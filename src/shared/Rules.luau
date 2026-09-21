@@ -1,0 +1,403 @@
+--!nonstrict
+-- Pure calculations, with module resolution for Studio and the official Luau CLI.
+-- Nothing here touches the engine, so every rule can be tested exhaustively.
+local Catalog = require(if script then script.Parent.Catalog else "./Catalog")
+local Rules = {}
+
+function Rules.IsFinite(value)
+	return type(value) == "number" and value == value and value > -math.huge and value < math.huge
+end
+
+local function number(value, fallback)
+	return if Rules.IsFinite(value) then value else fallback
+end
+
+--==============================================================================
+-- Account level and hero mastery
+--==============================================================================
+function Rules.LevelXP(level)
+	level = math.clamp(math.floor(number(level, 1)), 1, 50)
+	return math.floor(150 * (level - 1) ^ 1.65)
+end
+
+function Rules.LevelFromXP(xp)
+	xp = math.max(0, number(xp, 0))
+	local level = 1
+	while level < 50 and xp >= Rules.LevelXP(level + 1) do level += 1 end
+	return level
+end
+
+function Rules.MasteryXP(level)
+	level = math.clamp(math.floor(number(level, 1)), 1, 20)
+	return math.floor(90 * (level - 1) ^ 1.55)
+end
+
+function Rules.MasteryLevel(xp)
+	xp = math.max(0, number(xp, 0))
+	local level = 1
+	while level < 20 and xp >= Rules.MasteryXP(level + 1) do level += 1 end
+	return level
+end
+
+-- One point per level after the first, spent one at a time on the talent tree.
+function Rules.TalentPointsEarned(level)
+	return math.clamp(math.floor(number(level, 1)), 1, 50) - 1
+end
+
+function Rules.TowerLimit(size)
+	return ({ 16, 12, 10, 8 })[math.clamp(math.floor(number(size, 1)), 1, 4)]
+end
+
+--==============================================================================
+-- Modes, unlocks and the random map
+--==============================================================================
+function Rules.WaveCount(modeId)
+	local mode = Catalog.Modes[modeId]
+	return if mode then mode.waves else 0
+end
+
+local function anyWon(profile, key)
+	for _, entry in pairs(type(profile.campaign) == "table" and profile.campaign or {}) do
+		if type(entry) == "table" and entry[key] == true then return true end
+	end
+	return false
+end
+
+-- Whether a commander may enter a mode at all. This is the only unlock rule:
+-- the portals dim from it and the server re-checks it before every launch.
+--   training is always open; the campaign opens after training;
+--   ranked and cards open after any campaign victory; endless after a ranked one.
+function Rules.ModeUnlocked(profile, modeId)
+	if type(profile) ~= "table" or not Catalog.Modes[modeId] then return false end
+	if modeId == "tutorial" then return true end
+	if modeId == "normal" then return true end
+	if modeId == "ranked" or modeId == "cards" then return anyWon(profile, "normal") end
+	if modeId == "infinite" then return anyWon(profile, "ranked") or anyWon(profile, "hard") end
+	return false
+end
+
+local LOCK_REASON = {
+	normal = "Conclua o treinamento / Complete training",
+	ranked = "Vença a campanha normal uma vez / Win the normal campaign once",
+	cards = "Vença a campanha normal uma vez / Win the normal campaign once",
+	infinite = "Vença a modo ranqueado uma vez / Win the ranked campaign once",
+}
+
+-- Why a mode's portal refuses someone, in the "pt / en" form the router uses.
+-- A newcomer is always sent to training first.
+function Rules.ModeLockReason(modeId, profile)
+	return LOCK_REASON[modeId] or "Modo indisponível / Mode unavailable"
+end
+
+function Rules.CanStart(profile, mapId, modeId)
+	if not Catalog.Maps[mapId] or not Catalog.Modes[modeId] then return false, "Mapa ou modo inválido / Invalid map or mode" end
+	if type(profile) ~= "table" then return false, "Perfil indisponível / Profile unavailable" end
+	if modeId == "tutorial" then
+		return mapId == "manhattan", "O treinamento acontece em Manhattan / Training takes place in Manhattan"
+	end
+	if not Rules.ModeUnlocked(profile, modeId) then return false, Rules.ModeLockReason(modeId, profile) end
+	return true
+end
+
+-- The campaign portal trains a commander who has not trained yet.
+function Rules.PortalMode(profile, portalId)
+	return portalId
+end
+
+-- The map is never chosen: it is drawn when the portal launches. Training is
+-- the only exception and always runs in Manhattan.
+function Rules.PickMap(modeId, roll)
+	if modeId == "tutorial" then return "manhattan" end
+	local count = #Catalog.MapOrder
+	local index = math.floor(math.clamp(number(roll, 0), 0, 0.999999) * count) + 1
+	return Catalog.MapOrder[index]
+end
+
+function Rules.RankForWaves(waves)
+ local tiers = {
+  {minimum=0,pt="Iniciante",en="Rookie"}, {minimum=10,pt="Bronze",en="Bronze"},
+  {minimum=20,pt="Prata",en="Silver"}, {minimum=30,pt="Ouro",en="Gold"},
+  {minimum=40,pt="Diamante",en="Diamond"}, {minimum=50,pt="Lenda",en="Legend"},
+ }
+ local result=tiers[1]
+ for _,tier in ipairs(tiers) do if number(waves,0)>=tier.minimum then result=tier end end
+ return result
+end
+
+--==============================================================================
+-- Waves and bosses
+--==============================================================================
+-- A boss on every tenth wave. The last wave of a fixed-length run is the
+-- final boss, the strongest of them all.
+function Rules.IsBossWave(modeId, wave)
+	wave = math.floor(number(wave, 0))
+	return modeId ~= "tutorial" and wave >= 10 and wave % 10 == 0
+end
+
+function Rules.IsFinalWave(modeId, wave)
+	local count = Rules.WaveCount(modeId)
+	return count > 0 and math.floor(number(wave, 0)) == count
+end
+
+-- Wave 10, 20, 30, 40 and 50 meet the five bosses in story order; endless mode
+-- simply keeps cycling through them, stronger every time.
+function Rules.BossId(wave)
+	local step = math.max(1, math.floor(number(wave, 10) / 10))
+	return Catalog.BossOrder[(step - 1) % #Catalog.BossOrder + 1]
+end
+
+--==============================================================================
+-- Rewards
+--==============================================================================
+local KILL_GOLD = { normal = 1400, ranked = 2200, cards = 1800 }
+local VICTORY_GOLD = { normal = 600, ranked = 900, cards = 700 }
+
+-- The gold a wave's enemies carry between them. Later waves pay more, and the
+-- budget is conserved exactly across a whole run, whatever the party size.
+function Rules.RewardBudget(modeId, wave)
+	wave = math.max(1, math.floor(number(wave, 1)))
+	if modeId == "tutorial" then return 0 end
+	if modeId == "infinite" then return 25 + (if wave % 10 == 0 then 100 else 0) end
+	local total, count = KILL_GOLD[modeId], Rules.WaveCount(modeId)
+	if not total or count <= 0 or wave > count then return 0 end
+	local denominator = count * (count + 1)
+	return math.floor(total * wave * (wave + 1) / denominator) - math.floor(total * (wave - 1) * wave / denominator)
+end
+
+function Rules.VictoryGold(modeId)
+	return VICTORY_GOLD[modeId] or 0
+end
+
+function Rules.WaveXP(wave)
+	return 18 + math.max(1, math.floor(number(wave, 1))) * 2
+end
+
+function Rules.WaveMastery(wave)
+	return 10 + math.max(1, math.floor(number(wave, 1)))
+end
+
+--==============================================================================
+-- Towers
+--==============================================================================
+-- Permanent bonuses are capped so that no amount of progression outgrows the
+-- game: 15% damage, 10% attack speed, 10% range.
+function Rules.PermanentModifiers(profile, heroId)
+	local mastery = profile and profile.heroes and profile.heroes[heroId]
+	local masteryLevel = Rules.MasteryLevel(if type(mastery) == "table" then mastery.xp else 0)
+	local talents = profile and profile.talents or {}
+	return {
+		damageBonus = math.min(0.15, math.floor(masteryLevel / 2) * 0.01 + (talents.towerPower or 0) * 0.01),
+		rangeBonus = math.min(0.10, (masteryLevel - 1) * 0.002 + (talents.reach or 0) * 0.01),
+		attackSpeedBonus = math.min(0.10, (masteryLevel - 1) * 0.003),
+	}
+end
+
+local function applyMod(stats, mod)
+	if mod.op == "set" then stats[mod.key] = mod.value
+	elseif mod.op == "mul" then stats[mod.key] = stats[mod.key] * mod.value
+	elseif mod.op == "add" then stats[mod.key] = stats[mod.key] + mod.value end
+end
+
+-- A tower's stats from its hero, level, chosen branch and the bonuses around it.
+-- Levels 1-4 are a linear climb; level 5 applies the branch the player chose,
+-- and that branch is plain data on the hero (see Catalog).
+function Rules.TowerStats(hero, level, branch, modifiers)
+	if type(hero) == "string" then hero = Catalog.Heroes[hero] end
+	assert(type(hero) == "table" and hero.cost, "Unknown hero")
+	level = math.clamp(math.floor(number(level, 1)), 1, 5)
+	modifiers = modifiers or {}
+	local function bonus(key) return math.max(-0.9, number(modifiers[key], 0)) end
+	local linear = math.min(level, 4) - 1
+	local stats = {
+		damage = hero.damage * 1.45 ^ linear,
+		range = hero.range + linear * 1.75,
+		interval = hero.interval * 0.96 ^ linear,
+		attack = hero.attack, damageType = hero.damageType, air = hero.air == true,
+		reveal = hero.reveal == true, support = hero.support == true,
+		splash = hero.splash or 0, chain = hero.chain or 1, slow = hero.slow or 0,
+		mark = hero.mark or 0, armorPierce = hero.armorPierce or 0,
+		armorShred = if hero.shredBase then hero.shredBase + hero.shredPerLevel * level else 0,
+		supportBoost = hero.supportBoost or 0, bossDamage = 0,
+		portal = false, periodicSplash = hero.stompEvery or 0,
+		dotDuration = hero.dotDuration or 0, beamWidth = hero.beamWidth or 3,
+		upgradeCost = if level < 5 then math.floor(hero.cost * ({ 0.9, 1.4, 2.2, 3.5 })[level]) else 0,
+	}
+	if level == 5 then
+		assert(branch == 1 or branch == 2, "Final upgrade requires branch 1 or 2")
+		stats.damage *= 1.25
+		for _, mod in ipairs(hero.branches[branch].mods or {}) do applyMod(stats, mod) end
+	end
+	stats.damage *= 1 + bonus("damageBonus")
+	stats.range *= 1 + bonus("rangeBonus")
+	stats.interval = math.max(0.08, stats.interval / (1 + bonus("attackSpeedBonus")))
+	stats.rate = 1 / stats.interval
+	stats.bossDamage += bonus("bossDamageBonus")
+	stats.armorPierce = math.clamp(stats.armorPierce + bonus("armorPierceBonus"), 0, 0.9)
+	stats.splash *= 1 + bonus("splashBonus")
+	stats.supportBoost = math.max(stats.supportBoost, bonus("supportBoost"))
+	stats.airDamage, stats.stealthDamage = bonus("airDamage"), bonus("stealthDamage")
+	return stats
+end
+
+--==============================================================================
+-- Hero abilities
+--==============================================================================
+-- What an ability does at a given rank. abilityPower (talents, cards) scales its
+-- magnitude, or its duration when it has no magnitude (a stun); cooldownReduction
+-- shortens its recharge and is capped so an ability can never be spammed.
+function Rules.AbilityStats(def, rank, options)
+	options = options or {}
+	local ranks = Catalog.AbilityRanks
+	rank = math.clamp(math.floor(number(rank, 1)), 1, ranks.max)
+	local step = rank - 1
+	local strength = 1 + math.max(-0.5, number(options.abilityPower, 0))
+	local power = (def.power or 0) * (1 + ranks.growth.power * step)
+	local duration = (def.duration or 0) * (1 + ranks.growth.duration * step)
+	if def.power then power *= strength elseif def.duration then duration *= strength end
+	local cut = math.clamp(number(options.cooldownReduction, 0), -0.5, 0.4)
+	return {
+		kind = def.kind, target = def.target, stat = def.stat, unit = def.unit,
+		power = power, duration = duration,
+		radius = (def.radius or 0) * (1 + ranks.growth.radius * step),
+		count = if def.count then def.count + math.floor(step / 2) else 0,
+		cooldown = def.cooldown * (1 + ranks.growth.cooldown * step) * (1 - cut),
+		rank = rank,
+	}
+end
+
+local function trimmed(value)
+	local rounded = math.floor(value * 10 + 0.5) / 10
+	return if rounded % 1 == 0 then tostring(math.floor(rounded)) else string.format("%.1f", rounded)
+end
+
+-- The ability's description with this rank's real numbers filled in.
+function Rules.AbilityText(def, rank, language, options)
+	local stats = Rules.AbilityStats(def, rank, options)
+	local template = def.description[language] or def.description.pt
+	local power = if def.unit == "pct" then tostring(math.floor(stats.power * 100 + 0.5)) else trimmed(stats.power)
+	return (template:gsub("{power}", power):gsub("{duration}", trimmed(stats.duration)):gsub("{radius}", tostring(math.floor(stats.radius + 0.5))):gsub("{count}", tostring(stats.count)))
+end
+
+-- The next rank of a hero's ability: its gold price and the mastery that unlocks
+-- it. nil once the ability is maxed. Rarer heroes cost more to improve.
+function Rules.AbilityUpgrade(hero, currentRank)
+	if type(hero) == "string" then hero = Catalog.Heroes[hero] end
+	local ranks = Catalog.AbilityRanks
+	local nextRank = math.clamp(math.floor(number(currentRank, 1)), 1, ranks.max) + 1
+	if nextRank > ranks.max then return nil end
+	local multiplier = Catalog.Rarities[hero.rarity].abilityCost
+	return { rank = nextRank, cost = math.floor(ranks.cost[nextRank] * multiplier + 0.5), mastery = ranks.mastery[nextRank] }
+end
+
+--==============================================================================
+-- Chests
+--==============================================================================
+-- Starters are never in a chest: a chest exists to bring you something new.
+function Rules.ChestPool(rarity)
+	local pool = {}
+	for _, id in ipairs(Catalog.HeroOrder) do
+		local hero = Catalog.Heroes[id]
+		if hero.rarity == rarity and not hero.starter then table.insert(pool, id) end
+	end
+	return pool
+end
+
+-- Opens a chest from three random numbers in [0,1), so the outcome is a pure
+-- function that can be tested against the published odds.
+--   rarityRoll picks the rarity; heroRoll picks the hero inside it.
+--   A hero you do not own yet is always preferred over one you do, so a chest
+--   only hands you a duplicate once that rarity is complete.
+--   pity counts legendary-chest openings without a top hero: when it reaches
+--   the chest's threshold the next opening is guaranteed to be one.
+-- Returns { rarity, heroId, duplicate, pity }.
+function Rules.RollChest(chestId, rarityRoll, heroRoll, pity, owned)
+	local chest = Catalog.Chests[chestId]
+	assert(chest, "Unknown chest")
+	owned = owned or {}
+	rarityRoll = math.clamp(number(rarityRoll, 0), 0, 0.999999)
+	heroRoll = math.clamp(number(heroRoll, 0), 0, 0.999999)
+	local order, forced = Catalog.RarityOrder, false
+	local floorIndex = 1
+	if chest.pity and number(pity, 0) + 1 >= chest.pity.after then
+		forced = true
+		floorIndex = table.find(order, chest.pity.minimum) or 1
+	end
+	local total = 0
+	for index, rarity in ipairs(order) do
+		if index >= floorIndex then total += chest.odds[rarity] or 0 end
+	end
+	local target, chosen = rarityRoll * total, nil
+	for index, rarity in ipairs(order) do
+		local weight = if index >= floorIndex then (chest.odds[rarity] or 0) else 0
+		if weight > 0 then
+			chosen = rarity
+			if target < weight then break end
+			target -= weight
+		end
+	end
+	local pool = Rules.ChestPool(chosen)
+	local fresh = {}
+	for _, id in ipairs(pool) do if not owned[id] then table.insert(fresh, id) end end
+	local candidates = if #fresh > 0 then fresh else pool
+	local heroId = candidates[math.floor(heroRoll * #candidates) + 1]
+	local topIndex = table.find(order, chest.pity and chest.pity.minimum or "legendary") or #order
+	return {
+		rarity = chosen, heroId = heroId, duplicate = owned[heroId] == true,
+		pity = forced, top = (table.find(order, chosen) or 1) >= topIndex,
+	}
+end
+
+--==============================================================================
+-- Cards (the roguelike mode)
+--==============================================================================
+-- Three distinct cards, drawn by rarity weight and never one already at its
+-- stack limit. Deterministic in (seed, wave, player) so a reconnect sees the
+-- same offer. owned is a list of card ids, one entry per stack.
+function Rules.CardOffers(seed, wave, playerIndex, owned)
+	owned = owned or {}
+	local counts = {}
+	for _, id in ipairs(owned) do counts[id] = (counts[id] or 0) + 1 end
+	local available = {}
+	for _, id in ipairs(Catalog.CardOrder) do
+		if (counts[id] or 0) < Catalog.Cards[id].maxStacks then table.insert(available, id) end
+	end
+	local state = math.abs(math.floor(number(seed, 0) + number(wave, 0) * 7919 + number(playerIndex, 1) * 104729)) % 2147483646 + 1
+	local function nextRoll()
+		state = (state * 48271) % 2147483647
+		return state / 2147483647
+	end
+	local offers = {}
+	while #offers < 3 and #available > 0 do
+		local total = 0
+		for _, id in ipairs(available) do total += Catalog.CardRarityWeight[Catalog.Cards[id].rarity] end
+		local target = nextRoll() * total
+		local pick = #available
+		for index, id in ipairs(available) do
+			target -= Catalog.CardRarityWeight[Catalog.Cards[id].rarity]
+			if target < 0 then pick = index break end
+		end
+		table.insert(offers, table.remove(available, pick))
+	end
+	return offers
+end
+
+-- Waves after which a card is offered: every fifth, up to the last wave before
+-- the final boss. Only the card mode offers any.
+function Rules.CardWave(modeId, wave)
+	local mode = Catalog.Modes[modeId]
+	wave = math.floor(number(wave, 0))
+	if not mode or not mode.cards or wave < 5 or wave % 5 ~= 0 then return false end
+	return mode.waves == 0 or wave < mode.waves
+end
+
+-- The sum of every stacked card's stat changes.
+function Rules.CardTotals(owned)
+	local totals = {}
+	for _, id in ipairs(owned or {}) do
+		local card = Catalog.Cards[id]
+		for key, value in pairs(card and card.effects or {}) do totals[key] = (totals[key] or 0) + value end
+	end
+	return totals
+end
+
+return Rules

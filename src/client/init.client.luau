@@ -1,0 +1,1707 @@
+-- Client presentation and intent controller. Authority always remains on the server.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local MarketplaceService = game:GetService("MarketplaceService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
+local GuiService = game:GetService("GuiService")
+
+local player = Players.LocalPlayer
+local shared = ReplicatedStorage:WaitForChild("DoomShared")
+local Catalog = require(shared:WaitForChild("Catalog"))
+local Rules = require(shared:WaitForChild("Rules"))
+local UI = require(script:WaitForChild("UI"))
+local Effects = require(script:WaitForChild("Effects"))
+local Audio = require(script:WaitForChild("Audio"))
+local Nameplates = require(script:WaitForChild("Nameplates"))
+local remotes = ReplicatedStorage:WaitForChild("DoomRemotes")
+local requestRemote = remotes:WaitForChild("Request")
+local stateRemote = remotes:WaitForChild("State")
+local fxRemote = remotes:WaitForChild("FX")
+local C = UI.Colors
+
+local state, language = nil, "pt"
+local boardSize, boardMap, boardData = 1, "manhattan", nil
+local selectedTower, selectedHero, selectedSkill = nil, nil, nil
+local selectedPosition, placementValid = nil, false
+local placementPinned = false
+local layoutKind, lastProfileSignature = nil, nil
+local refs, productInfo, productFetching = {}, {}, false
+local placementRing, ghost, towerRing
+local ghostParts, ghostLift
+local contextPanel = nil
+local cosmeticsRetryPending = false
+local pending = {}
+local render, renderLobby, renderContext, renderElevator, openContext, closeContext, updateWorldCosmetics, fetchProducts, updateMatch, showToast
+
+local function T(pt, en) return language == "en" and en or pt end
+local function L(value)
+	if type(value) == "table" then return value[language] or value.pt or value.en or "" end
+	return tostring(value or "")
+end
+local function number(value) return UI.format(value) end
+local function profile() return state and state.profile or {} end
+local function activeMatch() return state and (state.phase == "Wave" or state.phase == "Preparing") end
+local function viewport()
+	local camera = workspace.CurrentCamera
+	return camera and camera.ViewportSize or Vector2.new(1280, 720)
+end
+local function colorFor(id) return UI.color(Catalog.Heroes[id] and Catalog.Heroes[id].color) end
+local function heroName(id) return L(Catalog.Heroes[id] and Catalog.Heroes[id].name or id) end
+local function mapName(id) return L(Catalog.Maps[id] and Catalog.Maps[id].name or id) end
+local function modeName(id) return L(Catalog.Modes[id] and Catalog.Modes[id].name or id) end
+local function contains(array, id) return table.find(array or {}, id) ~= nil end
+local function copy(array) return table.clone(array or {}) end
+
+local gui = UI.create("ScreenGui", {Name = "DoomsdayUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 10}, player:WaitForChild("PlayerGui"))
+local main = UI.frame(gui, {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1)})
+local overlays = UI.frame(gui, {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50})
+
+-- Every HUD is laid out from the usable screen: the viewport minus Roblox's
+-- topbar and the device's safe area, which is exactly main's AbsoluteSize.
+-- Before the first layout pass that is still zero, so fall back to the
+-- viewport minus the reported inset.
+local function screenSize()
+	local size = main.AbsoluteSize
+	if size.X > 0 and size.Y > 0 then return size end
+	local camera, inset = viewport(), GuiService:GetGuiInset()
+	return Vector2.new(camera.X, camera.Y - inset.Y)
+end
+local function sizeClass()
+	local size = screenSize()
+	return UI.sizeClass(size.X, size.Y)
+end
+local function mobile() return sizeClass().compact end
+-- A layout rect from UI.*Layout, as Position/Size. With an origin rect the
+-- position becomes relative to that parent frame.
+local function at(r, origin) return UDim2.fromOffset(r.x - (origin and origin.x or 0), r.y - (origin and origin.y or 0)) end
+local function dims(r) return UDim2.fromOffset(r.w, r.h) end
+local function screenKey()
+	local size = screenSize()
+	return tostring(math.floor(size.X)) .. "x" .. tostring(math.floor(size.Y))
+end
+
+-- Small one-shot motion acknowledges a new screen; reduced effects stays still.
+local function welcomePanel(panel)
+	if profile().settings and profile().settings.lowFX then return end
+	local scale=UI.create("UIScale",{Scale=0.975},panel)
+	TweenService:Create(scale,TweenInfo.new(0.18,Enum.EasingStyle.Quad),{Scale=1}):Play()
+end
+
+local function surface(label,tint)
+	label.BackgroundColor3=C.background
+	label.BackgroundTransparency=0.08
+	UI.corner(label,10)
+	UI.stroke(label,tint or C.stroke,1)
+	return label
+end
+
+showToast = function(message, bad)
+	if not message or message == "" then return end
+	local current = overlays:FindFirstChild("Toast")
+	if current then current:Destroy() end
+	local toast = UI.roundFrame(overlays, {
+		Name = "Toast", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, activeMatch() and 8 or math.max(8,screenSize().Y-78)),
+		Size = UDim2.new(1, -32, 0, 62), ZIndex = 60,
+	}, bad and C.red or C.green)
+	UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 100)}, toast)
+	UI.label(toast, L(message), {Position = UDim2.fromOffset(14, 6), Size = UDim2.new(1, -28, 1, -12), TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextSize = 14, ZIndex = 61})
+	toast.Active=false
+	welcomePanel(toast)
+	task.delay(4.5, function() if toast.Parent then toast:Destroy() end end)
+end
+
+local function request(action, payload, silent)
+	local success, result = pcall(function() return requestRemote:InvokeServer(action, payload or {}) end)
+	if not success or type(result) ~= "table" then
+		if not silent then showToast(T("Sem resposta do servidor. Tente novamente.", "The server did not respond. Please try again."), true) end
+		return nil
+	end
+	if not result.ok and not silent then showToast(result.message or T("Ação indisponível.", "Action unavailable."), true) end
+	return result
+end
+
+local function act(action, payload, callback)
+	if pending[action] then return end
+	pending[action] = true
+	task.spawn(function()
+		local result = request(action, payload)
+		pending[action] = nil
+		if result and result.ok and callback then callback(result.data) end
+	end)
+end
+
+local audio = Audio.new(function() return state end)
+local nameplates = Nameplates.new(player, function() return language end)
+local effects = Effects.new(player, request, function() return state end, audio)
+
+local function smallText(parent, text, y, h)
+	return UI.label(parent, text, {Position = UDim2.fromOffset(14, y), Size = UDim2.new(1, -28, 0, h or 40), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
+end
+
+local function heading(parent, text, y, tint)
+	return UI.label(parent, text, {Position = UDim2.fromOffset(14, y or 12), Size = UDim2.new(1, -28, 0, 26), TextSize = 17, Font = Enum.Font.GothamBold, TextColor3 = tint or C.text})
+end
+
+local function profileSignature()
+	local p = profile()
+	local ok, encoded = pcall(HttpService.JSONEncode, HttpService, p)
+	return ok and encoded or tostring(p.gold) .. tostring(p.level)
+end
+
+local function goldText() return "● " .. number(profile().gold) end
+local function levelText() return T("NV ", "LV ") .. tostring(profile().level or 1) end
+local function levelProgress()
+	local p = profile()
+	local level = p.level or 1
+	local floor = Rules.LevelXP(level)
+	local span = (p.xpNext or floor) - floor
+	if span <= 0 then return 1 end
+	return math.clamp(((p.xp or 0) - floor) / span, 0, 1)
+end
+
+local function selectedLoadoutLine()
+	local names = {}
+	for _, id in ipairs(profile().loadout or {}) do table.insert(names, heroName(id)) end
+	return table.concat(names, "  /  ")
+end
+
+local function heroSource(id)
+	local templates = ReplicatedStorage:FindFirstChild("DoomHeroPortraits")
+	local source = templates and (templates:FindFirstChild(id) or templates:FindFirstChild("Hero_" .. id))
+	local lobby = workspace:FindFirstChild("DoomLobby")
+	return source or (lobby and lobby:FindFirstChild("Hero_" .. id))
+end
+
+local function heroPortrait(parent, id, properties)
+	return UI.heroPortrait(parent, id, heroSource(id), colorFor(id), properties)
+end
+
+-- Quickbar and formation cards share a real 3D portrait, a clear price and
+-- a small slot number. The compact version keeps its tested touch geometry.
+local function heroCard(parent, id, index, width, height, callback, equipped)
+	local def, tint = Catalog.Heroes[id], colorFor(id)
+	local tight = height < 62
+	local portraitW = tight and 40 or math.floor(width * 0.43)
+	local button = UI.secondary(parent, "", callback, {
+		Name = "HeroCard_" .. id, LayoutOrder = index,
+		Size = UDim2.fromOffset(width, height), BackgroundColor3 = equipped and tint:Lerp(C.background, 0.74) or C.card,
+	})
+	heroPortrait(button, id, {Position = UDim2.fromOffset(3, 3), Size = UDim2.fromOffset(portraitW, height - 6)})
+	local textX = portraitW + 9
+	UI.label(button, L(def.name), {Name = "HeroName", Position = UDim2.fromOffset(textX, tight and 3 or 7), Size = UDim2.new(1, -textX - 5, 0, tight and 26 or 32), TextSize = tight and 10 or 12, Font = Enum.Font.GothamBold, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
+	if index==1 then UI.stroke(button,C.gold,2.5) end
+	local price = UI.label(button, "⚡ " .. tostring(def.cost), {Name = "EnergyCost", Position = UDim2.new(0, textX, 1, tight and -20 or -24), Size = UDim2.new(1, -textX - 4, 0, 18), TextColor3 = C.blue, TextSize = tight and 10 or 12, Font = Enum.Font.GothamBold})
+	local badge = UI.label(button, index==1 and "★1" or tostring(index), {Name = "SlotNumber", Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(tight and 22 or 26, tight and 15 or 18), BackgroundColor3 = C.background, BackgroundTransparency = 0.08, TextSize = 10, TextColor3 = tint, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
+	UI.corner(badge, 5)
+	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 8, 1, -3), Size = UDim2.new(1, -16, 0, 2), BackgroundColor3 = tint, BackgroundTransparency = equipped and 0 or 0.65})
+	return button, price, line
+end
+
+-- Every contextual panel below renders into a small scroll body in the middle
+-- of the screen, opened by walking up to one physical location in the lobby
+-- (or, for the squad and settings, one of the two small corner buttons). None
+-- of them carry navigation to another category: closing one and walking to a
+-- different location is how you switch subjects, on purpose. Starting a match
+-- has no panel at all: the mode portals are elevators you step into.
+local modeTint = {
+	normal = C.green, ranked = Color3.fromRGB(255, 138, 61), infinite = Color3.fromRGB(177, 119, 243),
+	cards = Color3.fromRGB(177,119,243),
+}
+local modeLockHints = {
+	normal = {pt = "Conclua o treinamento.", en = "Complete training."},
+	ranked = {pt = "Vença qualquer mapa na campanha normal.", en = "Clear any map in the normal campaign."},
+	infinite = {pt = "Vença qualquer mapa no modo ranqueado.", en = "Win any map on ranked mode."},
+	cards = {pt = "Vença a campanha normal.", en = "Win the normal campaign."},
+}
+
+local function contextHero(body, data)
+	UI.secondary(body,T("‹ INVENTÁRIO","‹ INVENTORY"),function() openContext("inventory",{}) end,{Name="BackToInventory",Size=UDim2.new(1,-6,0,40),TextSize=12})
+	local id = data.heroId
+	local def = Catalog.Heroes[id]
+	if not def then return end
+	local owned = (profile().heroes or {})[id]
+	local rarity = Catalog.Rarities[def.rarity]
+	local tint = UI.color(rarity.color)
+	local showcase = UI.row(body, 136)
+	heroPortrait(showcase,id,{Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(104,132)})
+	UI.label(showcase,L(rarity.name),{Position=UDim2.fromOffset(118,0),Size=UDim2.new(1,-122,0,20),TextColor3=tint,Font=Enum.Font.GothamBold})
+	UI.label(showcase,L(def.name),{Position=UDim2.fromOffset(118,25),Size=UDim2.new(1,-122,0,62),TextSize=23,Font=Enum.Font.GothamBlack,TextWrapped=true})
+	UI.label(showcase,number(def.cost)..T(" Energia"," Energy"),{Position=UDim2.fromOffset(118,95),Size=UDim2.new(1,-122,0,25),TextColor3=C.blue})
+	smallText(body,L(def.description),0,48)
+	local ability=Catalog.Abilities[def.ability]
+	local rank=(profile().abilities or {})[id] or 1
+	UI.section(body,L(ability.name),T("Seu primeiro herói empresta o poder especial para você!","Your first hero lends you their special power!"))
+	smallText(body,Rules.AbilityText(ability,rank,language),0,64)
+	if not owned then
+		UI.button(body,T("ENCONTRAR NOS BAÚS","FIND IN CHESTS"),function() openContext("chests",{}) end,{Size=UDim2.new(1,-6,0,44),BackgroundColor3=C.gold})
+		UI.secondary(body,T("Compra direta • Robux","Direct purchase • Robux"),function() openContext("premium",{}) end,{Size=UDim2.new(1,-6,0,44)})
+		return
+	end
+	UI.button(body,(profile().loadout or {})[1]==id and T("LÍDER ATUAL • SLOT 1","CURRENT LEADER • SLOT 1") or T("USAR COMO LÍDER • SLOT 1","MAKE LEADER • SLOT 1"),function()
+		local list=copy(profile().loadout)
+		local old=table.find(list,id)
+		if old then table.remove(list,old) elseif #list>=5 then table.remove(list,5) end
+		table.insert(list,1,id)
+		act("SetLoadout",{heroes=list})
+	end,{Name="MakeLeader_"..id,Size=UDim2.new(1,-6,0,46),BackgroundColor3=C.gold})
+	UI.secondary(body,contains(profile().loadout,id) and T("Retirar da equipe","Unequip") or T("Adicionar à equipe","Equip hero"),function()
+		local list=copy(profile().loadout); local old=table.find(list,id)
+		if old then table.remove(list,old) elseif #list<5 then table.insert(list,id) else showToast(T("A equipe tem 5 heróis. Retire um primeiro.","Squad full. Unequip a hero first."),true); return end
+		act("SetLoadout",{heroes=list})
+	end,{Size=UDim2.new(1,-6,0,42)})
+	UI.section(body,T("MELHORE SEU PODER","UPGRADE YOUR POWER"),T("Nível do herói ","Hero level ")..owned.level.."/20")
+	local offer=Rules.AbilityUpgrade(def,rank)
+	if offer then
+		local buy=UI.button(body,T("MELHORAR • ","UPGRADE • ")..number(offer.cost)..T(" Ouro • Herói nível "," Gold • Hero level ")..offer.mastery,function()
+			act("UpgradeAbility",{heroId=id,expectedRank=rank},function() audio:Cue("upgrade") end)
+		end,{Name="UpgradeAbility_"..id,Size=UDim2.new(1,-6,0,46),BackgroundColor3=tint})
+		if owned.level<offer.mastery or (profile().gold or 0)<offer.cost then UI.disabled(buy) end
+  if owned.level<offer.mastery then
+   smallText(body,T("Seu herói precisa do nível ","Your hero needs level ")..offer.mastery..T(". Jogue usando este herói para evoluir.",". Play with this hero to progress."),0,42)
+  elseif (profile().gold or 0)<offer.cost then
+   smallText(body,T("Faltam ","You need ")..number(offer.cost-(profile().gold or 0))..T(" Ouro para esta melhoria."," more Gold for this upgrade."),0,32)
+  end
+ else
+  UI.label(body,T("PODER NO NÍVEL MÁXIMO!","POWER AT MAX LEVEL!"),{Size=UDim2.new(1,-6,0,32),TextColor3=C.gold,Font=Enum.Font.GothamBold,TextSize=13})
+ end
+ local progress=UI.row(body,12)
+ for level=1,Catalog.AbilityRanks.max do
+  UI.roundFrame(progress,{Name="AbilityProgress_"..level,Position=UDim2.new((level-1)/Catalog.AbilityRanks.max,0,0,0),Size=UDim2.new(1/Catalog.AbilityRanks.max,-6,0,9),BackgroundColor3=level<=rank and tint or C.stroke})
+ end
+	for level=1,Catalog.AbilityRanks.max do
+		local row=UI.roundFrame(body,{Name="AbilityRank_"..level,Size=UDim2.new(1,-6,0,84),BackgroundColor3=level<=rank and tint:Lerp(C.background,0.85) or C.card},level<=rank and tint or C.stroke)
+		UI.label(row,T("NÍVEL ","LEVEL ")..level..(level<=rank and " ✓" or ""),{Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-24,0,22),TextColor3=tint,Font=Enum.Font.GothamBold})
+		UI.label(row,Rules.AbilityText(ability,level,language),{Position=UDim2.fromOffset(12,31),Size=UDim2.new(1,-24,0,45),TextSize=11,TextWrapped=true})
+	end
+
+end
+
+local function categoryTabs(body, name, options, selected, onSelect)
+ local row=UI.row(body,44)
+ row.Name=name
+ for index,option in ipairs(options) do
+  UI.button(row,option.label,function() onSelect(option.id) end,{
+   Name=name.."_"..option.id,Position=UDim2.new((index-1)/#options,0,0,0),
+   Size=UDim2.new(1/#options,-6,0,44),TextSize=12,
+   BackgroundColor3=selected==option.id and C.gold or C.card,
+   TextColor3=selected==option.id and C.background or C.text})
+ end
+end
+
+local lastChestResult
+local selectedChest="rare"
+local premiumCategory="hero"
+local inventoryFilter="owned"
+local function contextChests(body,data)
+ if data and Catalog.Chests[data.chestId] then selectedChest=data.chestId; data.chestId=nil end
+ categoryTabs(body,"ChestTabs",{{id="rare",label=T("BAÚ RARO","RARE CHEST")},{id="legendary",label=T("LENDÁRIO","LEGENDARY")}},selectedChest,function(id) selectedChest=id; renderContext() end)
+	UI.section(body,T("QUEM VEM NA SUA EQUIPE?","WHO WILL JOIN YOUR TEAM?"),T("Um herói por baú. Confira as chances antes de abrir.","One hero per chest. Check the odds before opening."))
+	if lastChestResult then
+		local r=lastChestResult
+		local hero=Catalog.Heroes[r.heroId]
+		local row=UI.roundFrame(body,{Name="ChestResult",Size=UDim2.new(1,-6,0,142),BackgroundColor3=C.card},UI.color(Catalog.Rarities[r.rarity].color))
+		heroPortrait(row,r.heroId,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(100,130)})
+		UI.label(row,heroName(r.heroId),{Position=UDim2.fromOffset(112,10),Size=UDim2.new(1,-126,0,44),TextSize=20,TextWrapped=true,Font=Enum.Font.GothamBlack})
+		UI.label(row,r.duplicate and (T("Repetido: +","Duplicate: +")..r.refundGold..T(" Ouro e +"," Gold and +")..r.refundMastery..T(" maestria"," mastery")) or T("NOVO HERÓI DESBLOQUEADO!","NEW HERO UNLOCKED!"),{Position=UDim2.fromOffset(112,57),Size=UDim2.new(1,-126,0,38),TextWrapped=true,TextSize=12,TextColor3=C.gold})
+		UI.button(row,T("VER HERÓI","VIEW HERO"),function() openContext("hero",{heroId=r.heroId}) end,{Position=UDim2.fromOffset(112,100),Size=UDim2.new(1,-126,0,32),TextSize=12})
+	end
+	for _,id in ipairs({selectedChest}) do
+		local chest=Catalog.Chests[id]; local tint=UI.color(chest.color)
+		local display=UI.roundFrame(body,{Name="ChestDisplay_"..id,Size=UDim2.new(1,-6,0,146),BackgroundColor3=tint:Lerp(C.background,0.88)},tint)
+		UI.shade(display,35)
+		local chestArt=UI.frame(display,{Name="ChestIllustration",BackgroundTransparency=1,Position=UDim2.fromOffset(12,20),Size=UDim2.fromOffset(104,100)})
+		UI.roundFrame(chestArt,{Position=UDim2.fromOffset(7,42),Size=UDim2.fromOffset(92,53),BackgroundColor3=tint:Lerp(C.background,0.3)},tint)
+		UI.roundFrame(chestArt,{Position=UDim2.fromOffset(3,18),Size=UDim2.fromOffset(100,35),BackgroundColor3=tint},C.gold)
+		for _,x in ipairs({20,77}) do UI.frame(chestArt,{Position=UDim2.fromOffset(x,20),Size=UDim2.fromOffset(9,71),BackgroundColor3=C.gold}) end
+		UI.roundFrame(chestArt,{Position=UDim2.fromOffset(42,42),Size=UDim2.fromOffset(24,25),BackgroundColor3=C.gold},tint)
+		UI.label(chestArt,"◆",{Position=UDim2.fromOffset(43,40),Size=UDim2.fromOffset(22,25),TextColor3=C.background,TextXAlignment=Enum.TextXAlignment.Center,TextSize=17})
+		UI.label(display,string.upper(L(chest.name)),{Position=UDim2.fromOffset(128,20),Size=UDim2.new(1,-140,0,49),Font=Enum.Font.GothamBlack,TextColor3=tint,TextSize=21,TextWrapped=true})
+		UI.label(display,number(chest.cost)..T(" OURO"," GOLD"),{Position=UDim2.fromOffset(128,79),Size=UDim2.new(1,-140,0,24),Font=Enum.Font.GothamBold,TextColor3=C.gold})
+		UI.label(display,T("1 herói • chances abaixo","1 hero • odds below"),{Position=UDim2.fromOffset(128,110),Size=UDim2.new(1,-140,0,25),TextSize=11,TextColor3=C.muted,TextWrapped=true})
+		local forced=chest.pity and ((profile().pity or {})[id] or 0)+1>=chest.pity.after
+		if chest.pity then smallText(body,T("Garantia lendária ou superior: ","Legendary or better guarantee: ")..tostring((profile().pity or {})[id] or 0).."/"..chest.pity.after..(forced and T(" • ATIVA NESTE BAÚ"," • ACTIVE NOW") or ""),0,32) end
+		local total=0
+		local minimum=forced and table.find(Catalog.RarityOrder,chest.pity.minimum) or 1
+		for index,rarity in ipairs(Catalog.RarityOrder) do if index>=minimum then total+=chest.odds[rarity] or 0 end end
+		for index,rarity in ipairs(Catalog.RarityOrder) do
+			local weight=index>=minimum and (chest.odds[rarity] or 0) or 0
+			if weight>0 then
+				local pool=Rules.ChestPool(rarity); local fresh={}
+				for _,heroId in ipairs(pool) do if not (profile().heroes or {})[heroId] then table.insert(fresh,heroId) end end
+				local candidates=#fresh>0 and fresh or pool
+				for _,heroId in ipairs(pool) do
+					local chance=contains(candidates,heroId) and weight/total/#candidates*100 or 0
+					smallText(body,heroName(heroId).."  •  "..string.format("%.4f%%",chance),0,22)
+				end
+			end
+		end
+		smallText(body,T("Heróis novos têm prioridade dentro da raridade sorteada. Ao completar a raridade, repetidos viram Ouro e maestria.","Unowned heroes take priority within the rolled rarity. After completing that rarity, duplicates grant Gold and mastery."),0,54)
+		local buy=UI.button(body,T("ABRIR ","OPEN ")..string.upper(L(chest.name)).." • "..number(chest.cost),function()
+			act("OpenChest",{chestId=id},function(snapshot)
+				lastChestResult=snapshot and snapshot.result
+				audio:Cue("upgrade"); renderContext()
+			end)
+		end,{Name="OpenChest_"..id,Size=UDim2.new(1,-6,0,46),BackgroundColor3=tint})
+		if (profile().gold or 0)<chest.cost or profile().paidRandomRestricted then UI.disabled(buy) end
+	end
+	if profile().paidRandomRestricted then smallText(body,T("Abertura de baús indisponível para esta conta. Heróis continuam disponíveis na compra direta.","Chest openings unavailable for this account. Direct hero purchases remain available."),0,52) end
+end
+
+local function contextPremium(body)
+ categoryTabs(body,"PremiumTabs",{{id="hero",label=T("HERÓIS","HEROES")},{id="pass",label=T("PASSES","PASSES")},{id="product",label=T("OURO","GOLD")}},premiumCategory,function(id) premiumCategory=id; renderContext() end)
+	UI.section(body,T("LOJA ROBUX","ROBUX SHOP"),T("Heróis garantidos, passes e Ouro. Preços consultados no Roblox.","Guaranteed heroes, passes and Gold. Prices loaded from Roblox."))
+	for _,group in ipairs({{kind="hero",items=Catalog.Products.Heroes},{kind="pass",items=Catalog.Products.Passes},{kind="product",items=Catalog.Products.Consumables}}) do
+		if group.kind~=premiumCategory then continue end
+		local keys={}; for key in pairs(group.items) do table.insert(keys,key) end; table.sort(keys)
+		for _,key in ipairs(keys) do
+			local def=group.items[key]; local info=productInfo[group.kind..":"..key]
+			local owned=group.kind=="hero" and (profile().heroes or {})[key] or group.kind=="pass" and (profile().passes or {})[key]
+			local row=UI.roundFrame(body,{Size=UDim2.new(1,-6,0,110),BackgroundColor3=C.card})
+			local left=group.kind=="hero" and 92 or 12
+			if group.kind=="hero" then heroPortrait(row,key,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(80,100)}) end
+			UI.label(row,L(def.name),{Position=UDim2.fromOffset(left,8),Size=UDim2.new(1,-left-12,0,40),TextWrapped=true,Font=Enum.Font.GothamBold,TextSize=14})
+			local buy=UI.button(row,owned and T("ADQUIRIDO","OWNED") or info and tostring(info.price).." Robux" or T("Indisponível","Unavailable"),function()
+				if not info or owned then return end
+				local ok=pcall(function() if group.kind=="pass" then MarketplaceService:PromptGamePassPurchase(player,info.id) else MarketplaceService:PromptProductPurchase(player,info.id) end end)
+				if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
+			end,{Position=UDim2.fromOffset(left,59),Size=UDim2.new(1,-left-12,0,39),BackgroundColor3=C.gold,TextSize=12})
+			if not info or owned then UI.disabled(buy) end
+		end
+	end
+	fetchProducts()
+end
+
+local function contextShop(body, data)
+	if data.shopKind then premiumCategory=data.shopKind; data.shopKind=nil end
+	contextPremium(body)
+end
+
+local function contextQuests(body)
+	UI.section(body, T("Missões e conquistas", "Missions and achievements"), T("Diárias acumulam por até 3 dias.", "Daily missions accumulate for up to 3 days."))
+	local quests = {}
+	for id, quest in pairs(profile().quests or {}) do table.insert(quests, {id = id, quest = quest}) end
+	table.sort(quests, function(a, b) return a.id < b.id end)
+	for _, item in ipairs(quests) do
+		local quest, id = item.quest, item.id
+		local card = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 160), BackgroundColor3 = C.card})
+		heading(card, L(quest.name), 10)
+		smallText(card, L(quest.description), 39, 34)
+		local progress = math.min(quest.progress or 0, quest.target or 1)
+		local fill = UI.bar(card, C.green, UDim2.fromOffset(14, 78), UDim2.new(1, -28, 0, 7))
+		fill.Size = UDim2.fromScale(progress / math.max(quest.target or 1, 1), 1)
+		smallText(card, progress .. "/" .. (quest.target or 1) .. "  •  " .. number(quest.gold or 0) .. T(" Ouro  +  ", " Gold  +  ") .. number(quest.xp or 0) .. " XP", 91, 22)
+		local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or T("Resgatar recompensa", "Claim reward"), function() act("ClaimQuest", {questId = id}) end, {Position = UDim2.new(0, 12, 1, -40), Size = UDim2.new(1, -24, 0, 30)})
+		if quest.claimed or progress < (quest.target or 1) then UI.disabled(claim) end
+	end
+	if #quests == 0 then UI.label(body, T("Conclua o treinamento para iniciar suas missões.", "Complete training to begin your missions."), {Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.muted}) end
+	UI.section(body, T("Títulos", "Titles"))
+	local titles = {}
+	for id, name in pairs(profile().titles or {}) do table.insert(titles, {id = id, name = name}) end
+	table.sort(titles, function(a, b) return a.id < b.id end)
+	local currentTitle = profile().title or ""
+	UI.secondary(body, T("Sem título", "No title") .. (currentTitle == "" and "  ✓" or ""), function() act("SetTitle", {titleId = ""}) end, {Size = UDim2.new(1, -6, 0, 38), TextSize = 13, TextColor3 = currentTitle == "" and C.green or C.text})
+	for _, entry in ipairs(titles) do
+		local selected = currentTitle == entry.id
+		UI.secondary(body, "✦ " .. L(entry.name) .. (selected and "  ✓" or ""), function() act("SetTitle", {titleId = entry.id}) end, {Size = UDim2.new(1, -6, 0, 40), TextSize = 13, TextColor3 = selected and C.green or C.gold})
+	end
+	UI.section(body, T("Galeria de feitos", "Achievement gallery"))
+	local count = 0
+	for _, achievement in pairs(profile().achievements or {}) do
+		count += 1
+		local row = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 54), BackgroundColor3 = C.card})
+		heading(row, "✦  " .. L(achievement.name), 14, C.gold)
+	end
+	if count == 0 then UI.label(body, T("Suas vitórias e títulos aparecerão aqui.", "Your victories and titles will appear here."), {Size = UDim2.new(1, -6, 0, 40), TextColor3 = C.muted, TextWrapped = true}) end
+end
+
+local boardMode="ranked"
+local function loadBoard()
+	act("Leaderboard", {mapId = boardMap, size = boardSize, modeId=boardMode}, function(data) boardData = data; if contextPanel and contextPanel.kind == "leaderboard" then renderContext() end end)
+end
+
+local function contextLeaderboard(body)
+ categoryTabs(body,"BoardMode",{{id="ranked",label=T("RANQUEADO","RANKED")},{id="infinite",label=T("INFINITO","ENDLESS")}},boardMode,function(id) boardMode=id; boardData=nil; renderContext(); loadBoard() end)
+ if boardMode=="ranked" then
+  local rank=Rules.RankForWaves(boardData and boardData.personal or 0)
+  UI.section(body,T("SEU RANK: ","YOUR RANK: ")..(language=="en" and rank.en or rank.pt),T("Bronze 10 • Prata 20 • Ouro 30 • Diamante 40 • Lenda 50 ondas","Bronze 10 • Silver 20 • Gold 30 • Diamond 40 • Legend 50 waves"))
+ end
+	UI.section(body, T("Lendas da resistência", "Legends of the resistance"), T("Evolução real da conta • temporadas de 60 dias.", "Real account progression • 60-day seasons."))
+	local controls = UI.row(body, 46)
+	UI.secondary(controls, mapName(boardMap), function()
+		local index = table.find(Catalog.MapOrder, boardMap) or 1
+		boardMap = Catalog.MapOrder[index % #Catalog.MapOrder + 1]
+		boardData = nil; renderContext(); loadBoard()
+	end, {Size = UDim2.new(0.6, -6, 0, 40), TextSize = 12})
+	UI.secondary(controls, tostring(boardSize) .. T(" jogador(es)", " player(s)"), function() boardSize = boardSize % 4 + 1; boardData = nil; renderContext(); loadBoard() end, {Position = UDim2.new(0.6, 4, 0, 0), Size = UDim2.new(0.4, -4, 0, 40), TextSize = 12})
+	local row = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 66), BackgroundColor3 = C.card})
+	heading(row, T("Sua melhor marca: ", "Your personal best: ") .. tostring(boardData and boardData.personal or 0) .. T(" ondas", " waves"), 10, C.green)
+	smallText(row, T("Temporada ", "Season ") .. tostring(boardData and boardData.season or profile().season or 1), 38, 22)
+	if boardData and boardData.rows then
+		for _, entry in ipairs(boardData.rows) do
+			local entryRow = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 56), BackgroundColor3 = entry.userId == player.UserId and Color3.fromRGB(24, 54, 49) or C.card})
+			UI.label(entryRow, "#" .. tostring(entry.rank), {Position = UDim2.fromOffset(12, 10), Size = UDim2.fromOffset(49, 30), Font = Enum.Font.GothamBold, TextColor3 = C.gold})
+			local tier=Rules.RankForWaves(entry.waves)
+			local title=(entry.name or tostring(entry.userId))..(boardMode=="ranked" and ("\n"..(language=="en" and tier.en or tier.pt)) or "")
+			UI.label(entryRow, title, {Position = UDim2.fromOffset(65, 6), Size = UDim2.new(1, -145, 0, 42), TextSize = 12, TextWrapped=true})
+			UI.label(entryRow, tostring(entry.waves), {Position = UDim2.new(1, -72, 0, 10), Size = UDim2.fromOffset(58, 30), TextXAlignment = Enum.TextXAlignment.Right, Font = Enum.Font.GothamBold, TextColor3 = C.green})
+		end
+		if #boardData.rows == 0 then UI.label(body, T("Seja o primeiro a deixar sua marca neste setor.", "Be the first to set a record in this sector."), {Size = UDim2.new(1, -6, 0, 50), TextWrapped = true, TextColor3 = C.muted}) end
+	else UI.label(body, T("Carregando placar…", "Loading leaderboard…"), {TextColor3 = C.muted}) end
+	UI.secondary(body, T("Atualizar placar", "Refresh leaderboard"), loadBoard, {Size = UDim2.new(1, -6, 0, 40)})
+end
+
+local function contextSquad(body)
+	local lineup=UI.row(body,78)
+	lineup.Name="SquadSlots"
+	for slot=1,5 do
+		local id=(profile().loadout or {})[slot]
+		local tile=UI.secondary(lineup,"",function()
+			if id then openContext("hero",{heroId=id}) else inventoryFilter="owned"; renderContext(); showToast(T("Escolha um herói abaixo e toque em Adicionar à equipe.","Choose a hero below, then tap Equip hero.")) end
+		end,{Name="SquadSlot_"..slot,Position=UDim2.new((slot-1)/5,0,0,0),Size=UDim2.new(0.2,-6,0,78),BackgroundColor3=slot==1 and C.gold:Lerp(C.background,0.8) or C.card})
+		if slot==1 then UI.stroke(tile,C.gold,2) end
+		if id then heroPortrait(tile,id,{Position=UDim2.fromOffset(4,3),Size=UDim2.new(1,-8,0,53)})
+		else UI.label(tile,"+",{Position=UDim2.fromOffset(0,4),Size=UDim2.new(1,0,0,47),TextSize=32,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center}) end
+		UI.label(tile,slot==1 and T("★ LÍDER","★ LEADER") or tostring(slot),{Position=UDim2.new(0,2,1,-21),Size=UDim2.new(1,-4,0,18),TextSize=10,Font=Enum.Font.GothamBold,TextColor3=slot==1 and C.gold or C.muted,TextXAlignment=Enum.TextXAlignment.Center})
+	end
+	local leader=(profile().loadout or {})[1]
+	if leader then
+		local banner=UI.roundFrame(body,{Name="LeaderBanner",Size=UDim2.new(1,-6,0,94),BackgroundColor3=C.gold:Lerp(C.background,0.85)},C.gold)
+		heroPortrait(banner,leader,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(75,84)})
+		UI.label(banner,T("SLOT 1 • LÍDER\n","SLOT 1 • LEADER\n")..heroName(leader),{Position=UDim2.fromOffset(87,7),Size=UDim2.new(1,-99,0,42),Font=Enum.Font.GothamBold,TextColor3=C.gold,TextWrapped=true,TextSize=13})
+		UI.label(banner,T("ATIVA: ","ACTIVE: ")..L(Catalog.Abilities[Catalog.Heroes[leader].ability].name),{Position=UDim2.fromOffset(87,52),Size=UDim2.new(1,-99,0,34),TextWrapped=true,TextSize=12})
+	end
+ local ownedCount=0
+ for _,id in ipairs(Catalog.HeroOrder) do if (profile().heroes or {})[id] then ownedCount+=1 end end
+ UI.section(body,T("COLEÇÃO ","COLLECTION ")..ownedCount.."/"..#Catalog.HeroOrder,T("Toque em um herói para ver seus poderes.","Tap a hero to discover their powers."))
+ categoryTabs(body,"InventoryTabs",{{id="owned",label=T("MEUS HERÓIS","MY HEROES")},{id="all",label=T("TODOS","ALL")}},inventoryFilter,function(id) inventoryFilter=id; renderContext() end)
+ local entries={}
+ for _,id in ipairs(Catalog.HeroOrder) do
+  if inventoryFilter=="all" or (profile().heroes or {})[id] then table.insert(entries,id) end
+ end
+ local width=math.min(650,screenSize().X-24)-34
+ local columns=math.max(1,math.min(3,math.floor((width+10)/165)))
+ local cellWidth=(width-(columns-1)*10)/columns
+ local gallery=UI.frame(body,{Name="HeroGallery",Size=UDim2.new(1,-6,0,math.ceil(#entries/columns)*246-10),BackgroundTransparency=1})
+ for index,id in ipairs(entries) do
+  local def=Catalog.Heroes[id]
+  local owned=(profile().heroes or {})[id]
+  local rarity=Catalog.Rarities[def.rarity]
+  local tint=UI.color(rarity.color)
+  local slot=table.find(profile().loadout or {},id)
+  local row=UI.roundFrame(gallery,{Name="Collection_"..id,Position=UDim2.fromOffset(((index-1)%columns)*(cellWidth+10),math.floor((index-1)/columns)*246),Size=UDim2.fromOffset(cellWidth,236),BackgroundColor3=tint:Lerp(C.background,0.92)},id==leader and C.gold or tint)
+  UI.shade(row,30)
+  heroPortrait(row,id,{Position=UDim2.new(0,5,0,28),Size=UDim2.new(1,-10,0,100)})
+  UI.label(row,string.upper(L(rarity.name)),{Position=UDim2.fromOffset(9,7),Size=UDim2.new(1,-18,0,18),TextColor3=tint,Font=Enum.Font.GothamBold,TextSize=10})
+  UI.label(row,heroName(id),{Position=UDim2.fromOffset(9,131),Size=UDim2.new(1,-18,0,38),Font=Enum.Font.GothamBold,TextSize=13,TextWrapped=true})
+  UI.label(row,owned and (T("NÍVEL ","LEVEL ")..owned.level.."/20") or T("AINDA NÃO TEM","NOT OWNED YET"),{Position=UDim2.fromOffset(9,172),Size=UDim2.new(1,-18,0,18),TextSize=10,TextColor3=owned and C.muted or tint})
+  UI.button(row,slot==1 and T("★ LÍDER","★ LEADER") or slot and (T("SLOT ","SLOT ")..slot) or owned and T("VER HERÓI","VIEW HERO") or T("VER HERÓI","VIEW HERO"),function() openContext("hero",{heroId=id}) end,{Name="FormationHero_"..id,Position=UDim2.fromOffset(7,195),Size=UDim2.new(1,-14,0,34),BackgroundColor3=id==leader and C.gold or owned and tint or C.card,TextColor3=owned and C.background or C.text,TextSize=11})
+ end
+	UI.section(body, T("Formações salvas", "Saved formations"), T("Salve a equipe e seu líder.", "Save your squad and leader."))
+	local slots = profile().loadoutSlots or (profile().passes and profile().passes.formations and 8 or 3)
+	for slot = 1, slots do
+		local saved = profile().savedLoadouts and profile().savedLoadouts[tostring(slot)]
+		local row = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 56), BackgroundColor3 = C.card})
+		UI.label(row, T("Formação ", "Formation ") .. slot .. (saved and "  ✓" or ""), {Position = UDim2.fromOffset(12, 10), Size = UDim2.new(0.4, -12, 0, 36), TextSize = 12})
+		UI.secondary(row, T("Salvar", "Save"), function() act("SaveLoadout", {slot = slot}, function() showToast(T("Formação salva.", "Formation saved.")) end) end, {Position = UDim2.new(0.4, 0, 0, 10), Size = UDim2.new(0.3, -10, 0, 36)})
+		local load = UI.button(row, T("Usar", "Load"), function() act("LoadLoadout", {slot = slot}) end, {Position = UDim2.new(0.7, 0, 0, 10), Size = UDim2.new(0.3, -12, 0, 36)})
+		if not saved then UI.disabled(load) end
+	end
+end
+
+local function contextSettings(body)
+ UI.button(body,T("APRENDER A JOGAR • 8 ONDAS","LEARN TO PLAY • 8 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,44)})
+	UI.section(body, T("Seu jeito de jogar", "Your experience"), T("Acessibilidade e apresentação. As regras de combate são iguais para todos.", "Accessibility and presentation. Combat rules are the same for everyone."))
+	local settings = profile().settings or {}
+	local options = {
+		{title = T("Idioma", "Language"), value = language == "pt" and "Português (Brasil)" or "English", key = "language", next = language == "pt" and "en" or "pt"},
+		{title = T("Menos efeitos e flashes", "Fewer effects and flashes"), value = settings.lowFX and T("Ligado", "On") or T("Desligado", "Off"), key = "lowFX", next = not settings.lowFX},
+		{title = T("Movimento de câmera", "Camera movement"), value = settings.shake and T("Ligado", "On") or T("Desligado", "Off"), key = "shake", next = not settings.shake},
+		{title = T("Música e sons", "Music and sound"), value = settings.music ~= false and T("Ligado", "On") or T("Desligado", "Off"), key = "music", next = settings.music == false},
+	}
+	for _, option in ipairs(options) do
+		local card = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 88), BackgroundColor3 = C.card})
+		heading(card, option.title, 10)
+		UI.secondary(card, option.value .. "  ↻", function()
+			local update = {language = settings.language or language, lowFX = settings.lowFX == true, shake = settings.shake == true, music = settings.music ~= false}
+			update[option.key] = option.next
+			act("Settings", update)
+		end, {Position = UDim2.fromOffset(12, 43), Size = UDim2.new(1, -24, 0, 33)})
+	end
+	UI.section(body, T("Controles", "Controls"))
+	UI.label(body, T("1–5: escolher herói  •  Q: poder do líder\nClique ou toque: selecionar posição / torre\nConfirmar: posicionar  •  Esc / Cancelar: cancelar seleção", "1–5: choose hero  •  Q: leader power\nClick or tap: select position / tower\nConfirm: place tower  •  Esc / Cancel: cancel selection"), {Size = UDim2.new(1, -6, 0, 90), TextColor3 = C.muted, TextSize = 13, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
+end
+
+local talentBranch = 1
+local function contextTalents(body)
+	local p = profile()
+	local points = p.talentPoints or 0
+	local ranks = p.talents or {}
+	local overview = UI.roundFrame(body, {Name = "TalentOverview", Size = UDim2.new(1, -6, 0, 126), BackgroundColor3 = Color3.fromRGB(27,46,68)}, C.gold)
+	UI.label(overview,T("CADA AVENTURA TE FAZ CRESCER!", "EVERY ADVENTURE HELPS YOU GROW!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,18),Font=Enum.Font.GothamBlack,TextColor3=C.gold,TextSize=11})
+	UI.label(overview, tostring(points), {Position = UDim2.fromOffset(14, 29), Size = UDim2.fromOffset(62, 53), TextSize = 46, Font = Enum.Font.GothamBlack, TextColor3 = C.gold})
+	UI.label(overview, T("PONTOS DISPONÍVEIS", "AVAILABLE POINTS"), {Position = UDim2.fromOffset(82, 35), Size = UDim2.new(1, -92, 0, 22), TextSize = 12, Font = Enum.Font.GothamBold})
+	UI.label(overview, T("Subiu de nível? Ganhou 1 ponto! Escolha o que melhorar.", "Level up, earn 1 point! Choose what to improve."), {Position = UDim2.fromOffset(82, 59), Size = UDim2.new(1, -92, 0, 40), TextWrapped = true, TextSize = 12, TextColor3 = C.muted})
+	local track = UI.roundFrame(overview, {Position = UDim2.fromOffset(14, 110), Size = UDim2.new(1, -28, 0, 6), BackgroundColor3 = C.background})
+	UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.gold})
+	local narrow = screenSize().X < 650
+	if narrow then
+		local tabs = UI.frame(body, {Size = UDim2.new(1, -6, 0, 42), BackgroundTransparency = 1})
+		for i, branch in ipairs(Catalog.TalentBranches) do
+			UI.button(tabs, L(branch.name), function() talentBranch = i; renderContext() end, {Position = UDim2.new((i - 1) / 3, 0, 0, 0), Size = UDim2.new(1 / 3, -5, 1, 0), TextSize = 10, BackgroundColor3 = i == talentBranch and Color3.fromRGB(unpack(branch.color)) or C.card})
+		end
+	end
+	local tree = UI.frame(body, {Name = "TalentTree", Size = UDim2.new(1, -6, 0, 1040), BackgroundTransparency = 1})
+	for i, branch in ipairs(Catalog.TalentBranches) do
+		if not narrow or i == talentBranch then
+			local tint = Color3.fromRGB(unpack(branch.color))
+			local lane = UI.frame(tree, {Name = branch.id, Position = UDim2.new(narrow and 0 or (i - 1) / 3, 0, 0, 0), Size = UDim2.new(narrow and 1 or 1 / 3, narrow and 0 or -8, 1, 0), BackgroundTransparency = 1})
+			UI.label(lane, L(branch.name), {Size = UDim2.new(1, 0, 0, 30), TextSize = 14, TextColor3 = tint, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center})
+			for index, id in ipairs(branch.nodes) do
+				local def = Catalog.Talents[id]
+				local rank = ranks[id] or 0
+				local unlocked = not def.parent or (ranks[def.parent] or 0) >= def.requiredRank
+				local y = 38 + (index - 1) * 200
+				if index > 1 then UI.frame(lane, {Position = UDim2.new(0.5, -2, 0, y - 18), Size = UDim2.fromOffset(4, 18), BackgroundColor3 = unlocked and tint or C.stroke}) end
+				local card = UI.roundFrame(lane, {Name = "Talent_" .. id, Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 182), BackgroundColor3 = tint:Lerp(C.background, rank > 0 and 0.83 or 0.94)}, unlocked and tint or C.stroke)
+				UI.emblem(card,branch.id,tint,{Position=UDim2.fromOffset(10,7),Size=UDim2.fromOffset(32,32)})
+				for pip=1,def.maxRank do
+					UI.frame(card,{Position=UDim2.new((pip-1)/def.maxRank,4,1,-4),Size=UDim2.new(1/def.maxRank,-8,0,2),BackgroundColor3=pip<=rank and tint or C.stroke})
+				end
+				UI.label(card, rank .. " / " .. def.maxRank, {Position = UDim2.new(1, -64, 0, 13), Size = UDim2.fromOffset(54, 22), TextColor3 = tint, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right})
+				UI.label(card, L(def.name), {Position = UDim2.fromOffset(10, 43), Size = UDim2.new(1, -20, 0, 34), TextWrapped = true, Font = Enum.Font.GothamBold, TextSize = 14})
+				UI.label(card, L(def.description), {Position = UDim2.fromOffset(10, 79), Size = UDim2.new(1, -20, 0, 50), TextWrapped = true, TextSize = 11, TextColor3 = C.muted, TextYAlignment = Enum.TextYAlignment.Top})
+				local label = rank >= def.maxRank and T("MAXIMIZADO", "MAXED") or not unlocked and (T("Anterior: rank ", "Previous: rank ") .. def.requiredRank) or T("EVOLUIR • 1 PONTO", "UPGRADE • 1 POINT")
+				local button = UI.button(card, label, function()
+					act("UpgradeTalent", {talentId = id, expectedRank = rank}, function() audio:Cue("upgrade"); showToast(L(def.name) .. "  " .. (rank + 1) .. "/" .. def.maxRank) end)
+				end, {Name = "UpgradeTalent_" .. id, Position = UDim2.fromOffset(10, 136), Size = UDim2.new(1, -20, 0, 36), BackgroundColor3 = tint, TextSize = 11})
+				if not unlocked or rank >= def.maxRank or points < 1 then UI.disabled(button) end
+			end
+		end
+	end
+	local confirmReset = false
+	local reset
+	reset = UI.secondary(body, T("Redistribuir pontos • grátis", "Reset points • free"), function()
+		if not confirmReset then confirmReset = true; reset.Text = T("Confirmar redistribuição", "Confirm reset"); return end
+		act("ResetTalents", {}, function() showToast(T("Pontos devolvidos. Experimente outra especialidade!", "Points refunded. Try a different specialty!")) end)
+	end, {Size = UDim2.new(1, -6, 0, 44)})
+end
+
+local function contextModes(body)
+	UI.section(body,T("SUA PRÓXIMA AVENTURA","YOUR NEXT ADVENTURE"),T("Cada partida escolhe um dos cinco mapas. Convide amigos entrando juntos em um portal!","Each run draws one of five maps. Play with friends by stepping into a portal together!"))
+	for _,id in ipairs(Catalog.PortalOrder) do
+		local def=Catalog.Modes[id]
+		local tint=modeTint[id] or C.green
+		local allowed=Rules.ModeUnlocked(profile(),id)
+		local card=UI.roundFrame(body,{Name="ModeChoice_"..id,Size=UDim2.new(1,-6,0,159),BackgroundColor3=tint:Lerp(C.panel,0.86)},tint)
+		UI.icon(card,id=="ranked" and "trophy" or id=="cards" and "star" or "bolt",tint,{Position=UDim2.fromOffset(12,12),Size=UDim2.fromOffset(32,32)})
+		UI.label(card,L(def.name),{Position=UDim2.fromOffset(55,9),Size=UDim2.new(1,-67,0,30),TextSize=19,Font=Enum.Font.GothamBold,TextColor3=tint,TextWrapped=true})
+		UI.label(card,allowed and L(def.description) or L(modeLockHints[id]),{Position=UDim2.fromOffset(12,48),Size=UDim2.new(1,-24,0,49),TextSize=13,TextWrapped=true})
+		local button=UI.button(card,allowed and (T("JOGAR • ","PLAY • ")..(def.waves==0 and T("SEM FIM","ENDLESS") or "50 "..T("ONDAS","WAVES"))) or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function()
+			act("StartMatch",{mapId="manhattan",modeId=id})
+		end,{Name="PlayMode_"..id,Position=UDim2.fromOffset(12,105),Size=UDim2.new(1,-24,0,44),BackgroundColor3=tint,TextSize=13})
+		if not allowed then UI.disabled(button) end
+	end
+	UI.secondary(body,T("PRIMEIRA VEZ? APRENDA A JOGAR","FIRST TIME? LEARN TO PLAY"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Size=UDim2.new(1,-6,0,44),TextSize=12})
+end
+
+local contextBuilders = {
+	modes=contextModes,
+	talents = contextTalents,
+	hero = contextHero, chests = contextChests, premium = contextPremium, inventory = contextSquad, shop = contextShop,
+	quests = contextQuests, leaderboard = contextLeaderboard, squad = contextSquad, settings = contextSettings,
+}
+
+fetchProducts = function()
+	if productFetching then return end
+	productFetching = true
+	task.spawn(function()
+		local fetched = false
+		for _, group in ipairs({{kind = "pass", data = Catalog.Products.Passes}, {kind = "product", data = Catalog.Products.Consumables}, {kind = "hero", data = Catalog.Products.Heroes}}) do
+			for key in pairs(group.data) do
+				local cacheKey = group.kind .. ":" .. key
+				if productInfo[cacheKey] == nil then
+					local response = request("ProductInfo", {kind = group.kind, key = key}, true)
+					productInfo[cacheKey] = response and response.ok and response.data or false
+					fetched = true
+					task.wait(0.18)
+				end
+			end
+		end
+		productFetching = false
+		-- Re-render only when a price actually arrived. The shop panel calls
+		-- fetchProducts every time it renders, so an unconditional re-render
+		-- here rebuilt the open panel every 1.3 seconds, forever.
+		if fetched and contextPanel and (contextPanel.kind == "shop" or contextPanel.kind == "premium") and state and state.phase == "Lobby" then renderContext() end
+	end)
+end
+
+local function lobbyChrome(visible)
+	for _,name in ipairs({"LobbyPill","SquadButton","SettingsButton","LobbyNavigation"}) do
+		local item=main:FindFirstChild(name)
+		if item then item.Visible=visible end
+	end
+end
+
+local function refreshNavigation()
+	local selected=contextPanel and contextPanel.kind
+	if selected=="hero" or selected=="squad" then selected="inventory" end
+	if selected=="shop" then selected="premium" end
+	for id,entry in pairs(refs.navigation or {}) do
+		local active=selected==id
+		entry.button.BackgroundColor3=active and entry.tint:Lerp(C.panel,0.6) or C.card
+		entry.line.Visible=active
+	end
+end
+
+renderContext = function()
+	if refs.context then refs.context:Destroy(); refs.context = nil end
+	lobbyChrome(true)
+	refreshNavigation()
+	if not contextPanel or not state or state.phase ~= "Lobby" then return end
+	local size = screenSize()
+	local slot=UI.contextLayout(size.X,size.Y,{wide=contextPanel.kind=="talents",elevator=state.elevator~=nil})
+	lobbyChrome(not slot.modal)
+	local tint=({inventory=C.blue,squad=C.blue,hero=C.blue,talents=C.gold,chests=C.green,premium=C.gold,shop=C.gold,modes=C.green,leaderboard=C.gold})[contextPanel.kind] or C.blue
+	local panel = UI.roundFrame(main, {Name = "ContextPanel", Position = at(slot), Size = dims(slot), BackgroundColor3 = C.background,Active=true}, tint:Lerp(C.stroke,0.6))
+	refs.context = panel
+	local titles = {hero = T("GALERIA DE HERÓIS", "HERO GALLERY"), skill = T("TREINAMENTO", "TRAINING"), shop = T("SUPRIMENTOS", "SUPPLIES"), quests = T("CENTRAL DE MISSÕES", "MISSION BOARD"), leaderboard = T("LENDAS DA RESISTÊNCIA", "RESISTANCE LEGENDS"), squad = T("FORMAÇÃO TÁTICA", "TACTICAL FORMATION"), settings = T("OPÇÕES", "SETTINGS")}
+	titles.talents = T("ÁRVORE DE EVOLUÇÃO", "TALENT TREE")
+	titles.chests=T("BAÚS • OURO","CHESTS • GOLD"); titles.premium=T("LOJA ROBUX","ROBUX SHOP"); titles.inventory=T("INVENTÁRIO","INVENTORY")
+	titles.inventory=T("MEUS HERÓIS","MY HEROES"); titles.modes=T("VAMOS JOGAR!","LET'S PLAY!")
+	UI.icon(panel,contextPanel.kind=="chests" and "chest" or contextPanel.kind=="talents" and "star" or contextPanel.kind=="premium" and "shop" or contextPanel.kind=="leaderboard" and "trophy" or "hero",tint,{Position=UDim2.fromOffset(14,10),Size=UDim2.fromOffset(24,24)})
+	UI.label(panel, titles[contextPanel.kind] or "DOOMSDAY", {Position = UDim2.fromOffset(48, 11), Size = UDim2.new(1, -106, 0, 24), TextColor3 = tint, Font = Enum.Font.GothamBold, TextSize = 14})
+	UI.frame(panel, {Position = UDim2.fromOffset(16, 42), Size = UDim2.new(1, -32, 0, 1), BackgroundColor3 = C.stroke, BackgroundTransparency = 0.35})
+	UI.secondary(panel, "×", closeContext, {Name="CloseContext",Position = UDim2.new(1, -48, 0, 2), Size = UDim2.fromOffset(44, 40), TextSize = 25})
+	local body = UI.scroll(panel, {Name = "ContextBody", Position = UDim2.fromOffset(14, 53), Size = UDim2.new(1, -28, 1, -65)})
+	UI.list(body, 10)
+	local builder = contextBuilders[contextPanel.kind]
+	if builder then builder(body, contextPanel) end
+	if contextPanel.animate then contextPanel.animate=nil; welcomePanel(panel) end
+end
+
+-- Which physical model in the lobby a panel belongs to, so the panel can
+-- close itself when the player walks away from it. Panels opened from the HUD
+-- (squad, settings) have no anchor and simply stay until dismissed.
+local CONTEXT_ANCHOR = {
+	chests = {kind="ChestStand",attribute="ChestId",field="chestId"},
+	shop = { kind = "ShopStand", attribute = "ShopKey", field = "shopKey" },
+	quests = { kind = "Board", attribute = "BoardId", value = "quests" },
+	leaderboard = { kind = "Board", attribute = "BoardId", value = "leaderboard" },
+}
+
+local function anchorPosition(kind, data)
+	local spec = CONTEXT_ANCHOR[kind]
+	if not spec then return nil end
+	local wanted = spec.value or data[spec.field]
+	if not wanted then return nil end
+	local lobby = workspace:FindFirstChild("DoomLobby")
+	if not lobby then return nil end
+	for _, model in ipairs(lobby:GetChildren()) do
+		if model:GetAttribute("Kind") == spec.kind and model:GetAttribute(spec.attribute) == wanted then
+			local pivot = model.PrimaryPart
+			return pivot and pivot.Position or nil
+		end
+	end
+	return nil
+end
+
+openContext = function(kind, data)
+	data = data or {}
+	data.kind = kind
+	data.animate=true
+	data.anchor = anchorPosition(kind, data)
+	contextPanel = data
+	if kind == "leaderboard" then boardData = nil; loadBoard() end
+	if refs.firstVisitHint then refs.firstVisitHint.Visible = false end
+	renderContext()
+end
+
+closeContext = function()
+	contextPanel = nil
+	if refs.context then refs.context:Destroy(); refs.context = nil end
+	lobbyChrome(true)
+	refreshNavigation()
+	if refs.firstVisitHint then refs.firstVisitHint.Visible = not (state and state.elevator) end
+end
+
+-- Per-viewer cosmetics on the shared lobby geometry: locked portals, unowned
+-- heroes and unlearned skills get a translucent shroud (never a mutation of
+-- the server's own parts), and equipped gear gets a highlight outline.
+local shroudColor = Color3.fromRGB(8, 10, 14)
+local function setShroud(model, locked, hint)
+	local existing = model:FindFirstChild("LockShroud")
+	if locked then
+		if existing then return end
+		local ok, cf, size = pcall(function() return model:GetBoundingBox() end)
+		if not ok then return end
+		local shroud = Instance.new("Part")
+		shroud.Name, shroud.Anchored = "LockShroud", true
+		shroud.CanCollide, shroud.CanTouch, shroud.CanQuery, shroud.CastShadow = false, false, false, false
+		-- Lock state is communicated by the sign, not an opaque box over art.
+		shroud.Material, shroud.Color, shroud.Transparency = Enum.Material.SmoothPlastic, shroudColor, 1
+		shroud.Size, shroud.CFrame = size + Vector3.new(0.4, 0.4, 0.4), cf
+		shroud.Parent = model
+		local billboard = Instance.new("BillboardGui")
+		billboard.Name, billboard.Size = "LockHint", UDim2.fromOffset(220, 50)
+		billboard.StudsOffset, billboard.MaxDistance = Vector3.new(0, size.Y / 2 + 2, 0), 36
+		billboard.Adornee, billboard.Parent = model.PrimaryPart, model
+		UI.label(billboard, T("BLOQUEADO: ", "LOCKED: ") .. (hint or ""), {Size = UDim2.fromScale(1, 1), TextColor3 = C.red, TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = true})
+		return
+	end
+	if not existing then return end
+	existing:Destroy()
+	local billboard = model:FindFirstChild("LockHint")
+	if billboard then billboard:Destroy() end
+	local pivot = model.PrimaryPart
+	if not pivot then return end
+	local burst = Instance.new("Part")
+	burst.Anchored, burst.CanCollide, burst.CanQuery, burst.CanTouch, burst.CastShadow = true, false, false, false, false
+	burst.Shape, burst.Material, burst.Color, burst.Transparency = Enum.PartType.Cylinder, Enum.Material.Neon, C.green, 0.2
+	burst.Size, burst.CFrame = Vector3.new(0.2, 1, 1), pivot.CFrame * CFrame.Angles(0, 0, math.pi / 2)
+	burst.Parent = effects.folder
+	TweenService:Create(burst, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {Size = Vector3.new(0.2, 13, 13), Transparency = 1}):Play()
+	task.delay(0.65, function() if burst.Parent then burst:Destroy() end end)
+	audio:Cue("place", 0.05)
+end
+
+local function setEquippedHighlight(model, on)
+	local highlight = model:FindFirstChildOfClass("Highlight")
+	if on then
+		if highlight then return end
+		highlight = Instance.new("Highlight")
+		highlight.FillTransparency, highlight.OutlineTransparency, highlight.OutlineColor = 1, 0.2, C.green
+		highlight.Parent = model
+	elseif highlight then
+		highlight:Destroy()
+	end
+end
+
+-- The mission board is shared scenery, but each viewer's client rewrites its
+-- face locally with their own status, so it reads from across the deck
+-- whether there is a reward waiting — the "next goal" the design asks for.
+local function updateQuestBoard(lobby, p)
+	local board = lobby:FindFirstChild("Board_quests")
+	local panel = board and board:FindFirstChild("Panel")
+	local surface = panel and panel:FindFirstChild("Board")
+	local label = surface and surface:FindFirstChildOfClass("TextLabel")
+	if not label then return end
+	local active, ready = 0, 0
+	for _, quest in pairs(p.quests or {}) do
+		if not quest.claimed then
+			active += 1
+			if (quest.progress or 0) >= (quest.target or 1) then ready += 1 end
+		end
+	end
+	local status
+	if ready > 0 then
+		status = tostring(ready) .. T(" PRONTA(S) PARA RESGATAR", " READY TO CLAIM")
+	elseif active > 0 then
+		status = tostring(active) .. T(" EM ANDAMENTO", " IN PROGRESS")
+	else
+		status = T("TREINE PARA RECEBER MISSÕES", "TRAIN TO RECEIVE MISSIONS")
+	end
+	label.Text = T("MISSÕES", "MISSIONS") .. "\n" .. status
+	label.TextColor3 = ready > 0 and C.gold or Color3.fromRGB(230, 240, 244)
+end
+
+-- The showroom's props move: the collector drone spins and bobs in its case
+-- above its turning ring, as the design brief describes the store.
+-- Purely local and cheap; reduced effects leaves them still.
+local lobbyProps = nil
+local function animateLobby(dt)
+	if not state or state.phase ~= "Lobby" then return end
+	if profile().settings and profile().settings.lowFX then return end
+	if not lobbyProps or (lobbyProps[1] and lobbyProps[1].part.Parent == nil) then
+		lobbyProps = {}
+		local lobby = workspace:FindFirstChild("DoomLobby")
+		-- Each prop turns about a pivot: its own centre for the showroom drone,
+		-- the hub for a rotor blade, the mast for the radar dish.
+		local function collect(model, partName, pivotName, spin, bob)
+			local pivotPart = pivotName and model:FindFirstChild(pivotName)
+			for _, child in ipairs(model:GetChildren()) do
+				if child.Name == partName and child:IsA("BasePart") then
+					local pivot = pivotPart and CFrame.new(pivotPart.Position) or child.CFrame
+					table.insert(lobbyProps, {part = child, pivot = pivot, offset = pivot:Inverse() * child.CFrame, spin = spin, bob = bob, angle = 0})
+				end
+			end
+		end
+		for _, model in ipairs(lobby and lobby:GetChildren() or {}) do
+			if model.Name == "Shop_collector" then
+				collect(model, "Drone", nil, 1.8, 0.25)
+				collect(model, "DroneRing", nil, -1.2, 0.25)
+			elseif model.Name == "Rotor" then
+				collect(model, "Blade", "RotorHub", 2.6, 0)
+			elseif model.Name == "Radar" then
+				collect(model, "RadarDish", "RadarMast", 0.9, 0)
+			elseif model.Name == "AuroraSanctuary" then
+				collect(model, "ForestMote", nil, 0.3, 0.7)
+			end
+		end
+	end
+	local now = os.clock()
+	for _, prop in ipairs(lobbyProps) do
+		prop.angle += dt * prop.spin
+		prop.part.CFrame = prop.pivot * CFrame.new(0, math.sin(now * 2) * prop.bob, 0) * CFrame.Angles(0, prop.angle, 0) * prop.offset
+	end
+end
+
+-- Each portal's sign says, for this viewer, what stepping in will start:
+-- which sector (the campaign's next unbeaten one, today's daily), how many
+-- waves, or what is still missing to unlock it.
+local function portalSign(model)
+	local sign = model:FindFirstChild("Sign")
+	local surface = sign and sign:FindFirstChild("Board")
+	return surface and surface:FindFirstChildOfClass("TextLabel")
+end
+
+local function updatePortal(model, p)
+	local portalId = model:GetAttribute("ModeId")
+	local modeId = Rules.PortalMode(p, portalId)
+	local unlocked = Rules.ModeUnlocked(p, modeId)
+	setShroud(model, not unlocked, L(modeLockHints[modeId]))
+	local label = portalSign(model)
+	if label then
+		local mapId = modeId=="tutorial" and "manhattan" or nil
+		local mode = Catalog.Modes[modeId]
+		if not unlocked then
+			label.Text = T("BLOQUEADO", "LOCKED") .. "\n" .. L(modeLockHints[modeId])
+			label.TextColor3 = C.red
+		elseif mode then
+			local waves = mode.waves == 0 and T("ONDAS INFINITAS", "ENDLESS WAVES") or (tostring(mode.waves) .. T(" ONDAS", " WAVES"))
+			label.Text = (modeId == "tutorial" and (T("TREINAMENTO", "TRAINING") .. "\n") or "") .. (mapId and string.upper(mapName(mapId)) or T("MAPA ALEATÓRIO","RANDOM MAP")) .. "\n" .. waves .. "  •  " .. T("ENTRE PARA JOGAR", "STEP IN TO PLAY")
+			label.TextColor3 = modeTint[portalId] or C.green
+		end
+	end
+	-- A first-time visitor sees one beacon, over the portal that starts
+	-- training, visible from the spawn through the crowd.
+	local beacon = model:FindFirstChild("StartHere")
+	local wantBeacon = portalId == "normal" and p.tutorialComplete ~= true
+	if wantBeacon and not beacon and model.PrimaryPart then
+		beacon = Instance.new("BillboardGui")
+		beacon.Name, beacon.Size, beacon.AlwaysOnTop = "StartHere", UDim2.fromOffset(200, 64), true
+		beacon.StudsOffset, beacon.MaxDistance = Vector3.new(0, 19, 0), 400
+		beacon.Adornee, beacon.Parent = model.PrimaryPart, model
+		UI.label(beacon, T("COMECE AQUI", "START HERE") .. "\n▼", {Size = UDim2.fromScale(1, 1), TextColor3 = C.gold, TextSize = 20, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = true, TextStrokeTransparency = 0.3})
+	elseif beacon and not wantBeacon then
+		beacon:Destroy()
+	end
+end
+
+updateWorldCosmetics = function()
+	if not state or state.phase ~= "Lobby" then return end
+	local lobby = workspace:FindFirstChild("DoomLobby")
+	if not lobby then
+		-- The lobby is built server-side at boot, but a slow client can get its
+		-- first snapshot before that model replicates. Without this retry the
+		-- shrouds would never appear and every portal would look unlocked.
+		if not cosmeticsRetryPending then
+			cosmeticsRetryPending = true
+			task.delay(1, function()
+				cosmeticsRetryPending = false
+				updateWorldCosmetics()
+			end)
+		end
+		return
+	end
+	local p = profile()
+	updateQuestBoard(lobby, p)
+	for _, model in ipairs(lobby:GetChildren()) do
+		local kind = model:GetAttribute("Kind")
+		if kind == "ModePortal" then
+			updatePortal(model, p)
+		elseif kind == "HeroPedestal" then
+			local heroId = model:GetAttribute("HeroId")
+			local templates = ReplicatedStorage:FindFirstChild("DoomHeroPortraits")
+			UI.rememberHero(heroId, templates and templates:FindFirstChild(heroId) or model)
+			local owned = p.heroes and p.heroes[heroId] ~= nil
+			setShroud(model, not owned, T("Ainda não comprado", "Not purchased yet"))
+			setEquippedHighlight(model, owned and contains(p.loadout, heroId))
+
+		end
+	end
+end
+
+-- The elevator card, shown only while this player stands in a portal. The
+-- countdown ticks locally from the server's last word and re-syncs on every
+-- snapshot; Leave and the first rider's sector switch are plain intents.
+local elevatorDeadline, elevatorSignature = nil, nil
+
+local function elevatorCountText()
+	if not elevatorDeadline then return "" end
+	local left = math.max(0, math.ceil(elevatorDeadline - os.clock()))
+	return left > 0 and tostring(left) or "…"
+end
+
+renderElevator = function()
+	local e = state and state.phase == "Lobby" and state.elevator or nil
+	if e then
+		local deadline = os.clock() + (tonumber(e.remaining) or 0)
+		if not elevatorDeadline or math.abs(deadline - elevatorDeadline) > 1.2 then elevatorDeadline = deadline end
+	else
+		elevatorDeadline = nil
+	end
+	local signature = e and HttpService:JSONEncode({e.portalId, e.modeId, e.mapId, #(e.riders or {}), e.host, e.maps, language}) or nil
+	if signature == elevatorSignature and (refs.elevator ~= nil) == (e ~= nil) then return false end
+	elevatorSignature = signature
+	if refs.elevator then refs.elevator:Destroy(); refs.elevator, refs.elevatorCount = nil, nil end
+	if refs.firstVisitHint then refs.firstVisitHint.Visible = e == nil and contextPanel == nil end
+	if not e then return true end
+	local size = screenSize()
+	local hud = UI.lobbyLayout(size.X, size.Y)
+	local compact, r = hud.class.compact, hud.elevator
+	local tint = modeTint[e.portalId] or C.green
+	local card = UI.roundFrame(main, {Name = "ElevatorCard", Position = at(r), Size = dims(r), BackgroundColor3 = C.background}, tint)
+	refs.elevator = card
+	local title = (e.modeId and modeName(e.modeId) or "") .. " • " .. T("MAPA ALEATÓRIO","RANDOM MAP")
+	UI.label(card, string.upper(title), {Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -100, 0, 24), TextSize = compact and 13 or 16, Font = Enum.Font.GothamBold, TextColor3 = tint})
+	refs.elevatorCount = UI.label(card, elevatorCountText(), {Position = UDim2.new(1, -80, 0, 4), Size = UDim2.fromOffset(66, 40), TextSize = compact and 28 or 34, Font = Enum.Font.GothamBlack, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
+	local rowH = compact and 34 or 36
+	local rowY = r.h - rowH - 8
+	local leaveW = compact and 76 or 92
+	UI.button(card, T("SAIR", "LEAVE"), function() act("ElevatorLeave", {}) end, {Position = UDim2.new(1, -(leaveW + 12), 0, rowY), Size = UDim2.fromOffset(leaveW, rowH), BackgroundColor3 = C.red, TextColor3 = C.text, TextSize = 13})
+	local statusRight = leaveW + 20
+	local names = {}
+	for _, rider in ipairs(e.riders or {}) do table.insert(names, rider.name) end
+	local status = tostring(#names) .. "/" .. tostring(e.max or 4) .. "  " .. T("jogadores", "players") .. "  •  " .. table.concat(names, ", ")
+	UI.label(card, status, {Position = UDim2.fromOffset(14, rowY), Size = UDim2.new(1, -(14 + statusRight), 0, rowH), TextSize = compact and 11 or 12, TextColor3 = C.muted})
+	return true
+end
+
+-- The world is the menu. The lobby HUD is a small gold/level pill, two small
+-- buttons in the opposite corner and, only while standing in a portal, the
+-- elevator card. Geometry lives in UI.lobbyLayout so tests can check it at
+-- real device sizes instead of by eye.
+renderLobby = function()
+	local size = screenSize()
+	local hud = UI.lobbyLayout(size.X, size.Y)
+	local compact = hud.class.compact
+	local pill = UI.roundFrame(main, {Name = "LobbyPill", Position = at(hud.pill), Size = dims(hud.pill), BackgroundColor3 = C.background, BackgroundTransparency = 0.04}, C.gold:Lerp(C.stroke, 0.68))
+	refs.gold = UI.label(pill, goldText(), {Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -64, 1, -4), TextSize = compact and 15 or 18, Font = Enum.Font.GothamBold, TextColor3 = C.gold})
+	refs.commander = UI.label(pill, levelText(), {Position = UDim2.new(1, -58, 0, 0), Size = UDim2.new(0, 46, 1, -4), TextSize = compact and 11 or 13, Font = Enum.Font.GothamBold, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Right})
+	local track = UI.frame(pill, {Position = UDim2.new(0, 10, 1, -6), Size = UDim2.new(1, -20, 0, 3), BackgroundColor3 = C.stroke})
+	refs.levelBar = UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.green})
+	UI.button(pill, "", function() openContext("talents", {}) end, {Name = "OpenTalentTree", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1})
+	UI.button(main, T("JOGAR", "PLAY"), function() openContext("modes", {}) end, {Name = "SquadButton", Position = at(hud.squad), Size = dims(hud.squad), BackgroundColor3=C.green,TextSize = compact and 12 or 14})
+	UI.secondary(main, T("OPÇÕES", "SETTINGS"), function() openContext("settings", {}) end, {Name = "SettingsButton", Position = at(hud.settings), Size = dims(hud.settings), TextSize = compact and 11 or 12})
+
+	local dock=UI.frame(main,{Name="LobbyNavigation",Position=at(hud.navigation),Size=dims(hud.navigation),BackgroundTransparency=1})
+	local nav={{"inventory",T("HERÓIS","HEROES"),C.blue,"hero"},{"talents",T("EVOLUÇÃO","TALENTS"),C.gold,"star"},{"chests",T("BAÚS","CHESTS"),C.green,"chest"},{"premium","ROBUX",C.gold,"shop"}}
+	refs.navigation={}
+	for i,entry in ipairs(nav) do
+		local button=UI.button(dock,entry[2],function() openContext(entry[1],{}) end,{Name="Nav_"..entry[1],Position=UDim2.new((i-1)/4,0,0,0),Size=UDim2.new(0.25,-5,1,0),BackgroundColor3=C.card,TextColor3=entry[3],TextTransparency=1})
+		local narrow=size.X<560
+		UI.icon(button,entry[4],entry[3],{Position=narrow and UDim2.new(0.5,-8,0,3) or UDim2.fromOffset(10,10),Size=UDim2.fromOffset(narrow and 16 or 24,narrow and 16 or 24)})
+		UI.label(button,entry[2],{Position=narrow and UDim2.fromOffset(0,22) or UDim2.fromOffset(40,0),Size=narrow and UDim2.new(1,0,0,17) or UDim2.new(1,-47,1,0),TextSize=narrow and 10 or 12,Font=Enum.Font.GothamBold,TextColor3=entry[3],TextXAlignment=Enum.TextXAlignment.Center})
+		local line=UI.frame(button,{Name="SelectedTab",Position=UDim2.new(0,8,1,-3),Size=UDim2.new(1,-16,0,3),BackgroundColor3=entry[3],Visible=false})
+		refs.navigation[entry[1]]={button=button,line=line,tint=entry[3]}
+	end
+
+	if not profile().tutorialComplete then
+		-- One plain pointer for a first visit, echoing the beacon over the
+		-- training portal. Hidden while a panel or the elevator card is up.
+		refs.firstVisitHint = UI.label(main, T("Sua aventura começa aqui! Toque em JOGAR ou entre num portal.", "Your adventure starts here! Tap PLAY or step into a portal."), {
+			Name = "FirstVisitHint", Position = at(hud.hint), Size = dims(hud.hint),
+			BackgroundTransparency = 0.25, BackgroundColor3 = C.background,
+			TextColor3 = C.gold, TextSize = compact and 12 or 14, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center,
+		})
+		UI.corner(refs.firstVisitHint, 10)
+		refs.firstVisitHint.Visible = not state.elevator and contextPanel == nil
+	end
+
+	elevatorSignature = nil
+	renderElevator()
+	renderContext()
+	updateWorldCosmetics()
+end
+
+local function previewPart(name, size, tint, transparency)
+	local p = Instance.new("Part")
+	p.Name, p.Size, p.Color, p.Transparency = name, size, tint, transparency
+	p.Material, p.Anchored = Enum.Material.ForceField, true
+	p.CanCollide, p.CanTouch, p.CanQuery, p.CastShadow = false, false, false, false
+	p.Parent = effects.folder
+	return p
+end
+
+local function rangeRing(existing, position, radius, tint)
+	local ring = existing or previewPart("RangePreview", Vector3.one, tint, 0.7)
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Size = Vector3.new(0.10, radius * 2, radius * 2)
+	ring.Color = tint
+	ring.CFrame = CFrame.new(position.X, 0.18, position.Z) * CFrame.Angles(0, 0, math.pi / 2)
+	return ring
+end
+
+local function clearPlacement()
+	selectedHero, selectedSkill, selectedPosition, placementPinned = nil, nil, nil, false
+	if ghost then ghost:Destroy(); ghost = nil end
+	ghostParts, ghostLift = nil, nil
+	if placementRing then placementRing:Destroy(); placementRing = nil end
+	if refs.placement then refs.placement.Visible = false end
+	if refs.hint then refs.hint.Visible = false end
+end
+
+local function distanceToSegment(point, a, b)
+	local delta = b - a
+	local t = delta:Dot(delta) > 0 and math.clamp((point - a):Dot(delta) / delta:Dot(delta), 0, 1) or 0
+	return (point - (a + delta * t)).Magnitude
+end
+
+local function positionValid(position)
+	if not state or not state.match or not selectedHero then return false end
+	if math.abs(position.X) > 107 or math.abs(position.Z) > 107 then return false end
+	local map = Catalog.Maps[state.match.mapId]
+	for _, path in ipairs(map and map.paths or {}) do
+		for index = 1, #path - 1 do
+			local a, b = Vector3.new(path[index][1], 0, path[index][2]), Vector3.new(path[index + 1][1], 0, path[index + 1][2])
+			if distanceToSegment(position, a, b) < 9 then return false end
+		end
+	end
+	for _, tower in ipairs(state.match.towers or {}) do
+		if typeof(tower.position) == "Vector3" then
+			local flat = Vector3.new(tower.position.X, 0, tower.position.Z)
+			if (flat - position).Magnitude < 6 then return false end
+		end
+	end
+	return true
+end
+
+local function raycast(screenPosition, groundOnly)
+	local camera = workspace.CurrentCamera
+	if not camera then return nil end
+	local ray = camera:ScreenPointToRay(screenPosition.X, screenPosition.Y)
+	local params = RaycastParams.new()
+	local world = workspace:FindFirstChild("DoomWorld")
+	if groundOnly and world and world:FindFirstChild("BuildZones") then
+		params.FilterType = Enum.RaycastFilterType.Include
+		params.FilterDescendantsInstances = {world.BuildZones, world:FindFirstChild("Paths") or world.BuildZones}
+	else
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = player.Character and {player.Character, effects.folder} or {effects.folder}
+	end
+	return workspace:Raycast(ray.Origin, ray.Direction * 1500, params)
+end
+
+local function updatePreview(position)
+	selectedPosition = Vector3.new(position.X, 0, position.Z)
+	local radius = selectedHero and Catalog.Heroes[selectedHero].range or (state.match and state.match.ability and state.match.ability.radius or 20)
+	placementValid = not selectedHero or positionValid(selectedPosition)
+	local tint = placementValid and C.green or C.red
+	placementRing = rangeRing(placementRing, selectedPosition, radius, tint)
+	if selectedHero then
+		if not ghost then
+			ghost = UI.heroModel(effects.folder, selectedHero, heroSource(selectedHero))
+			ghost.Name = "HeroPlacementPreview"
+			local bounds, size = ghost:GetBoundingBox()
+			ghostLift = size.Y * 0.5 - bounds.Position.Y + 0.15
+			ghostParts = {}
+			for _, part in ipairs(ghost:GetChildren()) do
+				if part:IsA("BasePart") then
+					table.insert(ghostParts, {part = part, cf = part.CFrame, color = part.Color})
+					part.Transparency = 0.35
+				end
+			end
+		end
+		for _, item in ipairs(ghostParts or {}) do
+			item.part.CFrame = CFrame.new(selectedPosition + Vector3.new(0, ghostLift or 0, 0)) * item.cf
+			item.part.Color = placementValid and item.color or item.color:Lerp(C.red, 0.65)
+		end
+	end
+	if refs.confirm then
+		refs.confirm.BackgroundColor3 = placementValid and C.green or C.red
+		refs.confirm.Text = placementValid and T("CONFIRMAR", "CONFIRM") or T("POSIÇÃO INVÁLIDA", "INVALID POSITION")
+	end
+	if refs.placement then refs.placement.Visible = true end
+end
+
+local function chooseHero(id)
+	if not activeMatch() then return end
+	clearPlacement()
+	selectedTower, selectedHero = nil, id
+	if refs.towerPanel then refs.towerPanel.Visible = false end
+	if towerRing then towerRing:Destroy(); towerRing = nil end
+	refs.hint.Text = heroName(id) .. " • " .. T("Toque no chão e confirme a posição.", "Select a ground position and confirm.")
+	refs.hint.Visible = true
+	refs.placement.Visible = true
+	refs.confirm.Text = T("SELECIONE O CHÃO", "SELECT GROUND")
+	updateMatch()
+end
+
+local function chooseSkill(id)
+	if not activeMatch() then return end
+	local ability=state.match.ability
+	if not ability or ability.id~=id then return end
+	local cooldown = ability.cooldown or 0
+	if cooldown > 0 then showToast(T("Habilidade recarregando.", "Ability is recharging."), true); return end
+	if ability.target == "self" then act("CastSkill", {skillId = id}); return end
+	clearPlacement()
+	selectedSkill, selectedTower = id, nil
+	if refs.towerPanel then refs.towerPanel.Visible = false end
+	if towerRing then towerRing:Destroy(); towerRing = nil end
+	refs.hint.Text = L(Catalog.Abilities[id].name) .. " • " .. (ability.target == "tower" and T("Selecione uma torre sua.", "Select one of your towers.") or T("Selecione uma região e confirme.", "Select a region and confirm."))
+	refs.hint.Visible = true
+	refs.placement.Visible = true
+	refs.confirm.Text = T("SELECIONE UM ALVO", "SELECT A TARGET")
+end
+
+local function confirmPlacement()
+	if selectedHero and selectedPosition and placementValid then
+		local hero, position = selectedHero, selectedPosition
+		act("PlaceTower", {heroId = hero, position = position}, function() audio:Cue("place", 0.05); clearPlacement() end)
+	elseif selectedSkill and selectedPosition and Catalog.Abilities[selectedSkill].target ~= "tower" then
+		local skill, position = selectedSkill, selectedPosition
+		act("CastSkill", {skillId = skill, position = position}, function() clearPlacement() end)
+	end
+end
+
+local function findTower(id)
+	for _, tower in ipairs(state and state.match and state.match.towers or {}) do if tostring(tower.id) == tostring(id) then return tower end end
+	return nil
+end
+
+local function selectTower(id)
+	local tower = findTower(id)
+	if not tower then return end
+	if selectedSkill and Catalog.Abilities[selectedSkill].target == "tower" then
+		if tower.ownerId ~= player.UserId then showToast(T("Selecione uma torre sua.", "Select one of your towers."), true); return end
+		act("CastSkill", {skillId = selectedSkill, towerId = tower.id}, function() clearPlacement() end)
+		return
+	end
+	clearPlacement()
+	selectedTower = tower.id
+	refs.towerKey = nil
+	updateMatch()
+end
+
+-- These must be the server's own values: MatchService accepts exactly
+-- First/Last/Strongest/Nearest. The lowercase spelling this used to send was
+-- refused on every press, so targeting could never be changed from the HUD.
+local priorityNames = {First = {pt = "Primeiro", en = "First"}, Last = {pt = "Último", en = "Last"}, Strongest = {pt = "Mais forte", en = "Strongest"}, Nearest = {pt = "Mais próximo", en = "Nearest"}}
+local priorityOrder = {"First", "Last", "Strongest", "Nearest"}
+
+local function currentMatchLayout()
+	local size = screenSize()
+	return UI.matchLayout(size.X, size.Y, {skills = 1, vip = profile().passes ~= nil and profile().passes.vip == true})
+end
+
+local function closeTowerPanel()
+	selectedTower = nil
+	if refs.towerPanel then refs.towerPanel.Visible = false end
+	if towerRing then towerRing:Destroy(); towerRing = nil end
+end
+
+-- Two arrangements of the same controls, chosen by UI.matchLayout: a single
+-- tall column where the screen has height to spare, and a short two-row
+-- panel for a phone on its side, where the old 306px column started above
+-- the top of the screen and took the upgrade button with it.
+local function towerPanel(tower)
+	if refs.towerPanel then refs.towerPanel:Destroy() end
+	local layout = refs.layout or currentMatchLayout()
+	local slot, wide = layout.tower, layout.towerVariant == "wide"
+	local w = slot.w
+	local panel = UI.roundFrame(main, {Position = at(slot), Size = dims(slot), BackgroundColor3 = C.background})
+	refs.towerPanel, refs.towerWide = panel, wide
+	local def = Catalog.Heroes[tower.heroId]
+	local own = tower.ownerId == player.UserId
+	local half = math.floor((w - 30) / 2)
+	local levelText = T("Nível ", "Level ") .. tostring(tower.level) .. "/5" .. (tower.branch and "  •  " .. L(def.branches[tower.branch].name) or "")
+	UI.secondary(panel, "×", closeTowerPanel, {Position = UDim2.fromOffset(w - (wide and 34 or 38), wide and 4 or 6), Size = UDim2.fromOffset(28, 28), TextSize = 20})
+	local actionY, actionH, rowY, rowH
+	if wide then
+		local nameW = math.floor((w - 54) * 0.5)
+		UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 6), Size = UDim2.fromOffset(nameW, 22), TextSize = 15, Font = Enum.Font.GothamBold, TextColor3 = colorFor(tower.heroId)})
+		UI.label(panel, levelText, {Position = UDim2.fromOffset(12 + nameW + 6, 8), Size = UDim2.fromOffset(w - 54 - nameW - 6, 18), TextSize = 11, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Right})
+		refs.towerStats = UI.label(panel, "", {Position = UDim2.fromOffset(12, 30), Size = UDim2.fromOffset(w - 24, 18), TextSize = 11, TextColor3 = C.muted})
+		actionY, actionH, rowY, rowH = 52, 36, 92, 34
+	else
+		UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 8), Size = UDim2.fromOffset(w - 54, 24), TextSize = 17, Font = Enum.Font.GothamBold, TextColor3 = colorFor(tower.heroId)})
+		UI.label(panel, levelText, {Position = UDim2.fromOffset(12, 34), Size = UDim2.fromOffset(w - 24, 18), TextSize = 12, TextColor3 = C.muted})
+		refs.towerStats = UI.label(panel, "", {Position = UDim2.fromOffset(12, 54), Size = UDim2.fromOffset(w - 24, 32), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
+		actionY, actionH, rowY, rowH = 92, 42, 176, 36
+	end
+	local function note(text)
+		UI.label(panel, text, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, (own and rowY - 6 or slot.h - 6) - actionY), TextSize = 11, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextYAlignment = Enum.TextYAlignment.Top})
+	end
+	if not own then
+		note(T("Torre de um aliado. Somente o dono pode modificá-la.", "Ally tower. Only its owner can modify it."))
+		return
+	end
+	if tower.level < 4 then
+		UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. number(tower.upgradeCost) .. " ⚡", function() act("UpgradeTower", {towerId = tower.id}) end, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = 13})
+	elseif tower.level == 4 then
+		for branch = 1, 2 do
+			local label = L(def.branches[branch].name) .. " • " .. number(tower.upgradeCost) .. " ⚡"
+			local position = wide and UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY) or UDim2.fromOffset(12, actionY + (branch - 1) * 42)
+			local size = wide and UDim2.fromOffset(half, actionH) or UDim2.fromOffset(w - 24, 36)
+			UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Position = position, Size = size, TextSize = wide and 10 or 11, BackgroundColor3 = branch == 1 and C.green or C.blue})
+		end
+	else
+		note(L(def.branches[tower.branch or 1].description))
+	end
+	UI.secondary(panel, T("Alvo: ", "Target: ") .. L(priorityNames[tower.priority] or tower.priority), function()
+		local index = table.find(priorityOrder, tower.priority) or 1
+		act("SetPriority", {towerId = tower.id, priority = priorityOrder[index % #priorityOrder + 1]})
+	end, {Position = UDim2.fromOffset(12, rowY), Size = UDim2.fromOffset(half, rowH), TextSize = 11})
+	UI.secondary(panel, T("Vender • ", "Sell • ") .. number(math.floor((tower.invested or 0) * 0.7)) .. " ⚡", function()
+		act("SellTower", {towerId = tower.id}, closeTowerPanel)
+	end, {Position = UDim2.fromOffset(18 + half, rowY), Size = UDim2.fromOffset(half, rowH), TextColor3 = C.red, TextSize = 11})
+end
+
+-- Every tower you own carries its next upgrade above it, in the world: tap
+-- to buy, green when the energy is there. The panel stays one tap away for
+-- targeting and selling, and it is where level 4 picks a branch, but a
+-- plain upgrade never needs it. Billboards live in PlayerGui, so they are
+-- this player's alone and survive HUD re-layouts.
+local upgradeBoards = {}
+local function clearUpgradeBoards()
+	for id, board in pairs(upgradeBoards) do
+		board.gui:Destroy()
+		upgradeBoards[id] = nil
+	end
+end
+
+local function towerAnchor(id)
+	local world = workspace:FindFirstChild("DoomWorld")
+	local folder = world and world:FindFirstChild("Towers")
+	for _, model in ipairs(folder and folder:GetChildren() or {}) do
+		if tostring(model:GetAttribute("TowerId")) == tostring(id) then return model.PrimaryPart end
+	end
+	return nil
+end
+
+local function updateUpgradeBoards(match)
+	local seen = {}
+	for _, tower in ipairs(match.towers or {}) do
+		if tower.ownerId ~= player.UserId or (tower.level or 1) >= 5 then continue end
+		local id = tostring(tower.id)
+		local board = upgradeBoards[id]
+		if board and (board.gui.Adornee == nil or board.gui.Adornee.Parent == nil) then
+			-- The model was rebuilt (an upgrade swaps parts); re-anchor.
+			board.gui:Destroy()
+			upgradeBoards[id], board = nil, nil
+		end
+		if not board then
+			local anchor = towerAnchor(tower.id)
+			if anchor then
+				local gui = Instance.new("BillboardGui")
+				gui.Name, gui.Size, gui.AlwaysOnTop, gui.Active = "Upgrade_" .. id, UDim2.fromOffset(128, 34), true, true
+				gui.StudsOffset, gui.MaxDistance, gui.ResetOnSpawn = Vector3.new(0, 9, 0), 200, false
+				gui.Adornee = anchor
+				board = {gui = gui}
+				board.button = UI.button(gui, "", function()
+					local current = board.tower
+					if not current then return end
+					if (current.level or 1) >= 4 then selectTower(current.id) else act("UpgradeTower", {towerId = current.id}) end
+				end, {Size = UDim2.fromScale(1, 1), TextSize = 13})
+				UI.stroke(board.button, C.background, 2)
+				gui.Parent = player:WaitForChild("PlayerGui")
+				upgradeBoards[id] = board
+			end
+		end
+		if board then
+			seen[id] = true
+			board.tower = tower
+			local cost = tower.upgradeCost or 0
+			local affordable = (match.energy or 0) >= cost
+			local nextLevel = (tower.level or 1) + 1
+			board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("⬆ " .. T("NV", "LV") .. tostring(nextLevel))) .. "  " .. number(cost) .. "⚡"
+			board.button.BackgroundColor3 = affordable and C.green or C.card
+			board.button.TextColor3 = affordable and C.background or C.muted
+		end
+	end
+	for id, board in pairs(upgradeBoards) do
+		if not seen[id] then
+			board.gui:Destroy()
+			upgradeBoards[id] = nil
+		end
+	end
+end
+
+-- Stacked cards on a tall portrait screen, three across everywhere else, and
+-- always sized to the screen's real height so every CHOOSE button is on it.
+local function protocolModal(offers)
+	if refs.protocolPanel then refs.protocolPanel:Destroy(); refs.protocolPanel = nil end
+	if #offers == 0 then return end
+	local size = screenSize()
+	local P = UI.protocolLayout(size.X, size.Y)
+	local veil = UI.frame(overlays, {BackgroundColor3 = C.background, BackgroundTransparency = 0.22, Size = UDim2.fromScale(1, 1), ZIndex = 51, Active = true})
+	refs.protocolPanel = veil
+	local panel = UI.roundFrame(veil, {Position = at(P.panel), Size = dims(P.panel), ZIndex = 52}, C.green)
+	UI.label(panel, T("ESCOLHA SUA CARTA", "CHOOSE YOUR CARD"), {Position = UDim2.fromOffset(20, 14), Size = UDim2.new(1, -40, 0, 30), TextColor3 = C.green, Font = Enum.Font.GothamBold, TextSize = P.class.compact and 18 or 21, ZIndex = 53})
+	UI.label(panel, T("Escolha um bônus para esta partida.", "Choose a bonus for this match."), {Position = UDim2.fromOffset(20, 48), Size = UDim2.new(1, -40, 0, 24), TextColor3 = C.muted, TextSize = 13, ZIndex = 53})
+	for index, id in ipairs(offers) do
+		local def = Catalog.Cards[id]
+		local cardRect = P.cards[index]
+		if not def or not cardRect then continue end
+		local rarity=Catalog.Rarities[def.rarity]
+		local tint=rarity and UI.color(rarity.color) or C.green
+		local card = UI.roundFrame(panel, {Position = at(cardRect, P.panel), Size = dims(cardRect), BackgroundColor3 = tint:Lerp(C.card,0.88), ZIndex = 53},tint)
+		UI.shade(card,30)
+		UI.frame(card,{Position=UDim2.fromOffset(0,6),Size=UDim2.new(0,3,1,-12),BackgroundColor3=tint,ZIndex=54})
+		UI.label(card, L(def.name), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 24), Font = Enum.Font.GothamBold, TextSize = P.class.compact and 13 or 15, TextWrapped = true, ZIndex = 54})
+		UI.label(card, L(def.description), {Position = at(P.descriptions[index], cardRect), Size = dims(P.descriptions[index]), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 54})
+		UI.button(card, T("ESCOLHER", "CHOOSE").." • "..string.upper(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(P.buttons[index], cardRect), Size = dims(P.buttons[index]), BackgroundColor3=tint, TextSize = 12, ZIndex = 54})
+	end
+end
+
+local function renderMatch()
+	-- Every rect comes from UI.matchLayout, which tests/ui_layout.spec.luau
+	-- checks on 22 real screens: nothing co-visible overlaps, nothing leaves
+	-- the screen, and every control a thumb has to hit stays thumb-sized.
+	local layout = currentMatchLayout()
+	refs.layout = layout
+	local class = layout.class
+	local compact = class.compact
+	local topRect = layout.top
+	local top = UI.roundFrame(main, {Position = at(topRect), Size = dims(topRect), BackgroundColor3 = C.background})
+	UI.frame(top, {Position = UDim2.fromOffset(0, 12), Size = UDim2.new(0, 3, 1, -24), BackgroundColor3 = C.green})
+	refs.wave = UI.label(top, "", {Position = at(layout.wave, topRect), Size = dims(layout.wave), TextSize = class.short and 16 or (compact and 17 or 21), Font = Enum.Font.GothamBold, TextColor3 = C.green})
+	refs.map = UI.label(top, "", {Position = at(layout.map, topRect), Size = dims(layout.map), TextSize = compact and 10 or 12, TextColor3 = C.muted})
+	refs.hpText = UI.label(top, "", {Position = at(layout.hpText, topRect), Size = dims(layout.hpText), TextXAlignment = Enum.TextXAlignment.Right, TextSize = compact and 12 or 15, Font = Enum.Font.GothamBold})
+	refs.hp = UI.bar(top, C.green, at(layout.hpBar, topRect), dims(layout.hpBar))
+	refs.matchGold = UI.label(main, "", {Position = at(layout.gold), Size = dims(layout.gold), TextSize = compact and 13 or 16, TextColor3 = C.gold, Font = Enum.Font.GothamBold, TextXAlignment = class.narrow and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right})
+	refs.energy = UI.label(main, "", {Position = at(layout.energy), Size = dims(layout.energy), TextColor3 = C.blue, Font = Enum.Font.GothamBold, TextSize = compact and 14 or 18, TextXAlignment = class.narrow and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left})
+	surface(refs.matchGold,C.gold:Lerp(C.stroke,0.5))
+	surface(refs.energy,C.blue:Lerp(C.stroke,0.5))
+	refs.energy.TextXAlignment=Enum.TextXAlignment.Center
+	refs.matchGold.TextXAlignment=Enum.TextXAlignment.Center
+	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 11 or 13, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center})
+	refs.skip = UI.secondary(main, T("PRONTO", "READY"), function() act("SkipWave", {}) end, {Position = at(layout.skip), Size = dims(layout.skip), TextSize = 12})
+	local bossRect = layout.boss
+	refs.boss = UI.roundFrame(main, {Position = at(bossRect), Size = dims(bossRect), BackgroundColor3 = C.background, Visible = false}, C.red)
+	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 5), Size = UDim2.new(1, -24, 0, 18), TextColor3 = C.red, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center})
+	refs.bossHP = UI.bar(refs.boss, C.red, UDim2.fromOffset(12, 27), UDim2.new(1, -24, 0, 7))
+	refs.bossHint = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 37), Size = UDim2.new(1, -24, 0, bossRect.h - 41), TextColor3 = C.muted, TextSize = 11, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center})
+	refs.hint = UI.label(main, "", {Position = at(layout.hint), Size = dims(layout.hint), TextColor3 = C.green, TextSize = compact and 12 or 13, Font = Enum.Font.GothamBold, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
+	surface(refs.hint,C.green)
+	refs.placement = UI.roundFrame(main, {Position = at(layout.placement), Size = dims(layout.placement), Visible = false})
+	refs.confirm = UI.button(refs.placement, T("CONFIRMAR", "CONFIRM"), confirmPlacement, {Position = UDim2.fromOffset(6, 6), Size = UDim2.new(0.65, -9, 1, -12), TextSize = 12})
+	UI.secondary(refs.placement, T("Cancelar", "Cancel"), clearPlacement, {Position = UDim2.new(0.65, 2, 0, 6), Size = UDim2.new(0.35, -8, 1, -12), TextSize = 12})
+	local abilities = UI.frame(main, {BackgroundTransparency = 1, Position = at(layout.abilities), Size = dims(layout.abilities)})
+	UI.list(abilities, 8, true)
+	refs.abilityButtons = {}
+	for index, id in ipairs(state.match and state.match.ability and {state.match.ability.id} or {}) do
+		if index > 2 then break end
+		local button = UI.secondary(abilities, "", function() chooseSkill(id) end, {Name="LeaderPower",LayoutOrder = index, Size = UDim2.fromOffset(layout.skillW, layout.buttonH), TextSize = 11})
+		local meter = UI.bar(button, C.blue, UDim2.new(0, 7, 1, -5), UDim2.new(1, -14, 0, 2))
+		refs.abilityButtons[id] = {button = button, index = index, meter = meter}
+	end
+	if profile().passes and profile().passes.vip then
+		UI.secondary(abilities, "✦ " .. T("Saudação", "Salute"), function()
+			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid then pcall(function() humanoid:PlayEmote("wave") end) end
+		end, {LayoutOrder = 3, Size = UDim2.fromOffset(layout.saluteW, layout.buttonH), TextColor3 = C.gold, TextSize = 11})
+	end
+	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
+	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
+	UI.list(cards, 7, true)
+	refs.heroCards = {}
+	for index = 1, 5 do
+		local id = (profile().loadout or {})[index]
+		if id and Catalog.Heroes[id] then
+			local button, price, line = heroCard(cards, id, index, layout.cardW, layout.heroCards.h - 14, function() chooseHero(id) end)
+			refs.heroCards[id] = {button = button, price = price, line = line}
+		else
+			local empty = UI.roundFrame(cards, {Name = "EmptyHeroSlot", LayoutOrder = index, Size = UDim2.fromOffset(layout.cardW, layout.heroCards.h - 14), BackgroundColor3 = C.background, BackgroundTransparency = 0.25})
+			UI.label(empty, "+", {Position = UDim2.fromOffset(8, 0), Size = UDim2.new(0, 24, 1, 0), TextSize = 25, TextColor3 = C.stroke, TextXAlignment = Enum.TextXAlignment.Center})
+			UI.label(empty, T("ESPAÇO ", "SLOT ") .. index .. "\n" .. T("Equipe no lobby", "Equip in lobby"), {Position = UDim2.fromOffset(38, 0), Size = UDim2.new(1, -44, 1, 0), TextSize = compact and 10 or 11, TextColor3 = C.muted, TextWrapped = true})
+		end
+	end
+	updateMatch()
+end
+
+updateMatch = function()
+	if not state or not state.match or not refs.wave then return end
+	local match = state.match
+	refs.wave.Text = T("ONDA ", "WAVE ") .. tostring(match.wave or 0) .. (match.totalWaves == 0 and " / ∞" or " / " .. tostring(match.totalWaves or 50))
+	refs.map.Text = mapName(match.mapId) .. "  /  " .. modeName(match.modeId)
+	refs.hpText.Text = T("BASE ", "CORE ") .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  +" .. math.ceil(match.shield) or "")
+	refs.hp.Size = UDim2.fromScale(math.clamp((match.baseHP or 0) / (match.maxBaseHP or 100), 0, 1), 1)
+	refs.hp.BackgroundColor3 = (match.baseHP or 0)/math.max(1,match.maxBaseHP or 100) > 0.3 and C.green or C.red
+	refs.matchGold.Text = "● " .. number(match.goldEarned) .. T(" OURO", " GOLD")
+	local towerCount = 0
+	for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId then towerCount += 1 end end
+	refs.energy.Text = "⚡ " .. number(match.energy)..T(" ENERGIA"," ENERGY")
+	refs.energy.TextSize=mobile() and 11 or 14
+	refs.skip.Visible = state.phase == "Preparing"
+	refs.skip.Text = T("PRONTO", "READY") .. "  •  " .. tostring(math.max(0, math.ceil(match.prepRemaining or 0))) .. "s" .. (match.skipVotes and "  (" .. tostring(match.skipVotes) .. "/" .. tostring(#(state.players or {})) .. ")" or "")
+	local threatNames = {}
+	for _, id in ipairs(match.threats or match.nextThreats or {}) do
+		local def = Catalog.Enemies[id]
+		table.insert(threatNames, def and L(def.name) or tostring(id))
+	end
+	refs.waveInfo.Text = state.phase == "Preparing" and (T("PRÓXIMA HORDA", "NEXT HORDE") .. (#threatNames > 0 and "  •  " .. table.concat(threatNames, " / ") or T("  •  Prepare suas defesas e colete Ouro.", "  •  Prepare your defenses and collect Gold."))) or (T("INFECTADOS EM CAMPO: ", "INFECTED IN FIELD: ") .. tostring(match.enemies or 0))
+	local boss = match.boss
+	refs.boss.Visible = boss ~= nil
+	if boss then
+		refs.bossName.Text = (boss.final and T("CHEFE FINAL • ","FINAL BOSS • ") or "")..L(boss.name)
+		refs.bossName.TextSize=mobile() and 12 or 14
+		refs.bossHP.Size = UDim2.fromScale(math.clamp((boss.hp or 0) / math.max(boss.maxHP or 1, 1), 0, 1), 1)
+		refs.bossHint.Text = L(boss.hint)
+	end
+	for id, record in pairs(refs.abilityButtons or {}) do
+		local remaining = match.ability and match.ability.cooldown or 0
+		local shortcut = UserInputService.TouchEnabled and "" or "Q  "
+		record.button.Text = shortcut..T("PODER DO LÍDER","LEADER POWER").."\n"..(remaining>0 and (T("Recarrega em ","Ready in ")..math.ceil(remaining).."s") or state.phase=="Preparing" and T("Na próxima onda","Next wave") or T("PRONTO!","READY!"))
+		record.button.TextColor3 = remaining > 0 and C.muted or C.gold
+		record.button.BackgroundColor3=remaining>0 and C.card or C.gold:Lerp(C.panel,0.82)
+		record.meter.Size = UDim2.fromScale(1 - math.clamp(remaining / math.max(match.ability and match.ability.cooldownTotal or 1, 1), 0, 1), 1)
+	end
+	for id, card in pairs(refs.heroCards or {}) do
+		local selected = selectedHero == id
+		card.button.BackgroundColor3 = selected and colorFor(id):Lerp(C.background, 0.7) or C.card
+		card.line.BackgroundTransparency = selected and 0 or 0.65
+		card.price.TextColor3 = (match.energy or 0) >= Catalog.Heroes[id].cost and C.blue or C.red
+	end
+	updateUpgradeBoards(match)
+	if selectedTower then
+		local tower = findTower(selectedTower)
+		if not tower then selectedTower = nil; if refs.towerPanel then refs.towerPanel.Visible = false end; if towerRing then towerRing:Destroy(); towerRing = nil end
+		else
+			local key = tostring(tower.id) .. ":" .. tostring(tower.level) .. ":" .. tostring(tower.priority)
+			if refs.towerKey ~= key then refs.towerKey = key; towerPanel(tower) end
+			if refs.towerStats then
+				-- The wide panel has a single line for stats; the tall one has two.
+				refs.towerStats.Text = T("Dano ", "Damage ") .. number(tower.damage) .. "  •  " .. string.format("%.1f", tower.rate or 0) .. T("/s", "/s")
+					.. (refs.towerWide and "  •  " or "\n") .. T("Alcance ", "Range ") .. string.format("%.1f", tower.range or 0)
+			end
+			if typeof(tower.position) == "Vector3" then towerRing = rangeRing(towerRing, tower.position, tower.range or 20, colorFor(tower.heroId)) end
+		end
+	end
+	local offers = match.cardOffers or {}
+	local signature = table.concat(offers, ":")
+	if refs.protocolSignature ~= signature then refs.protocolSignature = signature; protocolModal(offers) end
+end
+
+local function renderResults()
+	local result = state.results or {}
+	local victory = result.victory == true
+	local veil = UI.frame(main, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.12})
+	local panel = UI.roundFrame(veil, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -32, 1, -50), BackgroundColor3 = C.panel}, victory and C.green or C.red)
+	UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 590)}, panel)
+	local content = UI.scroll(panel, {Name="ResultBody",Position = UDim2.fromOffset(20, 18), Size = UDim2.new(1, -40, 1, -98)})
+	UI.frame(panel,{Position=UDim2.new(0,18,1,-75),Size=UDim2.new(1,-36,0,1),BackgroundColor3=C.stroke})
+	UI.button(panel,T("VOLTAR À BASE","RETURN TO BASE"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(1,-36,0,48),TextSize=15})
+	UI.list(content, 12)
+	local celebration=UI.row(content,58)
+	UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.new(0.5,-27,0,0),Size=UDim2.fromOffset(54,54)})
+	UI.label(content, victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("A PRÓXIMA VAI SER MELHOR!", "YOU'LL GET FURTHER NEXT TIME!"), {Size = UDim2.new(1, -6, 0, 61), TextSize = mobile() and 23 or 29, Font = Enum.Font.GothamBlack, TextWrapped = true, TextColor3 = victory and C.green or C.blue, TextXAlignment = Enum.TextXAlignment.Center})
+	UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal"), {Size = UDim2.new(1, -6, 0, 28), TextColor3 = C.muted, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center})
+	if result.modeId=="ranked" then
+		local tier=Rules.RankForWaves(result.waves)
+		UI.section(content,T("RANK DESTA PARTIDA: ","THIS RUN'S RANK: ")..(language=="en" and tier.en or tier.pt),T("Seu melhor resultado fica no placar da temporada.","Your best result stays on the seasonal leaderboard."))
+	end
+	for _, reward in ipairs({{T("ONDAS CONCLUÍDAS", "WAVES CLEARED"), tostring(result.waves or 0), C.green}, {T("OURO RECEBIDO", "GOLD EARNED"), "+" .. number(result.gold or 0), C.gold}, {T("EXPERIÊNCIA", "EXPERIENCE"), "+" .. number(result.xp or 0) .. " XP", C.blue}}) do
+		local row = UI.roundFrame(content, {Size = UDim2.new(1, -6, 0, 64), BackgroundColor3 = C.card})
+		UI.label(row, reward[1], {Position = UDim2.fromOffset(12, 10), Size = UDim2.new(0.6, -12, 0, 43), TextSize = 11, TextColor3 = C.muted, Font = Enum.Font.GothamBold})
+		UI.label(row, reward[2], {Position = UDim2.new(0.58, 0, 0, 10), Size = UDim2.new(0.42, -12, 0, 43), TextSize = 23, Font = Enum.Font.GothamBold, TextColor3 = reward[3], TextXAlignment = Enum.TextXAlignment.Right})
+	end
+	local earnedPoints = math.max(0, (profile().level or 1) - (result.startLevel or profile().level or 1))
+	local evolution = UI.roundFrame(content, {Name = "ResultEvolution", Size = UDim2.new(1, -6, 0, 98), BackgroundColor3 = C.gold:Lerp(C.background, 0.88)}, C.gold)
+	UI.label(evolution, T("COMANDANTE • NÍVEL ", "COMMANDER • LEVEL ") .. tostring(profile().level or 1), {Position = UDim2.fromOffset(12, 10), Size = UDim2.new(1, -24, 0, 24), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.gold})
+	UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. T(" ponto(s) para sua árvore!", " point(s) for your talent tree!")) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 36), TextWrapped = true, TextSize = 13})
+	local xpTrack = UI.frame(evolution, {Position = UDim2.fromOffset(12, 82), Size = UDim2.new(1, -24, 0, 5), BackgroundColor3 = C.stroke})
+	UI.frame(xpTrack, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.gold})
+	local gains = {}
+	for heroId, earned in pairs(result.mastery or {}) do
+		if Catalog.Heroes[heroId] and earned > 0 then table.insert(gains, {id = heroId, xp = earned}) end
+	end
+	table.sort(gains, function(a, b) return a.xp > b.xp end)
+	if #gains > 0 then
+		local card = UI.roundFrame(content, {Size = UDim2.new(1, -6, 0, 34 + #gains * 26), BackgroundColor3 = C.card})
+		UI.label(card, T("SEUS HERÓIS APRENDERAM!", "YOUR HEROES GREW!"), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 20), TextSize = 11, TextColor3 = C.muted, Font = Enum.Font.GothamBold})
+		for index, gain in ipairs(gains) do
+			local y = 30 + (index - 1) * 26
+			UI.label(card, heroName(gain.id), {Position = UDim2.fromOffset(12, y), Size = UDim2.new(0.62, -12, 0, 22), TextSize = 13, TextColor3 = colorFor(gain.id)})
+			UI.label(card, "+" .. number(gain.xp) .. " XP", {Position = UDim2.new(0.62, 0, 0, y), Size = UDim2.new(0.38, -12, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right})
+		end
+	end
+	UI.label(content,T("Próximo objetivo: evolua a habilidade do líder ou recrute nos baús.","Next goal: upgrade your leader ability or recruit from chests."),{Size=UDim2.new(1,-6,0,50),TextWrapped=true,TextColor3=C.muted})
+	welcomePanel(panel)
+end
+
+render = function()
+	clearPlacement()
+	selectedTower = nil
+	if towerRing then towerRing:Destroy(); towerRing = nil end
+	if refs.protocolPanel then refs.protocolPanel:Destroy() end
+	UI.clear(main)
+	refs = {}
+	contextPanel = nil
+	if not activeMatch() then clearUpgradeBoards() end
+	if not state or not state.profile then
+		local frame = UI.roundFrame(main, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -40, 0, 190)}, C.green)
+		UI.create("UISizeConstraint", {MaxSize = Vector2.new(480, 220)}, frame)
+		UI.label(frame, "DOOMSDAY", {Position = UDim2.fromOffset(20, 20), Size = UDim2.new(1, -40, 0, 52), Font = Enum.Font.GothamBlack, TextSize = 38, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center})
+		UI.label(frame, T("Conectando à resistência…", "Connecting to the resistance…"), {Position = UDim2.fromOffset(20, 86), Size = UDim2.new(1, -40, 0, 55), TextColor3 = C.muted, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center})
+		return
+	end
+	if state.phase == "Lobby" then renderLobby() elseif state.phase == "Results" then renderResults() else renderMatch() end
+end
+
+local function frameCommanderView(inBattle)
+	-- Start above the battlefield instead of at eye level among the zombies.
+	-- Roblox's normal camera retains orbit, wheel zoom and touch pinch control.
+	player.CameraMinZoomDistance = inBattle and 14 or 7
+	player.CameraMaxZoomDistance = inBattle and 100 or 55
+	task.delay(0.5, function()
+		if inBattle ~= not not activeMatch() then return end
+		local camera = workspace.CurrentCamera
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not camera or not root then return end
+		local focus = root.Position + Vector3.new(0, 2, 0)
+		camera.FieldOfView = inBattle and 60 or 65
+		camera.CFrame = CFrame.lookAt(focus + (inBattle and Vector3.new(0, 30, 29) or Vector3.new(0, 9, 17)), focus)
+	end)
+end
+
+player.CharacterAdded:Connect(function()
+	frameCommanderView(not not activeMatch())
+end)
+
+local function applyState(nextState)
+	if type(nextState) ~= "table" then return end
+	local previousPhase = state and state.phase
+	local previousLevel = state and state.profile and state.profile.level
+	local previousLanguage = language
+	state = nextState
+	language = state.profile and state.profile.settings and state.profile.settings.language or language
+	local kind = screenKey()
+	local signature = profileSignature()
+	local phaseChanged = previousPhase ~= state.phase and not ((previousPhase == "Wave" or previousPhase == "Preparing") and activeMatch())
+	if phaseChanged or kind ~= layoutKind or language ~= previousLanguage or not refs.wave and activeMatch() then
+		layoutKind = kind
+		render()
+		if phaseChanged and state.phase ~= "Results" then frameCommanderView(activeMatch()) end
+	elseif state.phase == "Lobby" then
+		if refs.gold then refs.gold.Text = goldText() end
+		if refs.commander then refs.commander.Text = levelText() end
+		if refs.levelBar then refs.levelBar.Size = UDim2.fromScale(levelProgress(), 1) end
+		local elevatorMoved = renderElevator()
+		if signature ~= lastProfileSignature or elevatorMoved then renderContext(); updateWorldCosmetics() end
+	elseif activeMatch() then updateMatch()
+	elseif state.phase == "Results" and signature ~= lastProfileSignature then render() end
+	lastProfileSignature = signature
+	audio:Update(state)
+	if previousLevel and (profile().level or 1) > previousLevel then
+		audio:Cue("levelUp")
+		showToast(T("NÍVEL ", "LEVEL ") .. profile().level .. "! +" .. (profile().level - previousLevel) .. T(" ponto(s) de evolução", " talent point(s)"))
+	end
+	nameplates:Update(state.players)
+	if state.notice then showToast(state.notice) end
+end
+
+stateRemote.OnClientEvent:Connect(applyState)
+fxRemote.OnClientEvent:Connect(function(event)
+	if type(event) ~= "table" then return end
+	if event.kind == "Notice" then showToast(event.text, event.tone == "boss")
+	elseif event.kind == "OpenPanel" and state and state.phase == "Lobby" then
+		if contextBuilders[event.panel] then
+			openContext(event.panel, {
+				heroId = event.heroId, chestId = event.chestId,
+				shopKind = event.shopKind, shopKey = event.shopKey,
+			})
+		end
+	else effects:Handle(event) end
+end)
+
+local function handleWorldPointer(position)
+	if not activeMatch() or refs.protocolPanel then return end
+	if selectedHero or (selectedSkill and Catalog.Abilities[selectedSkill].target ~= "tower") then
+		local hit = raycast(position, true)
+		if hit then updatePreview(hit.Position); placementPinned = true end
+		return
+	end
+	local hit = raycast(position, false)
+	local instance = hit and hit.Instance
+	while instance and instance ~= workspace do
+		local id = instance:GetAttribute("TowerId")
+		if id then selectTower(id); return end
+		instance = instance.Parent
+	end
+	if hit then
+		local best, distance
+		for _, tower in ipairs(state.match.towers or {}) do
+			local d = (Vector3.new(tower.position.X, 0, tower.position.Z) - Vector3.new(hit.Position.X, 0, hit.Position.Z)).Magnitude
+			if d < 5 and (not distance or d < distance) then best, distance = tower.id, d end
+		end
+		if best then selectTower(best) end
+	end
+end
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed or UserInputService:GetFocusedTextBox() then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then handleWorldPointer(Vector2.new(input.Position.X, input.Position.Y))
+	elseif input.KeyCode == Enum.KeyCode.Escape then clearPlacement()
+	elseif activeMatch() then
+		local keys = {Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five}
+		local index = table.find(keys, input.KeyCode)
+		if index and profile().loadout[index] then chooseHero(profile().loadout[index])
+		elseif input.KeyCode == Enum.KeyCode.Q and state.match.ability then chooseSkill(state.match.ability.id) end
+	end
+end)
+
+UserInputService.TouchTapInWorld:Connect(function(position, processed)
+	if not processed then handleWorldPointer(position) end
+end)
+
+local nameplateAt, anchorCheckAt = 0, 0
+RunService.RenderStepped:Connect(function(dt)
+	animateLobby(dt or 1 / 60)
+	if refs.elevatorCount then
+		local count = elevatorCountText()
+		if refs.elevatorCount.Text ~= count then refs.elevatorCount.Text = count end
+	end
+	if os.clock() >= nameplateAt then
+		nameplateAt = os.clock() + 0.7
+		nameplates:Refresh()
+	end
+	-- A contextual panel belongs to the place that opened it: walk away from
+	-- the pedestal and the panel closes, the way the physical lobby implies.
+	if contextPanel and contextPanel.anchor and os.clock() >= anchorCheckAt then
+		anchorCheckAt = os.clock() + 0.25
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		if root and (root.Position - contextPanel.anchor).Magnitude > 26 then closeContext() end
+	end
+	if activeMatch() and selectedHero and not placementPinned and not UserInputService.TouchEnabled then
+		local hit = raycast(UserInputService:GetMouseLocation(), true)
+		if hit then updatePreview(hit.Position) end
+	end
+end)
+
+-- Layouts are computed in pixels from the usable screen, so any change to it
+-- re-lays the HUD out: a rotation, a resized window, or Roblox changing its
+-- own topbar inset. Debounced, and skipped when the size did not really move.
+local resizeQueued = false
+local function queueRelayout()
+	if resizeQueued then return end
+	resizeQueued = true
+	task.delay(0.2, function()
+		resizeQueued = false
+		local key = screenKey()
+		if key == layoutKind then return end
+		layoutKind = key
+		render()
+	end)
+end
+local function watchCamera()
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	camera:GetPropertyChangedSignal("ViewportSize"):Connect(queueRelayout)
+end
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(watchCamera)
+main:GetPropertyChangedSignal("AbsoluteSize"):Connect(queueRelayout)
+watchCamera()
+render()
+
+task.spawn(function()
+	while not state or not state.profile do
+		local response = request("Sync", {}, true)
+		if response and response.ok and response.data then applyState(response.data) end
+		if not state or not state.profile then task.wait(2) end
+	end
+end)

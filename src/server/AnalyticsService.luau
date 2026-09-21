@@ -1,0 +1,127 @@
+--!nonstrict
+-- The measurements the launch plan asks for: tutorial completion, abandonment
+-- by wave, match duration, gold per minute, time to unlock a hero, squad
+-- composition and technical faults.
+--
+-- Every call is wrapped: analytics must never be able to fail a match. Studio
+-- sessions are skipped so test runs do not pollute the live funnels.
+local AnalyticsService = game:GetService("AnalyticsService")
+local RunService = game:GetService("RunService")
+
+local Analytics = {}
+Analytics.__index = Analytics
+
+local FUNNEL = "Tutorial"
+
+local function fieldKeys()
+	local ok, keys = pcall(function()
+		return {
+			Enum.AnalyticsCustomFieldKeys.CustomField01.Name,
+			Enum.AnalyticsCustomFieldKeys.CustomField02.Name,
+			Enum.AnalyticsCustomFieldKeys.CustomField03.Name,
+		}
+	end)
+	return ok and keys or nil
+end
+
+function Analytics.new(enabled)
+	local self = setmetatable({}, Analytics)
+	self.enabled = enabled ~= false and not RunService:IsStudio()
+	self.keys = self.enabled and fieldKeys() or nil
+	self.counts = {}
+	return self
+end
+
+function Analytics:_fields(first, second, third)
+	if not self.keys then return nil end
+	local fields = {}
+	local values = { first, second, third }
+	for index, key in ipairs(self.keys) do
+		if values[index] ~= nil then fields[key] = tostring(values[index]) end
+	end
+	return next(fields) and fields or nil
+end
+
+function Analytics:_call(name, callback)
+	self.counts[name] = (self.counts[name] or 0) + 1
+	if not self.enabled then return end
+	local ok, problem = pcall(callback)
+	if not ok then
+		self.enabled = false
+		warn("[Analytics] disabled after a failure in " .. name .. ": " .. tostring(problem))
+	end
+end
+
+function Analytics:Custom(player, eventName, value, first, second, third)
+	self:_call(eventName, function()
+		AnalyticsService:LogCustomEvent(player, eventName, tonumber(value) or 0, self:_fields(first, second, third))
+	end)
+end
+
+-- Gold entering or leaving an account, so the economy can be read without
+-- guessing from aggregate balances.
+function Analytics:Economy(player, source, amount, balance, transaction, sku)
+	if (tonumber(amount) or 0) <= 0 then return end
+	self:_call("economy", function()
+		AnalyticsService:LogEconomyEvent(
+			player,
+			source and Enum.AnalyticsEconomyFlowType.Source or Enum.AnalyticsEconomyFlowType.Sink,
+			"Gold",
+			math.floor(amount),
+			math.max(0, math.floor(tonumber(balance) or 0)),
+			tostring(transaction or "Gameplay"),
+			sku and tostring(sku) or nil
+		)
+	end)
+end
+
+function Analytics:TutorialStep(player, step, name)
+	self:_call("tutorial", function()
+		AnalyticsService:LogFunnelStepEvent(player, FUNNEL, nil, math.floor(step), tostring(name))
+	end)
+end
+
+-- status is "Start", "Complete" or "Fail"; level carries the wave reached, which
+-- is what turns abandonment into a readable curve.
+function Analytics:Progression(player, mapId, modeId, status, wave)
+	self:_call("progression", function()
+		local progression = Enum.AnalyticsProgressionType[status]
+		AnalyticsService:LogProgressionEvent(
+			player,
+			tostring(mapId),
+			progression,
+			self:_fields(modeId, wave),
+			math.max(1, math.floor(tonumber(wave) or 1)),
+			tostring(modeId)
+		)
+	end)
+end
+
+function Analytics:MatchFinished(player, mapId, modeId, victory, waves, seconds, gold)
+	seconds = math.max(1, math.floor(tonumber(seconds) or 1))
+	self:Progression(player, mapId, modeId, victory and "Complete" or "Fail", waves)
+	self:Custom(player, "MatchDuration", seconds, mapId, modeId, victory and "win" or "loss")
+	self:Custom(player, "GoldPerMinute", math.floor((tonumber(gold) or 0) * 60 / seconds), mapId, modeId)
+	self:Custom(player, "WavesCleared", waves, mapId, modeId)
+end
+
+function Analytics:Composition(player, loadout, mapId)
+	if type(loadout) ~= "table" or #loadout == 0 then return end
+	local ordered = table.clone(loadout)
+	table.sort(ordered)
+	self:Custom(player, "Composition", #ordered, table.concat(ordered, "+"), mapId)
+end
+
+function Analytics:HeroUnlocked(player, heroId, level, minutesPlayed)
+	self:Custom(player, "HeroUnlocked", math.floor(tonumber(minutesPlayed) or 0), heroId, level)
+end
+
+function Analytics:Fault(player, area, detail)
+	self:Custom(player, "Fault", 1, area, detail)
+end
+
+function Analytics:Report()
+	return table.clone(self.counts)
+end
+
+return Analytics

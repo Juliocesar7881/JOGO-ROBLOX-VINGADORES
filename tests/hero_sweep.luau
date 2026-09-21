@@ -1,0 +1,32 @@
+-- Appended to the match simulation by `python tests/test_match_simulation.py --sweep heroes`.
+-- Every hero is paired with Iron Man, a middling all-rounder that can hit flyers,
+-- and plays ranked mode: ranked is the discriminating mode, normal is a walkover for
+-- any roster. Alone, a ground-only hero would just be blamed for the flyers it can
+-- never hit. Compare each row with the Iron Man baseline: a hero well above it
+-- earns more than its price, one below it is being carried by its partner.
+local unlocked = { campaign = { manhattan = { normal = true, ranked = true } } }
+local MAPS = { "manhattan", "hydra", "wakanda" }
+local rows = {}
+for _, heroId in ipairs(Catalog.HeroOrder) do
+	local hero = Catalog.Heroes[heroId]
+	local reached, minutes = 0, 0
+	for _, mapId in ipairs(MAPS) do
+		local run = simulate({ mapId = mapId, modeId = "ranked", profile = unlocked, loadout = { heroId, "ironman" } })
+		reached += run.results.waves
+		minutes += run.seconds / 60
+	end
+	table.insert(rows, { id = heroId, rarity = hero.rarity, cost = hero.cost, kind = hero.attack, waves = reached / #MAPS })
+end
+print(string.format("%-14s %-10s %5s  %-7s %s", "heroi", "raridade", "custo", "ataque", "ondas (ranked, media de 3 mapas)"))
+local byRarity = {}
+for _, row in ipairs(rows) do
+	print(string.format("%-14s %-10s %5d  %-7s %5.1f  %s", row.id, row.rarity, row.cost, row.kind, row.waves, string.rep("#", math.floor(row.waves / 2))))
+	byRarity[row.rarity] = byRarity[row.rarity] or { sum = 0, count = 0 }
+	byRarity[row.rarity].sum += row.waves
+	byRarity[row.rarity].count += 1
+end
+print("")
+for _, rarity in ipairs(Catalog.RarityOrder) do
+	local entry = byRarity[rarity]
+	print(string.format("%-10s media %5.1f ondas", rarity, entry.sum / entry.count))
+end

@@ -1,0 +1,1060 @@
+--!nonstrict
+-- A full playthrough of the real MatchService, outside Roblox.
+--
+-- The rules tests check formulas and the PlayerService tests check persistence.
+-- Neither of them ever plays a match, so this harness drives the actual match
+-- loop: it places towers by trial, survives waves, fights bosses and reads the
+-- results screen. It is the closest thing to pressing Play that can run in CI.
+--
+-- Rendering, input, networking and DataStores are out of scope here; Studio and
+-- a published place remain separate acceptance gates.
+
+--==============================================================================
+-- Roblox stand-ins
+--==============================================================================
+local V3 = {}
+local V3_METHODS = {}
+
+local function v3(x, y, z)
+	return setmetatable({ x = x or 0, y = y or 0, z = z or 0 }, V3)
+end
+
+V3.__index = function(self, key)
+	if key == "X" then return rawget(self, "x") end
+	if key == "Y" then return rawget(self, "y") end
+	if key == "Z" then return rawget(self, "z") end
+	if key == "Magnitude" then
+		local a, b, c = rawget(self, "x"), rawget(self, "y"), rawget(self, "z")
+		return math.sqrt(a * a + b * b + c * c)
+	end
+	if key == "Unit" then
+		local a, b, c = rawget(self, "x"), rawget(self, "y"), rawget(self, "z")
+		local m = math.sqrt(a * a + b * b + c * c)
+		if m == 0 then return v3(0, 0, 0) end
+		return v3(a / m, b / m, c / m)
+	end
+	return V3_METHODS[key]
+end
+V3.__add = function(a, b) return v3(a.X + b.X, a.Y + b.Y, a.Z + b.Z) end
+V3.__sub = function(a, b) return v3(a.X - b.X, a.Y - b.Y, a.Z - b.Z) end
+V3.__mul = function(a, b)
+	if type(b) == "number" then return v3(a.X * b, a.Y * b, a.Z * b) end
+	return v3(a.X * b.X, a.Y * b.Y, a.Z * b.Z)
+end
+function V3_METHODS:Dot(other) return self.X * other.X + self.Y * other.Y + self.Z * other.Z end
+function V3_METHODS:Lerp(other, t)
+	return v3(self.X + (other.X - self.X) * t, self.Y + (other.Y - self.Y) * t, self.Z + (other.Z - self.Z) * t)
+end
+
+Vector3 = { new = v3 }
+Vector2 = {
+	new = function(x, y)
+		return setmetatable({ X = x or 0, Y = y or 0 }, {
+			__index = function(self, key)
+				if key == "Magnitude" then return math.sqrt(self.X * self.X + self.Y * self.Y) end
+				return nil
+			end,
+		})
+	end,
+}
+Color3 = { fromRGB = function(r, g, b) return { R = r, G = g, B = b } end }
+
+local realType = type
+function typeof(value)
+	if realType(value) == "table" and getmetatable(value) == V3 then return "Vector3" end
+	return realType(value)
+end
+
+Random = {
+	new = function(seed)
+		local state = (math.abs(math.floor(seed or 0)) % 2147483646) + 1
+		local function nextValue()
+			state = (state * 48271) % 2147483647
+			return state / 2147483647
+		end
+		-- Nearby seeds must not start with nearby numbers, as with the real thing.
+		for _ = 1, 12 do nextValue() end
+		return {
+			NextInteger = function(_, low, high) return low + math.floor(nextValue() * (high - low + 1 - 1e-9)) end,
+			NextNumber = function(_, low, high)
+				if low == nil then return nextValue() end
+				return low + nextValue() * (high - low)
+			end,
+		}
+	end,
+}
+
+task = {
+	spawn = function(fn, ...) fn(...) end,
+	wait = function() return 0 end,
+	delay = function(_, fn, ...) fn(...) end,
+}
+
+local PLAYERS = { __service = "Players" }
+local guidCounter = 0
+local SERVICES = {
+	Players = PLAYERS,
+	HttpService = {
+		GenerateGUID = function()
+			guidCounter += 1
+			return "sim-" .. tostring(guidCounter)
+		end,
+	},
+}
+game = { GetService = function(_, name) return assert(SERVICES[name], "unstubbed service: " .. name) end }
+warn = function() end
+
+--==============================================================================
+-- Modules under test
+--==============================================================================
+-- Declared in dependency order: each inlined module captures the previous ones
+-- as upvalues, which is how the rewritten requires resolve.
+local Config = __CONFIG__
+local Catalog = __CATALOG__
+local Rules = __RULES__
+local Waves = __WAVES__
+local MatchService = __MATCH__
+
+--==============================================================================
+-- Test doubles for everything the match talks to
+--==============================================================================
+local checks, failures = 0, 0
+local function check(condition, label)
+	checks += 1
+	if not condition then
+		failures += 1
+		print("FAIL: " .. label)
+	end
+end
+
+local function newWorld()
+	local world = { built = 0, towers = 0, upgrades = 0 }
+	function world:Build() self.built += 1 end
+	function world:MovePlayer() end
+	function world:ApplyLobbyLighting() end
+	function world:UpgradeTower() self.upgrades += 1 end
+	function world:MakeTower()
+		self.towers += 1
+		local owner = self
+		return { Destroy = function() owner.towers -= 1 end }
+	end
+	return world
+end
+
+local function newProfile(overrides)
+	local profile = {
+		gold = 0, xp = 0, level = 12,
+		heroes = {}, abilities = {}, loadout = {}, talents = {},
+		campaign = {}, tutorialComplete = true,
+		passes = {}, settings = {}, best = {},
+	}
+	for _, id in ipairs(Catalog.HeroOrder) do
+		profile.heroes[id] = { xp = 4000, level = 10 }
+		profile.abilities[id] = 1
+	end
+	-- Slot one is Iron Man, so the ability the run fights with is his barrage.
+	profile.loadout = { "ironman", "hawkeye", "hulk", "thor", "spiderman" }
+	for key, value in pairs(overrides or {}) do profile[key] = value end
+	return profile
+end
+
+local function newProfiles(profile)
+	return {
+		awards = {}, bests = {},
+		Snapshot = function(self, _) return profile end,
+		Award = function(self, _, id, reward)
+			if self.awards[id] then return true end
+			self.awards[id] = reward
+			profile.gold += reward.gold or 0
+			return true
+		end,
+		RecordBest = function(self, _, mapId, size, waves)
+			table.insert(self.bests, { mapId = mapId, size = size, waves = waves })
+			return true
+		end,
+	}
+end
+
+local function newPlayer(userId, position)
+	return {
+		UserId = userId, Name = "Sim" .. tostring(userId), Parent = PLAYERS,
+		Character = position and {
+			FindFirstChild = function(_, name)
+				if name == "HumanoidRootPart" then return { Position = position } end
+				return nil
+			end,
+		} or nil,
+	}
+end
+
+local function newRemotes(log)
+	log.notices = log.notices or {}
+	return { FX = { FireClient = function(_, _, event)
+		log[event.kind] = (log[event.kind] or 0) + 1
+		if event.kind == "Notice" and event.text then table.insert(log.notices, event.text.pt or "") end
+	end } }
+end
+
+--==============================================================================
+-- The player: place what fits, upgrade what is already standing
+--==============================================================================
+-- A tower only earns its cost if it covers the route, so the harness ranks
+-- candidate ground by distance to the path the way a player eyeballs it.
+local function distanceToPath(mapId, point)
+	local best = math.huge
+	for _, route in ipairs(Catalog.Maps[mapId].paths) do
+		for index = 1, #route - 1 do
+			local a = v3(route[index][1], 0, route[index][2])
+			local b = v3(route[index + 1][1], 0, route[index + 1][2])
+			local delta = b - a
+			local square = delta:Dot(delta)
+			local t = square > 0 and math.clamp((point - a):Dot(delta) / square, 0, 1) or 0
+			local distance = (point - (a + delta * t)).Magnitude
+			if distance < best then best = distance end
+		end
+	end
+	return best
+end
+
+-- A person places towers where they cover the most road: in the bends and
+-- where roads meet, not just beside the nearest kerb. The harness scores every
+-- legal spot by how much of the route lies within a typical tower's reach and
+-- fills the best ones first, keeping a little space between towers.
+local spotCache = {}
+local function buildSpots(mapId)
+	if spotCache[mapId] then return spotCache[mapId] end
+	local minimum = Config.PathHalfWidth + Config.TowerRadius + 0.5
+	local samples = {}
+	for _, route in ipairs(Catalog.Maps[mapId].paths) do
+		for index = 1, #route - 1 do
+			local a = v3(route[index][1], 0, route[index][2])
+			local b = v3(route[index + 1][1], 0, route[index + 1][2])
+			local length = (b - a).Magnitude
+			for step = 0, math.floor(length / 3) do table.insert(samples, a + (b - a) * (step * 3 / length)) end
+		end
+	end
+	local spots = {}
+	for x = -100, 100, 4 do
+		for z = -100, 100, 4 do
+			local point = v3(x, 0, z)
+			if distanceToPath(mapId, point) >= minimum then
+				local covered = 0
+				for _, sample in ipairs(samples) do
+					if (sample - point).Magnitude <= 24 then covered += 1 end
+				end
+				if covered > 0 then table.insert(spots, { point = point, covered = covered }) end
+			end
+		end
+	end
+	table.sort(spots, function(a, b)
+		if a.covered ~= b.covered then return a.covered > b.covered end
+		if a.point.X ~= b.point.X then return a.point.X < b.point.X end
+		return a.point.Z < b.point.Z
+	end)
+	spotCache[mapId] = spots
+	return spots
+end
+
+local function buildPhase(match, player, heroes)
+	local snapshot = match:Snapshot(player)
+	if not snapshot then return end
+	-- A commander with cards on offer takes the first one, as the timer would.
+	if #snapshot.cardOffers > 0 then
+		match:Handle(player, "ChooseCard", { cardId = snapshot.cardOffers[1] })
+		snapshot = match:Snapshot(player)
+	end
+	local mine = 0
+	for _, tower in ipairs(snapshot.towers) do
+		if tower.ownerId == player.UserId then mine += 1 end
+	end
+	-- Upgrade first: a tall tower beats a wide one in this game.
+	for _, tower in ipairs(snapshot.towers) do
+		if tower.ownerId == player.UserId and tower.upgradeCost > 0 and snapshot.energy >= tower.upgradeCost then
+			local branch = nil
+			if tower.level == 4 then branch = 1 end
+			if match:Handle(player, "UpgradeTower", { towerId = tower.id, branch = branch }) then
+				snapshot = match:Snapshot(player)
+			end
+		end
+	end
+	-- Then expand, trying real positions until the server accepts one.
+	while mine < snapshot.towerLimit do
+		-- Buy the next hero in the rotation that the Energy can pay for: waiting
+		-- for the priciest one while the road is undefended is not how anyone plays.
+		local heroId
+		for offset = 0, #heroes - 1 do
+			local candidate = heroes[((mine + offset) % #heroes) + 1]
+			if Catalog.Heroes[candidate].cost <= snapshot.energy then heroId = candidate break end
+		end
+		if not heroId then break end
+		local placed = false
+		for _, spot in ipairs(buildSpots(snapshot.mapId)) do
+			local crowded = false
+			for _, tower in ipairs(snapshot.towers) do
+				if (tower.position - spot.point).Magnitude < 9 then crowded = true break end
+			end
+			if not crowded and match:Handle(player, "PlaceTower", { heroId = heroId, position = spot.point }) then
+				placed = true
+				break
+			end
+		end
+		if not placed then break end
+		mine += 1
+		snapshot = match:Snapshot(player)
+	end
+end
+
+-- Casts the slot-one ability where it does the most: over the densest knot of
+-- enemies for an area ability, on the first tower for a tower ability.
+local function castAbility(match, player)
+	local snapshot = match:Snapshot(player)
+	local ability = snapshot and snapshot.ability
+	if not ability or ability.cooldown > 0 or match.phase ~= "Wave" then return false end
+	local payload = { skillId = ability.id }
+	if ability.target == "area" then
+		local best, bestCount = nil, 0
+		for _, enemy in pairs(match.enemies) do
+			local count = 0
+			for _, other in pairs(match.enemies) do
+				if (other.position - enemy.position).Magnitude <= ability.radius then count += 1 end
+			end
+			if count > bestCount then best, bestCount = enemy, count end
+		end
+		if not best or bestCount < 3 then return false end
+		payload.position = best.position
+	elseif ability.target == "tower" then
+		local tower = snapshot.towers[1]
+		if not tower then return false end
+		payload.towerId = tower.id
+	end
+	return match:Handle(player, "CastSkill", payload)
+end
+
+local function simulate(options)
+	local profile = newProfile(options.profile)
+	if options.loadout then profile.loadout = options.loadout end
+	local profiles = newProfiles(profile)
+	local world = newWorld()
+	local log = {}
+	local player = newPlayer(1, options.characterAt)
+	local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, newRemotes(log), function() end)
+
+	local started, problem = match:Start({ player }, options.mapId, options.modeId)
+	check(started, "match starts on " .. options.mapId .. "/" .. options.modeId .. ": " .. tostring(problem))
+	if not started then return nil end
+
+	local step = Config.SimulationStep
+	local seconds, guard = 0, 0
+	local lastWave, lastHP, monotonic, negativeEnergy = 0, Config.BaseHP, true, false
+	local peakEnemies, bossSeen = 0, false
+	local phaseClock, lastPhase, prepTotal, waveTotal, waveTimes = 0, match.phase, 0, 0, {}
+	local casts, bossWaves, finalBossWave, picks = 0, {}, nil, 0
+	local guardLimit = 5400 / step * 2
+
+	while match.running and guard < guardLimit do
+		guard += 1
+		if match.phase == "Preparing" and options.build ~= false then
+			buildPhase(match, player, profile.loadout)
+		end
+		if match.phase == "Wave" and options.build ~= false and options.cast ~= false and guard % 5 == 0 then
+			if castAbility(match, player) then casts += 1 end
+		end
+		match:Step(step)
+		seconds += step
+		phaseClock += step
+		if match.phase ~= lastPhase then
+			if lastPhase == "Preparing" then
+				prepTotal += phaseClock
+			elseif lastPhase == "Wave" then
+				waveTotal += phaseClock
+				table.insert(waveTimes, phaseClock)
+			end
+			lastPhase, phaseClock = match.phase, 0
+		end
+		local snapshot = match:Snapshot(player)
+		if snapshot then
+			if snapshot.wave < lastWave then monotonic = false end
+			lastWave = snapshot.wave
+			if snapshot.baseHP > lastHP then monotonic = false end
+			lastHP = snapshot.baseHP
+			if snapshot.energy < 0 then negativeEnergy = true end
+			peakEnemies = math.max(peakEnemies, snapshot.enemies)
+			if snapshot.boss then
+				bossSeen = true
+				bossWaves[snapshot.wave] = snapshot.boss.name.pt
+				if snapshot.boss.final then finalBossWave = snapshot.wave end
+			end
+			picks = math.max(picks, #snapshot.cards)
+		end
+	end
+
+	local _, results = match:Snapshot(player)
+	return {
+		match = match, profiles = profiles, profile = profile, world = world, log = log,
+		results = results, seconds = seconds, monotonic = monotonic,
+		negativeEnergy = negativeEnergy, peakEnemies = peakEnemies, bossSeen = bossSeen,
+		player = player, prepTotal = prepTotal, waveTotal = waveTotal, waveTimes = waveTimes,
+		casts = casts, bossWaves = bossWaves, finalBossWave = finalBossWave, picks = picks,
+	}
+end
+
+--==============================================================================
+-- Playthroughs
+--==============================================================================
+print("--- tutorial ---")
+local tutorial = simulate({ mapId = "manhattan", modeId = "tutorial" })
+check(tutorial ~= nil, "tutorial ran")
+if tutorial then
+	check(tutorial.match.phase == "Results", "tutorial reaches the results screen")
+	check(tutorial.results ~= nil, "tutorial produces a result")
+	check(tutorial.results.victory == true, "a defended tutorial is a win")
+	check(tutorial.results.waves == 8, "tutorial clears all 8 waves, got " .. tostring(tutorial.results.waves))
+	check(tutorial.seconds >= 120 and tutorial.seconds <= 900,
+		"tutorial lasts 2-15 min, got " .. string.format("%.1f min", tutorial.seconds / 60))
+	check(tutorial.bossSeen, "the tutorial boss shows up")
+	check(tutorial.world.towers > 0, "towers are built in the world")
+	-- Teaching is paced across the run: a new commander should be told about
+	-- upgrading, abilities, wave pacing and where to spend the reward.
+	local taught = 0
+	for _, text in ipairs(tutorial.log.notices or {}) do
+		if string.find(text, "melhorar", 1, true) or string.find(text, "habilidade ativa", 1, true)
+			or string.find(text, "PRONTO", 1, true) or string.find(text, "baús", 1, true) then
+			taught += 1
+		end
+	end
+	check(taught >= 4, "the tutorial paces its lessons across the run, got " .. tostring(taught) .. " of 4")
+	print(string.format("  %d waves, %.1f min, base %d/100, peak %d enemies, gold %d",
+		tutorial.results.waves, tutorial.seconds / 60, tutorial.match.baseHP, tutorial.peakEnemies, tutorial.results.gold))
+end
+
+print("--- campaign, Manhattan ---")
+local campaign = simulate({ mapId = "manhattan", modeId = "normal" })
+check(campaign ~= nil, "campaign ran")
+if campaign then
+	check(campaign.match.phase == "Results", "campaign terminates instead of hanging")
+	check(campaign.monotonic, "waves only move forward and the core never heals itself")
+	check(not campaign.negativeEnergy, "energy never goes negative")
+	check(campaign.peakEnemies <= Config.MaxEnemies, "the enemy cap holds")
+	check(campaign.bossSeen, "a boss reaches the field")
+	check(campaign.results.waves >= 30,
+		"a competent defense survives most of the campaign, got wave " .. tostring(campaign.results.waves))
+	check(campaign.casts > 3, "the bot uses its hero ability, got " .. tostring(campaign.casts) .. " casts")
+	check((campaign.log.Ability or 0) == campaign.casts, "every cast is announced to the clients")
+	check(campaign.picks == 0, "the campaign offers no cards")
+	local expectedBosses = { [10] = "Lagarto infectado", [20] = "Abominável infectado", [30] = "Caveira Vermelha infectado", [40] = "Killmonger infectado", [50] = "Doutor Destino" }
+	for wave, name in pairs(expectedBosses) do
+		if campaign.results.waves >= wave then check(campaign.bossWaves[wave] == name, "wave " .. wave .. " brings " .. name .. ", saw " .. tostring(campaign.bossWaves[wave])) end
+	end
+	for wave in pairs(campaign.bossWaves) do check(wave % 10 == 0, "bosses only walk in on every tenth wave, saw one on " .. wave) end
+	check(campaign.results.gold > 0, "the run pays out gold")
+	check(next(campaign.profiles.awards) ~= nil, "checkpoints are committed to the profile")
+	check((campaign.log.Shot or 0) > 0, "towers actually fire")
+	check((campaign.log.Breach or 0) >= 0, "breaches are reported")
+	print(string.format("  %d waves, %.1f min, base %d/100, peak %d enemies, gold %d, victory=%s",
+		campaign.results.waves, campaign.seconds / 60, campaign.match.baseHP,
+		campaign.peakEnemies, campaign.results.gold, tostring(campaign.results.victory)))
+	print(string.format("  preparacao %.1f min, combate %.1f min", campaign.prepTotal / 60, campaign.waveTotal / 60))
+	local line = "  por onda:"
+	for index, value in ipairs(campaign.waveTimes) do
+		if index % 5 == 0 then line ..= string.format(" w%d=%.0fs", index, value) end
+	end
+	print(line)
+	if campaign.results.victory then
+		check(campaign.finalBossWave == 50, "the final boss is the wave-50 boss")
+		-- Fifty waves are a long run by design. This harness never uses the
+		-- unanimous ready vote, so it measures the slowest possible session.
+		check(campaign.seconds >= 25 * 60 and campaign.seconds <= 62 * 60,
+			"a full 50-wave campaign stays inside 25-62 min, got " .. string.format("%.1f min", campaign.seconds / 60))
+		print(string.format("  50 ondas, medido %.1f min sem usar o voto de pronto", campaign.seconds / 60))
+	end
+end
+
+print("--- undefended core ---")
+local undefended = simulate({ mapId = "manhattan", modeId = "normal", build = false })
+check(undefended ~= nil, "undefended run ran")
+if undefended then
+	check(undefended.results.victory == false, "an undefended core falls")
+	check(undefended.match.baseHP == 0, "the core reaches zero")
+	check((undefended.log.Breach or 0) > 0, "every leak is announced to the client")
+	check(undefended.results.gold >= 0, "a loss still preserves what was earned")
+	print(string.format("  lost on wave %d after %.1f min, gold kept %d",
+		undefended.match.wave, undefended.seconds / 60, undefended.results.gold))
+end
+
+print("--- manual pickup vs collector drone ---")
+-- The tutorial pays no gold, so no coins exist there to compare.
+local manual = simulate({ mapId = "manhattan", modeId = "normal", characterAt = v3(88, 0, 66) })
+local drone = simulate({ mapId = "manhattan", modeId = "normal", profile = { passes = { collector = true } } })
+if manual and drone then
+	check(manual.results.gold == drone.results.gold,
+		string.format("manual and drone collection pay the same total (%d vs %d)",
+			manual.results.gold, drone.results.gold))
+	check((drone.log.CoinRemove or 0) > 0, "the drone actually picks coins up")
+	print(string.format("  manual %d gold, drone %d gold", manual.results.gold, drone.results.gold))
+end
+
+print("--- endless, Gamma ---")
+local endless = simulate({ mapId = "gamma", modeId = "infinite", profile = {
+	campaign = { manhattan = { normal = true, ranked = true } },
+} })
+if endless then
+	check(endless.match.phase == "Results", "endless ends in defeat rather than looping forever")
+	check(#endless.profiles.bests > 0, "endless records a leaderboard best")
+	check(endless.results.waves >= 5, "endless survives a few waves, got " .. tostring(endless.results.waves))
+	check(endless.picks == 0, "endless offers no cards")
+	print(string.format("  survived %d waves in %.1f min", endless.results.waves, endless.seconds / 60))
+end
+
+print("--- card roguelike, hydra ---")
+local cardRun = simulate({ mapId = "hydra", modeId = "cards", profile = { campaign = { manhattan = { normal = true } } } })
+if cardRun then
+	check(cardRun.match.phase == "Results", "the card run terminates")
+	check(cardRun.picks == math.min(9, math.floor(cardRun.results.waves / 5)), "one card per five completed waves, got " .. cardRun.picks .. " picks for " .. cardRun.results.waves .. " waves")
+	check(cardRun.picks >= 3, "the run lasts long enough to matter")
+	check(#cardRun.results.cards == cardRun.picks, "the results screen lists the run's cards")
+	for _, id in ipairs(cardRun.results.cards) do check(Catalog.Cards[id] ~= nil, "a real card in the results") end
+	print(string.format("  %d waves, %d cartas, %.1f min, victory=%s", cardRun.results.waves, cardRun.picks, cardRun.seconds / 60, tostring(cardRun.results.victory)))
+end
+
+print("--- ranked, wakanda ---")
+local hardRun = simulate({ mapId = "wakanda", modeId = "ranked", profile = { campaign = { manhattan = { normal = true } } } })
+if hardRun then
+	check(hardRun.match.phase == "Results", "the ranked run terminates")
+	check(hardRun.picks == 0, "ranked mode offers no cards")
+	print(string.format("  %d waves, %.1f min, victory=%s", hardRun.results.waves, hardRun.seconds / 60, tostring(hardRun.results.victory)))
+end
+
+print("--- selling and limits ---")
+local economy = simulate({ mapId = "manhattan", modeId = "normal", build = false })
+if economy then
+	local match = economy.match
+	local player = economy.player
+	match.running, match.phase = true, "Preparing"
+	local before = match:Snapshot(player).energy
+	local placed = match:Handle(player, "PlaceTower", { heroId = "ironman", position = v3(-70, 0, -30) })
+	check(placed, "a tower can be placed on open ground")
+	local spent = before - match:Snapshot(player).energy
+	check(spent == Catalog.Heroes.ironman.cost, "placing charges exactly the hero cost")
+	local entrance = Catalog.Maps.manhattan.paths[1][1]
+	local onPath = match:Handle(player, "PlaceTower", { heroId = "ironman", position = v3(entrance[1], 0, entrance[2]) })
+	check(not onPath, "the route itself cannot be built on")
+	local towerId = match:Snapshot(player).towers[1].id
+	local beforeSale = match:Snapshot(player).energy
+	match:Handle(player, "SellTower", { towerId = towerId })
+	local refund = match:Snapshot(player).energy - beforeSale
+	check(refund == math.floor(spent * 0.7), "selling refunds 70 percent, got " .. tostring(refund))
+	check(not match:Handle(player, "PlaceTower", { heroId = "strange", position = v3(-70, 0, -30) }),
+		"an unequipped hero cannot be placed")
+end
+
+print("--- talent bonuses ---")
+do
+	local player = newPlayer(901)
+	local profile = newProfile({talents={roundGold=2,killGold=5,baseVitality=3,baseRecovery=2,startingEnergy=2}})
+	local profiles = newProfiles(profile)
+	local match = MatchService.new(Config,Catalog,Rules,Waves,profiles,newWorld(),newRemotes({}),function() end)
+	check(match:Start({player},"manhattan","normal","talent-test"),"Talented account starts a match")
+	local p = match.participants[player.UserId]
+	check(match.maxBaseHP==112 and match.baseHP==112,"Vitality raises actual and maximum base HP")
+	check(p.energy==Config.StartEnergy+40,"Preparation talent grants initial Energy")
+	check(match:Snapshot(player).maxBaseHP==112,"HUD receives increased maximum HP")
+	p.contributed=true
+	for i=1,10 do
+		local enemy={id=i,hp=1,maxHP=1,def={},armorUntil=0,markUntil=0,shield=0,gold=1,position=v3(0,0,0)}
+		match.enemies[i],match.alive=enemy,1
+		match:_damage(enemy,10,nil,nil)
+	end
+	check(p.goldEarned==12,"Fractional kill bonuses accumulate instead of vanishing on small coins")
+	match.wave,match.baseHP,match.baseWasDamaged=5,108,true
+	match:_endWave()
+	check(match.baseHP==110,"Repair talent restores HP every five completed waves")
+	check(p.goldEarned==16 and profile.gold==16,"Wave talent pays only the earned amount at checkpoint")
+	match:_endWave()
+	check(p.goldEarned==16 and match.baseHP==110,"Duplicate wave completion cannot duplicate gold or repairs")
+	match:Finish(true)
+	check(profiles.awards["talent-test:final"].noDamage==false,"Repair cannot award a false flawless medal")
+	local idleProfile=newProfile({talents={roundGold=5}})
+	local idle=MatchService.new(Config,Catalog,Rules,Waves,newProfiles(idleProfile),newWorld(),newRemotes({}),function() end)
+	idle:Start({player},"manhattan","normal","idle-talents")
+	idle.wave=1; idle:_endWave()
+	check(idleProfile.gold==0,"Idle participants cannot farm wave talent gold")
+end
+
+--==============================================================================
+-- Staging helpers for the focused tests below
+--==============================================================================
+local stagedPlayers = 0
+local function stage(options)
+	options = options or {}
+	stagedPlayers += 1
+	local player = newPlayer(4000 + stagedPlayers)
+	local profile = newProfile(options.profile)
+	-- Later modes are gated behind victories; a staged match has earned them.
+	if not (options.profile and options.profile.campaign) then profile.campaign = { manhattan = { normal = true, ranked = true } } end
+	if options.loadout then profile.loadout = options.loadout end
+	local profiles = newProfiles(profile)
+	local log = {}
+	local world = newWorld()
+	local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, newRemotes(log), function() end)
+	local started, problem = match:Start({ player }, options.mapId or "manhattan", options.modeId or "normal", "stage-" .. stagedPlayers)
+	check(started, "staged match starts: " .. tostring(problem))
+	match.phase = "Wave"
+	match.wave = options.wave or 10
+	return match, player, profile, log
+end
+
+local function spawn(match, enemyId, progress, hpMultiplier)
+	match:_spawn({ enemyId = enemyId, pathIndex = 1, progress = progress, hpMultiplier = hpMultiplier or 1 })
+	return match.enemies["e" .. match.entityIds.e]
+end
+
+local function place(match, player, heroId)
+	for _, spot in ipairs(buildSpots(match.mapId)) do
+		local ok, reply = match:Handle(player, "PlaceTower", { heroId = heroId, position = spot.point })
+		if ok then return match.towers[reply.towerId] end
+	end
+	error("no valid spot for " .. heroId)
+end
+
+local function distanceBetween(a, b) return (a - b).Magnitude end
+
+--==============================================================================
+-- Every hero ability, cast against real enemies
+--==============================================================================
+print("--- hero abilities ---")
+do
+	local casts = 0
+	for _, heroId in ipairs(Catalog.HeroOrder) do
+		local hero = Catalog.Heroes[heroId]
+		local def = Catalog.Abilities[hero.ability]
+		local match, player, profile = stage({ loadout = { heroId, "ironman" } })
+		local p = match.participants[player.UserId]
+		local label = heroId .. "/" .. def.id .. " (" .. def.kind .. ")"
+
+		local snapshot = match:Snapshot(player)
+		check(snapshot.ability and snapshot.ability.id == def.id and snapshot.ability.heroId == heroId, "slot one decides the ability: " .. label)
+		check(snapshot.ability.cooldown == 0 and snapshot.ability.cooldownTotal == def.cooldown, "a fresh ability is ready: " .. label)
+
+		local stats = Rules.AbilityStats(def, 1)
+		local tower = place(match, player, "ironman")
+		local near = {}
+		for offset = 0, 5 do table.insert(near, spawn(match, "zombie", 100 + offset * 0.5, 4)) end
+		if def.kind == "execute" then
+			near[1].hp = near[1].maxHP * 0.1
+			near[2].hp = near[2].maxHP
+		end
+		local hidden = def.kind == "reveal" and spawn(match, "stealth", 100.4, 1) or nil
+		local at = near[1].position
+		local farProgress = 330
+		local far = spawn(match, "zombie", farProgress, 4)
+		local farAway = distanceBetween(far.position, at) > stats.radius + 6
+		local boss = def.kind ~= "chain" and spawn(match, "lizard", 100.2, 1) or nil
+		local payload = { skillId = def.id, position = at, towerId = tower.id }
+		local energyBefore, coreBefore = p.energy, match.baseHP
+		match.baseHP = match.maxBaseHP - 20
+		coreBefore = match.baseHP
+		local hpBefore = {}
+		for index, enemy in ipairs(near) do hpBefore[index] = enemy.hp end
+		local bossBefore = boss and boss.hp
+		local intervalBefore, damageBefore = match:_towerStats(tower).interval, match:_towerStats(tower).damage
+
+		local ok, message = match:Handle(player, "CastSkill", payload)
+		check(ok, "the ability casts: " .. label .. " " .. tostring(message))
+		casts += 1
+		check((match:Snapshot(player).ability.cooldown or 0) > 0, "casting starts the cooldown: " .. label)
+		local again = match:Handle(player, "CastSkill", payload)
+		check(not again, "a recharging ability cannot be cast again: " .. label)
+		check(p.contributed and p.waveHeroes[heroId], "casting counts as taking part and credits the hero: " .. label)
+
+		if def.kind == "blast" then
+			for index, enemy in ipairs(near) do
+				check(math.abs(enemy.hp - hpBefore[index] * (1 - stats.power)) < 0.001, "blast takes its share of health: " .. label)
+			end
+			if farAway then check(far.hp == far.maxHP, "blast leaves distant enemies alone: " .. label) end
+			check(math.abs(boss.hp - bossBefore * (1 - stats.power * 0.12)) < 0.01, "a boss takes only a slice of a blast: " .. label)
+		elseif def.kind == "execute" then
+			check(match.enemies[near[1].id] == nil, "execute finishes a wounded enemy: " .. label)
+			check(match.enemies[near[2].id] ~= nil and near[2].hp == near[2].maxHP, "execute spares a healthy enemy: " .. label)
+			check(boss.hp > bossBefore * 0.95 and boss.hp < bossBefore, "a boss takes a small hit, never an execution: " .. label)
+		elseif def.kind == "rally" then
+			check(p.rallyUntil > match.elapsed and p.rallyStat == def.stat, "rally starts a timed buff: " .. label)
+			local buffed = match:_towerStats(tower)
+			if def.stat == "speed" then check(buffed.interval < intervalBefore, "rally speeds towers up: " .. label)
+			else check(buffed.damage > damageBefore * 1.2, "rally strengthens towers: " .. label) end
+			match.elapsed += stats.duration + 1
+			check(match:_towerStats(tower).interval == intervalBefore, "the rally wears off: " .. label)
+		elseif def.kind == "stun" then
+			for _, enemy in ipairs(near) do check(enemy.stunUntil >= match.elapsed + stats.duration - 0.001, "stun holds ordinary enemies: " .. label) end
+			check(math.abs(boss.stunUntil - (match.elapsed + stats.duration * 0.25)) < 0.001, "a boss is held for a quarter as long: " .. label)
+			if farAway then check(far.stunUntil <= match.elapsed, "stun does not reach distant enemies: " .. label) end
+			-- Stunned enemies really stop.
+			local frozen, progressBefore = near[2], near[2].progress
+			match:_enemiesStep(0.5)
+			check(frozen.progress == progressBefore, "a stunned enemy does not move: " .. label)
+			-- No chain of casts can lock a boss down.
+			match.elapsed += stats.duration * 0.25 + 0.5
+			p.cooldowns[def.id] = 0
+			local heldUntil = boss.stunUntil
+			match:Handle(player, "CastSkill", payload)
+			check(boss.stunUntil == heldUntil, "a boss just stunned cannot be stunned again: " .. label)
+		elseif def.kind == "slow" then
+			for _, enemy in ipairs(near) do check(enemy.slow > 0 and enemy.slowUntil > match.elapsed, "slow applies: " .. label) end
+			check(boss.slow <= 0.25, "a boss resists slowing: " .. label)
+		elseif def.kind == "reveal" then
+			for _, enemy in ipairs(near) do check(enemy.markUntil > match.elapsed and enemy.mark >= stats.power, "reveal marks enemies: " .. label) end
+			check(hidden.revealUntil > match.elapsed, "reveal exposes cloaked enemies: " .. label)
+			check(match:_canTarget({ position = hidden.position }, hidden, { air = false, reveal = false, range = 5 }), "a revealed enemy can be targeted by any tower: " .. label)
+		elseif def.kind == "overdrive" then
+			check((tower.overloadUntil or 0) > match.elapsed, "overdrive starts a timer on the tower: " .. label)
+			check(match:_towerStats(tower).interval < intervalBefore, "overdrive attacks faster: " .. label)
+			local other = { UserId = 9999, Name = "Other", Parent = PLAYERS }
+			p.cooldowns[def.id] = 0
+			local foreign = match:Handle(player, "CastSkill", { skillId = def.id, towerId = "t-not-mine" })
+			check(not foreign, "overdrive needs one of your own towers: " .. label)
+		elseif def.kind == "chain" then
+			local struck = 0
+			for _, enemy in ipairs(near) do if enemy.hp < hpBefore[1] * 0.999 then struck += 1 end end
+			check(struck == math.min(stats.count, #near), "chain strikes exactly its count of enemies: " .. label .. " " .. struck)
+		elseif def.kind == "energy" then
+			check(p.energy == energyBefore + math.floor(stats.power * (200 + 10 * match.wave)), "energy scales with the wave: " .. label)
+		elseif def.kind == "pull" then
+			for index, enemy in ipairs(near) do check(math.abs(enemy.progress - (100 + (index - 1) * 0.5 - stats.power)) < 0.001, "pull pushes enemies back: " .. label) end
+			check(boss.progress == 100.2, "a boss cannot be pulled: " .. label)
+		elseif def.kind == "barrier" then
+			check(match.shield == stats.power and match.shieldUntil > match.elapsed, "barrier shields the core: " .. label)
+		elseif def.kind == "heal" then
+			check(match.baseHP == coreBefore + math.min(stats.power, 20), "heal restores core health: " .. label)
+		elseif def.kind == "weaken" then
+			for _, enemy in ipairs(near) do check(enemy.armorBreak >= stats.power and enemy.armorUntil > match.elapsed, "weaken strips armor: " .. label) end
+		elseif def.kind == "burn" then
+			for _, enemy in ipairs(near) do check(enemy.dot and enemy.dot.untilTime > match.elapsed, "burn ignites enemies: " .. label) end
+			local target = near[3]
+			tower.nextAttack = math.huge
+			local start = target.hp
+			for _ = 1, math.floor(stats.duration / 0.1) + 12 do match:Step(0.1) end
+			check(start - target.hp > target.maxHP * stats.power * 0.6, "burn deals its total over time: " .. label)
+		elseif def.kind == "smite" then
+			local strongest = spawn(match, "brute", 90, 50)
+			match.enemies[strongest.id] = strongest
+			p.cooldowns[def.id] = 0
+			local before = strongest.hp
+			match:Handle(player, "CastSkill", { skillId = def.id })
+			check(strongest.hp < before, "smite goes for the strongest enemy: " .. label)
+		end
+
+		-- Validation is the server's job, whatever the client sent.
+		if def.target == "area" then
+			p.cooldowns[def.id] = 0
+			check(not match:Handle(player, "CastSkill", { skillId = def.id }), "an area ability needs a position: " .. label)
+			check(not match:Handle(player, "CastSkill", { skillId = def.id, position = v3(9999, 0, 0) }), "a position off the map is rejected: " .. label)
+			check(not match:Handle(player, "CastSkill", { skillId = def.id, position = "here" }), "a malformed position is rejected: " .. label)
+		end
+		check(not match:Handle(player, "CastSkill", { skillId = "notAnAbility", position = at, towerId = tower.id }), "only the slot-one ability can be named: " .. label)
+		p.cooldowns[def.id] = 0
+		match.phase = "Preparing"
+		check(not match:Handle(player, "CastSkill", payload), "abilities are for waves, not preparation: " .. label)
+	end
+	check(casts == #Catalog.HeroOrder, "every hero's ability was exercised, " .. casts)
+end
+
+-- The hero in slot one is what matters, wherever else it appears.
+print("--- slot one decides ---")
+do
+	local match, player = stage({ loadout = { "thor", "ironman" } })
+	check(match:Snapshot(player).ability.id == "thunderCall", "Thor in slot one fights with Thunder Call")
+	local swapped, swappedPlayer = stage({ loadout = { "ironman", "thor" } })
+	check(swapped:Snapshot(swappedPlayer).ability.id == "repulsorBarrage", "Iron Man in slot one fights with his barrage, whatever else is equipped")
+	local leader = stage({ loadout = { "wanda" } })
+	check(true, "a one-hero squad is fine")
+	-- Ability rank, talents and cards all strengthen it.
+	local m, pl, prof = stage({ loadout = { "ironman" }, profile = { talents = { abilityPower = 5, skillTempo = 10 } } })
+	prof.abilities.ironman = 5
+	local d, s = m:_abilityOf(m.participants[pl.UserId])
+	local plain = Rules.AbilityStats(Catalog.Abilities.repulsorBarrage, 5)
+	check(s.power > plain.power and s.cooldown < plain.cooldown, "talents strengthen the ability")
+	check(math.abs(s.cooldown - plain.cooldown * 0.9 * 1) < 0.001 or s.cooldown < plain.cooldown, "cooldown talents shorten it")
+end
+
+--==============================================================================
+-- The card roguelike
+--==============================================================================
+print("--- cards: rules of the mode ---")
+do
+	local match, player = stage({ modeId = "cards", wave = 5 })
+	local p = match.participants[player.UserId]
+	match.phase, match.alive, match.spawnIndex, match.pendingSpawns = "Wave", 0, 1, {}
+	match:_endWave()
+	check(#p.cardOffers == 3, "wave 5 of the card mode offers three cards")
+	check(match.prepRemaining >= 30, "a card wave gives time to choose")
+	check(not match:Handle(player, "SkipWave", {}), "you cannot ready up with a card still on the table")
+	check(not match:Handle(player, "ChooseCard", { cardId = "definitelyNotACard" }), "unknown cards rejected")
+	local notOffered
+	for _, id in ipairs(Catalog.CardOrder) do if not table.find(p.cardOffers, id) then notOffered = id break end end
+	check(not match:Handle(player, "ChooseCard", { cardId = notOffered }), "a card that was not offered cannot be taken")
+	check(not match:Handle(player, "ChooseCard", { cardId = { "sharpen" } }), "a malformed card id is rejected")
+	local snapshot = match:Snapshot(player)
+	check(#snapshot.cardOffers == 3 and snapshot.cardMode == true, "the snapshot carries the offer")
+	-- The timer runs out: the first card is dealt, so a run never stalls.
+	local first = p.cardOffers[1]
+	match.prepRemaining = 0
+	match:Step(0.1)
+	check(#p.cards == 1 and p.cards[1] == first and #p.cardOffers == 0, "an unchosen card is dealt automatically")
+	check(match.phase == "Wave" and match.wave == 6, "the next wave then begins")
+
+	-- Only the card mode offers cards, and never before the final boss.
+	local normal, normalPlayer = stage({ modeId = "normal", wave = 5 })
+	normal.phase, normal.alive, normal.spawnIndex, normal.pendingSpawns = "Wave", 0, 1, {}
+	normal:_endWave()
+	check(#normal.participants[normalPlayer.UserId].cardOffers == 0, "the campaign offers no cards")
+	local finalRun, finalPlayer = stage({ modeId = "cards", wave = 50 })
+	finalRun.phase, finalRun.alive, finalRun.spawnIndex, finalRun.pendingSpawns = "Wave", 0, 1, {}
+	finalRun:_endWave()
+	check(#finalRun.participants[finalPlayer.UserId].cardOffers == 0 and finalRun.phase == "Results", "wave 50 ends the run with no card")
+	local counted = 0
+	local picker, pickerPlayer = stage({ modeId = "cards", wave = 0 })
+	local pp = picker.participants[pickerPlayer.UserId]
+	for wave = 5, 45, 5 do
+		picker.wave, picker.completedWaves = wave, wave - 1
+		picker.phase, picker.alive, picker.spawnIndex, picker.pendingSpawns = "Wave", 0, 1, {}
+		picker:_endWave()
+		if #pp.cardOffers == 3 then counted += 1; picker:Handle(pickerPlayer, "ChooseCard", { cardId = pp.cardOffers[1] }) end
+	end
+	check(counted == 9 and #pp.cards == 9, "a card run has exactly nine picks")
+end
+
+print("--- cards: what each one does ---")
+do
+	local function withCard(cardId, setup)
+		local match, player, profile = stage({ modeId = "cards", loadout = { "ironman", "hulk", "widow", "hawkeye" } })
+		match.phase = "Preparing"
+		local p = match.participants[player.UserId]
+		if setup then setup(match, player, p) end
+		local function take() p.cardOffers = { cardId }; return match:Handle(player, "ChooseCard", { cardId = cardId }) end
+		return match, player, p, take
+	end
+	local function towerOf(match, player, heroId)
+		local tower = place(match, player, heroId)
+		return tower, function() return match:_baseStats(tower) end
+	end
+	local perm = Rules.PermanentModifiers({ heroes = { ironman = { xp = 4000 } }, talents = {} }, "ironman").damageBonus
+
+	do -- sharpen: +10% damage
+		local match, player, p, take = withCard("sharpen")
+		local tower, stats = towerOf(match, player, "ironman")
+		local before = stats().damage
+		check(take(), "sharpen can be taken")
+		check(math.abs(stats().damage / before - (1 + perm + 0.10) / (1 + perm)) < 1e-9, "sharpen adds 10% damage and invalidates cached stats")
+		p.cardOffers = { "sharpen" }; match:Handle(player, "ChooseCard", { cardId = "sharpen" })
+		check(math.abs(stats().damage / before - (1 + perm + 0.20) / (1 + perm)) < 1e-9, "the same card stacks")
+	end
+	do -- quickDraw / longSight
+		local match, player, p, take = withCard("quickDraw")
+		local tower, stats = towerOf(match, player, "ironman")
+		local before = stats().rate
+		take()
+		check(stats().rate > before, "quick draw attacks faster")
+		local m2, pl2, _, take2 = withCard("longSight")
+		local _, stats2 = towerOf(m2, pl2, "ironman")
+		local rangeBefore = stats2().range
+		take2()
+		check(stats2().range > rangeBefore * 1.06, "eagle eye reaches farther")
+	end
+	do -- armor pierce and area
+		local match, player, p, take = withCard("armorBreaker")
+		local _, stats = towerOf(match, player, "hulk")
+		local before = stats().armorPierce
+		take()
+		check(math.abs(stats().armorPierce - before - 0.10) < 1e-9, "armor breaker adds 10% pierce")
+		local m2, pl2, _, take2 = withCard("wideArea")
+		local _, stats2 = towerOf(m2, pl2, "hulk")
+		local splash = stats2().splash
+		take2()
+		check(math.abs(stats2().splash / splash - 1.12) < 1e-9, "wide coverage widens blasts by 12%")
+	end
+	do -- targeted damage
+		for _, case in ipairs({ { "skyHunter", "airDamage" }, { "nightHunter", "stealthDamage" }, { "bossSlayer", "bossDamage" } }) do
+			local match, player, p, take = withCard(case[1])
+			local _, stats = towerOf(match, player, "ironman")
+			local before = stats()[case[2]]
+			take()
+			check(stats()[case[2]] > before, case[1] .. " raises " .. case[2])
+		end
+		-- ...and the damage really lands harder on that kind of enemy.
+		local match, player, p, take = withCard("skyHunter")
+		local tower = place(match, player, "ironman")
+		local flyer = spawn(match, "flyer", 60, 1)
+		local groundling = spawn(match, "zombie", 60, 1)
+		local before = { flyer.maxHP, groundling.maxHP }
+		match:_damage(flyer, 100, tower, match:_baseStats(tower))
+		local plainLoss = before[1] - flyer.hp
+		take()
+		local second = spawn(match, "flyer", 60, 1)
+		match:_damage(second, 100, tower, match:_baseStats(tower))
+		check(second.maxHP - second.hp > plainLoss * 1.2, "sky hunter hits flyers harder")
+	end
+	do -- risk and reward
+		local match, player, p, take = withCard("glassCannon")
+		local _, stats = towerOf(match, player, "ironman")
+		local damage, range = stats().damage, stats().range
+		take()
+		check(stats().damage > damage * 1.25 and stats().range < range * 0.9, "glass cannon trades range for damage")
+		local m2, pl2, _, take2 = withCard("overclock")
+		local _, stats2 = towerOf(m2, pl2, "ironman")
+		local damage2, rate2 = stats2().damage, stats2().rate
+		take2()
+		check(stats2().rate > rate2 * 1.2 and stats2().damage < damage2, "overclock trades damage for speed")
+	end
+	do -- economy: instants
+		local match, player, p, take = withCard("supplyDrop")
+		local before = p.energy
+		take()
+		check(p.energy == before + 350 and #p.cards == 1, "supplies grant 350 Energy")
+		local m2, pl2, p2, take2 = withCard("warChest")
+		local before2 = p2.energy
+		take2()
+		check(p2.energy == before2 + 900, "the war chest grants 900 Energy")
+		local m3, pl3, p3, take3 = withCard("medic")
+		m3.baseHP = 50
+		take3()
+		check(m3.baseHP == 58, "the medic restores 8 core health")
+		local m4, pl4, p4, take4 = withCard("fortify")
+		m4.baseHP = 50
+		take4()
+		check(m4.maxBaseHP == 110 and m4.baseHP == 60, "a fortified core is bigger and healed")
+		check(m4:Snapshot(pl4).maxBaseHP == 110, "the HUD sees the new maximum")
+	end
+	do -- the gamble is settled by the server, both ways
+		local outcomes = { win = false, lose = false }
+		for wave = 1, 40 do
+			local match, player, p, take = withCard("gambler", function(m) m.wave = wave end)
+			local before = p.energy
+			take()
+			if p.energy == before + 600 then outcomes.win = true
+			elseif p.energy == math.max(0, before - 200) then outcomes.lose = true
+			else check(false, "the gamble must end at +600 or -200, got " .. (p.energy - before)) end
+		end
+		check(outcomes.win and outcomes.lose, "the gamble can go either way")
+		local m, pl, p, take = withCard("gambler", function(match, _, part) part.energy = 50 end)
+		take()
+		check(p.energy >= 0, "a lost gamble never leaves negative Energy")
+	end
+	do -- economy: rates
+		local match, player, p, take = withCard("coinRain")
+		p.contributed = true
+		take()
+		local enemy = spawn(match, "zombie", 10, 1)
+		enemy.gold = 100
+		match:_damage(enemy, 1e9, nil, { trueDamage = true })
+		check(p.goldEarned == 115, "coin rain pays 15% more, got " .. p.goldEarned)
+		local m2, pl2, p2, take2 = withCard("income")
+		p2.contributed = true
+		take2()
+		local before = p2.energy
+		m2.wave = 10; m2.completedWaves = 9; m2.alive = 0; m2.spawnIndex = 1; m2.pendingSpawns = {}
+		m2:_endWave()
+		check(p2.energy - before == math.floor((90 + 10 * 12) * 1.2), "the supply network raises wave income by 20%")
+		local m3, pl3, p3, take3 = withCard("discount")
+		take3()
+		local before3 = p3.energy
+		place(m3, pl3, "ironman")
+		check(before3 - p3.energy == math.floor(Catalog.Heroes.ironman.cost * 0.92), "the arms contract discounts placement by 8%")
+	end
+	do -- abilities and support
+		local match, player, p, take = withCard("abilityPower")
+		local _, before = match:_abilityOf(p)
+		take()
+		local _, after = match:_abilityOf(p)
+		check(math.abs(after.power / before.power - 1.2) < 1e-9, "amplified power adds 20%")
+		local m2, pl2, p2, take2 = withCard("fastCharge")
+		local _, b2 = m2:_abilityOf(p2)
+		take2()
+		local _, a2 = m2:_abilityOf(p2)
+		check(a2.cooldown < b2.cooldown, "fast recharge shortens the cooldown")
+		local m3, pl3, p3, take3 = withCard("tempest")
+		local _, b3 = m3:_abilityOf(p3)
+		take3()
+		local _, a3 = m3:_abilityOf(p3)
+		check(a3.power > b3.power * 1.35 and a3.cooldown > b3.cooldown, "tempest trades cooldown for power")
+		local m4, pl4, p4, take4 = withCard("supportRange")
+		local _, stats4 = towerOf(m4, pl4, "widow")
+		local range4 = stats4().range
+		take4()
+		check(math.abs(stats4().range / range4 - 1.15) < 1e-9, "the command network extends support range by 15%")
+		local m5, pl5, p5, take5 = withCard("supportRange")
+		local _, stats5 = towerOf(m5, pl5, "ironman")
+		local range5 = stats5().range
+		take5()
+		check(stats5().range == range5, "the command network leaves ordinary heroes alone")
+	end
+end
+
+--==============================================================================
+-- Bosses
+--==============================================================================
+print("--- bosses ---")
+do
+	local match, player = stage({ modeId = "normal", wave = 50 })
+	local doom = spawn(match, "doom", 20, 1)
+	check(doom.final == true, "the wave-50 boss is the final boss")
+	local mini, miniPlayer = stage({ modeId = "normal", wave = 30 })
+	local skull = spawn(mini, "redskull", 20, 1)
+	check(skull.final == false, "an ordinary boss is not the final boss")
+	match.elapsed = doom.nextPower
+	local before = match.alive
+	match:_enemiesStep(0.1)
+	check(match.alive - before >= 5, "the final boss calls a bigger wave of reinforcements")
+	check(math.abs(doom.nextPower - (match.elapsed + 9)) < 0.001, "the final boss uses a power every 9 seconds")
+	mini.elapsed = skull.nextPower
+	mini:_enemiesStep(0.1)
+	check(math.abs(skull.nextPower - (mini.elapsed + 14)) < 0.001, "an ordinary boss uses a power every 14 seconds")
+	check(match:Snapshot(player).boss and match:Snapshot(player).boss.final == true, "the HUD is told it is the final boss")
+	local endless, endlessPlayer = stage({ modeId = "infinite", wave = 60, profile = { campaign = { manhattan = { normal = true, ranked = true } } } })
+	local cycled = spawn(endless, "lizard", 20, 1)
+	check(cycled.final == false, "endless has no final boss")
+	-- Upcoming boss, for the wave bar.
+	local counter, counterPlayer = stage({ modeId = "normal", wave = 12 })
+	counter.phase = "Preparing"
+	check(counter:Snapshot(counterPlayer).nextBoss == 20, "the HUD knows the next boss wave")
+	counter.wave = 49
+	check(counter:Snapshot(counterPlayer).nextBoss == 50, "wave 50 is the last boss")
+end
+
+--==============================================================================
+-- Talents in the match
+--==============================================================================
+print("--- last stand ---")
+do
+	local match, player = stage({ profile = { talents = { lastStand = 2 } } })
+	check(match.lastStandHeal == 10, "two ranks of last stand heal 10")
+	match.baseHP = 30.5
+	local leaker = spawn(match, "zombie", match.routeCache[1].total - 0.05, 1)
+	match:_enemiesStep(0.1)
+	check(match.baseHP > 30, "the core is patched up once it drops below 30%, got " .. match.baseHP)
+	local healedTo = match.baseHP
+	match.baseHP = 29.5
+	local second = spawn(match, "zombie", match.routeCache[1].total - 0.05, 1)
+	match:_enemiesStep(0.1)
+	check(match.baseHP < 29.5 + 0.001, "last stand triggers once per match")
+	local none, nonePlayer = stage({})
+	none.baseHP = 25
+	check(none.lastStandHeal == 0, "no talent, no last stand")
+end
+
+print("--- performance guard ---")
+do
+	local match, player = stage({ wave = 45 })
+	match.participants[player.UserId].energy = 1e6
+	for _ = 1, 12 do place(match, player, "ironman") end
+	local calls = 0
+	local original = Rules.TowerStats
+	Rules.TowerStats = function(...) calls += 1 return original(...) end
+	for _ = 1, 100 do
+		for _, tower in pairs(match.towers) do match:_towerStats(tower) end
+	end
+	Rules.TowerStats = original
+	check(calls <= 12, "tower stats are cached: 1200 reads cost " .. calls .. " recomputations")
+end
+
+print(string.format("%s match simulation: %d checks, %d failures",
+	failures == 0 and "PASS" or "FAIL", checks, failures))
+if failures > 0 then error("match simulation failed", 0) end

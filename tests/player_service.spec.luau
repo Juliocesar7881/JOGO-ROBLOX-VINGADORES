@@ -1,0 +1,532 @@
+-- Executed by test_player_service.py, which inlines the actual source modules.
+local checks = 0
+local function check(condition, message)
+	checks += 1
+	assert(condition, message)
+end
+local function clone(value)
+	if type(value) ~= "table" then return value end
+	local result = {}
+	for key, item in pairs(value) do result[key] = clone(item) end
+	return result
+end
+
+local stores, orderedStores, online, passOwners = {}, {}, {}, {}
+local isStudio, guid = false, 0
+local failBefore, failAfter, replayCallback = 0, 0, false
+local scheduleUpdates = false
+local marketplace = { PromptGamePassPurchaseFinished = { Connect = function(_, callback)
+	return { Disconnect = function() end, callback = callback }
+end } }
+function marketplace:UserOwnsGamePassAsync(userId, passId) return passOwners[tostring(userId) .. ":" .. tostring(passId)] == true end
+function marketplace:GetProductInfoAsync(id, _infoType) return { Name = "Platform product " .. id, PriceInRobux = 87, IsForSale = true } end
+local function createStore()
+	local store = { values = {} }
+	function store:UpdateAsync(key, transform)
+		if scheduleUpdates then coroutine.yield("network") end
+		if failBefore > 0 then failBefore -= 1; error("SIMULATED_NETWORK_FAILURE") end
+		if replayCallback then transform(clone(self.values[key])) end
+		local result = transform(clone(self.values[key]))
+		if result ~= nil then self.values[key] = clone(result) end
+		if failAfter > 0 then failAfter -= 1; error("SIMULATED_RESPONSE_LOST_AFTER_COMMIT") end
+		return clone(result)
+	end
+	function store:GetSortedAsync(_ascending, size)
+		local rows = {}
+		for key, value in pairs(self.values) do table.insert(rows, { key = key, value = value }) end
+		table.sort(rows, function(a, b) return a.value > b.value end)
+		while #rows > size do table.remove(rows) end
+		return { GetCurrentPage = function() return rows end }
+	end
+	return store
+end
+local services = {
+	DataStoreService = {
+		GetDataStore = function(_, name)
+			if not stores[name] then stores[name] = createStore() end
+			return stores[name]
+		end,
+		GetOrderedDataStore = function(_, name)
+			if not orderedStores[name] then orderedStores[name] = createStore() end
+			return orderedStores[name]
+		end,
+	},
+	MarketplaceService = marketplace,
+	Players = {
+		GetPlayerByUserId = function(_, userId) return online[userId] end,
+		GetNameFromUserIdAsync = function(_, userId) return "TestPlayer" .. tostring(userId) end,
+	},
+	RunService = { IsStudio = function() return isStudio end },
+	HttpService = { GenerateGUID = function() guid += 1; return "test-uuid-" .. guid end },
+}
+local game = { JobId = "unit-server", GetService = function(_, name) return services[name] end }
+local Enum = { InfoType = { GamePass = "pass", Product = "product" }, ProductPurchaseDecision = { NotProcessedYet = "pending", PurchaseGranted = "granted" } }
+-- Background timers are suppressed; tests invoke flush/release explicitly.
+local task = { spawn = function() end, wait = function() if scheduleUpdates then coroutine.yield("waiting") end end }
+local warn = function() end
+-- A seeded stand-in for Roblox's Random. Tests replace service.random to script
+-- the exact rolls a chest consumes.
+local Random = { new = function()
+	local state = 20260921
+	return { NextNumber = function()
+		state = (state * 48271) % 2147483647
+		return state / 2147483647
+	end }
+end }
+local Catalog = __CATALOG__
+local Rules = __RULES__
+local PlayerService = __SERVICE__
+local config = {
+	DataStoreName = "Tests", StudioMemory = true, ProfileRetries = 3,
+	Products = {
+		Passes = { collector = { id = 201 }, training = { id = 202 }, formations = { id = 203 } },
+		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 } },
+		Heroes = { falcon = { id = 301 }, thor = { id = 302 }, ironman = { id = 999 } },
+	},
+}
+-- Scripts the rolls a chest consumes, in order, then falls back to zero.
+local function scriptedRolls(...)
+	local values, index = { ... }, 0
+	return { NextNumber = function() index += 1; return values[index] or 0 end }
+end
+local function player(id)
+	local result = { UserId = id, Name = "Player" .. id }
+	online[id] = result
+	return result
+end
+local p1, p2 = player(1), player(2)
+local service = PlayerService.new(config, Catalog, nil, Rules)
+check(service.memory == false, "A live server must ignore StudioMemory=true")
+local initial = service:Load(p1)
+check(initial and initial.gold == 0 and initial.level == 1, "New account defaults")
+check(initial.heroes.ironman and initial.heroes.hawkeye and #initial.loadout == 2, "Starter heroes")
+check(initial._receipts == nil and initial._session == nil and initial._awards == nil, "Secrets never replicate")
+initial.gold = 999999
+check(service:Get(p1).gold == 0, "Public snapshots cannot mutate saved state")
+check(initial.abilities.ironman == 1 and initial.abilities.hawkeye == 1, "Every owned hero starts its ability at rank one")
+check(initial.loadout[1] == "ironman", "Slot one starts with Iron Man, whose ability the player fights with")
+check(initial.pity.legendary == 0 and initial.stats.chests == 0, "A new account has opened no chests")
+check(initial.skills == nil and initial.activeSkills == nil and initial.passives == nil, "The old skill system leaves no trace")
+check(initial.paidRandomRestricted == false, "Regional restriction defaults to open")
+check(not pcall(function() PlayerService.new(config, Catalog) end), "The service refuses to start without the shared Rules")
+
+-- Mutations and reward idempotency, including retries AFTER a successful commit.
+replayCallback = true
+failAfter = 1
+check(service:Award(p1, "tutorial:finish", { tutorial = true, finished = true, victory = true, modeId = "tutorial", mapId = "manhattan", gold = 0, xp = 100, mastery = { ironman = 10 } }), "Tutorial award survives lost response")
+check(service:Get(p1).gold == 1000, "Repeated UpdateAsync callbacks cannot duplicate tutorial gold")
+check(service:Get(p1).tutorialComplete, "Tutorial unlock saved")
+check(service:Award(p1, "tutorial:finish", { tutorial = true, finished = true, victory = true, gold = 999999 }), "Duplicate award acknowledged")
+check(service:Get(p1).gold == 1000 and service:Get(p1).xp == 100, "Duplicate award is inert")
+check(service:Award(p1, "tutorial:again", { tutorial = true, finished = true, victory = true }), "Replay tutorial award")
+check(service:Get(p1).gold == 1000, "Tutorial first-clear bonus awarded once")
+
+-- Heroes come from chests, never from a plain gold purchase.
+local handled, boughtDirect = service:Handle(p1, "BuyHero", { heroId = "spiderman" }, true)
+check(not handled and not boughtDirect, "The old direct hero purchase no longer exists")
+local _, brokeOpen = service:Handle(p1, "OpenChest", { chestId = "legendary" }, true)
+check(not brokeOpen and service:Get(p1).gold == 1000 and service:Get(p1).stats.chests == 0, "A chest needs its full price")
+local _, badChest = service:Handle(p1, "OpenChest", { chestId = "platinum" }, true)
+check(not badChest and service:Get(p1).gold == 1000, "Unknown chests rejected")
+local _, nonString = service:Handle(p1, "OpenChest", { chestId = { "rare" } }, true)
+check(not nonString, "A table is not a chest id")
+service:Award(p1, "seed-chest-gold", { gold = 9000 })
+check(service:Get(p1).gold == 10000, "Gold to spend on chests")
+local _, inMatch = service:Handle(p1, "OpenChest", { chestId = "rare" }, false)
+check(not inMatch and service:Get(p1).gold == 10000, "Chests only open in the lobby")
+
+-- A scripted rare chest: rarity roll 0 is a common, hero roll 0 the first of the pool.
+service.random = scriptedRolls(0, 0)
+local _, openedOk, opened = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+check(openedOk and opened.gold == 9000, "A rare chest costs 1,000")
+check(opened.result.chestId == "rare" and opened.result.heroId == "falcon" and opened.result.rarity == "common" and not opened.result.duplicate, "The reply reports what the chest held")
+check(opened.result.cost == 1000, "The reply reports the price")
+check(opened.heroes.falcon and opened.heroes.falcon.level == 1, "The hero drawn joins the account")
+check(opened.abilities.falcon == 1, "A new hero's ability starts at rank one")
+check(opened.loadout[3] == "falcon", "A new hero takes the first free slot")
+check(opened.stats.chests == 1, "Chests opened are counted")
+check(opened.achievements.firstChest ~= nil, "First chest achievement")
+check(stores.Tests.values.p_1.heroes.falcon ~= nil and stores.Tests.values.p_1.gold == 9000, "The hero and the price are durable together")
+
+-- The same roll now finds Falcon owned: a chest prefers something new.
+service.random = scriptedRolls(0, 0)
+local _, secondOk, second = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+check(secondOk and second.heroes.bucky ~= nil and second.gold == 8000, "A repeated roll delivers the other new common instead of a duplicate")
+service.random = scriptedRolls(0, 0)
+local masteryBefore = service:Get(p1).heroes.falcon.xp + service:Get(p1).heroes.bucky.xp
+local _, thirdOk, third = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+check(thirdOk, "A third common opening resolves")
+check(third.gold == 8000 - 1000 + Catalog.Rarities.common.duplicate.gold, "A duplicate refunds gold by rarity")
+check(third.result.duplicate and third.result.refundGold == 150 and third.result.refundMastery == 60, "The reply reports the duplicate refund")
+check(third.heroes.falcon.xp + third.heroes.bucky.xp == masteryBefore + Catalog.Rarities.common.duplicate.mastery, "A duplicate becomes mastery on that hero")
+check(#third.loadout == 4, "A duplicate never takes a slot")
+
+-- Slot one is the ability slot: the loadout order is stored exactly as sent.
+local _, reorderOk, reordered = service:Handle(p1, "SetLoadout", { heroes = { "falcon", "ironman", "hawkeye", "bucky" } }, true)
+check(reorderOk and reordered.loadout[1] == "falcon" and reordered.loadout[2] == "ironman", "Loadout order is preserved")
+check(stores.Tests.values.p_1.loadout[1] == "falcon", "The ability slot is durable")
+
+-- A rare chest that hits an epic, then the legendary chest with its pity counter.
+service.random = scriptedRolls(0.9, 0)
+local _, epicOk, epic = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+local epicHero
+for id in pairs(epic.heroes) do if Catalog.Heroes[id].rarity == "epic" then epicHero = id end end
+check(epicOk and epicHero ~= nil, "A high roll in the rare chest is an epic")
+check(epic.pity.legendary == 0, "The rare chest keeps no pity counter")
+for opening = 1, 9 do
+	service:Award(p1, "pity-gold-" .. opening, { gold = 2000 })
+	local goldBeforeOpen = service:Get(p1).gold
+	-- A low rarity roll is a plain rare hero, which is never a top hero.
+	service.random = scriptedRolls(0, opening / 20)
+	local _, legendaryOk, snapshot = service:Handle(p1, "OpenChest", { chestId = "legendary" }, true)
+	check(legendaryOk, "Legendary opening " .. opening)
+	check(snapshot.pity.legendary == opening, "Each miss raises pity, opening " .. opening)
+	local spent = goldBeforeOpen - snapshot.gold
+	check(spent <= 2000 and spent >= 2000 - Catalog.Rarities.rare.duplicate.gold, "The legendary chest costs 2,000 (a duplicate refunds part)")
+end
+service:Award(p1, "chest-gold-2", { gold = 30000 })
+service.random = scriptedRolls(0, 0.3)
+local _, pityOk, pitySnapshot = service:Handle(p1, "OpenChest", { chestId = "legendary" }, true)
+check(pityOk and pitySnapshot.pity.legendary == 0, "Pity resets when a top hero arrives")
+local topFound = false
+for id in pairs(pitySnapshot.heroes) do
+	local rarity = Catalog.Heroes[id].rarity
+	if rarity == "legendary" or rarity == "mythic" then topFound = true end
+end
+check(topFound, "The tenth legendary chest guarantees a legendary or better")
+
+-- A response lost after the commit and a replayed callback still charge once
+-- and add at most one hero, because the roll lives inside the committed transaction.
+do
+	service:Award(p1, "chest-gold-3", { gold = 5000 })
+	replayCallback = true
+	local goldNow, ownedNow = service:Get(p1).gold, 0
+	for _ in pairs(service:Get(p1).heroes) do ownedNow += 1 end
+	service.random = scriptedRolls(0.5, 0.1)
+	failAfter = 1
+	local _, replayOk = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+	replayCallback = false
+	local ownedAfter = 0
+	for _ in pairs(service:Get(p1).heroes) do ownedAfter += 1 end
+	check(replayOk, "A chest survives a lost response")
+	check(service:Get(p1).gold >= goldNow - 1000 and service:Get(p1).gold <= goldNow - 1000 + Catalog.Rarities.legendary.duplicate.gold, "A replayed callback cannot charge twice")
+	check(ownedAfter == ownedNow or ownedAfter == ownedNow + 1, "A replayed callback cannot add two heroes")
+end
+
+-- Ability upgrades: gold, mastery and rank, all checked on the server.
+do
+	service:Award(p1, "ability-gold", { gold = 20000 })
+	local goldNow = service:Get(p1).gold
+	local _, wrongRank = service:Handle(p1, "UpgradeAbility", { heroId = "ironman", expectedRank = 3 }, true)
+	check(not wrongRank and service:Get(p1).abilities.ironman == 1, "A stale rank is refused")
+	local _, unowned = service:Handle(p1, "UpgradeAbility", { heroId = "captainmarvel", expectedRank = 1 }, true)
+	check(not unowned, "A hero you do not own has no ability to improve")
+	local _, notHero = service:Handle(p1, "UpgradeAbility", { heroId = "nobody", expectedRank = 1 }, true)
+	check(not notHero, "Unknown heroes rejected")
+	service:Award(p1, "ability-mastery", { mastery = { ironman = 300 } })
+	check(service:Get(p1).heroes.ironman.level >= 3, "Mastery earned in matches unlocks ranks")
+	local goldBeforeRank = service:Get(p1).gold
+	local _, matchUpgrade = service:Handle(p1, "UpgradeAbility", { heroId = "ironman", expectedRank = 1 }, false)
+	check(not matchUpgrade, "Abilities are upgraded in the lobby only")
+	local _, upgradeOk, upgraded = service:Handle(p1, "UpgradeAbility", { heroId = "ironman", expectedRank = 1 }, true)
+	check(upgradeOk and upgraded.abilities.ironman == 2, "Rank two bought")
+	check(goldBeforeRank - upgraded.gold == 300, "Rank two costs 300 on a common hero")
+	local _, again = service:Handle(p1, "UpgradeAbility", { heroId = "ironman", expectedRank = 1 }, true)
+	check(not again and service:Get(p1).abilities.ironman == 2, "A retry cannot buy a rank twice")
+	local _, tooSoon = service:Handle(p1, "UpgradeAbility", { heroId = "ironman", expectedRank = 2 }, true)
+	check(not tooSoon, "Rank three needs mastery six")
+	service:Award(p1, "ability-mastery-2", { mastery = { ironman = 100000 } })
+	for rank = 2, 4 do
+		local _, ok = service:Handle(p1, "UpgradeAbility", { heroId = "ironman", expectedRank = rank }, true)
+		check(ok and service:Get(p1).abilities.ironman == rank + 1, "Rank " .. (rank + 1))
+	end
+	local _, maxed = service:Handle(p1, "UpgradeAbility", { heroId = "ironman", expectedRank = 5 }, true)
+	check(not maxed and service:Get(p1).abilities.ironman == 5, "Rank five is the ceiling")
+	-- A mythic hero costs more for the same rank; give the account one directly.
+	local record = service.records[p1.UserId]
+	record.profile.heroes.captainmarvel = { xp = 100000, level = 20 }
+	record.profile.abilities.captainmarvel = 1
+	stores.Tests.values.p_1.heroes.captainmarvel = { xp = 100000, level = 20 }
+	stores.Tests.values.p_1.abilities.captainmarvel = 1
+	service:Award(p1, "mythic-gold", { gold = 50000 })
+	local mythicBefore = service:Get(p1).gold
+	local _, mythicOk = service:Handle(p1, "UpgradeAbility", { heroId = "captainmarvel", expectedRank = 1 }, true)
+	check(mythicOk and mythicBefore - service:Get(p1).gold == math.floor(300 * 4.5 + 0.5), "Rarer heroes cost more to improve")
+end
+local _, duplicateLoadout = service:Handle(p1, "SetLoadout", { heroes = { "ironman", "ironman" } }, true)
+check(not duplicateLoadout, "Duplicate loadout rejected")
+local _, unownedLoadout = service:Handle(p1, "SetLoadout", { heroes = { "doom" } }, true)
+check(not unownedLoadout, "Unknown/unowned loadout rejected")
+local _, malformedLoadout = service:Handle(p1, "SetLoadout", { heroes = { [1] = "ironman", evil = "hawkeye" } }, true)
+check(not malformedLoadout, "Mixed-key forged loadout rejected")
+local _, validLoadout = service:Handle(p1, "SetLoadout", { heroes = { "ironman", "falcon" } }, true)
+check(validLoadout and #service:Get(p1).loadout == 2, "Valid loadout persisted")
+local _, sixHeroes = service:Handle(p1, "SetLoadout", { heroes = { "ironman", "hawkeye", "falcon", "bucky", "thor", "hulk" } }, true)
+check(not sixHeroes, "A loadout holds five heroes at most")
+local _, emptyLoadout = service:Handle(p1, "SetLoadout", { heroes = {} }, true)
+check(not emptyLoadout and #service:Get(p1).loadout == 2, "A loadout cannot be empty")
+local _, saveFree = service:Handle(p1, "SaveLoadout", { slot = 3 }, true)
+local _, savePaid = service:Handle(p1, "SaveLoadout", { slot = 4 }, true)
+check(saveFree and not savePaid, "Free formation limit enforced")
+
+-- Developer receipts remain pending without durable storage and grant exactly once.
+local goldBeforeReceipts = service:Get(p1).gold
+local receipt = { PlayerId = 1, ProductId = 101, PurchaseId = "purchase-1" }
+failAfter = 1
+check(service:_receipt(receipt) == "granted", "Receipt succeeds after commit response lost")
+check(service:Get(p1).gold == goldBeforeReceipts + 1000, "Receipt adds gold once")
+check(service:_receipt(receipt) == "granted" and service:Get(p1).gold == goldBeforeReceipts + 1000, "Receipt replay acknowledged without gold")
+failBefore = 3
+check(service:_receipt({ PlayerId = 1, ProductId = 101, PurchaseId = "purchase-2" }) == "pending", "Storage failure leaves receipt pending")
+check(service:Get(p1).gold == goldBeforeReceipts + 1000, "Failed receipt doesn't mutate memory")
+check(service:_receipt({ PlayerId = 1, ProductId = 101, PurchaseId = "purchase-2" }) == "granted", "Pending receipt can retry")
+check(service:Get(p1).gold == goldBeforeReceipts + 2000, "Pending receipt grants later exactly once")
+check(service:_receipt({ PlayerId = 1, ProductId = 9999, PurchaseId = "unknown-product" }) == "pending", "Unknown products remain pending")
+check(service:_receipt({ PlayerId = 9999, ProductId = 101, PurchaseId = "offline" }) == "pending", "Offline receipts remain pending")
+local _, productOK, productInfo = service:Handle(p1, "ProductInfo", { kind = "product", key = "gold1000" }, true)
+check(productOK and productInfo.price == 87 and productInfo.id == 101, "Actual platform price used")
+local _, unconfigured = service:Handle(p1, "ProductInfo", { kind = "product", key = "gold12000" }, true)
+check(not unconfigured, "ID zero disabled")
+
+-- Heroes bought directly with Robux: priced by the platform, granted exactly once.
+local _, heroInfoOk, heroInfo = service:Handle(p1, "ProductInfo", { kind = "hero", key = "thor" }, true)
+check(heroInfoOk and heroInfo.id == 302 and heroInfo.price == 87, "A hero product reports the platform price")
+local _, notConfiguredHero = service:Handle(p1, "ProductInfo", { kind = "hero", key = "wanda" }, true)
+check(not notConfiguredHero, "A hero without a product id is unavailable")
+local _, ownedHero = service:Handle(p1, "ProductInfo", { kind = "hero", key = "falcon" }, true)
+check(not ownedHero, "A hero you own is not for sale")
+local _, starterHero = service:Handle(p1, "ProductInfo", { kind = "hero", key = "ironman" }, true)
+check(not starterHero, "A starter is never sold")
+local goldBeforeThor = service:Get(p1).gold
+local thorReceipt = { PlayerId = 1, ProductId = 302, PurchaseId = "thor-1" }
+failAfter = 1
+check(service:_receipt(thorReceipt) == "granted", "A hero receipt survives a lost response")
+check(service:Get(p1).heroes.thor and service:Get(p1).abilities.thor == 1, "The purchased hero arrives with its ability")
+check(service:Get(p1).gold == goldBeforeThor, "A new hero purchase gives no gold")
+local loadoutBefore = #service:Get(p1).loadout
+check(service:_receipt(thorReceipt) == "granted" and #service:Get(p1).loadout == loadoutBefore, "A replayed hero receipt is inert")
+-- A second purchase of a hero already owned is never wasted: it becomes gold.
+check(service:_receipt({ PlayerId = 1, ProductId = 302, PurchaseId = "thor-2" }) == "granted", "A duplicate purchase is still acknowledged")
+check(service:Get(p1).gold == goldBeforeThor + Catalog.Products.Heroes.thor.price * 10, "A duplicate purchase refunds gold, 10 per Robux")
+check(service:_receipt({ PlayerId = 1, ProductId = 302, PurchaseId = "thor-1" }) == "granted" and service:Get(p1).gold == goldBeforeThor + Catalog.Products.Heroes.thor.price * 10, "The receipt ledger stays exact")
+failBefore = 3
+check(service:_receipt({ PlayerId = 1, ProductId = 301, PurchaseId = "falcon-x" }) == "pending", "A storage failure leaves a hero receipt pending")
+
+-- Some regions restrict paid random items, so Gold packs are withheld there.
+do
+	services.PolicyService = { GetPolicyInfoForPlayerAsync = function(_, who)
+		return { ArePaidRandomItemsRestricted = who.UserId == 7 }
+	end }
+	local restricted, free = player(7), player(8)
+	local regional = PlayerService.new(config, Catalog, nil, Rules)
+	regional:Load(restricted); regional:Load(free)
+	check(regional:Snapshot(restricted).paidRandomRestricted == true, "The policy reaches the snapshot")
+	local _, packRestricted = regional:Handle(restricted, "ProductInfo", { kind = "product", key = "gold1000" }, true)
+	check(not packRestricted, "Gold packs are unavailable to a restricted player")
+	local _, packFree = regional:Handle(free, "ProductInfo", { kind = "product", key = "gold1000" }, true)
+	check(packFree, "Gold packs are available elsewhere")
+	local _, passRestricted = regional:Handle(restricted, "ProductInfo", { kind = "pass", key = "collector" }, true)
+	check(passRestricted, "Passes stay available to a restricted player")
+	local _, heroRestricted = regional:Handle(restricted, "ProductInfo", { kind = "hero", key = "thor" }, true)
+	check(heroRestricted, "Direct hero purchases stay available to a restricted player")
+	regional:Award(restricted,"restricted-test-budget",{gold=3000})
+	local beforeRestricted=regional:Get(restricted).gold
+	local _, restrictedChest = regional:Handle(restricted, "OpenChest", { chestId = "rare" }, true)
+	check(not restrictedChest and regional:Get(restricted).gold==beforeRestricted, "Restricted random purchases rejected even with sufficient gold")
+	services.PolicyService = nil
+end
+
+-- Lease prevents concurrent servers; releasing permits the next place to load.
+local goldAtHandoff = service:Get(p1).gold
+local other = PlayerService.new(config, Catalog, nil, Rules)
+local locked = other:Load(p1)
+check(locked == nil, "Second server cannot take an active lease")
+service:Release(p1)
+check(service:Get(p1) == nil, "Released state no longer served")
+local transferred = other:Load(p1)
+check(transferred and transferred.gold == goldAtHandoff and transferred.heroes.falcon and transferred.heroes.thor, "Transfer retains durable progress")
+check(other:_receipt(receipt) == "granted" and other:Get(p1).gold == goldAtHandoff, "Receipt survives server changes")
+service = other
+
+-- Paid boosts have no unique power ceiling; only server-verified ownership applies.
+passOwners["1:202"] = true
+passOwners["1:203"] = true
+service:_refreshPasses(p1)
+check(service:Get(p1).passes.training and service:Get(p1).loadoutSlots == 8, "Verified pass ownership")
+local beforeXP = service:Get(p1).xp
+local beforeMastery = service:Get(p1).heroes.ironman.xp
+check(service:Award(p1, "training-test", { xp = 100, mastery = { ironman = 100 } }), "Training award")
+check(service:Get(p1).xp == beforeXP + 125 and service:Get(p1).heroes.ironman.xp == beforeMastery + 125, "Training boost applied to both XP types")
+local _, paidSlot = service:Handle(p1, "SaveLoadout", { slot = 8 }, true)
+check(paidSlot, "Extra formations entitlement")
+local _, excessiveSlot = service:Handle(p1, "SaveLoadout", { slot = 9 }, true)
+check(not excessiveSlot, "Extra formations still bounded")
+
+check(service:Award(p1, "max-level", { xp = 1000000, gold = 100000, mastery = { ironman = 100000 } }), "Large legitimate progression award")
+local leveled = service:Get(p1)
+check(leveled.level == 50 and leveled.heroes.ironman.level == 20 and leveled.heroes.ironman.awakened, "Account and mastery level caps")
+check(leveled.skills == nil and leveled.skillSlots == nil and leveled.skillOffers == nil, "The old skill slots and offers are gone")
+local _, oldSkill = service:Handle(p1, "BuySkill", { skillId = "scan" }, true)
+check(not oldSkill, "Buying skills is no longer possible")
+local _, oldSlots = service:Handle(p1, "SetSkills", { active = { "overload" }, passive = {} }, true)
+check(not oldSlots, "Equipping skills is no longer possible")
+local _, invalidSettings = service:Handle(p1, "Settings", { lowFX = "true" }, false)
+check(not invalidSettings, "Settings type validation")
+local _, settings = service:Handle(p1, "Settings", { language = "en", lowFX = true, shake = false }, false)
+check(settings and service:Get(p1).settings.language == "en", "Accessibility settings during match")
+
+-- First clear, daily bonus, quests, and medals.
+local goldBefore = service:Get(p1).gold
+service:Award(p1, "normal-first", { gold = 300, xp = 0, victory = true, finished = true, modeId = "normal", mapId = "manhattan", noDamage = true, waves = 15, bosses = 1 })
+check(service:Get(p1).gold == goldBefore + 800 and service:Get(p1).campaign.manhattan.normal, "First normal clear plus base completion")
+check(service:Get(p1).achievements["medal:manhattan"] ~= nil, "No damage medal")
+service:Award(p1, "normal-repeat", { gold = 300, victory = true, finished = true, modeId = "normal", mapId = "manhattan" })
+check(service:Get(p1).gold == goldBefore + 1100, "First clear bonus cannot repeat")
+service:Award(p1, "ranked-first", { gold = 450, victory = true, finished = true, modeId = "ranked", mapId = "gamma" })
+check(service:Get(p1).campaign.gamma.ranked == true and service:Get(p1).achievements.hardWin ~= nil, "A ranked clear is recorded and unlocks endless")
+service:Award(p1, "cards-first", { gold = 300, victory = true, finished = true, modeId = "cards", mapId = "hydra" })
+check(service:Get(p1).campaign.hydra.cards == true and service:Get(p1).achievements.cardsWin ~= nil, "A card-mode clear is recorded")
+check(Rules.ModeUnlocked(service:Get(p1), "infinite") and Rules.ModeUnlocked(service:Get(p1), "cards"), "The profile's own record opens the later modes")
+service:Award(p1, "daily-ghost", { gold = 300, victory = true, finished = true, modeId = "daily", mapId = "manhattan" })
+for _, mapId in ipairs(Catalog.MapOrder) do
+	service:Award(p1, "clear-" .. mapId, { gold = 0, victory = true, finished = true, modeId = "normal", mapId = mapId })
+end
+check(service:Get(p1).achievements.campaign ~= nil and service:Get(p1).achievements.campaign.kind == "title", "Clearing all five maps earns the campaign title")
+goldBefore = service:Get(p1).gold
+-- Both callbacks yield like network requests; the per-player FIFO must preserve
+-- both grants without one stale snapshot overwriting the other.
+goldBefore = service:Get(p1).gold
+scheduleUpdates = true
+local first = coroutine.create(function() check(service:Award(p1, "concurrent-a", { gold = 17 }), "First concurrent award") end)
+local second = coroutine.create(function() check(service:Award(p1, "concurrent-b", { gold = 23 }), "Second concurrent award") end)
+local turns = 0
+while coroutine.status(first) ~= "dead" or coroutine.status(second) ~= "dead" do
+	turns += 1
+	assert(turns < 20, "Queue deadlocked")
+	for _, thread in ipairs({ first, second }) do
+		if coroutine.status(thread) ~= "dead" then local success, problem = coroutine.resume(thread); assert(success, tostring(problem)) end
+	end
+end
+scheduleUpdates = false
+check(service:Get(p1).gold == goldBefore + 40, "Serialized concurrent grants preserve both balances")
+local questId
+for id, quest in pairs(service:Get(p1).quests) do
+	if quest.kind == "waves" and quest.period == "daily" and quest.progress >= quest.target then questId = id; break end
+end
+check(questId ~= nil, "Daily quests progress from verified reward deltas")
+goldBefore = service:Get(p1).gold
+local _, claimed = service:Handle(p1, "ClaimQuest", { questId = questId }, true)
+local _, reclaimed = service:Handle(p1, "ClaimQuest", { questId = questId }, true)
+check(claimed and not reclaimed and service:Get(p1).gold == goldBefore + 150, "Quest reward claimed exactly once")
+check(not service:Award(p1, "nan", { gold = 0 / 0 }), "NaN rewards rejected")
+check(not service:Award(p1, "negative", { gold = -1 }), "Negative rewards rejected")
+
+-- Persistent leaderboard outbox, monotonic max, separated sizes, and tied ranks.
+service:Load(p2)
+check(service:RecordBest(p1, "manhattan", 1, 45), "Best score accepted")
+check(service:_flushBoards(p1), "Leaderboard outbox flush")
+check(service:RecordBest(p1, "manhattan", 1, 20), "Lower score ignored safely")
+service:RecordBest(p2, "manhattan", 1, 45)
+service:_flushBoards(p2)
+local leaderboard = service:Leaderboard("manhattan", 1)
+check(#leaderboard == 2 and leaderboard[1].waves == 45 and leaderboard[2].waves == 45, "OrderedDataStore max preserves best")
+check(leaderboard[1].rank == 1 and leaderboard[2].rank == 1, "Ties share rank")
+check(#service:Leaderboard("manhattan", 2) == 0, "Party sizes have separate boards")
+check(#service:Leaderboard("manhattan", 1, "all") == 2, "All-time board is queryable")
+check(service:Leaderboard("manhattan", 1, "s99999") == nil, "Future seasons rejected")
+local key = service:_boardKey("manhattan", 1, "s" .. tostring(service:_season()))
+check(service:Get(p1).best[key] == 45, "Personal best persisted")
+
+check(service:RecordBest(p1,"manhattan",1,30,"ranked"),"Ranked result accepted from server")
+check(service:_flushBoards(p1),"Ranked score flushes durably")
+check(service:RecordBest(p1,"manhattan",1,10,"ranked"),"Lower ranked score cannot erase best")
+local rankedBoard=service:Leaderboard("manhattan",1,nil,"ranked")
+check(#rankedBoard==1 and rankedBoard[1].waves==30,"Ranked scores are isolated from endless")
+check(service:Leaderboard("manhattan",1)[1].waves==45,"Endless score survives ranked updates")
+check(not service:RecordBest(p1,"manhattan",1,51,"ranked"),"Ranked waves cannot exceed 50")
+check(service:Leaderboard("manhattan",1,nil,"invalid")==nil,"Unknown competitive mode refused")
+check(Rules.RankForWaves(9).minimum==0 and Rules.RankForWaves(10).pt=="Bronze","Rank uses completed wave threshold")
+check(Rules.RankForWaves(49).pt=="Diamante" and Rules.RankForWaves(50).pt=="Lenda","Legend requires clearing final wave")
+check(next(service.records[p1.UserId].profile._pendingBoards) == nil, "Confirmed outbox entries removed")
+
+-- Existing profiles are never replaced on failed or corrupted loads.
+local p3 = player(3)
+failBefore = 3
+check(service:Load(p3) == nil and stores.Tests.values.p_3 == nil, "Failed load doesn't create blank saved data")
+stores.Tests.values.p_3 = { schemaVersion = 999, gold = 7654, xp = 0, heroes = {} }
+check(service:Load(p3) == nil and stores.Tests.values.p_3.gold == 7654, "Future schema fails closed")
+
+-- Expired owner cannot mutate after another server acquires the profile.
+stores.Tests.values.p_2._session.expires = 0
+local takeover = PlayerService.new(config, Catalog, nil, Rules)
+check(takeover:Load(p2) ~= nil, "Expired lease can be acquired")
+check(not service:Award(p2, "stale-server", { gold = 1000 }), "Old server cannot overwrite new owner")
+check(service:Get(p2) == nil and takeover:Get(p2).gold == 0, "Lost session revoked locally")
+
+isStudio = true
+local localOnly = PlayerService.new(config, Catalog, nil, Rules)
+local p4 = player(4)
+check(localOnly.memory and localOnly:Load(p4) ~= nil, "Studio memory opt-in")
+check(localOnly:_receipt({ PlayerId = 4, ProductId = 101, PurchaseId = "studio-purchase" }) == "pending", "Memory mode cannot acknowledge real purchases")
+local _, studioPurchase = localOnly:Handle(p4, "ProductInfo", { kind = "product", key = "gold1000" }, true)
+check(not studioPurchase, "Studio memory shop disabled")
+
+-- Talent points are derived from earned levels, never bought or client supplied.
+check(localOnly:Snapshot(p4).talentPoints == 0, "Level one starts with zero talent points")
+local _, noPoint = localOnly:Handle(p4, "UpgradeTalent", {talentId="roundGold",expectedRank=0}, true)
+check(not noPoint, "Cannot spend an unearned point")
+check(localOnly:Award(p4, "talent-xp", {xp=1000000}), "Earn talent points through server awards")
+check(localOnly:Snapshot(p4).talentPoints == 49, "Level fifty supplies exactly forty-nine points")
+local _, locked = localOnly:Handle(p4, "UpgradeTalent", {talentId="killGold",expectedRank=0}, true)
+check(not locked, "Branch prerequisite enforced")
+local _, invested = localOnly:Handle(p4, "UpgradeTalent", {talentId="roundGold",expectedRank=0}, true)
+local _, duplicate = localOnly:Handle(p4, "UpgradeTalent", {talentId="roundGold",expectedRank=0}, true)
+check(invested and not duplicate and localOnly:Snapshot(p4).talentPoints == 48, "Retry cannot spend a second point")
+local _, battleEdit = localOnly:Handle(p4, "UpgradeTalent", {talentId="roundGold",expectedRank=1}, false)
+check(not battleEdit, "Talent changes rejected during matches")
+for rank=1,4 do local _, ok = localOnly:Handle(p4,"UpgradeTalent",{talentId="roundGold",expectedRank=rank},true); check(ok,"Valid root investment") end
+local _, capped = localOnly:Handle(p4,"UpgradeTalent",{talentId="roundGold",expectedRank=5},true)
+check(not capped, "Node rank cap enforced")
+local _, child = localOnly:Handle(p4,"UpgradeTalent",{talentId="killGold",expectedRank=0},true)
+check(child and localOnly:Snapshot(p4).talentPoints == 43,"Unlocked branch spends one point")
+local _, resetBattle = localOnly:Handle(p4,"ResetTalents",{},false)
+check(not resetBattle,"Reset rejected during matches")
+local goldBeforeReset = localOnly:Get(p4).gold
+local _, reset = localOnly:Handle(p4,"ResetTalents",{},true)
+check(reset and localOnly:Snapshot(p4).talentPoints == 49 and next(localOnly:Get(p4).talents)==nil and localOnly:Get(p4).gold==goldBeforeReset,"Free reset restores all points")
+local _, persistTalent = service:Handle(p1,"UpgradeTalent",{talentId="baseVitality",expectedRank=0},true)
+check(persistTalent and stores.Tests.values.p_1.talents.baseVitality == 1,"Talent is durable before acknowledgement")
+local budgetBefore = service:Snapshot(p1).talentPoints
+service:Award(p1,"max-level",{xp=1000000})
+check(service:Snapshot(p1).talentPoints == budgetBefore,"Repeated XP checkpoint does not duplicate points")
+
+-- A profile written by an older version loads: it is healed, never rejected.
+do
+	local legacyPlayer = player(5)
+	stores.Tests.values.p_5 = {
+		schemaVersion = 1, gold = 1234, xp = 5000, level = 9,
+		heroes = { ironman = { xp = 0, level = 1 }, hawkeye = { xp = 0, level = 1 }, spiderman = { xp = 400, level = 1 }, retired = { xp = 10, level = 1 } },
+		loadout = { "spiderman", "ghost", "spiderman", "ironman" },
+		skills = { overload = 2, magnet = 1 }, activeSkills = { "overload" }, passives = { "magnet" },
+		-- barrierPower no longer exists; victoryGold's parent (magnet) has no rank.
+		talents = { roundGold = 2, killGold = 1, barrierPower = 3, victoryGold = 4 },
+		campaign = {}, tutorialComplete = true, settings = { language = "pt", lowFX = false, shake = true },
+	}
+	local healed = service:Load(legacyPlayer)
+	check(healed ~= nil, "An older profile still loads")
+	check(healed.gold == 1234 and healed.xp == 5000, "Gold and experience survive the migration")
+	check(healed.skills == nil and healed.activeSkills == nil and healed.passives == nil, "Legacy skill fields are dropped")
+	check(healed.talents.roundGold == 2 and healed.talents.killGold == 1, "Valid talents survive")
+	check(healed.talents.barrierPower == nil and healed.talents.victoryGold == nil, "Removed or unreachable talents are dropped, not fatal")
+	check(healed.talentPoints == healed.level - 1 - 3, "Points are recomputed from what remains")
+	check(#healed.loadout == 2 and healed.loadout[1] == "spiderman" and healed.loadout[2] == "ironman", "The loadout keeps its order, drops unknown heroes and duplicates")
+	check(healed.abilities.spiderman == 1 and healed.abilities.ironman == 1 and healed.abilities.hawkeye == 1, "Every owned hero gains an ability rank")
+	check(healed.pity.legendary == 0, "The pity counter is created")
+	stores.Tests.values.p_6 = { schemaVersion = 1, gold = 10, xp = 0, heroes = { ironman = { xp = 0, level = 1 } }, loadout = { "ghost" }, talents = { roundGold = 50 } }
+	local repaired = service:Load(player(6))
+	check(repaired and repaired.loadout[1] == "ironman" and repaired.talents.roundGold == nil, "An empty loadout falls back to the starters and impossible ranks are dropped")
+	stores.Tests.values.p_9 = { schemaVersion = 1, gold = 10, xp = 0, heroes = { ironman = { xp = 0, level = 1 } }, talents = { roundGold = 5, killGold = 5, magnet = 5, victoryGold = 10 } }
+	check(service:Load(player(9)) == nil and stores.Tests.values.p_9.gold == 10, "A talent budget the level cannot pay for still fails closed")
+end
+
+print("PASS PlayerService: " .. checks .. " assertions (real module, mocked Roblox persistence and purchases)")
