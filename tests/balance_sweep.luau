@@ -6,7 +6,15 @@ local ROSTERS = {
 	{ name = "iniciais", loadout = { "ironman", "hawkeye" } },
 	{ name = "decente", loadout = { "ironman", "hawkeye", "hulk", "thor", "widow" } },
 	{ name = "forte", loadout = { "ironman", "widow", "thor", "ghostrider", "silversurfer" } },
+	-- A legend in slot one: the ultimate is what this roster is here to measure.
+	{ name = "lenda", loadout = { "silversurfer", "thor", "ghostrider", "captainmarvel", "wanda" } },
 }
+-- tests/test_match_simulation.py --roster <name> sets ONLY_ROSTER to run one roster.
+if ONLY_ROSTER then
+	for index = #ROSTERS, 1, -1 do
+		if ROSTERS[index].name ~= ONLY_ROSTER then table.remove(ROSTERS, index) end
+	end
+end
 local totals = {}
 for _, roster in ipairs(ROSTERS) do
 	print("== elenco: " .. roster.name .. " ==")

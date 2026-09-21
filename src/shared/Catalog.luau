@@ -477,6 +477,35 @@ Catalog.Abilities = {
 }
 
 --==============================================================================
+-- Rewards: reasons to come back
+--==============================================================================
+-- Four small loops around the main game. None of them can be bought, and each
+-- is bounded per day, so they make a return visit worth it without becoming a
+-- way to farm. A gift with a chest opens it on the spot, like any other chest.
+Catalog.Rewards = {
+	-- A free chest every few hours. It never stacks: the point is to come back.
+	freeChest = { chestId = "rare", cooldown = 6 * 3600 },
+	-- One claim per UTC day. Missing a single day is forgiven; two reset the streak.
+	loginGraceDays = 2,
+	login = {
+		{ gold = 250 }, { gold = 350 }, { gold = 450, xp = 150 }, { gold = 600 },
+		{ gold = 800, xp = 300 }, { gold = 1000 }, { gold = 1500, chest = "rare" },
+	},
+	-- Gifts for time spent in the game today. Time resets with the UTC day.
+	playtime = {
+		{ minutes = 3, gold = 100 }, { minutes = 10, gold = 200 }, { minutes = 20, gold = 300 },
+		{ minutes = 35, gold = 450 }, { minutes = 50, gold = 600 }, { minutes = 75, gold = 900, chest = "rare" },
+	},
+	-- How many different heroes the account owns. Once, ever.
+	collection = {
+		{ count = 4, gold = 200 }, { count = 6, gold = 400 }, { count = 9, gold = 700 },
+		{ count = 12, gold = 1200, title = { id = "collector", pt = "Colecionador", en = "Collector" } },
+		{ count = 15, gold = 2000 }, { count = 18, gold = 3000 }, { count = 21, gold = 4500 },
+		{ count = 24, gold = 8000, title = { id = "livingLegend", pt = "Lenda Viva", en = "Living Legend" } },
+	},
+}
+
+--==============================================================================
 -- Commander talents (the level tree)
 --==============================================================================
 -- One talent point per account level after the first. The tree lives on the

@@ -316,6 +316,84 @@ function Rules.AbilityUpgrade(hero, currentRank)
 end
 
 --==============================================================================
+-- Rewards (reasons to come back)
+--==============================================================================
+-- State lives in profile.rewards: freeChestAt, loginDay, loginStreak, playDay,
+-- playSeconds, playClaimed (index set) and collection (index set). All of it is
+-- decided here from the server's clock, never from a number the client sent.
+local DAY_SECONDS = 86400
+
+function Rules.UtcDay(now)
+	return math.floor(now / DAY_SECONDS)
+end
+
+function Rules.NewRewardsState()
+	return { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {} }
+end
+
+-- Time played today; a state from an earlier day counts as no time and no claims.
+function Rules.PlaytimeToday(state, now)
+	if state.playDay ~= Rules.UtcDay(now) then return 0, {} end
+	return state.playSeconds or 0, state.playClaimed or {}
+end
+
+-- The claim a player would get today, or nil when today's is already taken.
+-- streak is the day of the cycle this claim continues from.
+function Rules.LoginClaim(state, now)
+	local rewards = Catalog.Rewards
+	local today = Rules.UtcDay(now)
+	local last = state.loginDay or -1
+	if last >= today then return nil end
+	local streak = 1
+	if last >= 0 and today - last <= rewards.loginGraceDays then streak = (state.loginStreak or 0) + 1 end
+	local index = (streak - 1) % #rewards.login + 1
+	return { streak = streak, index = index, reward = rewards.login[index], today = today }
+end
+
+-- Everything the rewards panel and the lobby badge need, in one table.
+-- pendingSeconds is time played since the profile was last written.
+function Rules.RewardsStatus(profile, now, pendingSeconds)
+	local rewards = Catalog.Rewards
+	local state = profile.rewards or Rules.NewRewardsState()
+	local status = { claimable = 0 }
+
+	local remaining = math.max(0, (state.freeChestAt or 0) - now)
+	status.freeChest = { ready = remaining == 0, remaining = remaining, chestId = rewards.freeChest.chestId, cooldown = rewards.freeChest.cooldown }
+	if status.freeChest.ready then status.claimable += 1 end
+
+	local claim = Rules.LoginClaim(state, now)
+	status.login = { claimable = claim ~= nil, streak = state.loginStreak or 0, cycle = #rewards.login }
+	if claim then
+		status.login.nextIndex, status.login.nextStreak = claim.index, claim.streak
+		status.claimable += 1
+	else
+		status.login.nextIndex = ((state.loginStreak or 0)) % #rewards.login + 1
+	end
+
+	local seconds, claimed = Rules.PlaytimeToday(state, now)
+	seconds += math.max(0, pendingSeconds or 0)
+	status.playtime = { seconds = seconds, gifts = {} }
+	for index, gift in ipairs(rewards.playtime) do
+		local entry = { index = index, minutes = gift.minutes, gold = gift.gold, xp = gift.xp, chest = gift.chest,
+			claimed = claimed[index] == true, ready = seconds >= gift.minutes * 60 and claimed[index] ~= true }
+		if entry.ready then status.claimable += 1 end
+		table.insert(status.playtime.gifts, entry)
+	end
+
+	local owned = 0
+	for _ in pairs(profile.heroes or {}) do owned += 1 end
+	status.collection = { owned = owned, milestones = {} }
+	local done = state.collection or {}
+	for index, milestone in ipairs(rewards.collection) do
+		local entry = { index = index, count = milestone.count, gold = milestone.gold, title = milestone.title,
+			claimed = done[index] == true, ready = owned >= milestone.count and done[index] ~= true }
+		if entry.ready then status.claimable += 1 end
+		table.insert(status.collection.milestones, entry)
+	end
+	return status
+end
+
+--==============================================================================
 -- Chests
 --==============================================================================
 -- Starters are never in a chest: a chest exists to bring you something new.

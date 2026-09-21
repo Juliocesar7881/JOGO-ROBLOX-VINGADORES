@@ -21,7 +21,10 @@ local SCHEMA_VERSION = 1
 local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "savedLoadouts", "quests", "achievements", "best", "stats", "title", "talents" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
-local ACTIONS = { UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, SaveLoadout = true, LoadLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true }
+local ACTIONS = { UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, SaveLoadout = true, LoadLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
+	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true }
+-- Rewards that can open a chest need their two random numbers drawn up front.
+local CHEST_ACTIONS = { OpenChest = true, ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true }
 -- The VIP pass carries a title that is never earned through play, so it is
 -- offered while the pass is owned instead of being written into the profile.
 local VIP_TITLE = { pt = "Patrono da Resistencia", en = "Resistance Patron" }
@@ -29,6 +32,8 @@ local MAX_LOADOUT = 5
 -- A hero bought with Robux that the account already owns (two purchases racing
 -- each other) is never wasted: it turns into this much gold per Robux.
 local GOLD_PER_ROBUX = 10
+-- Time played is counted between transactions, and never more than this per gap.
+local PLAYTIME_CAP = 43200
 
 local function copy(value)
 	if type(value) ~= "table" then return value end
@@ -84,6 +89,7 @@ local function newProfile(now)
 		-- Slot one is the hero whose ability the player fights with.
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
 		pity = { legendary = 0 },
+		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {} },
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", lowFX = false, shake = true, music = true },
 		savedLoadouts = {}, quests = {}, achievements = {}, best = {},
@@ -143,6 +149,15 @@ local function normalize(raw, now, catalog)
 	if #loadout == 0 then loadout = { "ironman", "hawkeye" } end
 	profile.loadout = loadout
 	if type(profile.pity.legendary) ~= "number" then profile.pity.legendary = 0 end
+	-- A damaged reward record is repaired field by field rather than refusing
+	-- to load: nothing in it is worth locking a player out for.
+	local rewards = profile.rewards
+	for key, fallback in pairs({ freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0 }) do
+		if type(rewards[key]) ~= "number" or rewards[key] ~= rewards[key] then rewards[key] = fallback end
+	end
+	for _, key in ipairs({ "playClaimed", "collection" }) do
+		if type(rewards[key]) ~= "table" then rewards[key] = {} end
+	end
 	return profile
 end
 
@@ -310,7 +325,7 @@ function PlayerService:Load(player)
 			return profile
 		end)
 		if not ok or not persisted then return nil, lockFailure or "Não foi possível carregar seu perfil. Nenhum dado foi substituído." end
-		local record = { player = player, profile = persisted, passes = {}, closing = false, lost = false, lastSaved = os.time(), randomRestricted = false }
+		local record = { player = player, profile = persisted, passes = {}, closing = false, lost = false, lastSaved = os.time(), playMark = os.time(), randomRestricted = false }
 		self.records[player.UserId] = record
 		return record
 	end)
@@ -354,6 +369,8 @@ function PlayerService:_transaction(player, mutate, operationId, options)
 		local record = self.records[player.UserId]
 		if not record or record.player ~= player or record.lost or (record.closing and not options.releasing) then return false, "Perfil ainda não disponível." end
 		local rejected, value, lost = nil, nil, false
+		-- Fixed before the callback, which UpdateAsync may run more than once.
+		local elapsed = math.clamp(os.time() - (record.playMark or os.time()), 0, PLAYTIME_CAP)
 		local saved, persisted = self:_update(player.UserId, function(raw)
 			rejected, value, lost = nil, nil, false
 			local now = os.time()
@@ -362,6 +379,9 @@ function PlayerService:_transaction(player, mutate, operationId, options)
 			local previous = profile._operations[operationId]
 			if previous then value = copy(previous.result); return profile end
 			refreshQuests(profile, now)
+			local rewards, today = profile.rewards, math.floor(now / DAY)
+			if rewards.playDay ~= today then rewards.playDay, rewards.playSeconds, rewards.playClaimed = today, 0, {} end
+			rewards.playSeconds += elapsed
 			local accepted, payload = mutate(profile, now, record)
 			if accepted == false then rejected = payload or "Operação inválida."; return nil end
 			value = payload
@@ -380,6 +400,7 @@ function PlayerService:_transaction(player, mutate, operationId, options)
 		if not persisted then return false, rejected or "Alteração não confirmada." end
 		record.profile = persisted
 		record.lastSaved = os.time()
+		record.playMark = os.time()
 		return true, value
 	end)
 	if ok and not options.silent then self:_notify(player) end
@@ -410,6 +431,35 @@ function PlayerService:_grantHero(profile, heroId, now, options)
 	return false, { gold = 0, mastery = 0 }
 end
 
+-- Rolls and grants one chest from a pair of random numbers drawn before the
+-- transaction. Shared by the paid chests and by every reward that opens one.
+function PlayerService:_openChest(profile, chestId, rolls, now)
+	local chest = self.catalog.Chests[chestId]
+	local owned = {}
+	for id in pairs(profile.heroes) do owned[id] = true end
+	local pity = profile.pity[chestId] or 0
+	local outcome = self.rules.RollChest(chestId, rolls[1], rolls[2], pity, owned)
+	if chest.pity then profile.pity[chestId] = outcome.top and 0 or pity + 1 end
+	local duplicate, refund = self:_grantHero(profile, outcome.heroId, now)
+	profile.stats.chests += 1
+	if profile.stats.chests == 1 then achievement(profile, "firstChest", "Primeiro baú", "First chest", now) end
+	return { chestId = chestId, heroId = outcome.heroId, rarity = outcome.rarity, duplicate = duplicate,
+		refundGold = refund.gold, refundMastery = refund.mastery, pity = outcome.pity, cost = chest.cost }
+end
+
+-- Pays a reward table ({ gold, xp, chest, title }) into the profile.
+function PlayerService:_payReward(profile, reward, rolls, now, current)
+	local paid = { gold = reward.gold or 0, xp = 0 }
+	profile.gold += paid.gold
+	if reward.xp then
+		paid.xp = math.floor(reward.xp * (current.passes.training and 1.25 or 1))
+		profile.xp += paid.xp
+	end
+	if reward.title then achievement(profile, reward.title.id, reward.title.pt, reward.title.en, now, "title") end
+	if reward.chest then paid.chest = self:_openChest(profile, reward.chest, rolls, now) end
+	return paid
+end
+
 function PlayerService:Get(player)
 	return self:Snapshot(player)
 end
@@ -423,6 +473,8 @@ function PlayerService:Snapshot(player)
 	result.talentPoints = math.max(0, result.level - 1 - talentSpent(record.profile))
 	result.loadoutSlots = record.passes.formations and 8 or 3
 	result.paidRandomRestricted = record.randomRestricted == true
+	local now = os.time()
+	result.rewards = self.rules.RewardsStatus(record.profile, now, math.clamp(now - (record.playMark or now), 0, PLAYTIME_CAP))
 	result.xpNext = result.level < 50 and xpThreshold(result.level + 1) or result.xp
 	result.xpFloor = xpThreshold(result.level)
 	result.season = self:_season()
@@ -465,7 +517,7 @@ function PlayerService:Handle(player, action, payload, inLobby)
 	end
 	-- A chest's two random numbers are drawn once, here. UpdateAsync may run the
 	-- callback below several times, and every run must reach the same hero.
-	local rolls = action == "OpenChest" and { self.random:NextNumber(), self.random:NextNumber() } or nil
+	local rolls = CHEST_ACTIONS[action] and { self.random:NextNumber(), self.random:NextNumber() } or nil
 	local ok, result = self:_transaction(player, function(profile, now, current)
 		if action == "UpgradeTalent" then
 			local node = type(payload.talentId) == "string" and self.catalog.Talents[payload.talentId]
@@ -485,16 +537,35 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			if profile.gold < chest.cost then return false, "Ouro insuficiente. / Not enough Gold." end
 			profile.gold -= chest.cost
 			-- The client never supplies or sees a roll, only the committed result.
-			local owned = {}
-			for id in pairs(profile.heroes) do owned[id] = true end
-			local pity = profile.pity[payload.chestId] or 0
-			local outcome = self.rules.RollChest(payload.chestId, rolls[1], rolls[2], pity, owned)
-			if chest.pity then profile.pity[payload.chestId] = outcome.top and 0 or pity + 1 end
-			local duplicate, refund = self:_grantHero(profile, outcome.heroId, now)
-			profile.stats.chests += 1
-			if profile.stats.chests == 1 then achievement(profile, "firstChest", "Primeiro baú", "First chest", now) end
-			return true, { chestId = payload.chestId, heroId = outcome.heroId, rarity = outcome.rarity, duplicate = duplicate,
-				refundGold = refund.gold, refundMastery = refund.mastery, pity = outcome.pity, cost = chest.cost }
+			return true, self:_openChest(profile, payload.chestId, rolls, now)
+		elseif action == "ClaimFreeChest" then
+			local state, config = profile.rewards, self.catalog.Rewards.freeChest
+			if now < state.freeChestAt then return false, "O baú grátis ainda não está pronto. / The free chest is not ready yet." end
+			state.freeChestAt = now + config.cooldown
+			return true, { chest = self:_openChest(profile, config.chestId, rolls, now), gold = 0, xp = 0 }
+		elseif action == "ClaimLogin" then
+			local claim = self.rules.LoginClaim(profile.rewards, now)
+			if not claim then return false, "A recompensa de hoje já foi resgatada. / Today's reward was already claimed." end
+			profile.rewards.loginDay, profile.rewards.loginStreak = claim.today, claim.streak
+			local paid = self:_payReward(profile, claim.reward, rolls, now, current)
+			paid.streak, paid.day = claim.streak, claim.index
+			return true, paid
+		elseif action == "ClaimPlaytime" then
+			local gift = integer(payload.index, 1, #self.catalog.Rewards.playtime) and self.catalog.Rewards.playtime[payload.index]
+			if not gift then return false, "Presente inválido. / Invalid gift." end
+			local state = profile.rewards
+			if state.playClaimed[payload.index] then return false, "Presente já resgatado. / Gift already claimed." end
+			if state.playSeconds < gift.minutes * 60 then return false, "Ainda falta tempo para este presente. / This gift is not ready yet." end
+			state.playClaimed[payload.index] = true
+			return true, self:_payReward(profile, gift, rolls, now, current)
+		elseif action == "ClaimMilestone" then
+			local milestone = integer(payload.index, 1, #self.catalog.Rewards.collection) and self.catalog.Rewards.collection[payload.index]
+			if not milestone then return false, "Meta inválida. / Invalid milestone." end
+			local state = profile.rewards
+			if state.collection[payload.index] then return false, "Meta já resgatada. / Milestone already claimed." end
+			if tableCount(profile.heroes) < milestone.count then return false, "Você ainda não tem heróis suficientes. / You do not own enough heroes yet." end
+			state.collection[payload.index] = true
+			return true, self:_payReward(profile, milestone, rolls, now, current)
 		elseif action == "UpgradeAbility" then
 			local hero = type(payload.heroId) == "string" and self.catalog.Heroes[payload.heroId]
 			local owned = hero and profile.heroes[payload.heroId]
@@ -556,7 +627,7 @@ function PlayerService:Handle(player, action, payload, inLobby)
 	local snapshot = ok and self:Snapshot(player) or nil
 	-- A chest or an ability upgrade also reports what just happened, so the
 	-- client can play the reveal instead of guessing from a diff.
-	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility") then snapshot.result = result end
+	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility" or action:sub(1, 5) == "Claim") then snapshot.result = result end
 	return true, ok, ok and snapshot or result
 end
 

@@ -38,6 +38,7 @@ def main() -> None:
     parser.add_argument("--luau", type=Path, default=root / ".tools" / "luau" / "luau.exe")
     parser.add_argument("--sweep", nargs="?", const="rosters", choices=["rosters", "heroes", "duel"],
                         help="Print a balance table (three rosters across every map and mode, or every hero on its own) instead of running the checks")
+    parser.add_argument("--roster", help="With --sweep rosters: run only the roster with this name (e.g. lenda)")
     args = parser.parse_args()
     if not args.luau.is_file():
         raise SystemExit("Luau CLI missing. Run tools/test.py or supply --luau <path>.")
@@ -55,7 +56,8 @@ def main() -> None:
         # Everything above the playthroughs is the harness: stubs, the bot and
         # simulate(). The sweep reuses it and swaps the checks for a table.
         name = {"heroes": "hero_sweep.luau", "duel": "duel_sweep.luau"}.get(args.sweep, "balance_sweep.luau")
-        source = source[:source.index('print("--- tutorial ---")')] + (root / "tests" / name).read_text(encoding="utf-8")
+        only = ('ONLY_ROSTER = "' + args.roster + '"' if args.roster else 'ONLY_ROSTER = nil') + chr(10)
+        source = source[:source.index('print("--- tutorial ---")')] + only + (root / "tests" / name).read_text(encoding="utf-8")
 
     with tempfile.TemporaryDirectory(prefix="doomsday-match-sim-") as temporary:
         script = Path(temporary) / "simulation.luau"
