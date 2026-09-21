@@ -757,6 +757,86 @@ do
 	check(casts == #Catalog.HeroOrder, "every hero's ability was exercised, " .. casts)
 end
 
+--==============================================================================
+-- Ultimates: one cast, several effects
+--==============================================================================
+print("--- ultimates ---")
+do
+	local function cast(heroId, setup)
+		local match, player = stage({ loadout = { heroId, "ironman" } })
+		local p = match.participants[player.UserId]
+		local def = Catalog.Abilities[Catalog.Heroes[heroId].ability]
+		local events = {}
+		local original = match._fx
+		match._fx = function(self, event, ...) table.insert(events, event) return original(self, event, ...) end
+		local near = {}
+		for offset = 0, 5 do table.insert(near, spawn(match, "zombie", 100 + offset * 0.5, 4)) end
+		local far = spawn(match, "zombie", 330, 4)
+		local boss = spawn(match, "lizard", 100.2, 1)
+		local before = {}
+		for index, enemy in ipairs(near) do before[index] = enemy.hp end
+		local ok = match:Handle(player, "CastSkill", { skillId = def.id, position = near[1].position })
+		check(ok, "ultimate casts: " .. heroId)
+		local announced
+		for _, event in ipairs(events) do if event.kind == "Ability" then announced = event end end
+		return match, near, far, boss, before, announced, Rules.AbilityStats(def, 1), Rules.AbilityExtras(def, 1), def
+	end
+
+	-- Every ultimate is flagged, announced as one, and rings the screen harder.
+	for _, id in ipairs(Catalog.AbilityOrder) do
+		local def = Catalog.Abilities[id]
+		if def.ultimate then
+			check(#(def.extras or {}) >= 1, "an ultimate does more than one thing: " .. id)
+			check(def.cooldown >= 75, "an ultimate is a big-cooldown decision: " .. id)
+		end
+	end
+
+	do -- Photon Nova: damage, stun and mark across a huge area.
+		local match, near, far, boss, before, fx, stats, extras = cast("captainmarvel")
+		for index, enemy in ipairs(near) do
+			check(math.abs(enemy.hp - before[index] * (1 - stats.power)) < 0.001, "nova blasts everything close")
+			check(enemy.stunUntil >= match.elapsed + extras[1].duration - 0.001, "nova stuns what it hits")
+			check(enemy.markUntil > match.elapsed and enemy.mark >= extras[2].power, "nova marks its targets")
+		end
+		check(fx and fx.ultimate == true and #fx.extras == 2, "the client is told this is an ultimate with two extras")
+		check(fx.shake >= 1, "an ultimate shakes the camera harder")
+		check(boss.stunUntil > match.elapsed and boss.stunUntil - match.elapsed < extras[1].duration, "a boss is stunned for a fraction only")
+	end
+
+	do -- Cosmic Smite: hits the strongest, chains across the whole map and melts armor everywhere.
+		local match, near, far, boss, before, fx, stats, extras = cast("silversurfer")
+		check(far.armorBreak >= extras[2].power and far.armorUntil > match.elapsed, "smite weakens armor even at the far end of the map")
+		local struck = 0
+		for index, enemy in ipairs(near) do if enemy.hp < before[index] then struck += 1 end end
+		check(struck >= extras[1].count - 1, "smite chains lightning through the pack, struck " .. struck)
+		check(fx.ultimate and fx.points and #fx.points >= 2, "the chain points reach the client")
+	end
+
+	do -- Hex Bind: stun, melt and blast.
+		local match, near, far, boss, before, fx, stats, extras = cast("wanda")
+		for index, enemy in ipairs(near) do
+			check(enemy.stunUntil >= match.elapsed + stats.duration - 0.001, "hex holds the enemy")
+			check(enemy.armorBreak >= extras[1].power, "hex melts armor")
+			check(enemy.hp < before[index], "hex also hurts")
+		end
+	end
+
+	do -- Time Dilation: nearly frozen and shoved backward.
+		local match, near, far, boss, before, fx, stats, extras = cast("strange")
+		for index, enemy in ipairs(near) do
+			check(enemy.slow >= 0.7 and enemy.slowUntil > match.elapsed, "time nearly stops")
+			check(enemy.progress < 100 + (index - 1) * 0.5, "and the pack is pushed back")
+		end
+	end
+
+	do -- Hellfire: burn + slow + a short stun.
+		local match, near, far, boss, before, fx, stats, extras = cast("ghostrider")
+		for _, enemy in ipairs(near) do
+			check(enemy.dot ~= nil and enemy.slow > 0 and enemy.stunUntil > match.elapsed, "hellfire burns, slows and stuns")
+		end
+	end
+end
+
 -- The hero in slot one is what matters, wherever else it appears.
 print("--- slot one decides ---")
 do

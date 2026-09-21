@@ -715,11 +715,12 @@ function Match:_abilityOf(p)
 	local def = hero and self.catalog.Abilities[hero.ability]
 	if not def then return nil end
 	local rank = (p.profile.abilities or {})[heroId] or 1
-	local stats = self.rules.AbilityStats(def, rank, {
+	local options = {
 		abilityPower = talent(p, "abilityPower") * 0.02 + cardStat(p, "abilityPower"),
 		cooldownReduction = talent(p, "skillTempo") * 0.01 + cardStat(p, "cooldown"),
-	})
-	return def, stats, heroId
+	}
+	-- extras are the secondary effects of an ultimate; they fire with the main one.
+	return def, self.rules.AbilityStats(def, rank, options), heroId, self.rules.AbilityExtras(def, rank, options)
 end
 
 function Match:_inRadius(position, radius)
@@ -842,7 +843,7 @@ function ABILITY_HANDLERS.smite(self, p, stats)
 end
 
 function Match:_castAbility(player, p, payload)
-	local def, stats, heroId = self:_abilityOf(p)
+	local def, stats, heroId, extras = self:_abilityOf(p)
 	if not def then return false, "Sem habilidade equipada. / No ability equipped." end
 	-- The client may name the ability it believes it is casting, but the server
 	-- only ever casts the one that belongs to the hero in slot one.
@@ -863,6 +864,15 @@ function Match:_castAbility(player, p, payload)
 	end
 	local handler = ABILITY_HANDLERS[def.kind]
 	local points = handler(self, p, stats, at, tower)
+	local extraFx = {}
+	for _, extra in ipairs(extras) do
+		local extraPoints = ABILITY_HANDLERS[extra.kind](self, p, extra, at, tower)
+		if extraPoints then
+			points = points or {}
+			for _, point in ipairs(extraPoints) do table.insert(points, point) end
+		end
+		table.insert(extraFx, { kind = extra.kind, radius = extra.radius, duration = extra.duration, power = extra.power })
+	end
 	-- Casting counts as taking part, and the hero whose ability it is earns the
 	-- mastery even when none of its towers are on the field.
 	p.contributed = true
@@ -870,7 +880,9 @@ function Match:_castAbility(player, p, payload)
 	p.cooldowns[def.id] = self.elapsed + stats.cooldown
 	self:_fx({kind="Ability", abilityId=def.id, abilityKind=def.kind, heroId=heroId, position=at, radius=stats.radius,
 		duration=stats.duration, power=stats.power, points=points, towerId=tower and tower.id, ownerId=player.UserId,
-		color=Color3.fromRGB(def.color[1], def.color[2], def.color[3]), shake=(def.kind=="blast" or def.kind=="smite") and 0.5 or 0.15})
+		ultimate=def.ultimate or nil, extras=#extraFx>0 and extraFx or nil,
+		color=Color3.fromRGB(def.color[1], def.color[2], def.color[3]),
+		shake=def.ultimate and 1.1 or ((def.kind=="blast" or def.kind=="smite") and 0.5 or 0.15)})
 	return true
 end
 
@@ -1028,7 +1040,7 @@ function Match:Snapshot(player)
 	if def then
 		ability = { id = def.id, heroId = heroId, kind = def.kind, target = def.target, rank = stats.rank,
 			cooldown = math.max(0, (p.cooldowns[def.id] or 0) - self.elapsed), cooldownTotal = stats.cooldown,
-			radius = stats.radius, duration = stats.duration, power = stats.power }
+			radius = stats.radius, duration = stats.duration, power = stats.power, ultimate = def.ultimate or nil }
 	end
 	local boss
 	for _,e in pairs(self.enemies) do

@@ -337,6 +337,27 @@ for _, id in Catalog.AbilityOrder do
 	end
 end
 for kind in KINDS do check(kindsUsed[kind], "Every ability kind is used by some hero: " .. kind) end
+-- Ultimates: the rarest heroes carry several effects in one cast.
+for _, id in Catalog.AbilityOrder do
+	local def = Catalog.Abilities[id]
+	for _, extra in def.extras or {} do check(KINDS[extra.kind], "Known extra kind: " .. id .. "/" .. tostring(extra.kind)) end
+	local extras = Rules.AbilityExtras(def, 1)
+	equal(#extras, #(def.extras or {}), "AbilityExtras returns one entry per extra: " .. id)
+	if def.ultimate then check(#extras >= 1, "An ultimate has extras: " .. id) end
+end
+for _, heroId in Catalog.HeroOrder do
+	local hero = Catalog.Heroes[heroId]
+	if hero.rarity == "mythic" or hero.rarity == "legendary" then
+		check(Catalog.Abilities[hero.ability].ultimate == true, "Legendary and mythic heroes own an ultimate: " .. heroId)
+	end
+end
+do
+	local nova = Catalog.Abilities.photonNova
+	check(Rules.AbilityExtras(nova, 5)[1].duration > Rules.AbilityExtras(nova, 1)[1].duration, "Extras grow with the rank")
+	check(Rules.AbilityExtras(nova, 1, { abilityPower = 0.5 })[2].power > Rules.AbilityExtras(nova, 1)[2].power, "Extras follow ability power")
+	local text = Rules.AbilityText(nova, 1, "en")
+	check(string.find(text, "stuns for 2.5 s", 1, true) ~= nil, "Extra numbers are printed in the description: " .. text)
+end
 -- Every hero's ability is reachable from that hero and the two stay in step.
 for _, heroId in Catalog.HeroOrder do
 	check(Catalog.Abilities[Catalog.Heroes[heroId].ability] ~= nil, "Ability resolves from " .. heroId)
@@ -355,8 +376,8 @@ do
 	-- A stun has no magnitude, so ability power lengthens it instead.
 	local stun = Catalog.Abilities.rootWall
 	check(Rules.AbilityStats(stun, 1, { abilityPower = 0.5 }).duration > Rules.AbilityStats(stun, 1).duration, "Ability power extends a stun")
-	equal(Rules.AbilityStats(Catalog.Abilities.thunderCall, 1).count, 8, "Chain count at rank one")
-	equal(Rules.AbilityStats(Catalog.Abilities.thunderCall, 5).count, 10, "Chain count grows with rank")
+	equal(Rules.AbilityStats(Catalog.Abilities.thunderCall, 1).count, 10, "Chain count at rank one")
+	equal(Rules.AbilityStats(Catalog.Abilities.thunderCall, 5).count, 12, "Chain count grows with rank")
 	check(string.find(Rules.AbilityText(def, 1, "pt"), "35%", 1, true) ~= nil, "Description shows this rank's real number")
 	check(string.find(Rules.AbilityText(def, 5, "pt"), "60%", 1, true) ~= nil, "Description follows the rank")
 end

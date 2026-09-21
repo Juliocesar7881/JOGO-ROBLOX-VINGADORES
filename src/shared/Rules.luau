@@ -270,12 +270,38 @@ local function trimmed(value)
 	return if rounded % 1 == 0 then tostring(math.floor(rounded)) else string.format("%.1f", rounded)
 end
 
--- The ability's description with this rank's real numbers filled in.
+-- The secondary effects of an ultimate, at this rank. Each one rides on the
+-- primary effect's target and radius unless it names its own, and grows with
+-- the rank and with the same ability-power bonuses.
+function Rules.AbilityExtras(def, rank, options)
+	local extras = {}
+	for _, extra in ipairs(def.extras or {}) do
+		local synthetic = {
+			kind = extra.kind, target = def.target, power = extra.power, duration = extra.duration,
+			radius = extra.radius or def.radius, count = extra.count, cooldown = def.cooldown, stat = extra.stat,
+			unit = extra.unit or (if extra.kind == "pull" then "studs" elseif extra.kind == "barrier" or extra.kind == "heal" then "hp" else "pct"),
+		}
+		table.insert(extras, Rules.AbilityStats(synthetic, rank, options))
+	end
+	return extras
+end
+
+local function formatPower(stats)
+	return if stats.unit == "pct" then tostring(math.floor(stats.power * 100 + 0.5)) else trimmed(stats.power)
+end
+
+-- The ability's description with this rank's real numbers filled in. Extras are
+-- named {e1.power}, {e1.duration}, {e1.radius}, {e1.count}, {e2...} in the order
+-- they are listed on the ability.
 function Rules.AbilityText(def, rank, language, options)
 	local stats = Rules.AbilityStats(def, rank, options)
-	local template = def.description[language] or def.description.pt
-	local power = if def.unit == "pct" then tostring(math.floor(stats.power * 100 + 0.5)) else trimmed(stats.power)
-	return (template:gsub("{power}", power):gsub("{duration}", trimmed(stats.duration)):gsub("{radius}", tostring(math.floor(stats.radius + 0.5))):gsub("{count}", tostring(stats.count)))
+	local text = def.description[language] or def.description.pt
+	for index, extra in ipairs(Rules.AbilityExtras(def, rank, options)) do
+		local key = "{e" .. index .. "."
+		text = text:gsub(key .. "power}", formatPower(extra)):gsub(key .. "duration}", trimmed(extra.duration))
+			:gsub(key .. "radius}", tostring(math.floor(extra.radius + 0.5))):gsub(key .. "count}", tostring(extra.count))
+	end
+	return (text:gsub("{power}", formatPower(stats)):gsub("{duration}", trimmed(stats.duration)):gsub("{radius}", tostring(math.floor(stats.radius + 0.5))):gsub("{count}", tostring(stats.count)))
 end
 
 -- The next rank of a hero's ability: its gold price and the mastery that unlocks

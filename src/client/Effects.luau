@@ -375,6 +375,41 @@ function Effects:_groundImpact(position, color, radius)
 	if effect then effect.growFrom, effect.growTo = radius, radius * 2 end
 end
 
+-- The signature of an ultimate: a pillar of light and three shockwaves rolling
+-- out from the cast point, then one ring per extra effect in that effect's own
+-- color so a player can read what the ultimate just did. Reduced effects keeps a
+-- single ring and no strobing.
+local EXTRA_TINT = {
+	stun = Color3.fromRGB(255, 255, 255), weaken = Color3.fromRGB(190, 120, 255), reveal = Color3.fromRGB(255, 90, 90),
+	slow = Color3.fromRGB(120, 200, 255), pull = Color3.fromRGB(255, 190, 90), blast = Color3.fromRGB(255, 160, 90),
+	chain = Color3.fromRGB(140, 225, 255), barrier = Color3.fromRGB(110, 160, 255), heal = Color3.fromRGB(150, 255, 170),
+}
+function Effects:_ultimateBurst(event, tint, lowFX)
+	local position = event.position
+	local radius = math.max(event.radius or 0, 30)
+	if lowFX then
+		self:_groundImpact(position, tint, radius)
+		return
+	end
+	local pale = tint:Lerp(Color3.new(1, 1, 1), 0.55)
+	local width = math.clamp(radius * 0.18, 3, 12)
+	self:_effect(Vector3.new(120, width, width), CFrame.new(position + Vector3.new(0, 60, 0)) * CFrame.Angles(0, 0, math.pi / 2), pale, 0.7, Enum.PartType.Cylinder, 0.35)
+	for wave = 1, 3 do
+		task.delay((wave - 1) * 0.14, function()
+			self:_groundImpact(position, tint, radius * (0.55 + 0.3 * wave))
+			self:_impact(position + Vector3.new(0, 1.5, 0), pale, radius * 0.12 * wave)
+		end)
+	end
+	for index, extra in ipairs(event.extras or {}) do
+		local color = EXTRA_TINT[extra.kind]
+		if color then
+			task.delay(0.1 + index * 0.16, function()
+				self:_groundImpact(position, color, math.max(extra.radius or 0, radius * 0.5) * 0.8)
+			end)
+		end
+	end
+end
+
 function Effects:_heroShot(event, lowFX)
 	local from, target = event.from, event.to
 	local model = self:_towerModel(event.towerId)
@@ -486,6 +521,7 @@ function Effects:Handle(event)
 				end
 			end
 		end
+		if event.ultimate and typeof(event.position)=="Vector3" then self:_ultimateBurst(event,tint,lowFX) end
 		for i,point in ipairs(event.points or {}) do
 			if i>(lowFX and 2 or 12) then break end
 			if typeof(point)=="Vector3" then self:_line(point+Vector3.new(0,15,0),point,UI.color(event.color),0.3,0.4) end
