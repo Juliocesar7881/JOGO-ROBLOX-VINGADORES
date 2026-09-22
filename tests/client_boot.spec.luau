@@ -752,6 +752,29 @@ local function session(screen)
 		check(asked("SkipWave"), tag .. ": READY votes to skip preparation")
 	end)
 
+	step("the leader power button carries slot one's own hero and name", function()
+		local leader = named(gui, "LeaderPower")
+		check(leader ~= nil and string.find(leader.Text, Catalog.Abilities.repulsorBarrage.name.pt, 1, true) ~= nil,
+			tag .. ": the button shows slot one's actual ability name, not a generic label, got " .. tostring(leader and leader.Text))
+		check(not string.find(leader.Text, "⚡", 1, true), tag .. ": an ordinary ability carries no ultimate mark")
+		-- The button is only rebuilt on a full render (a fresh match start), never
+		-- mid-match — the loadout, and so slot one's ability, cannot change once a
+		-- match has begun. Route through Results, like a real match ending, to
+		-- reach a fresh "Preparing" the same way a new match would.
+		push(resultsSnapshot(profile))
+		push(matchSnapshot(profile, "Preparing", { ability = {
+			id = Catalog.Heroes.thor.ability, heroId = "thor", kind = "chain", target = "area", rank = 1,
+			cooldown = 0, cooldownTotal = 75, radius = 70, duration = 1.5, power = 0.3, ultimate = true,
+		} }))
+		local ultimateButton = named(gui, "LeaderPower")
+		check(ultimateButton ~= nil and string.find(ultimateButton.Text, Catalog.Abilities.thunderCall.name.pt, 1, true) ~= nil,
+			tag .. ": slot one's hero decides the button's ability and name, got " .. tostring(ultimateButton and ultimateButton.Text))
+		check(string.find(ultimateButton.Text, "⚡", 1, true) ~= nil, tag .. ": a legendary/mythic ability marks itself as an ultimate")
+		-- Back to the default loadout for every step that follows.
+		push(resultsSnapshot(profile))
+		push(matchSnapshot(profile, "Preparing"))
+	end)
+
 	step("placing a tower from a hotkey", function()
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.One, Position = v3(0, 0, 0) }, false)
 		flush()

@@ -1494,11 +1494,21 @@ local function renderMatch()
 	local abilities = UI.frame(main, {BackgroundTransparency = 1, Position = at(layout.abilities), Size = dims(layout.abilities)})
 	UI.list(abilities, 8, true)
 	refs.abilityButtons = {}
+	-- Slot one decides which hero the commander fights with, so its button
+	-- carries that hero's own color and name instead of a generic label —
+	-- the same differentiation the squad bar gives slot one (gold star, gold
+	-- border). An ultimate (legendary/mythic) also gets a thicker glow and a
+	-- ⚡ mark, so the rarest skills read as a bigger deal at a glance.
 	for index, id in ipairs(state.match and state.match.ability and {state.match.ability.id} or {}) do
 		if index > 2 then break end
-		local button = UI.secondary(abilities, "", function() chooseSkill(id) end, {Name="LeaderPower",LayoutOrder = index, Size = UDim2.fromOffset(layout.skillW, layout.buttonH), TextSize = 11})
-		local meter = UI.bar(button, C.blue, UDim2.new(0, 7, 1, -5), UDim2.new(1, -14, 0, 2))
-		refs.abilityButtons[id] = {button = button, index = index, meter = meter}
+		local abilityInfo = state.match.ability
+		local def = Catalog.Abilities[id]
+		local tint = colorFor(abilityInfo.heroId)
+		local button = UI.secondary(abilities, "", function() chooseSkill(id) end, {Name="LeaderPower",LayoutOrder = index, Size = UDim2.fromOffset(layout.skillW, layout.buttonH), TextSize = 11, TextTruncate = Enum.TextTruncate.AtEnd})
+		UI.stroke(button, tint, abilityInfo.ultimate and 3 or 1.5)
+		local meter = UI.bar(button, tint, UDim2.new(0, 7, 1, -5), UDim2.new(1, -14, 0, 2))
+		refs.abilityButtons[id] = {button = button, index = index, meter = meter, tint = tint,
+			name = (def and L(def.name) or T("PODER DO LÍDER", "LEADER POWER")), ultimate = abilityInfo.ultimate}
 	end
 	if profile().passes and profile().passes.vip then
 		UI.secondary(abilities, "✦ " .. T("Saudação", "Salute"), function()
@@ -1556,9 +1566,10 @@ updateMatch = function()
 	for id, record in pairs(refs.abilityButtons or {}) do
 		local remaining = match.ability and match.ability.cooldown or 0
 		local shortcut = UserInputService.TouchEnabled and "" or "Q  "
-		record.button.Text = shortcut..T("PODER DO LÍDER","LEADER POWER").."\n"..(remaining>0 and (T("Recarrega em ","Ready in ")..math.ceil(remaining).."s") or state.phase=="Preparing" and T("Na próxima onda","Next wave") or T("PRONTO!","READY!"))
-		record.button.TextColor3 = remaining > 0 and C.muted or C.gold
-		record.button.BackgroundColor3=remaining>0 and C.card or C.gold:Lerp(C.panel,0.82)
+		local label = (record.ultimate and "⚡ " or "")..record.name
+		record.button.Text = shortcut..label.."\n"..(remaining>0 and (T("Recarrega em ","Ready in ")..math.ceil(remaining).."s") or state.phase=="Preparing" and T("Na próxima onda","Next wave") or T("PRONTO!","READY!"))
+		record.button.TextColor3 = remaining > 0 and C.muted or record.tint
+		record.button.BackgroundColor3=remaining>0 and C.card or record.tint:Lerp(C.panel,0.8)
 		record.meter.Size = UDim2.fromScale(1 - math.clamp(remaining / math.max(match.ability and match.ability.cooldownTotal or 1, 1), 0, 1), 1)
 	end
 	for id, card in pairs(refs.heroCards or {}) do
