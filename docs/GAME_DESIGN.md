@@ -22,7 +22,7 @@ desatualizado; use-o para qualquer número de herói/habilidade específico.
    cada 10 (ondas 10/20/30/40) e o chefe final, mais forte, na onda 50.
 4. Ao vencer ou perder, Ouro/XP ganhos na partida são creditados
    imediatamente; a conta nunca perde progresso por queda de conexão (ver
-   `docs/architecture` sobre `RejoinService`).
+   `RejoinService` em `IMPLEMENTATION.md`).
 
 ## Modos (`Catalog.Modes`, portais em `Catalog.PortalOrder`)
 

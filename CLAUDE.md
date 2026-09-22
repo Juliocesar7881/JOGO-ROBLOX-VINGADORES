@@ -39,6 +39,13 @@ Useful narrower runs:
   equal Energy budget, no ability (`tests/duel_sweep.luau`).
 - `.tools/luau/luau.exe tools/gen_heroes_doc.luau > docs/HEROES.md` —
   regenerate the hero reference after any Catalog change.
+- `python tools/generate_audio.py` — rebuild the original WAVs in
+  `assets/audio` (own synthesis; `manifest.json` holds their hashes, checked
+  by `tests/test_audio.py`/`tests/test_release.py`).
+- `python tools/release.py --config deployment/local.json --check` — validate
+  the real account IDs; drop `--check` to write release places to
+  `dist/release`. `deployment/local.json` is gitignored; only
+  `deployment/template.json` (all zeros) is committed. See `docs/DEPLOYMENT.md`.
 
 ## The one invariant that matters most
 
@@ -65,7 +72,10 @@ src/client/   init.client (controller), UI (layout + widgets), Effects,
 tools/        build.py, test.py, setup_luau.py, gen_heroes_doc.luau, sweeps
 tests/        real-module tests via the official Luau CLI + deterministic
               Roblox stand-ins (tests/roblox_stubs.luau and friends)
-docs/         HEROES.md (generated), architecture/design/balance notes
+docs/         HEROES.md (generated), design/balance/deployment/status notes
+assets/audio/ original WAVs + manifest (import into Roblox, then put IDs in
+              deployment/local.json)
+deployment/   template.json of every account ID the release needs
 ```
 
 ## Working conventions

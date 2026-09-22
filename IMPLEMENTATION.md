@@ -15,6 +15,29 @@ their replacements (`OpenChest`, `SetLoadout`, `UpgradeAbility`,
 `UpgradeTalent`/`ResetTalents`, `ChooseCard`) and `PlayerService.luau`'s
 `ACTIONS` table for the exact, current, authoritative list.
 
+## Lobby shop entry, audio and release — 22/09/2026
+
+`Kind="HeroPedestal"` statues and the premium showcase no longer exist; the
+hero collection lives only in the HUD (inventory/hero panels). Each chest
+has a green entry zone in `world.shopZones[chestId]`; the bootstrap's
+Heartbeat calls `World:StepShopEntries(visitors)` (lobby players with a
+profile, not in a match, not travelling) every elevator tick. Stepping in
+fires `openPanel(player, "chests", {chestId})` exactly once; the player must
+leave the zone (1-stud tolerance) before it can fire again, and opening the
+page never spends Gold — `OpenChest` still requires the explicit confirm.
+
+`profile.settings.effects` (boolean) is new and independent of `music`;
+older profiles inherit it from `music`. `Settings` accepts it.
+`Config.Audio` gained `ability`, `boss`, `wave`, `chest`. Release places are
+produced by `tools/release.py` from `deployment/local.json` (gitignored);
+see `docs/DEPLOYMENT.md`.
+
+Boss telegraph `Pulse` events may carry `followEnemyId` (the client keeps
+the ring on that enemy), `warningText={pt,en}` and `requiresShield=true`
+(hide the ring once that enemy's shield is gone). `EnemySync` positions are
+now the route position; airborne height is added client-side, and `Shot`
+endpoints use the same heights (air 8, boss 4.2, brute 2.9, else 2).
+
 ## Ultimates and daily rewards — 22/09/2026
 
 Legendary/mythic abilities carry an optional `extras` list on the catalog

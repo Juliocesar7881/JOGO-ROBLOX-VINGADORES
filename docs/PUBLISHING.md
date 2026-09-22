@@ -60,12 +60,14 @@ ainda.
 
 ## Roblox
 
-Publicar o jogo em si (dois lugares, IDs de produto, licenciamento) está
-documentado na seção **"2. Publicar de verdade"** do `README.md` — não
-duplicado aqui para não haver duas versões da mesma instrução divergindo com
-o tempo. Resumo: preencha os IDs em `Config.luau`, rode
-`python tools/build.py`, suba os dois `.rbxlx` gerados para os lugares
-correspondentes.
+Publicar o jogo em si (dois lugares, IDs de produto e áudio) está em
+[DEPLOYMENT.md](DEPLOYMENT.md) — não duplicado aqui para não haver duas
+versões da mesma instrução divergindo com o tempo. Resumo: copie
+`deployment/template.json` para `deployment/local.json` (ignorado pelo Git),
+preencha os IDs da sua conta, rode `python tools/release.py --config
+deployment/local.json --check` e depois sem `--check` para gerar os lugares
+em `dist/release`. O que ainda falta para declarar lançamento está em
+[PRODUCTION_STATUS.md](PRODUCTION_STATUS.md).
 
 Teleporte, servidor reservado e compras reais só funcionam numa experiência
 publicada — nunca no playtest do Studio.
