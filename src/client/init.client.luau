@@ -16,6 +16,7 @@ local UI = require(script:WaitForChild("UI"))
 local Effects = require(script:WaitForChild("Effects"))
 local Audio = require(script:WaitForChild("Audio"))
 local Nameplates = require(script:WaitForChild("Nameplates"))
+local Celebrate = require(script:WaitForChild("Celebrate"))
 local remotes = ReplicatedStorage:WaitForChild("DoomRemotes")
 local requestRemote = remotes:WaitForChild("Request")
 local stateRemote = remotes:WaitForChild("State")
@@ -193,6 +194,15 @@ local function heroPortrait(parent, id, properties)
 	return UI.heroPortrait(parent, id, heroSource(id), colorFor(id), properties)
 end
 
+-- Chest reveals, banners, confetti and counter pops. Purely presentation:
+-- every number it shows was committed by the server first.
+local celebrate = Celebrate.new({
+	UI = UI, root = overlays, audio = audio, portrait = heroPortrait,
+	language = function() return language end,
+	lowFX = function() local settings = profile().settings return settings ~= nil and settings.lowFX == true end,
+})
+local resultsCelebrated = false
+
 -- Quickbar and formation cards share a real 3D portrait, a clear price and
 -- a small slot number. The compact version keeps its tested touch geometry.
 local function heroCard(parent, id, index, width, height, callback, equipped)
@@ -336,7 +346,7 @@ local function contextChests(body,data)
 		for _,x in ipairs({20,77}) do UI.frame(chestArt,{Position=UDim2.fromOffset(x,20),Size=UDim2.fromOffset(9,71),BackgroundColor3=C.gold}) end
 		UI.roundFrame(chestArt,{Position=UDim2.fromOffset(42,42),Size=UDim2.fromOffset(24,25),BackgroundColor3=C.gold},tint)
 		UI.label(chestArt,"◆",{Position=UDim2.fromOffset(43,40),Size=UDim2.fromOffset(22,25),TextColor3=C.background,TextXAlignment=Enum.TextXAlignment.Center,TextSize=17})
-		UI.label(display,string.upper(L(chest.name)),{Position=UDim2.fromOffset(128,20),Size=UDim2.new(1,-140,0,49),Font=Enum.Font.GothamBlack,TextColor3=tint,TextSize=21,TextWrapped=true})
+		UI.label(display,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(128,20),Size=UDim2.new(1,-140,0,49),Font=Enum.Font.GothamBlack,TextColor3=tint,TextSize=21,TextWrapped=true})
 		UI.label(display,number(chest.cost)..T(" OURO"," GOLD"),{Position=UDim2.fromOffset(128,79),Size=UDim2.new(1,-140,0,24),Font=Enum.Font.GothamBold,TextColor3=C.gold})
 		UI.label(display,T("1 herói • chances abaixo","1 hero • odds below"),{Position=UDim2.fromOffset(128,110),Size=UDim2.new(1,-140,0,25),TextSize=11,TextColor3=C.muted,TextWrapped=true})
 		local forced=chest.pity and ((profile().pity or {})[id] or 0)+1>=chest.pity.after
@@ -361,14 +371,17 @@ local function contextChests(body,data)
 				task.spawn(function()
 					local response=request("OpenChest",{chestId=id})
 					pending.OpenChest=nil
-					if response and response.ok then lastChestResult=response.data and response.data.result; audio:Cue("chest") end
+					if response and response.ok then
+						lastChestResult=response.data and response.data.result
+						if lastChestResult then celebrate:Chest(lastChestResult,id) else audio:Cue("chest") end
+					end
 					if contextPanel and contextPanel.kind=="chests" then renderContext() end
 				end)
 			end,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(12,86),Size=UDim2.new(0.6,-18,0,44),TextSize=12,BackgroundColor3=C.gold})
 			if not eligible or pending.OpenChest then UI.disabled(yes) end
 			UI.secondary(confirmation,T("CANCELAR","CANCEL"),function() confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.6,0,0,86),Size=UDim2.new(0.4,-12,0,44),TextSize=12})
 		else
-			local buy=UI.button(body,pending.OpenChest and T("ABRINDO…","OPENING…") or T("ABRIR ","OPEN ")..string.upper(L(chest.name)).." • "..number(chest.cost)..T(" OURO"," GOLD"),function() confirmChest=id; renderContext() end,{Name="OpenChest_"..id,Size=UDim2.new(1,-6,0,48),BackgroundColor3=tint,TextSize=14})
+			local buy=UI.button(body,pending.OpenChest and T("ABRINDO…","OPENING…") or T("ABRIR ","OPEN ")..Catalog.Upper(L(chest.name)).." • "..number(chest.cost)..T(" OURO"," GOLD"),function() confirmChest=id; renderContext() end,{Name="OpenChest_"..id,Size=UDim2.new(1,-6,0,48),BackgroundColor3=tint,TextSize=14})
 			if not eligible or pending.OpenChest then UI.disabled(buy) end
 		end
 		if not profile().paidRandomRestricted and (profile().gold or 0)<chest.cost then
@@ -382,7 +395,7 @@ local function contextChests(body,data)
 				for _,heroId in ipairs(pool) do if not (profile().heroes or {})[heroId] then table.insert(fresh,heroId) end end
 				local candidates=#fresh>0 and fresh or pool
 				local rarityTint=UI.color(Catalog.Rarities[rarity].color)
-				UI.label(body,string.upper(L(Catalog.Rarities[rarity].name)),{Size=UDim2.new(1,-6,0,24),TextColor3=rarityTint,Font=Enum.Font.GothamBold,TextSize=13})
+				UI.label(body,Catalog.Upper(L(Catalog.Rarities[rarity].name)),{Size=UDim2.new(1,-6,0,24),TextColor3=rarityTint,Font=Enum.Font.GothamBold,TextSize=13})
 				local size=screenSize(); local width=UI.contextLayout(size.X,size.Y).w-34
 				local columns=math.max(1,math.min(3,math.floor((width+8)/140)))
 				local cell=(width-(columns-1)*8)/columns
@@ -523,7 +536,7 @@ local function rewardGiven(paid)
 	end
 	lastRewardResult = paid
 	showToast(#parts > 0 and table.concat(parts, "  •  ") or T("Recompensa resgatada!", "Reward claimed!"), false)
-	audio:Cue("upgrade")
+	if paid.chest then celebrate:Chest(paid.chest, paid.chest.chestId) else audio:Cue("upgrade") end
 end
 
 local function contextRewards(body)
@@ -646,7 +659,7 @@ local function contextSquad(body)
   UI.shade(row,30)
   UI.portraitStage(row,tint,{Name="HeroArtwork",Position=UDim2.fromOffset(5,27),Size=UDim2.new(1,-10,0,101)})
   heroPortrait(row,id,{Position=UDim2.new(0,5,0,28),Size=UDim2.new(1,-10,0,100)})
-  UI.label(row,string.upper(L(rarity.name)),{Position=UDim2.fromOffset(9,7),Size=UDim2.new(1,-18,0,18),TextColor3=C.background,Font=Enum.Font.GothamBlack,TextSize=10})
+  UI.label(row,Catalog.Upper(L(rarity.name)),{Position=UDim2.fromOffset(9,7),Size=UDim2.new(1,-18,0,18),TextColor3=C.background,Font=Enum.Font.GothamBlack,TextSize=10})
   UI.label(row,heroName(id),{Position=UDim2.fromOffset(9,131),Size=UDim2.new(1,-18,0,38),Font=Enum.Font.GothamBlack,TextSize=13,TextWrapped=true,TextColor3=C.background})
   UI.label(row,owned and (T("NÍVEL ","LEVEL ")..owned.level.."/20") or T("AINDA NÃO TEM","NOT OWNED YET"),{Position=UDim2.fromOffset(9,172),Size=UDim2.new(1,-18,0,18),TextSize=10,TextColor3=C.panel})
   UI.button(row,slot==1 and T("★ LÍDER","★ LEADER") or slot and (T("NA EQUIPE • ","EQUIPPED • ")..slot) or T("VER HERÓI","VIEW HERO"),function() openContext("hero",{heroId=id}) end,{Name="FormationHero_"..id,Position=UDim2.fromOffset(7,195),Size=UDim2.new(1,-14,0,44),BackgroundColor3=id==leader and C.gold or owned and tint or C.card,TextColor3=owned and C.background or C.text,TextSize=11})
@@ -1038,7 +1051,7 @@ local function updatePortal(model, p)
 			label.TextColor3 = C.red
 		elseif mode then
 			local waves = mode.waves == 0 and T("ONDAS INFINITAS", "ENDLESS WAVES") or (tostring(mode.waves) .. T(" ONDAS", " WAVES"))
-			label.Text = (modeId == "tutorial" and (T("TREINAMENTO", "TRAINING") .. "\n") or "") .. (mapId and string.upper(mapName(mapId)) or T("MAPA ALEATÓRIO","RANDOM MAP")) .. "\n" .. waves .. "  •  " .. T("ENTRE PARA JOGAR", "STEP IN TO PLAY")
+			label.Text = (modeId == "tutorial" and (T("TREINAMENTO", "TRAINING") .. "\n") or "") .. (mapId and Catalog.Upper(mapName(mapId)) or T("MAPA ALEATÓRIO","RANDOM MAP")) .. "\n" .. waves .. "  •  " .. T("ENTRE PARA JOGAR", "STEP IN TO PLAY")
 			label.TextColor3 = modeTint[portalId] or C.green
 		end
 	end
@@ -1123,7 +1136,7 @@ renderElevator = function()
 	local card = UI.roundFrame(main, {Name = "ElevatorCard", Position = at(r), Size = dims(r), BackgroundColor3 = C.background}, tint)
 	refs.elevator = card
 	local title = (e.modeId and modeName(e.modeId) or "") .. " • " .. T("MAPA ALEATÓRIO","RANDOM MAP")
-	UI.label(card, string.upper(title), {Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -100, 0, 24), TextSize = compact and 13 or 16, Font = Enum.Font.GothamBold, TextColor3 = tint})
+	UI.label(card, Catalog.Upper(title), {Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -100, 0, 24), TextSize = compact and 13 or 16, Font = Enum.Font.GothamBold, TextColor3 = tint})
 	refs.elevatorCount = UI.label(card, elevatorCountText(), {Position = UDim2.new(1, -80, 0, 4), Size = UDim2.fromOffset(66, 40), TextSize = compact and 28 or 34, Font = Enum.Font.GothamBlack, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
 	local rowH = compact and 34 or 36
 	local rowY = r.h - rowH - 8
@@ -1538,7 +1551,7 @@ local function protocolModal(offers)
 		UI.frame(card,{Position=UDim2.fromOffset(0,6),Size=UDim2.new(0,3,1,-12),BackgroundColor3=tint,ZIndex=54})
 		UI.label(card, L(def.name), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 24), Font = Enum.Font.GothamBold, TextSize = P.class.compact and 13 or 15, TextWrapped = true, ZIndex = 54})
 		UI.label(card, L(def.description), {Position = at(P.descriptions[index], cardRect), Size = dims(P.descriptions[index]), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 54})
-		UI.button(card, T("ESCOLHER", "CHOOSE").." • "..string.upper(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(P.buttons[index], cardRect), Size = dims(P.buttons[index]), BackgroundColor3=tint, TextSize = 12, ZIndex = 54})
+		UI.button(card, T("ESCOLHER", "CHOOSE").." • "..Catalog.Upper(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(P.buttons[index], cardRect), Size = dims(P.buttons[index]), BackgroundColor3=tint, TextSize = 12, ZIndex = 54})
 	end
 end
 
@@ -1723,7 +1736,20 @@ local function renderResults()
 	for index,reward in ipairs({{T("ONDAS", "WAVES"), tostring(result.waves or 0), C.green}, {T("OURO", "GOLD"), "+" .. number(result.gold or 0), C.gold}, {"XP", "+" .. number(result.xp or 0), C.blue}}) do
 		local tile=UI.roundFrame(rewards,{Name="Reward_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-6,1,0),BackgroundColor3=reward[3]:Lerp(C.card,0.9)},reward[3]:Lerp(C.stroke,0.5))
 		UI.label(tile,reward[1],{Position=UDim2.fromOffset(4,6),Size=UDim2.new(1,-8,0,18),TextSize=10,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.GothamBold})
-		UI.label(tile,reward[2],{Position=UDim2.fromOffset(4,26),Size=UDim2.new(1,-8,1,-32),TextSize=mobile() and 19 or 24,TextColor3=reward[3],TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.GothamBlack})
+		UI.label(tile,reward[2],{Name="RewardValue_"..index,Position=UDim2.fromOffset(4,26),Size=UDim2.new(1,-8,1,-32),TextSize=mobile() and 19 or 24,TextColor3=reward[3],TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.GothamBlack})
+	end
+	if not resultsCelebrated then
+		-- Once per results screen: a re-render while rewards finish saving must
+		-- not throw a second round of confetti.
+		resultsCelebrated=true
+		celebrate:CountUp(rewards:FindFirstChild("Reward_1") and rewards.Reward_1:FindFirstChild("RewardValue_1"),result.waves or 0,function(v) return tostring(v) end,1)
+		celebrate:CountUp(rewards:FindFirstChild("Reward_2") and rewards.Reward_2:FindFirstChild("RewardValue_2"),result.gold or 0,function(v) return "+"..number(v) end,1.4)
+		celebrate:CountUp(rewards:FindFirstChild("Reward_3") and rewards.Reward_3:FindFirstChild("RewardValue_3"),result.xp or 0,function(v) return "+"..number(v) end,1.4)
+		if victory then
+			celebrate:Banner({pt="VITÓRIA!",en="VICTORY!"},{pt=tostring(result.waves or 0).." ondas defendidas",en=tostring(result.waves or 0).." waves defended"},C.gold,{big=true,cue="victory",confetti=60})
+		else
+			celebrate:Banner({pt="QUASE LÁ!",en="SO CLOSE!"},{pt="Você chegou à onda "..tostring(result.waves or 0)..". Da próxima vez vai!",en="You reached wave "..tostring(result.waves or 0)..". Next time!"},C.blue,{duration=2.2})
+		end
 	end
 	if result.modeId=="ranked" then
 		local tier=Rules.RankForWaves(result.waves)
@@ -1792,16 +1818,38 @@ player.CharacterAdded:Connect(function()
 	frameCommanderView(not not activeMatch())
 end)
 
+-- Compares the previous snapshot with the new one and celebrates what the
+-- player just earned: Gold in the lobby, Gold in battle, a cleared wave.
+local function celebrateChanges(previousGold, previousMatch, phaseChanged)
+	if phaseChanged then return end
+	if state.phase == "Lobby" and previousGold and refs.gold and (profile().gold or 0) > previousGold then
+		celebrate:Pop(refs.gold, 0.25)
+		celebrate:Float("+" .. number((profile().gold or 0) - previousGold), refs.gold, C.gold)
+	end
+	local match = state.match
+	if not (activeMatch() and match and previousMatch and previousMatch.runId == match.runId) then return end
+	if refs.matchGold and (match.goldEarned or 0) > (previousMatch.goldEarned or 0) then celebrate:Pop(refs.matchGold, 0.12) end
+	local cleared = match.completedWaves or 0
+	if cleared > (previousMatch.completedWaves or 0) and not Rules.IsBossWave(match.modeId, cleared) then
+		-- Boss waves get their own, bigger banner when the boss falls.
+		celebrate:Banner({pt = "ONDA " .. cleared .. " VENCIDA!", en = "WAVE " .. cleared .. " CLEARED!"}, nil, C.green, {cue = "wave"})
+	end
+end
+
 local function applyState(nextState)
 	if type(nextState) ~= "table" then return end
 	local previousPhase = state and state.phase
 	local previousLevel = state and state.profile and state.profile.level
+	local previousGold = state and state.profile and state.profile.gold
+	local previousMatch = state and state.match
 	local previousLanguage = language
 	state = nextState
 	language = state.profile and state.profile.settings and state.profile.settings.language or language
 	local kind = screenKey()
 	local signature = profileSignature()
 	local phaseChanged = previousPhase ~= state.phase and not ((previousPhase == "Wave" or previousPhase == "Preparing") and activeMatch())
+	if phaseChanged then celebrate:Clear() end
+	if state.phase ~= "Results" then resultsCelebrated = false end
 	if phaseChanged or kind ~= layoutKind or language ~= previousLanguage or not refs.wave and activeMatch() then
 		layoutKind = kind
 		render()
@@ -1823,9 +1871,11 @@ local function applyState(nextState)
 	lastProfileSignature = signature
 	audio:Update(state)
 	if previousLevel and (profile().level or 1) > previousLevel then
-		audio:Cue("levelUp")
-		showToast(T("NÍVEL ", "LEVEL ") .. profile().level .. "! +" .. (profile().level - previousLevel) .. T(" ponto(s) de evolução", " talent point(s)"))
+		celebrate:Banner({pt = "SUBIU DE NÍVEL! NV " .. profile().level, en = "LEVEL UP! LV " .. profile().level},
+			{pt = "+" .. (profile().level - previousLevel) .. " ponto(s) na árvore de evolução", en = "+" .. (profile().level - previousLevel) .. " talent point(s) to spend"},
+			C.violet, {big = true, cue = "levelUp", confetti = 40})
 	end
+	celebrateChanges(previousGold, previousMatch, phaseChanged)
 	nameplates:Update(state.players)
 	if state.notice then showToast(state.notice) end
 end
@@ -1843,7 +1893,16 @@ fxRemote.OnClientEvent:Connect(function(event)
 				shopKind = event.shopKind, shopKey = event.shopKey,
 			})
 		end
-	else effects:Handle(event) end
+	else
+		if event.kind == "EnemyDown" and event.boss and activeMatch() then
+			local def = Catalog.Enemies[event.enemyId]
+			celebrate:Banner({pt = "CHEFE DERROTADO!", en = "BOSS DEFEATED!"}, def and def.name or nil, C.gold, {big = true, cue = "victory", confetti = 50})
+		elseif event.kind == "Ability" and event.ultimate and event.ownerId == player.UserId then
+			local def = Catalog.Abilities[event.abilityId]
+			if def then celebrate:Banner({pt = "⚡ " .. Catalog.Upper(def.name.pt) .. "!", en = "⚡ " .. Catalog.Upper(def.name.en) .. "!"}, {pt = "ULTIMATE", en = "ULTIMATE"}, UI.color(def.color), {cue = "ability", duration = 1.5}) end
+		end
+		effects:Handle(event)
+	end
 end)
 
 local function handleWorldPointer(position)
@@ -1890,6 +1949,7 @@ end)
 local nameplateAt, anchorCheckAt = 0, 0
 RunService.RenderStepped:Connect(function(dt)
 	animateLobby(dt or 1 / 60)
+	celebrate:Step(dt or 1 / 60)
 	if refs.elevatorCount then
 		local count = elevatorCountText()
 		if refs.elevatorCount.Text ~= count then refs.elevatorCount.Text = count end

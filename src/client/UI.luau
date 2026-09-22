@@ -102,6 +102,20 @@ function UI.button(parent, text, callback, properties)
 		border.Transparency = 0.1
 	end
 	if callback then button.Activated:Connect(callback) end
+	-- Every button squashes under the finger and springs back: the smallest
+	-- bit of feel, applied everywhere at once.
+	local press = UI.create("UIScale", {Name = "PressScale", Scale = 1}, button)
+	local function squash(target, seconds, style)
+		local ok, tweens = pcall(game.GetService, game, "TweenService")
+		if ok and tweens then
+			tweens:Create(press, TweenInfo.new(seconds, style or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = target}):Play()
+		else
+			press.Scale = target
+		end
+	end
+	button.MouseButton1Down:Connect(function() if button.Active ~= false then squash(0.93, 0.07) end end)
+	button.MouseButton1Up:Connect(function() squash(1, 0.24, Enum.EasingStyle.Back) end)
+	button.MouseLeave:Connect(function() squash(1, 0.15) end)
 	return button
 end
 

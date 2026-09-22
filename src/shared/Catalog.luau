@@ -17,6 +17,19 @@ local function add(key, value) return { op = "add", key = key, value = value } e
 
 local Catalog = {}
 
+-- string.upper only knows ASCII, so "Baú Lendário" became "BAú LENDáRIO" on
+-- every sign and button that shouts a name. Every uppercase display of
+-- Portuguese text goes through this instead.
+local ACCENT_UPPER = {
+	["á"] = "Á", ["à"] = "À", ["â"] = "Â", ["ã"] = "Ã", ["é"] = "É", ["ê"] = "Ê",
+	["í"] = "Í", ["ó"] = "Ó", ["ô"] = "Ô", ["õ"] = "Õ", ["ú"] = "Ú", ["ü"] = "Ü", ["ç"] = "Ç",
+}
+function Catalog.Upper(value)
+	local result = string.upper(tostring(value or ""))
+	for lower, upper in pairs(ACCENT_UPPER) do result = string.gsub(result, lower, upper) end
+	return result
+end
+
 --==============================================================================
 -- Rarity
 --==============================================================================

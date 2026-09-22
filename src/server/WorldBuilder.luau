@@ -105,6 +105,10 @@ end
 -- hero-gallery statues both call this, so a hero looks like the same
 -- character everywhere instead of two unrelated blockouts.
 local FIGURE_SCALE = { hulk = 1.35, groot = 1.55, rocket = 0.72, wasp = 0.9, silversurfer = 1.05 }
+-- Sign text is shouted in capitals; string.upper does not know accents, so
+-- World.new swaps in the catalog's accent-aware version.
+local upper = string.upper
+
 local function heroFigure(parent, heroId, hero, origin, scale)
 	scale = scale or FIGURE_SCALE[heroId] or 1
 	parent:SetAttribute("FigureScale", scale)
@@ -559,6 +563,7 @@ function World:ApplyLobbyLighting()
 end
 
 function World.new(catalog, openPanel)
+	upper = catalog.Upper or string.upper
 	local self = setmetatable({ catalog = catalog, openPanel = openPanel }, World)
 	-- Match places need the same portraits even when their lobby is removed.
 	local storage = game:GetService("ReplicatedStorage")
@@ -610,7 +615,7 @@ local function buildModePortal(lobby, x, z, modeId, mode)
 	emitter(pad, tint, 6, 2, 0.7, 1.2, Vector3.new(0, 5, 0))
 	local glow = Instance.new("PointLight")
 	glow.Color, glow.Range, glow.Brightness, glow.Parent = tint, 18, 0.9, glass
-	wallSign(model,"ModeHeader",CFrame.new(x,17,z-3.6)*CFrame.Angles(0,math.pi,0),Vector3.new(16,3.8,0.5),string.upper(mode.name.pt),"SELECIONE SUA OPERAÇÃO",tint)
+	wallSign(model,"ModeHeader",CFrame.new(x,17,z-3.6)*CFrame.Angles(0,math.pi,0),Vector3.new(16,3.8,0.5),upper(mode.name.pt),"SELECIONE SUA OPERAÇÃO",tint)
 	-- The per-viewer sign: which map, how many waves, or what is still missing.
 	local sign = part(model, "Sign", Vector3.new(11, 2.2, 0.3), CFrame.new(x, 1.9, z + 5.6) * CFrame.Angles(0, math.pi, 0), ART.ink, Enum.Material.Metal)
 	local surface = Instance.new("SurfaceGui")
@@ -672,7 +677,7 @@ local function buildChestStand(lobby, x, z, chestId, chest, openPanel)
 		end
 	end
 	wallSign(model, "ChestNameplate", CFrame.new(x - 4.8, 2.6, z) * CFrame.Angles(0, math.pi / 2, 0), Vector3.new(7.2, 1.9, 0.2),
-		string.upper(chest.name.pt), commas(chest.cost) .. " OURO", tint)
+		upper(chest.name.pt), commas(chest.cost) .. " OURO", tint)
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= plinth then p.CanCollide = false end end
 	model.PrimaryPart = plinth
 	interactable(plinth, chest.name.pt, function(player) openPanel(player, "chests", { chestId = chestId }) end, 16)
@@ -1243,7 +1248,7 @@ end
 -- rather than trying to be personal to whoever is looking at it.
 function World:UpdateLeaderboardBoard(rows, mapName)
 	if not self.leaderboardText then return end
-	local lines = { "SALÃO DA FAMA", string.upper(mapName or "MANHATTAN") .. " • SOLO" }
+	local lines = { "SALÃO DA FAMA", upper(mapName or "MANHATTAN") .. " • SOLO" }
 	for index, row in ipairs(rows or {}) do
 		if index > 5 then break end
 		table.insert(lines, string.format("#%d  %s — %d", row.rank, row.name or tostring(row.userId), row.waves))

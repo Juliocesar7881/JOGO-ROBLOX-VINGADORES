@@ -331,6 +331,8 @@ local function session(screen)
 
 	local current = lobbySnapshot(veteranProfile())
 	local actions = {}
+	-- What the mocked server answers to OpenChest; nil keeps the plain {} reply.
+	local chestResult
 	requestRemote.InvokeServer = function(_, action, payload)
 		table.insert(actions, action)
 		if action == "Sync" then return { ok = true, data = current } end
@@ -341,6 +343,7 @@ local function session(screen)
 		if action == "Leaderboard" then
 			return { ok = true, data = { rows = { { rank = 1, userId = 5, name = "Ana", waves = 42 }, { rank = 2, userId = LOCAL_ID, name = "Tester", waves = 12 } }, season = 1, personal = 12 } }
 		end
+		if action == "OpenChest" and chestResult then return { ok = true, data = { result = chestResult } } end
 		return { ok = true, data = {} }
 	end
 	local function push(snapshot)
@@ -394,7 +397,8 @@ local function session(screen)
 	local effectsScript = moduleScript(clientScript, "Effects", __EFFECTS__)
 	local audioScript = moduleScript(clientScript, "Audio", __AUDIO__)
 	local nameplatesScript = moduleScript(clientScript, "Nameplates", __NAMEPLATES__)
-	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript }) do loaded[item] = nil end
+	local celebrateScript = moduleScript(clientScript, "Celebrate", __CELEBRATE__)
+	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript }) do loaded[item] = nil end
 	loaded[shared.Config] = nil
 
 	if not step("init.client boots and syncs", function() __CLIENT__(clientScript, clockOs); flush() end) then return end
@@ -550,6 +554,69 @@ local function session(screen)
 		check(asked("ClaimQuest"), tag .. ": the mission board claims a finished quest")
 		click("×")
 		check(not contextOpen(), tag .. ": the close button dismisses the panel")
+	end)
+
+	step("earned Gold pops and floats up from the lobby counter", function()
+		local richer = veteranProfile()
+		richer.gold = (richer.gold or 0) + 250
+		push(lobbySnapshot(richer))
+		local float = named(overlays, "FloatingGain")
+		check(float ~= nil and float.Text == "+250", tag .. ": the gain floats above the Gold counter, got " .. tostring(float and float.Text))
+		frames(1 / 30, 45)
+		check(named(overlays, "FloatingGain") == nil, tag .. ": the floating number fades away")
+		push(lobbySnapshot(veteranProfile()))
+	end)
+
+	step("a chest reveal builds suspense, then shows the hero", function()
+		local function reveal() return overlays:FindFirstChild("ChestReveal") end
+		local function openRare()
+			fx({ kind = "OpenPanel", panel = "chests" })
+			click("ABRIR")
+			clickNamed("ConfirmChest_rare")
+		end
+		chestResult = { chestId = "rare", heroId = "thor", rarity = "legendary", duplicate = false, refundGold = 0, refundMastery = 0 }
+		openRare()
+		local stage = reveal()
+		check(stage ~= nil, tag .. ": confirming a chest opens the full-screen reveal")
+		local card = stage and named(stage, "RevealHeroCard")
+		check(card ~= nil and card.Visible == false, tag .. ": the hero stays hidden while the chest charges")
+		frames(1 / 30, 25)
+		local tier = stage and named(stage, "TierLabel")
+		check(tier ~= nil and tier.Text ~= "", tag .. ": the chest climbs through rarity names while it charges")
+		check(not named(stage, "RevealContinue").Visible, tag .. ": no way out before the prize is shown")
+		clickNamed("RevealSkip")
+		check(card.Visible and named(stage, "RevealContinue").Visible, tag .. ": a tap skips straight to the hero")
+		check(named(stage, "RevealName").Text == Catalog.Heroes.thor.name.pt, tag .. ": the reveal names the hero the server granted")
+		check(string.find(named(stage, "RevealStatus").Text, "NOVO", 1, true) ~= nil, tag .. ": a new hero is celebrated as new")
+		check(string.find(named(stage, "RevealRarity").Text, "LENDÁRIO", 1, true) ~= nil, tag .. ": the rarity is shouted with its accent intact, got " .. named(stage, "RevealRarity").Text)
+		clickNamed("RevealContinue")
+		check(reveal() == nil, tag .. ": the continue button closes the reveal")
+		check(countNamed(gui, "ChestResult") == 1, tag .. ": the panel keeps the result card afterwards")
+
+		-- A duplicate plays through on its own and says what it turned into.
+		chestResult = { chestId = "rare", heroId = "falcon", rarity = "common", duplicate = true, refundGold = 150, refundMastery = 60 }
+		openRare()
+		frames(1 / 30, 90)
+		stage = reveal()
+		check(stage ~= nil and named(stage, "RevealContinue").Visible, tag .. ": left alone, the reveal finishes by itself")
+		check(stage and string.find(named(stage, "RevealStatus").Text, "150", 1, true) ~= nil, tag .. ": a duplicate shows the Gold it became")
+		clickNamed("RevealContinue")
+
+		-- Reduced effects: same result, no charging build-up.
+		local calm = veteranProfile()
+		calm.settings.lowFX = true
+		push(lobbySnapshot(calm))
+		chestResult = { chestId = "rare", heroId = "widow", rarity = "rare", duplicate = false, refundGold = 0, refundMastery = 0 }
+		frames(1 / 30, 100) -- the previous reveal's confetti has landed
+		openRare()
+		frames(1 / 30, 25)
+		stage = reveal()
+		check(stage ~= nil and named(stage, "RevealHeroCard").Visible, tag .. ": with reduced effects the hero shows in under a second")
+		check(countNamed(overlays, "Confetti") == 0, tag .. ": reduced effects throws no confetti")
+		clickNamed("RevealContinue")
+		chestResult = nil
+		push(lobbySnapshot(veteranProfile()))
+		click("×")
 	end)
 
 	step("HUD affordances open their panels", function()
@@ -801,6 +868,30 @@ local function session(screen)
 		push(matchSnapshot(profile, "Preparing"))
 	end)
 
+	step("battle moments get their own banners", function()
+		local function bannerTitle()
+			local banner = named(overlays, "CelebrationBanner")
+			return banner and named(banner, "BannerTitle").Text or ""
+		end
+		push(matchSnapshot(profile, "Wave", { completedWaves = 2, wave = 3 }))
+		push(matchSnapshot(profile, "Preparing", { completedWaves = 3, wave = 3, goldEarned = 400 }))
+		check(string.find(bannerTitle(), "ONDA 3 VENCIDA", 1, true) ~= nil, tag .. ": a cleared wave is celebrated, got " .. bannerTitle())
+		check(named(gui, "PopScale") ~= nil, tag .. ": battle Gold pops when it grows")
+		push(matchSnapshot(profile, "Wave", { completedWaves = 9, wave = 10 }))
+		push(matchSnapshot(profile, "Preparing", { completedWaves = 10, wave = 10 }))
+		check(string.find(bannerTitle(), "ONDA 10", 1, true) == nil, tag .. ": a boss wave waits for the boss banner instead")
+		push(matchSnapshot(profile, "Wave", { completedWaves = 10, wave = 11 }))
+		fx({ kind = "EnemyDown", id = 44, enemyId = "lizard", position = v3(0, 0, 0), boss = true })
+		check(string.find(bannerTitle(), "CHEFE DERROTADO", 1, true) ~= nil, tag .. ": a fallen boss gets a big banner, got " .. bannerTitle())
+		fx({ kind = "Ability", heroId = "captainmarvel", abilityId = "photonNova", abilityKind = "blast", ultimate = true, ownerId = LOCAL_ID,
+			position = v3(0, 0, 0), radius = 60, duration = 2, color = Color3.fromRGB(255, 210, 90), points = {} })
+		check(string.find(bannerTitle(), "⚡", 1, true) ~= nil and string.find(bannerTitle(), "NOVA FOTÔNICA", 1, true) ~= nil,
+			tag .. ": your own ultimate shouts its name, accents intact, got " .. bannerTitle())
+		frames(1 / 30, 120)
+		check(named(overlays, "CelebrationBanner") == nil, tag .. ": banners clear themselves")
+		push(matchSnapshot(profile, "Preparing"))
+	end)
+
 	step("placing a tower from a hotkey", function()
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.One, Position = v3(0, 0, 0) }, false)
 		flush()
@@ -1011,6 +1102,14 @@ local function session(screen)
 		local results = resultsSnapshot(profile)
 		for _, heroId in ipairs(Catalog.HeroOrder) do results.results.mastery[heroId] = 50 end
 		push(results)
+		local banner = named(overlays, "CelebrationBanner")
+		check(banner ~= nil and string.find(named(banner, "BannerTitle").Text, "VITÓRIA", 1, true) ~= nil, tag .. ": a win is announced with a big banner")
+		local goldValue = named(gui, "RewardValue_2")
+		check(goldValue ~= nil and goldValue.Text ~= "+1.500", tag .. ": the Gold reward starts counting up instead of appearing whole")
+		frames(1 / 30, 60)
+		check(goldValue.Text == "+1.500", tag .. ": the Gold counter lands exactly on the reward, got " .. tostring(goldValue.Text))
+		push(results)
+		check(countNamed(overlays, "CelebrationBanner") <= 1, tag .. ": a re-render of the same results never repeats the celebration")
 		local back, body = named(gui, "ResultReturn"), named(gui, "ResultBody")
 		check(back ~= nil and body ~= nil and back.Parent == body.Parent,
 			tag .. ": return action remains outside the long rewards scroll")

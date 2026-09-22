@@ -20,6 +20,7 @@ LOADERS = {
     "__EFFECTS__": "src/client/Effects.luau",
     "__AUDIO__": "src/client/Audio.luau",
     "__NAMEPLATES__": "src/client/Nameplates.luau",
+    "__CELEBRATE__": "src/client/Celebrate.luau",
     "__WORLD__": "src/server/WorldBuilder.luau",
     "__CLIENT__": "src/client/init.client.luau",
 }

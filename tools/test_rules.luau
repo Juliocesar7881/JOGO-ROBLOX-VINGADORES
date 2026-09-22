@@ -18,6 +18,18 @@ end
 -- Catalog shape
 --==============================================================================
 equal(#Catalog.HeroOrder, 24, "Roster size")
+-- Shouted names keep their accents (string.upper alone produced "BAú LENDáRIO").
+equal(Catalog.Upper("Baú Lendário"), "BAÚ LENDÁRIO", "Accent-aware uppercase")
+equal(Catalog.Upper("Instalação da HYDRA"), "INSTALAÇÃO DA HYDRA", "Cedilla and tilde uppercase")
+equal(Catalog.Upper("Nova Fotônica"), "NOVA FOTÔNICA", "Circumflex uppercase")
+-- Plain finds: a Lua character class compares bytes, and every accented
+-- UTF-8 letter shares its first byte with every other one.
+for _, rarity in Catalog.RarityOrder do
+	local shouted = Catalog.Upper(Catalog.Rarities[rarity].name.pt)
+	for _, lower in { "á", "à", "â", "ã", "é", "ê", "í", "ó", "ô", "õ", "ú", "ç" } do
+		check(not string.find(shouted, lower, 1, true), "No lowercase accent survives: " .. rarity .. " " .. shouted)
+	end
+end
 equal(#Catalog.MapOrder, 5, "Campaign map count")
 equal(#Catalog.EnemyOrder, 8, "Enemy families")
 equal(#Catalog.BossOrder, 5, "Boss count")
