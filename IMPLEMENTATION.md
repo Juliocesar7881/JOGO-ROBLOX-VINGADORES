@@ -1,5 +1,19 @@
 # Integration contract
 
+## Revisão de interface — 22/09/2026
+
+`UI.contextLayout` calcula a área de todos os menus do lobby. Em telas baixas,
+`slot.modal` oculta os cantos e a navegação enquanto o menu está aberto; o
+elevador conserva uma área separada. `ResultReturn` fica fora de `ResultBody`.
+`UI.icon` produz os símbolos com formas locais, sem IDs de assets externos.
+Animações de abertura respeitam `settings.lowFX`; transições não alteram regras.
+
+O botão JOGAR utiliza `StartMatch`, com os mesmos bloqueios de perfil e grupo.
+O servidor sorteia o mapa em `startMatch`, incluindo chamadas pelo HUD;
+o treinamento continua em Manhattan. Nenhuma decisão de custo, recompensa
+ou combate passou ao cliente. `tools/studio_hud_review.luau` instala estados
+visuais só em uma cópia descartável e intercepta as intenções de rede.
+
 ## Atualização de rotas e competição
 
 `ranked` substitui `hard` nos catálogos, portais e partidas. `normal` não

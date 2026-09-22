@@ -1,5 +1,29 @@
 # Vingadores: Doomsday — Última Defesa
 
+## Interfaces: navegação e acabamento — 22/09/2026
+
+- HUD do lobby com ícones próprios, indicação da categoria aberta e botão
+  **JOGAR**. Ele abre os modos disponíveis, explica os bloqueios e inicia uma
+  partida com mapa sorteado pelo servidor. Portais continuam disponíveis.
+- Azul mais claro, bordas suaves, contraste maior e abertura animada breve,
+  respeitando **Menos efeitos e flashes**. Referências e decisões em
+  [docs/HUD_REFERENCES.md](docs/HUD_REFERENCES.md).
+- Evolução mostra os pontos disponíveis também na navegação. Inventário,
+  árvore, configurações, missões e lojas têm ações maiores para toque.
+- Ouro e Energia identificados; combate mostra uso do limite de heróis,
+  recarga do poder do líder, vida da base e orientação do chefe. A barra de
+  heróis aproveita a largura disponível para retratos e nomes maiores.
+- Menus adaptados a telas baixas preservam o fechamento e o cartão de saída
+  do portal. Cartas têm mais espaço para descrição. Resultados mantêm
+  **VOLTAR À BASE** fixo, fora da rolagem, e agrupam ondas, Ouro e XP no início.
+- Validação automatizada: suíte completa aprovada; 6.313 verificações de
+  layout e 1.494 de execução/navegação do cliente. Revisão visual no renderer
+  do Studio com `tools/studio_hud_review.luau`, que usa estados simulados e
+  bloqueia intenções de compra/progresso na cópia descartável de teste.
+  Isso não substitui testes de toque e desempenho em aparelhos reais.
+
+Reabra **dist/Doomsday-Studio.rbxlx** no Studio para carregar o HUD atualizado.
+
 ## Rotas visíveis e modo ranqueado — revisão atual
 
 - Campanha começa diretamente com **50 ondas**, mesmo na primeira sessão.

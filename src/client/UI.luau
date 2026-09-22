@@ -409,6 +409,9 @@ function UI.matchLayout(width, height, options)
 		layout.actionTop = bandY - 8 - buttonH
 		layout.abilities = rect(pad, layout.actionTop, abilitiesW, buttonH)
 	end
+	-- Use spare quickbar width for readable names and portraits. Only scroll
+	-- when five comfortable cards cannot fit, as on a landscape phone.
+	layout.cardW = math.max(layout.cardW, math.min(160, math.floor((layout.heroCards.w - 42) / 5)))
 
 	local placementH, hintH = 56, 40
 	local bossH = class.short and 60 or 76

@@ -607,6 +607,18 @@ local function session(screen)
 		check(not asked("ElevatorMap"), tag .. ": no manual map selection")
 		fx({ kind = "OpenPanel", panel = "quests" })
 		check(main:FindFirstChild("ContextPanel") ~= nil, tag .. ": a panel opened while riding stops above the card")
+		local panelRect = screenRect(named(gui, "ContextPanel"), gui, SCREEN)
+		local bodyRect = screenRect(named(gui, "ContextBody"), gui, SCREEN)
+		local elevatorRect = screenRect(card, gui, SCREEN)
+		check(panelRect ~= nil and elevatorRect ~= nil and panelRect.y + panelRect.h <= elevatorRect.y,
+			tag .. ": the actual panel never covers the portal countdown or Leave action")
+		check(bodyRect ~= nil and bodyRect.h >= 65,
+			tag .. ": a compact screen keeps a scrollable panel body while boarding")
+		local close = named(gui, "CloseContext")
+		local closeRect = screenRect(close, gui, SCREEN)
+		check(closeRect ~= nil and closeRect.w >= 40 and closeRect.h >= 40
+			and closeRect.y >= 0 and closeRect.y + closeRect.h <= SCREEN.h,
+			tag .. ": the panel close action stays reachable while boarding")
 		click("×")
 		click("SAIR")
 		check(asked("ElevatorLeave"), tag .. ": Leave is sent to the server")

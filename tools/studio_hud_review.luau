@@ -3,8 +3,10 @@
 -- placement or progression action is submitted during the review.
 -- After Play, use the CLIENT command bar to revisit any stage:
 -- game.Players.LocalPlayer:SetAttribute("DoomHudStage", "cards")
+-- Optional: change DoomHudLanguage to "en" and revisit a stage.
 -- Stages: lobby, modes, inventory, hero, talents, chests, premium, preparing,
--- wave, tower, cards, results. The automatic tour finishes on results.
+-- wave, tower, cards, results. Additional manual stages: quests, leaderboard,
+-- settings, defeat, finalboss, boarding. The automatic tour finishes on results.
 local starters = game:GetService("StarterPlayer").StarterPlayerScripts
 for _, child in ipairs(starters:GetChildren()) do
 	if not child:IsA("LocalScript") then continue end
@@ -19,6 +21,13 @@ task.spawn(function()
 	while not state or not state.profile do task.wait(0.2) end
 	task.wait(2)
 	player:SetAttribute("DoomHudReview", true)
+	-- Optional editor attributes constrain only the review's GUI area. This
+	-- exercises actual text rendering at phone sizes, not device performance.
+	local reviewWidth, reviewHeight = workspace:GetAttribute("DoomHudWidth"), workspace:GetAttribute("DoomHudHeight")
+	if type(reviewWidth)=="number" and type(reviewHeight)=="number" then
+		main.Size=UDim2.fromOffset(reviewWidth,reviewHeight)
+		overlays.Size=main.Size
+	end
 	local function clone(value)
 		if type(value) ~= "table" then return value end
 		local result = {}
@@ -74,6 +83,9 @@ task.spawn(function()
 	end
 	local function visibleText(item)
 		if not (item:IsA("TextLabel") or item:IsA("TextButton")) or item.Text == "" then return false end
+		-- Icon navigation retains accessible text on its parent button, but only
+		-- the child label is painted. Do not report deliberately invisible text.
+		if item.TextTransparency >= 1 and item.TextStrokeTransparency >= 1 then return false end
 		if item.AbsoluteSize.X <= 0 or item.AbsoluteSize.Y <= 0 then return false end
 		local top, bottom = item.AbsolutePosition.Y, item.AbsolutePosition.Y + item.AbsoluteSize.Y
 		local left, right = item.AbsolutePosition.X, item.AbsolutePosition.X + item.AbsoluteSize.X
@@ -104,25 +116,39 @@ task.spawn(function()
 		print("DOOM_HUD_MEASURE", stage, "visible", visible, "overflow", overflow, "screen", main.AbsoluteSize)
 	end
 	local function showStage(stage)
-		if stage == "preparing" or stage == "wave" or stage == "tower" or stage == "cards" then
+		language = player:GetAttribute("DoomHudLanguage") == "en" and "en" or "pt"
+		fixtureProfile.settings.language = language
+		if stage == "preparing" or stage == "wave" or stage == "tower" or stage == "cards" or stage == "finalboss" then
 			state = matchFixture(stage == "preparing" and "Preparing" or "Wave")
 			if stage ~= "preparing" then
 				state.match.boss = {id = "lizard", name = {pt = "Lagarto infectado", en = "Infected Lizard"},
 					hp = 1800, maxHP = 2453, phase = 2,
 					hint = {pt = "Concentre os ataques para parar a regeneração!", en = "Focus your attacks to stop regeneration!"}}
 			end
+			if stage == "finalboss" then
+				state.match.wave = 50
+				state.match.boss.final = true
+				state.match.boss.name = Catalog.Enemies.killmonger.name
+				state.match.boss.hint = Catalog.Enemies.killmonger.hint
+			end
 			if stage == "cards" then state.match.cardOffers = {"sharpen", "quickDraw", "warChest"} end
 			render()
 			if stage == "tower" then selectTower("review2") end
-		elseif stage == "results" then
+		elseif stage == "results" or stage == "defeat" then
 			state = {phase = "Results", role = "Standalone", profile = fixtureProfile, players = actors,
-				results = {victory = true, waves = 50, gold = 1825, xp = 840, startLevel = 10,
+				results = {victory = stage == "results", waves = stage == "results" and 50 or 37, gold = 1825, xp = 840, startLevel = 10,
 					mapId = "manhattan", modeId = "ranked", mastery = {ironman = 180, hawkeye = 90, spiderman = 80, thor = 65, hulk = 55}}}
 			render()
 		else
 			state = {phase = "Lobby", role = "Standalone", profile = fixtureProfile, players = actors}
+			if stage == "boarding" then
+				state.elevator = {portalId = "normal", modeId = "normal", mapId = "gamma", max = 4, remaining = 99,
+					host = true, maps = 5, riders = actors}
+			end
 			render()
-			if stage ~= "lobby" then
+			if stage == "boarding" then
+				openContext("quests", {})
+			elseif stage ~= "lobby" then
 				openContext(stage, stage == "hero" and {heroId = "ironman"} or {})
 			end
 		end

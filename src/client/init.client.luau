@@ -200,12 +200,8 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 	return button, price, line
 end
 
--- Every contextual panel below renders into a small scroll body in the middle
--- of the screen, opened by walking up to one physical location in the lobby
--- (or, for the squad and settings, one of the two small corner buttons). None
--- of them carry navigation to another category: closing one and walking to a
--- different location is how you switch subjects, on purpose. Starting a match
--- has no panel at all: the mode portals are elevators you step into.
+-- Lobby locations and the HUD share these panels. The HUD offers a quick
+-- route to playing, forming a team and spending earned progression points.
 local modeTint = {
 	normal = C.green, ranked = Color3.fromRGB(255, 138, 61), infinite = Color3.fromRGB(177, 119, 243),
 	cards = Color3.fromRGB(177,119,243),
@@ -218,7 +214,7 @@ local modeLockHints = {
 }
 
 local function contextHero(body, data)
-	UI.secondary(body,T("‹ INVENTÁRIO","‹ INVENTORY"),function() openContext("inventory",{}) end,{Name="BackToInventory",Size=UDim2.new(1,-6,0,40),TextSize=12})
+	UI.secondary(body,T("‹ MEUS HERÓIS","‹ MY HEROES"),function() openContext("inventory",{}) end,{Name="BackToInventory",Size=UDim2.new(1,-6,0,44),TextSize=12})
 	local id = data.heroId
 	local def = Catalog.Heroes[id]
 	if not def then return end
@@ -251,7 +247,7 @@ local function contextHero(body, data)
 		local list=copy(profile().loadout); local old=table.find(list,id)
 		if old then table.remove(list,old) elseif #list<5 then table.insert(list,id) else showToast(T("A equipe tem 5 heróis. Retire um primeiro.","Squad full. Unequip a hero first."),true); return end
 		act("SetLoadout",{heroes=list})
-	end,{Size=UDim2.new(1,-6,0,42)})
+	end,{Size=UDim2.new(1,-6,0,44)})
 	UI.section(body,T("MELHORE SEU PODER","UPGRADE YOUR POWER"),T("Nível do herói ","Hero level ")..owned.level.."/20")
 	local offer=Rules.AbilityUpgrade(def,rank)
 	if offer then
@@ -302,11 +298,11 @@ local function contextChests(body,data)
 	if lastChestResult then
 		local r=lastChestResult
 		local hero=Catalog.Heroes[r.heroId]
-		local row=UI.roundFrame(body,{Name="ChestResult",Size=UDim2.new(1,-6,0,142),BackgroundColor3=C.card},UI.color(Catalog.Rarities[r.rarity].color))
+		local row=UI.roundFrame(body,{Name="ChestResult",Size=UDim2.new(1,-6,0,154),BackgroundColor3=C.card},UI.color(Catalog.Rarities[r.rarity].color))
 		heroPortrait(row,r.heroId,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(100,130)})
 		UI.label(row,heroName(r.heroId),{Position=UDim2.fromOffset(112,10),Size=UDim2.new(1,-126,0,44),TextSize=20,TextWrapped=true,Font=Enum.Font.GothamBlack})
 		UI.label(row,r.duplicate and (T("Repetido: +","Duplicate: +")..r.refundGold..T(" Ouro e +"," Gold and +")..r.refundMastery..T(" maestria"," mastery")) or T("NOVO HERÓI DESBLOQUEADO!","NEW HERO UNLOCKED!"),{Position=UDim2.fromOffset(112,57),Size=UDim2.new(1,-126,0,38),TextWrapped=true,TextSize=12,TextColor3=C.gold})
-		UI.button(row,T("VER HERÓI","VIEW HERO"),function() openContext("hero",{heroId=r.heroId}) end,{Position=UDim2.fromOffset(112,100),Size=UDim2.new(1,-126,0,32),TextSize=12})
+		UI.button(row,T("VER HERÓI","VIEW HERO"),function() openContext("hero",{heroId=r.heroId}) end,{Position=UDim2.fromOffset(112,100),Size=UDim2.new(1,-126,0,44),TextSize=12})
 	end
 	for _,id in ipairs({selectedChest}) do
 		local chest=Catalog.Chests[id]; local tint=UI.color(chest.color)
@@ -367,7 +363,7 @@ local function contextPremium(body)
 				if not info or owned then return end
 				local ok=pcall(function() if group.kind=="pass" then MarketplaceService:PromptGamePassPurchase(player,info.id) else MarketplaceService:PromptProductPurchase(player,info.id) end end)
 				if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
-			end,{Position=UDim2.fromOffset(left,59),Size=UDim2.new(1,-left-12,0,39),BackgroundColor3=C.gold,TextSize=12})
+			end,{Position=UDim2.fromOffset(left,59),Size=UDim2.new(1,-left-12,0,44),BackgroundColor3=C.gold,TextSize=12})
 			if not info or owned then UI.disabled(buy) end
 		end
 	end
@@ -386,14 +382,14 @@ local function contextQuests(body)
 	table.sort(quests, function(a, b) return a.id < b.id end)
 	for _, item in ipairs(quests) do
 		local quest, id = item.quest, item.id
-		local card = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 160), BackgroundColor3 = C.card})
+		local card = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 176), BackgroundColor3 = C.card})
 		heading(card, L(quest.name), 10)
 		smallText(card, L(quest.description), 39, 34)
 		local progress = math.min(quest.progress or 0, quest.target or 1)
 		local fill = UI.bar(card, C.green, UDim2.fromOffset(14, 78), UDim2.new(1, -28, 0, 7))
 		fill.Size = UDim2.fromScale(progress / math.max(quest.target or 1, 1), 1)
 		smallText(card, progress .. "/" .. (quest.target or 1) .. "  •  " .. number(quest.gold or 0) .. T(" Ouro  +  ", " Gold  +  ") .. number(quest.xp or 0) .. " XP", 91, 22)
-		local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or T("Resgatar recompensa", "Claim reward"), function() act("ClaimQuest", {questId = id}) end, {Position = UDim2.new(0, 12, 1, -40), Size = UDim2.new(1, -24, 0, 30)})
+		local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or T("Resgatar recompensa", "Claim reward"), function() act("ClaimQuest", {questId = id}) end, {Position = UDim2.new(0, 12, 1, -54), Size = UDim2.new(1, -24, 0, 44)})
 		if quest.claimed or progress < (quest.target or 1) then UI.disabled(claim) end
 	end
 	if #quests == 0 then UI.label(body, T("Conclua o treinamento para iniciar suas missões.", "Complete training to begin your missions."), {Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.muted}) end
@@ -470,8 +466,8 @@ local function contextSquad(body)
 	if leader then
 		local banner=UI.roundFrame(body,{Name="LeaderBanner",Size=UDim2.new(1,-6,0,94),BackgroundColor3=C.gold:Lerp(C.background,0.85)},C.gold)
 		heroPortrait(banner,leader,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(75,84)})
-		UI.label(banner,T("SLOT 1 • LÍDER\n","SLOT 1 • LEADER\n")..heroName(leader),{Position=UDim2.fromOffset(87,7),Size=UDim2.new(1,-99,0,42),Font=Enum.Font.GothamBold,TextColor3=C.gold,TextWrapped=true,TextSize=13})
-		UI.label(banner,T("ATIVA: ","ACTIVE: ")..L(Catalog.Abilities[Catalog.Heroes[leader].ability].name),{Position=UDim2.fromOffset(87,52),Size=UDim2.new(1,-99,0,34),TextWrapped=true,TextSize=12})
+		UI.label(banner,T("1º HERÓI • SEU LÍDER\n","1ST HERO • YOUR LEADER\n")..heroName(leader),{Position=UDim2.fromOffset(87,7),Size=UDim2.new(1,-99,0,42),Font=Enum.Font.GothamBold,TextColor3=C.gold,TextWrapped=true,TextSize=13})
+		UI.label(banner,T("SEU PODER: ","YOUR POWER: ")..L(Catalog.Abilities[Catalog.Heroes[leader].ability].name),{Position=UDim2.fromOffset(87,52),Size=UDim2.new(1,-99,0,34),TextWrapped=true,TextSize=12})
 	end
  local ownedCount=0
  for _,id in ipairs(Catalog.HeroOrder) do if (profile().heroes or {})[id] then ownedCount+=1 end end
@@ -481,32 +477,33 @@ local function contextSquad(body)
  for _,id in ipairs(Catalog.HeroOrder) do
   if inventoryFilter=="all" or (profile().heroes or {})[id] then table.insert(entries,id) end
  end
- local width=math.min(650,screenSize().X-24)-34
+ local size=screenSize()
+ local width=UI.contextLayout(size.X,size.Y).w-34
  local columns=math.max(1,math.min(3,math.floor((width+10)/165)))
  local cellWidth=(width-(columns-1)*10)/columns
- local gallery=UI.frame(body,{Name="HeroGallery",Size=UDim2.new(1,-6,0,math.ceil(#entries/columns)*246-10),BackgroundTransparency=1})
+ local gallery=UI.frame(body,{Name="HeroGallery",Size=UDim2.new(1,-6,0,math.ceil(#entries/columns)*256-10),BackgroundTransparency=1})
  for index,id in ipairs(entries) do
   local def=Catalog.Heroes[id]
   local owned=(profile().heroes or {})[id]
   local rarity=Catalog.Rarities[def.rarity]
   local tint=UI.color(rarity.color)
   local slot=table.find(profile().loadout or {},id)
-  local row=UI.roundFrame(gallery,{Name="Collection_"..id,Position=UDim2.fromOffset(((index-1)%columns)*(cellWidth+10),math.floor((index-1)/columns)*246),Size=UDim2.fromOffset(cellWidth,236),BackgroundColor3=tint:Lerp(C.background,0.92)},id==leader and C.gold or tint)
+  local row=UI.roundFrame(gallery,{Name="Collection_"..id,Position=UDim2.fromOffset(((index-1)%columns)*(cellWidth+10),math.floor((index-1)/columns)*256),Size=UDim2.fromOffset(cellWidth,246),BackgroundColor3=tint:Lerp(C.background,0.92)},id==leader and C.gold or tint)
   UI.shade(row,30)
   heroPortrait(row,id,{Position=UDim2.new(0,5,0,28),Size=UDim2.new(1,-10,0,100)})
   UI.label(row,string.upper(L(rarity.name)),{Position=UDim2.fromOffset(9,7),Size=UDim2.new(1,-18,0,18),TextColor3=tint,Font=Enum.Font.GothamBold,TextSize=10})
   UI.label(row,heroName(id),{Position=UDim2.fromOffset(9,131),Size=UDim2.new(1,-18,0,38),Font=Enum.Font.GothamBold,TextSize=13,TextWrapped=true})
   UI.label(row,owned and (T("NÍVEL ","LEVEL ")..owned.level.."/20") or T("AINDA NÃO TEM","NOT OWNED YET"),{Position=UDim2.fromOffset(9,172),Size=UDim2.new(1,-18,0,18),TextSize=10,TextColor3=owned and C.muted or tint})
-  UI.button(row,slot==1 and T("★ LÍDER","★ LEADER") or slot and (T("SLOT ","SLOT ")..slot) or owned and T("VER HERÓI","VIEW HERO") or T("VER HERÓI","VIEW HERO"),function() openContext("hero",{heroId=id}) end,{Name="FormationHero_"..id,Position=UDim2.fromOffset(7,195),Size=UDim2.new(1,-14,0,34),BackgroundColor3=id==leader and C.gold or owned and tint or C.card,TextColor3=owned and C.background or C.text,TextSize=11})
+  UI.button(row,slot==1 and T("★ LÍDER","★ LEADER") or slot and (T("NA EQUIPE • ","EQUIPPED • ")..slot) or T("VER HERÓI","VIEW HERO"),function() openContext("hero",{heroId=id}) end,{Name="FormationHero_"..id,Position=UDim2.fromOffset(7,195),Size=UDim2.new(1,-14,0,44),BackgroundColor3=id==leader and C.gold or owned and tint or C.card,TextColor3=owned and C.background or C.text,TextSize=11})
  end
 	UI.section(body, T("Formações salvas", "Saved formations"), T("Salve a equipe e seu líder.", "Save your squad and leader."))
 	local slots = profile().loadoutSlots or (profile().passes and profile().passes.formations and 8 or 3)
 	for slot = 1, slots do
 		local saved = profile().savedLoadouts and profile().savedLoadouts[tostring(slot)]
-		local row = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 56), BackgroundColor3 = C.card})
+		local row = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 64), BackgroundColor3 = C.card})
 		UI.label(row, T("Formação ", "Formation ") .. slot .. (saved and "  ✓" or ""), {Position = UDim2.fromOffset(12, 10), Size = UDim2.new(0.4, -12, 0, 36), TextSize = 12})
-		UI.secondary(row, T("Salvar", "Save"), function() act("SaveLoadout", {slot = slot}, function() showToast(T("Formação salva.", "Formation saved.")) end) end, {Position = UDim2.new(0.4, 0, 0, 10), Size = UDim2.new(0.3, -10, 0, 36)})
-		local load = UI.button(row, T("Usar", "Load"), function() act("LoadLoadout", {slot = slot}) end, {Position = UDim2.new(0.7, 0, 0, 10), Size = UDim2.new(0.3, -12, 0, 36)})
+		UI.secondary(row, T("Salvar", "Save"), function() act("SaveLoadout", {slot = slot}, function() showToast(T("Formação salva.", "Formation saved.")) end) end, {Position = UDim2.new(0.4, 0, 0, 10), Size = UDim2.new(0.3, -10, 0, 44)})
+		local load = UI.button(row, T("Usar", "Load"), function() act("LoadLoadout", {slot = slot}) end, {Position = UDim2.new(0.7, 0, 0, 10), Size = UDim2.new(0.3, -12, 0, 44)})
 		if not saved then UI.disabled(load) end
 	end
 end
@@ -522,13 +519,13 @@ local function contextSettings(body)
 		{title = T("Música e sons", "Music and sound"), value = settings.music ~= false and T("Ligado", "On") or T("Desligado", "Off"), key = "music", next = settings.music == false},
 	}
 	for _, option in ipairs(options) do
-		local card = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 88), BackgroundColor3 = C.card})
+		local card = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 100), BackgroundColor3 = C.card})
 		heading(card, option.title, 10)
 		UI.secondary(card, option.value .. "  ↻", function()
 			local update = {language = settings.language or language, lowFX = settings.lowFX == true, shake = settings.shake == true, music = settings.music ~= false}
 			update[option.key] = option.next
 			act("Settings", update)
-		end, {Position = UDim2.fromOffset(12, 43), Size = UDim2.new(1, -24, 0, 33)})
+		end, {Position = UDim2.fromOffset(12, 43), Size = UDim2.new(1, -24, 0, 44)})
 	end
 	UI.section(body, T("Controles", "Controls"))
 	UI.label(body, T("1–5: escolher herói  •  Q: poder do líder\nClique ou toque: selecionar posição / torre\nConfirmar: posicionar  •  Esc / Cancelar: cancelar seleção", "1–5: choose hero  •  Q: leader power\nClick or tap: select position / tower\nConfirm: place tower  •  Esc / Cancel: cancel selection"), {Size = UDim2.new(1, -6, 0, 90), TextColor3 = C.muted, TextSize = 13, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
@@ -553,7 +550,7 @@ local function contextTalents(body)
 			UI.button(tabs, L(branch.name), function() talentBranch = i; renderContext() end, {Position = UDim2.new((i - 1) / 3, 0, 0, 0), Size = UDim2.new(1 / 3, -5, 1, 0), TextSize = 10, BackgroundColor3 = i == talentBranch and Color3.fromRGB(unpack(branch.color)) or C.card})
 		end
 	end
-	local tree = UI.frame(body, {Name = "TalentTree", Size = UDim2.new(1, -6, 0, 1040), BackgroundTransparency = 1})
+	local tree = UI.frame(body, {Name = "TalentTree", Size = UDim2.new(1, -6, 0, 1090), BackgroundTransparency = 1})
 	for i, branch in ipairs(Catalog.TalentBranches) do
 		if not narrow or i == talentBranch then
 			local tint = Color3.fromRGB(unpack(branch.color))
@@ -563,9 +560,9 @@ local function contextTalents(body)
 				local def = Catalog.Talents[id]
 				local rank = ranks[id] or 0
 				local unlocked = not def.parent or (ranks[def.parent] or 0) >= def.requiredRank
-				local y = 38 + (index - 1) * 200
+				local y = 38 + (index - 1) * 210
 				if index > 1 then UI.frame(lane, {Position = UDim2.new(0.5, -2, 0, y - 18), Size = UDim2.fromOffset(4, 18), BackgroundColor3 = unlocked and tint or C.stroke}) end
-				local card = UI.roundFrame(lane, {Name = "Talent_" .. id, Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 182), BackgroundColor3 = tint:Lerp(C.background, rank > 0 and 0.83 or 0.94)}, unlocked and tint or C.stroke)
+				local card = UI.roundFrame(lane, {Name = "Talent_" .. id, Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 192), BackgroundColor3 = tint:Lerp(C.background, rank > 0 and 0.83 or 0.94)}, unlocked and tint or C.stroke)
 				UI.emblem(card,branch.id,tint,{Position=UDim2.fromOffset(10,7),Size=UDim2.fromOffset(32,32)})
 				for pip=1,def.maxRank do
 					UI.frame(card,{Position=UDim2.new((pip-1)/def.maxRank,4,1,-4),Size=UDim2.new(1/def.maxRank,-8,0,2),BackgroundColor3=pip<=rank and tint or C.stroke})
@@ -573,10 +570,10 @@ local function contextTalents(body)
 				UI.label(card, rank .. " / " .. def.maxRank, {Position = UDim2.new(1, -64, 0, 13), Size = UDim2.fromOffset(54, 22), TextColor3 = tint, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right})
 				UI.label(card, L(def.name), {Position = UDim2.fromOffset(10, 43), Size = UDim2.new(1, -20, 0, 34), TextWrapped = true, Font = Enum.Font.GothamBold, TextSize = 14})
 				UI.label(card, L(def.description), {Position = UDim2.fromOffset(10, 79), Size = UDim2.new(1, -20, 0, 50), TextWrapped = true, TextSize = 11, TextColor3 = C.muted, TextYAlignment = Enum.TextYAlignment.Top})
-				local label = rank >= def.maxRank and T("MAXIMIZADO", "MAXED") or not unlocked and (T("Anterior: rank ", "Previous: rank ") .. def.requiredRank) or T("EVOLUIR • 1 PONTO", "UPGRADE • 1 POINT")
+				local label = rank >= def.maxRank and T("COMPLETO!", "COMPLETE!") or not unlocked and (T("Anterior no nível ", "Previous at level ") .. def.requiredRank) or points < 1 and T("GANHE MAIS XP", "EARN MORE XP") or T("EVOLUIR • 1 PONTO", "UPGRADE • 1 POINT")
 				local button = UI.button(card, label, function()
 					act("UpgradeTalent", {talentId = id, expectedRank = rank}, function() audio:Cue("upgrade"); showToast(L(def.name) .. "  " .. (rank + 1) .. "/" .. def.maxRank) end)
-				end, {Name = "UpgradeTalent_" .. id, Position = UDim2.fromOffset(10, 136), Size = UDim2.new(1, -20, 0, 36), BackgroundColor3 = tint, TextSize = 11})
+				end, {Name = "UpgradeTalent_" .. id, Position = UDim2.fromOffset(10, 136), Size = UDim2.new(1, -20, 0, 44), BackgroundColor3 = tint, TextSize = 11})
 				if not unlocked or rank >= def.maxRank or points < 1 then UI.disabled(button) end
 			end
 		end
@@ -653,6 +650,11 @@ local function refreshNavigation()
 		local active=selected==id
 		entry.button.BackgroundColor3=active and entry.tint:Lerp(C.panel,0.6) or C.card
 		entry.line.Visible=active
+		if entry.badge then
+			local points=profile().talentPoints or 0
+			entry.badge.Visible=points>0
+			entry.badge.Text=tostring(points)
+		end
 	end
 end
 
@@ -996,7 +998,12 @@ renderLobby = function()
 		UI.icon(button,entry[4],entry[3],{Position=narrow and UDim2.new(0.5,-8,0,3) or UDim2.fromOffset(10,10),Size=UDim2.fromOffset(narrow and 16 or 24,narrow and 16 or 24)})
 		UI.label(button,entry[2],{Position=narrow and UDim2.fromOffset(0,22) or UDim2.fromOffset(40,0),Size=narrow and UDim2.new(1,0,0,17) or UDim2.new(1,-47,1,0),TextSize=narrow and 10 or 12,Font=Enum.Font.GothamBold,TextColor3=entry[3],TextXAlignment=Enum.TextXAlignment.Center})
 		local line=UI.frame(button,{Name="SelectedTab",Position=UDim2.new(0,8,1,-3),Size=UDim2.new(1,-16,0,3),BackgroundColor3=entry[3],Visible=false})
-		refs.navigation[entry[1]]={button=button,line=line,tint=entry[3]}
+		local badge
+		if entry[1]=="talents" then
+			badge=UI.label(button,"",{Name="AvailableTalentPoints",Position=UDim2.new(1,-22,0,2),Size=UDim2.fromOffset(20,18),BackgroundTransparency=0,BackgroundColor3=C.gold,TextColor3=C.background,TextSize=10,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Center})
+			UI.corner(badge,7)
+		end
+		refs.navigation[entry[1]]={button=button,line=line,tint=entry[3],badge=badge}
 	end
 
 	if not profile().tutorialComplete then
@@ -1208,19 +1215,19 @@ local function towerPanel(tower)
 	local own = tower.ownerId == player.UserId
 	local half = math.floor((w - 30) / 2)
 	local levelText = T("Nível ", "Level ") .. tostring(tower.level) .. "/5" .. (tower.branch and "  •  " .. L(def.branches[tower.branch].name) or "")
-	UI.secondary(panel, "×", closeTowerPanel, {Position = UDim2.fromOffset(w - (wide and 34 or 38), wide and 4 or 6), Size = UDim2.fromOffset(28, 28), TextSize = 20})
+	UI.secondary(panel, "×", closeTowerPanel, {Name="CloseTower",Position = UDim2.fromOffset(w - 46, 4), Size = UDim2.fromOffset(40, 40), TextSize = 24})
 	local actionY, actionH, rowY, rowH
 	if wide then
-		local nameW = math.floor((w - 54) * 0.5)
+		local nameW = math.floor((w - 66) * 0.5)
 		UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 6), Size = UDim2.fromOffset(nameW, 22), TextSize = 15, Font = Enum.Font.GothamBold, TextColor3 = colorFor(tower.heroId)})
-		UI.label(panel, levelText, {Position = UDim2.fromOffset(12 + nameW + 6, 8), Size = UDim2.fromOffset(w - 54 - nameW - 6, 18), TextSize = 11, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Right})
-		refs.towerStats = UI.label(panel, "", {Position = UDim2.fromOffset(12, 30), Size = UDim2.fromOffset(w - 24, 18), TextSize = 11, TextColor3 = C.muted})
+		UI.label(panel, levelText, {Position = UDim2.fromOffset(12 + nameW + 6, 8), Size = UDim2.fromOffset(w - 66 - nameW - 6, 18), TextSize = 11, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Right})
+		refs.towerStats = UI.label(panel, "", {Position = UDim2.fromOffset(12, 30), Size = UDim2.fromOffset(w - 64, 18), TextSize = 10, TextColor3 = C.muted})
 		actionY, actionH, rowY, rowH = 52, 36, 92, 34
 	else
 		UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 8), Size = UDim2.fromOffset(w - 54, 24), TextSize = 17, Font = Enum.Font.GothamBold, TextColor3 = colorFor(tower.heroId)})
 		UI.label(panel, levelText, {Position = UDim2.fromOffset(12, 34), Size = UDim2.fromOffset(w - 24, 18), TextSize = 12, TextColor3 = C.muted})
 		refs.towerStats = UI.label(panel, "", {Position = UDim2.fromOffset(12, 54), Size = UDim2.fromOffset(w - 24, 32), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
-		actionY, actionH, rowY, rowH = 92, 42, 176, 36
+		actionY, actionH, rowY, rowH = 88, 40, 178, 40
 	end
 	local function note(text)
 		UI.label(panel, text, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, (own and rowY - 6 or slot.h - 6) - actionY), TextSize = 11, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextYAlignment = Enum.TextYAlignment.Top})
@@ -1235,7 +1242,7 @@ local function towerPanel(tower)
 		for branch = 1, 2 do
 			local label = L(def.branches[branch].name) .. " • " .. number(tower.upgradeCost) .. " ⚡"
 			local position = wide and UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY) or UDim2.fromOffset(12, actionY + (branch - 1) * 42)
-			local size = wide and UDim2.fromOffset(half, actionH) or UDim2.fromOffset(w - 24, 36)
+			local size = wide and UDim2.fromOffset(half, actionH) or UDim2.fromOffset(w - 24, 40)
 			UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Position = position, Size = size, TextSize = wide and 10 or 11, BackgroundColor3 = branch == 1 and C.green or C.blue})
 		end
 	else
@@ -1369,6 +1376,7 @@ local function renderMatch()
 	refs.energy.TextXAlignment=Enum.TextXAlignment.Center
 	refs.matchGold.TextXAlignment=Enum.TextXAlignment.Center
 	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 11 or 13, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center})
+	surface(refs.waveInfo,C.stroke)
 	refs.skip = UI.secondary(main, T("PRONTO", "READY"), function() act("SkipWave", {}) end, {Position = at(layout.skip), Size = dims(layout.skip), TextSize = 12})
 	local bossRect = layout.boss
 	refs.boss = UI.roundFrame(main, {Position = at(bossRect), Size = dims(bossRect), BackgroundColor3 = C.background, Visible = false}, C.red)
@@ -1433,7 +1441,7 @@ updateMatch = function()
 		local def = Catalog.Enemies[id]
 		table.insert(threatNames, def and L(def.name) or tostring(id))
 	end
-	refs.waveInfo.Text = state.phase == "Preparing" and (T("PRÓXIMA HORDA", "NEXT HORDE") .. (#threatNames > 0 and "  •  " .. table.concat(threatNames, " / ") or T("  •  Prepare suas defesas e colete Ouro.", "  •  Prepare your defenses and collect Gold."))) or (T("INFECTADOS EM CAMPO: ", "INFECTED IN FIELD: ") .. tostring(match.enemies or 0))
+	refs.waveInfo.Text = state.phase == "Preparing" and (T("PRÓXIMA HORDA", "NEXT HORDE") .. (#threatNames > 0 and "  •  " .. table.concat(threatNames, " / ") or T("  •  Prepare suas defesas e colete Ouro.", "  •  Prepare your defenses and collect Gold."))) or (T("INIMIGOS: ", "ENEMIES: ") .. tostring(match.enemies or 0)..T("  •  HERÓIS: ","  •  HEROES: ")..towerCount.."/"..tostring(match.towerLimit or 16))
 	local boss = match.boss
 	refs.boss.Visible = boss ~= nil
 	if boss then
@@ -1486,18 +1494,24 @@ local function renderResults()
 	UI.frame(panel,{Position=UDim2.new(0,18,1,-75),Size=UDim2.new(1,-36,0,1),BackgroundColor3=C.stroke})
 	UI.button(panel,T("VOLTAR À BASE","RETURN TO BASE"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(1,-36,0,48),TextSize=15})
 	UI.list(content, 12)
-	local celebration=UI.row(content,58)
-	UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.new(0.5,-27,0,0),Size=UDim2.fromOffset(54,54)})
-	UI.label(content, victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("A PRÓXIMA VAI SER MELHOR!", "YOU'LL GET FURTHER NEXT TIME!"), {Size = UDim2.new(1, -6, 0, 61), TextSize = mobile() and 23 or 29, Font = Enum.Font.GothamBlack, TextWrapped = true, TextColor3 = victory and C.green or C.blue, TextXAlignment = Enum.TextXAlignment.Center})
-	UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal"), {Size = UDim2.new(1, -6, 0, 28), TextColor3 = C.muted, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center})
+	local short=sizeClass().short
+	local celebration=UI.row(content,short and 44 or 72)
+	local emblemSize=short and 36 or 48
+	UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.fromOffset(2,short and 4 or 12),Size=UDim2.fromOffset(emblemSize,emblemSize)})
+	UI.label(celebration, victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("VAMOS TENTAR DE NOVO?", "LET'S TRY AGAIN!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.GothamBlack, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
+	UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal"), {Size = UDim2.new(1, -6, 0, short and 18 or 26), TextColor3 = C.muted, TextSize = short and 11 or 13, TextXAlignment = Enum.TextXAlignment.Center})
+	-- Core rewards stay together and appear before the optional detailed history,
+	-- including on short screens where three large rows needed several scrolls.
+	local rewards=UI.row(content,short and 64 or 82)
+	rewards.Name="ResultRewards"
+	for index,reward in ipairs({{T("ONDAS", "WAVES"), tostring(result.waves or 0), C.green}, {T("OURO", "GOLD"), "+" .. number(result.gold or 0), C.gold}, {"XP", "+" .. number(result.xp or 0), C.blue}}) do
+		local tile=UI.roundFrame(rewards,{Name="Reward_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-6,1,0),BackgroundColor3=reward[3]:Lerp(C.card,0.9)},reward[3]:Lerp(C.stroke,0.5))
+		UI.label(tile,reward[1],{Position=UDim2.fromOffset(4,6),Size=UDim2.new(1,-8,0,18),TextSize=10,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.GothamBold})
+		UI.label(tile,reward[2],{Position=UDim2.fromOffset(4,26),Size=UDim2.new(1,-8,1,-32),TextSize=mobile() and 19 or 24,TextColor3=reward[3],TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.GothamBlack})
+	end
 	if result.modeId=="ranked" then
 		local tier=Rules.RankForWaves(result.waves)
 		UI.section(content,T("RANK DESTA PARTIDA: ","THIS RUN'S RANK: ")..(language=="en" and tier.en or tier.pt),T("Seu melhor resultado fica no placar da temporada.","Your best result stays on the seasonal leaderboard."))
-	end
-	for _, reward in ipairs({{T("ONDAS CONCLUÍDAS", "WAVES CLEARED"), tostring(result.waves or 0), C.green}, {T("OURO RECEBIDO", "GOLD EARNED"), "+" .. number(result.gold or 0), C.gold}, {T("EXPERIÊNCIA", "EXPERIENCE"), "+" .. number(result.xp or 0) .. " XP", C.blue}}) do
-		local row = UI.roundFrame(content, {Size = UDim2.new(1, -6, 0, 64), BackgroundColor3 = C.card})
-		UI.label(row, reward[1], {Position = UDim2.fromOffset(12, 10), Size = UDim2.new(0.6, -12, 0, 43), TextSize = 11, TextColor3 = C.muted, Font = Enum.Font.GothamBold})
-		UI.label(row, reward[2], {Position = UDim2.new(0.58, 0, 0, 10), Size = UDim2.new(0.42, -12, 0, 43), TextSize = 23, Font = Enum.Font.GothamBold, TextColor3 = reward[3], TextXAlignment = Enum.TextXAlignment.Right})
 	end
 	local earnedPoints = math.max(0, (profile().level or 1) - (result.startLevel or profile().level or 1))
 	local evolution = UI.roundFrame(content, {Name = "ResultEvolution", Size = UDim2.new(1, -6, 0, 98), BackgroundColor3 = C.gold:Lerp(C.background, 0.88)}, C.gold)
