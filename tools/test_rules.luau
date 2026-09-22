@@ -590,4 +590,101 @@ end
 
 for _, product in Catalog.Products.Passes do equal(product.id, 0, "Unconfigured passes disabled") end
 for _, product in Catalog.Products.Consumables do equal(product.id, 0, "Unconfigured products disabled") end
-print("PASS " .. assertions .. " assertions: catalog, heroes, abilities, chests and odds, cards, talents, unlocks, random map, 50-wave bosses, wave economy on every map/mode/party size")
+
+--==============================================================================
+-- Rewards: free chest, login streak, playtime gifts, collection milestones
+--==============================================================================
+-- PlayerService's own spec exercises these end to end against mocked
+-- DataStores; these are the pure-function cases, which run in milliseconds
+-- and pin down the exact day-boundary arithmetic without a fake clock.
+local DAY = 86400
+equal(Rules.UtcDay(0), 0, "Day zero is the epoch's own day")
+equal(Rules.UtcDay(DAY - 1), 0, "One second before the boundary is still day zero")
+equal(Rules.UtcDay(DAY), 1, "The boundary itself starts the next day")
+equal(Rules.UtcDay(DAY * 30 + 1), 30, "Days accumulate exactly")
+
+do
+	local fresh = Rules.NewRewardsState()
+	equal(fresh.loginDay, -1, "A fresh reward state has never logged in")
+	equal(fresh.freeChestAt, 0, "A fresh free chest is immediately ready")
+	local seconds, claimed = Rules.PlaytimeToday(fresh, 12345)
+	equal(seconds, 0, "A fresh state has played no time today")
+	equal(next(claimed), nil, "A fresh state has claimed no gift")
+end
+
+do
+	-- Playtime resets when the stored day differs from now's day, regardless
+	-- of how much time or which gifts were logged for the old day.
+	local state = { playDay = 5, playSeconds = 900, playClaimed = { [1] = true, [3] = true } }
+	local seconds, claimed = Rules.PlaytimeToday(state, 5 * DAY + 100)
+	equal(seconds, 900, "Same-day playtime is returned as stored")
+	check(claimed[1] and claimed[3], "Same-day claims are returned as stored")
+	local staleSeconds, staleClaimed = Rules.PlaytimeToday(state, 6 * DAY + 1)
+	equal(staleSeconds, 0, "A new day resets playtime to zero")
+	equal(next(staleClaimed), nil, "A new day resets claimed gifts")
+end
+
+do
+	local cycle = #Catalog.Rewards.login
+	-- Never logged in: always claimable, always starts the cycle at day one.
+	local first = Rules.LoginClaim(Rules.NewRewardsState(), 100 * DAY)
+	check(first ~= nil, "A fresh account can claim today")
+	equal(first.streak, 1, "The first claim starts a streak of one")
+	equal(first.index, 1, "The first claim is day one of the cycle")
+	equal(first.reward, Catalog.Rewards.login[1], "The first claim's reward is the cycle's first entry")
+
+	-- Already claimed today: nothing to claim.
+	equal(Rules.LoginClaim({ loginDay = 10, loginStreak = 3 }, 10 * DAY + 500), nil, "Today's claim cannot repeat")
+
+	-- Consecutive day: streak continues.
+	local consecutive = Rules.LoginClaim({ loginDay = 10, loginStreak = 4 }, 11 * DAY)
+	equal(consecutive.streak, 5, "A consecutive day extends the streak")
+	equal(consecutive.index, 5, "The index tracks the streak while under one cycle")
+
+	-- Exactly at the grace boundary (loginGraceDays): still forgiven.
+	local grace = Rules.LoginClaim({ loginDay = 10, loginStreak = 4 }, (10 + Catalog.Rewards.loginGraceDays) * DAY)
+	equal(grace.streak, 5, "A gap of exactly the grace period still continues the streak")
+
+	-- One day past the grace boundary: streak resets to one.
+	local expired = Rules.LoginClaim({ loginDay = 10, loginStreak = 4 }, (10 + Catalog.Rewards.loginGraceDays + 1) * DAY)
+	equal(expired.streak, 1, "A gap past the grace period resets the streak")
+	equal(expired.index, 1, "A reset streak restarts the cycle at day one")
+
+	-- The cycle wraps: streak keeps counting, index loops back to one.
+	local wrapped = Rules.LoginClaim({ loginDay = 10, loginStreak = cycle }, 11 * DAY)
+	equal(wrapped.streak, cycle + 1, "The streak keeps counting past one full cycle")
+	equal(wrapped.index, 1, "The reward index wraps back to day one")
+end
+
+do
+	-- RewardsStatus assembles all four loops from one state; check the shape
+	-- and that "claimable" really counts what the four sub-sections report ready.
+	local state = Rules.NewRewardsState()
+	local profile = { rewards = state, heroes = { ironman = true, hawkeye = true } }
+	local status = Rules.RewardsStatus(profile, 50 * DAY, 0)
+	check(status.freeChest.ready and status.login.claimable, "A fresh profile has its free chest and login ready")
+	equal(#status.playtime.gifts, #Catalog.Rewards.playtime, "One playtime entry per configured gift")
+	equal(#status.collection.milestones, #Catalog.Rewards.collection, "One collection entry per configured milestone")
+	for _, gift in status.playtime.gifts do check(not gift.ready, "No playtime gift is ready with zero seconds played: " .. gift.index) end
+	for _, milestone in status.collection.milestones do check(not milestone.ready, "No milestone is ready with two heroes: " .. milestone.index) end
+	equal(status.claimable, 2, "Only the free chest and the login are claimable on a fresh profile")
+
+	-- Playtime seconds come from pendingSeconds when the stored day matches now.
+	local todayState = { freeChestAt = 51 * DAY, loginDay = 50, loginStreak = 1, playDay = 50, playSeconds = 100, playClaimed = {}, collection = {} }
+	local minutes = Catalog.Rewards.playtime[1].minutes
+	local mid = Rules.RewardsStatus({ rewards = todayState, heroes = {} }, 50 * DAY + 500, minutes * 60 - 100 - 1)
+	check(not mid.playtime.gifts[1].ready, "One second short of a gift is not ready")
+	local ready = Rules.RewardsStatus({ rewards = todayState, heroes = {} }, 50 * DAY + 500, minutes * 60 - 100)
+	check(ready.playtime.gifts[1].ready, "Reaching a gift's exact minute makes it ready")
+
+	-- Collection milestones ready exactly at their threshold, not before.
+	local justUnder = {}
+	for index = 1, Catalog.Rewards.collection[1].count - 1 do justUnder["hero" .. index] = true end
+	local underStatus = Rules.RewardsStatus({ rewards = Rules.NewRewardsState(), heroes = justUnder }, 0, 0)
+	check(not underStatus.collection.milestones[1].ready, "One hero short of a milestone is not ready")
+	justUnder["hero" .. Catalog.Rewards.collection[1].count] = true
+	local atStatus = Rules.RewardsStatus({ rewards = Rules.NewRewardsState(), heroes = justUnder }, 0, 0)
+	check(atStatus.collection.milestones[1].ready, "Reaching a milestone's exact count makes it ready")
+end
+
+print("PASS " .. assertions .. " assertions: catalog, heroes, abilities, chests and odds, cards, talents, unlocks, random map, 50-wave bosses, wave economy on every map/mode/party size, daily rewards")
