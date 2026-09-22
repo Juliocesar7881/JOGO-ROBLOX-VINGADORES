@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     One-time setup: create the GitHub repository for this project, push the
     current branch, and invite a collaborator.
@@ -31,7 +31,9 @@ param(
     [switch]$Public
 )
 
-$ErrorActionPreference = "Stop"
+# Windows PowerShell 5.1 turns any native stderr line into an error record, and
+# git/gh write normal progress there; exit codes are checked explicitly instead.
+$ErrorActionPreference = "Continue"
 $root = Split-Path -Parent $PSScriptRoot
 
 function Require-Command($name, $installHint) {
@@ -55,43 +57,45 @@ Instale a GitHub CLI e faça login uma vez, interativamente:
 Depois rode este script de novo.
 "@
 
-Push-Location $root
-try {
-    $authStatus = gh auth status 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "gh não está autenticado. Rode 'gh auth login' e tente de novo.`n$authStatus"
-        exit 1
-    }
-
-    if (-not (Test-Path ".git")) {
-        Write-Host "Inicializando o repositório Git local..."
-        git init
-    }
-
-    $currentBranch = (git branch --show-current).Trim()
-    if (-not $currentBranch) {
-        $currentBranch = "main"
-        git checkout -b $currentBranch
-    }
-
-    $existingRemote = git remote get-url origin 2>$null
-    if ($existingRemote) {
-        Write-Host "Remote 'origin' já existe: $existingRemote"
-        Write-Host "Este script só cria o repositório e convida o colaborador; para publicar, rode:"
-        Write-Host "  git push -u origin $currentBranch"
-    } else {
-        $visibility = if ($Public) { "--public" } else { "--private" }
-        Write-Host "Criando repositório GitHub '$RepoName' ($(if ($Public) {'público'} else {'privado'}))..."
-        gh repo create $RepoName $visibility --source=. --remote=origin --push
-    }
-
-    Write-Host "Convidando '$Collaborator' com permissão de escrita..."
-    gh api "repos/:owner/$RepoName/collaborators/$Collaborator" -X PUT -f permission=push | Out-Null
-    Write-Host "Convite enviado. '$Collaborator' precisa aceitar pelo e-mail ou por https://github.com/$RepoName/invitations"
-
-    $repoUrl = gh repo view --json url -q .url
-    Write-Host ""
-    Write-Host "Pronto: $repoUrl"
-} finally {
+function Fail($message) {
+    Write-Host $message -ForegroundColor Red
     Pop-Location
+    exit 1
 }
+
+Push-Location $root
+gh auth status *> $null
+if ($LASTEXITCODE -ne 0) { Fail "gh não está autenticado. Rode 'gh auth login' e tente de novo." }
+$owner = (gh api user --jq .login).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $owner) { Fail "Não foi possível ler a conta logada no gh." }
+
+if (-not (Test-Path ".git")) {
+    Write-Host "Inicializando o repositório Git local..."
+    git init
+}
+$currentBranch = (git branch --show-current).Trim()
+if (-not $currentBranch) {
+    $currentBranch = "main"
+    git checkout -b $currentBranch
+}
+
+if ((git remote) -contains "origin") {
+    Write-Host "Remote 'origin' já existe: $(git remote get-url origin). Enviando o branch $currentBranch..."
+    git push -u origin $currentBranch
+    if ($LASTEXITCODE -ne 0) { Fail "O envio (git push) falhou." }
+} else {
+    $visibility = if ($Public) { "--public" } else { "--private" }
+    Write-Host "Criando repositório GitHub '$owner/$RepoName' ($(if ($Public) {'público'} else {'privado'}))..."
+    gh repo create $RepoName $visibility --source=. --remote=origin --push
+    if ($LASTEXITCODE -ne 0) { Fail "A criação do repositório falhou." }
+}
+
+Write-Host "Convidando '$Collaborator' com permissão de escrita..."
+gh api "repos/$owner/$RepoName/collaborators/$Collaborator" -X PUT -f permission=push | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "O convite para '$Collaborator' falhou." }
+Write-Host "Convite enviado. '$Collaborator' precisa aceitar pelo e-mail ou em https://github.com/$owner/$RepoName/invitations"
+
+$repoUrl = gh repo view "$owner/$RepoName" --json url -q .url
+Write-Host ""
+Write-Host "Pronto: $repoUrl"
+Pop-Location
