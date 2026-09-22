@@ -8,6 +8,13 @@ sweeps de novo antes de confiar neles para decidir algo.
 
 ## Como medir
 
+Revisão de 22/09/2026: o teste normal também executa partidas completas com
+2, 3 e 4 jogadores em Manhattan, verifica resultados, limites e recompensas
+individuais. Com o bot de referência, as duplas/trios venceram 50 ondas em
+40,9/39,5 minutos; o quarteto perdeu após 49 ondas em 41,1 minutos. O solo
+venceu em 42,3 minutos. Preparações não foram antecipadas nessas medições.
+Esses dados ainda exigem sessões humanas para aprovar dificuldade e duração.
+
 ```bash
 # Três elencos sintéticos em todo mapa/modo — visão geral da campanha.
 python tests/test_match_simulation.py --sweep rosters

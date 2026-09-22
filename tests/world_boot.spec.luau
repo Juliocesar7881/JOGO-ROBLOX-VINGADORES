@@ -34,7 +34,7 @@ end
 print("--- lobby ---")
 local panels = {}
 local ok, world = pcall(WorldBuilder.new, Catalog, function(player, panel, data)
-	table.insert(panels, { panel = panel, data = data or {} })
+	table.insert(panels, { player=player,panel = panel, data = data or {} })
 end)
 check(ok, "WorldBuilder.new builds the lobby: " .. tostring(world))
 if not ok then
@@ -137,14 +137,44 @@ do
 	end
 end
 
-check(#(byKind.HeroPedestal or {}) == #Catalog.HeroOrder,
-	"one pedestal per hero, got " .. tostring(#(byKind.HeroPedestal or {})))
-local pedestalHeroes = {}
-for _, model in ipairs(byKind.HeroPedestal or {}) do pedestalHeroes[model:GetAttribute("HeroId")] = true end
-for _, heroId in ipairs(Catalog.HeroOrder) do check(pedestalHeroes[heroId], "a pedestal exists for " .. heroId) end
+check(#(byKind.HeroPedestal or {}) == 0,"the lobby no longer displays hero statues")
+local portraits=game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
+for _,heroId in ipairs(Catalog.HeroOrder) do check(portraits and portraits:FindFirstChild(heroId),"removing statues preserves portrait "..heroId) end
 
 check(#(byKind.SkillPedestal or {}) == 0, "talents live in HUD")
 check(#(byKind.ChestStand or {}) == 2, "two recruitment chest stands")
+do
+	local root={Position=world.shopZones.rare.center}
+	local visitor={UserId=801,Character={FindFirstChild=function(_,name) return name=="HumanoidRootPart" and root or nil end}}
+	local start=#panels
+	world:StepShopEntries({visitor})
+	check(#panels==start+1 and panels[#panels].data.chestId=="rare","stepping on green opens the correct chest")
+	for _=1,20 do world:StepShopEntries({visitor}) end
+	check(#panels==start+1,"standing on green never repeatedly opens a closed menu")
+	root.Position=world.shopZones.rare.center+v3(6.5,0,0)
+	world:StepShopEntries({visitor})
+	root.Position=world.shopZones.rare.center
+	world:StepShopEntries({visitor})
+	check(#panels==start+1,"small boundary jitter does not reopen the shop")
+	root.Position=world.shopZones.legendary.center
+	world:StepShopEntries({visitor})
+	check(#panels==start+2 and panels[#panels].data.chestId=="legendary","walking to the other pad selects legendary")
+	root.Position=world.shopZones.rare.center+v3(0,25,0)
+	world:StepShopEntries({visitor})
+	check(#panels==start+2,"flying above a pad does not count as standing on it")
+	root.Position=world.shopZones.rare.center
+	world:StepShopEntries({visitor})
+	check(#panels==start+3,"leaving and returning rearms the pad")
+	local other={UserId=802,Character=visitor.Character}
+	world:StepShopEntries({visitor,other})
+	check(#panels==start+4 and panels[#panels].player==other,"each player has independent entry state")
+	visitor.Character=nil
+	world:StepShopEntries({visitor})
+	check(next(world.shopOccupants)==nil,"despawned and disconnected players clear occupancy")
+	for _,model in ipairs(byKind.ChestStand) do
+		check(model:FindFirstChild("ShopEntryPad")~=nil,"each chest has a visible green entry pad")
+	end
+end
 
 check(#(byKind.ShopStand or {}) == 6, "one stand per pass plus one gold vault, got "
 	.. tostring(#(byKind.ShopStand or {})))
@@ -201,12 +231,12 @@ do
 		end
 	end
 	check(#wrong == 0, "every lobby prompt opens its own panel and refuses a distant player: " .. table.concat(wrong, ", "))
-	local expected = #Catalog.HeroOrder + 2 + 6 + 2
+	local expected = 2 + 6 + 2
 	check(refused == expected, "the distance re-check refused all " .. expected .. " far presses, got " .. tostring(refused))
 end
 
 local totalPrompts = countClass(lobby, "ProximityPrompt")
-local expectedPrompts = #Catalog.HeroOrder + 2 + 6 + 2
+local expectedPrompts = 2 + 6 + 2
 check(totalPrompts == expectedPrompts,
 	"every physical location is interactive, got " .. tostring(totalPrompts) .. "/" .. tostring(expectedPrompts))
 print(string.format("  %d parts, %d locais interativos", countClass(lobby, "BasePart"), totalPrompts))
@@ -539,7 +569,7 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 		-- The client's firing recoil animates the ring and restores it to this
 		-- attribute. If an upgrade stopped publishing it, every upgraded tower
 		-- would silently snap back to its level 1 ring the next time it fired.
-		if not ringA or ringA:GetAttribute("BaseSize") ~= ringA.Size.X then
+		if not ringA or ringA:GetAttribute("BaseSize") ~= ringA.Size.Y then
 			table.insert(missing, heroId .. ":ring-basesize")
 		end
 	else

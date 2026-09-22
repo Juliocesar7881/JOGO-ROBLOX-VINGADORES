@@ -8,10 +8,12 @@ desatualizado; use-o para qualquer número de herói/habilidade específico.
 
 ## O laço principal
 
-1. O lobby é o mundo, não um menu: cinco portais (um por modo), a galeria de
-   heróis, os dois baús, a loja Robux, o quadro de missões, o placar e o
-   painel de prêmios diários são lugares físicos com um `ProximityPrompt`
-   cada. Andar para longe de um painel aberto o fecha.
+1. O lobby tem quatro portais, dois baús, loja Robux, missões e placar.
+   As exposições de heróis foram removidas; a coleção continua no HUD.
+   Pisar na área verde de um baú abre sua loja sem gastar Ouro. É preciso
+   confirmar a abertura para pagar. Sair e voltar à área permite reabrir;
+   ficar parado depois de fechar não força o menu novamente. O botão de
+   proximidade permanece como alternativa. Andar para longe fecha o painel.
 2. Cada portal é um elevador: entrar nele começa uma contagem regressiva;
    quem entra junto vai para o mesmo grupo (até 4). O servidor **sorteia o
    mapa** entre os cinco disponíveis a cada partida — o jogador nunca escolhe
@@ -75,13 +77,19 @@ precisar ler texto.
 
 | Baú | Custo | O que vem |
 | --- | --- | --- |
-| Raro | 1.000 Ouro | Comuns/raros comuns, épicos com sorte; nunca lendário/mítico |
-| Lendário | 2.000 Ouro (o dobro do Raro) | Os melhores heróis do jogo — os mais fortes são deliberadamente os mais raros dentro do próprio baú |
+| Raro | 1.000 Ouro | Comum 34%, Raro 44%, Épico 20%, Lendário 2%; sem Mítico |
+| Lendário | 2.000 Ouro (o dobro do Raro) | Raro 30%, Épico 42%, Lendário 22%, Mítico 6%; sem Comum |
 
 Um baú prioriza heróis que a conta ainda não tem, dentro da raridade
 sorteada; repetidos viram Ouro e maestria (mais generosos quanto mais rara a
-raridade). O baú Lendário tem garantia (`pity`): depois de 10 aberturas sem
-tirar lendário ou mítico, a próxima é forçada a um deles.
+raridade). No baú Lendário, nove aberturas seguidas sem Lendário/Mítico
+ativam a garantia na décima. Essa abertura recalcula e exibe as chances
+apenas entre as raridades elegíveis; as porcentagens da tabela são as normais.
+
+A loja mostra saldo, preço, resumo por raridade e galeria com retratos e
+chances individuais. A confirmação informa o custo e o saldo restante;
+cancelar não manda uma solicitação de compra. O resultado vem do servidor,
+com identificação de novo herói ou compensação por repetido.
 
 ## Prêmios diários
 

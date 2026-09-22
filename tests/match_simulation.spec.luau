@@ -158,14 +158,16 @@ local function newProfile(overrides)
 	return profile
 end
 
-local function newProfiles(profile)
+local function newProfiles(profile, byUser)
 	return {
 		awards = {}, bests = {},
-		Snapshot = function(self, _) return profile end,
-		Award = function(self, _, id, reward)
+		Snapshot = function(self, who) return byUser and byUser[who.UserId] or profile end,
+		Award = function(self, who, id, reward)
+			local target = byUser and byUser[who.UserId] or profile
+			if byUser then id = tostring(who.UserId)..":"..id end
 			if self.awards[id] then return true end
 			self.awards[id] = reward
-			profile.gold += reward.gold or 0
+			target.gold += reward.gold or 0
 			return true
 		end,
 		RecordBest = function(self, _, mapId, size, waves)
@@ -333,13 +335,18 @@ end
 local function simulate(options)
 	local profile = newProfile(options.profile)
 	if options.loadout then profile.loadout = options.loadout end
-	local profiles = newProfiles(profile)
+	local members, byUser = {}, {[1]=profile}
+	for id=1,(options.size or 1) do
+		table.insert(members,newPlayer(id,options.characterAt))
+		if id>1 then byUser[id]=newProfile(options.profile); byUser[id].loadout=profile.loadout end
+	end
+	local profiles = newProfiles(profile,options.size and byUser or nil)
 	local world = newWorld()
 	local log = {}
-	local player = newPlayer(1, options.characterAt)
+	local player = members[1]
 	local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, newRemotes(log), function() end)
 
-	local started, problem = match:Start({ player }, options.mapId, options.modeId)
+	local started, problem = match:Start(members, options.mapId, options.modeId)
 	check(started, "match starts on " .. options.mapId .. "/" .. options.modeId .. ": " .. tostring(problem))
 	if not started then return nil end
 
@@ -354,10 +361,10 @@ local function simulate(options)
 	while match.running and guard < guardLimit do
 		guard += 1
 		if match.phase == "Preparing" and options.build ~= false then
-			buildPhase(match, player, profile.loadout)
+			for _,member in ipairs(members) do buildPhase(match, member, profile.loadout) end
 		end
 		if match.phase == "Wave" and options.build ~= false and options.cast ~= false and guard % 5 == 0 then
-			if castAbility(match, player) then casts += 1 end
+			for _,member in ipairs(members) do if castAbility(match, member) then casts += 1 end end
 		end
 		match:Step(step)
 		seconds += step
@@ -393,7 +400,7 @@ local function simulate(options)
 		match = match, profiles = profiles, profile = profile, world = world, log = log,
 		results = results, seconds = seconds, monotonic = monotonic,
 		negativeEnergy = negativeEnergy, peakEnemies = peakEnemies, bossSeen = bossSeen,
-		player = player, prepTotal = prepTotal, waveTotal = waveTotal, waveTimes = waveTimes,
+		player = player, members=members, byUser=byUser, prepTotal = prepTotal, waveTotal = waveTotal, waveTimes = waveTimes,
 		casts = casts, bossWaves = bossWaves, finalBossWave = finalBossWave, picks = picks,
 	}
 end
@@ -1118,6 +1125,23 @@ do
 	local none, nonePlayer = stage({})
 	none.baseHP = 25
 	check(none.lastStandHeal == 0, "no talent, no last stand")
+end
+
+print("--- cooperative full matches ---")
+for size=2,4 do
+	local run=simulate({mapId="manhattan",modeId="normal",size=size})
+	check(run and run.results and not run.match.running,"cooperative run reaches results for "..size.." players")
+	if run and run.results then
+		print(string.format("  %d players: %d waves, %.1f min, victory=%s",size,run.results.waves,run.seconds/60,tostring(run.results.victory)))
+		for _,member in ipairs(run.members) do
+			local snapshot,result=run.match:Snapshot(member)
+			check(result and result.waves==run.results.waves,"all members receive the same completed waves")
+			check(snapshot.towerLimit==Rules.TowerLimit(size),"group uses correct tower cap")
+			check(run.byUser[member.UserId].gold>0,"each contributing player receives persistent gold")
+			check(snapshot.energy>=0,"cooperative energy never goes negative")
+		end
+		check(run.match.size==size,"party scaling stays fixed through results")
+	end
 end
 
 print("--- performance guard ---")

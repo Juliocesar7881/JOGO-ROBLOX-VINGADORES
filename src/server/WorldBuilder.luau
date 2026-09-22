@@ -141,11 +141,27 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 	local bulky = heroId == "hulk" or heroId == "groot"
 	local slim = heroId == "wanda" or heroId == "widow" or heroId == "wasp" or heroId == "silversurfer"
 	local width = bulky and 1.32 or (slim and 0.82 or 1)
+	local armPieces = {
+		Shoulder=true, UpperArm=true, Elbow=true, Gauntlet=true, Hand=true,
+		Repulsor=true, Shield=true, ShieldBand=true, ShieldStar=true,
+		Bow=true, Bowstring=true, Arrow=true, ShockBaton=true, BatonCharge=true,
+		Claw=true, HammerHandle=true, Mjolnir=true, HammerInset=true,
+		ChaosSpell=true, SpellGlyph=true, MetalArm=true, MetalForearm=true,
+		MetalHand=true, StarMark=true, RifleBarrel=true, BigGun=true, GunMuzzle=true,
+		Billy=true, BillyTip=true, TenRing=true, Blaster=true, BlasterGlow=true, PhotonFist=true,
+	}
 	local function piece(name, size, position, tint, surface, rotation, shape)
 		local made = part(parent, name, size * scale, origin * CFrame.new(position * scale) * (rotation or CFrame.new()), tint, surface or material)
 		made.CanCollide = false
 		made:SetAttribute("HeroGeometry", true)
 		made:SetAttribute("HeroVisual", true)
+		-- Authored joints keep weapons attached to the same arm during local
+		-- firing poses. The platform and lower body remain planted.
+		if armPieces[name] then
+			local side = (name == "Arrow" or name == "Bowstring") and -1 or (position.X < 0 and -1 or 1)
+			made:SetAttribute("PoseGroup", side < 0 and "LeftArm" or "RightArm")
+			made:SetAttribute("PoseJoint", (origin * CFrame.new(V(side * 1.14 * width, 4.22, 0) * scale)).Position)
+		elseif position.Y > 2.45 then made:SetAttribute("PoseGroup", "Body") end
 		if shape then made.Shape = shape end
 		return made
 	end
@@ -424,10 +440,10 @@ end
 -- more than atmosphere.
 local MAP_LIGHTING = {
 	manhattan = {
-		sun = 1.3, clockTime = 21.5, ambient = { 45, 55, 82 }, outdoor = { 58, 72, 102 },
-		atmosphereColor = { 120, 150, 190 }, atmosphereDensity = 0.3, glare = 0.12,
-		tint = { 150, 180, 255 }, contrast = 0.08, saturation = -0.05, brightness = -0.02,
-		bloom = 0.42, fogColor = { 28, 36, 55 }, fogEnd = 620,
+		sun = 2.3, clockTime = 16.4, ambient = { 104, 107, 128 }, outdoor = { 128, 137, 151 },
+		atmosphereColor = { 190, 208, 235 }, atmosphereDensity = 0.22, glare = 0.08,
+		tint = { 244, 240, 255 }, contrast = 0.04, saturation = 0.08, brightness = 0.02,
+		bloom = 0.25, fogColor = { 123, 148, 176 }, fogEnd = 680,
 	},
 	gamma = {
 		sun = 2.6, clockTime = 14, ambient = { 40, 70, 45 }, outdoor = { 70, 110, 60 },
@@ -436,9 +452,9 @@ local MAP_LIGHTING = {
 		bloom = 0.5, fogColor = { 32, 55, 30 }, fogEnd = 520,
 	},
 	hydra = {
-		sun = 1.1, clockTime = 3, ambient = { 40, 42, 46 }, outdoor = { 55, 58, 62 },
+		sun = 1.8, clockTime = 6.5, ambient = { 90, 96, 110 }, outdoor = { 105, 116, 135 },
 		atmosphereColor = { 110, 110, 120 }, atmosphereDensity = 0.34, glare = 0.08,
-		tint = { 200, 190, 190 }, contrast = 0.15, saturation = -0.25, brightness = -0.05,
+		tint = { 224, 231, 255 }, contrast = 0.07, saturation = 0.02, brightness = 0.02,
 		bloom = 0.28, fogColor = { 24, 25, 28 }, fogEnd = 480,
 	},
 	wakanda = {
@@ -448,9 +464,9 @@ local MAP_LIGHTING = {
 		bloom = 0.48, fogColor = { 45, 35, 55 }, fogEnd = 650,
 	},
 	latveria = {
-		sun = 1.5, clockTime = 20, ambient = { 50, 55, 80 }, outdoor = { 70, 80, 110 },
+		sun = 1.8, clockTime = 18.5, ambient = { 100, 102, 137 }, outdoor = { 117, 129, 167 },
 		atmosphereColor = { 140, 150, 220 }, atmosphereDensity = 0.4, glare = 0.26,
-		tint = { 190, 200, 255 }, contrast = 0.14, saturation = -0.02, brightness = -0.03,
+		tint = { 219, 225, 255 }, contrast = 0.07, saturation = 0.05, brightness = 0.02,
 		bloom = 0.56, fogColor = { 30, 32, 50 }, fogEnd = 460,
 	},
 }
@@ -613,37 +629,6 @@ local function buildModePortal(lobby, x, z, modeId, mode)
 	}
 end
 
--- Statues, not menu rows: buying and equipping a hero happens while looking
--- at that hero's own pedestal, per the design brief.
-local function buildHeroPedestal(lobby, x, z, heroId, hero, openPanel, rarity, side)
-	side = side or 1
-	local model = Instance.new("Model")
-	model.Name, model.Parent = "Hero_" .. heroId, lobby
-	model:SetAttribute("Kind", "HeroPedestal")
-	model:SetAttribute("HeroId", heroId)
-	model:SetAttribute("Rarity", hero.rarity)
-	-- The pedestal glows in its hero's rarity colour, so a collection reads at a glance.
-	local tint=rgb(rarity.color)
-	local plinth = part(model, "Plinth", Vector3.new(1,7,7), CFrame.new(x,0.5,z)*CFrame.Angles(0,0,math.pi/2), ART.pearl, Enum.Material.Metal)
-	plinth.Shape=Enum.PartType.Cylinder
-	local ring = part(model, "Ring", Vector3.new(0.12,6.3,6.3), CFrame.new(x,1.05,z)*CFrame.Angles(0,0,math.pi/2), tint, Enum.Material.Neon)
-	ring.Shape,ring.CanCollide=Enum.PartType.Cylinder,false
-	local top=artPart(model,"PodiumTop",Vector3.new(0.13,5.8,5.8),CFrame.new(x,1.16,z)*CFrame.Angles(0,0,math.pi/2),ART.ink,Enum.Material.DiamondPlate)
-	top.Shape=Enum.PartType.Cylinder
-	local yaw = side == 1 and -math.pi / 2 or math.pi / 2
-	heroFigure(model, heroId, hero, CFrame.new(x,1.3,z)*CFrame.Angles(0,yaw,0), (FIGURE_SCALE[heroId] and FIGURE_SCALE[heroId] > 1 and 0.85 or 0.9) * (FIGURE_SCALE[heroId] and FIGURE_SCALE[heroId] < 1 and 1.15 or 1))
-	for _,end_ in ipairs({-1,1}) do
-		artPart(model,"GalleryFin",Vector3.new(0.5,7,0.65),CFrame.new(x-side*2.6,4,z+end_*2.9),ART.pearl,Enum.Material.Metal)
-		artPart(model,"GalleryGlow",Vector3.new(0.15,4.4,0.3),CFrame.new(x-side*2.3,4,z+end_*2.9),tint,Enum.Material.Neon)
-	end
-	local tag = string.upper(rarity.name.pt) .. (hero.starter and "  •  INICIAL" or "")
-	wallSign(model,"HeroNameplate",CFrame.new(x+side*3.6,1.7,z)*CFrame.Angles(0,yaw,0),Vector3.new(5.6,1.7,0.2),hero.name.pt,tag,tint)
-	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= plinth then p.CanCollide = false end end
-	model.PrimaryPart = plinth
-	interactable(plinth, hero.name.pt, function(player) openPanel(player, "hero", { heroId = heroId }) end)
-	return model
-end
-
 -- The chest shop: heroes are found in chests, paid for with Gold. Two chests sit
 -- on lit plinths, the rare one and the legendary one, each with its price on a
 -- sign and a beam of light so it can be seen from across the deck.
@@ -691,7 +676,15 @@ local function buildChestStand(lobby, x, z, chestId, chest, openPanel)
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= plinth then p.CanCollide = false end end
 	model.PrimaryPart = plinth
 	interactable(plinth, chest.name.pt, function(player) openPanel(player, "chests", { chestId = chestId }) end, 16)
-	return model
+	local green = Color3.fromRGB(82, 235, 146)
+	local pad = artPart(model, "ShopEntryPad", Vector3.new(12, 0.18, 12), CFrame.new(x - 15, 0.48, z), green:Lerp(ART.ink, 0.58), Enum.Material.SmoothPlastic)
+	for _,side in ipairs({-1,1}) do
+		artPart(model,"ShopEntryBorder",Vector3.new(12,0.12,0.24),CFrame.new(x-15,0.61,z+side*5.9),green,Enum.Material.Neon)
+		artPart(model,"ShopEntryBorder",Vector3.new(0.24,0.12,12),CFrame.new(x-15+side*5.9,0.61,z),green,Enum.Material.Neon)
+	end
+	local sign=label(pad,"PISE PARA ABRIR\nSTEP TO OPEN",Vector3.new(0,2.4,0),green,210,48)
+	sign.Parent.Name="ShopEntryHint"
+	return model, {center=Vector3.new(x-15,3,z),size=Vector3.new(12,7,12),chestId=chestId}
 end
 
 -- The store as a physical kiosk row: the drone spins in a display case, the
@@ -711,8 +704,9 @@ local function buildShopStand(lobby, x, z, shopKind, shopKey, displayName, openP
 	end
 	artPart(model,"ShowcaseCanopy",Vector3.new(6.5,0.35,5.8),CFrame.new(x,6,z),ART.ink,Enum.Material.Metal)
 	if shopKey == "heroes" and showcase then
-		-- A mythic hero turns in a lit case: the premium shop sells heroes directly.
-		heroFigure(model, showcase.id, showcase, CFrame.new(x, 1.15, z) * CFrame.Angles(0, -math.pi / 2, 0), 0.62)
+		-- Recruitment card marks direct purchases without a character statue.
+		artPart(model,"RecruitCard",Vector3.new(0.4,3.6,2.8),CFrame.new(x,3,z),ART.gold,Enum.Material.Metal)
+		artPart(model,"RecruitStar",Vector3.new(0.5,1.2,1.2),CFrame.new(x+0.25,3,z)*CFrame.Angles(math.pi/4,0,0),ART.cyan,Enum.Material.Neon)
 		part(model, "DisplayRing", Vector3.new(4.6, 0.15, 4.6), CFrame.new(x, 1.1, z), ART.gold, Enum.Material.Neon).CanCollide = false
 	elseif shopKey == "collector" then
 		-- A body with two crossed rotor arms, so the client's showroom spin is
@@ -775,7 +769,7 @@ function World:BuildLobby()
 	if old then old:Destroy() end
 	local lobby = Instance.new("Model")
 	lobby.Name, lobby.Parent = "DoomLobby", workspace
-	self.lobby, self.portalZones = lobby, {}
+	self.lobby, self.portalZones, self.shopZones, self.shopOccupants = lobby, {}, {}, {}
 	local center = Vector3.new(0, 0, 320)
 	local hull = part(lobby, "Helicarrier", Vector3.new(180, 8, 150), CFrame.new(center - Vector3.new(0, 5, 0)), Color3.fromRGB(23, 32, 47), Enum.Material.Metal)
 	hull.CastShadow = true
@@ -808,25 +802,16 @@ function World:BuildLobby()
 		self.portalZones[modeId] = zone
 	end
 
-	-- Hero hall: every hero has a pedestal, twelve along each rail, glowing in
-	-- its rarity colour. A hero not won yet stays veiled until it is found.
-	local heroCount = #self.catalog.HeroOrder
-	local perRail = math.ceil(heroCount / 2)
-	for index, heroId in ipairs(self.catalog.HeroOrder) do
-		local west = index <= perRail
-		local slot = west and index or index - perRail
-		local z = 258 + (slot - 1) * (128 / math.max(1, perRail - 1))
-		local hero = self.catalog.Heroes[heroId]
-		buildHeroPedestal(lobby, west and -86 or 82, z, heroId, hero, self.openPanel, self.catalog.Rarities[hero.rarity], west and 1 or -1)
-	end
+	-- The collection lives in the HUD; the plaza stays clear of hero statues.
 
 	-- The chest shop, east of the plaza: Gold for heroes, by chance.
 	local chestZ = { rare = 338, legendary = 374 }
 	for _, chestId in ipairs(self.catalog.ChestOrder) do
-		buildChestStand(lobby, 58, chestZ[chestId], chestId, self.catalog.Chests[chestId], self.openPanel)
+		local _,zone=buildChestStand(lobby, 58, chestZ[chestId], chestId, self.catalog.Chests[chestId], self.openPanel)
+		self.shopZones[chestId]=zone
 	end
 	wallSign(lobby, "ChestShopSign", CFrame.new(69, 15, 356) * CFrame.Angles(0, math.pi / 2, 0), Vector3.new(50, 6.4, 1),
-		"LOJA DE BAÚS", "GASTE OURO  •  HERÓIS NOVOS EM CADA BAÚ", ART.gold)
+		"LOJA DE BAÚS", "PISE NO VERDE  •  STEP ON GREEN  •  OURO / GOLD", ART.gold)
 	for _, z in ipairs({ 322, 390 }) do
 		artPart(lobby, "ChestShopPillar", Vector3.new(2, 15, 2), CFrame.new(69, 7.5, z), ART.pearl, Enum.Material.Metal).CastShadow = true
 		artPart(lobby, "ChestShopPillarLight", Vector3.new(0.3, 12, 0.3), CFrame.new(67.9, 7.5, z), ART.gold, Enum.Material.Neon)
@@ -859,6 +844,33 @@ function World:BuildLobby()
 	self:DressLobby(lobby)
 	self:ArtDirectLobby(lobby)
 	self:BuildForestSanctuary(lobby)
+end
+
+-- Check root positions on the server, not Touched events from every limb.
+-- Closing a menu while standing on a pad keeps it closed until re-entry.
+function World:StepShopEntries(players)
+	local occupants={}
+	for _,player in ipairs(players) do
+		local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local previous=self.shopOccupants[player.UserId]
+		local function inside(zone,margin)
+			if not zone or not root then return false end
+			local offset=root.Position-zone.center
+			return math.abs(offset.X)<=zone.size.X/2+margin and math.abs(offset.Y)<=zone.size.Y/2+margin and math.abs(offset.Z)<=zone.size.Z/2+margin
+		end
+		if previous and inside(self.shopZones[previous],1) then
+			occupants[player.UserId]=previous
+		else
+			for _,id in ipairs(self.catalog.ChestOrder) do
+				if inside(self.shopZones[id],0) then
+					occupants[player.UserId]=id
+					self.openPanel(player,"chests",{chestId=id})
+					break
+				end
+			end
+		end
+	end
+	self.shopOccupants=occupants
 end
 
 -- A recognizable social world around the operations plaza. All terrain is
@@ -1183,7 +1195,8 @@ function World:DressLobby(lobby)
 	for _, x in ipairs({ -106, 106 }) do
 		for _, z in ipairs({ 262, 378 }) do buildRotor(lobby, x, z) end
 	end
-	buildJet(lobby, 30, 377, 0)
+	-- Keep the wing clear of the legendary chest's walk-in shop pad.
+	buildJet(lobby, 18, 377, 0)
 	buildJet(lobby, -30, 380, 0.08)
 
 	-- A radar on the bridge, turning slowly (the client animates it).
@@ -2405,8 +2418,10 @@ function World:MakeTower(id, heroId, position, ownerId)
 	model.Name = heroId .. "_" .. id
 	model:SetAttribute("TowerId", id) model:SetAttribute("OwnerId", ownerId) model:SetAttribute("HeroId", heroId)
 	local color = rgb(hero.color)
-	local base = part(model, "Platform", Vector3.new(5.5, 0.45, 5.5), CFrame.new(position.X, 0.35, position.Z), Color3.fromRGB(39, 52, 65), Enum.Material.Metal)
-	local ring = part(model, "PowerRing", Vector3.new(5.8, 0.15, 5.8), CFrame.new(position.X, 0.12, position.Z), color, Enum.Material.Neon)
+	local flat = CFrame.Angles(0,0,math.pi/2)
+	local base = part(model, "Platform", Vector3.new(0.45, 5.5, 5.5), CFrame.new(position.X, 0.35, position.Z)*flat, Color3.fromRGB(65, 83, 107), Enum.Material.Metal)
+	local ring = part(model, "PowerRing", Vector3.new(0.15, 5.8, 5.8), CFrame.new(position.X, 0.12, position.Z)*flat, color, Enum.Material.Neon)
+	base.Shape, ring.Shape = Enum.PartType.Cylinder, Enum.PartType.Cylinder
 	ring.CanCollide = false
 	-- The server owns the ring's canonical width; the client's firing recoil
 	-- animates around it and restores to whatever this says, so an upgrade
@@ -2418,7 +2433,7 @@ function World:MakeTower(id, heroId, position, ownerId)
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") then p.CanCollide = false p:SetAttribute("TowerId", id) end end
 	model.PrimaryPart, model.Parent = base, self.Towers
 	self:ClearClutter(position, 2.9)
-	local title = label(head, hero.name.pt, Vector3.new(0, 2, 0), Color3.fromRGB(229, 243, 247), 170)
+	local title = label(head, hero.name.pt, Vector3.new(0, 2, 0), Color3.fromRGB(229, 243, 247), 145, 55)
 	title.TextSize = 12
 	return model
 end
@@ -2428,7 +2443,7 @@ function World:UpgradeTower(model, level, branch, mastery)
 	local ring = model:FindFirstChild("PowerRing")
 	if ring then
 		local width = 5.8 + level * 0.12
-		ring.Size = Vector3.new(width, 0.15, width)
+		ring.Size = Vector3.new(0.15, width, width)
 		ring:SetAttribute("BaseSize", width)
 		-- The two final specializations must look different from each other,
 		-- not just different from an unspecialized tower: warm for the first
@@ -2439,7 +2454,7 @@ function World:UpgradeTower(model, level, branch, mastery)
 	local old = model:FindFirstChild("UpgradeMarkers") if old then old:Destroy() end
 	local folder = Instance.new("Folder") folder.Name, folder.Parent = "UpgradeMarkers", model
 	for i = 1, level - 1 do
-		part(folder, "Rank", Vector3.new(0.55, 0.3 + i * 0.15, 0.55), model.PrimaryPart.CFrame * CFrame.new(-2.2 + i, 0.4, 2.1), Color3.fromRGB(255, 208, 92), Enum.Material.Neon)
+		part(folder, "Rank", Vector3.new(0.55, 0.3 + i * 0.15, 0.55), CFrame.new(model.PrimaryPart.Position) * CFrame.new(-2.2 + i, 0.4, 2.1), Color3.fromRGB(255, 208, 92), Enum.Material.Neon)
 	end
 	local head = model:FindFirstChild("Mask")
 	if branch and head then

@@ -34,7 +34,7 @@ return {
 		},
 	},
 	-- Optional owned/licensed audio IDs. Zero keeps the experience silent.
-	Audio = { lobby = 0, battle = 0, collect = 0, victory = 0, defeat = 0, breach = 0, place = 0, upgrade = 0, levelUp = 0 },
+	Audio = { lobby = 0, battle = 0, collect = 0, victory = 0, defeat = 0, breach = 0, place = 0, upgrade = 0, levelUp = 0, ability = 0, boss = 0, wave = 0, chest = 0 },
 	-- Native Roblox client sounds; uploaded, configured IDs take precedence.
 	-- Remove entries to mute fallbacks. Music still requires owned audio IDs.
 	BuiltinCues = {
@@ -45,5 +45,9 @@ return {
 		victory = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.2},
 		defeat = {path = "rbxasset://sounds/volume_slider.ogg", speed = 0.6},
 		breach = {path = "rbxasset://sounds/impact_explosion_03.mp3", speed = 0.85},
+		ability = {path = "rbxasset://sounds/action_get_up.mp3", speed = 0.85},
+		boss = {path = "rbxasset://sounds/impact_explosion_03.mp3", speed = 0.65},
+		wave = {path = "rbxasset://sounds/volume_slider.ogg", speed = 0.9},
+		chest = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.15},
 	},
 }

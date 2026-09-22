@@ -457,7 +457,8 @@ function Match:_attack(tower, stats)
 		self:_damage(enemy,stats.damage*(1+boost),tower,stats)
 	end
 	local c=self.catalog.Heroes[tower.heroId].color
-	self:_fx({kind="Shot",from=tower.position+Vector3.new(0,4,0),to=target.position+Vector3.new(0,target.def.air and 8 or 2,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp})
+	local visualHeight = target.def.air and 8 or target.def.boss and 4.2 or target.enemyId=="brute" and 2.9 or 2
+	self:_fx({kind="Shot",from=tower.position+Vector3.new(0,4,0),to=target.position+Vector3.new(0,visualHeight,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp})
 	if attack=="splash" or attack=="dot" then self:_fx({kind="Pulse",position=target.position,radius=stats.splash or 8,color=Color3.fromRGB(c[1],c[2],c[3])}) end
 	return true
 end
@@ -487,7 +488,11 @@ function Match:_power(enemy)
 		if enemy.shield>0 then
 			for _,t in pairs(self.towers) do if distanceXZ(t.position,enemy.position)<28 then t.stunnedUntil=self.elapsed+2 end end
 			enemy.shield=0
-		else enemy.shield=enemy.maxHP*0.08 enemy.dischargeAt=self.elapsed+5 end
+		else
+			enemy.shield=enemy.maxHP*0.08 enemy.dischargeAt=self.elapsed+5
+			self:_fx({kind="Pulse",position=enemy.position,radius=28,color=Color3.fromRGB(255,170,64),duration=5,
+				followEnemyId=enemy.id,requiresShield=true,warningText={pt="QUEBRE O ESCUDO",en="BREAK THE SHIELD"}})
+		end
 		enemy.hint="Quebre o escudo antes da descarga / Break the shield before discharge"
 	elseif id=="doom" then
 		self:_summon(enemy,3+enemy.phase+bonus,"armored")
@@ -527,7 +532,9 @@ function Match:_enemiesStep(dt)
 					enemy.telegraphed=true self:_notice(enemy.def.name.pt.." prepara uma habilidade!",enemy.def.name.en.." is preparing an ability!","boss")
 					-- The toast says a power is coming; this ring says where, and
 					-- lasts exactly the two seconds the player has to react.
-					self:_fx({kind="Pulse",position=enemy.position,radius=26,color=Color3.fromRGB(255,170,64),duration=2})
+					local radius = enemy.enemyId=="abomination" and 24 or enemy.enemyId=="killmonger" and 28 or enemy.enemyId=="doom" and enemy.final and 22 or 6
+					self:_fx({kind="Pulse",position=enemy.position,radius=radius,color=Color3.fromRGB(255,170,64),duration=2,
+						followEnemyId=enemy.id,warningText={pt="PODER DO CHEFE",en="BOSS POWER"}})
 				end
 				if self.elapsed>=enemy.nextPower then self:_power(enemy) enemy.nextPower=self.elapsed+(enemy.final and 9 or 14) enemy.telegraphed=false end
 				if enemy.dischargeAt and self.elapsed>=enemy.dischargeAt then
@@ -943,7 +950,9 @@ function Match:Step(dt)
 	self.syncTimer+=dt
 	if self.syncTimer>=self.config.EnemySyncInterval then
 		self.syncTimer=0 local enemies={}
-		for _,e in pairs(self.enemies) do table.insert(enemies,{id=e.id,enemyId=e.enemyId,position=e.position+Vector3.new(0,e.def.air and 7 or 0,0),hp=e.hp,maxHP=e.maxHP,phase=e.phase,st=self:_statusOf(e),final=e.final or nil}) end
+		-- Replicate route position, not a second visual flight offset. Client
+		-- torso height and Shot endpoints use the same 8-stud airborne center.
+		for _,e in pairs(self.enemies) do table.insert(enemies,{id=e.id,enemyId=e.enemyId,position=e.position,hp=e.hp,maxHP=e.maxHP,phase=e.phase,st=self:_statusOf(e),final=e.final or nil}) end
 		-- The heaviest few hits since the last sync, one number per enemy.
 		local hits, order = {}, {}
 		for id, amount in pairs(self.hitBuffer) do

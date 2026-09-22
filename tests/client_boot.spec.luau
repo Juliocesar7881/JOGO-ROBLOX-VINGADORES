@@ -432,12 +432,12 @@ local function session(screen)
 
 	step("per-viewer lobby cosmetics", function()
 		local lobby = workspace:FindFirstChild("DoomLobby")
-		-- Veteran: infinite and boss rush portals locked; 9 of 12 heroes
-		-- unowned; stasis, logistics and boss hunter above level 7.
-		check(countNamed(lobby, "LockShroud") == 22, tag .. ": the veteran sees exactly 14 locks, got " .. countNamed(lobby, "LockShroud"))
+		-- Collections now live in the HUD; only the locked Infinito portal
+		-- needs a world shroud for this veteran.
+		check(countNamed(lobby, "LockShroud") == 1, tag .. ": the veteran sees only the locked infinite portal")
 		local highlights = 0
 		for _, item in ipairs(lobby:GetDescendants()) do if rawget(item, "__class") == "Highlight" then highlights += 1 end end
-		check(highlights == 2, tag .. ": 2 equipped heroes, 3 equipped skills and 2 owned passes glow, got " .. highlights)
+		check(highlights == 0, tag .. ": removed hero statues leave no equipped world highlights")
 		local boardText = lobby.Board_quests.Panel.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(boardText, "1 PRONTA", 1, true) ~= nil, tag .. ": the mission board tells this viewer a reward is waiting, got " .. boardText)
 		-- Each portal's sign names what stepping in starts for this viewer.
@@ -532,6 +532,12 @@ local function session(screen)
 	step("buying and equipping from the panels", function()
 		fx({kind="OpenPanel",panel="chests"})
 		click("ABRIR")
+		check(not asked("OpenChest"),tag..": selecting a chest does not spend before confirmation")
+		check(countNamed(gui,"ChestConfirmation")==1,tag..": the price confirmation appears")
+		clickNamed("CancelChest")
+		check(not asked("OpenChest"),tag..": cancelling keeps Gold untouched")
+		click("ABRIR")
+		clickNamed("ConfirmChest_rare")
 		check(asked("OpenChest"),tag .. ": chest sends server recruitment intent")
 		fx({kind="OpenPanel",panel="hero",heroId="spiderman"})
 		click("Adicionar à equipe")
@@ -717,7 +723,7 @@ local function session(screen)
 		profile.heroes.thor = { xp = 0, level = 1 }
 		profile.gold = 0
 		push(lobbySnapshot(profile))
-		check(countNamed(workspace:FindFirstChild("DoomLobby"), "LockShroud") == 21, tag .. ": the bought hero's shroud is gone")
+		check(countNamed(workspace:FindFirstChild("DoomLobby"), "LockShroud") == 1, tag .. ": gaining a hero does not create a lobby statue")
 	end)
 
 	step("a newcomer sees locks and the first-visit pointer", function()
@@ -728,7 +734,7 @@ local function session(screen)
 		-- Before training four portals are locked (the campaign portal runs
 		-- training instead), ten heroes are unowned, and seven skills sit above
 		-- level 1.
-		check(countNamed(lobby, "LockShroud") == 25, tag .. ": a newcomer sees exactly 21 locks, got " .. countNamed(lobby, "LockShroud"))
+		check(countNamed(lobby, "LockShroud") == 3, tag .. ": a newcomer sees the three locked mode portals")
 		local campaignSign = lobby.Portal_normal.Sign.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(campaignSign, "50 ONDAS", 1, true) ~= nil, tag .. ": for a newcomer the campaign portal is the training portal, got " .. campaignSign)
 		check(countNamed(lobby, "StartHere") == 1, tag .. ": a newcomer sees one START HERE beacon")
@@ -882,6 +888,12 @@ local function session(screen)
 		}
 		fx({ kind = "EnemySync", enemies = enemies })
 		frames(1 / 30, 3)
+		local flyingTorso
+		for _,model in ipairs(workspace.DoomClientVisuals:GetChildren()) do
+			local torso=model:FindFirstChild("Torso")
+			if torso and torso.Position.X < -20 and torso.Position.Z > -20 then flyingTorso=torso end
+		end
+		check(flyingTorso and flyingTorso.Position.Y>7.7 and flyingTorso.Position.Y<8.3,tag..": airborne visual shares the eight-stud shot height")
 		for _, enemy in ipairs(enemies) do enemy.hp -= 20; enemy.position += v3(2, 0, 0) end
 		fx({ kind = "EnemySync", enemies = enemies })
 		frames(1 / 30, 3)
@@ -895,6 +907,16 @@ local function session(screen)
 			end
 		end
 		check(discs >= 2 and squares == 0, tag .. ": area pulses are drawn as discs, not squares (" .. discs .. " discs, " .. squares .. " squares)")
+		fx({kind="Pulse",position=v3(32,0,0),followEnemyId=4,radius=24,duration=2,warningText={pt="PODER DO CHEFE",en="BOSS POWER"},color=Color3.fromRGB(255,170,64)})
+		frames(1/30, 2)
+		local warningPart
+		for _,item in ipairs(workspace.DoomClientVisuals:GetChildren()) do if item:FindFirstChild("Warning") and item.Warning.Enabled then warningPart=item end end
+		check(warningPart and warningPart.Warning.Text.Text:find("PODER DO CHEFE",1,true),tag..": boss warning has a readable countdown")
+		local warningX=warningPart and warningPart.Position.X or 0
+		enemies[4].position+=v3(8,0,0)
+		fx({kind="EnemySync",enemies=enemies})
+		frames(1/30, 4)
+		check(warningPart and warningPart.Position.X>warningX+1,tag..": boss danger area follows the moving boss")
 		fx({ kind = "CoinSpawn", id = "c1", position = v3(1, 0, 1), value = 10 })
 		fx({ kind = "Breach", position = v3(88, 0, 66), damage = 3, baseHP = 83, shake = 0.5 })
 		fx({ kind = "Notice", text = { pt = "Aviso", en = "Notice" }, tone = "boss" })
@@ -909,6 +931,13 @@ local function session(screen)
 		local want = (v3(-40, 0, -60) - v3(10, 0, 10)).Unit
 		check(look ~= nil and look.X * want.X + look.Z * want.Z > 0.95, tag .. ": a hero turns to face what it shoots")
 		check(t1 and t1.Platform.CFrame.LookVector.Z < -0.99, tag .. ": the platform the server owns never turns")
+		local hand = t1 and t1:FindFirstChild("Hand")
+		local handRest = hand and hand.CFrame
+		fx({kind="Shot",towerId="t1",from=v3(10,4,10),to=v3(-40,2,-60),color=Color3.fromRGB(220,48,51)})
+		frames(0.1, 2)
+		check(hand and (hand.Position-handRest.Position).Magnitude > 0.025, tag .. ": firing moves the hand around its authored shoulder")
+		frames(0.1, 5)
+		check(hand and (hand.Position-handRest.Position).Magnitude < 0.001, tag .. ": firing restores the pose without accumulating displacement")
 		fx({ kind = "CoinRemove", id = "c1" })
 		for _,heroId in ipairs(Catalog.HeroOrder) do
 			local ability=Catalog.Abilities[Catalog.Heroes[heroId].ability]

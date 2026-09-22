@@ -29,6 +29,14 @@
         }
       }
     },
+    "TextChatService": {
+      "$className": "TextChatService",
+      "$properties": {
+        "ChatVersion": "TextChatService",
+        "CreateDefaultTextChannels": true,
+        "CreateDefaultCommands": true
+      }
+    },
     "Lighting": {
       "$className": "Lighting",
       "$properties": {

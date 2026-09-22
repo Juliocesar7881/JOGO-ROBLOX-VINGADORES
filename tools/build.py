@@ -170,6 +170,12 @@ def build_tree(role: str, root: Path = ROOT) -> ET.Element:
     client = source_container(starter_scripts, "DoomClient", "client")
     item(tree, "StarterGui", "StarterGui")
     item(tree, "SoundService", "SoundService")
+    # Older XML defaults select legacy chat. Author the modern filtered chat
+    # service in the place; ChatVersion is not writable by game scripts.
+    _, chat_properties = item(tree, "TextChatService", "TextChatService")
+    prop(chat_properties, "token", "ChatVersion", 1)
+    prop(chat_properties, "bool", "CreateDefaultTextChannels", True)
+    prop(chat_properties, "bool", "CreateDefaultCommands", True)
     containers = {"shared": shared, "server": server, "client": client}
     folders: dict[tuple[str, ...], ET.Element] = {}
 

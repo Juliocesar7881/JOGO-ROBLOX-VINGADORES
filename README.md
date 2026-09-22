@@ -26,6 +26,20 @@ publicada). Detalhes de publicação real em
 
 ## Estado atual (resumo; detalhes em docs/GAME_DESIGN.md)
 
+- **Combate visual:** poses de ataque nos 24 heróis, disparos nas armas,
+  pedestais circulares, mapas mais claros, estados dos inimigos e avisos
+  de chefes que acompanham a área real de perigo.
+- **Áudio e implantação:** [13 áudios originais](assets/audio/README.md),
+  música/efeitos com controles separados e [gerador de publicação](docs/DEPLOYMENT.md)
+  que aplica IDs da conta sem alterar os fontes. Uploads e testes publicados
+  ainda dependem da configuração proprietária.
+
+- **Loja de baús:** as exposições físicas de heróis saíram do lobby.
+  Pisar no verde diante do Raro ou Lendário abre sua loja; o menu mostra
+  saldo, retratos, chances e confirmação antes de gastar Ouro. Fechar
+  enquanto está sobre a área não reabre o menu repetidamente.
+  Progresso e pendências de lançamento: [docs/PRODUCTION_STATUS.md](docs/PRODUCTION_STATUS.md).
+
 - **24 heróis**, 5 raridades. Um herói só chega à conta por um dos **2 baús**
   do lobby (Raro: 1.000 Ouro; Lendário: 2.000 Ouro, com garantia após 10
   aberturas sem lendário/mítico) ou pela compra direta na Loja Robux —

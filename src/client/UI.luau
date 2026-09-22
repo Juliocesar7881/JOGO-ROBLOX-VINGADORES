@@ -2,16 +2,29 @@
 local UI = {}
 
 UI.Colors = {
-	background = Color3.fromRGB(19, 32, 57),
-	panel = Color3.fromRGB(34, 54, 86),
-	card = Color3.fromRGB(47, 71, 105),
-	stroke = Color3.fromRGB(101, 135, 171),
-	text = Color3.fromRGB(246, 249, 254),
-	muted = Color3.fromRGB(196, 214, 234),
-	green = Color3.fromRGB(99, 241, 187),
-	gold = Color3.fromRGB(255, 207, 98),
-	red = Color3.fromRGB(255, 112, 124),
-	blue = Color3.fromRGB(97, 202, 255),
+	background = Color3.fromRGB(25, 23, 33),
+	panel = Color3.fromRGB(42, 38, 51),
+	card = Color3.fromRGB(62, 55, 68),
+	stroke = Color3.fromRGB(121, 109, 130),
+	text = Color3.fromRGB(255, 248, 232),
+	muted = Color3.fromRGB(207, 198, 213),
+	green = Color3.fromRGB(135, 235, 113),
+	gold = Color3.fromRGB(255, 206, 82),
+	red = Color3.fromRGB(255, 129, 134),
+	blue = Color3.fromRGB(120, 212, 255),
+	coral = Color3.fromRGB(255, 164, 112),
+	violet = Color3.fromRGB(203, 170, 255),
+	pink = Color3.fromRGB(255, 159, 215),
+	cream = Color3.fromRGB(255, 239, 195),
+}
+
+UI.Themes = {
+	inventory = {color=UI.Colors.coral, icon="hero"}, hero = {color=UI.Colors.coral, icon="hero"}, squad = {color=UI.Colors.coral, icon="hero"},
+	talents = {color=UI.Colors.violet, icon="star"}, chests = {color=UI.Colors.gold, icon="chest"},
+	premium = {color=UI.Colors.green, icon="shop"}, shop = {color=UI.Colors.green, icon="shop"},
+	rewards = {color=UI.Colors.pink, icon="gift"}, modes = {color=UI.Colors.green, icon="bolt"},
+	quests = {color=UI.Colors.coral, icon="star"}, leaderboard = {color=UI.Colors.gold, icon="trophy"},
+	settings = {color=UI.Colors.cream, icon="bolt"},
 }
 
 function UI.create(className, properties, parent)
@@ -43,7 +56,10 @@ end
 -- Color is still a property of the control (selected/affordable states can
 -- update it), while a restrained vertical shade gives game panels depth.
 function UI.shade(parent, rotation)
-	return UI.create("UIGradient", {Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(216, 227, 243)), Rotation = rotation or 90}, parent)
+	local gradient = parent:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient", {}, parent)
+	gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(205, 192, 210))
+	gradient.Rotation = rotation or 90
+	return gradient
 end
 
 function UI.frame(parent, properties)
@@ -82,8 +98,8 @@ function UI.button(parent, text, callback, properties)
 	UI.corner(button, 14)
 	UI.shade(button)
 	if (defaults.BackgroundTransparency or 0) < 1 then
-		local border = UI.stroke(button, Color3.fromRGB(223, 244, 255), 1)
-		border.Transparency = 0.65
+		local border = UI.stroke(button, UI.Colors.background, 2)
+		border.Transparency = 0.1
 	end
 	if callback then button.Activated:Connect(callback) end
 	return button
@@ -160,6 +176,70 @@ function UI.icon(parent, kind, tint, properties)
 		shape(0.47, 0.47, 0.18, 0.44, 29)
 	end
 	return root
+end
+
+-- Small clipped comic-print motifs; no textures to upload and no animated
+-- particles on menus. Each panel gets one motif, never one per text label.
+function UI.printTexture(parent, tint, properties)
+	local root = UI.frame(parent, {Name="ComicPrint", BackgroundTransparency=1, Size=UDim2.fromScale(1,1), ClipsDescendants=true, Active=false})
+	for key,value in pairs(properties or {}) do root[key]=value end
+	for row=0,3 do
+		for column=0,5 do
+			local dot=UI.frame(root,{Name="InkDot",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12-column*15,0,8+row*15),Size=UDim2.fromOffset(3+row,3+row),BackgroundColor3=tint,BackgroundTransparency=0.84,Active=false})
+			UI.corner(dot,8)
+		end
+	end
+	return root
+end
+
+function UI.ribbon(parent, tint, height)
+	local band=UI.frame(parent,{Name="TitleRibbon",Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,0,height or 46),BackgroundColor3=tint,ClipsDescendants=true,Active=false})
+	UI.corner(band,12)
+	UI.shade(band,15)
+	UI.printTexture(band,UI.Colors.background)
+	UI.frame(band,{Name="RibbonInk",Position=UDim2.new(0,12,1,-3),Size=UDim2.new(1,-24,0,2),BackgroundColor3=UI.Colors.background,BackgroundTransparency=0.8})
+	return band
+end
+
+function UI.portraitStage(parent, tint, properties)
+	local stage=UI.frame(parent,properties)
+	stage.BackgroundColor3=tint:Lerp(UI.Colors.background,0.42)
+	stage.ClipsDescendants=true
+	UI.corner(stage,12)
+	UI.shade(stage,45)
+	local halo=UI.frame(stage,{Name="PortraitHalo",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.53),Size=UDim2.fromOffset(88,88),BackgroundColor3=tint,BackgroundTransparency=0.65})
+	UI.corner(halo,100)
+	UI.stroke(halo,tint,2).Transparency=0.55
+	UI.printTexture(stage,UI.Colors.text)
+	return stage
+end
+
+-- A miniature expedition vignette makes the mode screen a destination
+-- selector, not a stack of identical text boxes.
+function UI.expeditionArt(parent, kind, tint, properties)
+	local art=UI.frame(parent,properties)
+	art.BackgroundColor3=tint:Lerp(UI.Colors.background,0.7)
+	art.ClipsDescendants=true
+	UI.corner(art,12)
+	UI.shade(art,90)
+	local function shape(x,y,w,h,color,angle,round)
+		local p=UI.frame(art,{Position=UDim2.fromScale(x,y),Size=UDim2.fromScale(w,h),BackgroundColor3=color,Rotation=angle or 0,Active=false})
+		if round then UI.corner(p,round) end
+		return p
+	end
+	shape(0.71,0.12,0.21,0.3,tint,0,60)
+	for i=0,5 do
+		local h=0.2+(i%3)*0.09
+		shape(i*0.18,0.75-h,0.14,h,UI.Colors.background:Lerp(tint,0.13))
+		shape(i*0.18+0.03,0.8-h,0.025,0.05,tint)
+	end
+	shape(-0.1,0.84,1.2,0.3,tint:Lerp(UI.Colors.background,0.72),-8)
+	shape(0.34,0.7,0.34,0.06,tint,0,4)
+	local portal=shape(0.35,0.19,0.32,0.54,UI.Colors.background,0,50)
+	UI.stroke(portal,tint,3).Transparency=0
+	UI.icon(portal,kind,tint,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromScale(0.62,0.62)})
+	UI.printTexture(art,tint)
+	return art
 end
 
 -- Small vector emblems stay crisp at any UI scale without asset downloads.

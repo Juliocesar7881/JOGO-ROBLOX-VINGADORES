@@ -22,16 +22,19 @@ local function buildEnemy(def)
 	local color = UI.color(def.color)
 	local scale = def.boss and 2.1 or (def.id == "brute" and 1.45 or 1)
 	local torso = part(model, Vector3.new(1.6, 1.7, 0.85) * scale, color)
+	torso.Shape, torso.Material = Enum.PartType.Ball, def.boss and Enum.Material.SmoothPlastic or Enum.Material.Fabric
 	torso.Name = "Torso"
 	torso.CFrame = CFrame.new(0, 2 * scale, 0)
 	model.PrimaryPart = torso
 	local head = part(model, Vector3.new(1.05, 1, 0.95) * scale, color:Lerp(Color3.fromRGB(135, 174, 115), 0.35))
+	head.Shape = Enum.PartType.Ball
 	head.Name = "Head"
 	head.CFrame = CFrame.new(0, 3.35 * scale, 0)
 	local legHeight = 1.25 * scale
 	local legs, arms, wings = {}, {}, {}
 	for _, x in ipairs({-1, 1}) do
 		local arm = part(model, Vector3.new(0.48, 1.6, 0.5) * scale, color:Lerp(Color3.new(), 0.2))
+		arm.Shape = Enum.PartType.Ball
 		arm.CFrame = CFrame.new(x * 1.05 * scale, 1.95 * scale, -0.18 * scale) * CFrame.Angles(-0.3, 0, x * 0.16)
 		table.insert(arms, {part = arm, base = torso.CFrame:Inverse() * arm.CFrame, side = x})
 		local leg = part(model, Vector3.new(0.56 * scale, legHeight, 0.6 * scale), Color3.fromRGB(34, 38, 43))
@@ -137,6 +140,8 @@ local function buildEnemy(def)
 	UI.corner(bg, 3)
 	local hp = UI.frame(bg, {Name = "HP", Size = UDim2.fromScale(1, 1), BackgroundColor3 = def.boss and UI.Colors.red or UI.Colors.green})
 	UI.corner(hp, 3)
+	local status = UI.label(billboard, "", {Name="Status", Position=UDim2.new(0.5,-75,0,-19), Size=UDim2.fromOffset(150,17),
+		TextSize=11, TextColor3=UI.Colors.gold, TextStrokeTransparency=0.25, Visible=false})
 	local pieces = {}
 	for _, piece in ipairs(model:GetChildren()) do
 		if piece:IsA("BasePart") then
@@ -148,7 +153,7 @@ local function buildEnemy(def)
 	-- Torso and head are the two parts a hit flash recolors: a Highlight per
 	-- enemy would be prettier and completely unaffordable at 180 of them.
 	return {
-		model = model, bar = hp, scale = scale, def = def, lastHP = nil,
+		model = model, bar = hp, status = status, scale = scale, def = def, lastHP = nil,
 		legs = def.air and nil or legs, arms = arms, wings = wings, legHeight = legHeight,
 		pieces = pieces, billboard = billboard,
 		flashParts = { { part = torso, color = torso.Color }, { part = head, color = head.Color } },
@@ -217,6 +222,7 @@ function Effects:_poolEnemy(record)
 	end
 	record.billboard.Enabled = true
 	record.lastHP, record.target, record.phase, record.animated = nil, nil, nil, nil
+	record.hitAt, record.statusFlags = nil, nil
 	record.model.Parent = nil
 	self.pool[record.def.id] = self.pool[record.def.id] or {}
 	table.insert(self.pool[record.def.id], record)
@@ -256,19 +262,20 @@ function Effects:_towerModel(towerId)
 	return self.towerModels[towerId]
 end
 
--- A brief muzzle-flash pulse on the tower's own power ring: an attack pose
--- without needing a full skeletal rig, readable even from the distant
--- top-down camera this tower defense uses.
+-- Attack poses use authored shoulder joints, including attached weapons.
+-- Every transform starts from the rest pose; repeated shots cannot drift.
 function Effects:_recoil(towerId)
 	local model = self:_towerModel(towerId)
+	local pose = model and self.aims[model]
+	if pose then pose.firedAt, pose.active = self.clock, true end
 	local ring = model and model:FindFirstChild("PowerRing")
 	if not ring or ring:GetAttribute("Recoiling") then return end
 	local function canonical()
-		local width = tonumber(ring:GetAttribute("BaseSize")) or ring.Size.X
-		return Vector3.new(width, ring.Size.Y, width)
+		local width = tonumber(ring:GetAttribute("BaseSize")) or ring.Size.Y
+		return Vector3.new(ring.Size.X, width, width)
 	end
 	ring:SetAttribute("Recoiling", true)
-	TweenService:Create(ring, TweenInfo.new(0.07, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = canonical() + Vector3.new(0.7, 0, 0.7)}):Play()
+	TweenService:Create(ring, TweenInfo.new(0.07, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = canonical() + Vector3.new(0, 0.45, 0.45)}):Play()
 	task.delay(0.07, function()
 		-- Read the canonical width again here: an upgrade may have widened the
 		-- ring while this recoil was in flight, and the restore must not undo it.
@@ -292,11 +299,14 @@ function Effects:_aim(towerId, target)
 	if not record then
 		local parts = {}
 		for _, child in ipairs(model:GetChildren()) do
-			if child:IsA("BasePart") and not FIXED_TOWER_PARTS[child.Name] then
-				table.insert(parts, { part = child, rest = child.CFrame })
+			if child:IsA("BasePart") and child:GetAttribute("HeroGeometry") and not FIXED_TOWER_PARTS[child.Name] then
+				local joint = child:GetAttribute("PoseJoint")
+				table.insert(parts, { part = child, rest = child.CFrame, group = child:GetAttribute("PoseGroup"),
+					joint = typeof(joint) == "Vector3" and CFrame.new(joint) or nil })
 			end
 		end
-		record = { parts = parts, pivot = CFrame.new(base.Position), yaw = 0, target = 0, active = false }
+		record = { parts = parts, pivot = CFrame.new(base.Position), yaw = 0, target = 0, active = false,
+			heroId = model:GetAttribute("HeroId"), waist = CFrame.new(base.Position + Vector3.new(0, 2.4 * (model:GetAttribute("FigureScale") or 1), 0)) }
 		self.aims[model] = record
 	end
 	local offset = target - base.Position
@@ -307,6 +317,8 @@ function Effects:_aim(towerId, target)
 end
 
 function Effects:_turnTowers(dt)
+	local state = self.getState()
+	local reduced = state and state.profile and state.profile.settings and state.profile.settings.lowFX
 	for model, record in pairs(self.aims) do
 		if model.Parent == nil then
 			self.aims[model] = nil
@@ -315,8 +327,25 @@ function Effects:_turnTowers(dt)
 			local settled = math.abs(delta) < 0.01
 			record.yaw = settled and record.target or record.yaw + delta * math.min(1, dt * 14)
 			local turn = record.pivot * CFrame.Angles(0, record.yaw, 0) * record.pivot:Inverse()
-			for _, entry in ipairs(record.parts) do entry.part.CFrame = turn * entry.rest end
-			if settled then record.active = false end
+			local age = record.firedAt and self.clock - record.firedAt or 1
+			local firing = age < 0.42
+			local pulse = firing and math.sin(math.clamp(age / 0.42, 0, 1) * math.pi) or 0
+			if reduced then pulse = 0 end
+			local melee = record.heroId == "hulk" or record.heroId == "thor" or record.heroId == "groot" or record.heroId == "shangchi"
+			local magic = record.heroId == "wanda" or record.heroId == "strange" or record.heroId == "silversurfer"
+			local body = record.waist * CFrame.Angles(-pulse * (melee and 0.12 or 0.035), 0, 0) * record.waist:Inverse()
+			for _, entry in ipairs(record.parts) do
+				if entry.part.Parent then
+					local transform = turn
+					if entry.group then transform *= body end
+					if entry.joint then
+						local side = entry.group == "LeftArm" and -1 or 1
+						transform *= entry.joint * CFrame.Angles(-pulse * (melee and 0.65 or magic and 0.28 or 0.16), 0, magic and side * pulse * 0.16 or 0) * entry.joint:Inverse()
+					end
+					entry.part.CFrame = transform * entry.rest
+				end
+			end
+			if settled and not firing then record.active = false end
 		end
 	end
 end
@@ -353,6 +382,8 @@ function Effects:_effect(size, frame, color, duration, shape, fade)
 	visual.Name, visual.Shape = "CombatEffect", shape or Enum.PartType.Block
 	visual.Size, visual.CFrame, visual.Color = size, frame, color
 	visual.Material, visual.Transparency = Enum.Material.Neon, fade or 0.12
+	local warning = visual:FindFirstChild("Warning")
+	if warning then warning.Enabled = false end
 	visual.Parent = self.folder
 	local effect = {part = visual, born = self.clock, expires = self.clock + duration, fade = fade or 0.12}
 	table.insert(self.shots, effect)
@@ -410,10 +441,15 @@ function Effects:_ultimateBurst(event, tint, lowFX)
 	end
 end
 
+local MUZZLE_PARTS = {ironman="Repulsor",hawkeye="Arrow",spiderman="Hand",thor="Mjolnir",captain="Shield",widow="BatonCharge",
+	bucky="RifleBarrel",rocket="GunMuzzle",warmachine="CannonMuzzle",starlord="BlasterGlow",wanda="ChaosSpell",strange="SpellGlyph",vision="MindGem",captainmarvel="PhotonFist"}
+
 function Effects:_heroShot(event, lowFX)
 	local from, target = event.from, event.to
 	local model = self:_towerModel(event.towerId)
 	local heroId = model and model:GetAttribute("HeroId")
+	local muzzle = model and model:FindFirstChild(MUZZLE_PARTS[heroId] or "Hand")
+	if muzzle then from = muzzle.Position end
 	local color = UI.color(event.color)
 	local white = Color3.fromRGB(218, 246, 255)
 	local delta = target - from
@@ -542,6 +578,7 @@ end
 
 function Effects:Handle(event)
 	if type(event) ~= "table" then return end
+		if event.kind == "Notice" and event.tone == "boss" and self.audio then self.audio:Cue("boss", 4) end
 	if event.shake then self:Shake(event.shake) end
 	if event.kind == "EnemyDown" then
 		self:Release(tostring(event.id))
@@ -581,7 +618,7 @@ function Effects:Handle(event)
 			if i>(lowFX and 2 or 12) then break end
 			if typeof(point)=="Vector3" then self:_line(point+Vector3.new(0,15,0),point,UI.color(event.color),0.3,0.4) end
 		end
-		if self.audio then self.audio:Cue("place",0.2) end
+		if self.audio then self.audio:Cue("ability",0.35) end
 		return
 	end
 	if event.kind == "Breach" then
@@ -613,6 +650,7 @@ function Effects:Handle(event)
 			current.target = enemy.position
 			local hp = enemy.hp or 1
 			if current.lastHP and hp < current.lastHP - 0.5 then
+				current.hitAt = self.clock
 				-- The hit tell survives lowFX, because it is how a player reads which
 				-- enemy their towers are working on. But reduced effects is also the
 				-- design's "reduce flashes" option: eighty enemies strobing pure white
@@ -629,9 +667,38 @@ function Effects:Handle(event)
 				end
 			end
 			current.lastHP = hp
+			current.maxHP = enemy.maxHP or hp
 			current.bar.Size = UDim2.fromScale(math.clamp(hp / math.max(enemy.maxHP or 1, 1), 0, 1), 1)
+			local state = self.getState()
+			local english = state and state.profile and state.profile.settings and state.profile.settings.language == "en"
+			local flags, words = tonumber(enemy.st) or 0, {}
+			current.statusFlags = flags
+			for _, status in ipairs({{16,"ESCUDO","SHIELD"},{1,"ATORDOADO","STUNNED"},{4,"MARCADO","MARKED"},{32,"FRÁGIL","WEAKENED"},{8,"QUEIMANDO","BURNING"},{2,"LENTO","SLOWED"}}) do
+				if math.floor(flags/status[1])%2==1 then table.insert(words,status[english and 3 or 2]) end
+				if #words==2 then break end
+			end
+			current.status.Visible = #words > 0
+			current.status.Text = table.concat(words," · ")
 		end
 		for id in pairs(self.enemies) do if not seen[id] then self:Release(id) end end
+		-- A dense horde must stay visible beneath its UI. Boss bars always
+		-- remain; a small budget shows wounded/status enemies, newest hits first.
+		local labels = {}
+		local camera = workspace.CurrentCamera
+		local eye = camera and camera.CFrame.Position or Vector3.zero
+		for id, enemy in pairs(self.enemies) do
+			enemy.billboard.Enabled = enemy.def.boss == true
+			if not enemy.def.boss and (enemy.lastHP < enemy.maxHP or (enemy.statusFlags or 0)>0) then
+				table.insert(labels,{enemy=enemy,id=id,distance=(enemy.position-eye).Magnitude})
+			end
+		end
+		table.sort(labels,function(a,b)
+			local ah,bh=a.enemy.hitAt or -1,b.enemy.hitAt or -1
+			if ah~=bh then return ah>bh end
+			if a.distance~=b.distance then return a.distance<b.distance end
+			return a.id<b.id
+		end)
+		for index=1,math.min(#labels,lowFX and 6 or 12) do labels[index].enemy.billboard.Enabled=true end
 	elseif event.kind == "CoinSpawn" then
 		if typeof(event.position) ~= "Vector3" then return end
 		local key = tostring(event.id)
@@ -657,8 +724,8 @@ function Effects:Handle(event)
 		end
 	elseif event.kind == "Shot" then
 		local state = self.getState()
-		self:_recoil(event.towerId)
 		self:_aim(event.towerId, event.to)
+		self:_recoil(event.towerId)
 		if typeof(event.from) ~= "Vector3" or typeof(event.to) ~= "Vector3" or #self.shots >= 80 then return end
 		self:_heroShot(event, state and state.profile and state.profile.settings.lowFX)
 	elseif event.kind == "Pulse" and typeof(event.position) == "Vector3" then
@@ -687,6 +754,22 @@ function Effects:Handle(event)
 			UI.color(event.color), duration, Enum.PartType.Cylinder, 0.68)
 		if pulse then
 			pulse.telegraph = telegraph
+			pulse.followEnemyId = event.followEnemyId and tostring(event.followEnemyId) or nil
+			pulse.requiresShield = event.requiresShield == true
+			if telegraph and type(event.warningText)=="table" then
+				local board = pulse.part:FindFirstChild("Warning")
+				if not board then
+					board = Instance.new("BillboardGui")
+					board.Name, board.Size, board.AlwaysOnTop, board.MaxDistance = "Warning", UDim2.fromOffset(180,32), true, 220
+					board.StudsOffsetWorldSpace, board.Parent = Vector3.new(0,9,0), pulse.part
+					UI.label(board,"",{Name="Text",Size=UDim2.fromScale(1,1),TextSize=13,TextColor3=UI.Colors.gold,TextStrokeTransparency=0.15})
+				end
+				local state = self.getState()
+				local english = state and state.profile and state.profile.settings and state.profile.settings.language=="en"
+				pulse.warning = event.warningText[english and "en" or "pt"] or "!"
+				board.Text.Text, board.Enabled = pulse.warning, true
+				pulse.warningBoard = board
+			end
 			pulse.growFrom, pulse.growTo = not telegraph and radius * 0.7 or nil, not telegraph and radius * 2.1 or nil
 		end
 	elseif event.kind == "Clear" then
@@ -728,7 +811,7 @@ function Effects:Step(dt)
 		end
 		enemy.position = enemy.position:Lerp(enemy.target, math.min(1, dt * 12))
 		local bob = settings.lowFX and 0 or math.sin(self.clock * (enemy.def.air and 4 or 8) + enemy.phase) * (enemy.def.air and 0.2 or 0.055)
-		local position = enemy.position + Vector3.new(0, 2 * enemy.scale + bob + (enemy.def.air and 4 or 0), 0)
+		local position = enemy.position + Vector3.new(0, 2 * enemy.scale + bob + (enemy.def.air and 6 or 0), 0)
 		local pivot = CFrame.lookAt(position, position + enemy.direction)
 		enemy.model:PivotTo(pivot)
 		if enemy.flashUntil and self.clock >= enemy.flashUntil then clearFlash(enemy) end
@@ -736,16 +819,17 @@ function Effects:Step(dt)
 			-- All limb rests are relative to the torso pivot, not the floor.
 			-- Reset them once when lowFX changes, so legs never freeze mid-stride.
 			local phase = self.clock * (enemy.def.speed or 7) * 0.85 + enemy.phase
+			local stopped = settings.lowFX or (enemy.statusFlags or 0)%2==1
 			if enemy.legs then
 				local hip = CFrame.new(0, enemy.legHeight / 2, 0)
 				for _, leg in ipairs(enemy.legs) do
-					local swing = settings.lowFX and 0 or math.sin(phase + (leg.side > 0 and math.pi or 0)) * 0.5
+					local swing = stopped and 0 or math.sin(phase + (leg.side > 0 and math.pi or 0)) * 0.5
 					leg.part.CFrame = pivot * leg.base * hip * CFrame.Angles(swing, 0, 0) * hip:Inverse()
 				end
 			end
 			local shoulder = CFrame.new(0, 0.7 * enemy.scale, 0)
 			for _, arm in ipairs(enemy.arms) do
-				local swing = settings.lowFX and 0 or math.sin(phase + (arm.side < 0 and math.pi or 0)) * 0.23
+				local swing = stopped and 0 or math.sin(phase + (arm.side < 0 and math.pi or 0)) * 0.23
 				arm.part.CFrame = pivot * arm.base * shoulder * CFrame.Angles(swing, 0, 0) * shoulder:Inverse()
 			end
 			for _, wing in ipairs(enemy.wings) do
@@ -775,6 +859,14 @@ function Effects:Step(dt)
 			table.remove(self.shots, i)
 		elseif effect.born then
 			local life = math.clamp((self.clock - effect.born) / (effect.expires - effect.born), 0, 1)
+			if effect.followEnemyId then
+				local enemy = self.enemies[effect.followEnemyId]
+				if enemy then
+					effect.part.CFrame = CFrame.new(enemy.position.X,0.2,enemy.position.Z) * CFrame.Angles(0,0,math.pi/2)
+					if effect.requiresShield and self.clock-effect.born>0.3 and math.floor((enemy.statusFlags or 0)/16)%2==0 then effect.expires=self.clock end
+				else effect.expires = self.clock end
+			end
+			if effect.warningBoard then effect.warningBoard.Text.Text = effect.warning .. "  " .. math.max(1,math.ceil(effect.expires-self.clock)) .. "s" end
 			if effect.fade then
 				local fadeLife = effect.telegraph and math.max(0, (life - 0.78) / 0.22) or life
 				effect.part.Transparency = effect.fade + (1 - effect.fade) * fadeLife

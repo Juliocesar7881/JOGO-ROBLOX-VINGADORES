@@ -717,6 +717,12 @@ RunService.Heartbeat:Connect(function(dt)
 			elevatorTimer = 0
 			local ok, problem = pcall(elevator.Step, elevator, elapsed, Players:GetPlayers())
 			if not ok then warn("[Doomsday] Elevator step failed: " .. tostring(problem)) end
+			local visitors={}
+			for _,player in ipairs(Players:GetPlayers()) do
+				if profiles:Get(player) and not match:Has(player) and not travelling[player.UserId] then table.insert(visitors,player) end
+			end
+			local shopOK,shopProblem=pcall(world.StepShopEntries,world,visitors)
+			if not shopOK then warn("[Doomsday] Shop entry failed: "..tostring(shopProblem)) end
 		end
 	end
 

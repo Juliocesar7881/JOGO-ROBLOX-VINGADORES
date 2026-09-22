@@ -11,5 +11,6 @@ test-results/
 *.png
 # Editor and OS noise.
 .vscode/
+deployment/local.json
 .DS_Store
 Thumbs.db

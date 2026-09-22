@@ -384,6 +384,10 @@ local _, invalidSettings = service:Handle(p1, "Settings", { lowFX = "true" }, fa
 check(not invalidSettings, "Settings type validation")
 local _, settings = service:Handle(p1, "Settings", { language = "en", lowFX = true, shake = false }, false)
 check(settings and service:Get(p1).settings.language == "en", "Accessibility settings during match")
+local _, effectsMuted = service:Handle(p1, "Settings", { effects = false }, false)
+check(effectsMuted and service:Get(p1).settings.effects == false and service:Get(p1).settings.music == true, "Sound effects mute independently of music")
+local _, invalidEffects = service:Handle(p1, "Settings", { effects = 0 }, false)
+check(not invalidEffects and service:Get(p1).settings.effects == false, "Invalid sound option cannot change saved preference")
 
 -- First clear, daily bonus, quests, and medals.
 local goldBefore = service:Get(p1).gold

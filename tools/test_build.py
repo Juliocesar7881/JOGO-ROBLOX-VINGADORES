@@ -14,6 +14,14 @@ import build
 
 
 class NativePlaceTests(unittest.TestCase):
+    def test_modern_chat_is_authored_in_all_places(self):
+        for role in build.ROLES.values():
+            tree = build.build_tree(role)
+            props = tree.find("Item[@class='TextChatService']/Properties")
+            self.assertIsNotNone(props)
+            self.assertEqual(props.find("token[@name='ChatVersion']").text, "1")
+            self.assertEqual(props.find("bool[@name='CreateDefaultTextChannels']").text, "true")
+
     def test_renderer_is_authored_without_protected_runtime_writes(self):
         for role in build.ROLES.values():
             tree = build.build_tree(role)

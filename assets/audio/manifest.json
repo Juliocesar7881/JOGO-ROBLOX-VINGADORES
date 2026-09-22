@@ -1,0 +1,112 @@
+{
+  "sampleRate": 32000,
+  "channels": 1,
+  "bits": 16,
+  "provenance": "Original procedural compositions; no third-party samples.",
+  "assets": {
+    "lobby": {
+      "file": "lobby.wav",
+      "seconds": 48.0,
+      "loop": true,
+      "peak": 0.2179,
+      "sha256": "53a34080afb4fa60968801f2f7f30e05241bc9d701e4e130e24ad6784587a395",
+      "assetId": 0
+    },
+    "battle": {
+      "file": "battle.wav",
+      "seconds": 34.286,
+      "loop": true,
+      "peak": 0.3479,
+      "sha256": "8d8932f77af72d765eb01774e57753ab2562f5d887533b1addf98f4f7c884550",
+      "assetId": 0
+    },
+    "collect": {
+      "file": "collect.wav",
+      "seconds": 0.69,
+      "loop": false,
+      "peak": 0.4167,
+      "sha256": "80edec66c8110c6059a8b321fde73f1f6c295ee77cf6bfcda2b3f713e4f95778",
+      "assetId": 0
+    },
+    "place": {
+      "file": "place.wav",
+      "seconds": 0.745,
+      "loop": false,
+      "peak": 0.523,
+      "sha256": "04f4be52566d326173158aa2503fb498e8c3c70a7b6c17630ea034b93526d280",
+      "assetId": 0
+    },
+    "upgrade": {
+      "file": "upgrade.wav",
+      "seconds": 0.95,
+      "loop": false,
+      "peak": 0.4623,
+      "sha256": "e24a7c2b8101f6949fd313a7ea5837040c9a7aa35cb25c021789fd14803c6e1e",
+      "assetId": 0
+    },
+    "levelUp": {
+      "file": "levelUp.wav",
+      "seconds": 1.2,
+      "loop": false,
+      "peak": 0.4623,
+      "sha256": "54923f747fe86419a4b8ef864b436c1528ad273ad30347e45ad4a355be19028e",
+      "assetId": 0
+    },
+    "victory": {
+      "file": "victory.wav",
+      "seconds": 1.74,
+      "loop": false,
+      "peak": 0.4056,
+      "sha256": "bb529adc32129135eabdbdb1bfe47341d33fd1d630ad95b646ae73d1c86fe085",
+      "assetId": 0
+    },
+    "defeat": {
+      "file": "defeat.wav",
+      "seconds": 1.51,
+      "loop": false,
+      "peak": 0.3396,
+      "sha256": "7dd12e3347de50802255a02e477b9b1c22270474e43d59ff8d72f9058cfd5c95",
+      "assetId": 0
+    },
+    "breach": {
+      "file": "breach.wav",
+      "seconds": 0.79,
+      "loop": false,
+      "peak": 0.3672,
+      "sha256": "50dc8c3d1e5c7a0f1eb554490c0de2c6a65fef766537f2fb8de95903bdd96090",
+      "assetId": 0
+    },
+    "ability": {
+      "file": "ability.wav",
+      "seconds": 0.77,
+      "loop": false,
+      "peak": 0.5473,
+      "sha256": "a56ec0e62e724f969f4addcb588a57a24a01ffc4a36462b19c059b10045c4e1c",
+      "assetId": 0
+    },
+    "boss": {
+      "file": "boss.wav",
+      "seconds": 1.24,
+      "loop": false,
+      "peak": 0.3401,
+      "sha256": "cde364ac43fa455255a73b3d2ad188c9350d651be6830eaf344ebca454203923",
+      "assetId": 0
+    },
+    "wave": {
+      "file": "wave.wav",
+      "seconds": 0.88,
+      "loop": false,
+      "peak": 0.4488,
+      "sha256": "fcf2d97aa73f6bd5786ddfa744baf7326618ee4f9a3c81f4adb7a6075f4855ee",
+      "assetId": 0
+    },
+    "chest": {
+      "file": "chest.wav",
+      "seconds": 1.27,
+      "loop": false,
+      "peak": 0.4826,
+      "sha256": "261505ab2cf9a97732ac5c1643c4efe9ce64ba78a092d727d1be2827a1dd7288",
+      "assetId": 0
+    }
+  }
+}

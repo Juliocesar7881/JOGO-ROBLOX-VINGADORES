@@ -52,6 +52,8 @@ def main() -> None:
     # campaign simulation spends a minute finding out the same thing.
     for suite in (
         "test_ui_layout.py",
+        "test_audio.py",
+        "test_release.py",
         "test_player_service.py",
         "test_party_service.py",
         "test_elevator.py",

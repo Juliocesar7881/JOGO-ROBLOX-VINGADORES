@@ -1,0 +1,115 @@
+{
+  "UniverseId": 0,
+  "LobbyPlaceId": 0,
+  "MatchPlaceId": 0,
+  "Products": {
+    "Passes": {
+      "collector": {
+        "id": 0
+      },
+      "formations": {
+        "id": 0
+      },
+      "training": {
+        "id": 0
+      },
+      "vip": {
+        "id": 0
+      }
+    },
+    "Consumables": {
+      "gold1000": {
+        "id": 0
+      },
+      "gold12000": {
+        "id": 0
+      },
+      "gold5000": {
+        "id": 0
+      }
+    },
+    "Heroes": {
+      "antman": {
+        "id": 0
+      },
+      "bucky": {
+        "id": 0
+      },
+      "captain": {
+        "id": 0
+      },
+      "captainmarvel": {
+        "id": 0
+      },
+      "daredevil": {
+        "id": 0
+      },
+      "falcon": {
+        "id": 0
+      },
+      "ghostrider": {
+        "id": 0
+      },
+      "groot": {
+        "id": 0
+      },
+      "hulk": {
+        "id": 0
+      },
+      "panther": {
+        "id": 0
+      },
+      "rocket": {
+        "id": 0
+      },
+      "shangchi": {
+        "id": 0
+      },
+      "silversurfer": {
+        "id": 0
+      },
+      "spiderman": {
+        "id": 0
+      },
+      "starlord": {
+        "id": 0
+      },
+      "strange": {
+        "id": 0
+      },
+      "thor": {
+        "id": 0
+      },
+      "vision": {
+        "id": 0
+      },
+      "wanda": {
+        "id": 0
+      },
+      "warmachine": {
+        "id": 0
+      },
+      "wasp": {
+        "id": 0
+      },
+      "widow": {
+        "id": 0
+      }
+    }
+  },
+  "Audio": {
+    "ability": 0,
+    "battle": 0,
+    "boss": 0,
+    "breach": 0,
+    "chest": 0,
+    "collect": 0,
+    "defeat": 0,
+    "levelUp": 0,
+    "lobby": 0,
+    "place": 0,
+    "upgrade": 0,
+    "victory": 0,
+    "wave": 0
+  }
+}
