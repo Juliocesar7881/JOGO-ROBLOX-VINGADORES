@@ -96,7 +96,7 @@ Catalog.Heroes = {
 		id = "falcon", rarity = "common", ability = "airCommand",
 		name = text("Falcão", "Falcon"), role = text("Ataque rápido contra voadores", "Fast strikes against flyers"), cost = 220,
 		description = text("Rasantes rápidos: ótimo contra voadores e alvos ágeis.", "Fast dives: great against flyers and agile targets."),
-		damage = 14, range = 30, interval = 0.75, color = { 196, 52, 60 }, attack = "single", damageType = "physical", air = true,
+		damage = 16, range = 30, interval = 0.68, color = { 196, 52, 60 }, attack = "single", damageType = "physical", air = true,
 		branches = {
 			{ name = text("Rasante", "Dive Bomb"), description = text("Mais dano e mais alcance.", "More damage and more range."), mods = { mul("damage", 1.3), add("range", 6) } },
 			{ name = text("Drone Redwing", "Redwing Drone"), description = text("Ataca quase o dobro de vezes.", "Attacks almost twice as often."), mods = { mul("interval", 0.6) } },
@@ -106,7 +106,7 @@ Catalog.Heroes = {
 		id = "bucky", rarity = "common", ability = "ambush",
 		name = text("Soldado Invernal", "Winter Soldier"), role = text("Perfuração de armadura", "Armor piercing"), cost = 300,
 		description = text("Tiros secos que atravessam a armadura inimiga.", "Dry shots that pierce enemy armor."),
-		damage = 28, range = 24, interval = 1.2, color = { 128, 142, 156 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.15,
+		damage = 28, range = 28, interval = 1.0, color = { 128, 142, 156 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.15,
 		branches = {
 			{ name = text("Braço de vibranium", "Vibranium Arm"), description = text("Perfura quase toda a armadura.", "Pierces almost all armor."), mods = { set("armorPierce", 0.5), mul("damage", 1.2) } },
 			{ name = text("Atirador de elite", "Sharpshooter"), description = text("Alcance enorme e dano contra chefes.", "Huge range and boss damage."), mods = { add("range", 10), set("bossDamage", 0.5) } },
@@ -117,7 +117,7 @@ Catalog.Heroes = {
 		id = "spiderman", rarity = "rare", ability = "webField",
 		name = text("Homem-Aranha", "Spider-Man"), role = text("Desaceleração e controle", "Slowing and crowd control"), cost = 280,
 		description = text("Teias mantêm os infectados dentro do alcance da equipe.", "Webs keep the infected within your team's range."),
-		damage = 8, range = 24, interval = 1.1, color = { 235, 68, 67 }, attack = "splash", damageType = "physical", air = false, splash = 5.5, slow = 0.22,
+		damage = 14, range = 24, interval = 1.1, color = { 235, 68, 67 }, attack = "splash", damageType = "physical", air = false, splash = 7, slow = 0.22,
 		branches = {
 			{ name = text("Rede urbana", "Urban Web"), description = text("Teias cobrem uma área muito maior.", "Webs cover a much larger area."), mods = { set("splash", 11), set("slow", 0.38) } },
 			{ name = text("Teia de impacto", "Impact Web"), description = text("Mais dano e controle concentrado.", "More damage and concentrated control."), mods = { mul("damage", 2.1), set("slow", 0.48) } },
@@ -135,9 +135,9 @@ Catalog.Heroes = {
 	},
 	antman = {
 		id = "antman", rarity = "rare", ability = "growth",
-		name = text("Homem-Formiga", "Ant-Man"), role = text("Ataques rápidos e pisões", "Fast attacks and stomps"), cost = 480,
+		name = text("Homem-Formiga", "Ant-Man"), role = text("Ataques rápidos e pisões", "Fast attacks and stomps"), cost = 380,
 		description = text("Ataques rápidos alternam com pisões gigantes.", "Quick attacks alternate with giant stomps."),
-		damage = 22, range = 22, interval = 0.7, color = { 205, 72, 72 }, attack = "single", damageType = "tech", air = false, splash = 8, stompEvery = 5,
+		damage = 22, range = 26, interval = 0.7, color = { 205, 72, 72 }, attack = "single", damageType = "tech", air = false, splash = 8, stompEvery = 5,
 		branches = {
 			{ name = text("Gigante", "Giant-Man"), description = text("Pisões gigantes acontecem com mais frequência.", "Giant stomps happen more frequently."), mods = { set("periodicSplash", 2) } },
 			{ name = text("Impacto Pym", "Pym Impact"), description = text("Pisões alcançam uma área enorme.", "Stomps reach an enormous area."), mods = { set("splash", 16), set("periodicSplash", 4) } },
@@ -188,7 +188,7 @@ Catalog.Heroes = {
 		id = "captain", rarity = "epic", ability = "vibraniumShield",
 		name = text("Capitão América", "Captain America"), role = text("Ricochetes e suporte às torres", "Ricochets and tower support"), cost = 360,
 		description = text("O escudo ricocheteia e a liderança fortalece aliados próximos.", "His shield ricochets while leadership strengthens nearby allies."),
-		damage = 17, range = 23, interval = 1.3, color = { 58, 121, 221 }, attack = "chain", damageType = "physical", air = false, chain = 3, support = true, supportBoost = 0.06,
+		damage = 17, range = 23, interval = 1.05, color = { 58, 121, 221 }, attack = "chain", damageType = "physical", air = false, chain = 4, support = true, supportBoost = 0.06,
 		branches = {
 			{ name = text("Escudo ofensivo", "Offensive Shield"), description = text("Mais ricochetes e dano por ataque.", "More ricochets and damage per attack."), mods = { set("chain", 6), mul("damage", 1.35) } },
 			{ name = text("Vingadores, avante!", "Avengers Assemble!"), description = text("Amplia o poder da aura de liderança.", "Strengthens the leadership aura."), mods = { set("supportBoost", 0.18), add("range", 5) } },
@@ -208,7 +208,7 @@ Catalog.Heroes = {
 		id = "hulk", rarity = "epic", ability = "hulkSmash",
 		name = text("Hulk", "Hulk"), role = text("Dano de área terrestre", "Ground area damage"), cost = 450,
 		description = text("Pancadas pesadas destroem grupos no chão.", "Heavy ground strikes devastate clustered enemies."),
-		damage = 34, range = 18, interval = 2.0, color = { 99, 192, 77 }, attack = "splash", damageType = "physical", air = false, splash = 8,
+		damage = 34, range = 24, interval = 1.6, color = { 99, 192, 77 }, attack = "splash", damageType = "physical", air = false, splash = 8,
 		branches = {
 			{ name = text("Cratera gama", "Gamma Crater"), description = text("Impactos atingem áreas maiores.", "Impacts strike a larger area."), mods = { set("splash", 15) } },
 			{ name = text("Esmagador", "Armor Smasher"), description = text("Golpes atravessam a proteção inimiga.", "Strikes break through enemy protection."), mods = { set("armorPierce", 0.7), set("armorShred", 0.12) } },
@@ -216,9 +216,9 @@ Catalog.Heroes = {
 	},
 	vision = {
 		id = "vision", rarity = "epic", ability = "phaseShift",
-		name = text("Visão", "Vision"), role = text("Feixe que atravessa alinhados", "Beam through lined-up enemies"), cost = 600,
+		name = text("Visão", "Vision"), role = text("Feixe que atravessa alinhados", "Beam through lined-up enemies"), cost = 480,
 		description = text("Um feixe solar atravessa inimigos alinhados.", "A solar beam pierces enemies standing in a line."),
-		damage = 44, range = 30, interval = 1.6, color = { 229, 187, 89 }, attack = "beam", damageType = "tech", air = true, beamWidth = 3,
+		damage = 44, range = 30, interval = 1.3, color = { 229, 187, 89 }, attack = "beam", damageType = "tech", air = true, beamWidth = 3,
 		branches = {
 			{ name = text("Feixe penetrante", "Piercing Beam"), description = text("Feixe mais largo ignora parte da armadura.", "A wider beam ignores part of enemy armor."), mods = { set("beamWidth", 6), set("armorPierce", 0.6) } },
 			{ name = text("Concentração solar", "Solar Focus"), description = text("Disparos mais frequentes e concentrados.", "More frequent, concentrated beams."), mods = { mul("interval", 0.55) } },
@@ -228,7 +228,7 @@ Catalog.Heroes = {
 		id = "warmachine", rarity = "epic", ability = "bombardment",
 		name = text("Máquina de Combate", "War Machine"), role = text("Artilharia pesada em área", "Heavy area artillery"), cost = 520,
 		description = text("Artilharia pesada: mísseis e canhões que atingem grandes áreas.", "Heavy artillery: missiles and cannons that strike wide areas."),
-		damage = 27, range = 28, interval = 1.7, color = { 96, 108, 122 }, attack = "splash", damageType = "tech", air = true, splash = 8,
+		damage = 27, range = 28, interval = 1.4, color = { 96, 108, 122 }, attack = "splash", damageType = "tech", air = true, splash = 10,
 		branches = {
 			{ name = text("Salva de mísseis", "Missile Salvo"), description = text("Explosões enormes e mais dano.", "Huge blasts and more damage."), mods = { set("splash", 13), mul("damage", 1.2) } },
 			{ name = text("Canhão de ombro", "Shoulder Cannon"), description = text("Tiro devastador que perfura armadura.", "A devastating shot that pierces armor."), mods = { mul("damage", 2), set("armorPierce", 0.5) } },
@@ -246,9 +246,9 @@ Catalog.Heroes = {
 	},
 	groot = {
 		id = "groot", rarity = "epic", ability = "rootWall",
-		name = text("Groot", "Groot"), role = text("Controle e dano em área terrestre", "Ground control and area damage"), cost = 500,
+		name = text("Groot", "Groot"), role = text("Controle e dano em área terrestre", "Ground control and area damage"), cost = 420,
 		description = text("Raízes prendem grupos inteiros no chão.", "Roots pin entire groups to the ground."),
-		damage = 19, range = 17, interval = 1.8, color = { 130, 100, 62 }, attack = "splash", damageType = "physical", air = false, splash = 10, slow = 0.3,
+		damage = 19, range = 23, interval = 1.5, color = { 130, 100, 62 }, attack = "splash", damageType = "physical", air = false, splash = 10, slow = 0.3,
 		branches = {
 			{ name = text("Raízes profundas", "Deep Roots"), description = text("Área maior e prisão mais forte.", "A larger area and a firmer hold."), mods = { set("slow", 0.5), set("splash", 13) } },
 			{ name = text("Colosso", "Colossus"), description = text("Golpes muito mais fortes que rompem armadura.", "Far stronger strikes that break armor."), mods = { mul("damage", 2.2), set("armorShred", 0.1) } },
@@ -277,9 +277,9 @@ Catalog.Heroes = {
 	},
 	strange = {
 		id = "strange", rarity = "legendary", ability = "dimensionalSlow",
-		name = text("Doutor Estranho", "Doctor Strange"), role = text("Controle espacial e suporte mágico", "Spatial control, magic support"), cost = 700,
+		name = text("Doutor Estranho", "Doctor Strange"), role = text("Controle espacial e suporte mágico", "Spatial control, magic support"), cost = 560,
 		description = text("Portais atrasam inimigos e fortalecem aliados mágicos.", "Portals delay enemies and strengthen magic allies."),
-		damage = 28, range = 28, interval = 1.5, color = { 246, 172, 70 }, attack = "splash", damageType = "magic", air = true, splash = 6, slow = 0.2, support = true, supportBoost = 0.06,
+		damage = 36, range = 28, interval = 1.5, color = { 246, 172, 70 }, attack = "splash", damageType = "magic", air = true, splash = 9, slow = 0.2, support = true, supportBoost = 0.06,
 		branches = {
 			{ name = text("Laço dimensional", "Dimensional Loop"), description = text("Portais reposicionam inimigos comuns, com recarga própria.", "Portals reposition ordinary enemies with a separate cooldown."), mods = { set("portal", true), set("slow", 0.35) } },
 			{ name = text("Artes místicas", "Mystic Arts"), description = text("Amplifica torres mágicas próximas.", "Amplifies nearby magic towers."), mods = { set("supportBoost", 0.22), add("range", 4) } },
@@ -289,7 +289,7 @@ Catalog.Heroes = {
 		id = "ghostrider", rarity = "legendary", ability = "hellfire",
 		name = text("Motoqueiro Fantasma", "Ghost Rider"), role = text("Fogo do inferno persistente", "Persistent hellfire"), cost = 620,
 		description = text("Chamas infernais queimam tudo que atravessa a zona.", "Hellfire burns everything that crosses the zone."),
-		damage = 28, range = 22, interval = 1.4, color = { 255, 122, 30 }, attack = "dot", damageType = "magic", air = false, splash = 8, dotDuration = 4,
+		damage = 28, range = 26, interval = 1.4, color = { 255, 122, 30 }, attack = "dot", damageType = "magic", air = false, splash = 8, dotDuration = 4,
 		branches = {
 			{ name = text("Chamas do inferno", "Hell Flames"), description = text("Área muito maior e queima por mais tempo.", "A much larger area that burns longer."), mods = { set("splash", 13), set("dotDuration", 6) } },
 			{ name = text("Olhar da penitência", "Penance Stare"), description = text("Dano imenso contra chefes.", "Immense damage against bosses."), mods = { mul("damage", 2), set("bossDamage", 0.6) } },
