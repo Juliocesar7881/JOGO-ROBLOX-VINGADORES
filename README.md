@@ -1,5 +1,68 @@
 # Vingadores: Doomsday — Última Defesa
 
+Tower defense cooperativo para Roblox com heróis dos Vingadores, construído
+inteiramente em Luau autoral — nenhum asset da Toolbox; mapas, heróis,
+inimigos e efeitos são gerados por código. Documentação relacionada:
+[docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (como o jogo funciona hoje),
+[docs/HEROES.md](docs/HEROES.md) (referência gerada de heróis/habilidades),
+[docs/BALANCE.md](docs/BALANCE.md) (como o balanceamento é medido),
+[IMPLEMENTATION.md](IMPLEMENTATION.md) (contrato cliente/servidor),
+[CONTRIBUTING.md](CONTRIBUTING.md) (trabalhando em dupla neste repositório),
+[docs/PUBLISHING.md](docs/PUBLISHING.md) (publicar no GitHub e no Roblox).
+
+## Rodando agora
+
+```bash
+python tools/setup_luau.py   # uma vez: baixa o Luau oficial e confere o SHA256
+python tools/build.py        # gera dist/Doomsday-{Studio,Lobby,Match}.rbxlx
+python tools/test.py         # compila, roda a suíte inteira, gera os lugares
+```
+
+Abra `dist/Doomsday-Studio.rbxlx` no Roblox Studio e aperte **Play** — cliente
+e servidor rodam no mesmo processo Standalone, perfis ficam em memória e
+compras ficam desativadas (não há como testar Robux fora de uma experiência
+publicada). Detalhes de publicação real em
+[docs/PUBLISHING.md](docs/PUBLISHING.md).
+
+## Estado atual (resumo; detalhes em docs/GAME_DESIGN.md)
+
+- **24 heróis**, 5 raridades. Um herói só chega à conta por um dos **2 baús**
+  do lobby (Raro: 1.000 Ouro; Lendário: 2.000 Ouro, com garantia após 10
+  aberturas sem lendário/mítico) ou pela compra direta na Loja Robux —
+  **nunca** por Ouro direto. Em combate, a habilidade ativa é sempre a do
+  herói no **slot 1** da formação, visualmente diferenciado, porque é o
+  único slot que decide o que o botão de habilidade no canto da tela faz.
+  Habilidades **lendárias e míticas são ultimates**: disparam o efeito
+  principal mais um ou mais efeitos secundários no mesmo cast, com um pilar
+  de luz e ondas de choque próprios na tela.
+- **4 modos** nos portais do lobby — Campanha, Ranqueado, Cartas, Infinito —
+  todos com **50 ondas** (exceto Infinito) e chefe a cada 10 (final na 50);
+  o servidor **sorteia o mapa** entre os 5 disponíveis a cada partida. O
+  modo Difícil, o desafio diário e a investida de chefes foram removidos.
+- **Árvore de evolução de conta** (não física, tela no HUD) com 3 ramos e
+  redistribuição gratuita.
+- **4 laços de retorno diário** (baú grátis, sequência de login, presentes
+  por tempo jogado, metas de coleção), decididos pelo relógio do servidor,
+  nenhum comprável.
+- Persistência versionada, sessão exclusiva por conta, `ProcessReceipt`
+  idempotente, placares `OrderedDataStore` por mapa/tamanho/temporada,
+  reconexão com vaga guardada.
+
+O que ainda falta antes de lançar publicamente: testes em experiência
+publicada (teleporte, servidor reservado, compras reais só existem lá), IDs
+de produto/lugar/áudio, licenciamento Marvel, e playtests humanos de
+balanceamento — a simulação automatizada mede o que um bot determinístico
+consegue, não o que é divertido (veja `docs/BALANCE.md`).
+
+---
+
+## Histórico de iterações
+
+As seções abaixo registram decisões e revisões anteriores, na ordem em que
+foram escritas — mais recentes primeiro. Onde um número ou contrato diverge
+do resumo acima, **o resumo acima e o código-fonte são a verdade atual**;
+o que está abaixo é contexto histórico, não instrução para o estado do jogo.
+
 ## Interfaces: navegação e acabamento — 22/09/2026
 
 - HUD do lobby com ícones próprios, indicação da categoria aberta e botão

@@ -1,5 +1,53 @@
 # Integration contract
 
+Sections below are appended in the order they were written, most recent
+first, and some are superseded by later ones (each says so where it
+happens — e.g. "Contratos atuais" replaces the historical ability/purchase
+contracts, "ranked substitui hard" replaces every earlier mention of a hard
+mode). Where anything conflicts, **the source is the ground truth**:
+`src/shared/Catalog.luau` for data (hero list, actions the server actually
+implements are in `ACTIONS`/`Handle` in each service file), and
+`docs/HEROES.md` for a hero/ability reference that is generated from the
+catalog and cannot drift. The "Action names" section further down still
+lists several actions (`BuyHero`, `BuySkill`, `SetSkills`, `ChooseProtocol`)
+that no longer exist — see "Contratos atuais — recrutamento e líder" for
+their replacements (`OpenChest`, `SetLoadout`, `UpgradeAbility`,
+`UpgradeTalent`/`ResetTalents`, `ChooseCard`) and `PlayerService.luau`'s
+`ACTIONS` table for the exact, current, authoritative list.
+
+## Ultimates and daily rewards — 22/09/2026
+
+Legendary/mythic abilities carry an optional `extras` list on the catalog
+entry (`Catalog.Abilities[id].extras = {{kind, power?, duration?, radius?,
+count?, unit?}, ...}`) and `ultimate = true`. `Rules.AbilityExtras(def, rank,
+options)` turns each entry into a full `Rules.AbilityStats`-shaped table
+(riding the primary effect's target/radius unless it names its own, scaled
+by the same rank/ability-power/cooldown-reduction rules as the primary
+effect); `Rules.AbilityText` fills `{e1.power}`, `{e1.duration}`,
+`{e1.radius}`, `{e1.count}`, `{e2...}` placeholders in description text, in
+list order. `MatchService:_castAbility` runs every extra through the same
+`ABILITY_HANDLERS` table the primary effect uses, then reports the cast as
+one `Ability` FX event with `ultimate = true` and `extras = {{kind, radius,
+duration, power}, ...}`; the client's `Effects:_ultimateBurst` reads those
+two fields to draw one light-pillar + three-shockwave burst plus one ring
+per extra, in that extra's own tint, instead of the plain per-kind pulse.
+
+Rewards (`Catalog.Rewards`, `Rules.RewardsStatus`/`Rules.LoginClaim`) are
+four independent loops stored in `profile.rewards` (never sent to the
+client raw — `PlayerService:Snapshot` computes and attaches
+`result.rewards = Rules.RewardsStatus(profile, now, pendingSeconds)`, where
+`pendingSeconds` is the time since the account's last committed
+transaction, clamped to 12h per gap). New actions, all lobby-only, all
+covered by `CHEST_ACTIONS` (so the two random rolls a chest may need are
+drawn before the DataStore transaction like `OpenChest` already does):
+`ClaimFreeChest {}`, `ClaimLogin {}`, `ClaimPlaytime {index}`,
+`ClaimMilestone {index}`. Each returns the usual full snapshot with
+`.result` attached (`{gold, xp, chest?, streak?, day?}` — `chest` has the
+same shape `OpenChest`'s result does). The client reaches this panel through
+`openContext("rewards", {})`, a fifth entry in the lobby's nav dock (not a
+physical pedestal — a claimable count shows as a badge on that nav button,
+computed client-side from `profile.rewards.claimable`).
+
 ## Revisão de interface — 22/09/2026
 
 `UI.contextLayout` calcula a área de todos os menus do lobby. Em telas baixas,
