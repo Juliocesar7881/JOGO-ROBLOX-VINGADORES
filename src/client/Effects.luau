@@ -477,6 +477,61 @@ function Effects:_heroShot(event, lowFX)
 	elseif heroId == "widow" then
 		self:_line(from, target, Color3.fromRGB(240, 87, 99), 0.1, 0.11)
 		self:_impact(target, Color3.fromRGB(255, 165, 138), 0.4)
+	elseif heroId == "falcon" then
+		local swoop = self:_effect(Vector3.new(0.6, 0.15, 0.15), CFrame.new(from), Color3.fromRGB(255, 150, 110), 0.22, nil, 0.15)
+		if swoop then swoop.from, swoop.to, swoop.arc = from, target, 2.5 end
+		self:_impact(target, Color3.fromRGB(255, 150, 110), 0.35)
+	elseif heroId == "bucky" then
+		self:_line(from, target, Color3.fromRGB(200, 208, 216), 0.06, 0.09)
+		self:_impact(target, Color3.fromRGB(160, 170, 180), 0.3)
+	elseif heroId == "wasp" then
+		local previous = from
+		local side = delta.Unit:Cross(Vector3.new(0, 1, 0))
+		for index = 1, 3 do
+			local point = index == 3 and target or from:Lerp(target, index / 3) + side * (index % 2 == 0 and 0.7 or -0.7)
+			self:_line(previous, point, Color3.fromRGB(255, 224, 110), 0.07, 0.12)
+			previous = point
+		end
+	elseif heroId == "rocket" then
+		local shell = self:_effect(Vector3.one * 0.3, CFrame.new(from), Color3.fromRGB(200, 160, 90), 0.3, Enum.PartType.Ball, 0.1)
+		if shell then shell.from, shell.to, shell.arc = from, target, 4 end
+		self:_groundImpact(target, Color3.fromRGB(255, 150, 60), 4)
+	elseif heroId == "daredevil" then
+		self:_line(target + Vector3.new(-0.9, 0.9, 0), target + Vector3.new(0.9, -0.9, 0), Color3.fromRGB(220, 50, 60), 0.09, 0.16)
+		self:_line(target + Vector3.new(0.9, 0.9, 0), target + Vector3.new(-0.9, -0.9, 0), Color3.fromRGB(220, 50, 60), 0.09, 0.16)
+	elseif heroId == "shangchi" then
+		self:_line(from, target, Color3.fromRGB(255, 150, 90), 0.08, 0.14)
+		for index = 0, 3 do
+			local angle = index * math.pi / 2 + self.shotSerial
+			local offset = Vector3.new(math.cos(angle), math.sin(angle), 0) * 0.9
+			self:_line(target - offset, target + offset, Color3.fromRGB(255, 180, 110), 0.05, 0.18)
+		end
+	elseif heroId == "warmachine" then
+		local missile = self:_effect(Vector3.new(0.22, 0.22, 1.6), CFrame.lookAt(from, target), Color3.fromRGB(180, 190, 200), 0.2)
+		if missile then missile.from, missile.to = from, target end
+		self:_groundImpact(target, Color3.fromRGB(255, 140, 60), 5.5)
+	elseif heroId == "starlord" then
+		local side = delta.Unit:Cross(Vector3.new(0, 1, 0)) * 0.5
+		self:_line(from + side, target + side, Color3.fromRGB(255, 120, 90), 0.07, 0.1)
+		self:_line(from - side, target - side, Color3.fromRGB(120, 200, 255), 0.07, 0.1)
+	elseif heroId == "groot" then
+		self:_line(from, target, Color3.fromRGB(110, 85, 55), 0.28, 0.18)
+		self:_groundImpact(target, Color3.fromRGB(130, 100, 62), 3.5)
+	elseif heroId == "ghostrider" then
+		local previous = from
+		for index = 1, 3 do
+			local point = index == 3 and target or from:Lerp(target, index / 3)
+			self:_line(previous, point, Color3.fromRGB(255, 140, 40), 0.14, 0.16)
+			previous = point
+		end
+		self:_groundImpact(target, Color3.fromRGB(255, 90, 20), 4)
+	elseif heroId == "captainmarvel" then
+		self:_line(from, target, Color3.fromRGB(255, 220, 140), 0.4, 0.2)
+		self:_line(from, target, white, 0.14, 0.12)
+		self:_impact(target, Color3.fromRGB(255, 230, 160), 0.6)
+	elseif heroId == "silversurfer" then
+		self:_line(from, target, Color3.fromRGB(210, 225, 245), 0.16, 0.16)
+		self:_impact(target, Color3.fromRGB(190, 210, 230), 0.45)
 	else
 		-- Repulsors remain pale blue even though Iron Man's suit is red.
 		local tint = heroId == "ironman" and Color3.fromRGB(136, 225, 255) or color

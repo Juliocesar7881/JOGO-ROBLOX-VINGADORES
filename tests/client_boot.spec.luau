@@ -891,6 +891,29 @@ local function session(screen)
 			local ability=Catalog.Abilities[Catalog.Heroes[heroId].ability]
 			fx({kind="Ability",heroId=heroId,abilityId=ability.id,abilityKind=ability.kind,position=v3(0,0,0),radius=12,duration=2,color=Color3.fromRGB(110,180,255),points={v3(3,0,2)}})
 		end
+
+		-- Every hero has its own attack VFX in Effects:_heroShot, keyed off the
+		-- firing tower's HeroId attribute. t1/t2/t4 already cover ironman,
+		-- hawkeye and spiderman; build one throwaway tower per remaining hero
+		-- and fire a Shot at it, so a typo in any branch crashes this test
+		-- instead of shipping silently. The pooled effect budget is shared and
+		-- capped, so the ability-FX loop just above is drained first, or its
+		-- leftovers would silently eat the shots this checks for.
+		frames(1 / 30, 60)
+		local shotCovered = { ironman = true, hawkeye = true, spiderman = true }
+		local visualsBefore = #workspace:FindFirstChild("DoomClientVisuals"):GetChildren()
+		local shotIndex = 0
+		for _, heroId in ipairs(Catalog.HeroOrder) do
+			if not shotCovered[heroId] then
+				shotIndex += 1
+				local vfxTowerId = "vfx" .. shotIndex
+				world:MakeTower(vfxTowerId, heroId, v3(70 + shotIndex, 0, 70), LOCAL_ID)
+				fx({ kind = "Shot", from = v3(70 + shotIndex, 4, 70), to = v3(70 + shotIndex, 2, 50), color = Color3.fromRGB(200, 200, 200), towerId = vfxTowerId })
+			end
+		end
+		frames(1 / 30, 2)
+		local visualsAfter = #workspace:FindFirstChild("DoomClientVisuals"):GetChildren()
+		check(visualsAfter > visualsBefore, tag .. ": every hero's shot VFX actually renders something, not just avoids crashing")
 		fx({kind="CardPicked",cardId="sharpen",rarity="common"})
 		fx({kind="EnemyDown",id=4,enemyId="lizard",position=v3(32,0,0),boss=true})
 		fx({ kind = "EnemySync", enemies = { enemies[1] } })
