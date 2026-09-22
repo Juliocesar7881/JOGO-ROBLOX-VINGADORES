@@ -50,7 +50,37 @@ local TUTORIAL_LESSONS = {
 function Match.new(config, catalog, rules, waves, profiles, world, remotes, changed)
 	return setmetatable({ config=config, catalog=catalog, rules=rules, waves=waves, profiles=profiles,
 		world=world, remotes=remotes, changed=changed, running=false, phase="Lobby", participants={},
-		enemies={}, towers={}, rewardQueue={}, nextId=0, syncTimer=0, rewardTimer=0, hitBuffer={} }, Match)
+		enemies={}, towers={}, rewardQueue={}, nextId=0, syncTimer=0, rewardTimer=0, hitBuffer={}, speed=1 }, Match)
+end
+
+-- How many seconds of match time pass per real second. 2 only while every
+-- commander still playing asked for it, so nobody is ever rushed by a
+-- teammate; a solo player decides alone. The bootstrap multiplies its real
+-- frame time by this before stepping the simulation.
+function Match:Speed()
+	return self.running and self.speed or 1
+end
+
+function Match:_refreshSpeed()
+	local anyone, allFast = false, true
+	for _, p in pairs(self.participants) do
+		if not p.returned and not p.disconnectedAt then
+			anyone = true
+			if p.speedVote ~= 2 then allFast = false end
+		end
+	end
+	self.speed = (anyone and allFast) and 2 or 1
+end
+
+-- Preparation ends early once everyone either pressed READY or has
+-- auto-skip on (and no card waiting to be chosen). It still leaves one real
+-- second, so the wave never starts on the same frame as the last one ended.
+function Match:_checkSkip()
+	if self.phase ~= "Preparing" then return end
+	for uid, other in pairs(self.participants) do
+		if not other.returned and not self.skipVotes[uid] and not (other.autoSkip and #other.cardOffers == 0) then return end
+	end
+	self.prepRemaining = math.min(self.prepRemaining, 1)
 end
 
 function Match:_fx(event, player)
@@ -100,6 +130,7 @@ function Match:Start(members, mapId, modeId, runId)
 	end
 	self.baseHP = self.maxBaseHP
 	self.elapsed, self.phase, self.running, self.shieldUntil = 0, "Preparing", true, 0
+	self.speed = 1
 	self.hitBuffer = {}
 	-- One seed for the whole run keeps every wave and every card offer stable.
 	self.seed, self.nextThreats, self.criticalWarned = math.floor(os.time() / 86400), {}, false
@@ -124,7 +155,11 @@ function Match:Start(members, mapId, modeId, runId)
 			killGoldRemainder=0,startLevel=profile.level or 1,
 			goldEarned=0,xpEarned=0,waveGold=0,coins={},cooldowns={},cards={},cardOffers={},mods={},modsVersion=0,
 			perm={},waveHeroes={},contributed=false,towerCount=0,bossKills=0,disconnectedAt=nil,returned=false,collected=0,
-			masteryEarned={},rallyUntil=0,rallyStat=nil,rallyValue=0}
+			masteryEarned={},rallyUntil=0,rallyStat=nil,rallyValue=0,
+			-- Remembered between matches: a commander who plays on 2x and
+			-- auto-skip does not have to switch them on every single run.
+			speedVote=(profile.settings and profile.settings.fastForward) and 2 or 1,
+			autoSkip=(profile.settings and profile.settings.autoSkip)==true}
 		self:_fx({kind="Clear"},player)
 		self.world:MovePlayer(player,true,index)
 	end
@@ -922,8 +957,14 @@ function Match:Step(dt)
 			end
 		end
 	end
+	-- dt is match time; preparation and network sync run on real time, so 2x
+	-- speeds up the fighting without halving the time to build or to pick a
+	-- card, and without doubling the enemy updates sent to every client.
+	local realDt = dt / (self.speed or 1)
+	self:_refreshSpeed()
 	if self.phase=="Preparing" then
-		self.prepRemaining-=dt
+		self:_checkSkip()
+		self.prepRemaining-=realDt
 		if self.prepRemaining<=0 then self:_beginWave() end
 	elseif self.phase=="Wave" then
 		self.spawnTimer-=dt
@@ -947,7 +988,7 @@ function Match:Step(dt)
 		self:_enemiesStep(dt)
 		if self.running and self.alive==0 and self.spawnIndex>#self.pendingSpawns then self:_endWave() end
 	end
-	self.syncTimer+=dt
+	self.syncTimer+=realDt
 	if self.syncTimer>=self.config.EnemySyncInterval then
 		self.syncTimer=0 local enemies={}
 		-- Replicate route position, not a second visual flight offset. Client
@@ -1018,8 +1059,17 @@ function Match:Handle(player,action,payload)
 		if self.phase~="Preparing" then return false,"Aguarde o intervalo. / Wait for preparation." end
 		if #p.cardOffers>0 then return false,"Escolha uma carta primeiro. / Pick a card first." end
 		p.skip=true self.skipVotes[player.UserId]=true
-		local unanimous=true for uid,other in pairs(self.participants) do if not other.returned and not self.skipVotes[uid] then unanimous=false end end
-		if unanimous then self.prepRemaining=math.min(self.prepRemaining,1) end
+		self:_checkSkip()
+		return true
+	elseif action=="SetSpeed" then
+		if payload.speed~=1 and payload.speed~=2 then return false,"Velocidade inválida. / Invalid speed." end
+		p.speedVote=payload.speed
+		self:_refreshSpeed()
+		return true,{speed=self.speed}
+	elseif action=="SetAutoSkip" then
+		if type(payload.on)~="boolean" then return false,"Configuração inválida. / Invalid setting." end
+		p.autoSkip=payload.on
+		self:_checkSkip()
 		return true
 	elseif action=="ChooseCard" then
 		if type(payload.cardId)~="string" then return false,"Carta inválida. / Invalid card." end
@@ -1056,6 +1106,7 @@ function Match:Snapshot(player)
 		if e.def.boss and not e.rewardless then boss={id=e.id,name=e.def.name,hp=e.hp,maxHP=e.maxHP,phase=e.phase,hint=e.hint,final=e.final or nil} break end
 	end
 	local votes=0 for _ in pairs(self.skipVotes or {}) do votes+=1 end
+	local speedVotes=0 for _,other in pairs(self.participants) do if not other.returned and other.speedVote==2 then speedVotes+=1 end end
 	-- The next boss wave, so the wave bar can count down to it.
 	local nextBoss
 	local total=self.rules.WaveCount(self.modeId)
@@ -1066,7 +1117,8 @@ function Match:Snapshot(player)
 		completedWaves=self.completedWaves,baseHP=self.baseHP,maxBaseHP=self.maxBaseHP,shield=self.shield,energy=math.floor(p.energy),towerLimit=self.rules.TowerLimit(self.size),
 		prepRemaining=math.max(0,math.ceil(self.prepRemaining)),enemies=self.alive,elapsed=self.elapsed,ability=ability,
 		cards=table.clone(p.cards),cardOffers=p.cardOffers,cardMode=self.cardMode,goldEarned=p.goldEarned,xpEarned=p.xpEarned,towers=towers,boss=boss,
-		partySize=self.size,skipVotes=votes,nextBoss=nextBoss,threats=self.phase=="Preparing" and self.nextThreats or nil},p.results
+		partySize=self.size,skipVotes=votes,nextBoss=nextBoss,threats=self.phase=="Preparing" and self.nextThreats or nil,
+		speed=self:Speed(),speedVote=p.speedVote or 1,speedVotes=speedVotes,autoSkip=p.autoSkip==true},p.results
 end
 
 return Match

@@ -421,6 +421,7 @@ end
 local MATCH_ACTIONS = {
 	PlaceTower = true, UpgradeTower = true, SellTower = true, SetPriority = true,
 	CastSkill = true, CollectCoin = true, SkipWave = true, ChooseCard = true, ReturnLobby = true,
+	SetSpeed = true, SetAutoSkip = true,
 }
 -- Coin pickups arrive several times per second and already answer with their
 -- own FX event, so they never trigger a full snapshot broadcast.
@@ -700,7 +701,9 @@ local snapshotInterval = math.max(0.2, tonumber(Config.SnapshotInterval) or 0.5)
 local accumulator, snapshotTimer, arrivalTimer, snapshotCycle, elevatorTimer = 0, 0, 0, 0, 0
 
 RunService.Heartbeat:Connect(function(dt)
-	accumulator += math.min(dt, 0.5)
+	-- 2x speed is match time running twice as fast as the frame clock; the
+	-- six-tick cap still bounds the work done in any one frame.
+	accumulator += math.min(dt, 0.5) * match:Speed()
 	local ticks = 0
 	while accumulator >= step and ticks < 6 do
 		accumulator -= step

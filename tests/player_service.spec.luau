@@ -388,6 +388,10 @@ local _, effectsMuted = service:Handle(p1, "Settings", { effects = false }, fals
 check(effectsMuted and service:Get(p1).settings.effects == false and service:Get(p1).settings.music == true, "Sound effects mute independently of music")
 local _, invalidEffects = service:Handle(p1, "Settings", { effects = 0 }, false)
 check(not invalidEffects and service:Get(p1).settings.effects == false, "Invalid sound option cannot change saved preference")
+local _, pace = service:Handle(p1, "Settings", { autoSkip = true, fastForward = true }, false)
+check(pace and service:Get(p1).settings.autoSkip == true and service:Get(p1).settings.fastForward == true, "2x and auto-skip are remembered, even from inside a match")
+local _, invalidPace = service:Handle(p1, "Settings", { fastForward = 2 }, false)
+check(not invalidPace and service:Get(p1).settings.fastForward == true, "A malformed speed preference is refused")
 
 -- First clear, daily bonus, quests, and medals.
 local goldBefore = service:Get(p1).gold

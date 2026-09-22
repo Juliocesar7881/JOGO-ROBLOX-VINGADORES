@@ -472,12 +472,18 @@ function UI.matchLayout(width, height, options)
 	end
 	local bannerY = statusY + statusH + gap
 
-	local count = math.clamp(math.floor(tonumber(options.skills) or 1), 0, 2)
+	-- A commander fights with exactly one ability: the slot-one hero's.
+	local count = math.clamp(math.floor(tonumber(options.skills) or 1), 0, 1)
 	local small = class.short or class.narrow
 	local skillW = small and 124 or (class.compact and 144 or 190)
 	local saluteW = small and 78 or 96
+	-- Speed (1x/2x) and auto-skip ride in the same band as the ability: they
+	-- are pressed often, so they get thumb height and sit where the hand is.
+	local controlW = small and 52 or 64
 	local abilitiesW = count * skillW + math.max(0, count - 1) * 8
 	if options.vip then abilitiesW += (count > 0 and 8 or 0) + saluteW end
+	abilitiesW += (abilitiesW > 0 and 8 or 0) + 2 * controlW + 8
+	layout.controlW = controlW
 	local buttonH = 48
 	local bandH = class.compact and 64 or 86
 	local bandY = height - 8 - bandH

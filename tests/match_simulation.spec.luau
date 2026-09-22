@@ -845,6 +845,73 @@ do
 end
 
 -- The hero in slot one is what matters, wherever else it appears.
+print("--- 2x speed and auto-skip ---")
+do
+	-- Solo: the commander decides alone.
+	local match, player = stage({ wave = 3 })
+	local p = match.participants[player.UserId]
+	check(match:Speed() == 1, "a match starts at normal speed")
+	check(not match:Handle(player, "SetSpeed", { speed = 3 }), "only 1x and 2x exist")
+	check(not match:Handle(player, "SetSpeed", { speed = "2" }), "a speed must be a number")
+	local ok, reply = match:Handle(player, "SetSpeed", { speed = 2 })
+	check(ok and reply.speed == 2 and match:Speed() == 2, "a solo commander switches to 2x at once")
+	check(match:Snapshot(player).speed == 2 and match:Snapshot(player).speedVote == 2, "the HUD is told the speed and the vote")
+
+	-- Preparation and enemy sync run on real time: 2x never halves the time
+	-- to build or to pick a card.
+	match.phase, match.prepRemaining = "Preparing", 10
+	match:Step(Config.SimulationStep * 2)
+	check(math.abs(match.prepRemaining - (10 - Config.SimulationStep)) < 1e-6,
+		"one real step of preparation costs one real step at 2x, left " .. tostring(match.prepRemaining))
+	local elapsedBefore = match.elapsed
+	match:Step(Config.SimulationStep * 2)
+	check(math.abs(match.elapsed - elapsedBefore - Config.SimulationStep * 2) < 1e-6, "match time itself runs at 2x")
+	check(match:Handle(player, "SetSpeed", { speed = 1 }) and match:Speed() == 1, "back to 1x")
+
+	-- Auto-skip ends preparation as if READY had been pressed every time.
+	match.phase, match.prepRemaining, match.skipVotes = "Preparing", 10, {}
+	check(not match:Handle(player, "SetAutoSkip", { on = "yes" }), "auto-skip takes a boolean")
+	check(match:Handle(player, "SetAutoSkip", { on = true }) and p.autoSkip, "auto-skip switches on")
+	check(match.prepRemaining <= 1, "auto-skip ends preparation straight away, left " .. tostring(match.prepRemaining))
+	match.phase, match.prepRemaining = "Preparing", 10
+	match:Step(Config.SimulationStep)
+	check(match.prepRemaining <= 1, "and keeps doing it every preparation")
+	-- A card on the table always wins over auto-skip.
+	match.phase, match.prepRemaining = "Preparing", 10
+	p.cardOffers = { "sharpen", "quickDraw", "longSight" }
+	match:Step(Config.SimulationStep)
+	check(match.prepRemaining > 5, "auto-skip waits for a pending card choice")
+	p.cardOffers = {}
+	check(match:Snapshot(player).autoSkip == true, "the HUD is told auto-skip is on")
+
+	-- The choice is remembered: a profile saved with both on starts that way.
+	local remembered, rememberedPlayer = stage({ profile = { settings = { fastForward = true, autoSkip = true } } })
+	remembered:Step(Config.SimulationStep)
+	check(remembered:Speed() == 2 and remembered.participants[rememberedPlayer.UserId].autoSkip, "saved 2x and auto-skip apply to the next match")
+
+	-- Party: 2x waits for everyone, and a player leaving never locks it at 2x.
+	local first, second = newPlayer(7101), newPlayer(7102)
+	local byUser = { [7101] = newProfile(), [7102] = newProfile() }
+	byUser[7101].campaign = { manhattan = { normal = true } }
+	byUser[7102].campaign = { manhattan = { normal = true } }
+	local duo = MatchService.new(Config, Catalog, Rules, Waves, newProfiles(byUser[7101], byUser), newWorld(), newRemotes({}), function() end)
+	check(duo:Start({ first, second }, "manhattan", "normal", "duo-speed"), "a duo match starts")
+	duo:Handle(first, "SetSpeed", { speed = 2 })
+	duo:Step(Config.SimulationStep)
+	check(duo:Speed() == 1, "one vote is not enough in a duo")
+	check(duo:Snapshot(first).speedVotes == 1, "the HUD shows one of two votes")
+	duo:Handle(second, "SetSpeed", { speed = 2 })
+	check(duo:Speed() == 2, "both votes switch the duo to 2x")
+	duo:Handle(second, "SetSpeed", { speed = 1 })
+	check(duo:Speed() == 1, "either commander can bring it back to 1x")
+	duo:Handle(second, "SetSpeed", { speed = 2 })
+	duo.participants[second.UserId].returned = true
+	duo:Step(Config.SimulationStep)
+	check(duo:Speed() == 2, "a teammate who left does not hold the speed hostage")
+	duo:Finish(false)
+	check(duo:Speed() == 1, "a finished match is never fast-forwarded")
+end
+
 print("--- slot one decides ---")
 do
 	local match, player = stage({ loadout = { "thor", "ironman" } })

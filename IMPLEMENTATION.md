@@ -15,6 +15,24 @@ their replacements (`OpenChest`, `SetLoadout`, `UpgradeAbility`,
 `UpgradeTalent`/`ResetTalents`, `ChooseCard`) and `PlayerService.luau`'s
 `ACTIONS` table for the exact, current, authoritative list.
 
+## Match speed and auto-skip — 22/09/2026
+
+Match actions `SetSpeed {speed = 1|2}` → `{speed}` and `SetAutoSkip {on}`.
+`Match:Speed()` is 2 only while every participant still playing (not
+returned, not disconnected) voted 2; a solo player decides alone; a finished
+match is always 1. The bootstrap multiplies its frame time by `match:Speed()`
+before feeding the fixed-step accumulator, so combat, cooldowns and spawns
+run twice as fast. Preparation countdown and `EnemySync` cadence divide the
+step back by the speed: they stay in real seconds (2x never halves the time
+to build or to pick a card, and never doubles network traffic).
+`Match:_checkSkip()` ends preparation (down to 1 real second) once every
+non-returned participant either voted `SkipWave` or has auto-skip on with no
+card offer pending. Preferences persist as `settings.fastForward` and
+`settings.autoSkip` (plain `Settings` action, allowed in a match) and seed
+`p.speedVote`/`p.autoSkip` at `Start`. Snapshot `match` gains `speed`,
+`speedVote`, `speedVotes`, `autoSkip`. The client's `SpeedToggle` (also key
+F) and `AutoSkipToggle` sit in the ability band (`layout.controlW`).
+
 ## Lobby shop entry, audio and release — 22/09/2026
 
 `Kind="HeroPedestal"` statues and the premium showcase no longer exist; the

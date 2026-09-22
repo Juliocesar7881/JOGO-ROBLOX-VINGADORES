@@ -91,7 +91,7 @@ local function newProfile(now)
 		pity = { legendary = 0 },
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {} },
 		campaign = {}, tutorialComplete = false, title = "",
-		settings = { language = "pt", lowFX = false, shake = true, music = true, effects = true },
+		settings = { language = "pt", lowFX = false, shake = true, music = true, effects = true, autoSkip = false, fastForward = false },
 		savedLoadouts = {}, quests = {}, achievements = {}, best = {},
 		stats = { waves = 0, bosses = 0, wins = 0, matches = 0, goldEarned = 0, chests = 0 },
 		createdAt = now, updatedAt = now,
@@ -601,8 +601,10 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			if payload.lowFX ~= nil and type(payload.lowFX) ~= "boolean" then return false, "Configuração inválida." end
 			if payload.shake ~= nil and type(payload.shake) ~= "boolean" then return false, "Configuração inválida." end
 			if payload.music ~= nil and type(payload.music) ~= "boolean" then return false, "Configuração inválida." end
-			if payload.effects ~= nil and type(payload.effects) ~= "boolean" then return false, "Configuração inválida." end
-			for _, key in ipairs({ "language", "lowFX", "shake", "music", "effects" }) do if payload[key] ~= nil then profile.settings[key] = payload[key] end end
+			for _, key in ipairs({ "effects", "autoSkip", "fastForward" }) do
+				if payload[key] ~= nil and type(payload[key]) ~= "boolean" then return false, "Configuração inválida." end
+			end
+			for _, key in ipairs({ "language", "lowFX", "shake", "music", "effects", "autoSkip", "fastForward" }) do if payload[key] ~= nil then profile.settings[key] = payload[key] end end
 		elseif action == "SetTitle" then
 			local id = payload.titleId
 			if id == nil or id == "" then

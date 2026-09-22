@@ -1326,6 +1326,22 @@ local function chooseSkill(id)
 	refs.confirm.Text = T("SELECIONE UM ALVO", "SELECT A TARGET")
 end
 
+-- 2x and auto-skip are votes the server counts; the settings write only
+-- remembers the choice for the next match. Neither ever changes a rule here.
+local function toggleSpeed()
+	if not activeMatch() then return end
+	local wanted = (state.match.speedVote or 1) == 2 and 1 or 2
+	act("SetSpeed", {speed = wanted}, function() audio:Cue("wave", 0.1) end)
+	act("Settings", {fastForward = wanted == 2})
+end
+
+local function toggleAutoSkip()
+	if not activeMatch() then return end
+	local wanted = not state.match.autoSkip
+	act("SetAutoSkip", {on = wanted})
+	act("Settings", {autoSkip = wanted})
+end
+
 local function confirmPlacement()
 	if selectedHero and selectedPosition and placementValid then
 		local hero, position = selectedHero, selectedPosition
@@ -1587,6 +1603,8 @@ local function renderMatch()
 			if humanoid then pcall(function() humanoid:PlayEmote("wave") end) end
 		end, {LayoutOrder = 3, Size = UDim2.fromOffset(layout.saluteW, layout.buttonH), TextColor3 = C.gold, TextSize = 11})
 	end
+	refs.speedToggle = UI.secondary(abilities, "1x", toggleSpeed, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 13, Font = Enum.Font.GothamBlack})
+	refs.autoSkipToggle = UI.secondary(abilities, "AUTO", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11, Font = Enum.Font.GothamBlack})
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
 	UI.list(cards, 7, true)
@@ -1618,6 +1636,19 @@ updateMatch = function()
 	for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId then towerCount += 1 end end
 	refs.energy.Text = "⚡ " .. number(match.energy)..T(" ENERGIA"," ENERGY")
 	refs.energy.TextSize=mobile() and 11 or 14
+	if refs.speedToggle then
+		local fast, voted = (match.speed or 1) == 2, (match.speedVote or 1) == 2
+		local party = match.partySize or 1
+		-- In a group, 2x starts only when everyone asked; show who is waiting.
+		refs.speedToggle.Text = fast and "▶▶ 2x" or (voted and party > 1 and ("2x " .. tostring(match.speedVotes or 1) .. "/" .. tostring(party)) or "▶ 1x")
+		refs.speedToggle.BackgroundColor3 = fast and C.gold or (voted and C.gold:Lerp(C.card, 0.6) or C.card)
+		refs.speedToggle.TextColor3 = fast and C.background or C.text
+	end
+	if refs.autoSkipToggle then
+		refs.autoSkipToggle.Text = match.autoSkip and "AUTO ✓" or "AUTO"
+		refs.autoSkipToggle.BackgroundColor3 = match.autoSkip and C.green or C.card
+		refs.autoSkipToggle.TextColor3 = match.autoSkip and C.background or C.text
+	end
 	refs.skip.Visible = state.phase == "Preparing"
 	refs.skip.Text = T("PRONTO", "READY") .. "  •  " .. tostring(math.max(0, math.ceil(match.prepRemaining or 0))) .. "s" .. (match.skipVotes and "  (" .. tostring(match.skipVotes) .. "/" .. tostring(#(state.players or {})) .. ")" or "")
 	local threatNames = {}
@@ -1847,7 +1878,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		local keys = {Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five}
 		local index = table.find(keys, input.KeyCode)
 		if index and profile().loadout[index] then chooseHero(profile().loadout[index])
-		elseif input.KeyCode == Enum.KeyCode.Q and state.match.ability then chooseSkill(state.match.ability.id) end
+		elseif input.KeyCode == Enum.KeyCode.Q and state.match.ability then chooseSkill(state.match.ability.id)
+		elseif input.KeyCode == Enum.KeyCode.F then toggleSpeed() end
 	end
 end)
 
