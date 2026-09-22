@@ -28,12 +28,25 @@ def run(command: list[str]) -> None:
     subprocess.run(command, cwd=ROOT, check=True)
 
 
+def check_heroes_doc() -> None:
+    """docs/HEROES.md is generated from the Catalog; a hero/ability edit that
+    forgets to regenerate it would silently ship a wrong reference doc."""
+    generated = subprocess.run([executable("luau"), "tools/gen_heroes_doc.luau"], cwd=ROOT, check=True, capture_output=True, text=True, encoding="utf-8").stdout
+    committed_path = ROOT / "docs" / "HEROES.md"
+    committed = committed_path.read_text(encoding="utf-8") if committed_path.is_file() else ""
+    if generated.replace("\r\n", "\n").strip() != committed.replace("\r\n", "\n").strip():
+        raise SystemExit("docs/HEROES.md is stale. Regenerate it with:\n"
+                          "  .tools/luau/luau.exe tools/gen_heroes_doc.luau > docs/HEROES.md")
+    print("PASS docs/HEROES.md matches the catalog")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-build", action="store_true", help="Only compile and run logic tests while bootstraps are being written")
     options = parser.parse_args()
     source_files = sorted(str(path.relative_to(ROOT)) for path in (ROOT / "src").rglob("*.luau"))
     run([executable("luau-compile"), "--null", *source_files])
+    check_heroes_doc()
     run([executable("luau"), "tools/test_rules.luau"])
     # Ordered cheapest-first, so a broken module reports before a full
     # campaign simulation spends a minute finding out the same thing.
