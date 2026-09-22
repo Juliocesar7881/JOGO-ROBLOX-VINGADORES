@@ -148,6 +148,12 @@ function UI.icon(parent, kind, tint, properties)
 		shape(0.68, 0.2, 0.24, 0.3, 16, tint, 5)
 		shape(0.43, 0.52, 0.14, 0.23)
 		shape(0.26, 0.76, 0.48, 0.13, 0, tint, 3)
+	elseif kind == "gift" then
+		shape(0.14, 0.42, 0.72, 0.46, 0, tint, 4)
+		shape(0.08, 0.3, 0.84, 0.15, 0, tint, 3)
+		shape(0.44, 0.3, 0.12, 0.58, 0, UI.Colors.background)
+		shape(0.26, 0.12, 0.22, 0.22, -18, tint, 10)
+		shape(0.52, 0.12, 0.22, 0.22, 18, tint, 10)
 	else -- bolt
 		shape(0.36, 0.08, 0.21, 0.49, 29)
 		shape(0.3, 0.4, 0.41, 0.19, -4)

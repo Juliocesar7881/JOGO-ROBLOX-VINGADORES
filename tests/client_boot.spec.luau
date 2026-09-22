@@ -92,6 +92,29 @@ local WorldBuilder = __WORLD__(nil, clockOs)
 --==============================================================================
 local LOCAL_ID, ALLY_ID = 1001, 2002
 
+-- A realistic rewards status, shaped like Rules.RewardsStatus's real output.
+-- "ready" (the default) has a free chest, day three of the login streak, one
+-- playtime gift and one collection milestone all waiting; "empty" has none.
+local function rewardsFixture(mode)
+	local ready = mode ~= "empty"
+	local fixture = {
+		claimable = ready and 3 or 0,
+		freeChest = { ready = ready, remaining = ready and 0 or 3600, chestId = "rare", cooldown = Catalog.Rewards.freeChest.cooldown },
+		login = { claimable = ready, streak = 2, cycle = #Catalog.Rewards.login, nextIndex = 3, nextStreak = 3 },
+		playtime = { seconds = ready and 700 or 60, gifts = {} },
+		collection = { owned = 5, milestones = {} },
+	}
+	for index, def in ipairs(Catalog.Rewards.playtime) do
+		table.insert(fixture.playtime.gifts, { index = index, minutes = def.minutes, gold = def.gold, xp = def.xp, chest = def.chest,
+			claimed = ready and index == 1, ready = ready and index == 2 })
+	end
+	for index, def in ipairs(Catalog.Rewards.collection) do
+		table.insert(fixture.collection.milestones, { index = index, count = def.count, gold = def.gold, title = def.title,
+			claimed = false, ready = ready and def.count <= 5 })
+	end
+	return fixture
+end
+
 local function veteranProfile(overrides)
 	local profile = {
 		gold = 2500, xp = 1200, level = 7,
@@ -106,7 +129,7 @@ local function veteranProfile(overrides)
 		quests = { daily1 = { name = { pt = "Defensor", en = "Defender" }, description = { pt = "Vença ondas", en = "Clear waves" }, progress = 5, target = 5, gold = 100, xp = 50 } },
 		achievements = { a1 = { name = { pt = "Primeira vitória", en = "First win" } } },
 		titles = { t1 = { pt = "Veterano", en = "Veteran" } }, title = "t1",
-		best = {}, season = 1, skillSlots = { active = 2, passive = 2 },
+		best = {}, season = 1, skillSlots = { active = 2, passive = 2 }, rewards = rewardsFixture("empty"),
 	}
 	for key, value in pairs(overrides or {}) do profile[key] = value end
 	return profile
@@ -452,7 +475,7 @@ local function session(screen)
 		{ panel = "shop", shopKind = "product", shopKey = "gold" },
 	}
 	for _, heroId in ipairs(Catalog.HeroOrder) do table.insert(openings, { panel = "hero", heroId = heroId }) end
-	for _, panel in ipairs({"inventory", "chests", "premium", "talents"}) do table.insert(openings, {panel = panel}) end
+	for _, panel in ipairs({"inventory", "chests", "premium", "talents", "rewards"}) do table.insert(openings, {panel = panel}) end
 	local opened = 0
 	for _, spec in ipairs(openings) do
 		local label = spec.panel .. ":" .. tostring(spec.modeId or spec.heroId or spec.skillId or spec.shopKey or "")
@@ -543,6 +566,51 @@ local function session(screen)
 		check(asked("SaveLoadout"), tag .. ": a formation can be saved")
 	end)
 
+	step("daily rewards: badge, free chest, login streak, playtime and milestones", function()
+		-- The previous step leaves the inventory panel open, which hides the
+		-- dock on short screens; close it first so the gift tab is reachable.
+		click("×")
+		check(not shown(named(gui, "RewardsBadge"), gui) or named(gui, "RewardsBadge").Visible == false,
+			tag .. ": no badge with nothing to claim")
+		local withRewards = veteranProfile({ rewards = rewardsFixture("ready") })
+		push(lobbySnapshot(withRewards))
+		local badge = named(gui, "RewardsBadge")
+		check(badge ~= nil and badge.Visible == true, tag .. ": the nav badge appears when rewards are claimable")
+		local badgeLabel = badge and badge:FindFirstChildOfClass("TextLabel")
+		check(badgeLabel ~= nil and badgeLabel.Text == "3", tag .. ": the badge counts what can be claimed, got " .. tostring(badgeLabel and badgeLabel.Text))
+
+		clickNamed("Nav_rewards")
+		check(contextOpen(), tag .. ": the gift tab opens the rewards panel")
+		check(named(gui, "ClaimFreeChest") ~= nil, tag .. ": the free chest card renders")
+		clickNamed("ClaimFreeChest")
+		check(asked("ClaimFreeChest"), tag .. ": the free chest sends its claim intent")
+		clickNamed("ClaimLogin")
+		check(asked("ClaimLogin"), tag .. ": the login streak sends its claim intent")
+		check(named(gui, "LoginDay_3") ~= nil, tag .. ": the seven-day strip renders every day")
+		clickNamed("ClaimPlaytime_2")
+		check(asked("ClaimPlaytime"), tag .. ": a ready playtime gift sends its claim intent")
+		local claimedGift = named(gui, "ClaimPlaytime_1")
+		check(claimedGift ~= nil, tag .. ": an already-claimed gift still renders, disabled")
+		local readyMilestone
+		for _, milestone in ipairs(withRewards.rewards.collection.milestones) do
+			if milestone.ready then readyMilestone = milestone.index end
+		end
+		check(readyMilestone ~= nil, tag .. ": the fixture has a ready milestone to claim")
+		clickNamed("ClaimMilestone_" .. readyMilestone)
+		check(asked("ClaimMilestone"), tag .. ": a ready milestone sends its claim intent")
+		click("×")
+
+		-- Claiming eventually clears the badge, once the server reports nothing left.
+		push(lobbySnapshot(veteranProfile({ rewards = rewardsFixture("empty") })))
+		check(named(gui, "RewardsBadge") == nil or named(gui, "RewardsBadge").Visible == false,
+			tag .. ": the badge clears once nothing is claimable")
+		-- Hand off to the next step exactly as "HUD affordances" left it: the
+		-- inventory panel open, on a fresh default profile.
+		push(lobbySnapshot(veteranProfile()))
+		clickNamed("Nav_inventory")
+		check(contextOpen(), tag .. ": inventory reopens for the next check")
+	end)
+
 	step("focused panels preserve navigation and usable touch space", function()
 		local context = named(gui, "ContextPanel")
 		local body = named(gui, "ContextBody")
@@ -558,7 +626,7 @@ local function session(screen)
 			check(element ~= nil and element.Visible == not focused,
 				tag .. ": " .. name .. " gives compact panels room and remains available on large screens")
 		end
-		for _, id in ipairs({"inventory", "talents", "chests", "premium"}) do
+		for _, id in ipairs({"inventory", "talents", "chests", "premium", "rewards"}) do
 			local nav = named(gui, "Nav_" .. id)
 			local indicator = nav and named(nav, "SelectedTab")
 			check(indicator ~= nil and indicator.Visible == (id == "inventory"),
@@ -567,7 +635,7 @@ local function session(screen)
 		clickNamed("CloseContext")
 		check(not contextOpen() and named(gui, "LobbyNavigation").Visible ~= false,
 			tag .. ": closing a focused panel restores the navigation")
-		for _, id in ipairs({"inventory", "talents", "chests", "premium"}) do
+		for _, id in ipairs({"inventory", "talents", "chests", "premium", "rewards"}) do
 			local indicator = named(named(gui, "Nav_" .. id), "SelectedTab")
 			check(indicator ~= nil and indicator.Visible == false, tag .. ": close clears stale selection for " .. id)
 		end

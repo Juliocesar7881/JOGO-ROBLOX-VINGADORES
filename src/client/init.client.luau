@@ -449,6 +449,101 @@ local function contextLeaderboard(body)
 	UI.secondary(body, T("Atualizar placar", "Refresh leaderboard"), loadBoard, {Size = UDim2.new(1, -6, 0, 40)})
 end
 
+-- Four small loops around the main game, all decided by the server's clock:
+-- a free chest on a timer, a daily login streak, gifts for time played today
+-- and one-time milestones for the collection. Nothing here can be bought.
+local lastRewardResult
+local function rewardGiven(paid)
+	if type(paid) ~= "table" then return end
+	local parts = {}
+	if paid.gold and paid.gold > 0 then table.insert(parts, "+" .. number(paid.gold) .. T(" Ouro", " Gold")) end
+	if paid.xp and paid.xp > 0 then table.insert(parts, "+" .. number(paid.xp) .. " XP") end
+	if paid.chest then
+		local hero = Catalog.Heroes[paid.chest.heroId]
+		table.insert(parts, paid.chest.duplicate and T("herói repetido → recompensa", "duplicate hero → reward") or (T("novo herói: ", "new hero: ") .. (hero and L(hero.name) or paid.chest.heroId)))
+	end
+	lastRewardResult = paid
+	showToast(#parts > 0 and table.concat(parts, "  •  ") or T("Recompensa resgatada!", "Reward claimed!"), false)
+	audio:Cue("upgrade")
+end
+
+local function contextRewards(body)
+	local rewards = profile().rewards
+	if not rewards then
+		UI.label(body, T("Carregando prêmios…", "Loading rewards…"), {Size = UDim2.new(1, -6, 0, 40), TextColor3 = C.muted})
+		return
+	end
+	UI.section(body, T("VOLTE TODO DIA", "COME BACK EVERY DAY"), T("Baú grátis, sequência de login, presentes por tempo jogado e metas de coleção.", "A free chest, a login streak, gifts for time played and collection milestones."))
+	if lastRewardResult and lastRewardResult.chest then
+		local r = lastRewardResult.chest
+		local row = UI.roundFrame(body, {Name = "RewardChestResult", Size = UDim2.new(1, -6, 0, 100), BackgroundColor3 = C.card}, UI.color(Catalog.Rarities[r.rarity].color))
+		heroPortrait(row, r.heroId, {Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(72, 92)})
+		UI.label(row, heroName(r.heroId), {Position = UDim2.fromOffset(84, 10), Size = UDim2.new(1, -96, 0, 30), Font = Enum.Font.GothamBlack, TextSize = 16, TextWrapped = true})
+		UI.label(row, r.duplicate and T("Repetido: virou Ouro e maestria", "Duplicate: turned into Gold and mastery") or T("NOVO HERÓI!", "NEW HERO!"), {Position = UDim2.fromOffset(84, 44), Size = UDim2.new(1, -96, 0, 40), TextSize = 12, TextWrapped = true, TextColor3 = C.gold})
+	end
+
+	-- Free chest: opens on the spot, then makes you wait.
+	local chest = rewards.freeChest
+	local freeCard = UI.roundFrame(body, {Name = "FreeChestCard", Size = UDim2.new(1, -6, 0, 92), BackgroundColor3 = C.card}, chest.ready and C.gold or C.stroke)
+	UI.icon(freeCard, "chest", chest.ready and C.gold or C.muted, {Position = UDim2.fromOffset(12, 14), Size = UDim2.fromOffset(40, 40)})
+	UI.label(freeCard, T("Baú grátis", "Free chest"), {Position = UDim2.fromOffset(62, 10), Size = UDim2.new(1, -180, 0, 26), Font = Enum.Font.GothamBold, TextSize = 16})
+	UI.label(freeCard, chest.ready and T("Pronto para abrir!", "Ready to open!") or (T("Pronto em ", "Ready in ") .. math.floor(chest.remaining / 3600) .. "h" .. math.floor((chest.remaining % 3600) / 60) .. "m"), {Position = UDim2.fromOffset(62, 38), Size = UDim2.new(1, -180, 0, 24), TextSize = 12, TextColor3 = C.muted})
+	local claimFree = UI.button(freeCard, T("ABRIR", "OPEN"), function()
+		act("ClaimFreeChest", {}, function(snapshot) rewardGiven(snapshot.result) end)
+	end, {Name = "ClaimFreeChest", Position = UDim2.new(1, -108, 0, 24), Size = UDim2.fromOffset(96, 44), BackgroundColor3 = C.gold})
+	if not chest.ready then UI.disabled(claimFree) end
+
+	-- Login streak: a seven-day strip, the ready day highlighted.
+	UI.section(body, T("Sequência de login", "Login streak"), T("Um dia perdido é perdoado; dois reiniciam a sequência.", "One missed day is forgiven; two reset the streak."))
+	-- lastCompletedIndex is the slot most recently claimed (today's, if the
+	-- streak already paid out today; otherwise yesterday's). Everything up to
+	-- it is checked off, except the slot about to be claimed, which is next.
+	local cycle = rewards.login.cycle
+	local lastCompletedIndex = rewards.login.streak > 0 and (((rewards.login.streak - 1) % cycle) + 1) or 0
+	local strip = UI.row(body, 78)
+	for day = 1, cycle do
+		local def = Catalog.Rewards.login[day]
+		local isNext = rewards.login.claimable and day == rewards.login.nextIndex
+		local done = not isNext and day <= lastCompletedIndex
+		local cell = UI.roundFrame(strip, {Name = "LoginDay_" .. day, Position = UDim2.new((day - 1) / cycle, 2, 0, 0), Size = UDim2.new(1 / cycle, -4, 1, 0),
+			BackgroundColor3 = isNext and C.gold:Lerp(C.card, 0.15) or C.card}, isNext and C.gold or C.stroke)
+		UI.label(cell, T("Dia ", "Day ") .. day, {Position = UDim2.fromOffset(0, 6), Size = UDim2.new(1, 0, 0, 16), TextSize = 10, TextColor3 = isNext and C.gold or C.muted})
+		UI.label(cell, def.chest and "🎁" or ("+" .. number(def.gold)), {Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 26), TextSize = def.chest and 18 or 13, Font = Enum.Font.GothamBold, TextColor3 = isNext and C.gold or C.text})
+		if done then UI.label(cell, "✓", {Position = UDim2.fromOffset(0, 52), Size = UDim2.new(1, 0, 0, 20), TextSize = 14, TextColor3 = C.green}) end
+	end
+	local claimLogin = UI.button(body, rewards.login.claimable and (T("RESGATAR DIA ", "CLAIM DAY ") .. rewards.login.nextIndex) or T("Volte amanhã", "Come back tomorrow"), function()
+		act("ClaimLogin", {}, function(snapshot) rewardGiven(snapshot.result) end)
+	end, {Name = "ClaimLogin", Size = UDim2.new(1, -6, 0, 46), BackgroundColor3 = C.gold})
+	if not rewards.login.claimable then UI.disabled(claimLogin) end
+
+	-- Playtime gifts: how long you have played today, in one bar with markers.
+	UI.section(body, T("Presentes de hoje", "Today's gifts"), T("O tempo reinicia a cada dia.", "Time resets every day."))
+	for _, gift in ipairs(rewards.playtime.gifts) do
+		local card = UI.roundFrame(body, {Name = "PlaytimeGift_" .. gift.index, Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
+		local progress = math.clamp(rewards.playtime.seconds / (gift.minutes * 60), 0, 1)
+		local fill = UI.bar(card, gift.claimed and C.muted or C.green, UDim2.fromOffset(12, 10), UDim2.new(1, -130, 0, 8))
+		fill.Size = UDim2.fromScale(progress, 1)
+		UI.label(card, gift.minutes .. T(" min de jogo", " min played"), {Position = UDim2.fromOffset(12, 24), Size = UDim2.new(1, -130, 0, 30), TextSize = 12, TextColor3 = C.muted})
+		local claim = UI.button(card, gift.claimed and T("RESGATADO", "CLAIMED") or (gift.chest and T("BAÚ", "CHEST") or ("+" .. number(gift.gold))), function()
+			act("ClaimPlaytime", {index = gift.index}, function(snapshot) rewardGiven(snapshot.result) end)
+		end, {Name = "ClaimPlaytime_" .. gift.index, Position = UDim2.new(1, -108, 0, 10), Size = UDim2.fromOffset(96, 40), BackgroundColor3 = gift.ready and C.green or C.card, TextSize = 12})
+		if not gift.ready then UI.disabled(claim) end
+	end
+
+	-- Collection milestones: how many different heroes the account owns.
+	UI.section(body, T("Metas de coleção", "Collection milestones"), T("Você tem ", "You own ") .. rewards.collection.owned .. T(" de ", " of ") .. #Catalog.HeroOrder .. T(" heróis.", " heroes."))
+	for _, milestone in ipairs(rewards.collection.milestones) do
+		local card = UI.roundFrame(body, {Name = "Milestone_" .. milestone.index, Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
+		UI.label(card, milestone.count .. T(" heróis", " heroes"), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -130, 0, 26), Font = Enum.Font.GothamBold, TextSize = 14})
+		local sub = "+" .. number(milestone.gold) .. T(" Ouro", " Gold") .. (milestone.title and T("  •  título", "  •  title") or "")
+		UI.label(card, sub, {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -130, 0, 22), TextSize = 11, TextColor3 = C.muted})
+		local claim = UI.button(card, milestone.claimed and T("RESGATADO", "CLAIMED") or T("RESGATAR", "CLAIM"), function()
+			act("ClaimMilestone", {index = milestone.index}, function(snapshot) rewardGiven(snapshot.result) end)
+		end, {Name = "ClaimMilestone_" .. milestone.index, Position = UDim2.new(1, -108, 0, 10), Size = UDim2.fromOffset(96, 40), BackgroundColor3 = milestone.ready and C.gold or C.card, TextSize = 12})
+		if milestone.claimed or not milestone.ready then UI.disabled(claim) end
+	end
+end
+
 local function contextSquad(body)
 	local lineup=UI.row(body,78)
 	lineup.Name="SquadSlots"
@@ -609,6 +704,7 @@ local contextBuilders = {
 	talents = contextTalents,
 	hero = contextHero, chests = contextChests, premium = contextPremium, inventory = contextSquad, shop = contextShop,
 	quests = contextQuests, leaderboard = contextLeaderboard, squad = contextSquad, settings = contextSettings,
+	rewards = contextRewards,
 }
 
 fetchProducts = function()
@@ -666,14 +762,14 @@ renderContext = function()
 	local size = screenSize()
 	local slot=UI.contextLayout(size.X,size.Y,{wide=contextPanel.kind=="talents",elevator=state.elevator~=nil})
 	lobbyChrome(not slot.modal)
-	local tint=({inventory=C.blue,squad=C.blue,hero=C.blue,talents=C.gold,chests=C.green,premium=C.gold,shop=C.gold,modes=C.green,leaderboard=C.gold})[contextPanel.kind] or C.blue
+	local tint=({inventory=C.blue,squad=C.blue,hero=C.blue,talents=C.gold,chests=C.green,premium=C.gold,shop=C.gold,modes=C.green,leaderboard=C.gold,rewards=C.red})[contextPanel.kind] or C.blue
 	local panel = UI.roundFrame(main, {Name = "ContextPanel", Position = at(slot), Size = dims(slot), BackgroundColor3 = C.background,Active=true}, tint:Lerp(C.stroke,0.6))
 	refs.context = panel
 	local titles = {hero = T("GALERIA DE HERÓIS", "HERO GALLERY"), skill = T("TREINAMENTO", "TRAINING"), shop = T("SUPRIMENTOS", "SUPPLIES"), quests = T("CENTRAL DE MISSÕES", "MISSION BOARD"), leaderboard = T("LENDAS DA RESISTÊNCIA", "RESISTANCE LEGENDS"), squad = T("FORMAÇÃO TÁTICA", "TACTICAL FORMATION"), settings = T("OPÇÕES", "SETTINGS")}
 	titles.talents = T("ÁRVORE DE EVOLUÇÃO", "TALENT TREE")
 	titles.chests=T("BAÚS • OURO","CHESTS • GOLD"); titles.premium=T("LOJA ROBUX","ROBUX SHOP"); titles.inventory=T("INVENTÁRIO","INVENTORY")
-	titles.inventory=T("MEUS HERÓIS","MY HEROES"); titles.modes=T("VAMOS JOGAR!","LET'S PLAY!")
-	UI.icon(panel,contextPanel.kind=="chests" and "chest" or contextPanel.kind=="talents" and "star" or contextPanel.kind=="premium" and "shop" or contextPanel.kind=="leaderboard" and "trophy" or "hero",tint,{Position=UDim2.fromOffset(14,10),Size=UDim2.fromOffset(24,24)})
+	titles.inventory=T("MEUS HERÓIS","MY HEROES"); titles.modes=T("VAMOS JOGAR!","LET'S PLAY!"); titles.rewards=T("PRÊMIOS DIÁRIOS","DAILY REWARDS")
+	UI.icon(panel,contextPanel.kind=="chests" and "chest" or contextPanel.kind=="talents" and "star" or contextPanel.kind=="premium" and "shop" or contextPanel.kind=="leaderboard" and "trophy" or contextPanel.kind=="rewards" and "gift" or "hero",tint,{Position=UDim2.fromOffset(14,10),Size=UDim2.fromOffset(24,24)})
 	UI.label(panel, titles[contextPanel.kind] or "DOOMSDAY", {Position = UDim2.fromOffset(48, 11), Size = UDim2.new(1, -106, 0, 24), TextColor3 = tint, Font = Enum.Font.GothamBold, TextSize = 14})
 	UI.frame(panel, {Position = UDim2.fromOffset(16, 42), Size = UDim2.new(1, -32, 0, 1), BackgroundColor3 = C.stroke, BackgroundTransparency = 0.35})
 	UI.secondary(panel, "×", closeContext, {Name="CloseContext",Position = UDim2.new(1, -48, 0, 2), Size = UDim2.fromOffset(44, 40), TextSize = 25})
@@ -990,13 +1086,20 @@ renderLobby = function()
 	UI.secondary(main, T("OPÇÕES", "SETTINGS"), function() openContext("settings", {}) end, {Name = "SettingsButton", Position = at(hud.settings), Size = dims(hud.settings), TextSize = compact and 11 or 12})
 
 	local dock=UI.frame(main,{Name="LobbyNavigation",Position=at(hud.navigation),Size=dims(hud.navigation),BackgroundTransparency=1})
-	local nav={{"inventory",T("HERÓIS","HEROES"),C.blue,"hero"},{"talents",T("EVOLUÇÃO","TALENTS"),C.gold,"star"},{"chests",T("BAÚS","CHESTS"),C.green,"chest"},{"premium","ROBUX",C.gold,"shop"}}
+	local nav={{"inventory",T("HERÓIS","HEROES"),C.blue,"hero"},{"talents",T("EVOLUÇÃO","TALENTS"),C.gold,"star"},{"chests",T("BAÚS","CHESTS"),C.green,"chest"},{"premium","ROBUX",C.gold,"shop"},{"rewards",T("PRÊMIOS","GIFTS"),C.red,"gift"}}
 	refs.navigation={}
 	for i,entry in ipairs(nav) do
-		local button=UI.button(dock,entry[2],function() openContext(entry[1],{}) end,{Name="Nav_"..entry[1],Position=UDim2.new((i-1)/4,0,0,0),Size=UDim2.new(0.25,-5,1,0),BackgroundColor3=C.card,TextColor3=entry[3],TextTransparency=1})
+		local button=UI.button(dock,entry[2],function() openContext(entry[1],{}) end,{Name="Nav_"..entry[1],Position=UDim2.new((i-1)/#nav,0,0,0),Size=UDim2.new(1/#nav,-5,1,0),BackgroundColor3=C.card,TextColor3=entry[3],TextTransparency=1})
 		local narrow=size.X<560
 		UI.icon(button,entry[4],entry[3],{Position=narrow and UDim2.new(0.5,-8,0,3) or UDim2.fromOffset(10,10),Size=UDim2.fromOffset(narrow and 16 or 24,narrow and 16 or 24)})
 		UI.label(button,entry[2],{Position=narrow and UDim2.fromOffset(0,22) or UDim2.fromOffset(40,0),Size=narrow and UDim2.new(1,0,0,17) or UDim2.new(1,-47,1,0),TextSize=narrow and 10 or 12,Font=Enum.Font.GothamBold,TextColor3=entry[3],TextXAlignment=Enum.TextXAlignment.Center})
+		if entry[1]=="rewards" then
+			local claimable=tonumber(profile().rewards and profile().rewards.claimable) or 0
+			local badge=UI.roundFrame(button,{Name="RewardsBadge",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,4),Size=UDim2.fromOffset(18,18),BackgroundColor3=C.red,Visible=claimable>0,ZIndex=5},C.background)
+			UI.corner(badge,9)
+			UI.label(badge,tostring(math.min(claimable,9)),{Size=UDim2.fromScale(1,1),TextSize=11,Font=Enum.Font.GothamBlack,TextColor3=Color3.new(1,1,1)})
+			refs.rewardsBadge=badge
+		end
 		local line=UI.frame(button,{Name="SelectedTab",Position=UDim2.new(0,8,1,-3),Size=UDim2.new(1,-16,0,3),BackgroundColor3=entry[3],Visible=false})
 		local badge
 		if entry[1]=="talents" then
@@ -1594,6 +1697,12 @@ local function applyState(nextState)
 		if refs.gold then refs.gold.Text = goldText() end
 		if refs.commander then refs.commander.Text = levelText() end
 		if refs.levelBar then refs.levelBar.Size = UDim2.fromScale(levelProgress(), 1) end
+		if refs.rewardsBadge then
+			local claimable=tonumber(profile().rewards and profile().rewards.claimable) or 0
+			refs.rewardsBadge.Visible=claimable>0
+			local badgeLabel=refs.rewardsBadge:FindFirstChildOfClass("TextLabel")
+			if badgeLabel then badgeLabel.Text=tostring(math.min(claimable,9)) end
+		end
 		local elevatorMoved = renderElevator()
 		if signature ~= lastProfileSignature or elevatorMoved then renderContext(); updateWorldCosmetics() end
 	elseif activeMatch() then updateMatch()

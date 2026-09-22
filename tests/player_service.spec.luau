@@ -11,6 +11,16 @@ local function clone(value)
 	return result
 end
 
+-- A frozen clock the tests move by hand: reward timers and the login calendar
+-- depend on it, and no test should wait real hours. Declared before the
+-- inlined modules below, so their bare `os.time()` calls close over this local
+-- instead of the real global. Starts at noon UTC so no test straddles a day
+-- boundary by accident.
+local realOs = os
+local clockOffset = 0
+local clockBase = math.floor(realOs.time() / 86400) * 86400 + 43200
+local os = { time = function() return clockBase + clockOffset end, clock = realOs.clock, date = realOs.date, difftime = realOs.difftime }
+
 local stores, orderedStores, online, passOwners = {}, {}, {}, {}
 local isStudio, guid = false, 0
 local failBefore, failAfter, replayCallback = 0, 0, false
@@ -522,11 +532,164 @@ do
 	check(#healed.loadout == 2 and healed.loadout[1] == "spiderman" and healed.loadout[2] == "ironman", "The loadout keeps its order, drops unknown heroes and duplicates")
 	check(healed.abilities.spiderman == 1 and healed.abilities.ironman == 1 and healed.abilities.hawkeye == 1, "Every owned hero gains an ability rank")
 	check(healed.pity.legendary == 0, "The pity counter is created")
+	check(healed.rewards ~= nil and healed.rewards.freeChest.ready and healed.rewards.login.claimable, "A legacy profile with no reward record at all gets a fresh one")
 	stores.Tests.values.p_6 = { schemaVersion = 1, gold = 10, xp = 0, heroes = { ironman = { xp = 0, level = 1 } }, loadout = { "ghost" }, talents = { roundGold = 50 } }
 	local repaired = service:Load(player(6))
 	check(repaired and repaired.loadout[1] == "ironman" and repaired.talents.roundGold == nil, "An empty loadout falls back to the starters and impossible ranks are dropped")
 	stores.Tests.values.p_9 = { schemaVersion = 1, gold = 10, xp = 0, heroes = { ironman = { xp = 0, level = 1 } }, talents = { roundGold = 5, killGold = 5, magnet = 5, victoryGold = 10 } }
 	check(service:Load(player(9)) == nil and stores.Tests.values.p_9.gold == 10, "A talent budget the level cannot pay for still fails closed")
+end
+
+--==============================================================================
+-- Rewards: free chest, login streak, playtime gifts, collection milestones
+--==============================================================================
+-- Every day-spanning check here moves the frozen clock by hand instead of
+-- waiting; the session lease is stretched so a multi-day jump cannot expire it
+-- mid-section. Each sub-section uses its own fresh player so the incidental
+-- playtime a claim's own transaction accumulates (the gap since the account's
+-- last save) never contaminates a different section's expectations.
+do
+	local realLease = service.leaseSeconds
+	service.leaseSeconds = 1e9
+
+	-- The free chest: opens on the spot for nothing, then makes you wait.
+	do
+		local rewarded = player(20)
+		local fresh = service:Load(rewarded)
+		check(fresh.rewards.freeChest.ready and fresh.rewards.login.claimable, "A new account has a free chest and a login reward waiting")
+		check(fresh.rewards.claimable == 2, "The badge counts exactly what a brand new account can claim, got " .. tostring(fresh.rewards.claimable))
+
+		service.random = scriptedRolls(0, 0)
+		local _, chestOk, chest = service:Handle(rewarded, "ClaimFreeChest", {}, true)
+		check(chestOk and chest.result.chest.heroId ~= nil and chest.result.gold == 0 and chest.result.xp == 0, "The free chest costs nothing and grants a hero")
+		check(chest.stats.chests == 1 and chest.heroes[chest.result.chest.heroId] ~= nil, "The free chest's hero joins the account and is counted")
+		check(not chest.rewards.freeChest.ready and chest.rewards.freeChest.remaining == Catalog.Rewards.freeChest.cooldown, "The free chest starts its timer")
+		local _, tooSoon = service:Handle(rewarded, "ClaimFreeChest", {}, true)
+		check(not tooSoon, "The free chest cannot be claimed twice")
+		local _, notInMatch = service:Handle(rewarded, "ClaimFreeChest", {}, false)
+		check(not notInMatch, "Rewards are claimed in the lobby, not mid-match")
+
+		clockOffset += Catalog.Rewards.freeChest.cooldown - 1
+		local _, almost = service:Handle(rewarded, "ClaimFreeChest", {}, true)
+		check(not almost, "One second early is still early")
+		clockOffset += 1
+		check(service:Get(rewarded).rewards.freeChest.ready, "The free chest is ready the instant the timer ends")
+		service.random = scriptedRolls(0, 0)
+		local _, secondChest = service:Handle(rewarded, "ClaimFreeChest", {}, true)
+		check(secondChest, "The free chest can be claimed again after the wait")
+	end
+
+	-- The login streak: one a day, a missed day forgiven, two missed days reset.
+	do
+		local streaker = player(23)
+		service:Load(streaker)
+		local _, day1Ok, day1 = service:Handle(streaker, "ClaimLogin", {}, true)
+		check(day1Ok and day1.result.day == 1 and day1.result.streak == 1 and day1.result.gold == Catalog.Rewards.login[1].gold, "Day one pays the first reward")
+		local goldAfterDay1 = day1.gold
+		local _, sameDay = service:Handle(streaker, "ClaimLogin", {}, true)
+		check(not sameDay and service:Get(streaker).gold == goldAfterDay1, "Today's login reward can only be claimed once")
+
+		clockOffset += 86400
+		local _, day2Ok, day2 = service:Handle(streaker, "ClaimLogin", {}, true)
+		check(day2Ok and day2.result.day == 2 and day2.result.streak == 2 and day2.result.gold == Catalog.Rewards.login[2].gold, "The next consecutive day continues the streak")
+
+		clockOffset += 2 * 86400
+		local _, graceOk, grace = service:Handle(streaker, "ClaimLogin", {}, true)
+		check(graceOk and grace.result.streak == 3 and grace.result.day == 3, "One missed day is forgiven")
+
+		clockOffset += 3 * 86400
+		local _, resetOk, reset = service:Handle(streaker, "ClaimLogin", {}, true)
+		check(resetOk and reset.result.streak == 1 and reset.result.day == 1, "Two missed days reset the streak")
+
+		local sawChestDay
+		for day = 2, #Catalog.Rewards.login do
+			clockOffset += 86400
+			service.random = scriptedRolls(0.5, 0.5)
+			local _, ok, claimed = service:Handle(streaker, "ClaimLogin", {}, true)
+			check(ok and claimed.result.day == day and claimed.result.streak == day, "Consecutive day " .. day .. " of the cycle")
+			if claimed.result.chest then sawChestDay = day end
+			local def = Catalog.Rewards.login[day]
+			if def.xp then check(claimed.result.xp == def.xp, "Login xp is paid on day " .. day) end
+		end
+		check(sawChestDay == #Catalog.Rewards.login, "The last day of the cycle opens a chest, got " .. tostring(sawChestDay))
+
+		clockOffset += 86400
+		local _, wrapOk, wrap = service:Handle(streaker, "ClaimLogin", {}, true)
+		check(wrapOk and wrap.result.day == 1 and wrap.result.streak == #Catalog.Rewards.login + 1, "The seven-day cycle restarts, but the streak keeps counting up")
+	end
+
+	-- Playtime gifts: how long the account has been in the game today.
+	do
+		local grinder = player(24)
+		service:Load(grinder)
+		local _, early = service:Handle(grinder, "ClaimPlaytime", { index = 1 }, true)
+		check(not early, "A gift is not ready before its minutes have passed")
+
+		clockOffset += Catalog.Rewards.playtime[1].minutes * 60
+		check(service:Get(grinder).rewards.playtime.gifts[1].ready, "The gift becomes ready as time passes")
+		local before = service:Get(grinder).gold
+		local _, giftOk, gift = service:Handle(grinder, "ClaimPlaytime", { index = 1 }, true)
+		check(giftOk and gift.gold == before + Catalog.Rewards.playtime[1].gold, "The gift pays its gold")
+		local _, giftAgain = service:Handle(grinder, "ClaimPlaytime", { index = 1 }, true)
+		check(not giftAgain, "A gift pays once a day")
+		local _, later = service:Handle(grinder, "ClaimPlaytime", { index = 2 }, true)
+		check(not later, "Time does not skip ahead to a gift that needs more of it")
+		for _, badIndex in ipairs({ 0, 99, 1.5, -1 }) do
+			local _, invalid = service:Handle(grinder, "ClaimPlaytime", { index = badIndex }, true)
+			check(not invalid, "Invalid gift index rejected: " .. tostring(badIndex))
+		end
+		for _, badIndex in ipairs({ "1", false, {} }) do
+			local _, invalid = service:Handle(grinder, "ClaimPlaytime", { index = badIndex }, true)
+			check(not invalid, "A non-numeric gift index is rejected: " .. tostring(badIndex))
+		end
+
+		clockOffset += 86400
+		local _, renewed = service:Handle(grinder, "ClaimPlaytime", { index = 1 }, true)
+		check(renewed, "Yesterday's claimed gift can be earned again today")
+	end
+
+	-- Collection milestones: how many different heroes the account owns, once each.
+	do
+		local collector = player(21)
+		stores.Tests.values.p_21 = { schemaVersion = 1, gold = 0, xp = 0, heroes = {}, loadout = { "ironman" } }
+		for index, heroId in ipairs(Catalog.HeroOrder) do
+			if index <= 12 then stores.Tests.values.p_21.heroes[heroId] = { xp = 0, level = 1 } end
+		end
+		local loaded = service:Load(collector)
+		check(loaded.rewards.collection.owned == 12, "The panel counts the collection")
+		local ready = 0
+		for _, milestone in ipairs(loaded.rewards.collection.milestones) do if milestone.ready then ready += 1 end end
+		check(ready == 4, "Four milestones are ready with twelve heroes, got " .. ready)
+
+		local _, notYet = service:Handle(collector, "ClaimMilestone", { index = 8 }, true)
+		check(not notYet, "The last milestone needs every hero")
+		local goldBefore = loaded.gold
+		local _, mOk, milestone = service:Handle(collector, "ClaimMilestone", { index = 4 }, true)
+		check(mOk and milestone.gold == goldBefore + Catalog.Rewards.collection[4].gold, "A milestone pays its gold")
+		check(milestone.titles.collector ~= nil, "The collector title is awarded")
+		local _, mAgain = service:Handle(collector, "ClaimMilestone", { index = 4 }, true)
+		check(not mAgain and service:Get(collector).gold == milestone.gold, "A milestone pays once")
+		local _, mTooMany = service:Handle(collector, "ClaimMilestone", { index = 5 }, true)
+		check(not mTooMany, "A milestone needs its full count, not just the gold to pretend")
+		for _, badIndex in ipairs({ 0, 9, 2.5 }) do
+			local _, invalid = service:Handle(collector, "ClaimMilestone", { index = badIndex }, true)
+			check(not invalid, "Invalid milestone index rejected: " .. tostring(badIndex))
+		end
+	end
+
+	-- A damaged reward record is repaired field by field, not fatal.
+	do
+		local damagedPlayer = player(22)
+		stores.Tests.values.p_22 = { schemaVersion = 1, gold = 5, xp = 0, heroes = { ironman = { xp = 0, level = 1 } }, loadout = { "ironman" },
+			rewards = { freeChestAt = "soon", loginDay = 0 / 0, playClaimed = 5, collection = "x" } }
+		local damaged = service:Load(damagedPlayer)
+		check(damaged ~= nil and damaged.rewards.freeChest.ready and damaged.rewards.login.claimable, "A damaged reward record is repaired, not fatal")
+		service.random = scriptedRolls(0, 0)
+		local _, repairedClaim = service:Handle(damagedPlayer, "ClaimFreeChest", {}, true)
+		check(repairedClaim, "A repaired account can claim like any other")
+	end
+
+	service.leaseSeconds = realLease
 end
 
 print("PASS PlayerService: " .. checks .. " assertions (real module, mocked Roblox persistence and purchases)")
