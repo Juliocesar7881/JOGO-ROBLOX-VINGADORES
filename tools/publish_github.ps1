@@ -42,6 +42,12 @@ function Require-Command($name, $installHint) {
 }
 
 Require-Command "git" "Instale o Git para Windows: https://git-scm.com/download/win"
+# A terminal opened before `winget install GitHub.cli` does not see the new
+# PATH entry yet; fall back to the installer's default location.
+if (-not (Get-Command "gh" -ErrorAction SilentlyContinue)) {
+    $defaultGh = Join-Path $env:ProgramFiles "GitHub CLI"
+    if (Test-Path (Join-Path $defaultGh "gh.exe")) { $env:PATH = "$defaultGh;$env:PATH" }
+}
 Require-Command "gh" @"
 Instale a GitHub CLI e faça login uma vez, interativamente:
   winget install GitHub.cli
