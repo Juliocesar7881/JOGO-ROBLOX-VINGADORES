@@ -15,7 +15,10 @@ separadamente e depois abra o arquivo reconstruído.
 4. Importe os 13 arquivos de `assets/audio` e autorize a experiência. Preencha
    `Audio`. O preço exibido pela loja continua vindo da plataforma; a configuração
    contém IDs, sem substituir preços por valores inventados.
-5. Execute:
+5. Opcional: coloque em `GroupId` o ID do grupo do jogo no Roblox. Com `0`,
+   o prêmio "Entre no grupo" simplesmente não aparece; não é pendência.
+   Códigos promocionais ficam em `src/server/Codes.luau` (só no servidor).
+6. Execute:
 
 ```powershell
 python tools/test.py

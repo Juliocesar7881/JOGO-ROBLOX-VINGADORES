@@ -46,13 +46,24 @@ class ReleaseTests(unittest.TestCase):
         data['LobbyPlaceId'], data['MatchPlaceId'], data['UniverseId'] = 123, 456, 789
         data['Audio']['lobby'] = 314
         data['Products']['Heroes']['thor']['id'] = 271
-        release.validate(data, self.template)
+        data['GroupId'] = 555
+        missing, configured = release.validate(data, self.template)
+        self.assertIn(('GroupId', 555), configured)
+        self.assertNotIn('GroupId', missing)
         source = release.config_source((ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8'), data, self.template)
-        harness = 'local c=(function()\n' + source + '\nend)()\nassert(c.StartEnergy==600 and c.MaxPartySize==4 and c.LobbyPlaceId==123 and c.MatchPlaceId==456 and c.Audio.lobby==314 and c.Products.Heroes.thor.id==271)\n'
+        harness = 'local c=(function()\n' + source + '\nend)()\nassert(c.StartEnergy==600 and c.MaxPartySize==4 and c.LobbyPlaceId==123 and c.MatchPlaceId==456 and c.Audio.lobby==314 and c.Products.Heroes.thor.id==271 and c.GroupId==555)\n'
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'config.luau'
             path.write_text(harness, encoding='utf-8')
             subprocess.run([str(ROOT / '.tools/luau/luau.exe'), str(path)], check=True)
+
+    def test_group_is_optional_and_validated(self):
+        data = copy.deepcopy(self.template)
+        missing, _ = release.validate(data, self.template)
+        self.assertNotIn('GroupId', missing, 'No group is a valid choice, never a release blocker')
+        for invalid in (-5, 1.5, '12', True):
+            data['GroupId'] = invalid
+            with self.assertRaises(ValueError): release.validate(data, self.template)
 
     def test_unconfigured_public_build_writes_nothing(self):
         with tempfile.TemporaryDirectory() as temp:

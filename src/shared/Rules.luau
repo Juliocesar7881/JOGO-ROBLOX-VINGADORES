@@ -380,6 +380,10 @@ function Rules.RewardsStatus(profile, now, pendingSeconds)
 		table.insert(status.playtime.gifts, entry)
 	end
 
+	-- Membership lives on Roblox's servers, so the group reward is never counted
+	-- as claimable here; the panel offers it and the server checks on claim.
+	status.group = { claimed = state.groupClaimed == true, gold = rewards.group and rewards.group.gold or 0 }
+
 	local owned = 0
 	for _ in pairs(profile.heroes or {}) do owned += 1 end
 	status.collection = { owned = owned, milestones = {} }

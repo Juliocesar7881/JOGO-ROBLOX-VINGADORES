@@ -22,9 +22,13 @@ local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "loadout", "abilities",
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
 local ACTIONS = { UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, SaveLoadout = true, LoadLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
-	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true }
+	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true,
+	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
-local CHEST_ACTIONS = { OpenChest = true, ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true }
+local CHEST_ACTIONS = { OpenChest = true, ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, RedeemCode = true }
+-- Wrong promo codes are refused before any DataStore call; past this many
+-- misses in a minute, the player is asked to wait instead of guessing.
+local CODE_MISSES_PER_MINUTE = 6
 -- The VIP pass carries a title that is never earned through play, so it is
 -- offered while the pass is owned instead of being written into the profile.
 local VIP_TITLE = { pt = "Patrono da Resistencia", en = "Resistance Patron" }
@@ -89,7 +93,8 @@ local function newProfile(now)
 		-- Slot one is the hero whose ability the player fights with.
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
 		pity = { legendary = 0 },
-		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {} },
+		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
+		codes = {},
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", lowFX = false, shake = true, music = true, effects = true, autoSkip = false, fastForward = false },
 		savedLoadouts = {}, quests = {}, achievements = {}, best = {},
@@ -159,6 +164,7 @@ local function normalize(raw, now, catalog)
 	for _, key in ipairs({ "playClaimed", "collection" }) do
 		if type(rewards[key]) ~= "table" then rewards[key] = {} end
 	end
+	if type(rewards.groupClaimed) ~= "boolean" then rewards.groupClaimed = false end
 	return profile
 end
 
@@ -210,9 +216,11 @@ local function productDefinitions(config, catalog)
 	return result
 end
 
-function PlayerService.new(config, catalog, onChanged, rules)
+function PlayerService.new(config, catalog, onChanged, rules, codes)
 	local self = setmetatable({}, PlayerService)
 	self.config, self.catalog, self.onChanged, self.rules = config, catalog, onChanged or function() end, rules
+	-- Server-only promo codes (src/server/Codes.luau), keyed in capitals.
+	self.codes = codes or config.Codes or {}
 	assert(rules and rules.RollChest and rules.AbilityUpgrade, "PlayerService needs the shared Rules module")
 	self.random = Random.new()
 	self.memory = RunService:IsStudio() and config.StudioMemory == true
@@ -516,6 +524,27 @@ function PlayerService:Handle(player, action, payload, inLobby)
 		local key = self:_boardKey(payload.mapId, payload.size, period, payload.modeId)
 		return true, true, { rows = rows, season = self:_season(), period = period, mapId = payload.mapId, size = payload.size, version = tostring(self.config.BalanceVersion or "1"), personal = record.profile.best[key] or 0 }
 	end
+	local code, codeEntry
+	if action == "RedeemCode" then
+		local now = os.time()
+		local window = record.codeWindow
+		if not window or now - window.start >= 60 then window = { start = now, misses = 0 }; record.codeWindow = window end
+		if window.misses >= CODE_MISSES_PER_MINUTE then return true, false, "Muitas tentativas. Espere um minuto. / Too many tries. Wait a minute." end
+		code = type(payload.code) == "string" and string.upper((string.gsub(payload.code, "%s", ""))) or ""
+		codeEntry = #code >= 3 and #code <= 32 and not string.find(code, "[^%w]") and self.codes[code] or nil
+		if not codeEntry or (codeEntry.expires and now >= codeEntry.expires) then
+			window.misses += 1
+			return true, false, "Código inválido ou expirado. / Invalid or expired code."
+		end
+		if (record.profile.codes or {})[code] then return true, false, "Você já usou este código. / You already used this code." end
+	elseif action == "ClaimGroupReward" then
+		local groupId = tonumber(self.config.GroupId) or 0
+		if groupId <= 0 then return true, false, "Recompensa de grupo indisponível. / No group reward here." end
+		if record.profile.rewards and record.profile.rewards.groupClaimed then return true, false, "Recompensa do grupo já resgatada. / Group reward already claimed." end
+		-- Roblox answers this from its own servers; a failure counts as "not yet".
+		local ok, member = pcall(function() return player:IsInGroup(groupId) end)
+		if not ok or member ~= true then return true, false, "Entre no grupo do jogo e tente de novo. / Join the game's group, then try again." end
+	end
 	-- A chest's two random numbers are drawn once, here. UpdateAsync may run the
 	-- callback below several times, and every run must reach the same hero.
 	local rolls = CHEST_ACTIONS[action] and { self.random:NextNumber(), self.random:NextNumber() } or nil
@@ -559,6 +588,16 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			if state.playSeconds < gift.minutes * 60 then return false, "Ainda falta tempo para este presente. / This gift is not ready yet." end
 			state.playClaimed[payload.index] = true
 			return true, self:_payReward(profile, gift, rolls, now, current)
+		elseif action == "RedeemCode" then
+			if profile.codes[code] then return false, "Você já usou este código. / You already used this code." end
+			profile.codes[code] = now
+			local paid = self:_payReward(profile, codeEntry, rolls, now, current)
+			paid.code = code
+			return true, paid
+		elseif action == "ClaimGroupReward" then
+			if profile.rewards.groupClaimed then return false, "Recompensa do grupo já resgatada. / Group reward already claimed." end
+			profile.rewards.groupClaimed = true
+			return true, self:_payReward(profile, self.catalog.Rewards.group, rolls, now, current)
 		elseif action == "ClaimMilestone" then
 			local milestone = integer(payload.index, 1, #self.catalog.Rewards.collection) and self.catalog.Rewards.collection[payload.index]
 			if not milestone then return false, "Meta inválida. / Invalid milestone." end
@@ -631,7 +670,7 @@ function PlayerService:Handle(player, action, payload, inLobby)
 	local snapshot = ok and self:Snapshot(player) or nil
 	-- A chest or an ability upgrade also reports what just happened, so the
 	-- client can play the reveal instead of guessing from a diff.
-	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility" or action:sub(1, 5) == "Claim") then snapshot.result = result end
+	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility" or action == "RedeemCode" or action:sub(1, 5) == "Claim") then snapshot.result = result end
 	return true, ok, ok and snapshot or result
 end
 

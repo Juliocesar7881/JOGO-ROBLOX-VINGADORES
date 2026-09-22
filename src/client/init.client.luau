@@ -12,6 +12,7 @@ local player = Players.LocalPlayer
 local shared = ReplicatedStorage:WaitForChild("DoomShared")
 local Catalog = require(shared:WaitForChild("Catalog"))
 local Rules = require(shared:WaitForChild("Rules"))
+local Config = require(shared:WaitForChild("Config"))
 local UI = require(script:WaitForChild("UI"))
 local Effects = require(script:WaitForChild("Effects"))
 local Audio = require(script:WaitForChild("Audio"))
@@ -614,6 +615,43 @@ local function contextRewards(body)
 		end, {Name = "ClaimMilestone_" .. milestone.index, Position = UDim2.new(1, -108, 0, 10), Size = UDim2.fromOffset(96, 40), BackgroundColor3 = milestone.ready and C.gold or C.card, TextSize = 12})
 		if milestone.claimed or not milestone.ready then UI.disabled(claim) end
 	end
+
+	-- Codes, the group and friends: the ways a YouTuber, a Discord or a friend
+	-- brings someone in. The server checks every code and the group membership.
+	UI.section(body, T("CÓDIGOS E AMIGOS", "CODES AND FRIENDS"), T("Códigos saem nas redes do jogo. Cada código vale uma vez por conta.", "Codes are posted on the game's socials. Each one works once per account."))
+	local codeRow = UI.roundFrame(body, {Name = "CodeRow", Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
+	local codeBox = UI.create("TextBox", {
+		Name = "CodeInput", Position = UDim2.fromOffset(10, 8), Size = UDim2.new(1, -128, 0, 44), BackgroundColor3 = C.background,
+		Text = "", PlaceholderText = T("Digite o código", "Type the code"), ClearTextOnFocus = false,
+		Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = C.text, PlaceholderColor3 = C.muted,
+	}, codeRow)
+	UI.corner(codeBox, 10)
+	UI.button(codeRow, T("USAR", "REDEEM"), function()
+		local typed = codeBox.Text or ""
+		if typed == "" then showToast(T("Digite um código primeiro.", "Type a code first."), true) return end
+		act("RedeemCode", {code = typed}, function(snapshot)
+			codeBox.Text = ""
+			rewardGiven(snapshot and snapshot.result)
+		end)
+	end, {Name = "RedeemCode", Position = UDim2.new(1, -110, 0, 8), Size = UDim2.fromOffset(100, 44), BackgroundColor3 = C.gold, TextSize = 14})
+	if (tonumber(Config.GroupId) or 0) > 0 then
+		local group = rewards.group or {}
+		local groupCard = UI.roundFrame(body, {Name = "GroupReward", Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
+		UI.label(groupCard, T("Entre no grupo do jogo", "Join the game's group"), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -130, 0, 24), Font = Enum.Font.GothamBold, TextSize = 14})
+		UI.label(groupCard, "+" .. number(group.gold or 0) .. T(" Ouro, uma vez", " Gold, once"), {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -130, 0, 20), TextSize = 11, TextColor3 = C.muted})
+		local claimGroup = UI.button(groupCard, group.claimed and T("RESGATADO", "CLAIMED") or T("RESGATAR", "CLAIM"), function()
+			act("ClaimGroupReward", {}, function(snapshot) rewardGiven(snapshot and snapshot.result) end)
+		end, {Name = "ClaimGroupReward", Position = UDim2.new(1, -110, 0, 8), Size = UDim2.fromOffset(100, 44), BackgroundColor3 = C.gold, TextSize = 12})
+		if group.claimed then UI.disabled(claimGroup) end
+	end
+	UI.button(body, T("CONVIDAR AMIGOS", "INVITE FRIENDS"), function()
+		-- Roblox's own invite sheet: it decides who can be invited and how.
+		local ok = pcall(function()
+			local social = game:GetService("SocialService")
+			if social:CanSendGameInviteAsync(player) then social:PromptGameInvite(player) else error("cannot invite") end
+		end)
+		if not ok then showToast(T("Convites indisponíveis agora.", "Invites are unavailable right now."), true) end
+	end, {Name = "InviteFriends", Size = UDim2.new(1, -6, 0, 48), BackgroundColor3 = C.blue, TextSize = 14})
 end
 
 local function contextSquad(body)

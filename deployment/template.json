@@ -2,6 +2,7 @@
   "UniverseId": 0,
   "LobbyPlaceId": 0,
   "MatchPlaceId": 0,
+  "GroupId": 0,
   "Products": {
     "Passes": {
       "collector": {

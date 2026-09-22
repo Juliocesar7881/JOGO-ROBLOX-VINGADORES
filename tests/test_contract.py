@@ -33,7 +33,7 @@ ALL_SOURCES = {path.name: path.read_text(encoding="utf-8-sig") for path in SRC.r
 
 SERVER_MODULES = (
     "PlayerService", "WorldBuilder", "MatchService", "PartyService",
-    "PresenceService", "AnalyticsService", "RejoinService", "ElevatorService",
+    "PresenceService", "AnalyticsService", "RejoinService", "ElevatorService", "Codes",
 )
 
 

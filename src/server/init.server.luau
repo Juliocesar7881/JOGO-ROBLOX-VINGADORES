@@ -16,6 +16,7 @@ local Rules = require(shared:WaitForChild("Rules"))
 local Waves = require(shared:WaitForChild("Waves"))
 
 local PlayerService = require(script:WaitForChild("PlayerService"))
+local Codes = require(script:WaitForChild("Codes"))
 local WorldBuilder = require(script:WaitForChild("WorldBuilder"))
 local MatchService = require(script:WaitForChild("MatchService"))
 local PartyService = require(script:WaitForChild("PartyService"))
@@ -85,7 +86,7 @@ local refreshPresence
 local profiles = PlayerService.new(Config, Catalog, function(player)
 	if refreshPresence then refreshPresence(player) end
 	if pushState then pushState(player) end
-end, Rules)
+end, Rules, Codes)
 
 -- The built place ships a baseplate and a spawn so the editor viewport is not
 -- an empty void before anyone presses Play. The generated lobby replaces them.

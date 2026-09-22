@@ -35,7 +35,8 @@ def catalog():
 
 def template():
     products, audio = catalog()
-    return {'UniverseId': 0, 'LobbyPlaceId': 0, 'MatchPlaceId': 0,
+    # GroupId is optional: 0 simply hides the join-the-group reward.
+    return {'UniverseId': 0, 'LobbyPlaceId': 0, 'MatchPlaceId': 0, 'GroupId': 0,
             'Products': {group: {key: {'id': 0} for key in rows} for group, rows in products.items()},
             'Audio': {key: 0 for key in audio}}
 
@@ -51,6 +52,9 @@ def validate(data, expected):
         if value == 0: missing.append(key)
         else: configured.append((key, value))
     for key in ('UniverseId', 'LobbyPlaceId', 'MatchPlaceId'): asset(data.get(key, 0), key)
+    group = data.get('GroupId', 0)
+    if type(group) is not int or not 0 <= group <= 9007199254740991: raise ValueError('GroupId must be a nonnegative integer Roblox ID.')
+    if group: configured.append(('GroupId', group))
     if data.get('LobbyPlaceId', 0) and data.get('LobbyPlaceId') == data.get('MatchPlaceId'):
         raise ValueError('Lobby and Match must be different places.')
     for group in ('Products', 'Audio'):
@@ -76,7 +80,7 @@ def validate(data, expected):
 def config_source(source, data, expected):
     # Only validated integer IDs and catalog-derived keys are inserted into Luau.
     lines = ['local configured = (function()', source, 'end)()']
-    for key in ('UniverseId', 'LobbyPlaceId', 'MatchPlaceId'):
+    for key in ('UniverseId', 'LobbyPlaceId', 'MatchPlaceId', 'GroupId'):
         lines.append(f'configured.{key} = {data.get(key, 0)}')
     for category, rows in expected['Products'].items():
         lines.append(f'configured.Products.{category} = {{}}')

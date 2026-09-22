@@ -15,6 +15,24 @@ their replacements (`OpenChest`, `SetLoadout`, `UpgradeAbility`,
 `UpgradeTalent`/`ResetTalents`, `ChooseCard`) and `PlayerService.luau`'s
 `ACTIONS` table for the exact, current, authoritative list.
 
+## Promo codes, group reward, invites — 22/09/2026
+
+`src/server/Codes.luau` (server-only; never replicates) maps a capitalised
+code to a reward `{gold?, xp?, chest?, title?, expires?}` and is passed as
+the fifth argument of `PlayerService.new` (tests may use `config.Codes`).
+`RedeemCode {code}`: spaces removed, case ignored, 3–32 letters/digits.
+Unknown, malformed or expired codes are refused **before** any DataStore
+call; six misses in a minute per player are throttled. A valid code is
+recorded in `profile.codes[CODE] = time` (not public) and paid through
+`_payReward`, so a code can also open a chest (rolls drawn up front, like
+every chest). `ClaimGroupReward {}` needs `Config.GroupId > 0` and
+`player:IsInGroup(GroupId)` (a failed check pays nothing); it pays
+`Catalog.Rewards.group` once (`rewards.groupClaimed`). Rewards status gains
+`group = {claimed, gold}` (not counted as claimable: membership lives on
+Roblox). The rewards panel has the code box, the group card (only when
+`Config.GroupId` is set) and an invite button using `SocialService`.
+`GroupId` is an optional key of the release config.
+
 ## Match speed and auto-skip — 22/09/2026
 
 Match actions `SetSpeed {speed = 1|2}` → `{speed}` and `SetAutoSkip {on}`.

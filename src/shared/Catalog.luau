@@ -498,6 +498,8 @@ Catalog.Abilities = {
 Catalog.Rewards = {
 	-- A free chest every few hours. It never stacks: the point is to come back.
 	freeChest = { chestId = "rare", cooldown = 6 * 3600 },
+	-- Once per account, for joining the experience's Roblox group (Config.GroupId).
+	group = { gold = 750 },
 	-- One claim per UTC day. Missing a single day is forgiven; two reset the streak.
 	loginGraceDays = 2,
 	login = {

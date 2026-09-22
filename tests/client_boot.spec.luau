@@ -671,6 +671,14 @@ local function session(screen)
 		check(readyMilestone ~= nil, tag .. ": the fixture has a ready milestone to claim")
 		clickNamed("ClaimMilestone_" .. readyMilestone)
 		check(asked("ClaimMilestone"), tag .. ": a ready milestone sends its claim intent")
+		local codeBox = named(gui, "CodeInput")
+		check(codeBox ~= nil, tag .. ": the rewards panel has a code box")
+		codeBox.Text = "vingadores"
+		clickNamed("RedeemCode")
+		check(asked("RedeemCode"), tag .. ": a typed code is sent to the server")
+		check(countNamed(gui, "GroupReward") == 0, tag .. ": without a configured group there is no group card")
+		clickNamed("InviteFriends")
+		check(named(gui, "InviteFriends") ~= nil, tag .. ": inviting friends never breaks the panel, even where invites are unavailable")
 		click("×")
 
 		-- Claiming eventually clears the badge, once the server reports nothing left.

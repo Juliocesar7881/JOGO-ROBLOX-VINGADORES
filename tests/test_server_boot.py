@@ -25,6 +25,7 @@ LOADERS = {
     "__ANALYTICS__": "src/server/AnalyticsService.luau",
     "__REJOIN__": "src/server/RejoinService.luau",
     "__ELEVATOR__": "src/server/ElevatorService.luau",
+    "__CODES__": "src/server/Codes.luau",
     "__SERVER__": "src/server/init.server.luau",
 }
 

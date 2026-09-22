@@ -87,7 +87,8 @@ local Catalog = __CATALOG__
 local Rules = __RULES__
 local PlayerService = __SERVICE__
 local config = {
-	DataStoreName = "Tests", StudioMemory = true, ProfileRetries = 3,
+	DataStoreName = "Tests", StudioMemory = true, ProfileRetries = 3, GroupId = 777,
+	Codes = { TESTE = { gold = 200 }, VELHO = { gold = 1, expires = 1 }, BAU = { gold = 0, chest = "rare" } },
 	Products = {
 		Passes = { collector = { id = 201 }, training = { id = 202 }, formations = { id = 203 } },
 		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 } },
@@ -695,6 +696,56 @@ do
 		service.random = scriptedRolls(0, 0)
 		local _, repairedClaim = service:Handle(damagedPlayer, "ClaimFreeChest", {}, true)
 		check(repairedClaim, "A repaired account can claim like any other")
+	end
+
+	-- Promo codes: typed any way, once per account, checked before any save.
+	do
+		local fan = player(25)
+		service:Load(fan)
+		local goldBefore = service:Get(fan).gold
+		local _, codeOk, redeemed = service:Handle(fan, "RedeemCode", { code = "  tes te " }, true)
+		check(codeOk and redeemed.gold == goldBefore + 200 and redeemed.result.code == "TESTE", "A code typed in lowercase with spaces still pays")
+		local _, again, againMessage = service:Handle(fan, "RedeemCode", { code = "TESTE" }, true)
+		check(not again and string.find(againMessage, "já usou", 1, true) and service:Get(fan).gold == goldBefore + 200, "A code pays once per account")
+		local _, expired = service:Handle(fan, "RedeemCode", { code = "velho" }, true)
+		check(not expired, "An expired code pays nothing")
+		for _, bad in ipairs({ {}, 42, "", "x", string.rep("A", 40), "TE$TE" }) do
+			local _, refused = service:Handle(fan, "RedeemCode", { code = bad }, true)
+			check(not refused, "A malformed code is refused: " .. tostring(bad))
+		end
+		-- Guessing is throttled: after enough misses even a real code must wait.
+		service.random = scriptedRolls(0, 0)
+		local _, throttled, throttleMessage = service:Handle(fan, "RedeemCode", { code = "BAU" }, true)
+		check(not throttled and string.find(throttleMessage, "Muitas tentativas", 1, true), "Too many wrong guesses in a minute ask the player to wait")
+		clockOffset += 61
+		service.random = scriptedRolls(0, 0)
+		local _, chestOk, chest = service:Handle(fan, "RedeemCode", { code = "bau" }, true)
+		check(chestOk and chest.result.chest and chest.heroes[chest.result.chest.heroId] ~= nil, "A code can open a chest, and the hero joins the account")
+		local _, inMatch = service:Handle(fan, "RedeemCode", { code = "TESTE" }, false)
+		check(not inMatch, "Codes are redeemed in the lobby")
+		check(stores.Tests.values.p_25.codes.TESTE ~= nil, "Used codes are durable")
+		check(service:Get(fan).codes == nil, "The list of used codes never replicates")
+	end
+
+	-- The group reward: Roblox decides membership, the server pays once.
+	do
+		local member = player(26)
+		service:Load(member)
+		local _, outsider, outsiderMessage = service:Handle(member, "ClaimGroupReward", {}, true)
+		check(not outsider and string.find(outsiderMessage, "grupo", 1, true), "Not in the group yet: nothing is paid")
+		member.IsInGroup = function(_, groupId) return groupId == 777 end
+		local goldBefore = service:Get(member).gold
+		local _, joined, paid = service:Handle(member, "ClaimGroupReward", {}, true)
+		check(joined and paid.gold == goldBefore + Catalog.Rewards.group.gold, "A member is paid the group reward")
+		check(paid.rewards.group.claimed == true, "The panel learns the reward was claimed")
+		local _, twice = service:Handle(member, "ClaimGroupReward", {}, true)
+		check(not twice and service:Get(member).gold == paid.gold, "The group reward pays once")
+		member.IsInGroup = function() error("Roblox is down") end
+		local other = player(27)
+		service:Load(other)
+		other.IsInGroup = function() error("Roblox is down") end
+		local _, failed = service:Handle(other, "ClaimGroupReward", {}, true)
+		check(not failed, "A failed membership check pays nothing")
 	end
 
 	service.leaseSeconds = realLease

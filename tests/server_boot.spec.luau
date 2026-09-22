@@ -166,6 +166,7 @@ moduleScript(serverScript, "PresenceService", __PRESENCE__)
 moduleScript(serverScript, "AnalyticsService", __ANALYTICS__)
 moduleScript(serverScript, "RejoinService", __REJOIN__)
 moduleScript(serverScript, "ElevatorService", __ELEVATOR__)
+moduleScript(serverScript, "Codes", __CODES__)
 
 local function step(name, fn)
 	local ok, problem = xpcall(fn, debug.traceback)
