@@ -556,6 +556,13 @@ local function session(screen)
 		check(not contextOpen(), tag .. ": the close button dismisses the panel")
 	end)
 
+	step("the chest tab shouts when a chest is affordable", function()
+		check(named(gui, "ChestsBadge") ~= nil and named(gui, "ChestsBadge").Visible, tag .. ": 2,500 Gold lights the chest tab")
+		click("JOGAR")
+		check(named(gui, "FirstMission") == nil, tag .. ": a trained commander goes straight to the modes")
+		click("×")
+	end)
+
 	step("earned Gold pops and floats up from the lobby counter", function()
 		local richer = veteranProfile()
 		richer.gold = (richer.gold or 0) + 250
@@ -816,6 +823,12 @@ local function session(screen)
 		local newcomerBoard = lobby.Board_quests.Panel.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(newcomerBoard, "TREINE", 1, true) ~= nil, tag .. ": the mission board points a newcomer to training, got " .. newcomerBoard)
 		check(frameAt(main, lobbyLayout.hint) ~= nil, tag .. ": the first-visit pointer is on screen")
+		check(not named(gui, "ChestsBadge").Visible, tag .. ": no chest badge without the Gold to open one")
+		click("JOGAR")
+		check(named(gui, "FirstMission") ~= nil, tag .. ": a newcomer's play menu leads with the short training")
+		clickNamed("PlayMode_tutorial")
+		check(asked("StartMatch"), tag .. ": the training starts from that card")
+		click("×")
 	end)
 
 	--========================================================================

@@ -167,6 +167,15 @@ local function profileSignature()
 	return ok and encoded or tostring(p.gold) .. tostring(p.level)
 end
 
+-- True when the Gold on hand already opens at least one chest.
+local function canOpenChest()
+	if profile().paidRandomRestricted then return false end
+	for _, chest in pairs(Catalog.Chests) do
+		if (profile().gold or 0) >= chest.cost then return true end
+	end
+	return false
+end
+
 local function goldText() return "● " .. number(profile().gold) end
 local function levelText() return T("NV ", "LV ") .. tostring(profile().level or 1) end
 local function levelProgress()
@@ -799,6 +808,15 @@ local function contextTalents(body)
 end
 
 local function contextModes(body)
+	if not profile().tutorialComplete then
+		-- A newcomer's first win should take minutes, not an hour, and pay for
+		-- their first hero chest (the tutorial's first clear grants 1,000 Gold).
+		local first=UI.roundFrame(body,{Name="FirstMission",Size=UDim2.new(1,-6,0,168),BackgroundColor3=C.gold:Lerp(C.panel,0.78)},C.gold)
+		UI.label(first,T("COMECE AQUI!","START HERE!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,36),TextSize=26,Font=Enum.Font.GothamBlack,TextColor3=C.gold})
+		UI.label(first,T("Treino rápido de 8 ondas. Vença e ganhe 1.000 Ouro: o suficiente para abrir seu primeiro baú de herói!","A quick 8-wave training. Win it for 1,000 Gold: enough to open your first hero chest!"),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
+		UI.button(first,T("JOGAR O TREINO • 8 ONDAS","PLAY TRAINING • 8 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Name="PlayMode_tutorial",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
+		celebrate:Pop(first,0.06)
+	end
 	UI.section(body,T("SUA PRÓXIMA AVENTURA","YOUR NEXT ADVENTURE"),T("Cada partida escolhe um dos cinco mapas. Convide amigos entrando juntos em um portal!","Each run draws one of five maps. Play with friends by stepping into a portal together!"))
 	for _,id in ipairs(Catalog.PortalOrder) do
 		local def=Catalog.Modes[id]
@@ -813,7 +831,9 @@ local function contextModes(body)
 		end,{Name="PlayMode_"..id,Position=UDim2.fromOffset(12,122),Size=UDim2.new(1,-24,0,44),BackgroundColor3=tint,TextSize=13})
 		if not allowed then UI.disabled(button) end
 	end
-	UI.secondary(body,T("PRIMEIRA VEZ? APRENDA A JOGAR","FIRST TIME? LEARN TO PLAY"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Size=UDim2.new(1,-6,0,44),TextSize=12})
+	if profile().tutorialComplete then
+		UI.secondary(body,T("TREINAR DE NOVO • 8 ONDAS","TRAIN AGAIN • 8 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Size=UDim2.new(1,-6,0,44),TextSize=12})
+	end
 end
 
 local contextBuilders = {
@@ -1213,6 +1233,12 @@ renderLobby = function()
 		local narrow=size.X<560
 		UI.icon(button,entry[4],C.background,{Position=narrow and UDim2.new(0.5,-8,0,3) or UDim2.fromOffset(10,10),Size=UDim2.fromOffset(narrow and 16 or 24,narrow and 16 or 24)})
 		UI.label(button,entry[2],{Position=narrow and UDim2.fromOffset(0,22) or UDim2.fromOffset(40,0),Size=narrow and UDim2.new(1,0,0,17) or UDim2.new(1,-47,1,0),TextSize=narrow and 10 or 12,Font=Enum.Font.GothamBlack,TextColor3=C.background,TextXAlignment=Enum.TextXAlignment.Center})
+		if entry[1]=="chests" then
+			local chestBadge=UI.roundFrame(button,{Name="ChestsBadge",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,4),Size=UDim2.fromOffset(18,18),BackgroundColor3=C.gold,Visible=canOpenChest(),ZIndex=5},C.background)
+			UI.corner(chestBadge,9)
+			UI.label(chestBadge,"!",{Size=UDim2.fromScale(1,1),TextSize=12,Font=Enum.Font.GothamBlack,TextColor3=C.background,TextXAlignment=Enum.TextXAlignment.Center})
+			refs.chestsBadge=chestBadge
+		end
 		if entry[1]=="rewards" then
 			local claimable=tonumber(profile().rewards and profile().rewards.claimable) or 0
 			local badge=UI.roundFrame(button,{Name="RewardsBadge",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,4),Size=UDim2.fromOffset(18,18),BackgroundColor3=C.red,Visible=claimable>0,ZIndex=5},C.background)
@@ -1896,6 +1922,7 @@ local function applyState(nextState)
 		if refs.gold then refs.gold.Text = goldText() end
 		if refs.commander then refs.commander.Text = levelText() end
 		if refs.levelBar then refs.levelBar.Size = UDim2.fromScale(levelProgress(), 1) end
+		if refs.chestsBadge then refs.chestsBadge.Visible=canOpenChest() end
 		if refs.rewardsBadge then
 			local claimable=tonumber(profile().rewards and profile().rewards.claimable) or 0
 			refs.rewardsBadge.Visible=claimable>0

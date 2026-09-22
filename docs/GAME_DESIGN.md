@@ -24,6 +24,26 @@ desatualizado; use-o para qualquer número de herói/habilidade específico.
    imediatamente; a conta nunca perde progresso por queda de conexão (ver
    `RejoinService` em `IMPLEMENTATION.md`).
 
+## Ritmo e emoção
+
+- **Velocidade 2x e AUTO** ficam ao lado do poder do líder (tecla F para 2x).
+  Em grupo, o 2x só liga quando todos pedem; o AUTO conta como PRONTO em toda
+  preparação. As duas escolhas ficam salvas para a próxima partida. A
+  preparação continua em segundos reais: o 2x acelera a luta, não o tempo
+  para construir. Uma campanha solo cai de ~42 para ~18 minutos com os dois.
+- **Primeira partida:** para quem ainda não treinou, o menu JOGAR começa com
+  o treino de 8 ondas, que na primeira vitória paga 1.000 Ouro — um baú.
+- **Baú:** revelação em tela cheia; o baú treme e sobe de cor em cor até a
+  raridade sorteada, estoura com raios e confete e mostra o herói (toque
+  pula). A aba BAÚS ganha um "!" sempre que há Ouro para abrir um.
+- **Celebrações:** onda vencida, chefe derrotado, o nome do seu ultimate,
+  subir de nível, vitória (com contagem dos prêmios) e um incentivo na
+  derrota; o Ouro "pula" e sobe "+N" quando cresce; todo botão afunda ao
+  toque. "Menos efeitos e flashes" remove flash, tremor e confete.
+- **Códigos, grupo e amigos:** caixa de código promocional (`Codes.luau`,
+  só no servidor), prêmio único por entrar no grupo do jogo (se
+  `GroupId` estiver configurado) e botão de convidar amigos.
+
 ## Modos (`Catalog.Modes`, portais em `Catalog.PortalOrder`)
 
 | Modo | Ondas | Multiplicador de vida | Recompensa | Desbloqueio |
