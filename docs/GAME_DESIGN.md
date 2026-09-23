@@ -71,8 +71,8 @@ próprio chefe (`bossId`), paleta de iluminação e rota. O mapa de uma partida
 
 ## Heróis e habilidades
 
-24 heróis em 5 raridades (Comum → Mítico). Um herói só chega à conta por um
-dos dois baús do lobby ou pela compra direta na Loja Robux — **não existe
+36 heróis em 5 raridades (Comum → Mítico). Um herói só chega à conta por um
+dos cinco baús de heróis ou pela compra direta na Loja Robux — **não existe
 compra direta por Ouro**. Cada herói tem uma única habilidade ativa; em
 combate, a habilidade usada é sempre a do herói no **slot 1** da formação
 (por isso o slot 1 é visualmente diferenciado na interface — é o único slot
@@ -94,6 +94,11 @@ distinta por efeito secundário, para que o jogador leia o que aconteceu sem
 precisar ler texto.
 
 ## Baús (`Catalog.Chests`)
+
+A expansão **2026.4** adiciona Suprimentos, Épico e Cósmico, além de cinco
+baús equivalentes de bases. Há 11 bases equipáveis, fazenda de Energia,
+canhões, barricadas e soldados. [BASES.md](BASES.md) contém a tabela atual
+dos dez baús e substitui as referências históricas a apenas dois abaixo.
 
 | Baú | Custo | O que vem |
 | --- | --- | --- |

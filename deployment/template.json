@@ -33,6 +33,9 @@
       "antman": {
         "id": 0
       },
+      "beast": {
+        "id": 0
+      },
       "bucky": {
         "id": 0
       },
@@ -42,10 +45,19 @@
       "captainmarvel": {
         "id": 0
       },
+      "cyclops": {
+        "id": 0
+      },
       "daredevil": {
         "id": 0
       },
+      "deadpool": {
+        "id": 0
+      },
       "falcon": {
+        "id": 0
+      },
+      "gambit": {
         "id": 0
       },
       "ghostrider": {
@@ -57,7 +69,25 @@
       "hulk": {
         "id": 0
       },
+      "iceman": {
+        "id": 0
+      },
+      "jean": {
+        "id": 0
+      },
+      "moonknight": {
+        "id": 0
+      },
+      "nightcrawler": {
+        "id": 0
+      },
+      "nova": {
+        "id": 0
+      },
       "panther": {
+        "id": 0
+      },
+      "psylocke": {
         "id": 0
       },
       "rocket": {
@@ -73,6 +103,9 @@
         "id": 0
       },
       "starlord": {
+        "id": 0
+      },
+      "storm": {
         "id": 0
       },
       "strange": {
@@ -94,6 +127,9 @@
         "id": 0
       },
       "widow": {
+        "id": 0
+      },
+      "wolverine": {
         "id": 0
       }
     }

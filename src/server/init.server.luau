@@ -420,7 +420,7 @@ end
 -- Request router
 --==============================================================================
 local MATCH_ACTIONS = {
-	PlaceTower = true, UpgradeTower = true, SellTower = true, SetPriority = true,
+	UpgradeBase = true, PlaceTower = true, UpgradeTower = true, SellTower = true, SetPriority = true,
 	CastSkill = true, CollectCoin = true, SkipWave = true, ChooseCard = true, ReturnLobby = true,
 	SetSpeed = true, SetAutoSkip = true,
 }
@@ -541,7 +541,7 @@ local function route(player, action, payload)
 			local result = data.result
 			if action == "OpenChest" and type(result) == "table" then
 				analytics:Custom(player, "ChestOpened", result.cost, result.chestId, result.rarity, result.heroId)
-				if not result.duplicate then
+				if not result.duplicate and result.heroId then
 					analytics:HeroUnlocked(player, tostring(result.heroId), data.level, minutesPlayed(player))
 				end
 			elseif action == "UpgradeAbility" and type(result) == "table" then

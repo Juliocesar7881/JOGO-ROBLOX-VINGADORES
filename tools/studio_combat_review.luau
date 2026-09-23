@@ -1,6 +1,7 @@
--- Disposable Studio place only: real renderer, 24 animated heroes and 180
+-- Disposable Studio place only: real renderer, full hero roster and 180
 -- client enemies. No profile, reward, matchmaking or purchase requests.
 local servers=game:GetService("ServerScriptService"):WaitForChild("DoomServer")
+servers.Disabled=true
 for _,child in ipairs(servers:GetChildren()) do if child:IsA("Script") then child.Disabled=true end end
 local starters=game:GetService("StarterPlayer").StarterPlayerScripts
 local original
@@ -16,6 +17,10 @@ local function build()
  local id=workspace:GetAttribute("ReviewMap") or "manhattan"
  if not catalog.Maps[id] then return end
  world:Build(id)
+ for i,baseId in ipairs({"garden","arsenal","bunker","barracks"}) do
+  local rules=require(shared.Rules)
+  world:UpdateBase(i,{id=baseId,level=4,stats=rules.BaseStats(baseId,4)},Vector3.new((i-2.5)*25,0,12))
+ end
  for i,hero in ipairs(catalog.HeroOrder) do
   world:MakeTower("review"..i,hero,Vector3.new(-36+((i-1)%6)*12,0,30+math.floor((i-1)/6)*11),1)
  end
@@ -48,7 +53,8 @@ RunService:BindToRenderStep("ReviewCamera",Enum.RenderPriority.Camera.Value+2,fu
  workspace.CurrentCamera.CameraType=Enum.CameraType.Scriptable
  workspace.CurrentCamera.CFrame=CFrame.lookAt(Vector3.new(0,66,103),Vector3.new(0,2,26))
 end)
-local enemies={"zombie","runner","brute","armored","stealth","flyer","support","summoner","lizard","abomination","redskull","killmonger","doom"}
+local enemies=table.clone(catalog.EnemyOrder)
+for _,id in ipairs(catalog.BossOrder) do table.insert(enemies,id) end
 local elapsed,syncAt,shotAt,started,frames,frameTotal,worst=0,0,0,os.clock(),0,0,0
 local samples={}
 RunService.RenderStepped:Connect(function(dt)
@@ -60,15 +66,19 @@ RunService.RenderStepped:Connect(function(dt)
   for i=1,count do
    local kind=enemies[(i-1)%#enemies+1]
    -- Keep five bosses total; the rest are the eight ordinary families.
-   if i>13 then kind=enemies[(i-1)%8+1] end
+   if i>#enemies then kind=catalog.EnemyOrder[(i-1)%#catalog.EnemyOrder+1] end
    local x=-44+((i*7+elapsed*3)%88)
    local z=-35+math.floor((i-1)/22)*5
    table.insert(snapshot,{id=i,enemyId=kind,position=Vector3.new(x,0,z),hp=80,maxHP=100,st=i%3==0 and 18 or 0})
   end
   effects:Handle({kind="EnemySync",enemies=snapshot})
+  local soldiers={}
+  for i=1,8 do table.insert(soldiers,{id="ally"..i,baseId="barracks",hp=70,maxHP=100,position=Vector3.new(-28+i*7,0,18-(elapsed*4+i*3)%45)}) end
+  effects:Handle({kind="SoldierSync",soldiers=soldiers})
  end
  if elapsed>=shotAt then
   shotAt=elapsed+0.75
+  effects:Handle({kind="BaseShot",from=Vector3.new(0,6,12),to=Vector3.new(0,2,-15),color=Color3.fromRGB(255,191,82)})
   for i,hero in ipairs(catalog.HeroOrder) do
    local position=Vector3.new(-36+((i-1)%6)*12,4,30+math.floor((i-1)/6)*11)
    effects:Handle({kind="Shot",towerId="review"..i,heroId=hero,from=position,to=Vector3.new(position.X,2,-15),color=Color3.fromRGB(table.unpack(catalog.Heroes[hero].color))})

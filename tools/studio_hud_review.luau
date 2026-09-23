@@ -38,6 +38,8 @@ task.spawn(function()
 	fixtureProfile.gold, fixtureProfile.level, fixtureProfile.xp = 4250, 12, 4200
 	fixtureProfile.loadout = {"ironman", "hawkeye", "spiderman", "hulk", "thor"}
 	fixtureProfile.heroes, fixtureProfile.abilities = {}, {}
+	fixtureProfile.bases={}; fixtureProfile.equippedBase="barracks"
+	for _,id in ipairs(Catalog.BaseOrder) do fixtureProfile.bases[id]=true end
 	for _, id in ipairs(Catalog.HeroOrder) do
 		fixtureProfile.heroes[id] = {level = 10, xp = 1200}
 		fixtureProfile.abilities[id] = 2
@@ -116,10 +118,13 @@ task.spawn(function()
 		print("DOOM_HUD_MEASURE", stage, "visible", visible, "overflow", overflow, "screen", main.AbsoluteSize)
 	end
 	local function showStage(stage)
+		local w,h=workspace:GetAttribute("DoomHudWidth"),workspace:GetAttribute("DoomHudHeight")
+		if type(w)=="number" and type(h)=="number" then main.Size=UDim2.fromOffset(w,h); overlays.Size=main.Size end
 		language = player:GetAttribute("DoomHudLanguage") == "en" and "en" or "pt"
 		fixtureProfile.settings.language = language
-		if stage == "preparing" or stage == "wave" or stage == "tower" or stage == "cards" or stage == "finalboss" then
+		if stage == "baseupgrade" or stage == "preparing" or stage == "wave" or stage == "tower" or stage == "cards" or stage == "finalboss" then
 			state = matchFixture(stage == "preparing" and "Preparing" or "Wave")
+			state.match.base={id="barracks",level=2,stats=Rules.BaseStats("barracks",2),wall=0}
 			if stage ~= "preparing" then
 				state.match.boss = {id = "lizard", name = {pt = "Lagarto infectado", en = "Infected Lizard"},
 					hp = 1800, maxHP = 2453, phase = 2,
@@ -134,6 +139,7 @@ task.spawn(function()
 			if stage == "cards" then state.match.cardOffers = {"sharpen", "quickDraw", "warChest"} end
 			render()
 			if stage == "tower" then selectTower("review2") end
+			if stage == "baseupgrade" then openBaseUpgrade() end
 		elseif stage == "results" or stage == "defeat" then
 			state = {phase = "Results", role = "Standalone", profile = fixtureProfile, players = actors,
 				results = {victory = stage == "results", waves = stage == "results" and 50 or 37, gold = 1825, xp = 840, startLevel = 10,
@@ -148,6 +154,8 @@ task.spawn(function()
 			render()
 			if stage == "boarding" then
 				openContext("quests", {})
+			elseif stage == "basechests" then
+				openContext("chests",{chestId="base_cosmic"})
 			elseif stage ~= "lobby" then
 				openContext(stage, stage == "hero" and {heroId = "ironman"} or {})
 			end
@@ -159,7 +167,7 @@ task.spawn(function()
 		local stage = player:GetAttribute("DoomHudStage")
 		if type(stage) == "string" then showStage(stage) end
 	end)
-	for _, stage in ipairs({"lobby", "modes", "inventory", "hero", "talents", "chests", "premium", "preparing", "wave", "tower", "cards", "results"}) do
+	for _, stage in ipairs({"lobby", "modes", "inventory", "hero", "talents", "chests", "basechests", "bases", "premium", "preparing", "wave", "tower", "cards", "results", "baseupgrade"}) do
 		player:SetAttribute("DoomHudStage", stage)
 		task.wait(1.8)
 	end

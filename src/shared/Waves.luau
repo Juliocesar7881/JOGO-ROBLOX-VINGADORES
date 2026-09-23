@@ -35,6 +35,9 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed)
 		return (index - 1) % #map.paths + 1
 	end
 	local function add(enemyId, index, override)
+		if wave>=4 and index%2==0 and modeId~="tutorial" then
+			enemyId=(Catalog.MapEnemyVariants[mapId] or {})[enemyId] or enemyId
+		end
 		local enemy = Catalog.Enemies[enemyId]
 		table.insert(result, {
 			enemyId = enemyId,

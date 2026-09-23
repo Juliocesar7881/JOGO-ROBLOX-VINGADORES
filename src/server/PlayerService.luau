@@ -18,10 +18,10 @@ end
 
 local DAY = 86400
 local SCHEMA_VERSION = 1
-local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "savedLoadouts", "quests", "achievements", "best", "stats", "title", "talents" }
+local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "savedLoadouts", "quests", "achievements", "best", "stats", "title", "talents" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
-local ACTIONS = { UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, SaveLoadout = true, LoadLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
+local ACTIONS = { EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, SaveLoadout = true, LoadLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
 	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true,
 	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
@@ -89,6 +89,7 @@ local function newProfile(now)
 	return {
 		schemaVersion = SCHEMA_VERSION,
 		gold = 0, xp = 0, level = 1, talents = {},
+		bases = {outpost=true}, equippedBase = "outpost",
 		heroes = { ironman = { xp = 0, level = 1 }, hawkeye = { xp = 0, level = 1 } },
 		-- Slot one is the hero whose ability the player fights with.
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
@@ -118,6 +119,9 @@ local function normalize(raw, now, catalog)
 		elseif type(value) == "table" and type(profile[key]) ~= "table" then error("INVALID_PROFILE_FIELD:" .. key) end
 	end
 	profile.schemaVersion = SCHEMA_VERSION
+	profile.bases.outpost=true
+	for id,owned in pairs(profile.bases) do if owned~=true or not catalog.Bases[id] then profile.bases[id]=nil end end
+	if type(profile.equippedBase)~="string" or not profile.bases[profile.equippedBase] then profile.equippedBase="outpost" end
 	if profile.settings.effects == nil then profile.settings.effects = profile.settings.music ~= false end
 	profile.level = levelFor(profile.xp, 50, xpThreshold)
 	-- The old per-slot skill system is gone: abilities now belong to heroes.
@@ -155,6 +159,10 @@ local function normalize(raw, now, catalog)
 	if #loadout == 0 then loadout = { "ironman", "hawkeye" } end
 	profile.loadout = loadout
 	if type(profile.pity.legendary) ~= "number" then profile.pity.legendary = 0 end
+	for _,id in ipairs(catalog.ChestOrder) do
+		local chest=catalog.Chests[id]
+		if chest.pity and not integer(profile.pity[id],0,chest.pity.after-1) then profile.pity[id]=0 end
+	end
 	-- A damaged reward record is repaired field by field rather than refusing
 	-- to load: nothing in it is worth locking a player out for.
 	local rewards = profile.rewards
@@ -445,14 +453,22 @@ end
 function PlayerService:_openChest(profile, chestId, rolls, now)
 	local chest = self.catalog.Chests[chestId]
 	local owned = {}
-	for id in pairs(profile.heroes) do owned[id] = true end
+	for id in pairs(chest.kind=="base" and profile.bases or profile.heroes) do owned[id] = true end
 	local pity = profile.pity[chestId] or 0
 	local outcome = self.rules.RollChest(chestId, rolls[1], rolls[2], pity, owned)
 	if chest.pity then profile.pity[chestId] = outcome.top and 0 or pity + 1 end
-	local duplicate, refund = self:_grantHero(profile, outcome.heroId, now)
+	local duplicate, refund
+	if chest.kind=="base" then
+		duplicate=profile.bases[outcome.baseId]==true
+		refund={gold=0,mastery=0}
+		if duplicate then
+			refund.gold=math.min(math.floor(chest.cost*0.4),self.catalog.Rarities[outcome.rarity].duplicate.gold)
+			profile.gold+=refund.gold
+		else profile.bases[outcome.baseId]=true end
+	else duplicate, refund = self:_grantHero(profile, outcome.heroId, now) end
 	profile.stats.chests += 1
 	if profile.stats.chests == 1 then achievement(profile, "firstChest", "Primeiro baú", "First chest", now) end
-	return { chestId = chestId, heroId = outcome.heroId, rarity = outcome.rarity, duplicate = duplicate,
+	return { chestId = chestId, heroId = outcome.heroId, baseId = outcome.baseId, rarity = outcome.rarity, duplicate = duplicate,
 		refundGold = refund.gold, refundMastery = refund.mastery, pity = outcome.pity, cost = chest.cost }
 end
 
@@ -560,6 +576,9 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			profile.talents[payload.talentId] = rank + 1
 		elseif action == "ResetTalents" then
 			profile.talents = {}
+		elseif action == "EquipBase" then
+			if type(payload.baseId)~="string" or not self.catalog.Bases[payload.baseId] or profile.bases[payload.baseId]~=true then return false,"Base não desbloqueada. / Base not unlocked." end
+			profile.equippedBase=payload.baseId
 		elseif action == "OpenChest" then
 			if record.randomRestricted then return false, "Baús indisponíveis para esta conta. / Chests unavailable for this account." end
 			local chest = type(payload.chestId) == "string" and self.catalog.Chests[payload.chestId]

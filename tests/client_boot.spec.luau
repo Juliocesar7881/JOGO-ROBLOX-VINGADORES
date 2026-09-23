@@ -524,13 +524,31 @@ local function session(screen)
 		check(countNamed(gui,"Collection_thor")==0,tag..": owned filter restores compact gallery")
 		fx({kind="OpenPanel",panel="chests"})
 		check(countNamed(gui,"ChestDisplay_rare")==1 and countNamed(gui,"ChestDisplay_legendary")==0,tag..": rare chest has a dedicated page")
-		click("LENDÁRIO")
+		click("Baú Lendário")
 		check(countNamed(gui,"OpenChest_legendary")==1 and countNamed(gui,"OpenChest_rare")==0,tag..": legendary tab switches the purchase intent")
-		click("BAÚ RARO")
+		click("Baú Raro")
 		fx({kind="OpenPanel",panel="premium"})
 		click("PASSES")
 		check(countNamed(gui,"PremiumTabs_pass")==1,tag..": premium pass tab stays accessible")
 		check(#offscreen(main,SCREEN)==0,tag..": category navigation stays on screen")
+	end)
+
+	step("base collection, chest and battle upgrade",function()
+		local p=veteranProfile({bases={outpost=true,workshop=true},equippedBase="outpost"})
+		push(lobbySnapshot(p)); fx({kind="OpenPanel",panel="bases"})
+		check(countNamed(gui,"BaseCard_worldtree")==1,tag..": base gallery includes locked and owned bases")
+		local equip=named(gui,"EquipBase_workshop"); check(equip~=nil,tag..": owned base can be equipped")
+		if equip then equip.Activated:Fire(); flush() end
+		check(asked("EquipBase"),tag..": base equip uses server intent")
+		fx({kind="OpenPanel",panel="chests",chestId="base_supply"})
+		check(countNamed(gui,"ChestDisplay_base_supply")==1,tag..": base chest selected independently of hero chests")
+		check(countNamed(gui,"ChestOdds_workshop")==1 and countNamed(gui,"ChestOdds_ironman")==0,tag..": base chest displays actual base pool")
+		push(matchSnapshot(p,"Preparing",{base={id="workshop",level=1,stats=Rules.BaseStats("workshop",1),wall=0},energy=1000}))
+		local open=named(gui,"OpenBaseUpgrade"); if open then open.Activated:Fire(); flush() end
+		check(countNamed(gui,"ConfirmBaseUpgrade")==1,tag..": core bar opens upgrade comparison")
+		local upgrade=named(gui,"ConfirmBaseUpgrade"); if upgrade then upgrade.Activated:Fire(); flush() end
+		check(asked("UpgradeBase"),tag..": base upgrade uses server intent")
+		push(lobbySnapshot(veteranProfile())); fx({kind="OpenPanel",panel="chests",chestId="rare"})
 	end)
 
 	step("buying and equipping from the panels", function()
@@ -740,6 +758,8 @@ local function session(screen)
 		push(riding)
 		local card = frameAt(main, lobbyLayout.elevator)
 		check(card ~= nil, tag .. ": the elevator card sits where lobbyLayout puts it")
+		check(named(gui,"LobbyNavigation").Visible == not lobbyLayout.class.short,
+			tag .. ": short screens hide the dock while boarding so Leave stays reachable")
 		local function labels()
 			local found = {}
 			for _, item in ipairs(card and card:GetDescendants() or {}) do

@@ -156,9 +156,9 @@ do
 	root.Position=world.shopZones.rare.center
 	world:StepShopEntries({visitor})
 	check(#panels==start+1,"small boundary jitter does not reopen the shop")
-	root.Position=world.shopZones.legendary.center
+	root.Position=world.shopZones.base_rare.center
 	world:StepShopEntries({visitor})
-	check(#panels==start+2 and panels[#panels].data.chestId=="legendary","walking to the other pad selects legendary")
+	check(#panels==start+2 and panels[#panels].data.chestId=="base_rare","walking to the other pad selects base collection")
 	root.Position=world.shopZones.rare.center+v3(0,25,0)
 	world:StepShopEntries({visitor})
 	check(#panels==start+2,"flying above a pad does not count as standing on it")
@@ -579,6 +579,21 @@ end
 check(placed == #Catalog.HeroOrder, "every hero has a tower model, got " .. tostring(placed))
 check(#missing == 0, "each tower is complete, upgradeable and branch-distinct: " .. table.concat(missing, ", "))
 print(string.format("  %d herois modelados", placed))
+
+for _,id in ipairs(Catalog.BaseOrder) do
+	for level=1,5 do
+		local position=world:UpdateBase(1,{id=id,level=level},v3(88,0,78))
+		local model=world.Scenery:FindFirstChild("PlayerBase_1")
+		check(model~=nil and model:FindFirstChild("Building")~=nil,"base model exists: "..id.."/"..level)
+		check(math.abs(position.X)<=100 and math.abs(position.Z)<=100,"base respects map bounds")
+		local markers=0
+		for _,item in ipairs(model:GetChildren()) do
+			if item.Name=="LevelLamp" then markers+=1 end
+			if item:IsA("BasePart") then check(not item.CanCollide,"base decoration cannot block player") end
+		end
+		check(markers==level,"base upgrade level is visible")
+	end
+end
 
 print(string.format("%s world boot: %d checks, %d failures",
 	failures == 0 and "PASS" or "FAIL", checks, failures))

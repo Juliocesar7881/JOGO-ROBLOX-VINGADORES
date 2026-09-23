@@ -1,5 +1,26 @@
 # Integration contract
 
+## Bases e recrutamento — 2026.4
+
+`Catalog.Chests` contém dez IDs; `HeroChestOrder` e `BaseChestOrder` separam
+as duas coleções. `OpenChest {chestId}` mantém a transação existente e retorna
+`result.heroId` **ou** `result.baseId`, mais raridade, repetido e compensação.
+Contadores de garantia são independentes. O perfil adiciona `bases: {[id]: true}`
+e `equippedBase`; migração concede `outpost` sem modificar Ouro ou heróis.
+
+`EquipBase {baseId}` só funciona no lobby com uma base possuída.
+`UpgradeBase {expectedLevel}` só funciona na partida; valida nível e Energia
+no servidor. A intenção não aceita custo, dano, renda ou ID de outro jogador.
+`match.base` replica `{id, level, stats, wall}` do jogador. `Rules.BaseStats`
+centraliza custos e atributos. A contribuição de vida ao núcleo é dividida
+pelo tamanho inicial do grupo. Níveis e soldados ficam apenas na partida.
+
+FX `BaseShot {from,to,color}` e `SoldierSync {soldiers}` representam decisões
+do servidor. Cada soldado contém `id,position,hp,maxHP,baseId`. O cliente só
+interpola o visual. Limite de seis soldados por comandante; dano e recompensas
+usam o mesmo caminho autoritativo das torres. [BASES.md](docs/BASES.md) documenta
+o conteúdo e a economia atuais; as seções antigas abaixo são históricas.
+
 Sections below are appended in the order they were written, most recent
 first, and some are superseded by later ones (each says so where it
 happens — e.g. "Contratos atuais" replaces the historical ability/purchase

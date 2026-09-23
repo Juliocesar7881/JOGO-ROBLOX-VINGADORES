@@ -751,4 +751,37 @@ do
 	service.leaseSeconds = realLease
 end
 
+-- Base ownership is durable, collection-specific and lobby-only.
+do
+	local owner=player(91); service:Load(owner)
+	check(service:Get(owner).equippedBase=="outpost" and service:Get(owner).bases.outpost,"starter base is free")
+	service:Award(owner,"base-budget",{gold=20000})
+	local gold=service:Get(owner).gold
+	local _,locked=service:Handle(owner,"EquipBase",{baseId="worldtree"},true)
+	check(not locked and service:Get(owner).equippedBase=="outpost","unowned base cannot be equipped")
+	service.random=scriptedRolls(0,0)
+	replayCallback=true
+	local _,ok,result=service:Handle(owner,"OpenChest",{chestId="base_supply"},true)
+	replayCallback=false
+	check(ok and result.gold==gold-400,"base chest charges once under callback replay")
+	check(result.result.baseId=="workshop" and result.result.heroId==nil,"base chest never grants a hero")
+	check(result.bases.workshop and not result.heroes.workshop,"separate inventory for bases")
+	check(stores.Tests.values.p_91.bases.workshop,"base grant persisted with charge")
+	local _,equipped=service:Handle(owner,"EquipBase",{baseId="workshop"},true)
+	check(equipped and stores.Tests.values.p_91.equippedBase=="workshop","equipped base persists")
+	local _,battle=service:Handle(owner,"EquipBase",{baseId="outpost"},false)
+	check(not battle and service:Get(owner).equippedBase=="workshop","cannot swap base during battle")
+	service.random=scriptedRolls(0,0)
+	service:Handle(owner,"OpenChest",{chestId="base_supply"},true)
+	service.random=scriptedRolls(0,0)
+	local _,duplicate,paid=service:Handle(owner,"OpenChest",{chestId="base_supply"},true)
+	check(duplicate and paid.result.duplicate and paid.result.refundGold<=160 and paid.result.refundMastery==0,"base duplicate refund is capped; no hero mastery")
+	service:Release(owner); service:Load(owner)
+	check(service:Get(owner).equippedBase=="workshop" and service:Get(owner).bases.garden,"base collection survives reload")
+	service.records[owner.UserId].randomRestricted=true
+	local before=service:Get(owner).gold
+	local _,restricted=service:Handle(owner,"OpenChest",{chestId="base_cosmic"},true)
+	check(not restricted and service:Get(owner).gold==before,"paid random restriction also blocks base chests without charge")
+end
+
 print("PASS PlayerService: " .. checks .. " assertions (real module, mocked Roblox persistence and purchases)")

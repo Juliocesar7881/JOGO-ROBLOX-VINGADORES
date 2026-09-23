@@ -593,6 +593,153 @@ Catalog.Cards = {
 --==============================================================================
 -- Everything a player can buy with Robux lives in the premium shop, apart from
 -- the Gold chest shop. Ids stay in Config.luau; an id of 0 means unavailable.
+-- Reinforcements: authored combat stats, two branches and a leader skill each.
+local reinforcements = {
+	{"wolverine","Wolverine","Wolverine","epic",{245,191,48},420,36,16,0.65,"single","physical",false,"claws","execute",0.28,55},
+	{"cyclops","Ciclope","Cyclops","rare",{77,121,221},320,38,32,1.35,"beam","tech",true,"visor","blast",0.28,60},
+	{"storm","Tempestade","Storm","legendary",{228,234,249},600,40,34,1.4,"chain","magic",true,"cape","chain",0.26,75},
+	{"jean","Jean Grey","Jean Grey","mythic",{244,131,61},760,44,30,1.3,"splash","magic",true,"phoenix","burn",0.08,80},
+	{"iceman","Homem de Gelo","Iceman","rare",{141,230,255},300,17,25,1.05,"splash","magic",false,"ice","slow",0.5,65},
+	{"gambit","Gambit","Gambit","epic",{218,114,218},390,35,29,1.15,"splash","magic",true,"cards","blast",0.32,60},
+	{"nightcrawler","Noturno","Nightcrawler","rare",{107,101,223},290,24,22,0.8,"single","magic",false,"tail","pull",22,65},
+	{"beast","Fera","Beast","rare",{84,142,217},240,26,18,0.95,"splash","physical",false,"fur","stun",0,65},
+	{"psylocke","Psylocke","Psylocke","epic",{171,92,238},400,32,23,0.7,"single","magic",false,"blade","weaken",0.4,65},
+	{"deadpool","Deadpool","Deadpool","epic",{200,64,74},380,24,28,0.6,"single","physical",true,"swords","rally",0.2,65},
+	{"moonknight","Cavaleiro da Lua","Moon Knight","rare",{224,223,204},310,34,25,1.05,"single","physical",true,"moon","reveal",0.18,65},
+	{"nova","Nova","Nova","legendary",{255,199,80},590,48,32,1.05,"beam","tech",true,"nova","blast",0.38,75},
+}
+for _, row in ipairs(reinforcements) do
+	local id, pt, en, rarity, color, cost, damage, range, interval, attack, damageType, air, costume, kind, power, cooldown = unpack(row)
+	local skillId = id .. "Power"
+	local hero = {id=id,name=text(pt,en),rarity=rarity,color=color,cost=cost,damage=damage,range=range,interval=interval,
+		attack=attack,damageType=damageType,air=air,ability=skillId,costume=costume,splash=6,chain=3,beamWidth=3,
+		role=text("Reforço "..(damageType=="magic" and "mágico" or "de combate"), damageType=="magic" and "Magic reinforcement" or "Combat reinforcement"),
+		description=text("Combine sua especialização com o poder do líder.","Combine your specialization with the leader power."),
+		branches={
+			{name=text("Potência máxima","Maximum power"),description=text("+65% de dano; perfura armadura.","+65% damage; pierces armor."),mods={mul("damage",1.65),set("armorPierce",0.35)}},
+			{name=text("Cobertura tática","Tactical coverage"),description=text("+9 de alcance e ataques 25% mais rápidos.","+9 range and 25% faster attacks."),mods={add("range",9),mul("interval",0.8)}},
+		}}
+	if id=="iceman" then hero.slow=0.25 end
+	if id=="wolverine" or id=="psylocke" then hero.armorPierce=0.25 end
+	if id=="moonknight" then hero.reveal=true end
+	Catalog.Heroes[id]=hero; table.insert(Catalog.HeroOrder,id)
+	local descriptions = {
+		blast=text("Explosão: {power}% da vida máxima em {radius} studs. Chefes resistem.","Blast: {power}% max HP within {radius} studs. Bosses resist."),
+		execute=text("Finaliza alvos abaixo de {power}% de vida em {radius} studs. Chefes resistem.","Finishes targets below {power}% HP within {radius} studs. Bosses resist."),
+		chain=text("Atinge {count} inimigos com {power}% da vida máxima. Chefes resistem.","Hits {count} enemies for {power}% max HP. Bosses resist."),
+		burn=text("Zona de energia: {power}% de vida por segundo por {duration} s. Chefes resistem.","Energy zone: {power}% HP per second for {duration} s. Bosses resist."),
+		slow=text("Desacelera {power}% por {duration} s em {radius} studs.","Slows {power}% for {duration} s within {radius} studs."),
+		pull=text("Recua inimigos {power} studs. Não move chefes.","Pushes enemies back {power} studs. Does not move bosses."),
+		stun=text("Paralisa por {duration} s em {radius} studs. Chefes resistem.","Stuns for {duration} s within {radius} studs. Bosses resist."),
+		weaken=text("Remove {power}% de armadura por {duration} s.","Removes {power}% armor for {duration} s."),
+		rally=text("Suas torres ganham {power}% de dano por {duration} s.","Your towers gain {power}% damage for {duration} s."),
+		reveal=text("Revela e marca: +{power}% de dano por {duration} s.","Reveals and marks: +{power}% damage for {duration} s."),
+	}
+	local names={wolverine=text("Fúria de adamantium","Adamantium fury"),cyclops=text("Explosão óptica","Optic blast"),storm=text("Olho da tempestade","Eye of the storm"),jean=text("Chama da Fênix","Phoenix flame"),iceman=text("Era do gelo","Ice age"),gambit=text("Ás explosivo","Explosive ace"),nightcrawler=text("Bamf!","Bamf!"),beast=text("Salto selvagem","Wild leap"),psylocke=text("Corte psíquico","Psychic slash"),deadpool=text("Trabalho em equipe","Teamwork"),moonknight=text("Luz de Khonshu","Khonshu's light"),nova=text("Supernova","Supernova")}
+	Catalog.Abilities[skillId]=ability(skillId,kind,kind=="rally" and "self" or "area",cooldown,
+		{power=power,duration=kind=="stun" and 2 or 6,radius=30,count=6,stat="damage",unit=kind=="pull" and "studs" or "pct",color=color,ultimate=rarity=="mythic" or rarity=="legendary"},names[id],descriptions[kind])
+	table.insert(Catalog.AbilityOrder,skillId)
+end
+Catalog.Abilities.stormPower.extras={{kind="stun",duration=1.2}}
+Catalog.Abilities.stormPower.description=text("Relâmpagos: {power}% da vida de {count} alvos; paralisa por {e1.duration} s. Chefes resistem.","Lightning: {power}% HP to {count} targets; stuns for {e1.duration} s. Bosses resist.")
+Catalog.Abilities.jeanPower.extras={{kind="weaken",power=0.2,duration=6}}
+Catalog.Abilities.jeanPower.description=text("Chama: {power}% de vida por segundo por {duration} s; remove {e1.power}% de armadura. Chefes resistem.","Flame: {power}% HP per second for {duration} s; removes {e1.power}% armor. Bosses resist.")
+Catalog.Abilities.novaPower.extras={{kind="reveal",power=0.12,duration=6}}
+Catalog.Abilities.novaPower.description=text("Explosão: {power}% da vida em {radius} studs; revela e marca (+{e1.power}% dano). Chefes resistem.","Blast: {power}% HP within {radius} studs; reveals and marks (+{e1.power}% damage). Bosses resist.")
+local identities={
+	wolverine={text("Garras contra elites","Claws against elites"),text("Caçador de chefes","Boss hunter"),{set("bossDamage",0.8),mul("damage",1.25)},text("Frenesi","Frenzy"),{mul("interval",0.55),add("range",3)}},
+	cyclops={text("Feixe que atravessa a horda","Beam through the horde"),text("Feixe amplo","Wide beam"),{set("beamWidth",7),mul("damage",1.2)},text("Foco óptico","Optic focus"),{set("armorPierce",0.6),add("range",8)}},
+	storm={text("Relâmpagos e defesa aérea","Lightning and air defense"),text("Cadeia de trovões","Thunder chain"),{set("chain",6)},text("Olho do furacão","Hurricane eye"),{mul("damage",1.5),set("slow",0.25)}},
+	jean={text("Explosões de energia psíquica","Psychic energy blasts"),text("Asas da Fênix","Phoenix wings"),{set("splash",12)},text("Fogo concentrado","Focused fire"),{mul("damage",1.5),set("bossDamage",0.45)}},
+	iceman={text("Congela o avanço de grupos","Freezes group advances"),text("Nevasca","Blizzard"),{set("splash",11),set("slow",0.35)},text("Zero absoluto","Absolute zero"),{set("slow",0.55),mul("damage",1.35)}},
+	gambit={text("Cartas explosivas contra grupos","Explosive cards against groups"),text("Baralho completo","Full deck"),{set("splash",12)},text("Ás de armadura","Armor ace"),{set("armorPierce",0.65),mul("damage",1.3)}},
+	nightcrawler={text("Ataques rápidos e recuo tático","Fast attacks and tactical pushback"),text("Espadas gêmeas","Twin swords"),{mul("interval",0.5)},text("Sombra distante","Distant shadow"),{add("range",12),set("reveal",true)}},
+	beast={text("Impactos curtos contra hordas","Short-range horde impacts"),text("Salto esmagador","Crushing leap"),{set("splash",10),mul("damage",1.2)},text("Instinto feroz","Fierce instinct"),{mul("interval",0.6),set("armorPierce",0.3)}},
+	psylocke={text("Lâminas psíquicas perfurantes","Piercing psychic blades"),text("Lâmina espiritual","Spirit blade"),{set("armorPierce",0.8)},text("Dança psíquica","Psychic dance"),{mul("interval",0.55),add("range",4)}},
+	deadpool={text("Rajadas rápidas e apoio ofensivo","Rapid bursts and offensive support"),text("Arsenal duplo","Dual arsenal"),{mul("interval",0.6),add("range",5)},text("Munição explosiva","Explosive rounds"),{set("attack","splash"),set("splash",8)}},
+	moonknight={text("Revela camuflados na rota","Reveals cloaked enemies"),text("Vigília lunar","Moon watch"),{add("range",14),set("mark",0.15)},text("Lâminas crescentes","Crescent blades"),{set("attack","chain"),set("chain",3)}},
+	nova={text("Feixe cósmico antiaéreo","Cosmic anti-air beam"),text("Corredor estelar","Star corridor"),{set("beamWidth",8),add("range",6)},text("Impacto cósmico","Cosmic impact"),{mul("damage",1.6),set("armorPierce",0.4)}},
+}
+for id,entry in pairs(identities) do
+	local hero=Catalog.Heroes[id]; hero.role=entry[1]; hero.description=entry[1]
+	for i=1,2 do
+		local name=entry[i==1 and 2 or 4]; local mods=entry[i==1 and 3 or 5]
+		local labels={damage=text("dano","damage"),interval=text("intervalo","attack interval"),range=text("alcance","range"),bossDamage=text("bônus contra chefes","boss bonus"),armorPierce=text("perfuração","armor pierce"),beamWidth=text("largura do feixe","beam width"),chain=text("alvos encadeados","chained targets"),slow=text("lentidão","slow"),splash=text("raio de explosão","blast radius"),mark=text("marcação","mark")}
+		local lines={pt={},en={}}
+		for _,mod in ipairs(mods) do
+			for _,lang in ipairs({"pt","en"}) do
+				local label=labels[mod.key] and labels[mod.key][lang]
+				local value=mod.value
+				if label then
+					if mod.op=="mul" then value="×"..tostring(value)
+					elseif mod.op=="add" then value="+"..tostring(value)
+					elseif mod.key=="bossDamage" or mod.key=="armorPierce" or mod.key=="slow" or mod.key=="mark" then value=math.floor(value*100).."%" end
+					table.insert(lines[lang],label.." "..tostring(value))
+				elseif mod.key=="reveal" then table.insert(lines[lang],lang=="pt" and "revela camuflados" or "reveals hidden enemies")
+				elseif mod.key=="attack" then table.insert(lines[lang],lang=="pt" and "ataque em grupo" or "group attacks") end
+			end
+		end
+		hero.branches[i]={name=name,mods=mods,description=text(table.concat(lines.pt," • "),table.concat(lines.en," • "))}
+	end
+end
+
+-- Personal outposts support the shared core. Income is match Energy, never
+-- permanent Gold. Each has five match-only levels, bought with Energy.
+Catalog.BaseOrder={"outpost","workshop","garden","bunker","arsenal","barracks","reactor","citadel","carrier","sanctum","worldtree"}
+Catalog.Bases={}
+local bases={
+	{"outpost","Posto da Resistência","Resistance outpost","common","balanced",{139,213,151},20,0,0,0,0},
+	{"workshop","Oficina Stark","Stark workshop","common","farm",{255,193,83},45,4,0,0,0},
+	{"garden","Horta de suprimentos","Supply garden","common","farm",{146,213,106},40,8,0,0,0},
+	{"bunker","Bunker S.H.I.E.L.D.","S.H.I.E.L.D. bunker","rare","wall",{108,188,228},20,18,0,120,0},
+	{"arsenal","Arsenal Stark","Stark arsenal","rare","turret",{228,116,82},20,8,26,0,0},
+	{"barracks","Quartel de Wakanda","Wakandan barracks","epic","soldiers",{190,139,241},25,12,0,0,85},
+	{"reactor","Reator de vibranium","Vibranium reactor","epic","farm",{89,228,194},65,8,0,0,0},
+	{"citadel","Cidadela de Asgard","Asgard citadel","legendary","wall",{255,210,118},28,28,0,240,0},
+	{"carrier","Porta-aviões da Resistência","Resistance carrier","legendary","soldiers",{146,183,225},32,14,0,0,140},
+	{"sanctum","Sanctum Sanctorum","Sanctum Sanctorum","mythic","turret",{242,142,92},30,14,48,0,0},
+	{"worldtree","Jardim de Yggdrasil","Yggdrasil garden","mythic","farm",{245,177,221},85,12,0,0,0},
+}
+local roles={balanced=text("Renda básica e vida ao evoluir.","Basic income and HP when upgraded."),farm=text("Mais Energia a cada onda concluída.","More Energy each completed wave."),wall=text("Barricada troca vida por dano e se regenera fora de combate.","Barricade trades HP for damage and regenerates out of combat."),turret=text("Canhão automático protege a chegada ao núcleo.","Automatic cannon guards the approach to the core."),soldiers=text("Soldados percorrem a rota ao contrário e colidem com inimigos.","Soldiers march backwards along the path and collide with enemies.")}
+for _,row in ipairs(bases) do
+	local id,pt,en,rarity,style,color,income,hp,damage,wall,soldier=unpack(row)
+	Catalog.Bases[id]={id=id,name=text(pt,en),rarity=rarity,style=style,color=color,income=income,hp=hp,damage=damage,wall=wall,soldier=soldier,starter=id=="outpost",description=roles[style]}
+end
+Catalog.BaseUpgradeCosts={450,950,1800,3200}
+
+-- Five price tiers per collection. Existing chest IDs/pity are preserved.
+Catalog.HeroChestOrder={"supply","rare","epic","legendary","cosmic"}
+Catalog.BaseChestOrder={"base_supply","base_rare","base_epic","base_legendary","base_cosmic"}
+Catalog.Chests.supply={id="supply",name=text("Suprimentos","Supplies"),cost=400,color={155,214,129},odds={common=75,rare=23,epic=2,legendary=0,mythic=0}}
+Catalog.Chests.epic={id="epic",name=text("Baú Épico","Epic chest"),cost=1500,color={196,145,250},odds={common=0,rare=45,epic=47,legendary=7,mythic=1},pity={after=8,minimum="epic"}}
+Catalog.Chests.cosmic={id="cosmic",name=text("Baú Cósmico","Cosmic chest"),cost=5000,color={255,138,198},odds={common=0,rare=0,epic=45,legendary=43,mythic=12},pity={after=15,minimum="mythic"}}
+Catalog.ChestOrder={}
+for _,id in ipairs(Catalog.HeroChestOrder) do
+	local chest=Catalog.Chests[id]; chest.kind="hero"
+	chest.description=chest.description or text("Um herói aleatório. Veja as chances antes de abrir.","One random hero. Check the odds before opening.")
+	table.insert(Catalog.ChestOrder,id)
+	local baseId="base_"..id
+	local baseChest={id=baseId,kind="base",name=chest.name,cost=chest.cost,color=chest.color,odds=chest.odds,pity=chest.pity,description=text("Uma base aleatória. Equipe apenas uma no lobby.","One random base. Equip one in the lobby.")}
+	Catalog.Chests[baseId]=baseChest
+end
+for _,id in ipairs(Catalog.BaseChestOrder) do table.insert(Catalog.ChestOrder,id) end
+
+-- Map factions preserve family counters while adding distinct silhouettes.
+Catalog.MapEnemyVariants={}
+local factions={manhattan={"sinister","Capanga Sinistro","Sinister minion",{191,134,99}},gamma={"gamma","Mutante Gama","Gamma mutant",{145,197,86}},hydra={"hydra","Soldado HYDRA","HYDRA soldier",{88,153,128}},wakanda={"vibranium","Saqueador de vibranium","Vibranium raider",{171,120,201}},latveria={"doombot","Doombot","Doombot",{118,161,164}}}
+for mapId,faction in pairs(factions) do
+	Catalog.MapEnemyVariants[mapId]={}
+	for _,family in ipairs({"zombie","runner","armored"}) do
+		local original=Catalog.Enemies[family]; local variant={}
+		for key,value in pairs(original) do variant[key]=value end
+		variant.id=faction[1].."_"..family; variant.family=family; variant.faction=faction[1]; variant.color=faction[4]
+		variant.name=text(faction[2].." • "..original.name.pt,faction[3].." • "..original.name.en)
+		-- Same budget and stats: a visual faction must not silently favor one map.
+		Catalog.Enemies[variant.id]=variant; Catalog.MapEnemyVariants[mapId][family]=variant.id
+		table.insert(Catalog.EnemyOrder,variant.id)
+	end
+end
+
 Catalog.Products = {
 	Passes = {
 		collector = { id = 0, price = 149, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold.") },

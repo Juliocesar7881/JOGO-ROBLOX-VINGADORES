@@ -401,10 +401,10 @@ end
 -- Chests
 --==============================================================================
 -- Starters are never in a chest: a chest exists to bring you something new.
-function Rules.ChestPool(rarity)
+function Rules.ChestPool(rarity, kind)
 	local pool = {}
-	for _, id in ipairs(Catalog.HeroOrder) do
-		local hero = Catalog.Heroes[id]
+	for _, id in ipairs(kind=="base" and Catalog.BaseOrder or Catalog.HeroOrder) do
+		local hero = (kind=="base" and Catalog.Bases or Catalog.Heroes)[id]
 		if hero.rarity == rarity and not hero.starter then table.insert(pool, id) end
 	end
 	return pool
@@ -443,16 +443,27 @@ function Rules.RollChest(chestId, rarityRoll, heroRoll, pity, owned)
 			target -= weight
 		end
 	end
-	local pool = Rules.ChestPool(chosen)
+	local pool = Rules.ChestPool(chosen, chest.kind)
 	local fresh = {}
 	for _, id in ipairs(pool) do if not owned[id] then table.insert(fresh, id) end end
 	local candidates = if #fresh > 0 then fresh else pool
 	local heroId = candidates[math.floor(heroRoll * #candidates) + 1]
 	local topIndex = table.find(order, chest.pity and chest.pity.minimum or "legendary") or #order
 	return {
-		rarity = chosen, heroId = heroId, duplicate = owned[heroId] == true,
+		rarity = chosen, heroId = chest.kind~="base" and heroId or nil, baseId = chest.kind=="base" and heroId or nil, itemId=heroId, duplicate = owned[heroId] == true,
 		pity = forced, top = (table.find(order, chosen) or 1) >= topIndex,
 	}
+end
+
+function Rules.BaseStats(id, level)
+	local def=Catalog.Bases[id] or Catalog.Bases.outpost
+	level=math.clamp(math.floor(number(level,1)),1,5)
+	local growth=1+(level-1)*0.7
+	return {id=def.id,level=level,style=def.style,income=math.floor(def.income*growth),
+		hp=def.hp+(level-1)*12,damage=math.floor(def.damage*growth),range=30+(level-1)*3,
+		wall=math.floor(def.wall*growth),regen=def.wall>0 and (5+level*3) or 0,
+		soldier=math.floor(def.soldier*growth),interval=math.max(12,24-level*2),
+		upgradeCost=Catalog.BaseUpgradeCosts[level] or 0}
 end
 
 --==============================================================================

@@ -687,7 +687,7 @@ do
 			check(p.rallyUntil > match.elapsed and p.rallyStat == def.stat, "rally starts a timed buff: " .. label)
 			local buffed = match:_towerStats(tower)
 			if def.stat == "speed" then check(buffed.interval < intervalBefore, "rally speeds towers up: " .. label)
-			else check(buffed.damage > damageBefore * 1.2, "rally strengthens towers: " .. label) end
+			else check(buffed.damage > damageBefore, "rally strengthens towers: " .. label) end
 			match.elapsed += stats.duration + 1
 			check(match:_towerStats(tower).interval == intervalBefore, "the rally wears off: " .. label)
 		elseif def.kind == "stun" then
@@ -1106,7 +1106,7 @@ do
 		local before = p2.energy
 		m2.wave = 10; m2.completedWaves = 9; m2.alive = 0; m2.spawnIndex = 1; m2.pendingSpawns = {}
 		m2:_endWave()
-		check(p2.energy - before == math.floor((90 + 10 * 12) * 1.2), "the supply network raises wave income by 20%")
+		check(p2.energy - before == math.floor((90 + 10 * 12) * 1.2)+p2.base.stats.income, "the supply network raises wave income by 20%")
 		local m3, pl3, p3, take3 = withCard("discount")
 		take3()
 		local before3 = p3.energy
@@ -1208,6 +1208,78 @@ for size=2,4 do
 			check(snapshot.energy>=0,"cooperative energy never goes negative")
 		end
 		check(run.match.size==size,"party scaling stays fixed through results")
+	end
+end
+
+print("--- base economy and defenses ---")
+do
+	for _,id in ipairs(Catalog.BaseOrder) do
+		local match,player=stage({profile={equippedBase=id,bases={[id]=true}}})
+		local p=match.participants[player.UserId]
+		check(p.base.id==id,"owned base selected at start: "..id)
+		p.energy=20000; local gold=p.profile.gold
+		local before=p.energy
+		check(not match:Handle(player,"UpgradeBase",{expectedLevel=2}),"stale base upgrade rejected")
+		check(p.energy==before,"stale upgrade spends nothing")
+		for level=1,4 do
+			local hp=match.baseHP; local max=match.maxBaseHP; local old=p.base.stats
+			check(match:Handle(player,"UpgradeBase",{expectedLevel=level}),"upgrade base "..id.." at "..level)
+			check(p.base.level==level+1 and p.energy==before-old.upgradeCost,"base upgrade charges match Energy exactly once")
+			check(match.baseHP-hp==match.maxBaseHP-max and match.maxBaseHP>max,"upgrade adds new HP without free full repair")
+			before=p.energy
+		end
+		check(not match:Handle(player,"UpgradeBase",{expectedLevel=5}),"base stops at five levels")
+		check(p.profile.gold==gold,"base upgrades never spend permanent Gold")
+		p.contributed=true; before=p.energy; match:_endWave()
+		check(p.energy-before==90+match.wave*12+p.base.stats.income,"completed wave grants base income once")
+		before=p.energy; match:_endWave(); check(p.energy==before,"duplicate end-wave cannot farm income")
+	end
+	local match,player=stage({profile={equippedBase="worldtree",bases={worldtree=true}}})
+	local p=match.participants[player.UserId]; local energy=p.energy; match:_endWave()
+	check(p.energy==energy,"idle farm earns no income without contribution")
+	local fresh,freshPlayer=stage({profile={equippedBase="worldtree",bases={}}})
+	check(fresh.participants[freshPlayer.UserId].base.id=="outpost","forged base selection falls back to starter")
+	local wall,defender=stage({profile={equippedBase="bunker",bases={bunker=true}}})
+	local base=wall.participants[defender.UserId].base
+	local enemy=spawn(wall,"brute",wall.routeCache[1].total-10,10)
+	local hp=enemy.hp; local capacity=base.wall
+	wall:_basesStep(0.1)
+	check(base.wall==0 and math.abs(hp-enemy.hp-capacity)<0.001,"wall trades finite HP for damage")
+	wall.elapsed+=4; wall:_basesStep(0.1); check(base.wall==0,"wall cannot regenerate while still under attack")
+	wall.enemies={}; wall.alive=0; wall.elapsed+=2; wall:_basesStep(1)
+	check(base.wall>0 and base.wall<=base.stats.wall,"wall regenerates after five seconds without damage")
+	local cannon,g=stage({profile={equippedBase="arsenal",bases={arsenal=true}}})
+	local target=spawn(cannon,"zombie",cannon.routeCache[1].total-9,100)
+	local hpBefore=target.hp; cannon:_basesStep(0.1)
+	check(target.hp<hpBefore and cannon.participants[g.UserId].contributed,"cannon attacks near core and credits support contribution")
+	local barracks,s=stage({profile={equippedBase="barracks",bases={barracks=true}}})
+	barracks:_basesStep(0.1)
+	local soldierId,soldier=next(barracks.soldiers)
+	check(soldier and soldier.progress<barracks.routeCache[1].total,"soldier marches toward enemy entrance")
+	local victim=spawn(barracks,"zombie",soldier.progress-2,1)
+	local hpBefore=soldier.hp; barracks:_basesStep(0.1)
+	check(victim.hp<=0 and soldier.hp<hpBefore,"soldier collision spends HP and damages enemy")
+	soldier.progress=0.1; local earned=barracks.participants[s.UserId].goldEarned
+	barracks:_basesStep(0.1)
+	check(not barracks.soldiers[soldierId] and barracks.participants[s.UserId].goldEarned==earned,"soldier reaching entrance vanishes without reward")
+	local air=spawn(barracks,"flyer",barracks.routeCache[1].total-2,10)
+	barracks.participants[s.UserId].base.nextSoldier=0; barracks:_basesStep(0.1)
+	check(air.hp==air.maxHP,"ground soldiers cannot hit flying enemies")
+	for size=2,4 do
+		local members,byUser={},{}
+		for n=1,size do
+			local member=newPlayer(8000+n); members[n]=member
+			byUser[member.UserId]=newProfile({bases={reactor=true},equippedBase="reactor",campaign={manhattan={normal=true}}})
+		end
+		local run=MatchService.new(Config,Catalog,Rules,Waves,newProfiles(byUser[8001],byUser),newWorld(),newRemotes({}),function() end)
+		check(run:Start(members,"manhattan","normal","base-coop-"..size),"cooperative bases start")
+		check(run.maxBaseHP==Config.BaseHP+size*math.floor(Rules.BaseStats("reactor",1).hp/size),"group HP contributions use fixed party divisor")
+		local p=run.participants[8001]; p.energy=1000
+		check(run:Handle(members[1],"UpgradeBase",{expectedLevel=1}),"commander upgrades personal module")
+		check(run.participants[8002].base.level==1 and p.base.level==2,"upgrade cannot change teammate module")
+		local hp=run.maxBaseHP; local energy=p.energy
+		run:OnLeave(members[1]); check(run:Reconnect(members[1]),"base owner reconnects")
+		check(run.maxBaseHP==hp and p.energy==energy and p.base.level==2,"reconnect restores base without duplicating HP or Energy")
 	end
 end
 

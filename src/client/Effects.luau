@@ -17,10 +17,11 @@ local function part(parent, size, color, material)
 end
 
 local function buildEnemy(def)
+	local family=def.family or def.id
 	local model = Instance.new("Model")
 	model.Name = "EnemyVisual"
 	local color = UI.color(def.color)
-	local scale = def.boss and 2.1 or (def.id == "brute" and 1.45 or 1)
+	local scale = def.boss and 2.1 or (family == "brute" and 1.45 or 1)
 	local torso = part(model, Vector3.new(1.6, 1.7, 0.85) * scale, color)
 	torso.Shape, torso.Material = Enum.PartType.Ball, def.boss and Enum.Material.SmoothPlastic or Enum.Material.Fabric
 	torso.Name = "Torso"
@@ -59,15 +60,15 @@ local function buildEnemy(def)
 	end
 	-- Recognizable silhouettes, not just eight differently colored torsos.
 	-- Each common enemy adds at most three pieces; only bosses spend more.
-	if def.id == "runner" then
+	if family == "runner" then
 		local scarf = part(model, Vector3.new(0.65, 0.18, 1.9), Color3.fromRGB(235, 156, 73))
 		scarf.CFrame = CFrame.new(0, 2.7, 0.85) * CFrame.Angles(-0.22, 0, 0)
-	elseif def.id == "brute" then
+	elseif family == "brute" then
 		for _, side in ipairs({-1, 1}) do
 			local fist = part(model, Vector3.new(0.85, 0.8, 0.85) * scale, color:Lerp(Color3.new(), 0.25))
 			fist.CFrame = CFrame.new(side * 1.2 * scale, 1.1 * scale, -0.3 * scale)
 		end
-	elseif def.id == "armored" then
+	elseif family == "armored" then
 		local helmet = part(model, Vector3.new(1.35, 0.6, 1.3), Color3.fromRGB(65, 80, 91), Enum.Material.Metal)
 		helmet.CFrame = CFrame.new(0, 3.75, 0.08)
 		local shield = part(model, Vector3.new(1.05, 1.8, 0.24), Color3.fromRGB(70, 88, 100), Enum.Material.Metal)
@@ -89,6 +90,20 @@ local function buildEnemy(def)
 		staff.CFrame = CFrame.new(1.35, 1.9, -0.3)
 		local orb = part(model, Vector3.new(0.75, 0.75, 0.75), Color3.fromRGB(220, 131, 255), Enum.Material.Neon)
 		orb.Shape, orb.CFrame = Enum.PartType.Ball, CFrame.new(1.35, 3.9, -0.3)
+	end
+	if def.faction then
+		local material=def.faction=="doombot" and Enum.Material.Metal or Enum.Material.Fabric
+		local badge=part(model,Vector3.new(0.5,0.6,0.16),color:Lerp(Color3.new(1,1,1),0.45),Enum.Material.Neon)
+		badge.CFrame=CFrame.new(0,2.4,-0.65)
+		if def.faction=="gamma" then
+			for _,side in ipairs({-1,1}) do local growth=part(model,Vector3.new(0.8,0.8,0.8),color,Enum.Material.Slate); growth.Shape=Enum.PartType.Ball; growth.CFrame=CFrame.new(side*1.1,2.8,0.2) end
+		elseif def.faction=="doombot" then
+			local mask=part(model,Vector3.new(1.1,0.95,0.15),Color3.fromRGB(187,203,207),material); mask.CFrame=CFrame.new(0,3.35,-0.58)
+		elseif def.faction=="sinister" then
+			local vest=part(model,Vector3.new(1.8,1.2,0.18),Color3.fromRGB(164,92,49),material); vest.CFrame=CFrame.new(0,2.1,-0.6)
+		else
+			local helmet=part(model,Vector3.new(1.3,0.4,1.2),color,Enum.Material.Metal); helmet.CFrame=CFrame.new(0,3.85,0)
+		end
 	end
 	-- Only one boss exists at a time, so its silhouette can afford real detail
 	-- instead of reading as a scaled-up infected.
@@ -168,6 +183,7 @@ function Effects.new(player, request, getState, audio)
 	self.folder.Name = "DoomClientVisuals"
 	self.folder.Parent = workspace
 	self.enemies, self.pool, self.coins, self.shots = {}, {}, {}, {}
+	self.soldiers={}
 	self.shotPool, self.clock, self.collectAt = {}, 0, 0
 	self.shakeAmount = 0
 	self.towerModels, self.popups, self.popupPool = nil, {}, {}
@@ -442,7 +458,8 @@ function Effects:_ultimateBurst(event, tint, lowFX)
 end
 
 local MUZZLE_PARTS = {ironman="Repulsor",hawkeye="Arrow",spiderman="Hand",thor="Mjolnir",captain="Shield",widow="BatonCharge",
-	bucky="RifleBarrel",rocket="GunMuzzle",warmachine="CannonMuzzle",starlord="BlasterGlow",wanda="ChaosSpell",strange="SpellGlyph",vision="MindGem",captainmarvel="PhotonFist"}
+	bucky="RifleBarrel",rocket="GunMuzzle",warmachine="CannonMuzzle",starlord="BlasterGlow",wanda="ChaosSpell",strange="SpellGlyph",vision="MindGem",captainmarvel="PhotonFist",
+	wolverine="AdamantiumClaw",cyclops="Visor",gambit="ChargedCard",iceman="IceFist",psylocke="Blade",nova="Visor",beast="FurryFist"}
 
 function Effects:_heroShot(event, lowFX)
 	local from, target = event.from, event.to
@@ -460,7 +477,7 @@ function Effects:_heroShot(event, lowFX)
 		if self.shotSerial % 3 == 0 then self:_line(from, target, color, 0.08, 0.1) end
 		return
 	end
-	if heroId == "thor" then
+	if heroId == "thor" or heroId=="storm" then
 		local previous = from
 		local side = delta.Unit:Cross(Vector3.new(0, 1, 0))
 		for index = 1, 4 do
@@ -476,12 +493,12 @@ function Effects:_heroShot(event, lowFX)
 			local offset = Vector3.new(math.cos(angle) * 1.3, math.sin(angle) * 1.3, 0)
 			self:_line(target - offset, target + offset, white, 0.07, 0.3)
 		end
-	elseif heroId == "panther" then
+	elseif heroId == "panther" or heroId=="wolverine" or heroId=="psylocke" then
 		for index = -1, 1 do
 			local offset = Vector3.new(index * 0.4, 0, 0)
 			self:_line(target + offset + Vector3.new(-0.6, 0.9, 0), target + offset + Vector3.new(0.6, -0.9, 0), Color3.fromRGB(192, 155, 255), 0.11, 0.18)
 		end
-	elseif heroId == "hulk" or heroId == "antman" then
+	elseif heroId == "hulk" or heroId == "antman" or heroId=="beast" then
 		self:_groundImpact(target, color, heroId == "hulk" and 5 or 3.5)
 		for index = 0, 2 do
 			local angle = index * math.pi * 2 / 3 + self.shotSerial
@@ -496,7 +513,16 @@ function Effects:_heroShot(event, lowFX)
 	elseif heroId == "hawkeye" then
 		local arrow = self:_effect(Vector3.new(0.11, 0.11, 2.4), CFrame.lookAt(from, target), Color3.fromRGB(205, 179, 243), 0.17)
 		if arrow then arrow.from, arrow.to, arrow.arrow = from, target, true end
-	elseif heroId == "wanda" then
+	elseif heroId=="gambit" or heroId=="moonknight" then
+		local card=self:_effect(Vector3.new(0.7,1,0.1),CFrame.new(from),color,0.25,nil,0.1)
+		if card then card.from,card.to,card.arc=from,target,1.4 end
+		self:_groundImpact(target,color,2)
+	elseif heroId=="iceman" then
+		self:_line(from,target,color,0.2,0.2)
+		for index=-1,1 do self:_effect(Vector3.new(0.3,1.5,0.3),CFrame.new(target+Vector3.new(index*0.8,-0.4,0))*CFrame.Angles(0,0,index*0.2),color,0.35,nil,0.15) end
+	elseif heroId=="nightcrawler" then
+		self:_impact(from,color,1.2); self:_impact(target,color,1.6)
+	elseif heroId == "wanda" or heroId=="jean" then
 		local bolt = self:_effect(Vector3.one * 0.65, CFrame.new(from), Color3.fromRGB(255, 85, 131), 0.22, Enum.PartType.Ball, 0.1)
 		if bolt then bolt.from, bolt.to, bolt.arc = from, target, 2 end
 		self:_groundImpact(target, Color3.fromRGB(204, 57, 105), 3)
@@ -507,8 +533,8 @@ function Effects:_heroShot(event, lowFX)
 			local offset = Vector3.new(math.cos(angle), math.sin(angle), 0) * 1.2
 			self:_effect(Vector3.new(0.35, 0.35, 0.09), CFrame.new(target + offset) * CFrame.Angles(0, 0, angle), Color3.fromRGB(255, 196, 112), 0.32)
 		end
-	elseif heroId == "vision" then
-		self:_line(from, target, Color3.fromRGB(252, 205, 99), 0.36, 0.22)
+	elseif heroId == "vision" or heroId=="cyclops" or heroId=="nova" then
+		self:_line(from, target, heroId=="cyclops" and Color3.fromRGB(255,80,90) or Color3.fromRGB(252, 205, 99), 0.36, 0.22)
 		self:_line(from, target, white, 0.1, 0.13)
 	elseif heroId == "widow" then
 		self:_line(from, target, Color3.fromRGB(240, 87, 99), 0.1, 0.11)
@@ -517,7 +543,7 @@ function Effects:_heroShot(event, lowFX)
 		local swoop = self:_effect(Vector3.new(0.6, 0.15, 0.15), CFrame.new(from), Color3.fromRGB(255, 150, 110), 0.22, nil, 0.15)
 		if swoop then swoop.from, swoop.to, swoop.arc = from, target, 2.5 end
 		self:_impact(target, Color3.fromRGB(255, 150, 110), 0.35)
-	elseif heroId == "bucky" then
+	elseif heroId == "bucky" or heroId=="deadpool" then
 		self:_line(from, target, Color3.fromRGB(200, 208, 216), 0.06, 0.09)
 		self:_impact(target, Color3.fromRGB(160, 170, 180), 0.3)
 	elseif heroId == "wasp" then
@@ -577,6 +603,38 @@ function Effects:_heroShot(event, lowFX)
 end
 
 function Effects:Handle(event)
+	if type(event)~="table" then return end
+	if event.kind=="BaseShot" then
+		self:_line(event.from,event.to,event.color,0.3,0.18); self:_impact(event.to,event.color,2)
+		return
+	elseif event.kind=="SoldierSync" then
+		local seen={}
+		for _,s in ipairs(event.soldiers or {}) do
+			seen[s.id]=true
+			local record=self.soldiers[s.id]
+			if not record then
+				local model=Instance.new("Model"); model.Name="AllySoldier"; model.Parent=self.folder
+				local tint=UI.color(Catalog.Bases[s.baseId].color)
+				local torso=part(model,Vector3.new(1.3,1.6,0.7),tint,Enum.Material.Metal); torso.CFrame=CFrame.new(0,2,0); model.PrimaryPart=torso
+				local head=part(model,Vector3.new(0.9,0.9,0.9),Color3.fromRGB(226,232,223)); head.Shape=Enum.PartType.Ball; head.CFrame=CFrame.new(0,3.2,0)
+				local legs={}
+				for _,side in ipairs({-1,1}) do
+					local limb=part(model,Vector3.new(0.45,1.3,0.5),tint); limb.CFrame=CFrame.new(side*0.4,0.65,0)
+					table.insert(legs,{part=limb,base=CFrame.new(side*0.4,-1.35,0),side=side})
+					local arm=part(model,Vector3.new(0.4,1.1,0.5),tint); arm.CFrame=CFrame.new(side*0.9,2.1,-0.15)
+				end
+				local helmet=part(model,Vector3.new(1.1,0.35,1),tint,Enum.Material.Metal); helmet.CFrame=CFrame.new(0,3.65,0)
+				local mark=part(model,Vector3.new(1.5,0.15,1.5),UI.Colors.green,Enum.Material.Neon); mark.CFrame=CFrame.new(0,0.15,0)
+				local tag=UI.create("BillboardGui",{Size=UDim2.fromOffset(44,6),StudsOffsetWorldSpace=Vector3.new(0,2.5,0),Adornee=torso,AlwaysOnTop=true,MaxDistance=110},model)
+				local hp=UI.bar(tag,UI.Colors.green,UDim2.fromOffset(0,0),UDim2.fromScale(1,1))
+				record={model=model,position=s.position,target=s.position,legs=legs,hp=hp}; self.soldiers[s.id]=record
+			end
+			record.target=s.position
+			record.hp.Size=UDim2.fromScale(math.clamp(s.hp/s.maxHP,0,1),1)
+		end
+		for id,record in pairs(self.soldiers) do if not seen[id] then record.model:Destroy(); self.soldiers[id]=nil end end
+		return
+	end
 	if type(event) ~= "table" then return end
 		if event.kind == "Notice" and event.tone == "boss" and self.audio then self.audio:Cue("boss", 4) end
 	if event.shake then self:Shake(event.shake) end
@@ -773,6 +831,7 @@ function Effects:Handle(event)
 			pulse.growFrom, pulse.growTo = not telegraph and radius * 0.7 or nil, not telegraph and radius * 2.1 or nil
 		end
 	elseif event.kind == "Clear" then
+		for _,record in pairs(self.soldiers) do record.model:Destroy() end; self.soldiers={}
 		for id in pairs(self.enemies) do self:Release(id, true) end
 		for _, death in ipairs(self.dying) do self:_poolEnemy(death.record) end
 		self.dying = {}
@@ -797,6 +856,17 @@ function Effects:Handle(event)
 end
 
 function Effects:Step(dt)
+	local allyState=self.getState()
+	local lowAllyFX=allyState and allyState.profile and allyState.profile.settings and allyState.profile.settings.lowFX
+	for _,record in pairs(self.soldiers) do
+		local previous=record.position; record.position=previous:Lerp(record.target,math.min(1,dt*12))
+		local delta=record.target-previous
+		local center=record.position+Vector3.new(0,2,0)
+		if delta.Magnitude>0.02 then record.direction=delta.Unit end
+		local pivot=CFrame.lookAt(center,center+(record.direction or Vector3.new(0,0,-1)))
+		record.model:PivotTo(pivot)
+		for _,leg in ipairs(record.legs) do leg.part.CFrame=pivot*leg.base*CFrame.Angles(lowAllyFX and 0 or math.sin(self.clock*10+leg.side*math.pi/2)*0.4,0,0) end
+	end
 	self.clock += dt
 	local state = self.getState()
 	local settings = state and state.profile and state.profile.settings or {}

@@ -137,6 +137,7 @@ function Match:Start(members, mapId, modeId, runId)
 	self.cardMode = self.catalog.Modes[modeId].cards == true
 	self.prepRemaining = modeId == "tutorial" and 30 or self.config.PreparationSeconds
 	self.participants, self.enemies, self.towers, self.rewardQueue, self.skipVotes = {}, {}, {}, {}, {}
+	self.soldiers={}
 	self.pendingSpawns, self.spawnIndex, self.spawnTimer, self.alive = {}, 1, 0, 0
 	self.routeCache = {}
 	for index, route in ipairs(self.catalog.Maps[mapId].paths) do
@@ -160,6 +161,14 @@ function Match:Start(members, mapId, modeId, runId)
 			-- auto-skip does not have to switch them on every single run.
 			speedVote=(profile.settings and profile.settings.fastForward) and 2 or 1,
 			autoSkip=(profile.settings and profile.settings.autoSkip)==true}
+		local p=self.participants[player.UserId]
+		local baseId=profile.equippedBase or "outpost"
+		if not self.catalog.Bases[baseId] or (baseId~="outpost" and not (profile.bases or {})[baseId]) then baseId="outpost" end
+		p.base={id=baseId,level=1,nextAttack=0,nextSoldier=0,wallHitAt=-100,routeCursor=0}
+		p.base.stats=self.rules.BaseStats(baseId,1); p.base.wall=p.base.stats.wall
+		local extra=math.floor(p.base.stats.hp/self.size)
+		self.maxBaseHP+=extra; self.baseHP+=extra
+		if self.world.UpdateBase then p.base.visualPosition=self.world:UpdateBase(p.index,p.base,self.corePosition) end
 		self:_fx({kind="Clear"},player)
 		self.world:MovePlayer(player,true,index)
 	end
@@ -323,7 +332,10 @@ end
 
 function Match:_contribute(tower)
 	local p = self.participants[tower.ownerId]
-	if p and not p.returned and not p.disconnectedAt then p.contributed=true p.waveHeroes[tower.heroId]=true end
+	if p and not p.returned and not p.disconnectedAt then
+		p.contributed=true
+		if tower.heroId then p.waveHeroes[tower.heroId]=true end
+	end
 end
 
 -- Damage is booked per enemy so the client can float one tidy number over each
@@ -659,7 +671,7 @@ function Match:_endWave()
 			end
 			self:_checkpoint(p,"wave:"..self.wave,true)
 			if p.contributed and not p.disconnectedAt then
-				p.energy+=math.floor((90+self.wave*12)*(1+cardStat(p,"energyIncome")))
+				p.energy+=math.floor((90+self.wave*12)*(1+cardStat(p,"energyIncome")))+p.base.stats.income
 				if self.modeId=="infinite" or self.modeId=="ranked" then
 					task.spawn(function() self.profiles:RecordBest(p.player,self.mapId,self.size,self.completedWaves,self.modeId) end)
 				end
@@ -931,6 +943,71 @@ end
 --==============================================================================
 -- Simulation
 --==============================================================================
+-- Base defenses use the same server-owned damage/reward path as heroes.
+-- Walls and soldiers trade their own HP for enemy damage; no infinite block.
+function Match:_basesStep(dt)
+	for uid,p in pairs(self.participants) do
+		if p.returned or p.disconnectedAt then continue end
+		local base=p.base; local stats=base.stats
+		if self.elapsed-base.wallHitAt>=5 then base.wall=math.min(stats.wall,base.wall+stats.regen*dt) end
+		if self.phase~="Wave" then continue end
+		local source={ownerId=uid}
+		if stats.damage>0 and self.elapsed>=base.nextAttack then
+			local target,best=nil,-math.huge
+			for _,enemy in pairs(self.enemies) do
+				local remaining=self.routeCache[enemy.routeIndex].total-enemy.progress
+				if enemy.hp>0 and not enemy.def.stealth and distanceXZ(enemy.position,self.corePosition)<=stats.range and -remaining>best then target,best=enemy,-remaining end
+			end
+			if target then
+				base.nextAttack=self.elapsed+1.2
+				self:_damage(target,stats.damage,source,{damageType=base.id=="sanctum" and "magic" or "tech"})
+				self:_fx({kind="BaseShot",from=(base.visualPosition or self.corePosition)+Vector3.new(0,6,0),to=target.position+Vector3.new(0,target.def.air and 8 or 2,0),color=Color3.fromRGB(unpack(self.catalog.Bases[base.id].color))})
+			end
+		end
+		if stats.wall>0 and base.wall>0 then
+			for _,enemy in pairs(self.enemies) do
+				local remaining=self.routeCache[enemy.routeIndex].total-enemy.progress
+				if enemy.hp>0 and not enemy.def.air and remaining<=15 then
+					local spent=math.min(base.wall,enemy.hp+enemy.shield)
+					base.wall-=spent; base.wallHitAt=self.elapsed
+					self:_damage(enemy,spent,source,{trueDamage=true})
+					self:_fx({kind="Pulse",position=enemy.position,radius=4,color=Color3.fromRGB(150,225,255),duration=0.3})
+					if base.wall<=0 then break end
+				end
+			end
+		end
+		if stats.soldier>0 and self.elapsed>=base.nextSoldier then
+			local count=0; for _,soldier in pairs(self.soldiers) do if soldier.ownerId==uid then count+=1 end end
+			if count<6 then
+				base.nextSoldier=self.elapsed+stats.interval; base.routeCursor=base.routeCursor%#self.routeCache+1
+				local route=self.routeCache[base.routeCursor]; local id=self:_nextId("s")
+				self.soldiers[id]={id=id,ownerId=uid,routeIndex=base.routeCursor,progress=route.total,hp=stats.soldier,maxHP=stats.soldier,baseId=base.id,position=self.corePosition}
+			end
+		end
+	end
+	if self.phase~="Wave" then return end
+	for id,soldier in pairs(self.soldiers) do
+		local p=self.participants[soldier.ownerId]
+		if not p or p.returned or p.disconnectedAt then self.soldiers[id]=nil; continue end
+		local before=soldier.progress
+		soldier.progress-=11*dt
+		soldier.position=self:_pathPosition(soldier.routeIndex,math.max(0,soldier.progress))
+		-- Sorted route intersections make a large dt hit the nearest target first.
+		local collisions={}
+		for _,enemy in pairs(self.enemies) do
+			if enemy.hp>0 and not enemy.def.air and enemy.routeIndex==soldier.routeIndex and enemy.progress>=soldier.progress-3 and enemy.progress<=before+3 then table.insert(collisions,enemy) end
+		end
+		table.sort(collisions,function(a,b) return a.progress>b.progress end)
+		for _,enemy in ipairs(collisions) do
+			if enemy.hp>0 and soldier.hp>0 then
+				local spent=math.min(soldier.hp,enemy.hp+enemy.shield); soldier.hp-=spent
+				self:_damage(enemy,spent,{ownerId=soldier.ownerId},{trueDamage=true})
+			end
+		end
+		if soldier.hp<=0 or soldier.progress<=0 then self.soldiers[id]=nil end
+	end
+end
+
 function Match:Step(dt)
 	self.rewardTimer+=dt
 	if self.rewardTimer>=5 then self.rewardTimer=0 self:_processRewards() end
@@ -962,6 +1039,7 @@ function Match:Step(dt)
 	-- card, and without doubling the enemy updates sent to every client.
 	local realDt = dt / (self.speed or 1)
 	self:_refreshSpeed()
+	self:_basesStep(dt)
 	if self.phase=="Preparing" then
 		self:_checkSkip()
 		self.prepRemaining-=realDt
@@ -1003,6 +1081,9 @@ function Match:Step(dt)
 		for index = 1, math.min(#order, 10) do hits[order[index]] = math.floor(self.hitBuffer[order[index]]) end
 		self.hitBuffer = {}
 		self:_fx({kind="EnemySync",enemies=enemies,hits=next(hits) and hits or nil})
+		local soldiers={}
+		for _,s in pairs(self.soldiers) do table.insert(soldiers,{id=s.id,position=s.position,hp=s.hp,maxHP=s.maxHP,baseId=s.baseId}) end
+		self:_fx({kind="SoldierSync",soldiers=soldiers})
 	end
 end
 
@@ -1025,7 +1106,20 @@ function Match:Handle(player,action,payload)
 		p.returned=true self.world:MovePlayer(player,false) return true
 	end
 	if not self.running then return false,"A partida terminou. / The match ended." end
-	if action=="PlaceTower" then
+	if action=="UpgradeBase" then
+		local base=p.base; local stats=base.stats
+		if payload.expectedLevel~=base.level then return false,"Base atualizada. / Base changed." end
+		if base.level>=5 then return false,"Base no máximo. / Base maxed." end
+		if p.energy<stats.upgradeCost then return false,"Energia insuficiente. / Not enough Energy." end
+		p.energy-=stats.upgradeCost; base.level+=1
+		base.stats=self.rules.BaseStats(base.id,base.level)
+		local added=math.floor(base.stats.hp/self.size)-math.floor(stats.hp/self.size)
+		self.maxBaseHP+=added; self.baseHP+=added
+		base.wall+=base.stats.wall-stats.wall
+		if self.world.UpdateBase then base.visualPosition=self.world:UpdateBase(p.index,base,self.corePosition) end
+		self:_fx({kind="Pulse",position=self.corePosition,radius=12,color=Color3.fromRGB(unpack(self.catalog.Bases[base.id].color)),duration=0.5})
+		return true
+	elseif action=="PlaceTower" then
 		local id=payload.heroId local hero=type(id)=="string" and self.catalog.Heroes[id]
 		if not hero or not contains(p.profile.loadout,id) or not p.profile.heroes[id] then return false,"Herói não equipado. / Hero not equipped." end
 		if p.towerCount>=self.rules.TowerLimit(self.size) then return false,"Limite de torres atingido. / Tower limit reached." end
@@ -1114,6 +1208,7 @@ function Match:Snapshot(player)
 		if self.rules.IsBossWave(self.modeId, wave) then nextBoss=wave break end
 	end
 	return {runId=self.runId,mapId=self.mapId,modeId=self.modeId,wave=self.wave,totalWaves=total,
+		base={id=p.base.id,level=p.base.level,stats=table.clone(p.base.stats),wall=math.floor(p.base.wall)},
 		completedWaves=self.completedWaves,baseHP=self.baseHP,maxBaseHP=self.maxBaseHP,shield=self.shield,energy=math.floor(p.energy),towerLimit=self.rules.TowerLimit(self.size),
 		prepRemaining=math.max(0,math.ceil(self.prepRemaining)),enemies=self.alive,elapsed=self.elapsed,ability=ability,
 		cards=table.clone(p.cards),cardOffers=p.cardOffers,cardMode=self.cardMode,goldEarned=p.goldEarned,xpEarned=p.xpEarned,towers=towers,boss=boss,

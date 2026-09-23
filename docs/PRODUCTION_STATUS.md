@@ -4,6 +4,14 @@ Este registro distingue código existente de aprovação para lançamento.
 
 ## Entrega desta revisão
 
+- Expansão 2026.4: **36 heróis, 11 bases equipáveis, cinco baús por coleção**,
+  15 variantes de inimigos por mapa, renda de Energia e melhorias de base
+  durante a partida. Canhões, barricadas regenerativas e soldados funcionam
+  no servidor. Detalhes e valores em [BASES.md](BASES.md).
+- HUDs com identidade coral/violeta/dourado/verde/rosa, galeria clara,
+  ilustrações de bases e comparação de melhorias. A seleção de base fica no
+  inventário; a barra de vida abre a evolução durante a partida.
+
 - Poses de ataque articuladas nos 24 heróis, com armas acompanhando as mãos,
   giro para o alvo e retorno à pose sem acumular deslocamento. Projéteis saem
   das armas/mãos; voadores e ataques agora compartilham a mesma altura visual.
@@ -37,7 +45,7 @@ Este registro distingue código existente de aprovação para lançamento.
 
 ## Já implementado, ainda sujeito a teste de lançamento
 
-24 heróis; evolução de conta e de habilidades; dois baús; inventário;
+36 heróis; 11 bases; evolução de conta e de habilidades; dez baús; inventário;
 cinco mapas; Campanha/Ranqueado/Cartas com 50 ondas e Infinito; chefes;
 recompensas; coleta; lojas; salvamento; placares e fluxo de reconexão.
 Existir em código não significa que arte, balanceamento ou serviços online
@@ -45,8 +53,8 @@ estejam aprovados em produção.
 
 ## Dependências que ainda impedem declarar lançamento pronto
 
-1. **Configuração da conta:** faltam 45 IDs no template: experiência, dois
-   lugares, quatro passes, três pacotes de Ouro, 22 heróis e 13 áudios.
+1. **Configuração da conta:** faltam 57 IDs no template: experiência, dois
+   lugares, quatro passes, três pacotes de Ouro, 34 heróis e 13 áudios.
    É necessário criar/importar esses itens na conta proprietária e preencher
    `deployment/local.json`. O gerador está pronto para aplicá-los aos lugares.
 2. **Fluxo em aparelhos:** testar movimentação/toque, joystick, rolagem,

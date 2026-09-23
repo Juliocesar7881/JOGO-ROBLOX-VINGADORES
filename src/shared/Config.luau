@@ -1,7 +1,7 @@
 -- Change deployment IDs only after creating both places in YOUR universe.
 return {
 	Version = "0.1.0",
-	BalanceVersion = "2026.3",
+	BalanceVersion = "2026.4",
 	DataStoreName = "DoomsdayProfiles_v1",
 	StudioMemory = true, -- Never used outside Studio. Studio profiles are temporary.
 	ProfileLeaseSeconds = 180,

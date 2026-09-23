@@ -12,6 +12,11 @@ inimigos e efeitos são gerados por código. Documentação relacionada:
 
 ## Rodando agora
 
+**Expansão 2026.4:** 36 heróis, 11 bases equipáveis, cinco tipos de baú para
+heróis e cinco para bases. Abra **Heróis → Minhas bases** no lobby e toque
+em **BASE / EVOLUIR** durante a partida. A renda da fazenda e as melhorias
+usam Energia; os baús usam Ouro. [Guia de bases e baús](docs/BASES.md).
+
 ```bash
 python tools/setup_luau.py   # uma vez: baixa o Luau oficial e confere o SHA256
 python tools/build.py        # gera dist/Doomsday-{Studio,Lobby,Match}.rbxlx
@@ -40,8 +45,8 @@ publicada). Detalhes de publicação real em
   enquanto está sobre a área não reabre o menu repetidamente.
   Progresso e pendências de lançamento: [docs/PRODUCTION_STATUS.md](docs/PRODUCTION_STATUS.md).
 
-- **24 heróis**, 5 raridades. Um herói só chega à conta por um dos **2 baús**
-  do lobby (Raro: 1.000 Ouro; Lendário: 2.000 Ouro, com garantia após 10
+- **36 heróis**, 5 raridades. Um herói só chega à conta por um dos **5 baús de heróis**
+  do lobby (400 a 5.000 Ouro; Lendário: 2.000 Ouro, com garantia após 10
   aberturas sem lendário/mítico) ou pela compra direta na Loja Robux —
   **nunca** por Ouro direto. Em combate, a habilidade ativa é sempre a do
   herói no **slot 1** da formação, visualmente diferenciado, porque é o
@@ -159,7 +164,7 @@ Abra `dist/Doomsday-Studio.rbxlx` no Roblox Studio e pressione **Play**.
 Se o arquivo já estava aberto, reabra-o para carregar esta compilação.
 Os arquivos anteriores foram preservados em `.tools/backup-before-chests-*`.
 
-- **24 heróis**, cada um com habilidade própria e cinco ranks de evolução.
+- **36 heróis**, cada um com habilidade própria e cinco ranks de evolução.
 - **Baú raro: 1.000 Ouro; lendário: 2.000 Ouro.** A tela informa chances
   individuais, prioridade para heróis ainda não possuídos e a garantia do
   lendário. Repetidos concedem Ouro e maestria. Tutorial: 1.000 Ouro na

@@ -139,6 +139,15 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		ghostrider = { ink, Color3.fromRGB(255, 128, 30), Color3.fromRGB(232, 228, 214), fabric },
 		captainmarvel = { Color3.fromRGB(44, 78, 178), red, skin, fabric },
 		silversurfer = { Color3.fromRGB(186, 200, 215), Color3.fromRGB(226, 236, 246), Color3.fromRGB(205, 218, 232), metal },
+		wolverine={gold,navy,skin,fabric},cyclops={navy,gold,skin,fabric},
+		storm={white,gold,Color3.fromRGB(140,91,65),fabric},jean={Color3.fromRGB(61,139,97),gold,skin,fabric},
+		iceman={Color3.fromRGB(139,225,255),white,Color3.fromRGB(172,238,255),Enum.Material.Ice},
+		gambit={Color3.fromRGB(138,80,62),Color3.fromRGB(230,106,184),skin,fabric},
+		nightcrawler={Color3.fromRGB(156,53,65),ink,Color3.fromRGB(89,96,191),fabric},
+		beast={Color3.fromRGB(73,123,194),navy,Color3.fromRGB(83,140,205),fabric},
+		psylocke={Color3.fromRGB(96,63,170),Color3.fromRGB(211,95,176),skin,fabric},
+		deadpool={red,ink,red,fabric},moonknight={white,Color3.fromRGB(195,198,202),white,fabric},
+		nova={navy,gold,gold,metal},
 	}
 	local colors = palette[heroId] or { rgb(hero.color), ink, rgb(hero.color), fabric }
 	local suit, trim, face, material = colors[1], colors[2], colors[3], colors[4]
@@ -153,6 +162,7 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		ChaosSpell=true, SpellGlyph=true, MetalArm=true, MetalForearm=true,
 		MetalHand=true, StarMark=true, RifleBarrel=true, BigGun=true, GunMuzzle=true,
 		Billy=true, BillyTip=true, TenRing=true, Blaster=true, BlasterGlow=true, PhotonFist=true,
+		AdamantiumClaw=true,ChargedCard=true,Staff=true,Blade=true,IceFist=true,FurryFist=true,
 	}
 	local function piece(name, size, position, tint, surface, rotation, shape)
 		local made = part(parent, name, size * scale, origin * CFrame.new(position * scale) * (rotation or CFrame.new()), tint, surface or material)
@@ -215,6 +225,7 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 	-- Facial planes: a mask is a mask, exposed faces have brows and a nose.
 	local exposed = heroId == "hawkeye" or heroId == "widow" or heroId == "thor" or heroId == "wanda" or heroId == "strange" or bulky
 		or heroId == "falcon" or heroId == "bucky" or heroId == "shangchi" or heroId == "captainmarvel" or heroId == "rocket"
+		or heroId=="storm" or heroId=="jean" or heroId=="gambit" or heroId=="psylocke" or heroId=="cyclops"
 	for _, side in ipairs({ -1, 1 }) do
 		local eyeWidth = heroId == "spiderman" and 0.48 or 0.34
 		piece("Eye", V(eyeWidth, heroId == "spiderman" and 0.34 or 0.16, 0.12), V(side * 0.31, 5.49, -0.716), exposed and ink or white,
@@ -226,6 +237,7 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		piece("Mouth", V(0.44, 0.08, 0.08), V(0, 5.03, -0.665), bulky and white or ink)
 		local hair = heroId == "widow" and Color3.fromRGB(139, 45, 29) or heroId == "wanda" and Color3.fromRGB(100, 39, 31) or heroId == "thor" and gold
 			or heroId == "captainmarvel" and gold or heroId == "rocket" and Color3.fromRGB(60, 46, 40) or Color3.fromRGB(39, 31, 30)
+		if heroId=="storm" then hair=white elseif heroId=="jean" then hair=Color3.fromRGB(175,72,42) elseif heroId=="psylocke" then hair=Color3.fromRGB(73,42,119) end
 		oval("Hair", V(1.52, 0.69, 1.37), V(0, 6.02, 0.02), hair, fabric)
 		for _, side in ipairs({ -1, 1 }) do
 			if heroId == "widow" or heroId == "wanda" or heroId == "thor" then
@@ -411,6 +423,39 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 			piece("CosmicEye", V(0.36, 0.14, 0.12), V(side * 0.3, 5.5, -0.74), energy, Enum.Material.Neon)
 		end
 	end
+	-- Reinforcements carry recognizable silhouettes and weapons, not recolors.
+	if hero.costume then
+		local style=hero.costume
+		local accent=Color3.fromRGB(unpack(hero.color))
+		if style=="claws" then
+			for _,side in ipairs({-1,1}) do
+				for n=-1,1 do piece("AdamantiumClaw",V(0.08,0.09,1.65),hands[side]+V(n*0.17,0,-0.9),silver,metal) end
+				piece("MaskFin",V(0.28,1.1,0.3),V(side*0.7,5.95,0),ink,metal,CFrame.Angles(0,0,-side*0.3))
+			end
+		elseif style=="visor" or style=="nova" then
+			piece("Visor",V(1.3,0.24,0.2),V(0,5.48,-0.77),style=="visor" and red or gold,Enum.Material.Neon)
+			disc("ChestStar",V(0,3.9,-0.75),0.7,0.12,gold,Enum.Material.Neon)
+		elseif style=="cape" or style=="phoenix" or style=="moon" then
+			for strip=-1,1 do piece("Cape",V(1.15,3.8,0.18),V(strip*0.9,2.8,0.95),accent,fabric,CFrame.Angles(-0.15,strip*0.2,0)) end
+			disc("Crest",V(0,4,-0.72),0.7,0.15,gold,Enum.Material.Neon)
+			if style=="phoenix" then
+				for _,side in ipairs({-1,1}) do for n=1,3 do piece("PhoenixFeather",V(0.45,2.8-n*0.3,0.22),V(side*(1+n*0.45),4.6,0.5),accent,Enum.Material.Neon,CFrame.Angles(0,0,-side*(0.35+n*0.15))) end end
+			end
+		elseif style=="ice" then
+			for n=-1,1 do piece("IceCrown",V(0.3,0.8+math.abs(n)*0.3,0.3),V(n*0.4,6.2,0),accent,Enum.Material.Ice) end
+			for _,side in ipairs({-1,1}) do oval("IceFist",V(0.9,0.9,1.1),hands[side],accent,Enum.Material.Ice) end
+		elseif style=="cards" then
+			link("Staff",hands[-1]+V(0,-1.3,0),hands[-1]+V(0,2.7,0),0.14,silver)
+			for n=-1,1 do piece("ChargedCard",V(0.5,0.8,0.08),hands[1]+V(n*0.4,0.4,-0.3),accent,Enum.Material.Neon,CFrame.Angles(0,0,n*0.3)) end
+		elseif style=="tail" then
+			for n=1,4 do oval("Tail",V(0.28,0.3,0.9),V(0,1.9-n*0.2,0.5+n*0.65),accent) end
+		elseif style=="fur" then
+			for _,side in ipairs({-1,1}) do oval("FurryFist",V(1.2,1.1,1.2),hands[side],accent,fabric) end
+			for n=-1,1 do piece("HairTuft",V(0.4,0.65,0.45),V(n*0.5,6.1,0),accent,fabric,CFrame.Angles(0,0,n*0.2)) end
+		elseif style=="blade" or style=="swords" then
+			for _,side in ipairs({-1,1}) do piece("Blade",V(0.13,2.7,0.24),hands[side]+V(0,1.1,-0.5),style=="blade" and accent or silver,style=="blade" and Enum.Material.Neon or metal,CFrame.Angles(-0.3,0,-side*0.2)) end
+		end
+	end
 	-- Cloth is separate from each hero's feature branch: Vision gets his cape.
 	if heroId == "thor" or heroId == "strange" or heroId == "vision" or heroId == "wanda" then
 		local capeColor = heroId == "vision" and gold or red
@@ -536,7 +581,7 @@ local SHOP_STANDS = {
 -- a map mood; this is the only thing that puts it back afterward.
 function World:ApplyLobbyLighting()
 	local lighting = game:GetService("Lighting")
-	lighting.ClockTime, lighting.Brightness = 14.4, 3
+	lighting.ClockTime, lighting.Brightness = 15.6, 2.5
 	lighting.ExposureCompensation = 0.1
 	lighting.Ambient, lighting.OutdoorAmbient = Color3.fromRGB(128, 143, 164), Color3.fromRGB(155, 166, 186)
 	lighting.FogColor, lighting.FogStart, lighting.FogEnd = Color3.fromRGB(31, 40, 58), 260, 900
@@ -545,7 +590,7 @@ function World:ApplyLobbyLighting()
 	local bloom = ensureLightingEffect(lighting, "BloomEffect", "Bloom")
 	bloom.Intensity, bloom.Size, bloom.Threshold = 0.16, 18, 1.25
 	local grade = ensureLightingEffect(lighting, "ColorCorrectionEffect", "ColorGrade")
-	grade.TintColor, grade.Contrast, grade.Saturation, grade.Brightness = Color3.fromRGB(242, 247, 255), 0.03, 0.03, 0.02
+	grade.TintColor, grade.Contrast, grade.Saturation, grade.Brightness = Color3.fromRGB(255, 245, 225), 0.04, 0.04, 0
 	-- The lobby is the one place a soft depth blur is safe: no battlefield to
 	-- keep legible, just a helicarrier deck worth a little cinematic depth.
 	local dof = ensureLightingEffect(lighting, "DepthOfFieldEffect", "DOF")
@@ -663,7 +708,7 @@ local function buildChestStand(lobby, x, z, chestId, chest, openPanel)
 	local treasure = part(model, "Treasure", sized(Vector3.new(4.8, 0.3, 2.8)), CFrame.new(x, 1.2 + 2.9 * scale, z), tint, Enum.Material.Neon)
 	treasure.CanCollide = false
 	local beam = part(model, "LightBeam", Vector3.new(3.6, 16, 3.6), CFrame.new(x, 11, z), tint, Enum.Material.Neon)
-	beam.Shape, beam.CanCollide, beam.CanQuery, beam.Transparency = Enum.PartType.Cylinder, false, false, 0.82
+	beam.Shape, beam.CanCollide, beam.CanQuery, beam.Transparency = Enum.PartType.Cylinder, false, false, 1
 	beam.CFrame = CFrame.new(x, 11, z) * CFrame.Angles(0, 0, math.pi / 2)
 	beam.Size = Vector3.new(16, 3.6, 3.6)
 	emitter(treasure, tint, legendary and 14 or 8, 5, 0.6, 1.8, Vector3.new(0, 5, 0))
@@ -677,7 +722,7 @@ local function buildChestStand(lobby, x, z, chestId, chest, openPanel)
 		end
 	end
 	wallSign(model, "ChestNameplate", CFrame.new(x - 4.8, 2.6, z) * CFrame.Angles(0, math.pi / 2, 0), Vector3.new(7.2, 1.9, 0.2),
-		upper(chest.name.pt), commas(chest.cost) .. " OURO", tint)
+		chest.kind=="base" and "BAÚS DE BASES" or "BAÚS DE HERÓIS", "5 TIPOS • A PARTIR DE 400 OURO", tint)
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= plinth then p.CanCollide = false end end
 	model.PrimaryPart = plinth
 	interactable(plinth, chest.name.pt, function(player) openPanel(player, "chests", { chestId = chestId }) end, 16)
@@ -798,7 +843,7 @@ function World:BuildLobby()
 	-- deck, with every actual function living at its own physical location.
 	local bridge = part(lobby, "Bridge", Vector3.new(44, 7, 18), CFrame.new(0, 3.5, 265), Color3.fromRGB(19, 27, 39), Enum.Material.Metal)
 	bridge.CastShadow = true
-	wallSign(lobby,"CommandIdentity",CFrame.new(0,33,275)*CFrame.Angles(0,math.pi,0),Vector3.new(44,11,1),"DOOMSDAY","ÚLTIMA DEFESA  /  CENTRAL DOS VINGADORES",ART.pearl)
+	wallSign(lobby,"CommandIdentity",CFrame.new(0,8,276)*CFrame.Angles(0,math.pi,0),Vector3.new(18,4,0.5),"DOOMSDAY","REFÚGIO DA AURORA / AURORA REFUGE",ART.gold)
 
 	-- Four mode portals: color, signage and unlock state are all per mode,
 	-- never a shared tabbed list. The map behind them is drawn, never chosen.
@@ -811,12 +856,14 @@ function World:BuildLobby()
 
 	-- The chest shop, east of the plaza: Gold for heroes, by chance.
 	local chestZ = { rare = 338, legendary = 374 }
-	for _, chestId in ipairs(self.catalog.ChestOrder) do
+	-- Two welcoming shop pads; all ten chest tiers live in the shop selector.
+	for _, chestId in ipairs({"rare", "base_rare"}) do
+		chestZ.base_rare=374
 		local _,zone=buildChestStand(lobby, 58, chestZ[chestId], chestId, self.catalog.Chests[chestId], self.openPanel)
 		self.shopZones[chestId]=zone
 	end
-	wallSign(lobby, "ChestShopSign", CFrame.new(69, 15, 356) * CFrame.Angles(0, math.pi / 2, 0), Vector3.new(50, 6.4, 1),
-		"LOJA DE BAÚS", "PISE NO VERDE  •  STEP ON GREEN  •  OURO / GOLD", ART.gold)
+	wallSign(lobby, "ChestShopSign", CFrame.new(67, 8, 356) * CFrame.Angles(0, math.pi / 2, 0), Vector3.new(16, 3.4, 0.5),
+		"LOJA DE BAÚS", "OURO / GOLD", ART.gold)
 	for _, z in ipairs({ 322, 390 }) do
 		artPart(lobby, "ChestShopPillar", Vector3.new(2, 15, 2), CFrame.new(69, 7.5, z), ART.pearl, Enum.Material.Metal).CastShadow = true
 		artPart(lobby, "ChestShopPillarLight", Vector3.new(0.3, 12, 0.3), CFrame.new(67.9, 7.5, z), ART.gold, Enum.Material.Neon)
@@ -830,8 +877,8 @@ function World:BuildLobby()
 		local displayName = pass and pass.name.pt or (entry.kind == "hero" and "Vitrine de Heróis" or "Cofre de Ouro")
 		buildShopStand(lobby, -66, shopZ[index], entry.kind, entry.key, displayName, self.openPanel, entry.kind == "hero" and showcase or nil)
 	end
-	wallSign(lobby, "PremiumShopSign", CFrame.new(-73, 15, 351) * CFrame.Angles(0, -math.pi / 2, 0), Vector3.new(76, 6.4, 1),
-		"LOJA PREMIUM", "ROBUX  •  HERÓIS DIRETOS  •  OURO  •  PASSES", Color3.fromRGB(97, 202, 255))
+	wallSign(lobby, "PremiumShopSign", CFrame.new(-74, 8, 351) * CFrame.Angles(0, -math.pi / 2, 0), Vector3.new(18, 3.4, 0.5),
+		"LOJA PREMIUM", "ROBUX", Color3.fromRGB(207, 180, 231))
 
 	-- Mission board and hall-of-fame totem flank the bridge entrance.
 	buildBoard(lobby, -14, 251, "quests", "MISSÕES\nDA RESISTÊNCIA", self.openPanel)
@@ -1065,76 +1112,151 @@ function World:ArtDirectLobby(lobby)
 	local V=Vector3.new
 	local art=Instance.new("Model")
 	art.Name,art.Parent="CommandAtrium",lobby
-	-- Large porcelain panels with recessed navy seams, utility grates and
-	-- painted directional inlays. Native materials supply real surface grain.
-	for x=-78,78,12 do
-		for z=254,386,12 do
-			local utility=math.abs(x)>66 or z>370
-			local shade=((math.floor(x/12)+math.floor(z/12))%3)*4
-			local tint=utility and Color3.fromRGB(70+shade,93+shade,113+shade) or Color3.fromRGB(191+shade,208+shade,216+shade)
-			artPart(art,"DeckPanel",V(11.82,0.07,11.82),CFrame.new(x,0.06,z),tint,utility and Enum.Material.DiamondPlate or Enum.Material.Concrete)
-			if not utility and z%24==14 then
-				artPart(art,"PanelInset",V(2.4,0.015,0.08),CFrame.new(x+3.7,0.104,z+5.5),ART.steel,Enum.Material.Metal)
-			end
+	art:SetAttribute("ArtTheme","WoodlandOutpost")
+	local stone=Color3.fromRGB(166,151,121)
+	local mortar=Color3.fromRGB(99,101,82)
+	local timber=Color3.fromRGB(98,64,43)
+	local cream=Color3.fromRGB(246,225,178)
+	local moss=Color3.fromRGB(78,118,65)
+	local function piece(name,size,cf,tint,material)
+		return artPart(art,name,size,cf,tint,material)
+	end
+	local function disk(name,at,diameter,thickness,tint,material)
+		local p=piece(name,V(thickness,diameter,diameter),CFrame.new(at)*CFrame.Angles(0,0,math.pi/2),tint,material)
+		p.Shape=Enum.PartType.Cylinder
+		return p
+	end
+	-- The arrival square is a compact cobbled courtyard. Grass continues into
+	-- it from the forest; paths connect actual doors rather than an empty grid.
+	local deck=lobby:FindFirstChild("FlightDeck")
+	if deck then deck.Color=Color3.fromRGB(98,139,77); deck.Material=Enum.Material.Grass end
+	for _,child in ipairs(lobby:GetChildren()) do
+		if child.Name=="DeckLine" or child.Name=="ChestShopPillar" or child.Name=="ChestShopPillarLight" then child:Destroy() end
+	end
+	disk("ArrivalCourt",V(0,0.04,345),57,0.12,mortar,Enum.Material.Cobblestone)
+	disk("CourtInset",V(0,0.12,345),53,0.12,stone,Enum.Material.Cobblestone)
+	local function walk(a,b,width)
+		local distance=(b-a).Magnitude
+		local cf=CFrame.lookAt((a+b)/2,b)
+		piece("VillagePath",V(width,0.15,distance+1),cf,stone,Enum.Material.Cobblestone)
+		for _,side in ipairs({-1,1}) do
+			piece("PathBorder",V(0.5,0.22,distance+1),cf*CFrame.new(side*(width/2+0.2),0.04,0),mortar,Enum.Material.Slate)
 		end
 	end
-	-- Broad dark carpet of metal toward the operations gates; cyan is only
-	-- used as inset navigation, so the whole room is not flooded with neon.
-	artPart(art,"OperationsWalk",V(116,0.09,13),CFrame.new(0,0.12,318),ART.ink,Enum.Material.Slate)
-	for _,z in ipairs({311.6,324.4}) do
-		artPart(art,"WalkTrim",V(116,0.08,0.16),CFrame.new(0,0.2,z),ART.cyan,Enum.Material.Neon)
-	end
+	walk(V(0,0.11,320),V(0,0.11,402),12)
+	walk(V(-78,0.11,352),V(67,0.11,352),11)
+	walk(V(-66,0.11,307),V(-66,0.11,394),12)
+	walk(V(43,0.11,326),V(43,0.11,385),13)
+	walk(V(-54,0.11,314),V(54,0.11,314),13)
 	for _,x in ipairs(MODE_X) do
-		for z=309,322,4 do
-			for _,side in ipairs({-1,1}) do
-				artPart(art,"DirectionChevron",V(0.22,0.08,2.2),CFrame.new(x+side*0.65,0.23,z)*CFrame.Angles(0,side*0.65,0),ART.pearl,Enum.Material.SmoothPlastic)
+		walk(V(x,0.12,300),V(x,0.12,318),10)
+	end
+	-- Broken stone gatehouse behind the retained magic rings, with cloth
+	-- pennants and masonry instead of a metal roof spanning the whole square.
+	for _,x in ipairs({-61,-20,20,61}) do
+		for level=0,3 do
+			local p=piece("GatehouseStone",V(5.8-level*0.2,4.5,5),CFrame.new(x,2.25+level*4.4,282),stone:Lerp(mortar,level*0.08),Enum.Material.Cobblestone)
+			p.CastShadow=true
+		end
+		piece("GatehouseCap",V(7,1.2,6.2),CFrame.new(x,18,282),cream,Enum.Material.Slate)
+		piece("GatehouseBanner",V(2.8,8,0.18),CFrame.new(x,11.5,284.6),Color3.fromRGB(46,102,101),Enum.Material.Fabric)
+		piece("BannerEmblem",V(1.3,1.3,0.12),CFrame.new(x,12,284.74)*CFrame.Angles(0,0,math.pi/4),ART.gold,Enum.Material.Metal)
+		piece("MossCap",V(5.9,0.28,2),CFrame.new(x,18.75,280.6),moss,Enum.Material.Grass)
+	end
+	-- Small watch-house anchors the skyline; openings and roof overhangs give
+	-- depth without needing a building the player must enter to use a menu.
+	local bridge=lobby:FindFirstChild("Bridge")
+	if bridge then bridge.Color=stone; bridge.Material=Enum.Material.Cobblestone end
+	for _,side in ipairs({-1,1}) do
+		piece("LodgeRoof",V(26,1.2,22),CFrame.new(side*11,10.2,265)*CFrame.Angles(0,0,-side*0.28),Color3.fromRGB(63,99,89),Enum.Material.WoodPlanks).CastShadow=true
+		piece("LodgeWindow",V(7,3.8,0.25),CFrame.new(side*12,4.1,274.2),timber,Enum.Material.Wood)
+		piece("LodgeWindowGlass",V(5.8,2.8,0.2),CFrame.new(side*12,4.1,274.4),Color3.fromRGB(219,164,89),Enum.Material.Glass)
+		piece("LodgeWindowCross",V(0.24,3.1,0.2),CFrame.new(side*12,4.1,274.6),timber,Enum.Material.Wood)
+	end
+	-- An asymmetric stone fountain makes a landmark beside the main route.
+	-- Solid footing and a low rim let avatars walk around it without snagging.
+	local at=V(24,0,352)
+	disk("FountainFoot",at+V(0,0.3,0),14,0.6,mortar,Enum.Material.Slate)
+	disk("FountainBowl",at+V(0,0.8,0),12,0.7,stone,Enum.Material.Cobblestone)
+	disk("FountainWater",at+V(0,1.2,0),10.5,0.15,Color3.fromRGB(76,165,163),Enum.Material.Glass).Transparency=0.18
+	for i=0,11 do
+		local a=i*math.pi/6
+		piece("FountainRim",V(3,1,1.1),CFrame.new(at+V(math.sin(a)*5.8,1.2,math.cos(a)*5.8))*CFrame.Angles(0,a,0),cream,Enum.Material.Slate)
+	end
+	piece("FountainPillar",V(2,3.8,2),CFrame.new(at+V(0,2.4,0)),mortar,Enum.Material.Cobblestone)
+	local crystal=piece("AuroraCrystal",V(1.7,2.7,1.7),CFrame.new(at+V(0,5.1,0))*CFrame.Angles(0,0,0.35),Color3.fromRGB(151,232,186),Enum.Material.Glass)
+	crystal.Transparency=0.12
+	disk("CrystalCollar",at+V(0,3.9,0),3,0.3,ART.gold,Enum.Material.Metal)
+	-- Tailored canvas stalls: visible seams, scalloped valances, timber posts,
+	-- crates and warm lamps. Open fronts preserve every existing shop trigger.
+	local function stall(x,z,width,depth,tint,side)
+		local cf=CFrame.new(x,0,z)*CFrame.Angles(0,side*math.pi/2,0)
+		for _,sx in ipairs({-1,1}) do
+			for _,sz in ipairs({-1,1}) do
+				piece("MarketPost",V(0.65,10,0.65),cf*CFrame.new(sx*(width/2-0.6),5,sz*(depth/2-0.6)),timber,Enum.Material.Wood).CastShadow=true
+				piece("PostFoot",V(1.2,0.8,1.2),cf*CFrame.new(sx*(width/2-0.6),0.4,sz*(depth/2-0.6)),stone,Enum.Material.Cobblestone)
 			end
 		end
-	end
-	-- Structural depth behind the portals, with repeated fins and a luminous
-	-- crown. This frames the arrival view without closing the carrier's sky.
-	for x=-60,60,20 do
-		local pillar=artPart(art,"AtriumButtress",V(2.4,23,4),CFrame.new(x,11.5,282),ART.pearl,Enum.Material.Metal)
-		pillar.CastShadow=true
-		artPart(art,"ButtressRecess",V(0.7,18,0.15),CFrame.new(x,11.5,284.1),ART.ink,Enum.Material.DiamondPlate)
-		artPart(art,"ButtressLight",V(0.12,14,0.12),CFrame.new(x,12,284.3),ART.cyan,Enum.Material.Neon)
-	end
-	artPart(art,"AtriumCrown",V(126,2.5,7),CFrame.new(0,25,282),ART.pearl,Enum.Material.Metal).CastShadow=true
-	artPart(art,"CrownInlay",V(124,0.18,0.2),CFrame.new(0,24,285.6),ART.cyan,Enum.Material.Neon)
-	for _,x in ipairs({-58,58}) do
-		artPart(art,"WingBeam",V(3,1.8,82),CFrame.new(x,22,330),ART.pearl,Enum.Material.Metal).CastShadow=true
-		for _,z in ipairs({330,365}) do
-			artPart(art,"WingSupport",V(1.8,22,2),CFrame.new(x,11,z),ART.steel,Enum.Material.Metal)
+		local strips=math.floor(width/2)
+		for i=1,strips do
+			local u=-width/2+(i-0.5)*width/strips
+			local color=i%2==0 and cream or tint
+			piece("CanvasAwning",V(width/strips+0.03,0.22,depth+2),cf*CFrame.new(u,10.7,0)*CFrame.Angles(0.12,0,0),color,Enum.Material.Fabric)
+			piece("CanvasValance",V(width/strips,0.9,0.15),cf*CFrame.new(u,9.5,-depth/2-0.9),color,Enum.Material.Fabric)
+		end
+		piece("MarketRidge",V(width+1,0.35,0.35),cf*CFrame.new(0,11.1,0),timber,Enum.Material.Wood)
+		for i=0,2 do
+			local box=cf*CFrame.new(width/2+2,1+i*1.4,depth/2-1-i*0.4)
+			piece("SupplyCrate",V(2.3,1.4,2),box,Color3.fromRGB(147,101,56),Enum.Material.WoodPlanks)
+			piece("CrateStrap",V(0.2,1.45,2.05),box,Color3.fromRGB(80,76,63),Enum.Material.Metal)
 		end
 	end
-	-- Arrival medallion: concentric machinery and a floating arc reactor.
-	-- Located beside the main path, not across the walking route to gates.
-	local origin=CFrame.new(27,0,343)
-	for index,diameter in ipairs({16,13,11}) do
-		local disk=artPart(art,"ReactorDais",V(0.55,diameter,diameter),origin*CFrame.new(0,index*0.45,0)*CFrame.Angles(0,0,math.pi/2),index==2 and ART.gold or ART.ink,Enum.Material.Metal)
-		disk.Shape=Enum.PartType.Cylinder
-	end
-	local reactor=artPart(art,"ArcHeart",V(3.2,3.2,3.2),origin*CFrame.new(0,6,0),ART.cyan,Enum.Material.Neon)
-	reactor.Shape=Enum.PartType.Ball
-	arc(art,"ReactorOrbit",origin*CFrame.new(0,6,0)*CFrame.Angles(0.4,0,0.6),4.1,0.2,0.25,ART.gold,Enum.Material.Metal,32)
-	arc(art,"ReactorOrbit",origin*CFrame.new(0,6,0)*CFrame.Angles(1.1,0.5,-0.6),4.7,0.13,0.18,ART.cyan,Enum.Material.Neon,32)
-	local glow=Instance.new("PointLight")
-	glow.Color,glow.Range,glow.Brightness,glow.Parent=ART.cyan,18,1.2,reactor
-	wallSign(art,"ReactorPlaque",origin*CFrame.new(0,2.1,7)*CFrame.Angles(0,math.pi,0),V(9,2,0.2),"ARC / 01","REDE DE DEFESA ATIVA",ART.cyan)
-	-- Physical department headers guide players without billboard clutter.
-	wallSign(art,"HeroWing",CFrame.new(-78,13,337)*CFrame.Angles(0,math.pi/2,0),V(23,5,0.6),"HERÓIS","MONTE SUA EQUIPE",ART.gold)
-	wallSign(art,"TrainingWing",CFrame.new(78,13,337)*CFrame.Angles(0,-math.pi/2,0),V(23,5,0.6),"ACADEMIA","HABILIDADES & EVOLUÇÃO",ART.cyan)
-	wallSign(art,"SupplyWing",CFrame.new(-63,11,360)*CFrame.Angles(0,math.pi/2,0),V(18,4,0.6),"ARSENAL","SUPRIMENTOS DA RESISTÊNCIA",ART.gold)
-	for _,x in ipairs({-51,51}) do
-		for _,z in ipairs({334,355,376}) do
-			artPart(art,"PlanterBasin",V(4,1.4,6),CFrame.new(x,0.7,z),ART.pearl,Enum.Material.Concrete)
-			for offset=-1,1 do
-				local leaf=artPart(art,"AtriumFoliage",V(3.1,2.6,3.1),CFrame.new(x,2.1,z+offset*1.6),Color3.fromRGB(48,132+offset*12,103),Enum.Material.LeafyGrass)
-				leaf.Shape=Enum.PartType.Ball
-			end
+	stall(59,338,17,13,Color3.fromRGB(183,115,57),-1)
+	stall(59,374,17,13,Color3.fromRGB(87,127,96),-1)
+	for _,z in ipairs({323,351,379}) do stall(-67,z,24,12,Color3.fromRGB(124,103,153),1) end
+	-- Interior gardens bring foliage into the arrival view, rather than only
+	-- outlining the edge of the island with identical spherical trees.
+	local function garden(x,z,radius)
+		disk("GardenBed",V(x,0.24,z),radius*2,0.45,mortar,Enum.Material.Cobblestone)
+		disk("GardenSoil",V(x,0.5,z),radius*2-1,0.14,Color3.fromRGB(77,75,47),Enum.Material.Ground)
+		for i=0,6 do
+			local a=i*2.4
+			local px,pz=x+math.cos(a)*radius*0.58,z+math.sin(a)*radius*0.58
+			local bush=piece("GardenShrub",V(3.3,2.5+(i%2),3),CFrame.new(px,1.7,pz),Color3.fromRGB(69+i*3,115+i*5,69),Enum.Material.Grass)
+			bush.Shape=Enum.PartType.Ball
+			piece("GardenBlossom",V(0.65,0.3,0.65),CFrame.new(px,3.1+(i%2)*0.45,pz),i%2==0 and Color3.fromRGB(245,195,91) or Color3.fromRGB(229,161,168),Enum.Material.SmoothPlastic)
 		end
+	end
+	for _,p in ipairs({{-29,337,6},{-29,366,6},{23,382,7},{-41,287,5},{41,287,5}}) do garden(p[1],p[2],p[3]) end
+	local function oak(x,z)
+		piece("PlazaTreeTrunk",V(2.5,12,2.5),CFrame.new(x,6,z)*CFrame.Angles(0,0,0.06),timber,Enum.Material.Wood).CastShadow=true
+		for i=0,4 do
+			local a=i*2.4
+			local leaf=piece("PlazaTreeCrown",V(11,8,10),CFrame.new(x+math.cos(a)*3.5,12+i%2*3,z+math.sin(a)*3.5),Color3.fromRGB(85+i*5,131+i*5,66+i*3),Enum.Material.Grass)
+			leaf.Shape=Enum.PartType.Ball
+		end
+	end
+	oak(-29,337); oak(-29,366); oak(23,382)
+	-- Two strings of cloth flags tie the market together. No large floating
+	-- billboard blocks the forest skyline from the player's normal camera.
+	for _,z in ipairs({330,391}) do
+		for _,x in ipairs({-47,47}) do piece("FestivalPole",V(0.45,15,0.45),CFrame.new(x,7.5,z),timber,Enum.Material.Wood) end
+		for i=0,15 do
+			local x=-45+i*6
+			local y=14.7-2.6*(1-(x/47)^2)
+			piece("FestivalCord",V(6.15,0.08,0.08),CFrame.new(x,y,z),timber,Enum.Material.SmoothPlastic)
+			piece("FestivalPennant",V(1.8,2.3,0.09),CFrame.new(x,y-1.2,z)*CFrame.Angles(0,0,i%2==0 and 0.08 or -0.08),i%3==0 and cream or i%3==1 and Color3.fromRGB(201,125,72) or Color3.fromRGB(68,124,114),Enum.Material.Fabric)
+		end
+	end
+	for _,p in ipairs({{-18,327},{18,327},{-17,375},{16,397}}) do
+		piece("VillageLampPost",V(0.45,7,0.45),CFrame.new(p[1],3.5,p[2]),timber,Enum.Material.Wood)
+		piece("VillageLampRoof",V(1.6,0.25,1.6),CFrame.new(p[1],7.8,p[2]),timber,Enum.Material.Wood)
+		local lamp=piece("VillageLampGlass",V(1,1.3,1),CFrame.new(p[1],7,p[2]),Color3.fromRGB(255,213,141),Enum.Material.Neon)
+		local glow=Instance.new("PointLight")
+		glow.Color,glow.Range,glow.Brightness,glow.Parent=Color3.fromRGB(255,217,159),13,0.65,lamp
 	end
 end
+
 
 --==============================================================================
 -- The carrier in the sky: ocean far below, rotors, parked jets, deck lights
@@ -1193,54 +1315,7 @@ local function buildJet(lobby, x, z, yaw)
 end
 
 function World:DressLobby(lobby)
-	-- The ocean, far below the flight deck: the carrier flies.
-	local terrain = workspace.Terrain
-	terrain:FillBlock(CFrame.new(0, OCEAN_Y, 320), Vector3.new(1400, 12, 1400), Enum.Material.Water)
-
-	for _, x in ipairs({ -106, 106 }) do
-		for _, z in ipairs({ 262, 378 }) do buildRotor(lobby, x, z) end
-	end
-	-- Keep the wing clear of the legendary chest's walk-in shop pad.
-	buildJet(lobby, 18, 377, 0)
-	buildJet(lobby, -30, 380, 0.08)
-
-	-- A radar on the bridge, turning slowly (the client animates it).
-	local radar = Instance.new("Model")
-	radar.Name, radar.Parent = "Radar", lobby
-	part(radar, "RadarMast", Vector3.new(0.8, 6, 0.8), CFrame.new(16, 10, 265), Color3.fromRGB(60, 74, 88), Enum.Material.Metal)
-	local dish = part(radar, "RadarDish", Vector3.new(0.4, 6.5, 6.5), CFrame.new(16, 13.4, 265) * CFrame.Angles(0, 0, math.rad(70)), Color3.fromRGB(170, 182, 194), Enum.Material.Metal)
-	dish.Shape = Enum.PartType.Cylinder
-	part(radar, "RadarLamp", Vector3.new(0.5, 0.5, 0.5), CFrame.new(16, 16.6, 265), Color3.fromRGB(255, 50, 50), Enum.Material.Neon)
-	for _, p in ipairs(radar:GetChildren()) do p.CanCollide, p.CanQuery = false, false end
-
-	-- Deck edge lighting and flight-deck paint.
-	local edge = Color3.fromRGB(71, 232, 178)
-	for _, z in ipairs({ 246.4, 393.6 }) do
-		part(lobby, "DeckEdgeLight", Vector3.new(176, 0.3, 0.5), CFrame.new(0, 0.15, z), edge, Enum.Material.Neon)
-	end
-	for _, corner in ipairs({ { -88, 247 }, { 88, 247 }, { -88, 393 }, { 88, 393 } }) do
-		local beacon = part(lobby, "DeckBeacon", Vector3.new(1, 1.2, 1), CFrame.new(corner[1], 0.6, corner[2]), Color3.fromRGB(255, 60, 60), Enum.Material.Neon)
-		local light = Instance.new("PointLight")
-		light.Color, light.Range, light.Brightness, light.Parent = Color3.fromRGB(255, 60, 60), 14, 1.2, beacon
-	end
-	local paint = Color3.fromRGB(226, 214, 120)
-	for z = 356, 390, 8 do
-		part(lobby, "RunwayMark", Vector3.new(0.6, 0.04, 4.5), CFrame.new(0, 0.03, z), Color3.fromRGB(230, 232, 228))
-	end
-	for _, side in ipairs({ -1, 1 }) do
-		part(lobby, "Chevron", Vector3.new(0.8, 0.04, 9), CFrame.new(side * 4, 0.03, 388) * CFrame.Angles(0, side * 0.6, 0), paint)
-	end
-	local pad = part(lobby, "DeckHelipad", Vector3.new(0.05, 16, 16), CFrame.new(56, 0.03, 384) * CFrame.Angles(0, 0, math.pi / 2), paint, Enum.Material.SmoothPlastic)
-	pad.Shape = Enum.PartType.Cylinder
-	part(lobby, "DeckHelipadInner", Vector3.new(0.06, 14.6, 14.6), CFrame.new(56, 0.035, 384) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(32, 46, 59), Enum.Material.Metal).Shape = Enum.PartType.Cylinder
-	for _, bar in ipairs({ { -2.2, 0, 0.9, 7 }, { 2.2, 0, 0.9, 7 }, { 0, 0, 4.4, 0.9 } }) do
-		part(lobby, "DeckHelipadMark", Vector3.new(bar[3], 0.04, bar[4]), CFrame.new(56 + bar[1], 0.05, 384 + bar[2]), paint)
-	end
-	for _, name in ipairs({ "RunwayMark", "Chevron", "DeckHelipad", "DeckHelipadInner", "DeckHelipadMark", "DeckEdgeLight" }) do
-		for _, item in ipairs(lobby:GetChildren()) do
-			if item.Name == name then item.CanCollide, item.CanQuery = false, false end
-		end
-	end
+	workspace.Terrain:FillBlock(CFrame.new(0, OCEAN_Y, 320), Vector3.new(1400, 12, 1400), Enum.Material.Water)
 end
 
 -- Called on a slow server timer with the top rows for a representative
@@ -2415,6 +2490,44 @@ function World:Build(mapId)
 	label(base, "NÚCLEO / CORE", Vector3.new(0, 9, 0), coreTint)
 	self.base = base
 	self.mapId = mapId
+end
+
+function World:UpdateBase(index, base, core)
+	local name="PlayerBase_"..index
+	local old=self.Scenery:FindFirstChild(name); if old then old:Destroy() end
+	local model=Instance.new("Model"); model.Name=name; model.Parent=self.Scenery
+	local def=self.catalog.Bases[base.id]; local tint=Color3.fromRGB(unpack(def.color))
+	local offsets={{-12,-12},{12,-12},{-12,12},{12,12}}
+	local at=Vector3.new(math.clamp(core.X+offsets[index][1],-100,100),0,math.clamp(core.Z+offsets[index][2],-100,100))
+	local function block(key,size,offset,color,material)
+		local p=part(model,key,size,CFrame.new(at+offset),color or tint,material or Enum.Material.Metal)
+		p.CanCollide=false; return p
+	end
+	block("Foundation",Vector3.new(9,1,9),Vector3.new(0,0.5,0),Color3.fromRGB(53,48,61))
+	block("Trim",Vector3.new(9.3,0.2,9.3),Vector3.new(0,1.1,0),tint,Enum.Material.Neon)
+	local building=block("Building",Vector3.new(6,3+base.level*0.4,5),Vector3.new(0,2.7,0))
+	block("Roof",Vector3.new(7,0.65,6),Vector3.new(0,4.4+base.level*0.2,0),tint:Lerp(Color3.new(1,1,1),0.35))
+	for n=1,base.level do block("LevelLamp",Vector3.new(0.7,0.4,0.15),Vector3.new(-2.4+n*0.8,2.4,-2.6),Color3.fromRGB(255,233,146),Enum.Material.Neon) end
+	if def.style=="farm" then
+		for x=-1,1 do
+			block("SupplyBed",Vector3.new(1.5,0.5,3),Vector3.new(x*2.4,1.4,2.6),Color3.fromRGB(101,73,46),Enum.Material.Wood)
+			for z=0,1 do local crop=block("EnergyCrop",Vector3.new(1,1+base.level*0.22,1),Vector3.new(x*2.4,2.2,2+z*1.2),tint,Enum.Material.Neon); crop.Shape=Enum.PartType.Ball end
+		end
+	elseif def.style=="turret" then
+		block("Turret",Vector3.new(2.8,2,2.8),Vector3.new(0,6,0),Color3.fromRGB(69,74,89))
+		for x=-1,1,2 do block("CannonBarrel",Vector3.new(0.65,0.65,4+base.level*0.3),Vector3.new(x*0.8,6,-2),tint) end
+	elseif def.style=="wall" then
+		for x=-1,1 do block("WallSection",Vector3.new(2.8,3+base.level*0.4,1),Vector3.new(x*3,2.4,-4),tint,Enum.Material.Concrete) end
+		block("ShieldEmitter",Vector3.new(8.4,0.3,0.3),Vector3.new(0,4.3,-4.6),tint,Enum.Material.Neon)
+	elseif def.style=="soldiers" then
+		block("Door",Vector3.new(2.4,2.8,0.15),Vector3.new(0,2.5,-2.6),Color3.fromRGB(27,28,39))
+		for x=-1,1,2 do
+			block("Flagpole",Vector3.new(0.15,5,0.15),Vector3.new(x*3.5,3.5,1))
+			block("Banner",Vector3.new(1.3,1.8,0.15),Vector3.new(x*3.5+0.55,5,1),tint,Enum.Material.Fabric)
+		end
+	end
+	label(building,def.name.pt.." • "..base.level.."/5",Vector3.new(0,6,0),tint)
+	return at
 end
 
 function World:MakeTower(id, heroId, position, ownerId)

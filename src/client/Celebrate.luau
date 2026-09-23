@@ -237,11 +237,11 @@ end
 -- result: the server's committed OpenChest result {heroId, rarity, duplicate,
 -- refundGold, refundMastery}. chestId picks the chest's own colour.
 function Celebrate:Chest(result, chestId, onClosed)
-	if type(result) ~= "table" or not Catalog.Heroes[result.heroId] then return end
+	if type(result) ~= "table" or not (Catalog.Heroes[result.heroId] or Catalog.Bases[result.baseId]) then return end
 	if self.reveal then self:_closeReveal() end
 	local UI = self.UI
 	local lowFX = self.lowFX()
-	local hero = Catalog.Heroes[result.heroId]
+	local hero = Catalog.Bases[result.baseId] or Catalog.Heroes[result.heroId]
 	local rarity = Catalog.Rarities[result.rarity] or Catalog.Rarities[hero.rarity]
 	local tiers = Catalog.RarityOrder
 	local tierIndex = table.find(tiers, rarity.id) or 1
@@ -280,7 +280,9 @@ function Celebrate:Chest(result, chestId, onClosed)
 	UI.stroke(card, finalTint, 4)
 	local cardScale = UI.create("UIScale", { Scale = 0 }, card)
 	UI.label(card, Catalog.Upper(self:_t(rarity.name)) .. "!", { Name = "RevealRarity", Position = UDim2.fromOffset(10, 10), Size = UDim2.new(1, -20, 0, 34), Font = Enum.Font.GothamBlack, TextSize = 28, TextColor3 = finalTint:Lerp(WHITE, 0.2), TextXAlignment = Enum.TextXAlignment.Center, TextStrokeTransparency = 0.3, ZIndex = 91 })
-	if self.portrait then
+	if result.baseId then
+		UI.basePortrait(card,hero,{Name="RevealBase",AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,48),Size=UDim2.fromOffset(190,196),ZIndex=91})
+	elseif self.portrait then
 		pcall(self.portrait, card, result.heroId, { Name = "RevealPortrait", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 48), Size = UDim2.fromOffset(190, 196), ZIndex = 91 })
 	end
 	UI.label(card, self:_t(hero.name), { Name = "RevealName", Position = UDim2.fromOffset(10, 250), Size = UDim2.new(1, -20, 0, 34), Font = Enum.Font.GothamBlack, TextSize = 24, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, TextScaled = true, ZIndex = 91 })
@@ -288,6 +290,7 @@ function Celebrate:Chest(result, chestId, onClosed)
 		and self:_t({ pt = "REPETIDO  •  +" .. tostring(result.refundGold or 0) .. " Ouro  •  +" .. tostring(result.refundMastery or 0) .. " XP do herói", en = "DUPLICATE  •  +" .. tostring(result.refundGold or 0) .. " Gold  •  +" .. tostring(result.refundMastery or 0) .. " hero XP" })
 		or self:_t({ pt = "NOVO HERÓI!", en = "NEW HERO!" })
 	local status = UI.label(card, statusText, { Name = "RevealStatus", Position = UDim2.fromOffset(10, 290), Size = UDim2.new(1, -20, 0, 48), Font = Enum.Font.GothamBlack, TextSize = result.duplicate and 13 or 24, TextWrapped = true, TextColor3 = result.duplicate and Color3.fromRGB(255, 206, 82) or Color3.fromRGB(135, 235, 113), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
+	if result.baseId then status.Text=result.duplicate and ("+"..tostring(result.refundGold or 0)..self:_t({pt=" Ouro • base repetida",en=" Gold • duplicate base"})) or self:_t({pt="NOVA BASE!",en="NEW BASE!"}) end
 	local statusScale = UI.create("UIScale", { Scale = 1 }, status)
 
 	local continueButton = UI.button(root, self:_t({ pt = "INCRÍVEL!", en = "AWESOME!" }), function() self:_closeReveal() end, {

@@ -30,6 +30,11 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Rocket** — Explosivos em área | 330 | área (ar) | 15 | 26 | 1.30s | Sucata Valiosa |
 | **Demolidor** — Enxerga camuflados | 270 | único | 17 | 20 | 0.60s | Sentido Radar |
 | **Shang-Chi** — Combate corpo a corpo veloz | 340 | único | 14 | 18 | 0.40s | Dez Anéis |
+| **Ciclope** — Feixe que atravessa a horda | 320 | feixe (ar) | 38 | 32 | 1.35s | Explosão óptica |
+| **Homem de Gelo** — Congela o avanço de grupos | 300 | área | 17 | 25 | 1.05s | Era do gelo |
+| **Noturno** — Ataques rápidos e recuo tático | 290 | único | 24 | 22 | 0.80s | Bamf! |
+| **Fera** — Impactos curtos contra hordas | 240 | área | 26 | 18 | 0.95s | Salto selvagem |
+| **Cavaleiro da Lua** — Revela camuflados na rota | 310 | único (ar) | 34 | 25 | 1.05s | Luz de Khonshu |
 
 ## Épico — 449 Robux (compra direta)
 
@@ -42,6 +47,10 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Máquina de Combate** — Artilharia pesada em área | 520 | área (ar) | 27 | 28 | 1.40s | Bombardeio |
 | **Senhor das Estrelas** — Rajadas rápidas de blasters | 430 | único (ar) | 16 | 25 | 0.32s | Mixtape Incrível |
 | **Groot** — Controle e dano em área terrestre | 420 | área | 19 | 23 | 1.50s | Muralha de Raízes |
+| **Wolverine** — Garras contra elites | 420 | único | 36 | 16 | 0.65s | Fúria de adamantium |
+| **Gambit** — Cartas explosivas contra grupos | 390 | área (ar) | 35 | 29 | 1.15s | Ás explosivo |
+| **Psylocke** — Lâminas psíquicas perfurantes | 400 | único | 32 | 23 | 0.70s | Corte psíquico |
+| **Deadpool** — Rajadas rápidas e apoio ofensivo | 380 | único (ar) | 24 | 28 | 0.60s | Trabalho em equipe |
 
 ## Lendário — 999 Robux (compra direta)
 
@@ -51,6 +60,8 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Feiticeira Escarlate** — Dano mágico persistente em área | 650 | queima contínua (ar) | 34 | 26 | 1.80s | Hex Escarlate ⚡ (ultimate) |
 | **Doutor Estranho** — Controle espacial e suporte mágico | 560 | área (ar) | 36 | 28 | 1.50s | Dilatação do Tempo ⚡ (ultimate) |
 | **Motoqueiro Fantasma** — Fogo do inferno persistente | 620 | queima contínua | 28 | 26 | 1.40s | Fogo do Inferno ⚡ (ultimate) |
+| **Tempestade** — Relâmpagos e defesa aérea | 600 | corrente (ar) | 40 | 34 | 1.40s | Olho da tempestade ⚡ (ultimate) |
+| **Nova** — Feixe cósmico antiaéreo | 590 | feixe (ar) | 48 | 32 | 1.05s | Supernova ⚡ (ultimate) |
 
 ## Mítico — 1999 Robux (compra direta)
 
@@ -58,6 +69,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | --- | --- | --- | --- | --- | --- | --- |
 | **Capitã Marvel** — Feixe cósmico devastador | 780 | feixe (ar) | 68 | 30 | 1.50s | Nova Fotônica ⚡ (ultimate) |
 | **Surfista Prateado** — Energia cósmica encadeada | 800 | corrente (ar) | 34 | 32 | 1.20s | Julgamento Cósmico ⚡ (ultimate) |
+| **Jean Grey** — Explosões de energia psíquica | 760 | área (ar) | 44 | 30 | 1.30s | Chama da Fênix ⚡ (ultimate) |
 
 ## Habilidades
 
@@ -92,4 +104,16 @@ maestria exigida crescendo por rank e multiplicados pela raridade do herói
 | Fogo do Inferno ⚡ | Motoqueiro Fantasma | 80s | ULTIMATE: o inferno engole a zona. Queima 60% da vida máxima em 7 s, atordoa por 1 s e desacelera em 40%. |
 | Nova Fotônica ⚡ | Capitã Marvel | 90s | ULTIMATE: uma nova varre quase o mapa todo. 60% da vida máxima de cada inimigo em 60 studs, paralisa por 2.5 s e marca os alvos (+25% de dano). Chefes sofrem bem menos. |
 | Julgamento Cósmico ⚡ | Surfista Prateado | 90s | ULTIMATE: destrói o inimigo mais forte (95% da vida máxima), fulmina outros 6 em todo o mapa (35% cada) e derrete 40% da armadura de todos por 8 s. Chefes sofrem bem menos. |
+| Fúria de adamantium | Wolverine | 55s | Finaliza alvos abaixo de 28% de vida em 30 studs. Chefes resistem. |
+| Explosão óptica | Ciclope | 60s | Explosão: 28% da vida máxima em 30 studs. Chefes resistem. |
+| Olho da tempestade ⚡ | Tempestade | 75s | Relâmpagos: 26% da vida de 6 alvos; paralisa por 1.2 s. Chefes resistem. |
+| Chama da Fênix ⚡ | Jean Grey | 80s | Chama: 8% de vida por segundo por 6 s; remove 20% de armadura. Chefes resistem. |
+| Era do gelo | Homem de Gelo | 65s | Desacelera 50% por 6 s em 30 studs. |
+| Ás explosivo | Gambit | 60s | Explosão: 32% da vida máxima em 30 studs. Chefes resistem. |
+| Bamf! | Noturno | 65s | Recua inimigos 22 studs. Não move chefes. |
+| Salto selvagem | Fera | 65s | Paralisa por 2 s em 30 studs. Chefes resistem. |
+| Corte psíquico | Psylocke | 65s | Remove 40% de armadura por 6 s. |
+| Trabalho em equipe | Deadpool | 65s | Suas torres ganham 20% de dano por 6 s. |
+| Luz de Khonshu | Cavaleiro da Lua | 65s | Revela e marca: +18% de dano por 6 s. |
+| Supernova ⚡ | Nova | 75s | Explosão: 38% da vida em 30 studs; revela e marca (+12% dano). Chefes resistem. |
 

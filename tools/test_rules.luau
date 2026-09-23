@@ -17,7 +17,7 @@ end
 --==============================================================================
 -- Catalog shape
 --==============================================================================
-equal(#Catalog.HeroOrder, 24, "Roster size")
+equal(#Catalog.HeroOrder, 36, "Roster size")
 -- Shouted names keep their accents (string.upper alone produced "BAú LENDáRIO").
 equal(Catalog.Upper("Baú Lendário"), "BAÚ LENDÁRIO", "Accent-aware uppercase")
 equal(Catalog.Upper("Instalação da HYDRA"), "INSTALAÇÃO DA HYDRA", "Cedilla and tilde uppercase")
@@ -31,11 +31,11 @@ for _, rarity in Catalog.RarityOrder do
 	end
 end
 equal(#Catalog.MapOrder, 5, "Campaign map count")
-equal(#Catalog.EnemyOrder, 8, "Enemy families")
+equal(#Catalog.EnemyOrder, 23, "Enemy families")
 equal(#Catalog.BossOrder, 5, "Boss count")
 equal(#Catalog.ModeOrder, 5, "Four modes plus training")
 equal(#Catalog.PortalOrder, 4, "Four portals")
-equal(#Catalog.AbilityOrder, 24, "One ability per hero")
+equal(#Catalog.AbilityOrder, 36, "One ability per hero")
 check(Catalog.Modes.daily == nil and Catalog.Modes.bossrush == nil, "Daily challenge and boss rush are gone")
 check(Catalog.Skills == nil and Catalog.Protocols == nil, "The old skill and protocol systems are gone")
 for _, modeId in { "normal", "ranked", "cards" } do equal(Catalog.Modes[modeId].waves, 50, modeId .. " runs 50 waves") end
@@ -80,8 +80,8 @@ for _, id in Catalog.HeroOrder do
 		equal(product.id, 0, "Unconfigured hero products stay disabled: " .. id)
 	end
 end
-equal(rarityCount.common, 4, "Commons"); equal(rarityCount.rare, 7, "Rares"); equal(rarityCount.epic, 7, "Epics")
-equal(rarityCount.legendary, 4, "Legendaries"); equal(rarityCount.mythic, 2, "Mythics")
+equal(rarityCount.common, 4, "Commons"); equal(rarityCount.rare, 12, "Rares"); equal(rarityCount.epic, 11, "Epics")
+equal(rarityCount.legendary, 6, "Legendaries"); equal(rarityCount.mythic, 3, "Mythics")
 check(Catalog.Heroes.ironman.starter and Catalog.Heroes.hawkeye.starter, "Iron Man and Hawkeye are the starters")
 local starters = 0
 for _, id in Catalog.HeroOrder do if Catalog.Heroes[id].starter then starters += 1 end end
@@ -272,7 +272,9 @@ do
 	for wave = 1, 50 do
 		for _, spec in Waves.Generate("manhattan", "normal", wave, 1, 7) do seen[spec.enemyId] = true end
 	end
-	for _, id in Catalog.EnemyOrder do check(seen[id], "Manhattan meets every family, including " .. id) end
+	for _, id in Catalog.EnemyOrder do
+		if not Catalog.Enemies[id].faction or Catalog.Enemies[id].faction=="sinister" then check(seen[id], "Manhattan meets its families and variants, including " .. id) end
+	end
 	for _, id in Catalog.BossOrder do check(seen[id], "A normal run meets every boss, including " .. id) end
 end
 

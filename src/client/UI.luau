@@ -2,12 +2,12 @@
 local UI = {}
 
 UI.Colors = {
-	background = Color3.fromRGB(25, 23, 33),
-	panel = Color3.fromRGB(42, 38, 51),
-	card = Color3.fromRGB(62, 55, 68),
-	stroke = Color3.fromRGB(121, 109, 130),
+	background = Color3.fromRGB(28, 32, 33),
+	panel = Color3.fromRGB(41, 47, 46),
+	card = Color3.fromRGB(57, 65, 61),
+	stroke = Color3.fromRGB(112, 123, 109),
 	text = Color3.fromRGB(255, 248, 232),
-	muted = Color3.fromRGB(207, 198, 213),
+	muted = Color3.fromRGB(196, 202, 187),
 	green = Color3.fromRGB(135, 235, 113),
 	gold = Color3.fromRGB(255, 206, 82),
 	red = Color3.fromRGB(255, 129, 134),
@@ -24,7 +24,7 @@ UI.Themes = {
 	premium = {color=UI.Colors.green, icon="shop"}, shop = {color=UI.Colors.green, icon="shop"},
 	rewards = {color=UI.Colors.pink, icon="gift"}, modes = {color=UI.Colors.green, icon="bolt"},
 	quests = {color=UI.Colors.coral, icon="star"}, leaderboard = {color=UI.Colors.gold, icon="trophy"},
-	settings = {color=UI.Colors.cream, icon="bolt"},
+	settings = {color=UI.Colors.cream, icon="bolt"}, bases={color=UI.Colors.green,icon="heart"},
 }
 
 function UI.create(className, properties, parent)
@@ -57,7 +57,7 @@ end
 -- update it), while a restrained vertical shade gives game panels depth.
 function UI.shade(parent, rotation)
 	local gradient = parent:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient", {}, parent)
-	gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(205, 192, 210))
+	gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(231, 232, 221))
 	gradient.Rotation = rotation or 90
 	return gradient
 end
@@ -95,7 +95,7 @@ function UI.button(parent, text, callback, properties)
 	}
 	for key, value in pairs(properties or {}) do defaults[key] = value end
 	local button = UI.create("TextButton", defaults, parent)
-	UI.corner(button, 14)
+	UI.corner(button, 10)
 	UI.shade(button)
 	if (defaults.BackgroundTransparency or 0) < 1 then
 		local border = UI.stroke(button, UI.Colors.background, 2)
@@ -192,6 +192,75 @@ function UI.icon(parent, kind, tint, properties)
 	return root
 end
 
+-- Small, authored colour illustrations. Built-in shapes stay sharp at every
+-- resolution and need no uploaded image or external icon dependency.
+function UI.illustration(parent, kind, tint, properties)
+	local root=UI.frame(parent,{Name="Illustration_"..kind,BackgroundTransparency=1,Size=UDim2.fromOffset(44,44),Active=false})
+	for k,v in pairs(properties or {}) do root[k]=v end
+	local ink=Color3.fromRGB(34,42,43)
+	local gold=Color3.fromRGB(247,195,83)
+	local cream=Color3.fromRGB(255,239,192)
+	local function shape(x,y,w,h,color,radius,rotation)
+		local p=UI.frame(root,{Position=UDim2.fromScale(x,y),Size=UDim2.fromScale(w,h),BackgroundColor3=color,Rotation=rotation or 0,Active=false,ZIndex=root.ZIndex})
+		if radius then UI.corner(p,radius) end
+		return p
+	end
+	if kind=="hero" then
+		shape(.16,.65,.68,.29,ink,9)
+		shape(.22,.67,.56,.19,tint,7)
+		shape(.23,.05,.54,.68,ink,12)
+		shape(.28,.09,.44,.55,Color3.fromRGB(202,77,56),10)
+		shape(.34,.16,.32,.41,gold,8)
+		shape(.32,.31,.15,.07,cream,2,-8)
+		shape(.53,.31,.15,.07,cream,2,8)
+		shape(.42,.51,.16,.04,ink,1)
+		shape(.43,.71,.14,.14,cream,20)
+	elseif kind=="star" then
+		shape(.44,.29,.12,.56,tint,3)
+		shape(.21,.42,.38,.065,tint,2,-32)
+		shape(.47,.38,.34,.065,tint,2,32)
+		shape(.36,.05,.28,.28,ink,8,45)
+		shape(.40,.09,.20,.20,tint,6,45)
+		for _,p in ipairs({{.09,.44},{.66,.39},{.37,.72}}) do
+			shape(p[1],p[2],.24,.24,ink,20)
+			shape(p[1]+.04,p[2]+.04,.16,.16,gold,20)
+		end
+	elseif kind=="chest" then
+		shape(.08,.20,.84,.69,ink,8)
+		shape(.13,.27,.74,.55,Color3.fromRGB(150,86,45),5)
+		shape(.13,.28,.74,.19,Color3.fromRGB(207,133,64),5)
+		shape(.22,.25,.10,.56,gold,2)
+		shape(.68,.25,.10,.56,gold,2)
+		shape(.13,.49,.74,.06,ink)
+		shape(.40,.42,.20,.26,gold,4)
+		shape(.47,.50,.06,.09,ink,3)
+		shape(.20,.13,.12,.05,cream,2,35)
+		shape(.73,.08,.06,.14,cream,2,30)
+	elseif kind=="gift" then
+		shape(.12,.34,.76,.57,ink,5)
+		shape(.17,.40,.66,.45,tint,3)
+		shape(.08,.28,.84,.19,ink,4)
+		shape(.12,.31,.76,.11,tint,3)
+		shape(.44,.32,.12,.53,cream,1)
+		shape(.24,.10,.24,.20,cream,10,-22)
+		shape(.52,.10,.24,.20,cream,10,22)
+		shape(.44,.21,.12,.12,gold,8)
+	elseif kind=="shop" or kind=="coin" then
+		for i=0,(kind=="coin" and 0 or 2) do
+			local x=kind=="coin" and .1 or .1+i*.19
+			local y=kind=="coin" and .1 or .35-i*.12
+			local size=kind=="coin" and .8 or .55
+			shape(x,y,size,size,ink,30)
+			shape(x+.04,y+.04,size-.08,size-.08,gold,30)
+			shape(x+.09,y+.09,size-.18,size-.18,Color3.fromRGB(210,145,51),30)
+			shape(x+size*.43,y+size*.25,size*.14,size*.48,cream,2,18)
+		end
+	else
+		UI.icon(root,kind,tint,{Size=UDim2.fromScale(1,1)})
+	end
+	return root
+end
+
 -- Small clipped comic-print motifs; no textures to upload and no animated
 -- particles on menus. Each panel gets one motif, never one per text label.
 function UI.printTexture(parent, tint, properties)
@@ -207,11 +276,10 @@ function UI.printTexture(parent, tint, properties)
 end
 
 function UI.ribbon(parent, tint, height)
-	local band=UI.frame(parent,{Name="TitleRibbon",Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,0,height or 46),BackgroundColor3=tint,ClipsDescendants=true,Active=false})
-	UI.corner(band,12)
-	UI.shade(band,15)
-	UI.printTexture(band,UI.Colors.background)
-	UI.frame(band,{Name="RibbonInk",Position=UDim2.new(0,12,1,-3),Size=UDim2.new(1,-24,0,2),BackgroundColor3=UI.Colors.background,BackgroundTransparency=0.8})
+	local band=UI.frame(parent,{Name="TitleRibbon",Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,0,height or 46),BackgroundColor3=UI.Colors.cream,ClipsDescendants=true,Active=false})
+	UI.corner(band,10)
+	UI.frame(band,{Name="SectionTab",Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(42,height or 46),BackgroundColor3=tint,Active=false})
+	UI.frame(band,{Name="RibbonInk",Position=UDim2.new(0,48,1,-4),Size=UDim2.new(1,-105,0,2),BackgroundColor3=tint,BackgroundTransparency=0.15})
 	return band
 end
 
@@ -462,7 +530,7 @@ function UI.matchLayout(width, height, options)
 	local rightW = inner - leftW - 8
 	local rightX = top.x + 12 + leftW + 8
 	layout.wave = rect(top.x + 12, top.y + 4, leftW, class.short and 20 or 26)
-	layout.map = rect(top.x + 12, top.y + (class.short and 26 or 32), leftW, class.short and 16 or 20)
+	layout.map = rect(top.x + 12, top.y + (class.short and 26 or 32), leftW, class.narrow and 40 or (class.short and 16 or 20))
 	layout.hpText = rect(rightX, top.y + 4, rightW, class.short and 18 or 22)
 	layout.hpBar = rect(rightX + math.floor(rightW * 0.1), top.y + (class.short and 30 or 36), rightW - math.floor(rightW * 0.1), 7)
 
@@ -590,11 +658,9 @@ function UI.protocolLayout(width, height)
 	return { class = class, stacked = stacked, panel = panel, headerH = headerH, cards = cards, buttons = buttons, descriptions = descriptions }
 end
 
--- The lobby HUD is deliberately almost nothing: the world is the menu. A
--- small gold/level pill in the top-left corner, two small buttons in the
--- top-right, and — only while the player stands in a portal — the elevator
--- card along the bottom. A contextual panel uses the middle of the screen;
--- while the elevator card shows, the panel stops above it.
+-- Small counters above and an illustrated dock below leave the arrival view
+-- clear. A boarding card sits above the dock, except on short phones where
+-- it temporarily replaces the dock to preserve room for contextual sheets.
 function UI.lobbyLayout(width, height)
 	width, height = clampScreen(width, height)
 	local class = UI.sizeClass(width, height)
@@ -605,17 +671,18 @@ function UI.lobbyLayout(width, height)
 	local squad = rect(settings.x - 8 - buttonW, pad, buttonW, rowH)
 	-- The pill never reaches the buttons, however narrow the screen.
 	local pill = rect(pad, pad, math.min(class.compact and 160 or 228, squad.x - 8 - pad), rowH)
-	local navigationW = math.min(720, width - 2 * pad)
-	local navigation = rect(math.floor((width - navigationW) / 2), pad + rowH + 6, navigationW, 44)
+	local navigationW = math.min(class.short and 470 or 510, width - 2 * pad)
+	local navigationH = class.short and 54 or class.compact and 68 or 82
+	local navigation = rect(math.floor((width - navigationW) / 2), height - pad - navigationH, navigationW, navigationH)
 	local cardW = math.min(460, width - 2 * pad)
 	local cardH = class.short and 84 or 96
-	local elevator = rect(math.floor((width - cardW) / 2), height - pad - cardH, cardW, cardH)
+	local elevator = rect(math.floor((width - cardW) / 2), (class.short and height - pad or navigation.y - 8) - cardH, cardW, cardH)
 	local hintW = math.min(520, width - 2 * pad)
-	local hint = rect(math.floor((width - hintW) / 2), height - pad - 40, hintW, 40)
+	local hint = rect(math.floor((width - hintW) / 2), navigation.y - 48, hintW, 40)
 	local contextW = math.min(560, width - 2 * pad)
 	-- The context panel is a sheet on landscape phones. Hiding corner chrome
 	-- there makes enough room for the close control and scrollable content.
-	local contextTop = class.short and pad or navigation.y + navigation.h + 8
+	local contextTop = class.short and pad or pad + rowH + 8
 	local function contextAbove(bottom)
 		local h = math.min(class.compact and 330 or 400, bottom - contextTop)
 		return rect(math.floor((width - contextW) / 2), bottom - h, contextW, h)
@@ -623,7 +690,7 @@ function UI.lobbyLayout(width, height)
 	return {
 		class = class, pill = pill, squad = squad, settings = settings, navigation = navigation,
 		elevator = elevator, hint = hint,
-		context = contextAbove(height - pad),
+		context = contextAbove(navigation.y - 8),
 		contextRiding = contextAbove(elevator.y - 8),
 	}
 end
@@ -637,8 +704,8 @@ function UI.contextLayout(width, height, options)
 	local hud = UI.lobbyLayout(width, height)
 	local pad = hud.class.compact and 10 or 14
 	local modal = hud.class.short
-	local top = modal and pad or hud.navigation.y + hud.navigation.h + 8
-	local bottom = options.elevator and hud.elevator.y - 8 or height - pad
+	local top = modal and pad or hud.pill.y + hud.pill.h + 8
+	local bottom = options.elevator and hud.elevator.y - 8 or modal and height - pad or hud.navigation.y - 8
 	local maxWidth = options.wide and 900 or 690
 	local panelWidth = math.min(maxWidth, width - 2 * pad)
 	local slot = rect(math.floor((width - panelWidth) / 2), top, panelWidth, bottom - top)
@@ -659,6 +726,37 @@ function UI.clear(parent)
 	for _, child in ipairs(parent:GetChildren()) do
 		if not child:IsA("UIComponent") then child:Destroy() end
 	end
+end
+
+function UI.basePortrait(parent, def, properties)
+	local root=UI.frame(parent,properties)
+	root.BackgroundTransparency=1
+	local tint=UI.color(def.color)
+	local function block(x,y,w,h,color,radius)
+		local f=UI.frame(root,{Position=UDim2.fromScale(x,y),Size=UDim2.fromScale(w,h),BackgroundColor3=color,ZIndex=root.ZIndex})
+		UI.corner(f,radius or 3); return f
+	end
+	block(0.06,0.79,0.88,0.15,UI.Colors.background,8)
+	block(0.12,0.74,0.76,0.1,tint,6)
+	block(0.22,0.36,0.56,0.39,tint:Lerp(UI.Colors.background,0.35),5)
+	block(0.16,0.28,0.68,0.13,tint,6)
+	for n=0,2 do block(0.29+n*0.16,0.46,0.09,0.12,UI.Colors.cream,2) end
+	if def.style=="farm" then
+		for n=0,3 do
+			block(0.14+n*0.19,0.68,0.13,0.13,UI.Colors.coral)
+			block(0.17+n*0.19,0.52,0.07,0.18,UI.Colors.green,10)
+		end
+	elseif def.style=="wall" then
+		for n=0,3 do block(0.07+n*0.23,0.57,0.18,0.28,tint:Lerp(UI.Colors.cream,0.25),3) end
+	elseif def.style=="turret" then
+		block(0.36,0.12,0.26,0.22,UI.Colors.stroke,5)
+		block(0.42,0.06,0.12,0.17,UI.Colors.gold,3)
+	elseif def.style=="soldiers" then
+		block(0.4,0.57,0.2,0.22,UI.Colors.background)
+		block(0.77,0.13,0.03,0.59,UI.Colors.cream)
+		block(0.79,0.13,0.19,0.19,UI.Colors.coral)
+	end
+	return root
 end
 
 return UI
