@@ -19,6 +19,7 @@ local Audio = require(script:WaitForChild("Audio"))
 local Nameplates = require(script:WaitForChild("Nameplates"))
 local Celebrate = require(script:WaitForChild("Celebrate"))
 local RoutePreview = require(script:WaitForChild("RoutePreview"))
+local BuildOverlay = require(script:WaitForChild("BuildOverlay"))
 local remotes = ReplicatedStorage:WaitForChild("DoomRemotes")
 local requestRemote = remotes:WaitForChild("Request")
 local stateRemote = remotes:WaitForChild("State")
@@ -178,6 +179,7 @@ local audio = Audio.new(function() return state end)
 local nameplates = Nameplates.new(player, function() return language end)
 local effects = Effects.new(player, request, function() return state end, audio)
 local routePreview = RoutePreview.new(effects.folder, Catalog, C)
+local buildOverlay = BuildOverlay.new(effects.folder, Catalog, Rules, Config, C)
 
 local function smallText(parent, text, y, h)
 	return UI.label(parent, text, {Position = UDim2.fromOffset(14, y), Size = UDim2.new(1, -28, 0, h or 40), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
@@ -1767,6 +1769,7 @@ local function clearPlacement()
 	if ghost then ghost:Destroy(); ghost = nil end
 	ghostParts, ghostLift = nil, nil
 	if placementRing then placementRing:Destroy(); placementRing = nil end
+	buildOverlay:Clear()
 	if refs.placement then refs.placement.Visible = false end
 	if refs.hint then refs.hint.Visible = false end
 end
@@ -1828,6 +1831,8 @@ local function updatePreview(position)
 	if selectedHero then placementValid, placementReason = positionValid(selectedPosition) else placementValid, placementReason = true, nil end
 	local tint = placementValid and C.green or C.red
 	placementRing = rangeRing(placementRing, selectedPosition, radius, tint)
+	-- While a hero is being placed, the ground that refuses a tower is tinted.
+	buildOverlay:Update(selectedHero and state.match or nil)
 	if selectedHero then
 		if not ghost then
 			ghost = UI.heroModel(effects.folder, selectedHero, heroSource(selectedHero))

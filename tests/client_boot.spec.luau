@@ -84,6 +84,7 @@ moduleScript(shared, "Config", __CONFIG__)
 moduleScript(shared, "Rules", __RULES__)
 local Catalog = require(shared.Catalog)
 local Rules = require(shared.Rules)
+local SharedConfig = require(shared.Config)
 local UILayout = __UI__(nil, clockOs)
 local WorldBuilder = __WORLD__(nil, clockOs)
 
@@ -401,7 +402,8 @@ local function session(screen)
 	local nameplatesScript = moduleScript(clientScript, "Nameplates", __NAMEPLATES__)
 	local celebrateScript = moduleScript(clientScript, "Celebrate", __CELEBRATE__)
 	local routeScript = moduleScript(clientScript, "RoutePreview", __ROUTEPREVIEW__)
-	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript }) do loaded[item] = nil end
+	local overlayScript = moduleScript(clientScript, "BuildOverlay", __BUILDOVERLAY__)
+	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript, overlayScript }) do loaded[item] = nil end
 	loaded[shared.Config] = nil
 
 	if not step("init.client boots and syncs", function() __CLIENT__(clientScript, clockOs); flush() end) then return end
@@ -1075,10 +1077,41 @@ local function session(screen)
 		rayHit = { Instance = workspace:FindFirstChild("DoomWorld").BuildZones.BuildGround, Position = v3(70, 0, -60) }
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, KeyCode = Enum.KeyCode.Unknown, Position = v3(SCREEN.w / 2, SCREEN.h / 2, 0) }, false)
 		flush()
+		-- While placing, the ground that refuses a tower is tinted, from the
+		-- very rule the server applies: every tinted spot really is refused.
+		local visuals = workspace:FindFirstChild("DoomClientVisuals")
+		local roads, circles, edges, wrong = 0, 0, 0, {}
+		local mapId = matchSnapshot(profile, "Preparing").match.mapId
+		for _, item in ipairs(visuals and visuals:GetChildren() or {}) do
+			if item.Name == "NoBuildRoad" or item.Name == "NoBuildCorner" or item.Name == "NoBuildTower" then
+				if item.Name == "NoBuildRoad" then
+					roads += 1
+					-- Exactly as wide as the rule: wider would hide good ground,
+					-- narrower would leave refused ground untinted.
+					if math.abs(item.Size.X - 2 * (SharedConfig.PathHalfWidth + SharedConfig.TowerRadius)) > 0.01 then table.insert(wrong, "road width " .. item.Size.X) end
+				elseif item.Name == "NoBuildTower" then
+					circles += 1
+					if math.abs(item.Size.Y - 4 * SharedConfig.TowerRadius) > 0.01 then table.insert(wrong, "tower ring " .. item.Size.Y) end
+				end
+				local ok = Rules.BuildCheck(mapId, item.Position, item.Name == "NoBuildTower" and { item.Position } or {}, SharedConfig, {})
+				if ok then table.insert(wrong, item.Name) end
+			elseif item.Name == "BuildEdge" then
+				edges += 1
+			end
+		end
+		check(roads >= #Catalog.Maps[mapId].paths[1] - 1, tag .. ": placing tints every road's no-build band, got " .. roads)
+		check(circles == #towers(), tag .. ": placing rings every tower's footprint, got " .. circles)
+		check(edges == 4, tag .. ": placing outlines the buildable area")
+		check(#wrong == 0, tag .. ": every tinted spot is one the server refuses: " .. table.concat(wrong, ", "))
 		click("CONFIRMAR")
 		check(asked("PlaceTower"), tag .. ": confirming sends PlaceTower")
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Escape, Position = v3(0, 0, 0) }, false)
 		flush()
+		local leftover = 0
+		for _, item in ipairs(visuals and visuals:GetChildren() or {}) do
+			if string.sub(item.Name, 1, 7) == "NoBuild" or item.Name == "BuildEdge" then leftover += 1 end
+		end
+		check(leftover == 0, tag .. ": leaving placement clears the tint, " .. leftover .. " left")
 	end)
 
 	step("each owned tower carries its next upgrade above it", function()
