@@ -218,6 +218,27 @@ do
 	end
 end
 
+-- Guaranteed purchase for restricted accounts: priced at the expected chest cost.
+do
+	local cheapest = math.huge
+	for _, chest in pairs(Catalog.Chests) do cheapest = math.min(cheapest, chest.cost) end
+	for _, id in Catalog.HeroOrder do
+		local price = Rules.GuaranteedPrice(id)
+		check(price ~= nil and price % 50 == 0 and price >= cheapest, "every hero has a guaranteed price at least a chest's: " .. id)
+	end
+	for _, id in Catalog.BaseOrder do
+		local price = Rules.GuaranteedPrice(id)
+		check(price == nil or price >= cheapest, "a base's guaranteed price is never below a chest: " .. id)
+	end
+	local byRarity = {}
+	for _, id in Catalog.HeroOrder do
+		local rarity = Catalog.Heroes[id].rarity
+		byRarity[rarity] = math.max(byRarity[rarity] or 0, Rules.GuaranteedPrice(id))
+	end
+	check(byRarity.mythic > byRarity.legendary and byRarity.legendary > byRarity.epic and byRarity.epic > byRarity.common, "rarer heroes cost more to guarantee")
+	check(Rules.GuaranteedPrice("nobody") == nil, "unknown items have no price")
+end
+
 -- AFK farm: a small, fixed pay per whole minute, and nothing for nonsense.
 equal(Rules.AfkReward("gold", 1).gold, Catalog.Afk.gold.gold, "Gold farm pays its rate")
 equal(Rules.AfkReward("gold", 1).xp, 0, "Gold farm pays no XP")

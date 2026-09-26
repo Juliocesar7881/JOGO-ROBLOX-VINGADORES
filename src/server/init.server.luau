@@ -559,6 +559,9 @@ local function route(player, action, payload)
 	if action == "ElevatorLeave" then
 		return { ok = elevator:Leave(player) }
 	end
+	if action == "ElevatorStart" then
+		return { ok = elevator:StartNow(player), message = text("Só quem entrou primeiro pode começar.", "Only the first rider can start.") }
+	end
 	if action == "CreateParty" then
 		if match:Has(player) then return { ok = false, message = text("Termine a partida primeiro.", "Finish the match first.") } end
 		local created, message = party:Create(player)

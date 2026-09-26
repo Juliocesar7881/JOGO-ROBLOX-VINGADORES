@@ -114,6 +114,18 @@ function Elevator:Leave(player)
 	return true
 end
 
+-- START NOW: the host (first rider) may skip the rest of the countdown once
+-- everyone aboard has had a moment to see the plan. Anyone else is refused.
+local START_NOW_AFTER = 1.5
+function Elevator:StartNow(player)
+	local portalId = self.riding[player]
+	local car = portalId and self.cars[portalId]
+	if not car or car.riders[1] ~= player then return false end
+	car.remaining = math.min(car.remaining, START_NOW_AFTER)
+	self:_announce(car)
+	return true
+end
+
 function Elevator:_depart(portalId)
 	local car = self.cars[portalId]
 	local modeId = self:Plan(portalId)

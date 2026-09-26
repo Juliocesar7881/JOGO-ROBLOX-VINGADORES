@@ -809,4 +809,26 @@ do
 	check(not restricted and service:Get(owner).gold==before,"paid random restriction also blocks base chests without charge")
 end
 
+-- Guaranteed purchase: only where chests are restricted, exact item, exact price.
+do
+	local buyer = player(4343)
+	service:Load(buyer)
+	local target = "thor"
+	local price = Rules.GuaranteedPrice(target)
+	service:Award(buyer, "guaranteed-funds", { gold = price + 100 })
+	local _, open = service:Handle(buyer, "BuyGuaranteed", { itemId = target }, true)
+	check(not open, "an unrestricted account uses the chests instead")
+	service.records[buyer.UserId].randomRestricted = true
+	local _, poor = service:Handle(buyer, "BuyGuaranteed", { itemId = "nobody" }, true)
+	check(not poor, "an unknown item is refused")
+	local before = service:Get(buyer).gold
+	local _, bought = service:Handle(buyer, "BuyGuaranteed", { itemId = target }, true)
+	check(bought and service:Get(buyer).heroes[target] ~= nil, "a restricted account buys the exact hero it chose")
+	check(service:Get(buyer).gold == before - price, "the guaranteed price is charged exactly once")
+	local _, again = service:Handle(buyer, "BuyGuaranteed", { itemId = target }, true)
+	check(not again and service:Get(buyer).gold == before - price, "an owned item cannot be bought again")
+	local _, broke = service:Handle(buyer, "BuyGuaranteed", { itemId = "silversurfer" }, true)
+	check(not broke, "the price must be affordable")
+end
+
 print("PASS PlayerService: " .. checks .. " assertions (real module, mocked Roblox persistence and purchases)")

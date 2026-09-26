@@ -21,7 +21,7 @@ local SCHEMA_VERSION = 1
 local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "savedLoadouts", "quests", "achievements", "best", "stats", "title", "talents" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
-local ACTIONS = { EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, SaveLoadout = true, LoadLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
+local ACTIONS = { BuyGuaranteed = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, SaveLoadout = true, LoadLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
 	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true,
 	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
@@ -595,6 +595,19 @@ function PlayerService:Handle(player, action, payload, inLobby)
 		elseif action == "EquipBase" then
 			if type(payload.baseId)~="string" or not self.catalog.Bases[payload.baseId] or profile.bases[payload.baseId]~=true then return false,"Base não desbloqueada. / Base not unlocked." end
 			profile.equippedBase=payload.baseId
+		elseif action == "BuyGuaranteed" then
+			-- Only for accounts that cannot open chests: one exact hero or base
+			-- at the Gold it costs on average to draw it (Rules.GuaranteedPrice).
+			if not record.randomRestricted then return false, "Use os baús para recrutar. / Use chests to recruit." end
+			local itemId = payload.itemId
+			local price = type(itemId) == "string" and self.rules.GuaranteedPrice(itemId)
+			if not price then return false, "Item inválido. / Invalid item." end
+			local isHero = self.catalog.Heroes[itemId] ~= nil
+			if (isHero and profile.heroes[itemId]) or (not isHero and profile.bases[itemId]) then return false, "Você já tem este item. / You already own this." end
+			if profile.gold < price then return false, "Ouro insuficiente. / Not enough Gold." end
+			profile.gold -= price
+			if isHero then self:_grantHero(profile, itemId, now) else profile.bases[itemId] = true end
+			return true, { itemId = itemId, price = price }
 		elseif action == "OpenChest" then
 			if record.randomRestricted then return false, "Baús indisponíveis para esta conta. / Chests unavailable for this account." end
 			local chest = type(payload.chestId) == "string" and self.catalog.Chests[payload.chestId]

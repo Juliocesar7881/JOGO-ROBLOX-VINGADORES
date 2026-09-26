@@ -278,6 +278,20 @@ do
 
 end
 
+print("--- start now ---")
+do
+	local h=harness()
+	local host,guest=veteran(),veteran()
+	h.add(host,guest); at(host,"normal"); h.step(0.25); at(guest,"normal"); h.step(0.25)
+	check(not h.service:StartNow(guest),"only the first rider may start early")
+	check(h.service:StartNow(host),"the host may start early")
+	check(#h.log.launches==0,"starting early still leaves a moment to see the plan")
+	h.step(1.6)
+	local run=h.log.launches[1]
+	check(run and #run.riders==2,"the whole car departs together after START")
+	check(not h.service:StartNow(host),"nothing to start once the car has left")
+end
+
 print("--- fixed destinations ---")
 local extra=0
 for _,id in ipairs(Catalog.DestinationOrder) do

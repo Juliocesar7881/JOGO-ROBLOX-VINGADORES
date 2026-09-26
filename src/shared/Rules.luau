@@ -175,6 +175,33 @@ function Rules.BuildCheck(mapId, position, towers, config, blockers)
 	return true
 end
 
+-- Guaranteed purchase for accounts where paid random items are restricted
+-- (PolicyService): the Gold price of one exact hero or base is what it costs
+-- on average to draw it from the cheapest chest that holds its rarity
+-- (chest price / chance of that item), rounded up to 50. Pity and the
+-- unowned-first rule are ignored, so it is never cheaper than the chests.
+function Rules.GuaranteedPrice(itemId)
+	local hero, base = Catalog.Heroes[itemId], Catalog.Bases and Catalog.Bases[itemId]
+	local def = hero or base
+	if not def then return nil end
+	local kind = if hero then "hero" else "base"
+	local count = 0
+	for _, id in ipairs(if hero then Catalog.HeroOrder else Catalog.BaseOrder) do
+		local other = if hero then Catalog.Heroes[id] else Catalog.Bases[id]
+		if other.rarity == def.rarity then count += 1 end
+	end
+	local best
+	for _, chest in pairs(Catalog.Chests) do
+		local chestKind = if chest.kind == "base" then "base" else "hero"
+		local odds = chest.odds and chest.odds[def.rarity] or 0
+		if chestKind == kind and odds > 0 and count > 0 then
+			local price = chest.cost / (odds / 100 / count)
+			if not best or price < best then best = price end
+		end
+	end
+	return if best then math.ceil(best / 50) * 50 else nil
+end
+
 -- What a stretch of whole minutes in an AFK chamber pays. nil for anything
 -- that is not a farm or not a sane number of minutes.
 function Rules.AfkReward(kind, minutes)

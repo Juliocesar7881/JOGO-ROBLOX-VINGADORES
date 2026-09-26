@@ -494,7 +494,23 @@ local function contextChests(body,data)
 		end
 		smallText(body,T("Novos itens têm prioridade dentro da raridade sorteada. Veja o conteúdo e as chances antes de confirmar.","Unowned items take priority within the rolled rarity. Review contents and odds before confirming."),0,54)
 	end
-	if profile().paidRandomRestricted then smallText(body,T("Abertura de baús indisponível para esta conta. Heróis continuam disponíveis na compra direta.","Chest openings unavailable for this account. Direct hero purchases remain available."),0,52) end
+	if profile().paidRandomRestricted then
+		smallText(body,T("Abertura de baús indisponível para esta conta. Aqui você compra o herói ou a base que escolher, com Ouro, pelo preço médio de tirar no baú.","Chest openings are unavailable for this account. Here you buy the exact hero or base you choose, with Gold, at the average cost of drawing it."),0,58)
+		UI.section(body,T("COMPRA GARANTIDA","GUARANTEED PURCHASE"),T("Sem sorteio: você escolhe e recebe exatamente este item.","No draw: you choose and get exactly this item."))
+		local owned=profile().heroes or {}
+		local ownedBases=profile().bases or {}
+		local function offer(id,name,rarity,isOwned)
+			local price=Rules.GuaranteedPrice(id)
+			if not price or isOwned then return end
+			local row=UI.roundFrame(body,{Name="Guaranteed_"..id,Size=UDim2.new(1,-6,0,58),BackgroundColor3=C.card})
+			UI.label(row,name,{Position=UDim2.fromOffset(12,4),Size=UDim2.new(1,-170,0,26),Font=UI.Fonts.display,TextSize=15})
+			UI.label(row,Catalog.Upper(L(Catalog.Rarities[rarity].name)),{Position=UDim2.fromOffset(12,30),Size=UDim2.new(1,-170,0,20),TextSize=11,TextColor3=UI.color(Catalog.Rarities[rarity].color)})
+			local button=UI.button(row,"🪙 "..number(price),function() act("BuyGuaranteed",{itemId=id}) end,{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-8,0.5,0),Size=UDim2.fromOffset(148,44),BackgroundColor3=C.gold,TextSize=14})
+			if (profile().gold or 0)<price then UI.disabled(button) end
+		end
+		for _,id in ipairs(Catalog.HeroOrder) do local def=Catalog.Heroes[id]; offer(id,L(def.name),def.rarity,owned[id]~=nil) end
+		for _,id in ipairs(Catalog.BaseOrder) do local def=Catalog.Bases[id]; offer(id,L(def.name),def.rarity,ownedBases[id]==true) end
+	end
 end
 
 local function contextPremium(body)
@@ -770,8 +786,12 @@ local function contextSquad(body)
 	local leader=(profile().loadout or {})[1]
 	if leader then
 		local banner=UI.roundFrame(body,{Name="LeaderBanner",Size=UDim2.new(1,-6,0,64),BackgroundColor3=C.gold:Lerp(C.background,0.85)},C.gold)
-		UI.label(banner,T("★ LÍDER: ","★ LEADER: ")..heroName(leader),{Position=UDim2.fromOffset(12,5),Size=UDim2.new(1,-24,0,22),Font=Enum.Font.GothamBold,TextColor3=C.gold,TextWrapped=true,TextSize=13})
-		UI.label(banner,T("PODER: ","POWER: ")..L(Catalog.Abilities[Catalog.Heroes[leader].ability].name),{Position=UDim2.fromOffset(12,29),Size=UDim2.new(1,-24,0,30),TextWrapped=true,TextSize=12})
+		UI.label(banner,T("★ LÍDER — define sua habilidade: ","★ LEADER — sets your ability: ")..heroName(leader),{Position=UDim2.fromOffset(12,5),Size=UDim2.new(1,-150,0,22),Font=UI.Fonts.display,TextColor3=C.gold,TextWrapped=true,TextSize=14})
+		UI.label(banner,T("PODER: ","POWER: ")..L(Catalog.Abilities[Catalog.Heroes[leader].ability].name),{Position=UDim2.fromOffset(12,29),Size=UDim2.new(1,-150,0,30),TextWrapped=true,TextSize=12})
+		-- Changing the leader is an explicit choice, not only a drag of cards.
+		UI.button(banner,inventoryView.leaderPick and T("ESCOLHENDO…","CHOOSING…") or T("TROCAR LÍDER","CHANGE LEADER"),function()
+			inventoryView.leaderPick=not inventoryView.leaderPick; inventoryFilter="owned"; inventoryView.query=""; inventoryView.rarity="all"; renderContext()
+		end,{Name="ChangeLeader",AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-10,0.5,0),Size=UDim2.fromOffset(128,44),BackgroundColor3=C.gold,TextSize=13})
 	end
  local ownedCount=0
  for _,id in ipairs(Catalog.HeroOrder) do if (profile().heroes or {})[id] then ownedCount+=1 end end
@@ -1495,14 +1515,29 @@ renderElevator = function()
 	local tint = modeTint[e.portalId] or C.green
 	local card = UI.roundFrame(main, {Name = "ElevatorCard", Position = at(r), Size = dims(r), BackgroundColor3 = C.background}, tint)
 	refs.elevator = card
+	-- The plan before anyone is committed: map, mode, length, final boss and
+	-- what a win pays in lobby Gold.
 	local title=mapName(e.mapId).." / "..modeName(e.modeId)
-	UI.label(card, Catalog.Upper(title), {Name="PortalDestination",Position = UDim2.fromOffset(14, 5), Size = UDim2.new(1, -90, 0, 36), TextWrapped=true,TextSize = compact and 11 or 13, Font = Enum.Font.GothamBold, TextColor3 = tint})
+	local waves=Rules.WaveCount(e.modeId,e.mapId)
+	local map=Catalog.Maps[e.mapId]
+	local boss=map and Catalog.Enemies[e.modeId=="tutorial" and "lizard" or map.bossId]
+	local prize=e.modeId=="ranked" and T("🏆 25/onda","🏆 25/wave") or ("🏆 "..number(Rules.RunGold(e.modeId,e.mapId,waves,true)))
+	local summary=(waves==0 and T("SEM FIM","ENDLESS") or (tostring(waves).." "..T("ONDAS","WAVES")))
+		..((boss and waves>0) and ("  •  "..T("CHEFE: ","BOSS: ")..Catalog.Upper(L(boss.name))) or "").."  •  "..prize
+	UI.label(card, Catalog.Upper(title), {Name="PortalDestination",Position = UDim2.fromOffset(14, 3), Size = UDim2.new(1, -90, 0, 22), TextWrapped=true,TextSize = compact and 12 or 15, Font = UI.Fonts.display, TextColor3 = tint})
+	UI.label(card, summary, {Name="PortalSummary",Position = UDim2.fromOffset(14, 25), Size = UDim2.new(1, -90, 0, 18), TextSize = compact and 10 or 12, Font = Enum.Font.GothamBold, TextColor3 = C.muted})
 	refs.elevatorCount = UI.label(card, elevatorCountText(), {Position = UDim2.new(1, -80, 0, 4), Size = UDim2.fromOffset(66, 40), TextSize = compact and 28 or 34, Font = Enum.Font.GothamBlack, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
 	local rowH = compact and 34 or 36
 	local rowY = r.h - rowH - 8
 	local leaveW = compact and 76 or 92
 	UI.button(card, T("SAIR", "LEAVE"), function() act("ElevatorLeave", {}) end, {Position = UDim2.new(1, -(leaveW + 12), 0, rowY), Size = UDim2.fromOffset(leaveW, rowH), BackgroundColor3 = C.red, TextColor3 = C.text, TextSize = 13})
 	local statusRight = leaveW + 28
+	-- Whoever stepped on first may skip the rest of the countdown.
+	if e.host then
+		local startW = compact and 96 or 120
+		UI.button(card, T("COMEÇAR", "START"), function() act("ElevatorStart", {}) end, {Name = "ElevatorStartNow", Position = UDim2.new(1, -(leaveW + startW + 20), 0, rowY), Size = UDim2.fromOffset(startW, rowH), BackgroundColor3 = C.blue, TextSize = 13})
+		statusRight += startW + 8
+	end
 	local names = {}
 	for _, rider in ipairs(e.riders or {}) do table.insert(names, rider.name) end
 	local status = tostring(#names) .. "/" .. tostring(e.max or 4) .. "  " .. T("jogadores", "players") .. "  •  " .. table.concat(names, ", ")
