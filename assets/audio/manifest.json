@@ -107,6 +107,102 @@
       "peak": 0.4826,
       "sha256": "261505ab2cf9a97732ac5c1643c4efe9ce64ba78a092d727d1be2827a1dd7288",
       "assetId": 0
+    },
+    "ambManhattan": {
+      "file": "ambManhattan.wav",
+      "seconds": 20.0,
+      "loop": true,
+      "peak": 0.4166,
+      "sha256": "be14976485cb9e0d690efa8de2a1171ae16050ac74e2b4c3baa761f04c8fa1b6",
+      "assetId": 0
+    },
+    "ambGamma": {
+      "file": "ambGamma.wav",
+      "seconds": 20.0,
+      "loop": true,
+      "peak": 0.1956,
+      "sha256": "27718ad0ea3a67567422edbb35bd89c345ed565133463831d8b0050ac6e43873",
+      "assetId": 0
+    },
+    "ambHydra": {
+      "file": "ambHydra.wav",
+      "seconds": 20.0,
+      "loop": true,
+      "peak": 0.2275,
+      "sha256": "d9910153009cb12b986601393338cf1d91334cb0ae16b0f9371ae68e6b2f1546",
+      "assetId": 0
+    },
+    "ambWakanda": {
+      "file": "ambWakanda.wav",
+      "seconds": 20.0,
+      "loop": true,
+      "peak": 0.3023,
+      "sha256": "49582b4571ddc147a1e6153b61b52ea9a9864236cafe131aff7d8c7787d1294a",
+      "assetId": 0
+    },
+    "ambAsgard": {
+      "file": "ambAsgard.wav",
+      "seconds": 20.0,
+      "loop": true,
+      "peak": 0.2469,
+      "sha256": "3961a74d337317c3c3fa408d45bc411caae76b121fb18b8bc56b4ef1b66e95f1",
+      "assetId": 0
+    },
+    "ambLatveria": {
+      "file": "ambLatveria.wav",
+      "seconds": 20.0,
+      "loop": true,
+      "peak": 0.3248,
+      "sha256": "d68c7a858f7721c8b22a85a46b940c49486f773137a077df9895311778c2b320",
+      "assetId": 0
+    },
+    "shotTech": {
+      "file": "shotTech.wav",
+      "seconds": 0.35,
+      "loop": false,
+      "peak": 0.4966,
+      "sha256": "26a8544eb7f33fdce9a2443271e673ff8086ed68d1f5b259a8c4b0ee0e5df763",
+      "assetId": 0
+    },
+    "shotArrow": {
+      "file": "shotArrow.wav",
+      "seconds": 0.45,
+      "loop": false,
+      "peak": 0.5913,
+      "sha256": "8836e463f79edeaf5ab5e40f291149d2d77268898d6ab6904e1ca26bd0b75aa8",
+      "assetId": 0
+    },
+    "shotMagic": {
+      "file": "shotMagic.wav",
+      "seconds": 0.6,
+      "loop": false,
+      "peak": 0.3272,
+      "sha256": "57419465ffee290bc47b09598ec48da3ece26fc2f4d20207d35346d6c1f41d7c",
+      "assetId": 0
+    },
+    "shotMelee": {
+      "file": "shotMelee.wav",
+      "seconds": 0.4,
+      "loop": false,
+      "peak": 0.72,
+      "sha256": "49d09bc59d3253395276deab84a0633bc7cb75d9d8c5443e2ef72ecf2382e499",
+      "assetId": 0
+    },
+    "shotBlast": {
+      "file": "shotBlast.wav",
+      "seconds": 0.8,
+      "loop": false,
+      "peak": 0.72,
+      "sha256": "6e36a48b542446be67126c8bb985b05fa4bc97f29ce50bd29359ac97f61440fb",
+      "assetId": 0
+    },
+    "abilityReady": {
+      "file": "abilityReady.wav",
+      "seconds": 0.9,
+      "loop": false,
+      "peak": 0.3383,
+      "sha256": "8e87a80ba45e8b6db378febc0219559ccc55f3017f2948409943ebbcb1fa6999",
+      "assetId": 0
     }
   }
 }

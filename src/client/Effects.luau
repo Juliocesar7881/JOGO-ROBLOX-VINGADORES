@@ -646,6 +646,21 @@ function Effects:_ultimateBurst(event, tint, lowFX)
 	end
 end
 
+-- Which weapon cue a hero's shot makes: bows and thrown cards whoosh, area
+-- attacks boom, magic and energy chains shimmer, close fighters thud and the
+-- rest (repulsors, blasters, rifles) zap.
+local WHOOSH_HEROES = { hawkeye = true, gambit = true, spiderman = true, falcon = true, moonknight = true }
+local THUD_HEROES = { hulk = true, groot = true, panther = true, wolverine = true, shangchi = true, daredevil = true,
+	beast = true, psylocke = true, captain = true, antman = true, thor = true }
+function Effects.ShotSound(heroId)
+	local def = Catalog.Heroes[heroId]
+	if WHOOSH_HEROES[heroId] then return "shotArrow" end
+	if THUD_HEROES[heroId] then return "shotMelee" end
+	if def and def.attack == "splash" then return "shotBlast" end
+	if def and (def.damageType == "magic" or def.attack == "chain" or def.attack == "beam" or def.attack == "dot") then return "shotMagic" end
+	return "shotTech"
+end
+
 local MUZZLE_PARTS = {ironman="Repulsor",hawkeye="Arrow",spiderman="Hand",thor="Mjolnir",captain="Shield",widow="BatonCharge",
 	bucky="RifleBarrel",rocket="GunMuzzle",warmachine="CannonMuzzle",starlord="BlasterGlow",wanda="ChaosSpell",strange="SpellGlyph",vision="MindGem",captainmarvel="PhotonFist",
 	wolverine="AdamantiumClaw",cyclops="Visor",gambit="ChargedCard",iceman="IceFist",psylocke="Blade",nova="Visor",beast="FurryFist"}
@@ -1020,6 +1035,10 @@ function Effects:Handle(event)
 		local state = self.getState()
 		self:_aim(event.towerId, event.to)
 		self:_recoil(event.towerId)
+		local camera = workspace.CurrentCamera
+		if self.audio and camera and typeof(event.to) == "Vector3" then
+			self.audio:Shot(Effects.ShotSound(event.heroId), (event.to - camera.CFrame.Position).Magnitude)
+		end
 		if typeof(event.from) ~= "Vector3" or typeof(event.to) ~= "Vector3" or #self.shots >= 80 then return end
 		local lowFX = state and state.profile and state.profile.settings.lowFX
 		self:_heroShot(event, lowFX)

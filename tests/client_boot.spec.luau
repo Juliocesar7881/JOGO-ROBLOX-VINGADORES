@@ -1336,6 +1336,16 @@ local function session(screen)
 		frames(1 / 30, 2)
 	end)
 
+	step("every hero's shot has a weapon sound", function()
+		local EffectsModule = require(effectsScript)
+		local missing = {}
+		for _, heroId in ipairs(Catalog.HeroOrder) do
+			local cue = EffectsModule.ShotSound(heroId)
+			if SharedConfig.Audio[cue] == nil or SharedConfig.BuiltinCues[cue] == nil then table.insert(missing, heroId .. ":" .. tostring(cue)) end
+		end
+		check(#missing == 0, tag .. ": every hero maps to a configured weapon cue with a built-in fallback: " .. table.concat(missing, ", "))
+	end)
+
 	step("enemy families read at a glance: links, reveal, summons and armour", function()
 		push(matchSnapshot(profile, "Wave", { enemies = 4 }))
 		local visuals = workspace:FindFirstChild("DoomClientVisuals")

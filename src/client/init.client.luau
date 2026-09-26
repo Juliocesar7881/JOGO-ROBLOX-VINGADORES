@@ -2292,6 +2292,9 @@ updateMatch = function()
 	end
 	for id, record in pairs(refs.abilityButtons or {}) do
 		local remaining = match.ability and match.ability.cooldown or 0
+		-- A chime the moment the leader's power comes back mid-wave.
+		if record.cooling and remaining <= 0 and state.phase == "Wave" then audio:Cue("abilityReady", 1) end
+		record.cooling = remaining > 0
 		local shortcut = UserInputService.TouchEnabled and "" or "Q  "
 		local label = (record.ultimate and "⚡ " or "")..record.name
 		record.button.Text = shortcut..label.."\n"..(remaining>0 and (T("Recarrega em ","Ready in ")..math.ceil(remaining).."s") or state.phase=="Preparing" and T("Na próxima onda","Next wave") or T("PRONTO!","READY!"))

@@ -9,11 +9,22 @@ local Config = require(ReplicatedStorage:WaitForChild("DoomShared"):WaitForChild
 local Audio = {}
 Audio.__index = Audio
 
+local MUSIC = { lobby = true, battle = true }
+-- Each map has its own ambience under the music: street, reactor, yard,
+-- savanna, bridge or fortress.
+local AMBIENCE = { manhattan = "ambManhattan", gamma = "ambGamma", hydra = "ambHydra", wakanda = "ambWakanda", asgard = "ambAsgard", latveria = "ambLatveria" }
 local LOOPED = { lobby = true, battle = true }
-local VOLUME = { lobby = 0.3, battle = 0.28, victory = 0.4, defeat = 0.3, collect = 0.18, breach = 0.22, place = 0.2, upgrade = 0.3, levelUp = 0.4, ability = 0.25, boss = 0.28, wave = 0.22, chest = 0.3 }
+for _, name in pairs(AMBIENCE) do LOOPED[name] = true end
+local VOLUME = { lobby = 0.3, battle = 0.28, victory = 0.4, defeat = 0.3, collect = 0.18, breach = 0.22, place = 0.2, upgrade = 0.3, levelUp = 0.4, ability = 0.25, boss = 0.28, wave = 0.22, chest = 0.3,
+	abilityReady = 0.35, shotTech = 0.13, shotArrow = 0.13, shotMagic = 0.12, shotMelee = 0.15, shotBlast = 0.16 }
+for _, name in pairs(AMBIENCE) do VOLUME[name] = 0.2 end
+-- Combat is dense: only a few weapon sounds per quarter second reach the
+-- speakers, quieter with distance, and none from beyond earshot.
+local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.25, 4, 90, 3
+Audio.Ambiences = AMBIENCE
 
 function Audio.new(getState)
-	local self = setmetatable({ getState = getState, sounds = {}, fades = {}, track = nil, lastCue = {} }, Audio)
+	local self = setmetatable({ getState = getState, sounds = {}, fades = {}, track = nil, lastCue = {}, voices = {}, voiceIndex = {}, shotVoices = 0, ambient = nil }, Audio)
 	self.folder = Instance.new("Folder")
 	self.folder.Name = "DoomAudio"
 	self.folder.Parent = SoundService
@@ -66,7 +77,7 @@ end
 
 function Audio:_stopMusic(except)
 	for name, sound in pairs(self.sounds) do
-		if LOOPED[name] and name ~= except then
+		if MUSIC[name] and name ~= except then
 			if sound.IsPlaying then self:_fade(name, 0) else sound:Stop() end
 		end
 	end
@@ -109,6 +120,59 @@ function Audio:Cue(name, minimumGap)
 	if not ok then self.sounds[name] = nil end
 end
 
+-- The map's ambience loop, faded in under the music; nil fades it out. It
+-- follows the effects switch, not the music one: it is sound of the place.
+function Audio:Ambience(name)
+	if not self:_allowed(true) then name = nil end
+	if self.ambient == name then return end
+	if self.ambient and self.sounds[self.ambient] then self:_fade(self.ambient, 0) end
+	self.ambient = name
+	if not name then return end
+	local sound = self:_sound(name)
+	if not sound then return end
+	local ok = pcall(function()
+		if not sound.IsPlaying then sound.Volume = 0; sound:Play() end
+		self:_fade(name, VOLUME[name] or 0.2)
+	end)
+	if not ok then self.sounds[name] = nil end
+end
+
+-- A few Sound voices per weapon cue, used round robin, so overlapping shots
+-- do not cut each other off.
+function Audio:_voice(name)
+	local template = self:_sound(name)
+	if not template then return nil end
+	local pool = self.voices[name] or {}
+	self.voices[name] = pool
+	local index = (self.voiceIndex[name] or 0) % VOICES_PER_SOUND + 1
+	self.voiceIndex[name] = index
+	local voice = pool[index]
+	if not voice then
+		voice = Instance.new("Sound")
+		voice.Name, voice.SoundId, voice.PlaybackSpeed = name, template.SoundId, template.PlaybackSpeed
+		voice.Parent = self.folder
+		pool[index] = voice
+	end
+	return voice
+end
+
+-- A weapon cue at a distance from the listener. Returns whether it played.
+function Audio:Shot(name, distance)
+	if not self:_allowed(true, name) then return false end
+	distance = tonumber(distance) or 0
+	if distance > EARSHOT then return false end
+	local now = os.clock()
+	if now - (self.shotWindowAt or -math.huge) >= SHOT_WINDOW then self.shotWindowAt, self.shotVoices = now, 0 end
+	if self.shotVoices >= SHOT_VOICES then return false end
+	if now - (self.lastCue[name] or -math.huge) < 0.05 then return false end
+	local voice = self:_voice(name)
+	if not voice then return false end
+	self.shotVoices += 1
+	self.lastCue[name] = now
+	voice.Volume = (VOLUME[name] or 0.13) * math.clamp(1 - distance / EARSHOT, 0.2, 1)
+	return (pcall(function() voice:Play() end))
+end
+
 function Audio:Update(state)
 	if not state then return end
 	local phase = state.phase
@@ -118,9 +182,12 @@ function Audio:Update(state)
 	self.lastWave, self.lastPhase = state.wave, phase
 	if phase == "Lobby" then
 		self:Music("lobby")
+		self:Ambience(nil)
 	elseif phase == "Preparing" or phase == "Wave" then
 		self:Music("battle")
+		self:Ambience(AMBIENCE[state.match and state.match.mapId])
 	elseif phase == "Results" then
+		self:Ambience(nil)
 		if self.track ~= "results" then
 			self.track = "results"
 			self:_stopMusic(nil)

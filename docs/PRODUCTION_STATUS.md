@@ -151,8 +151,8 @@ estejam aprovados em produção.
 
 ## Dependências que ainda impedem declarar lançamento pronto
 
-1. **Configuração da conta:** faltam 57 IDs no template: experiência, dois
-   lugares, quatro passes, três pacotes de Ouro, 34 heróis e 13 áudios.
+1. **Configuração da conta:** faltam 69 IDs no template: experiência, dois
+   lugares, quatro passes, três pacotes de Ouro, 34 heróis e 25 áudios.
    É necessário criar/importar esses itens na conta proprietária e preencher
    `deployment/local.json`. O gerador está pronto para aplicá-los aos lugares.
 2. **Fluxo em aparelhos:** testar movimentação/toque, joystick, rolagem,

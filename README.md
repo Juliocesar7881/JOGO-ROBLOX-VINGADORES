@@ -34,7 +34,7 @@ publicada). Detalhes de publicação real em
 - **Combate visual:** poses de ataque nos 24 heróis, disparos nas armas,
   pedestais circulares, mapas mais claros, estados dos inimigos e avisos
   de chefes que acompanham a área real de perigo.
-- **Áudio e implantação:** [13 áudios originais](assets/audio/README.md),
+- **Áudio e implantação:** [25 áudios originais](assets/audio/README.md),
   música/efeitos com controles separados e [gerador de publicação](docs/DEPLOYMENT.md)
   que aplica IDs da conta sem alterar os fontes. Uploads e testes publicados
   ainda dependem da configuração proprietária.

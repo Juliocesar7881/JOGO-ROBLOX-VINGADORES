@@ -38,7 +38,7 @@ Evidências que orientam a prioridade:
    2.577 em `WorldBuilder`, 1.219 em `MatchService` e 963 em `PlayerService`.
    O problema não é o tamanho sozinho: várias responsabilidades diferentes
    precisam ser alteradas no mesmo arquivo para acrescentar uma função.
-7. **Lançamento:** o template versionado continua com 57 IDs zerados. Há
+7. **Lançamento:** o template versionado continua com 69 IDs zerados. Há
    testes locais, mas compras, teleporte, dados e toque em aparelhos reais
    ainda precisam de aceitação publicada.
 

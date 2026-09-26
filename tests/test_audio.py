@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 source = (ROOT / 'src/client/Audio.luau').read_text(encoding='utf-8')
 harness = r'''
 local delayed, sounds = {}, {}
-local Config = {Audio={lobby=10,battle=11,collect=12,victory=13,wave=14}}
+local Config = {Audio={lobby=10,battle=11,collect=12,victory=13,wave=14,ambGamma=21,ambHydra=22,shotTech=23,shotBlast=24}}
 local module={WaitForChild=function(self) return self end}
 local clock=10
 local os={clock=function() return clock end}
@@ -50,7 +50,37 @@ settings.effects=nil;clock+=1;audio:Cue('collect');assert(effectsPlayed==count+1
 settings.effects=true;state.phase='Results';state.results={victory=true};audio:Update(state)
 count=effectsPlayed;audio:Update(state);assert(count==effectsPlayed,'Result cue does not repeat on state refresh')
 assert(audio.sounds.collect.SoundId=='rbxassetid://12','Configured assets take precedence')
-print('PASS audio: transitions, mute, legacy settings and result cues')
+-- Map ambience: plays under the battle music, follows the map, stops after.
+state.phase='Wave';state.results=nil;state.match={mapId='gamma'};audio:Update(state)
+assert(audio.ambient=='ambGamma' and audio.sounds.ambGamma.IsPlaying,'A match plays its map ambience')
+state.match={mapId='hydra'};audio:Update(state)
+assert(audio.ambient=='ambHydra','A different map switches the ambience')
+state.phase='Lobby';audio:Update(state)
+assert(audio.ambient==nil,'The lobby has no map ambience')
+-- Weapon cues: a budget per quarter second, nothing beyond earshot, quieter far away.
+local plays=0
+local originalNew=Instance.new
+Instance.new=function(kind)
+ local value=originalNew(kind)
+ if kind=='Sound' then value.Play=function(self) plays+=1 end end
+ return value
+end
+clock+=5
+assert(not audio:Shot('shotTech',200),'A shot beyond earshot is silent')
+local heard=0
+for index=1,10 do clock+=0.01; if audio:Shot(index%2==0 and 'shotTech' or 'shotBlast',10) then heard+=1 end end
+assert(heard==4,'Dense fire is thinned to four voices, got '..heard)
+clock+=1
+assert(audio:Shot('shotTech',80),'A far shot within earshot still plays')
+local farVolume=audio.voices.shotTech[audio.voiceIndex.shotTech].Volume
+clock+=1
+assert(audio:Shot('shotTech',5),'A near shot plays')
+local nearVolume=audio.voices.shotTech[audio.voiceIndex.shotTech].Volume
+assert(nearVolume>farVolume,'Nearer shots are louder')
+settings.effects=false;clock+=1
+assert(not audio:Shot('shotTech',5),'The effects switch silences weapons too')
+settings.effects=true
+print('PASS audio: transitions, mute, legacy settings, result cues, map ambience and weapon voice budget')
 '''.replace('__AUDIO__', source)
 with tempfile.TemporaryDirectory(prefix='doom-audio-') as temp:
     path = Path(temp) / 'audio.luau'

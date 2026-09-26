@@ -40,7 +40,10 @@ return {
 		},
 	},
 	-- Optional owned/licensed audio IDs. Zero keeps the experience silent.
-	Audio = { lobby = 0, battle = 0, collect = 0, victory = 0, defeat = 0, breach = 0, place = 0, upgrade = 0, levelUp = 0, ability = 0, boss = 0, wave = 0, chest = 0 },
+	Audio = { lobby = 0, battle = 0, collect = 0, victory = 0, defeat = 0, breach = 0, place = 0, upgrade = 0, levelUp = 0, ability = 0, boss = 0, wave = 0, chest = 0,
+		-- One ambience loop per map, and a short cue per weapon family.
+		ambManhattan = 0, ambGamma = 0, ambHydra = 0, ambWakanda = 0, ambAsgard = 0, ambLatveria = 0,
+		shotTech = 0, shotArrow = 0, shotMagic = 0, shotMelee = 0, shotBlast = 0, abilityReady = 0 },
 	-- Native Roblox client sounds; uploaded, configured IDs take precedence.
 	-- Remove entries to mute fallbacks. Music still requires owned audio IDs.
 	BuiltinCues = {
@@ -55,5 +58,11 @@ return {
 		boss = {path = "rbxasset://sounds/impact_explosion_03.mp3", speed = 0.65},
 		wave = {path = "rbxasset://sounds/volume_slider.ogg", speed = 0.9},
 		chest = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.15},
+		abilityReady = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.5},
+		shotTech = {path = "rbxasset://sounds/volume_slider.ogg", speed = 2.4},
+		shotArrow = {path = "rbxasset://sounds/action_get_up.mp3", speed = 2.2},
+		shotMagic = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.9},
+		shotMelee = {path = "rbxasset://sounds/impact_explosion_03.mp3", speed = 1.7},
+		shotBlast = {path = "rbxasset://sounds/impact_explosion_03.mp3", speed = 1.15},
 	},
 }
