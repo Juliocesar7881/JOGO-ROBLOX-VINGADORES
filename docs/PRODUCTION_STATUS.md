@@ -38,6 +38,30 @@ produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 - Duração medida na simulação (sem o voto de pronto): treino 12,7 min;
   Manhattan 34,4 min; cartas 48,7 min; competitivo ~40 min até a onda 39.
 
+- **Construção única** (`Rules.BuildCheck`): a prévia e o servidor usam a
+  mesma regra; recusas dizem o motivo (caminho, ocupado, fora da área, Ouro,
+  limite); núcleo e bases bloqueiam; alcance da prévia inclui bônus.
+- **Barricada** aparece atravessada na rua exatamente onde a regra para os
+  inimigos (15 studs do núcleo) e desbota conforme perde vida.
+- **Rolagem** dos painéis preservada nas atualizações do servidor.
+- **Preparação do portal:** cartão com ondas, chefe final e prêmio; o primeiro
+  passageiro pode COMEÇAR antes da contagem.
+- **Líder:** slot 1 com "LÍDER — define sua habilidade" e botão TROCAR LÍDER.
+- **Compra garantida** com Ouro para contas com itens aleatórios restritos
+  (`Rules.GuaranteedPrice`, custo esperado no baú mais barato).
+- **Proporções:** Hulk ~10,5 studs com cabeça menor e mãos enormes; Groot alto e
+  estreito; Rocket com 60% da altura humana (só visual).
+- **Evolução em colmeia** (hexágonos) com arrastar, zoom, centralizar e cartão
+  "Agora → Próximo", custo e requisito.
+- **Parkour** opcional no bosque: título "Explorador da Aurora" uma vez, sem Ouro.
+- **AFK:** tela de economia (desliga o 3D), sessão, total recebido, salvando e
+  "Voltar ao lobby"; sons da interface com chave própria.
+- **Prévia animada das rotas** na preparação e aviso de NOVA ENTRADA.
+- **Chefes:** janela VULNERÁVEL de 3 s (+25% de dano) depois de cada poder.
+- **Telemetria:** saída no meio da partida por onda, Ouro da partida coletado
+  por minuto e duração das sessões AFK.
+- **Lugar AFK dedicado** (código pronto, desligado até configurar `AfkPlaceId`).
+
 ### Implementado, aguardando teste real (Studio/aplicativo)
 
 - Leitura visual das moedas maiores, do ímã e do aviso "no chão".
@@ -53,12 +77,10 @@ produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 
 ### Pendente
 
-- Lugar AFK separado com renovação por teleporte a cada 15 min (exige lugar
-  publicado e teste de 1 h sem interação; não há garantia da API).
-- Validação compartilhada de construção (prévia × servidor) com superfícies
-  demarcadas e motivos específicos de recusa.
-- Barreiras e soldados: conferência visual × regra de contato no Studio.
-- Rolagem dos painéis preservada durante atualizações periódicas.
+- Lugar AFK: publicar `Doomsday-Afk.rbxlx`, configurar `AfkPlaceId` e testar
+  por 1 h sem interação no aplicativo (a renovação por teleporte a cada 15 min
+  é uma hipótese; a API não garante).
+- Soldados: conferência visual no Studio.
 - Amostra visual da etapa 2 (Manhattan, Homem de Ferro, Hulk, Homem-Aranha,
   quatro inimigos, Lagarto) e sessão com três pessoas de fora.
 

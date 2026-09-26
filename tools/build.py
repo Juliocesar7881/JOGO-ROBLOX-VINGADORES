@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ROLES = {"Studio": "Standalone", "Lobby": "Lobby", "Match": "Match"}
+ROLES = {"Studio": "Standalone", "Lobby": "Lobby", "Match": "Match", "Afk": "Afk"}
 
 
 def prop(parent: ET.Element, kind: str, name: str, value: object) -> ET.Element:

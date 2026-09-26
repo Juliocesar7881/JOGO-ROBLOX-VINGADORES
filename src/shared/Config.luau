@@ -11,6 +11,8 @@ return {
 	SeasonDays = 60,
 	LobbyPlaceId = 0,
 	MatchPlaceId = 0,
+	-- Optional light AFK place (0 = AFK stays in the lobby chambers).
+	AfkPlaceId = 0,
 	-- Optional Roblox group for the one-time join-the-group reward. 0 hides it.
 	GroupId = 0,
 	MaxPartySize = 4,

@@ -64,3 +64,18 @@ visual. Isso não mede celulares nem simula quatro conexões reais.
 A decisão de identidade pública e a permissão de uso da marca/personagens
 continuam sob responsabilidade da conta proprietária. Não publique comercialmente
 uma versão Marvel sem resolver essa dependência.
+
+
+## Lugar AFK (opcional)
+
+`python tools/build.py` também gera `dist/Doomsday-Afk.rbxlx`. Para ativar o
+servidor AFK dedicado: publique esse arquivo como um lugar a mais da mesma
+experiência e coloque o ID em `AfkPlaceId` no `deployment/local.json`. Com
+`AfkPlaceId = 0` (padrão), o farm AFK continua só nas salas do lobby e o botão
+"SERVIDOR AFK" não aparece.
+
+No lugar AFK todo jogador presente recebe o farm escolhido (Ouro ou XP) por
+minuto confirmado; a cada 15 minutos o servidor o transfere para um servidor
+AFK novo. **Isso ainda precisa de teste publicado de pelo menos uma hora**
+sem interação, no aplicativo Roblox: o Studio não faz teleportes, e a API não
+garante que a transferência evita a desconexão por inatividade.

@@ -343,6 +343,7 @@ check((anaRoot.Position - workspace:FindFirstChild("DoomLobby").Portal_normal.Pa
 frames(1)
 check(latest(ana).elevator == nil, "standing at the exit does not board again")
 check(not request(ana, "ElevatorLeave", {}).ok, "Leave outside a portal changes nothing")
+check(not request(ana, "EnterAfkServer", {}).ok, "the AFK place stays off until its place ID is configured")
 check(not request(ana, "ElevatorMap", { step = 1 }).ok, "switching sector outside a portal is refused")
 stepOut(ana)
 frames(0.5)

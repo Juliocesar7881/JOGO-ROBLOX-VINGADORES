@@ -54,13 +54,18 @@ local remotes = {
 --==============================================================================
 local lobbyPlaceId = math.floor(tonumber(Config.LobbyPlaceId) or 0)
 local matchPlaceId = math.floor(tonumber(Config.MatchPlaceId) or 0)
+local afkPlaceId = math.floor(tonumber(Config.AfkPlaceId) or 0)
 -- Teleport never works in a Studio playtest, and unconfigured IDs would strand
 -- players. Both cases collapse to a single self-contained server instead.
 local travelEnabled = lobbyPlaceId > 0 and matchPlaceId > 0 and not RunService:IsStudio()
 
 local role = workspace:GetAttribute("DoomRole")
-if role ~= "Lobby" and role ~= "Match" then role = "Standalone" end
+if role ~= "Lobby" and role ~= "Match" and role ~= "Afk" then role = "Standalone" end
 if not travelEnabled then role = "Standalone" end
+-- The dedicated AFK place is optional: without its ID, AFK farming stays in
+-- the lobby chambers and an "Afk" place behaves like a standalone server.
+local afkTravel = travelEnabled and afkPlaceId > 0
+if role == "Afk" and not afkTravel then role = "Standalone" end
 print(string.format("[Doomsday] version %s starting (role=%s, travel=%s)", tostring(Config.Version), role, tostring(travelEnabled)))
 
 pcall(function()
@@ -269,7 +274,7 @@ end
 local travelling = {}
 
 local function sendToLobby(player)
-	if role ~= "Match" or not travelEnabled or travelling[player.UserId] then return end
+	if (role ~= "Match" and role ~= "Afk") or not travelEnabled or travelling[player.UserId] then return end
 	travelling[player.UserId] = true
 	task.spawn(function()
 		local ok, problem = pcall(function()
@@ -284,6 +289,34 @@ local function sendToLobby(player)
 			end)
 		end
 	end)
+end
+
+-- The dedicated AFK place: one reserved server per stretch. Every
+-- AFK_RENEW_SECONDS the server moves the player to a fresh one; whether that
+-- keeps Roblox's idle disconnect away is a hypothesis for a published test
+-- (docs/PRODUCTION_STATUS.md), not a promise. Economy data never travels in
+-- TeleportData: only which farm (gold or xp) the player chose.
+local AFK_RENEW_SECONDS = 15 * 60
+local function sendToAfk(player, kind)
+	if not afkTravel or travelling[player.UserId] or not Catalog.Afk[kind] then return false end
+	local reserved, code = pcall(function() return (TeleportService:ReserveServer(afkPlaceId)) end)
+	if not reserved or type(code) ~= "string" then
+		warn("[Doomsday] AFK ReserveServer failed: " .. tostring(code))
+		analytics:Fault(player, "afk", "reserve")
+		return false
+	end
+	local options = Instance.new("TeleportOptions")
+	options.ReservedServerAccessCode = code
+	options:SetTeleportData({ afkKind = kind })
+	travelling[player.UserId] = true
+	local ok, problem = pcall(function() TeleportService:TeleportAsync(afkPlaceId, { player }, options) end)
+	if not ok then
+		travelling[player.UserId] = nil
+		warn("[Doomsday] AFK teleport failed: " .. tostring(problem))
+		analytics:Fault(player, "afk", "teleport")
+		return false
+	end
+	return true
 end
 
 local function sendToMatch(leader, members, mapId, modeId)
@@ -563,6 +596,16 @@ local function route(player, action, payload)
 	if action == "ElevatorLeave" then
 		return { ok = elevator:Leave(player) }
 	end
+	if action == "EnterAfkServer" then
+		-- From a lobby AFK chamber to the dedicated AFK place.
+		local kind = world:AfkZoneOf(player)
+		if role ~= "Lobby" or not afkTravel or not kind then return { ok = false, message = text("Servidor AFK indisponível.", "AFK server unavailable.") } end
+		return { ok = sendToAfk(player, kind), message = text("Não foi possível ir ao servidor AFK. Tente de novo.", "Could not reach the AFK server. Try again.") }
+	end
+	if action == "LeaveAfk" and role == "Afk" then
+		sendToLobby(player)
+		return { ok = true }
+	end
 	if action == "LeaveAfk" then
 		-- Out of the farm chamber, onto the plaza side of it.
 		local kind = world:AfkZoneOf(player)
@@ -730,12 +773,23 @@ local accumulator, snapshotTimer, arrivalTimer, snapshotCycle, elevatorTimer = 0
 -- farm it is in and how long until the next payout, to draw its banner.
 local afkClock = {}
 local parkourSeen = {}
+if role == "Afk" then
+	local function arrived(player)
+		local ok, join = pcall(function() return player:GetJoinData() end)
+		local data = ok and type(join) == "table" and join.TeleportData or nil
+		local kind = type(data) == "table" and Catalog.Afk[data.afkKind] and data.afkKind or "gold"
+		player:SetAttribute("AfkServer", kind)
+	end
+	Players.PlayerAdded:Connect(arrived)
+	for _, player in ipairs(Players:GetPlayers()) do arrived(player) end
+end
 local function stepAfk(elapsed, visitors)
 	local interval = Catalog.Afk.interval
 	local inLobby = {}
 	for _, player in ipairs(visitors) do
 		inLobby[player] = true
-		local kind = world:AfkZoneOf(player)
+		local kind = world:AfkZoneOf(player) or (role == "Afk" and player:GetAttribute("AfkServer")) or nil
+		if role == "Lobby" and player:GetAttribute("AfkTravel") ~= afkTravel then player:SetAttribute("AfkTravel", afkTravel) end
 		local clock = afkClock[player.UserId]
 		if kind then
 			if not clock or clock.kind ~= kind then
@@ -761,6 +815,13 @@ local function stepAfk(elapsed, visitors)
 					else
 						warn("[Doomsday] AFK payout failed for " .. tostring(player.UserId) .. "; retrying")
 					end
+				end)
+			end
+			-- On the AFK place, hop to a fresh server before idling too long.
+			if role == "Afk" and clock.session >= AFK_RENEW_SECONDS and not clock.paying and not clock.renewing then
+				clock.renewing = true
+				task.spawn(function()
+					if not sendToAfk(player, kind) then task.delay(60, function() clock.renewing = false end) end
 				end)
 			end
 			player:SetAttribute("AfkZone", kind)

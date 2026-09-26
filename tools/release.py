@@ -36,7 +36,8 @@ def catalog():
 def template():
     products, audio = catalog()
     # GroupId is optional: 0 simply hides the join-the-group reward.
-    return {'UniverseId': 0, 'LobbyPlaceId': 0, 'MatchPlaceId': 0, 'GroupId': 0,
+    # AfkPlaceId is optional too: 0 keeps AFK farming inside the lobby.
+    return {'UniverseId': 0, 'LobbyPlaceId': 0, 'MatchPlaceId': 0, 'AfkPlaceId': 0, 'GroupId': 0,
             'Products': {group: {key: {'id': 0} for key in rows} for group, rows in products.items()},
             'Audio': {key: 0 for key in audio}}
 
@@ -52,6 +53,11 @@ def validate(data, expected):
         if value == 0: missing.append(key)
         else: configured.append((key, value))
     for key in ('UniverseId', 'LobbyPlaceId', 'MatchPlaceId'): asset(data.get(key, 0), key)
+    afk = data.get('AfkPlaceId', 0)
+    if type(afk) is not int or not 0 <= afk <= 9007199254740991: raise ValueError('AfkPlaceId must be a nonnegative integer Roblox ID.')
+    if afk: configured.append(('AfkPlaceId', afk))
+    if afk and afk in (data.get('LobbyPlaceId', 0), data.get('MatchPlaceId', 0)):
+        raise ValueError('The AFK place must be its own place.')
     group = data.get('GroupId', 0)
     if type(group) is not int or not 0 <= group <= 9007199254740991: raise ValueError('GroupId must be a nonnegative integer Roblox ID.')
     if group: configured.append(('GroupId', group))
@@ -80,7 +86,7 @@ def validate(data, expected):
 def config_source(source, data, expected):
     # Only validated integer IDs and catalog-derived keys are inserted into Luau.
     lines = ['local configured = (function()', source, 'end)()']
-    for key in ('UniverseId', 'LobbyPlaceId', 'MatchPlaceId', 'GroupId'):
+    for key in ('UniverseId', 'LobbyPlaceId', 'MatchPlaceId', 'AfkPlaceId', 'GroupId'):
         lines.append(f'configured.{key} = {data.get(key, 0)}')
     for category, rows in expected['Products'].items():
         lines.append(f'configured.Products.{category} = {{}}')

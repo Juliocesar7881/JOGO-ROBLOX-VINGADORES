@@ -41,6 +41,18 @@ class ReleaseTests(unittest.TestCase):
         data['MatchPlaceId'] = data['LobbyPlaceId'] = 99
         with self.assertRaises(ValueError): release.validate(data, self.template)
 
+    def test_afk_place_is_optional_and_distinct(self):
+        data = release.template()
+        missing, configured = release.validate(data, release.template())
+        self.assertNotIn('AfkPlaceId', missing)
+        data['LobbyPlaceId'], data['MatchPlaceId'], data['AfkPlaceId'] = 123, 456, 777
+        missing, configured = release.validate(data, release.template())
+        self.assertIn(('AfkPlaceId', 777), configured)
+        data['AfkPlaceId'] = 123
+        with self.assertRaises(ValueError): release.validate(data, release.template())
+        data['AfkPlaceId'] = -1
+        with self.assertRaises(ValueError): release.validate(data, release.template())
+
     def test_configured_source_executes_and_keeps_gameplay(self):
         data = copy.deepcopy(self.template)
         data['LobbyPlaceId'], data['MatchPlaceId'], data['UniverseId'] = 123, 456, 789
@@ -51,7 +63,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn(('GroupId', 555), configured)
         self.assertNotIn('GroupId', missing)
         source = release.config_source((ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8'), data, self.template)
-        harness = 'local c=(function()\n' + source + '\nend)()\nassert(c.StartCash==600 and c.MaxPartySize==4 and c.LobbyPlaceId==123 and c.MatchPlaceId==456 and c.Audio.lobby==314 and c.Products.Heroes.thor.id==271 and c.GroupId==555)\n'
+        harness = 'local c=(function()\n' + source + '\nend)()\nassert(c.StartCash==600 and c.MaxPartySize==4 and c.LobbyPlaceId==123 and c.MatchPlaceId==456 and c.Audio.lobby==314 and c.Products.Heroes.thor.id==271 and c.GroupId==555 and c.AfkPlaceId==0)\n'
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'config.luau'
             path.write_text(harness, encoding='utf-8')

@@ -2542,18 +2542,18 @@ end)
 local afkBanner, afkTitle, afkDetail, afkBannerAt = nil, nil, nil, 0
 -- Power saving while farming: the 3D world stops rendering and a quiet
 -- screen shows the session. It always switches back when the farm ends.
-local afkEco, afkScreen, afkScreenText = false, nil, nil
+local afk = { eco = false, screen = nil, text = nil, travel = nil, autoEco = false }
 local function setAfkEco(on)
-	afkEco = on
+	afk.eco = on
 	pcall(function() RunService:Set3dRenderingEnabled(not on) end)
-	if on and not afkScreen then
-		afkScreen = UI.frame(overlays, {Name = "AfkScreen", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.02, Active = true, ZIndex = 60})
-		UI.label(afkScreen, T("💤 FARM AFK", "💤 AFK FARM"), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 0), Size = UDim2.fromOffset(420, 56), TextSize = 40, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 61})
-		afkScreenText = UI.label(afkScreen, "", {Name = "AfkScreenStats", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 70), Size = UDim2.fromOffset(460, 150), TextSize = 20, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 61})
-		UI.button(afkScreen, T("MOSTRAR O JOGO", "SHOW THE GAME"), function() setAfkEco(false) end, {Name = "AfkEcoOff", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, -115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.blue, TextSize = 16, ZIndex = 61})
-		UI.button(afkScreen, T("VOLTAR AO LOBBY", "BACK TO LOBBY"), function() setAfkEco(false); act("LeaveAfk", {}) end, {Name = "AfkLeave", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.red, TextSize = 16, ZIndex = 61})
-	elseif not on and afkScreen then
-		afkScreen:Destroy(); afkScreen, afkScreenText = nil, nil
+	if on and not afk.screen then
+		afk.screen = UI.frame(overlays, {Name = "AfkScreen", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.02, Active = true, ZIndex = 60})
+		UI.label(afk.screen, T("💤 FARM AFK", "💤 AFK FARM"), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 0), Size = UDim2.fromOffset(420, 56), TextSize = 40, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 61})
+		afk.text = UI.label(afk.screen, "", {Name = "AfkScreenStats", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 70), Size = UDim2.fromOffset(460, 150), TextSize = 20, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 61})
+		UI.button(afk.screen, T("MOSTRAR O JOGO", "SHOW THE GAME"), function() setAfkEco(false) end, {Name = "AfkEcoOff", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, -115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.blue, TextSize = 16, ZIndex = 61})
+		UI.button(afk.screen, T("VOLTAR AO LOBBY", "BACK TO LOBBY"), function() setAfkEco(false); act("LeaveAfk", {}) end, {Name = "AfkLeave", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.red, TextSize = 16, ZIndex = 61})
+	elseif not on and afk.screen then
+		afk.screen:Destroy(); afk.screen, afk.text = nil, nil
 	end
 end
 local function updateAfkBanner()
@@ -2561,12 +2561,14 @@ local function updateAfkBanner()
 	local farm = kind and Catalog.Afk[kind]
 	if not farm then
 		if afkBanner then afkBanner.Visible = false end
-		if afkEco then setAfkEco(false) end
+		if afk.eco then setAfkEco(false) end
 		return
 	end
 	if not afkBanner then
 		afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(math.min(460, screenSize().X - 24), 58), BackgroundColor3 = C.background}, C.gold)
 		afkTitle = UI.label(afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 28), TextSize = 18, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center})
+		-- The dedicated AFK place, when the game has one configured.
+		afk.travel = UI.button(afkBanner, T("SERVIDOR AFK", "AFK SERVER"), function() act("EnterAfkServer", {}) end, {Name = "AfkServerGo", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -104, 0.5, 0), Size = UDim2.fromOffset(120, 44), BackgroundColor3 = C.violet, TextSize = 12, Visible = false})
 		UI.button(afkBanner, T("ECONOMIA", "SAVER"), function() setAfkEco(true) end, {Name = "AfkEcoOn", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(92, 44), BackgroundColor3 = C.blue, TextSize = 13})
 		afkDetail = UI.label(afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
 	end
@@ -2583,8 +2585,11 @@ local function updateAfkBanner()
 		.. "  •  " .. string.format("%d:%02d", math.floor(session / 60), session % 60)
 		.. "  •  +" .. number(earned) .. (kind == "gold" and " 🪙" or " XP")
 		.. "  " .. (saving and T("salvando…", "saving…") or "✓")
-	if afkScreenText then
-		afkScreenText.Text = L(farm.name) .. "\n" .. T("Sessão ", "Session ") .. string.format("%d:%02d", math.floor(session / 60), session % 60)
+	if afk.travel then afk.travel.Visible = player:GetAttribute("AfkTravel") == true end
+	-- On the AFK place the saving screen comes on by itself, once.
+	if player:GetAttribute("AfkServer") and not afk.autoEco then afk.autoEco = true; setAfkEco(true) end
+	if afk.text then
+		afk.text.Text = L(farm.name) .. "\n" .. T("Sessão ", "Session ") .. string.format("%d:%02d", math.floor(session / 60), session % 60)
 			.. "\n" .. T("Próximo pagamento em ", "Next payment in ") .. tostring(player:GetAttribute("AfkNext") or 60) .. "s"
 			.. "\n" .. T("Recebido: +", "Received: +") .. number(earned) .. (kind == "gold" and " 🪙" or " XP") .. "  " .. (saving and T("(salvando…)", "(saving…)") or T("✓ salvo", "✓ saved"))
 	end
