@@ -38,9 +38,13 @@ function Audio:_sound(name)
 	return sound
 end
 
-function Audio:_allowed(effects)
+-- Menu and reward sounds have their own switch, separate from the battle's.
+local INTERFACE = { chest = true, levelUp = true, upgrade = true, collect = true }
+
+function Audio:_allowed(effects, name)
 	local state = self.getState()
 	local settings = state and state.profile and state.profile.settings
+	if effects and name and INTERFACE[name] and settings and settings.interface == false then return false end
 	-- Preserve the old combined mute until the player explicitly changes it.
 	if effects and settings and settings.effects ~= nil then return settings.effects ~= false end
 	return settings == nil or settings.music ~= false
@@ -93,7 +97,7 @@ end
 -- Short cues are rate limited so a wave of coin pickups cannot turn into a
 -- continuous tone.
 function Audio:Cue(name, minimumGap)
-	if not self:_allowed(true) then return end
+	if not self:_allowed(true, name) then return end
 	local now = os.clock()
 	if now - (self.lastCue[name] or -1) < (minimumGap or 0.12) then return end
 	self.lastCue[name] = now

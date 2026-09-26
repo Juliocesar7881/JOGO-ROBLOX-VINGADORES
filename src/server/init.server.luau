@@ -559,6 +559,15 @@ local function route(player, action, payload)
 	if action == "ElevatorLeave" then
 		return { ok = elevator:Leave(player) }
 	end
+	if action == "LeaveAfk" then
+		-- Out of the farm chamber, onto the plaza side of it.
+		local kind = world:AfkZoneOf(player)
+		local farm = kind and Catalog.Afk[kind]
+		local character = player.Character
+		if not farm or not character then return { ok = false } end
+		pcall(function() character:PivotTo(CFrame.new(farm.x + 16, 4, farm.z)) end)
+		return { ok = true }
+	end
 	if action == "ElevatorStart" then
 		return { ok = elevator:StartNow(player), message = text("Só quem entrou primeiro pode começar.", "Only the first rider can start.") }
 	end
@@ -712,6 +721,7 @@ local accumulator, snapshotTimer, arrivalTimer, snapshotCycle, elevatorTimer = 0
 -- resets the clock. The client is only told (through player attributes) which
 -- farm it is in and how long until the next payout, to draw its banner.
 local afkClock = {}
+local parkourSeen = {}
 local function stepAfk(elapsed, visitors)
 	local interval = Catalog.Afk.interval
 	local inLobby = {}
@@ -792,6 +802,17 @@ RunService.Heartbeat:Connect(function(dt)
 			if not shopOK then warn("[Doomsday] Shop entry failed: "..tostring(shopProblem)) end
 			local recoveryOK,recoveryProblem=pcall(world.RecoverLobbyVisitors,world,visitors)
 			if not recoveryOK then warn("[Doomsday] Lobby recovery failed: "..tostring(recoveryProblem)) end
+			-- The optional parkour: the server notices a visitor on the last stone
+			-- and grants its cosmetic title once (no Gold, not repeatable).
+			for _,visitor in ipairs(visitors) do
+				if not parkourSeen[visitor.UserId] and world:ParkourReached(visitor) then
+					parkourSeen[visitor.UserId]=true
+					task.spawn(function()
+						local ok,result=profiles:GrantCosmetic(visitor,"parkour")
+						if ok and result and result.fresh then notify(visitor,"CONQUISTA • Explorador da Aurora (novo título!) / ACHIEVEMENT • Aurora explorer (new title!)") end
+					end)
+				end
+			end
 			local afkOK,afkProblem=pcall(stepAfk,elapsed,visitors)
 			if not afkOK then warn("[Doomsday] AFK farm step failed: "..tostring(afkProblem)) end
 		end

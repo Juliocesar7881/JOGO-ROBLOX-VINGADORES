@@ -831,4 +831,19 @@ do
 	check(not broke, "the price must be affordable")
 end
 
+-- Cosmetic feats: a title once, never Gold, only for known feats.
+do
+	local climber = player(4444)
+	service:Load(climber)
+	local gold = service:Get(climber).gold
+	local ok, result = service:GrantCosmetic(climber, "parkour")
+	check(ok and result.fresh == true and service:Get(climber).titles["feat:parkour"] ~= nil, "the parkour grants its title")
+	local again, second = service:GrantCosmetic(climber, "parkour")
+	check(again and second.fresh == false, "the parkour title is granted only once")
+	check(service:Get(climber).gold == gold, "a cosmetic feat never pays Gold")
+	check(not service:GrantCosmetic(climber, "infiniteGold"), "unknown feats are refused")
+	local handled = service:Handle(climber, "GrantCosmetic", { featId = "parkour" }, true)
+	check(not handled, "no client action grants a feat")
+end
+
 print("PASS PlayerService: " .. checks .. " assertions (real module, mocked Roblox persistence and purchases)")

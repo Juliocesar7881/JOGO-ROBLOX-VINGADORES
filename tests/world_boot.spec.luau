@@ -289,6 +289,22 @@ do
 	check(WorldBuilder.StreetRules.BUILD_LIMIT == 106, "the street builder and the placement rule share the build limit")
 end
 
+-- The optional parkour: only the last stone counts, not the ground below it.
+do
+	local goal = world.parkourGoal
+	check(goal ~= nil, "the parkour has a goal stone")
+	if goal then
+		local function standing(position)
+			local root = { Position = position }
+			return { Character = { FindFirstChild = function(_, name) return name == "HumanoidRootPart" and root or nil end } }
+		end
+		check(world:ParkourReached(standing(goal + v3(0, 3, 0))), "standing on the last stone completes the parkour")
+		check(not world:ParkourReached(standing(v3(goal.X, 3, goal.Z) - v3(0, goal.Y, 0))), "walking under it on the ground does not")
+		check(not world:ParkourReached(standing(goal + v3(6, 3, 0))), "a nearby stone does not")
+		check(not world:ParkourReached({ Character = nil }), "no character, no parkour")
+	end
+end
+
 -- Hero proportions from the art direction: a human is ~6 studs, Hulk
 -- 10-11 with a small head, Rocket about 60% of a human, Groot tall and narrow.
 do

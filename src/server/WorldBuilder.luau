@@ -1249,7 +1249,16 @@ function World:BuildForestSanctuary(lobby)
 	wallSign(forest,"LookoutPlaque",CFrame.new(140,2.8,385),V(6,1.6,0.2),"MIRANTE","CACHOEIRA DA AURORA",ART.cyan)
 	-- Short optional jumping trail, with a safe landing on the island.
 	for i=1,7 do
-		disk("JumpStone",V(43+i*8,0.6+(i%4)*1.2,457+math.sin(i*0.8)*7),V(1.2,5,5),stone,Enum.Material.Slate,true)
+		local stoneAt=V(43+i*8,0.6+(i%4)*1.2,457+math.sin(i*0.8)*7)
+		local jump=disk("JumpStone",stoneAt,V(1.2,5,5),stone,Enum.Material.Slate,true)
+		-- The last stone is the parkour goal: landing on it earns a title.
+		if i==7 then
+			self.parkourGoal=stoneAt
+			jump.Color=ART.gold
+			local flag=piece("ParkourFlag",V(0.3,4,0.3),CFrame.new(stoneAt+V(1.6,2.6,0)),Color3.fromRGB(98,64,43),Enum.Material.Wood,false)
+			piece("ParkourBanner",V(1.6,1,0.1),CFrame.new(stoneAt+V(2.45,4.1,0)),ART.gold,Enum.Material.Fabric,false)
+			label(flag,"PARKOUR ★",V(0,3.2,0),ART.gold,140,40)
+		end
 	end
 	for _,spot in ipairs({{-109,341},{-115,420},{24,421},{108,429},{112,338}}) do
 		piece("TrailLanternPost",V(0.55,6,0.55),CFrame.new(spot[1],3,spot[2]),wood,Enum.Material.Wood,true)
@@ -1967,6 +1976,15 @@ function World:BuildDistricts(lobby)
 		end
 		sign(districts,"AfkTitle",CFrame.new(-133,12,343)*CFrame.Angles(0,-math.pi/2,0),V(17,4,0.5),d.title,d.subtitle,d.color)
 	end
+end
+
+-- Whether a lobby visitor is standing on the last jump stone of the parkour.
+function World:ParkourReached(player)
+	local goal=self.parkourGoal
+	local root=goal and player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return false end
+	local offset=root.Position-goal
+	return math.sqrt(offset.X*offset.X+offset.Z*offset.Z)<=3 and offset.Y>=1 and offset.Y<=8
 end
 
 -- Which AFK farm (if any) a lobby visitor stands in, from the server's own
