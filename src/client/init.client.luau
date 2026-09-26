@@ -41,7 +41,8 @@ task.spawn(function()
 end)
 
 local state, language = nil, "pt"
-local boardSize, boardMap, boardData = 1, "hydra", nil
+-- Leaderboard panel state, one table to spare the script's local slots.
+local board = { size = 1, map = "hydra", data = nil, mode = "ranked", failed = false }
 local selectedTower, selectedHero, selectedSkill = nil, nil, nil
 local selectedPosition, placementValid = nil, false
 local placementPinned = false
@@ -161,7 +162,7 @@ local function request(action, payload, silent)
 	return result
 end
 
-local function act(action, payload, callback)
+local function act(action, payload, callback, onFail)
 	if pending[action] then return end
 	pending[action] = true
 	-- A slow answer says it is being handled, instead of looking like a dead button.
@@ -171,7 +172,11 @@ local function act(action, payload, callback)
 	task.spawn(function()
 		local result = request(action, payload)
 		pending[action] = nil
-		if result and result.ok and callback then callback(result.data) end
+		if result and result.ok then
+			if callback then callback(result.data) end
+		elseif onFail then
+			onFail(result)
+		end
 	end)
 end
 
@@ -538,12 +543,17 @@ local function contextPremium(body)
 			else UI.icon(art,group.kind=="pass" and "star" or "chest",tint,{Position=UDim2.fromOffset(15,23),Size=UDim2.fromOffset(46,46)}) end
 			UI.label(row,L(def.name),{Position=UDim2.fromOffset(left,8),Size=UDim2.new(1,-left-12,0,40),TextWrapped=true,Font=Enum.Font.GothamBlack,TextSize=15})
 			UI.label(row,group.kind=="hero" and L(Catalog.Heroes[key].role) or def.description and L(def.description) or T("Ouro para recrutar e evoluir.","Gold to recruit and upgrade."),{Position=UDim2.fromOffset(left,52),Size=UDim2.new(1,-left-12,0,48),TextWrapped=true,TextSize=12,TextColor3=C.muted})
-			local buy=UI.button(row,owned and T("ADQUIRIDO","OWNED") or info and tostring(info.price).." Robux" or T("Indisponível","Unavailable"),function()
-				if not info or owned then return end
+			local cacheKey=group.kind..":"..key
+			local ready=type(info)=="table"
+			local label=owned and T("ADQUIRIDO","OWNED") or ready and tostring(info.price).." Robux"
+				or info=="retry" and T("Tentar de novo","Try again") or info==nil and T("Carregando preço…","Loading price…") or T("Indisponível","Unavailable")
+			local buy=UI.button(row,label,function()
+				if info=="retry" and not owned then productInfo[cacheKey]=nil; fetchProducts(); renderContext(); return end
+				if not ready or owned then return end
 				local ok=pcall(function() if group.kind=="pass" then MarketplaceService:PromptGamePassPurchase(player,info.id) else MarketplaceService:PromptProductPurchase(player,info.id) end end)
 				if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
-			end,{Position=UDim2.fromOffset(10,103),Size=UDim2.new(1,-20,0,44),BackgroundColor3=tint,TextSize=12})
-			if not info or owned then UI.disabled(buy) end
+			end,{Name="Buy_"..cacheKey,Position=UDim2.fromOffset(10,103),Size=UDim2.new(1,-20,0,44),BackgroundColor3=tint,TextSize=12})
+			if owned or (not ready and info~="retry") then UI.disabled(buy) end
 		end
 	end
 	fetchProducts()
@@ -592,42 +602,48 @@ local function contextQuests(body)
 	if count == 0 then UI.label(body, T("Suas vitórias e títulos aparecerão aqui.", "Your victories and titles will appear here."), {Size = UDim2.new(1, -6, 0, 40), TextColor3 = C.muted, TextWrapped = true}) end
 end
 
-local boardMode="ranked"
 local function loadBoard()
-	local maps=Rules.MapsForMode(boardMode)
-	if not table.find(maps,boardMap) then boardMap=maps[1] end
-	act("Leaderboard", {mapId = boardMap, size = boardSize, modeId=boardMode}, function(data) boardData = data; if contextPanel and contextPanel.kind == "leaderboard" then renderContext() end end)
+	local maps=Rules.MapsForMode(board.mode)
+	if not table.find(maps,board.map) then board.map=maps[1] end
+	board.failed = false
+	local function refresh() if contextPanel and contextPanel.kind == "leaderboard" then renderContext() end end
+	act("Leaderboard", {mapId = board.map, size = board.size, modeId=board.mode}, function(data) board.data = data; refresh() end,
+		function() board.failed = true; refresh() end)
 end
 
 local function contextLeaderboard(body)
-	local maps=Rules.MapsForMode(boardMode)
-	if not table.find(maps,boardMap) then boardMap=maps[1] end
- boardMode="ranked"
- if boardMode=="ranked" then
-  local rank=Rules.RankForWaves(boardData and boardData.personal or 0)
+	local maps=Rules.MapsForMode(board.mode)
+	if not table.find(maps,board.map) then board.map=maps[1] end
+ board.mode="ranked"
+ if board.mode=="ranked" then
+  local rank=Rules.RankForWaves(board.data and board.data.personal or 0)
   UI.section(body,T("SEU RANK: ","YOUR RANK: ")..(language=="en" and rank.en or rank.pt),T("Bronze 10 • Prata 20 • Ouro 30 • Diamante 40 • Lenda 50 ondas","Bronze 10 • Silver 20 • Gold 30 • Diamond 40 • Legend 50 waves"))
  end
 	UI.section(body, T("Lendas da resistência", "Legends of the resistance"), T("Evolução real da conta • temporadas de 60 dias.", "Real account progression • 60-day seasons."))
 	local controls = UI.row(body, 46)
-	UI.secondary(controls, mapName(boardMap), function()
-		local index = table.find(maps, boardMap) or 1
-		boardMap = maps[index % #maps + 1]
-		boardData = nil; renderContext(); loadBoard()
+	UI.secondary(controls, mapName(board.map), function()
+		local index = table.find(maps, board.map) or 1
+		board.map = maps[index % #maps + 1]
+		board.data = nil; renderContext(); loadBoard()
 	end, {Size = UDim2.new(0.6, -6, 0, 40), TextSize = 12})
-	UI.secondary(controls, tostring(boardSize) .. T(" jogador(es)", " player(s)"), function() boardSize = boardSize % 4 + 1; boardData = nil; renderContext(); loadBoard() end, {Position = UDim2.new(0.6, 4, 0, 0), Size = UDim2.new(0.4, -4, 0, 40), TextSize = 12})
+	UI.secondary(controls, tostring(board.size) .. T(" jogador(es)", " player(s)"), function() board.size = board.size % 4 + 1; board.data = nil; renderContext(); loadBoard() end, {Position = UDim2.new(0.6, 4, 0, 0), Size = UDim2.new(0.4, -4, 0, 40), TextSize = 12})
 	local row = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 66), BackgroundColor3 = C.card})
-	heading(row, T("Sua melhor marca: ", "Your personal best: ") .. tostring(boardData and boardData.personal or 0) .. T(" ondas", " waves"), 10, C.green)
-	smallText(row, T("Temporada ", "Season ") .. tostring(boardData and boardData.season or profile().season or 1), 38, 22)
-	if boardData and boardData.rows then
-		for _, entry in ipairs(boardData.rows) do
+	heading(row, T("Sua melhor marca: ", "Your personal best: ") .. tostring(board.data and board.data.personal or 0) .. T(" ondas", " waves"), 10, C.green)
+	smallText(row, T("Temporada ", "Season ") .. tostring(board.data and board.data.season or profile().season or 1), 38, 22)
+	if board.data and board.data.rows then
+		for _, entry in ipairs(board.data.rows) do
 			local entryRow = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 56), BackgroundColor3 = entry.userId == player.UserId and Color3.fromRGB(24, 54, 49) or C.card})
 			UI.label(entryRow, "#" .. tostring(entry.rank), {Position = UDim2.fromOffset(12, 10), Size = UDim2.fromOffset(49, 30), Font = Enum.Font.GothamBold, TextColor3 = C.gold})
 			local tier=Rules.RankForWaves(entry.waves)
-			local title=(entry.name or tostring(entry.userId))..(boardMode=="ranked" and ("\n"..(language=="en" and tier.en or tier.pt)) or "")
+			local title=(entry.name or tostring(entry.userId))..(board.mode=="ranked" and ("\n"..(language=="en" and tier.en or tier.pt)) or "")
 			UI.label(entryRow, title, {Position = UDim2.fromOffset(65, 6), Size = UDim2.new(1, -145, 0, 42), TextSize = 12, TextWrapped=true})
 			UI.label(entryRow, tostring(entry.waves), {Position = UDim2.new(1, -72, 0, 10), Size = UDim2.fromOffset(58, 30), TextXAlignment = Enum.TextXAlignment.Right, Font = Enum.Font.GothamBold, TextColor3 = C.green})
 		end
-		if #boardData.rows == 0 then UI.label(body, T("Seja o primeiro a deixar sua marca neste setor.", "Be the first to set a record in this sector."), {Size = UDim2.new(1, -6, 0, 50), TextWrapped = true, TextColor3 = C.muted}) end
+		if #board.data.rows == 0 then UI.label(body, T("Seja o primeiro a deixar sua marca neste setor.", "Be the first to set a record in this sector."), {Size = UDim2.new(1, -6, 0, 50), TextWrapped = true, TextColor3 = C.muted}) end
+	elseif board.failed then
+		-- Failure is a state with a way out, not an endless "loading".
+		UI.label(body, T("Não foi possível carregar o placar agora.", "The leaderboard could not be loaded right now."), {Name = "BoardFailed", Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.red})
+		UI.button(body, T("TENTAR NOVAMENTE", "TRY AGAIN"), function() board.data = nil; loadBoard(); renderContext() end, {Name = "BoardRetry", Size = UDim2.new(1, -6, 0, 48), BackgroundColor3 = C.gold, TextSize = 14})
 	else UI.label(body, T("Carregando placar…", "Loading leaderboard…"), {TextColor3 = C.muted}) end
 	UI.secondary(body, T("Atualizar placar", "Refresh leaderboard"), loadBoard, {Size = UDim2.new(1, -6, 0, 40)})
 end
@@ -1053,7 +1069,7 @@ local function contextModes(body)
 		if destination.modeId=="ranked" then
 			button.Size=UDim2.new(0.64,-18,0,44)
 			UI.secondary(card,T("PLACAR","LEADERBOARD"),function()
-				boardMode="ranked"; boardMap=destination.mapId; openContext("leaderboard",{})
+				board.mode="ranked"; board.map=destination.mapId; openContext("leaderboard",{})
 			end,{Name="DestinationBoard_"..id,Position=UDim2.new(0.64,0,0,126),Size=UDim2.new(0.36,-12,0,44),TextSize=12})
 		end
 	end
@@ -1181,7 +1197,8 @@ fetchProducts = function()
 				local cacheKey = group.kind .. ":" .. key
 				if productInfo[cacheKey] == nil then
 					local response = request("ProductInfo", {kind = group.kind, key = key}, true)
-					productInfo[cacheKey] = response and response.ok and response.data or false
+					-- No answer at all can be retried; a refusal means it is not on sale.
+					productInfo[cacheKey] = response == nil and "retry" or response.ok and response.data or false
 					fetched = true
 					task.wait(0.18)
 				end
@@ -1334,7 +1351,7 @@ openContext = function(kind, data)
 	data.animate=true
 	data.anchor = not data.hud and anchorPosition(kind, data) or nil
 	contextPanel = data
-	if kind == "leaderboard" then boardData = nil; loadBoard() end
+	if kind == "leaderboard" then board.data = nil; loadBoard() end
 	if refs.firstVisitHint then refs.firstVisitHint.Visible = false end
 	renderContext()
 end

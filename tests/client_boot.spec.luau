@@ -335,15 +335,20 @@ local function session(screen)
 	local actionPayloads = {}
 	-- What the mocked server answers to OpenChest; nil keeps the plain {} reply.
 	local chestResult
+	local collectorPrice, leaderboardDown = false, false
 	requestRemote.InvokeServer = function(_, action, payload)
 		table.insert(actions, action)
 		actionPayloads[action] = payload
 		if action == "Sync" then return { ok = true, data = current } end
 		if action == "ProductInfo" then
 			if payload.key == "vip" then return { ok = true, data = { id = 777, price = 299, name = "VIP" } } end
+			-- The training pass price never answers until the test says so.
+			if payload.key == "training" and not collectorPrice then return nil end
+			if payload.key == "training" then return { ok = true, data = { id = 778, price = 149, name = "Training" } } end
 			return { ok = false, message = { pt = "ID não configurado", en = "ID not configured" } }
 		end
 		if action == "Leaderboard" then
+			if leaderboardDown then return { ok = false, message = { pt = "Placar indisponível", en = "Leaderboard unavailable" } } end
 			return { ok = true, data = { rows = { { rank = 1, userId = 5, name = "Ana", waves = 42 }, { rank = 2, userId = LOCAL_ID, name = "Tester", waves = 12 } }, season = 1, personal = 12 } }
 		end
 		if action == "OpenChest" and chestResult then return { ok = true, data = { result = chestResult } } end
@@ -572,6 +577,28 @@ local function session(screen)
 		fx({kind="OpenPanel",panel="premium"})
 		click("PASSES")
 		check(countNamed(gui,"PremiumTabs_pass")==1,tag..": premium pass tab stays accessible")
+		-- A price that never answered offers a retry; one that is not on sale says so.
+		-- Prices are fetched one by one; wait for the whole list.
+		frames(0.5, 20)
+		local retry=named(gui,"Buy_pass:training")
+		check(retry~=nil and retry.Text=="Tentar de novo",tag..": a price with no answer offers a retry, got "..tostring(retry and retry.Text))
+		local unsold=named(gui,"Buy_pass:formations")
+		check(unsold~=nil and unsold.Text=="Indisponível",tag..": a pass that is not configured reads unavailable")
+		collectorPrice=true
+		if retry then retry.Activated:Fire(); flush() end
+		frames(0.5, 4)
+		local priced=named(gui,"Buy_pass:training")
+		check(priced~=nil and string.find(priced.Text,"149",1,true)~=nil,tag..": retrying loads the price, got "..tostring(priced and priced.Text))
+		leaderboardDown=true
+		-- Checked right away: a place-bound panel closes once the commander is
+		-- far from its totem, as this one is.
+		fx({kind="OpenPanel",panel="leaderboard"})
+		check(named(gui,"BoardRetry")~=nil,tag..": a leaderboard that failed to load offers a retry instead of loading forever")
+		leaderboardDown=false
+		local again=named(gui,"BoardRetry")
+		if again then again.Activated:Fire(); flush() end
+		check(named(gui,"BoardRetry")==nil and named(gui,"BoardFailed")==nil,tag..": retrying clears the failure")
+		fx({kind="OpenPanel",panel="premium"})
 		check(#offscreen(main,SCREEN)==0,tag..": category navigation stays on screen")
 	end)
 
