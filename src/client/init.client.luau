@@ -1538,7 +1538,7 @@ renderLobby = function()
 		local glow=UI.frame(button,{Name="IconGlow",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0,artSize/2+2),Size=UDim2.fromOffset(artSize+8,artSize+8),BackgroundColor3=entry[3],BackgroundTransparency=0.72,Active=false})
 		UI.corner(glow,(artSize+8)/2)
 		UI.stroke(glow,entry[3],2).Transparency=0.35
-		UI.illustration(button,entry[4],entry[3],{Name="NavIcon",Position=UDim2.new(0.5,-artSize/2,0,2),Size=UDim2.fromOffset(artSize,artSize)})
+		local navIcon=UI.illustration(button,entry[4],entry[3],{Name="NavIcon",Position=UDim2.new(0.5,-artSize/2,0,2),Size=UDim2.fromOffset(artSize,artSize)})
 		UI.label(button,entry[2],{Position=UDim2.new(0,-4,1,-21),Size=UDim2.new(1,8,0,20),TextSize=compact and 13 or 15,Font=UI.Fonts.display,TextColor3=C.text,TextXAlignment=Enum.TextXAlignment.Center,TextTruncate=Enum.TextTruncate.None})
 		if entry[1]=="chests" then
 			local chestBadge=UI.roundFrame(button,{Name="ChestsBadge",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,4),Size=UDim2.fromOffset(18,18),BackgroundColor3=C.gold,Visible=canOpenChest(),ZIndex=5},C.background)
@@ -1559,7 +1559,7 @@ renderLobby = function()
 			badge=UI.label(button,"",{Name="AvailableTalentPoints",Position=UDim2.new(1,-22,0,2),Size=UDim2.fromOffset(20,18),BackgroundTransparency=0,BackgroundColor3=C.gold,TextColor3=C.background,TextSize=10,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Center})
 			UI.corner(badge,7)
 		end
-		refs.navigation[entry[1]]={button=button,line=line,tint=entry[3],badge=badge}
+		refs.navigation[entry[1]]={button=button,line=line,tint=entry[3],badge=badge,icon=navIcon,iconX=-artSize/2,phase=i*0.9}
 	end
 
 	-- Nico, the refuge's little robot, gives the next step in a speech strip.
@@ -2432,6 +2432,18 @@ RunService.RenderStepped:Connect(function(dt)
 	if os.clock() >= afkBannerAt then
 		afkBannerAt = os.clock() + 0.25
 		updateAfkBanner()
+	end
+	-- The dock breathes, and anything waiting for the player wiggles.
+	if not (profile().settings and profile().settings.lowFX) then
+		local now = os.clock()
+		for _, entry in pairs(refs.navigation or {}) do
+			if entry.icon and entry.icon.Parent then
+				entry.icon.Position = UDim2.new(0.5, entry.iconX, 0, 2 + math.sin(now * 2.2 + entry.phase) * 2.5)
+			end
+		end
+		for _, badge in ipairs({refs.chestsBadge, refs.rewardsBadge}) do
+			if badge and badge.Parent and badge.Visible then badge.Rotation = math.sin(now * 7) * 14 end
+		end
 	end
 	if contextRefreshPending and not UserInputService:GetFocusedTextBox() then renderContext() end
 	animateLobby(dt or 1 / 60)
