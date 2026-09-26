@@ -105,7 +105,18 @@ end
 -- Shared authored silhouette for every hero: match towers and the lobby's
 -- hero-gallery statues both call this, so a hero looks like the same
 -- character everywhere instead of two unrelated blockouts.
-local FIGURE_SCALE = { hulk = 1.35, groot = 1.55, rocket = 0.72, wasp = 0.9, silversurfer = 1.05 }
+-- Overall height against a ~6-stud human. Hulk ~10.5 studs, Groot tall,
+-- Rocket about 60% of a human. Purely visual: range, collision and building
+-- never read it.
+local FIGURE_SCALE = { hulk = 1.65, groot = 1.6, rocket = 0.6, wasp = 0.9, silversurfer = 1.05 }
+-- Proportions beyond height: body width, head size and hand size. Hulk is
+-- rebuilt, not just enlarged: broad shoulders, huge hands, a small head.
+-- Groot is tall and narrow like a young tree.
+local FIGURE_SHAPE = {
+	hulk = { width = 1.55, head = 0.72, hands = 1.45 },
+	groot = { width = 0.88, head = 0.9, hands = 1.05 },
+	rocket = { head = 1.2 },
+}
 -- Armoured heroes catch the sky and street lamps; cloth stays matte.
 local SHINY_SUIT = { ironman = true, warmachine = true, panther = true, antman = true, vision = true, nova = true, silversurfer = true }
 -- Sign text is shouted in capitals; string.upper does not know accents, so
@@ -159,7 +170,8 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 	local suit, trim, face, material = colors[1], colors[2], colors[3], colors[4]
 	local bulky = heroId == "hulk" or heroId == "groot"
 	local slim = heroId == "wanda" or heroId == "widow" or heroId == "wasp" or heroId == "silversurfer"
-	local width = bulky and 1.32 or (slim and 0.82 or 1)
+	local shape = FIGURE_SHAPE[heroId] or {}
+	local width = shape.width or (bulky and 1.32 or (slim and 0.82 or 1))
 	local armPieces = {
 		Shoulder=true, UpperArm=true, Elbow=true, Gauntlet=true, Hand=true,
 		Repulsor=true, Shield=true, ShieldBand=true, ShieldStar=true,
@@ -485,6 +497,38 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		end
 		if heroId == "strange" then
 			for _, side in ipairs({ -1, 1 }) do piece("CloakCollar", V(0.47, 1.15, 0.37), V(side * 0.79, 4.83, 0.42), red, fabric, CFrame.Angles(0.2, 0, -side * 0.27)) end
+		end
+	end
+	-- Head and hand proportions are applied to the finished figure, around the
+	-- head's centre and each hand, so every facial detail stays in place.
+	local headScale, handScale = shape.head or 1, shape.hands or 1
+	if headScale ~= 1 or handScale ~= 1 then
+		local headCenter = V(0, 5.38, -0.05) * scale
+		local HAND_PIECES = { Hand = true, Gauntlet = true, FurryFist = true, Repulsor = true }
+		for _, item in ipairs(parent:GetChildren()) do
+			if item:IsA("BasePart") and item:GetAttribute("HeroGeometry") then
+				local relative = origin:Inverse() * item.CFrame
+				local k, pivot = 1, nil
+				if headScale ~= 1 and relative.Position.Y > 4.8 * scale and item.Name ~= "Cape" and item.Name ~= "CloakCollar" then
+					k, pivot = headScale, headCenter
+				elseif handScale ~= 1 and HAND_PIECES[item.Name] then
+					k, pivot = handScale, relative.Position
+				end
+				if pivot then
+					local rotation = CFrame.new(-relative.Position) * relative
+					item.Size = item.Size * k
+					item.CFrame = origin * CFrame.new(pivot + (relative.Position - pivot) * k) * rotation
+				end
+			end
+		end
+		-- A smaller head sits lower on the collar, with no floating neck gap.
+		if headScale < 1 then
+			local drop = (1 - headScale) * 0.6 * scale
+			for _, item in ipairs(parent:GetChildren()) do
+				if item:IsA("BasePart") and item:GetAttribute("HeroGeometry") and (origin:Inverse() * item.CFrame).Position.Y > 4.8 * scale then
+					item.CFrame = origin * CFrame.new(0, -drop, 0) * (origin:Inverse() * item.CFrame)
+				end
+			end
 		end
 	end
 	return torso, head

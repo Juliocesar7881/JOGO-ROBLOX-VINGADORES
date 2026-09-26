@@ -289,6 +289,23 @@ do
 	check(WorldBuilder.StreetRules.BUILD_LIMIT == 106, "the street builder and the placement rule share the build limit")
 end
 
+-- Hero proportions from the art direction: a human is ~6 studs, Hulk
+-- 10-11 with a small head, Rocket about 60% of a human, Groot tall and narrow.
+do
+	local portraits = game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
+	local function box(id)
+		local model = portraits and portraits:FindFirstChild(id)
+		if not model then return nil end
+		local _, size = model:GetBoundingBox()
+		return size
+	end
+	local human, hulk, rocket, groot = box("ironman"), box("hulk"), box("rocket"), box("groot")
+	check(human and human.Y >= 5.5 and human.Y <= 7.5, "a human-sized hero stands about six studs, got " .. tostring(human and human.Y))
+	check(hulk and hulk.Y >= 9.5 and hulk.Y <= 11.5, "Hulk stands about ten to eleven studs, got " .. tostring(hulk and hulk.Y))
+	check(rocket and human and rocket.Y / human.Y >= 0.5 and rocket.Y / human.Y <= 0.7, "Rocket is about 60% of a human")
+	check(groot and hulk and groot.X < hulk.X and groot.Y >= hulk.Y * 0.9, "Groot is tall and narrower than Hulk")
+end
+
 local ok2, err2 = pcall(function() world:UpdateLeaderboardBoard({ { rank = 1, name = "Tester", waves = 30 } }, "Manhattan") end)
 check(ok2, "UpdateLeaderboardBoard accepts real rows: " .. tostring(err2))
 check(world.leaderboardText.Text:find("Tester") ~= nil, "the totem text reflects the rows it was given")
