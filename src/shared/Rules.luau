@@ -51,9 +51,13 @@ end
 --==============================================================================
 -- Modes, unlocks and the random map
 --==============================================================================
-function Rules.WaveCount(modeId)
+-- How many waves a run lasts; 0 is endless. The campaign's length belongs to
+-- the map (Catalog.CampaignWaves); every other mode has one length.
+function Rules.WaveCount(modeId, mapId)
 	local mode = Catalog.Modes[modeId]
-	return if mode then mode.waves else 0
+	if not mode then return 0 end
+	if modeId == "normal" and mapId and Catalog.CampaignWaves[mapId] then return Catalog.CampaignWaves[mapId] end
+	return mode.waves
 end
 
 local function anyWon(profile, key)
@@ -65,22 +69,20 @@ end
 
 -- Whether a commander may enter a mode at all. This is the only unlock rule:
 -- the portals dim from it and the server re-checks it before every launch.
---   training is always open; the campaign opens after training;
---   ranked and cards open after any campaign victory; endless after a ranked one.
+--   training and the campaign are always open (training is recommended, never
+--   required); the first campaign victory on any map opens cards and the
+--   competitive arena. Nothing depends on beating an endless mode.
 function Rules.ModeUnlocked(profile, modeId)
 	if type(profile) ~= "table" or not Catalog.Modes[modeId] then return false end
 	if modeId == "tutorial" then return true end
 	if modeId == "normal" then return true end
 	if modeId == "ranked" or modeId == "cards" then return anyWon(profile, "normal") end
-	if modeId == "infinite" then return anyWon(profile, "ranked") or anyWon(profile, "hard") end
 	return false
 end
 
 local LOCK_REASON = {
-	normal = "Conclua o treinamento / Complete training",
-	ranked = "Vença a campanha normal uma vez / Win the normal campaign once",
-	cards = "Vença a campanha normal uma vez / Win the normal campaign once",
-	infinite = "Vença a modo ranqueado uma vez / Win the ranked campaign once",
+	ranked = "Vença qualquer mapa da campanha / Win any campaign map",
+	cards = "Vença qualquer mapa da campanha / Win any campaign map",
 }
 
 -- Why a mode's portal refuses someone, in the "pt / en" form the router uses.
@@ -93,7 +95,8 @@ function Rules.CanStart(profile, mapId, modeId)
 	if not Catalog.Maps[mapId] or not Catalog.Modes[modeId] then return false, "Mapa ou modo inválido / Invalid map or mode" end
 	if type(profile) ~= "table" then return false, "Perfil indisponível / Profile unavailable" end
 	if modeId == "tutorial" then
-		return mapId == "manhattan", "O treinamento acontece em Manhattan / Training takes place in Manhattan"
+		if mapId ~= "manhattan" then return false, "O treinamento acontece em Manhattan / Training takes place in Manhattan" end
+		return true
 	end
 	local destination=false
 	for _,def in pairs(Catalog.Destinations) do
@@ -158,43 +161,84 @@ end
 --==============================================================================
 -- A boss on every tenth wave. The last wave of a fixed-length run is the
 -- final boss, the strongest of them all.
-function Rules.IsBossWave(modeId, wave)
+function Rules.IsBossWave(modeId, wave, mapId)
 	wave = math.floor(number(wave, 0))
-	return modeId ~= "tutorial" and wave >= 10 and wave % 10 == 0
+	if modeId == "tutorial" then return Rules.IsFinalWave(modeId, wave, mapId) end
+	return wave >= 10 and wave % 10 == 0
 end
 
-function Rules.IsFinalWave(modeId, wave)
-	local count = Rules.WaveCount(modeId)
+function Rules.IsFinalWave(modeId, wave, mapId)
+	local count = Rules.WaveCount(modeId, mapId)
 	return count > 0 and math.floor(number(wave, 0)) == count
 end
 
--- Wave 10, 20, 30, 40 and 50 meet the five bosses in story order; endless mode
--- simply keeps cycling through them, stronger every time.
-function Rules.BossId(wave)
+-- Which boss walks in on a boss wave. A fixed-length run ends with its map's
+-- own boss (training: the Lizard, simplified); the bosses before it cycle
+-- through the rest of the cast in story order, so the finale is never met
+-- early. The competitive arena cycles through the whole cast, stronger
+-- every lap.
+function Rules.BossId(wave, mapId, modeId)
 	local step = math.max(1, math.floor(number(wave, 10) / 10))
+	local map = mapId and Catalog.Maps[mapId]
+	if modeId == "tutorial" then return "lizard" end
+	if map and modeId and modeId ~= "ranked" then
+		if Rules.IsFinalWave(modeId, wave, mapId) then return map.bossId end
+		local others = {}
+		for _, id in ipairs(Catalog.BossOrder) do if id ~= map.bossId then table.insert(others, id) end end
+		return others[(step - 1) % #others + 1]
+	end
 	return Catalog.BossOrder[(step - 1) % #Catalog.BossOrder + 1]
 end
 
 --==============================================================================
 -- Rewards
 --==============================================================================
-local KILL_GOLD = { normal = 1400, ranked = 2200, cards = 1800 }
-local VICTORY_GOLD = { normal = 600, ranked = 900, cards = 700 }
+-- Lobby Gold is paid for the run itself, never out of what was spent in it:
+-- the Gold enemies drop during a match is match money (Rules.KillCash) and
+-- stays in the match. Every completed wave banks a guaranteed share (kept
+-- even after a defeat or a disconnect); a victory pays the rest, so a full
+-- win is worth far more than a loss, and more waves are always worth more.
+--   campaign: 40 per wave (2,000 for 50 waves, 1,600 for 40, 2,800 for 70)
+--   cards: 50 per wave; training: nothing per wave, a one-off first clear
+--   competitive: 25 per wave and 100 more every ten waves, all of it kept
+local RUN_GOLD_PER_WAVE = { normal = 40, cards = 50 }
+local DEFEAT_SHARE = 0.4
 
--- The gold a wave's enemies carry between them. Later waves pay more, and the
--- budget is conserved exactly across a whole run, whatever the party size.
-function Rules.RewardBudget(modeId, wave)
+-- The lobby Gold banked when a wave is completed.
+function Rules.WaveGold(modeId, wave)
 	wave = math.max(1, math.floor(number(wave, 1)))
-	if modeId == "tutorial" then return 0 end
-	if modeId == "infinite" then return 25 + (if wave % 10 == 0 then 100 else 0) end
-	local total, count = KILL_GOLD[modeId], Rules.WaveCount(modeId)
-	if not total or count <= 0 or wave > count then return 0 end
-	local denominator = count * (count + 1)
-	return math.floor(total * wave * (wave + 1) / denominator) - math.floor(total * (wave - 1) * wave / denominator)
+	if modeId == "ranked" then return 25 + (if wave % 10 == 0 then 100 else 0) end
+	local rate = RUN_GOLD_PER_WAVE[modeId]
+	return if rate then math.floor(rate * DEFEAT_SHARE) else 0
 end
 
-function Rules.VictoryGold(modeId)
-	return VICTORY_GOLD[modeId] or 0
+-- What a victory adds on top of the banked waves.
+function Rules.VictoryGold(modeId, mapId)
+	local rate = RUN_GOLD_PER_WAVE[modeId]
+	local count = Rules.WaveCount(modeId, mapId)
+	if not rate or count <= 0 then return 0 end
+	return rate * count - Rules.WaveGold(modeId, 1) * count
+end
+
+-- The whole lobby Gold of a run that stopped after `waves` completed waves.
+function Rules.RunGold(modeId, mapId, waves, victory)
+	local total = 0
+	for wave = 1, math.max(0, math.floor(number(waves, 0))) do total += Rules.WaveGold(modeId, wave) end
+	if victory then total += Rules.VictoryGold(modeId, mapId) end
+	return total
+end
+
+-- Match Gold: what an enemy drops on the ground when it dies. Collected by
+-- walking near it (or the collector drone); spent on heroes, never saved.
+function Rules.KillCash(enemyId)
+	local enemy = Catalog.Enemies[enemyId]
+	if not enemy or enemy.illusion then return 0 end
+	return math.max(2, enemy.reward or 4)
+end
+
+-- The match Gold every commander receives when a wave is cleared.
+function Rules.WaveCash(wave)
+	return 90 + math.max(1, math.floor(number(wave, 1))) * 12
 end
 
 function Rules.WaveXP(wave)
@@ -535,7 +579,7 @@ function Rules.CardWave(modeId, wave)
 	local mode = Catalog.Modes[modeId]
 	wave = math.floor(number(wave, 0))
 	if not mode or not mode.cards or wave < 5 or wave % 5 ~= 0 then return false end
-	return mode.waves == 0 or wave < mode.waves
+	return mode.waves > 0 and wave < mode.waves
 end
 
 -- The sum of every stacked card's stat changes.

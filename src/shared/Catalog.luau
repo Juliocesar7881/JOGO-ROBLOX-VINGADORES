@@ -361,7 +361,7 @@ Catalog.Maps = {
 }
 
 Catalog.EnemyOrder = { "zombie", "runner", "brute", "armored", "stealth", "flyer", "support", "summoner" }
-Catalog.BossOrder = { "lizard", "abomination", "redskull", "killmonger", "doom" }
+Catalog.BossOrder = { "lizard", "abomination", "redskull", "killmonger", "doom", "loki" }
 Catalog.Enemies = {
 	zombie = { id = "zombie", name = text("Infectado", "Infected"), hp = 40, speed = 9.8, leak = 1, reward = 10, armor = 0, air = false, stealth = false, boss = false, color = { 111, 165, 94 } },
 	runner = { id = "runner", name = text("Corredor", "Runner"), hp = 29, speed = 16.9, leak = 1, reward = 9, armor = 0, air = false, stealth = false, boss = false, color = { 190, 151, 80 } },
@@ -375,6 +375,9 @@ Catalog.Enemies = {
 	abomination = { id = "abomination", name = text("Abominável infectado", "Infected Abomination"), hp = 2314, speed = 6.9, leak = 40, reward = 110, armor = 0.2, air = false, stealth = false, boss = true, color = { 174, 167, 86 }, hint = text("Impactos anunciados interrompem torres próximas.", "Telegraphed impacts interrupt nearby towers.") },
 	redskull = { id = "redskull", name = text("Caveira Vermelha infectado", "Infected Red Skull"), hp = 2114, speed = 8.0, leak = 40, reward = 110, armor = 0.18, air = false, stealth = false, boss = true, color = { 226, 71, 63 }, hint = text("Soldados próximos recebem o bônus de comando.", "Nearby soldiers receive a command boost.") },
 	killmonger = { id = "killmonger", name = text("Killmonger infectado", "Infected Killmonger"), hp = 2466, speed = 8.4, leak = 45, reward = 120, armor = 0.3, air = false, stealth = false, boss = true, color = { 212, 166, 71 }, hint = text("A descarga de vibranium é anunciada antes do impacto.", "The vibranium discharge is telegraphed before impact.") },
+	loki = { id = "loki", name = text("Loki corrompido", "Corrupted Loki"), hp = 2640, speed = 8.2, leak = 48, reward = 125, armor = 0.22, air = false, stealth = false, boss = true, color = { 82, 196, 104 }, hint = text("Ilusões temporárias confundem as torres; elas somem sozinhas e não dão recompensa.", "Temporary illusions distract your towers; they fade on their own and give no reward.") },
+	-- Loki's decoys: never in a wave pool, never worth anything, gone in seconds.
+	illusion = { id = "illusion", name = text("Ilusão de Loki", "Loki's Illusion"), hp = 70, speed = 9.5, leak = 0, reward = 0, armor = 0, air = false, stealth = false, boss = false, color = { 120, 230, 140 }, illusion = true },
 	doom = { id = "doom", name = text("Doutor Destino", "Doctor Doom"), hp = 2818, speed = 7.5, leak = 50, reward = 130, armor = 0.28, air = false, stealth = false, boss = true, color = { 87, 220, 126 }, hint = text("Armadura, magia e portais mudam a cada fase.", "Armor, magic and portals change with each phase.") },
 }
 
@@ -382,29 +385,36 @@ Catalog.Enemies = {
 --==============================================================================
 -- Modes
 --==============================================================================
--- Every mode except training and endless is a 50-wave run: a boss at 10, 20, 30
--- and 40, and the strongest boss of all on wave 50. Each destination owns its
--- map/mode pair. The card mode is the roguelike:
--- after every fifth wave each commander picks one of three cards.
-Catalog.PortalOrder = { "normal", "ranked", "cards", "infinite" }
+-- Each campaign map has its own length (Catalog.CampaignWaves); cards run 50
+-- waves on the Gamma Complex; the competitive arena never ends. A boss walks in
+-- every tenth wave, and a campaign's last wave is that map's own final boss.
+-- Training is 20 waves with a simplified boss. The old casual endless mode is
+-- gone: competitive is the one endless mode.
+Catalog.PortalOrder = { "tutorial", "normal", "ranked", "cards" }
+Catalog.CampaignWaves = { manhattan = 40, gamma = 50, hydra = 50, wakanda = 50, asgard = 50, latveria = 70 }
 -- Each entrance is an authored destination, with a fixed map and ruleset.
--- The lobby is laid out in districts: the campaign portals stand in the centre,
--- the competitive arena on the east side, the special modes in the north-east
--- corner. facing turns a portal about Y; 0 faces the spawn (+Z).
-Catalog.DestinationOrder = { "normal", "normal_gamma", "normal_hydra", "ranked", "ranked_wakanda", "ranked_latveria", "cards", "infinite" }
+-- The lobby is laid out in districts: three campaign portals in the centre, the
+-- other three expeditions in the southern corners, the competitive arena on
+-- the east side, training and cards in the north-east corner. facing turns a
+-- portal about Y; 0 faces the spawn (+Z).
+Catalog.DestinationOrder = { "normal", "normal_gamma", "normal_hydra", "normal_wakanda", "normal_asgard", "normal_latveria",
+	"ranked", "ranked_wakanda", "ranked_latveria", "cards", "training" }
 Catalog.Destinations = {
 	normal = {modeId="normal",mapId="manhattan",x=-50,z=300,district="center"},
 	normal_gamma = {modeId="normal",mapId="gamma",x=0,z=292,district="center"},
 	normal_hydra = {modeId="normal",mapId="hydra",x=50,z=300,district="center"},
+	normal_wakanda = {modeId="normal",mapId="wakanda",x=-106,z=262,district="expedition"},
+	normal_asgard = {modeId="normal",mapId="asgard",x=-78,z=262,district="expedition"},
+	normal_latveria = {modeId="normal",mapId="latveria",x=92,z=262,district="expedition"},
 	ranked = {modeId="ranked",mapId="hydra",x=108,z=306,facing=-math.pi/2,district="arena"},
 	ranked_wakanda = {modeId="ranked",mapId="wakanda",x=108,z=341,facing=-math.pi/2,district="arena"},
 	ranked_latveria = {modeId="ranked",mapId="latveria",x=108,z=376,facing=-math.pi/2,district="arena"},
 	cards = {modeId="cards",mapId="gamma",x=64,z=422,facing=math.pi,district="special"},
-	infinite = {modeId="infinite",mapId="asgard",x=100,z=422,facing=math.pi,district="special"},
+	training = {modeId="tutorial",mapId="manhattan",x=100,z=422,facing=math.pi,district="special"},
 }
 -- AFK farm: standing in one of these lobby chambers pays a small amount every
 -- minute, measured and paid by the server. Deliberately far below playing:
--- a campaign run earns roughly 70 Gold a minute.
+-- a campaign victory is worth 2,000 Gold for 30-45 minutes.
 Catalog.AfkOrder = { "gold", "xp" }
 Catalog.Afk = {
 	interval = 60,
@@ -414,23 +424,21 @@ Catalog.Afk = {
 		name = text("Farm de XP AFK", "AFK XP Farm"), rate = text("+10 XP POR MINUTO", "+10 XP PER MINUTE") },
 }
 Catalog.Maps.asgard = {
-	id="asgard",difficulty=1,name=text("Ponte de Asgard","Asgard Bridge"),chapter=6,bossId="doom",color={220,184,96},
+	id="asgard",difficulty=1,name=text("Ponte de Asgard","Asgard Bridge"),chapter=6,bossId="loki",color={220,184,96},
 	description=text("Defenda a ponte dourada contra uma invasão sem fim. As curvas recompensam alcance e controle.","Defend the golden bridge against an endless invasion. Its bends reward range and control."),
 	paths={{{-92,-80},{-60,-80},{-60,-40},{50,-40},{50,0},{-50,0},{-50,40},{60,40},{60,80},{88,80}}},
 }
 table.insert(Catalog.MapOrder,"asgard")
-Catalog.ModeOrder = { "tutorial", "normal", "ranked", "cards", "infinite" }
+Catalog.ModeOrder = { "tutorial", "normal", "ranked", "cards" }
 Catalog.Modes = {
-	tutorial = { id = "tutorial", name = text("Treinamento", "Training"), waves = 8, hpMultiplier = 0.6, rewardMultiplier = 1,
-		description = text("Aprenda o básico em 8 ondas.", "Learn the basics in 8 waves.") },
+	tutorial = { id = "tutorial", name = text("Treinamento", "Training"), waves = 20, hpMultiplier = 0.6, rewardMultiplier = 1,
+		description = text("Aprenda o básico em 20 ondas, com um chefe simplificado no fim.", "Learn the basics in 20 waves, with a simplified boss at the end.") },
 	normal = { id = "normal", name = text("Campanha", "Campaign"), waves = 50, hpMultiplier = 1.2, rewardMultiplier = 1,
-		description = text("50 ondas. Chefe a cada 10. O chefe final é o mais forte.", "50 waves. A boss every 10. The final boss is the strongest.") },
-	ranked = { id = "ranked", name = text("Ranqueado", "Ranked"), waves = 50, hpMultiplier = 1.45, rewardMultiplier = 1.5,
-		description = text("50 ondas para subir de rank. Supere sua marca no placar da temporada!", "50 waves to climb the ranks. Beat your best on the seasonal leaderboard!") },
+		description = text("Cada mapa tem sua duração: 40 a 70 ondas. Chefe a cada 10; o último é o chefe do mapa.", "Each map has its own length: 40 to 70 waves. A boss every 10; the last one is the map's own boss.") },
+	ranked = { id = "ranked", name = text("Competitivo", "Competitive"), waves = 0, hpMultiplier = 1.45, rewardMultiplier = 1.5,
+		description = text("Ondas sem fim. Sobreviva o máximo que puder e suba no placar da temporada!", "Endless waves. Survive as long as you can and climb the season leaderboard!") },
 	cards = { id = "cards", name = text("Roguelike de Cartas", "Card Roguelike"), waves = 50, hpMultiplier = 1.6, rewardMultiplier = 1.25, cards = true,
-		description = text("A cada 5 ondas escolha uma carta que muda seu jogo. 50 ondas.", "Every 5 waves pick a card that changes your run. 50 waves.") },
-	infinite = { id = "infinite", name = text("Infinito", "Endless"), waves = 0, hpMultiplier = 1.1, rewardMultiplier = 1,
-		description = text("Sobreviva o máximo que puder. Chefe a cada 10 ondas.", "Survive as long as you can. A boss every 10 waves.") },
+		description = text("Depois das ondas 5, 10 … 45 escolha 1 de 3 cartas que mudam seu jogo. 50 ondas.", "After waves 5, 10 … 45 pick 1 of 3 cards that change your run. 50 waves.") },
 }
 
 --==============================================================================
@@ -478,7 +486,7 @@ Catalog.Abilities = {
 	swarmSting = ability("swarmSting", "chain", "area", 50, { power = 0.16, count = 6, radius = 40, unit = "pct", color = { 255, 220, 80 } },
 		text("Enxame Elétrico", "Electric Swarm"), text("Ferroa {count} inimigos: {power}% da vida máxima de cada um.", "Stings {count} enemies: {power}% of each one's max health.")),
 	salvage = ability("salvage", "energy", "self", 60, { power = 0.6, unit = "pct", color = { 120, 220, 255 } },
-		text("Sucata Valiosa", "Valuable Scrap"), text("Recebe Energia na hora: {power}% de uma onda inteira de renda.", "Gain Energy at once: {power}% of a full wave's income.")),
+		text("Sucata Valiosa", "Valuable Scrap"), text("Recebe Ouro da partida na hora: {power}% de uma onda inteira de renda.", "Gain match Gold at once: {power}% of a full wave's income.")),
 	radarSense = ability("radarSense", "reveal", "area", 70, { power = 0.12, duration = 14, radius = 45, unit = "pct", color = { 255, 60, 60 } },
 		text("Sentido Radar", "Radar Sense"), text("Revela camuflados por {duration} s e marca alvos (+{power}% de dano) em {radius} studs.", "Reveals hidden enemies for {duration} s and marks targets (+{power}% damage) within {radius} studs.")),
 	tenRings = ability("tenRings", "pull", "area", 55, { power = 26, radius = 24, unit = "studs", color = { 255, 170, 60 } },
@@ -563,14 +571,14 @@ Catalog.TalentBranches = {
 	{ id = "command", name = text("COMANDO", "COMMAND"), color = { 149, 132, 255 }, nodes = { "startingEnergy", "towerPower", "reach", "skillTempo", "abilityPower" } },
 }
 Catalog.Talents = {
-	roundGold = { name = text("Renda de defesa", "Defense income"), description = text("+2 Ouro por onda concluída por ponto.", "+2 Gold per completed wave per point."), maxRank = 5, effect = 2, unit = "gold", icon = "+G" },
-	killGold = { name = text("Coleta de troféus", "Trophy collector"), description = text("+4% Ouro de eliminações por ponto.", "+4% Gold from kills per point."), maxRank = 5, parent = "roundGold", requiredRank = 2, effect = 4, unit = "%", icon = "KO" },
-	magnet = { name = text("Magnetismo", "Magnetism"), description = text("+8% no raio de coleta de moedas por ponto.", "+8% coin collection radius per point."), maxRank = 5, parent = "killGold", requiredRank = 2, effect = 8, unit = "%", icon = "MG" },
+	roundGold = { name = text("Renda de defesa", "Defense income"), description = text("+2 Ouro do lobby por onda concluída por ponto.", "+2 lobby Gold per completed wave per point."), maxRank = 5, effect = 2, unit = "gold", icon = "+G" },
+	killGold = { name = text("Coleta de troféus", "Trophy collector"), description = text("+4% no Ouro da partida que cada inimigo derruba, por ponto.", "+4% match Gold dropped by each enemy, per point."), maxRank = 5, parent = "roundGold", requiredRank = 2, effect = 4, unit = "%", icon = "KO" },
+	magnet = { name = text("Magnetismo", "Magnetism"), description = text("+15% no raio do ímã que puxa o Ouro do chão, por ponto.", "+15% magnet radius for pulling Gold off the ground, per point."), maxRank = 5, parent = "killGold", requiredRank = 2, effect = 15, unit = "%", icon = "MG" },
 	victoryGold = { name = text("Recompensa de vitória", "Victory bounty"), description = text("+2% no bônus de vitória por ponto. Não altera primeiras vitórias nem compras.", "+2% victory bonus per point. Excludes first-win bonuses and purchases."), maxRank = 10, parent = "magnet", requiredRank = 3, effect = 2, unit = "%", icon = "WIN" },
 	baseVitality = { name = text("Núcleo reforçado", "Reinforced core"), description = text("+4 vida máxima por ponto. No grupo vale o maior bônus.", "+4 max core HP per point. Highest teammate bonus applies."), maxRank = 5, effect = 4, unit = "HP", icon = "HP" },
 	baseRecovery = { name = text("Equipe de reparos", "Repair crew"), description = text("Recupera 1 vida por ponto a cada 5 ondas. No grupo vale o maior bônus.", "Restore 1 HP per point every 5 waves. Highest teammate bonus applies."), maxRank = 5, parent = "baseVitality", requiredRank = 2, effect = 1, unit = "HP", icon = "+HP" },
 	lastStand = { name = text("Última resistência", "Last stand"), description = text("Uma vez por partida, com o núcleo abaixo de 30%, recupera 5 de vida por ponto.", "Once per match, with the core below 30%, restore 5 HP per point."), maxRank = 3, parent = "baseRecovery", requiredRank = 2, effect = 5, unit = "HP", icon = "LS" },
-	startingEnergy = { name = text("Preparação tática", "Tactical preparation"), description = text("+20 Energia inicial por ponto.", "+20 starting Energy per point."), maxRank = 5, effect = 20, unit = "energy", icon = "E" },
+	startingEnergy = { name = text("Preparação tática", "Tactical preparation"), description = text("+20 Ouro da partida inicial por ponto.", "+20 starting match Gold per point."), maxRank = 5, effect = 20, unit = "gold", icon = "G" },
 	towerPower = { name = text("Formação de elite", "Elite formation"), description = text("+1% dano por ponto, dentro do limite permanente de 15%.", "+1% tower damage per point, within the 15% permanent cap."), maxRank = 5, parent = "startingEnergy", requiredRank = 2, effect = 1, unit = "%", icon = "ATK" },
 	reach = { name = text("Visão estratégica", "Strategic vision"), description = text("+1% alcance por ponto, dentro do limite permanente de 10%.", "+1% range per point, within the 10% permanent cap."), maxRank = 5, parent = "towerPower", requiredRank = 2, effect = 1, unit = "%", icon = "RNG" },
 	skillTempo = { name = text("Resposta rápida", "Rapid response"), description = text("-1% na recarga da habilidade do herói por ponto, respeitando o limite total.", "-1% hero ability cooldown per point, respecting the combined cap."), maxRank = 10, parent = "reach", requiredRank = 3, effect = 1, unit = "%", icon = "CD" },
@@ -600,11 +608,11 @@ Catalog.Cards = {
 	longSight = card("longSight", "common", 3, text("Mira de águia", "Eagle Eye"), text("+8% de alcance.", "+8% range."), { effects = { range = 0.08 } }),
 	armorBreaker = card("armorBreaker", "common", 2, text("Ruptura de armadura", "Armor Breaker"), text("Ignora mais 10% da armadura inimiga.", "Ignores another 10% of enemy armor."), { effects = { pierce = 0.10 } }),
 	wideArea = card("wideArea", "common", 2, text("Cobertura ampliada", "Wide Coverage"), text("+12% de área nos ataques.", "+12% attack area."), { effects = { area = 0.12 } }),
-	supplyDrop = card("supplyDrop", "common", 5, text("Suprimentos", "Supply Drop"), text("Receba 350 de Energia agora.", "Gain 350 Energy now."), { instant = { energy = 350 } }),
+	supplyDrop = card("supplyDrop", "common", 5, text("Suprimentos", "Supply Drop"), text("Receba 350 de Ouro da partida agora.", "Gain 350 match Gold now."), { instant = { energy = 350 } }),
 	skyHunter = card("skyHunter", "common", 2, text("Caçador de voadores", "Sky Hunter"), text("+25% de dano contra voadores.", "+25% damage against flyers."), { effects = { airDamage = 0.25 } }),
 	nightHunter = card("nightHunter", "common", 2, text("Visão noturna", "Night Vision"), text("+25% de dano contra camuflados.", "+25% damage against hidden enemies."), { effects = { stealthDamage = 0.25 } }),
 	coinRain = card("coinRain", "rare", 3, text("Chuva de moedas", "Coin Rain"), text("+15% de Ouro das eliminações.", "+15% Gold from kills."), { effects = { killGold = 0.15 } }),
-	income = card("income", "rare", 3, text("Rede logística", "Supply Network"), text("+20% de Energia por onda.", "+20% Energy per wave."), { effects = { energyIncome = 0.20 } }),
+	income = card("income", "rare", 3, text("Rede logística", "Supply Network"), text("+20% no bônus de Ouro por onda.", "+20% Gold bonus per wave."), { effects = { energyIncome = 0.20 } }),
 	fastCharge = card("fastCharge", "rare", 2, text("Recarga rápida", "Fast Recharge"), text("-10% de recarga da sua habilidade.", "-10% ability cooldown."), { effects = { cooldown = 0.10 } }),
 	abilityPower = card("abilityPower", "rare", 3, text("Poder amplificado", "Amplified Power"), text("+20% de potência da sua habilidade.", "+20% ability strength."), { effects = { abilityPower = 0.20 } }),
 	bossSlayer = card("bossSlayer", "rare", 3, text("Caçador de chefes", "Boss Slayer"), text("+20% de dano contra chefes.", "+20% damage against bosses."), { effects = { bossDamage = 0.20 } }),
@@ -615,9 +623,9 @@ Catalog.Cards = {
 	glassCannon = card("glassCannon", "epic", 2, text("Canhão de vidro", "Glass Cannon"), text("+35% de dano, mas -15% de alcance.", "+35% damage, but -15% range."), { effects = { damage = 0.35, range = -0.15 } }),
 	overclock = card("overclock", "epic", 2, text("Sobrecarga", "Overclock"), text("+30% de velocidade de ataque, mas -12% de dano.", "+30% attack speed, but -12% damage."), { effects = { speed = 0.30, damage = -0.12 } }),
 	bloodPact = card("bloodPact", "epic", 2, text("Pacto de ouro", "Gold Pact"), text("+40% de Ouro das eliminações, mas -10% de dano.", "+40% Gold from kills, but -10% damage."), { effects = { killGold = 0.40, damage = -0.10 } }),
-	gambler = card("gambler", "epic", 3, text("Aposta", "The Gamble"), text("50%: +600 Energia. 50%: perde 200.", "50%: +600 Energy. 50%: lose 200."), { instant = { gamble = true } }),
+	gambler = card("gambler", "epic", 3, text("Aposta", "The Gamble"), text("50%: +600 de Ouro. 50%: perde 200.", "50%: +600 Gold. 50%: lose 200."), { instant = { gamble = true } }),
 	tempest = card("tempest", "epic", 2, text("Tempestade", "Tempest"), text("+40% de potência da habilidade, mas +15% de recarga.", "+40% ability strength, but +15% cooldown."), { effects = { abilityPower = 0.40, cooldown = -0.15 } }),
-	warChest = card("warChest", "epic", 1, text("Cofre de guerra", "War Chest"), text("Receba 900 de Energia agora.", "Gain 900 Energy now."), { instant = { energy = 900 } }),
+	warChest = card("warChest", "epic", 1, text("Cofre de guerra", "War Chest"), text("Receba 900 de Ouro da partida agora.", "Gain 900 match Gold now."), { instant = { energy = 900 } }),
 }
 
 --==============================================================================
@@ -715,8 +723,8 @@ for id,entry in pairs(identities) do
 	end
 end
 
--- Personal outposts support the shared core. Income is match Energy, never
--- permanent Gold. Each has five match-only levels, bought with Energy.
+-- Personal outposts support the shared core. Income is match Gold, never
+-- lobby Gold. Each has five match-only levels, bought with match Gold.
 Catalog.BaseOrder={"outpost","workshop","garden","bunker","arsenal","barracks","reactor","citadel","carrier","sanctum","worldtree"}
 Catalog.Bases={}
 local bases={
@@ -732,7 +740,7 @@ local bases={
 	{"sanctum","Sanctum Sanctorum","Sanctum Sanctorum","mythic","turret",{242,142,92},30,14,48,0,0},
 	{"worldtree","Jardim de Yggdrasil","Yggdrasil garden","mythic","farm",{245,177,221},85,12,0,0,0},
 }
-local roles={balanced=text("Renda básica e vida ao evoluir.","Basic income and HP when upgraded."),farm=text("Mais Energia a cada onda concluída.","More Energy each completed wave."),wall=text("Barricada troca vida por dano e se regenera fora de combate.","Barricade trades HP for damage and regenerates out of combat."),turret=text("Canhão automático protege a chegada ao núcleo.","Automatic cannon guards the approach to the core."),soldiers=text("Soldados percorrem a rota ao contrário e colidem com inimigos.","Soldiers march backwards along the path and collide with enemies.")}
+local roles={balanced=text("Renda básica e vida ao evoluir.","Basic income and HP when upgraded."),farm=text("Mais Ouro da partida a cada onda concluída.","More match Gold each completed wave."),wall=text("Barricada troca vida por dano e se regenera fora de combate.","Barricade trades HP for damage and regenerates out of combat."),turret=text("Canhão automático protege a chegada ao núcleo.","Automatic cannon guards the approach to the core."),soldiers=text("Soldados percorrem a rota ao contrário e colidem com inimigos.","Soldiers march backwards along the path and collide with enemies.")}
 for _,row in ipairs(bases) do
 	local id,pt,en,rarity,style,color,income,hp,damage,wall,soldier=unpack(row)
 	Catalog.Bases[id]={id=id,name=text(pt,en),rarity=rarity,style=style,color=color,income=income,hp=hp,damage=damage,wall=wall,soldier=soldier,starter=id=="outpost",description=roles[style]}

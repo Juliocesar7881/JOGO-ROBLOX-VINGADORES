@@ -111,6 +111,8 @@ local SHINY_SUIT = { ironman = true, warmachine = true, panther = true, antman =
 -- Sign text is shouted in capitals; string.upper does not know accents, so
 -- World.new swaps in the catalog's accent-aware version.
 local upper = string.upper
+-- Per-map campaign lengths for the portal signs, set by World.new.
+local campaignWaves = {}
 
 local function heroFigure(parent, heroId, hero, origin, scale)
 	scale = scale or FIGURE_SCALE[heroId] or 1
@@ -606,7 +608,11 @@ local DISTRICTS = {
 	{ id = "market", x0 = -114, x1 = -44, z0 = 394, z1 = 446, color = Color3.fromRGB(207, 180, 231),
 		title = { "MERCADO", "MARKET" }, subtitle = { "BAÚS • LOJA ROBUX", "CHESTS • ROBUX SHOP" } },
 	{ id = "special", x0 = 44, x1 = 114, z0 = 394, z1 = 446, color = Color3.fromRGB(177, 119, 243),
-		title = { "MODOS ESPECIAIS", "SPECIAL MODES" }, subtitle = { "CARTAS • INFINITO", "CARDS • ENDLESS" } },
+		title = { "TREINO E CARTAS", "TRAINING & CARDS" }, subtitle = { "APRENDA • ROGUELIKE DE CARTAS", "LEARN • CARD ROGUELIKE" } },
+	{ id = "expeditionWest", x0 = -122, x1 = -65, z0 = 246, z1 = 284, color = Color3.fromRGB(203, 170, 255),
+		title = { "EXPEDIÇÕES", "EXPEDITIONS" }, subtitle = { "WAKANDA • ASGARD", "WAKANDA • ASGARD" } },
+	{ id = "expeditionEast", x0 = 72, x1 = 112, z0 = 246, z1 = 284, color = Color3.fromRGB(104, 232, 190),
+		title = { "EXPEDIÇÃO FINAL", "FINAL EXPEDITION" }, subtitle = { "LATVÉRIA • 70 ONDAS", "LATVERIA • 70 WAVES" } },
 	{ id = "arena", x0 = 86, x1 = 140, z0 = 288, z1 = 392, color = Color3.fromRGB(255, 138, 61),
 		title = { "ARENA COMPETITIVA", "COMPETITIVE ARENA" }, subtitle = { "3 MAPAS • PLACAR DA TEMPORADA", "3 MAPS • SEASON LEADERBOARD" } },
 	{ id = "afk", x0 = -140, x1 = -86, z0 = 288, z1 = 392, color = Color3.fromRGB(120, 200, 255),
@@ -649,6 +655,7 @@ end
 
 function World.new(catalog, openPanel)
 	upper = catalog.Upper or string.upper
+	campaignWaves = catalog.CampaignWaves or {}
 	local self = setmetatable({ catalog = catalog, openPanel = openPanel }, World)
 	-- Match places need the same portraits even when their lobby is removed.
 	local storage = game:GetService("ReplicatedStorage")
@@ -695,9 +702,11 @@ local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
 	local pad = part(model, "Pad", Vector3.new(12, 0.12, 7), at(0, 1.06, 0.5), tint, Enum.Material.Neon)
 	pad.CanCollide, pad.Transparency = false, 0.35
 	local ringFrame=at(0,7.5,-3.6)
-	arc(model,"PortalArmor",ringFrame,6.8,1.5,2.3,ART.pearl,Enum.Material.Metal,24)
-	arc(model,"PortalGasket",ringFrame*CFrame.new(0,0,1.2),6.25,0.52,0.25,ART.ink,Enum.Material.Metal,32)
-	arc(model,"Frame",ringFrame*CFrame.new(0,0,1.4),6.2,0.18,0.18,tint,Enum.Material.Neon,32)
+	-- Eleven portals share the lobby's mobile part budget: segment counts are
+	-- the lowest that still read as smooth rings from the plaza.
+	arc(model,"PortalArmor",ringFrame,6.8,1.5,2.3,ART.pearl,Enum.Material.Metal,20)
+	arc(model,"PortalGasket",ringFrame*CFrame.new(0,0,1.2),6.25,0.52,0.25,ART.ink,Enum.Material.Metal,20)
+	arc(model,"Frame",ringFrame*CFrame.new(0,0,1.4),6.2,0.18,0.18,tint,Enum.Material.Neon,24)
 	for i=0,7 do
 		local a=i*math.pi/4
 		artPart(model,"PortalBrace",Vector3.new(1.5,1.9,2.8),ringFrame*CFrame.Angles(0,0,a)*CFrame.new(0,7.1,0),ART.ink,Enum.Material.DiamondPlate)
@@ -705,8 +714,8 @@ local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
 	end
 	local glass = part(model, "Glass", Vector3.new(0.2,11.6,11.6), ringFrame*CFrame.Angles(0,math.pi/2,0), tint, Enum.Material.ForceField)
 	glass.Shape,glass.Transparency=Enum.PartType.Cylinder,0.72
-	for i=1,3 do
-		arc(model,"PortalEcho",ringFrame*CFrame.new(0,0,-i*0.6),5.8-i*0.9,0.065,0.06,tint,Enum.Material.Neon,24)
+	for i=1,2 do
+		arc(model,"PortalEcho",ringFrame*CFrame.new(0,0,-i*0.7),5.6-i*1.1,0.065,0.06,tint,Enum.Material.Neon,16)
 	end
 	emitter(glass, tint, 8, 3.5, 1.1, 1.6)
 	emitter(pad, tint, 6, 2, 0.7, 1.2, Vector3.new(0, 5, 0))
@@ -749,7 +758,8 @@ local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
 	local text = Instance.new("TextLabel")
 	text.Size, text.BackgroundTransparency, text.TextScaled, text.TextWrapped = UDim2.fromScale(1, 1), 1, true, true
 	text.Font, text.TextColor3, text.Parent = Enum.Font.GothamBold, tint, surface
-	text.Text = (mode.waves == 0 and "ONDAS INFINITAS" or (tostring(mode.waves) .. " ONDAS")) .. "\nENTRE PARA JOGAR"
+	local waves = (mode.id == "normal" and campaignWaves[destination.mapId]) or mode.waves
+	text.Text = (waves == 0 and "ONDAS INFINITAS" or (tostring(waves) .. " ONDAS")) .. "\nENTRE PARA JOGAR"
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= plinth then p.CanCollide = false end end
 	model.PrimaryPart = plinth
 	-- The rider box is axis-aligned; a quarter turn swaps its width and depth.
@@ -1767,6 +1777,8 @@ function World:BuildDistricts(lobby)
 	trail(V(72,0.12,352),V(88,0.12,352),9) -- plaza -> arena
 	trail(V(54,0.12,314),V(88,0.12,314),9)
 	trail(V(118,0.12,391),V(119,0.12,431),8) -- arena -> starlight bridge
+	trail(V(-92,0.12,284),V(-56,0.12,312),8) -- western expeditions -> plaza
+	trail(V(92,0.12,284),V(58,0.12,312),8) -- final expedition -> plaza
 
 	-- Market: a striped awning shades the Robux counters.
 	do
@@ -1790,6 +1802,16 @@ function World:BuildDistricts(lobby)
 		local d=byId.special
 		sign(districts,"SpecialTitle",CFrame.new(82,13,434),V(11.5,3.4,0.4),d.title,d.subtitle,d.color)
 		sign(districts,"SpecialCorner",CFrame.lookAt(V(50,15,398),V(0,15,345)),V(17,4,0.5),d.title,d.subtitle,d.color)
+	end
+
+	-- Expeditions: the three longer campaigns, signed from the plaza.
+	for _,id in ipairs({"expeditionWest","expeditionEast"}) do
+		local d=byId[id]
+		local x=(d.x0+d.x1)/2
+		sign(districts,id.."Title",CFrame.new(x,14,249)*CFrame.Angles(0,math.pi,0),V(17,4,0.5),d.title,d.subtitle,d.color)
+		for _,side in ipairs({-1,1}) do
+			part(districts,"ExpeditionPost",V(0.8,14,0.8),CFrame.new(x+side*8,7,249.6),Color3.fromRGB(98,64,43),Enum.Material.Wood)
+		end
 	end
 
 	-- Competitive arena: a raised season scoreboard behind the three ranked

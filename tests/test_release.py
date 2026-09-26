@@ -51,7 +51,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn(('GroupId', 555), configured)
         self.assertNotIn('GroupId', missing)
         source = release.config_source((ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8'), data, self.template)
-        harness = 'local c=(function()\n' + source + '\nend)()\nassert(c.StartEnergy==600 and c.MaxPartySize==4 and c.LobbyPlaceId==123 and c.MatchPlaceId==456 and c.Audio.lobby==314 and c.Products.Heroes.thor.id==271 and c.GroupId==555)\n'
+        harness = 'local c=(function()\n' + source + '\nend)()\nassert(c.StartCash==600 and c.MaxPartySize==4 and c.LobbyPlaceId==123 and c.MatchPlaceId==456 and c.Audio.lobby==314 and c.Products.Heroes.thor.id==271 and c.GroupId==555)\n'
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'config.luau'
             path.write_text(harness, encoding='utf-8')

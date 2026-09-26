@@ -253,7 +253,7 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 	local textX = portraitW + 9
 	UI.label(button, L(def.name), {Name = "HeroName", Position = UDim2.fromOffset(textX, tight and 3 or 7), Size = UDim2.new(1, -textX - 5, 0, tight and 26 or 32), TextSize = tight and 12 or 14, Font = UI.Fonts.display, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
 	if index==1 then UI.stroke(button,C.gold,3.5) end
-	local price = UI.label(button, "⚡ " .. tostring(def.cost), {Name = "EnergyCost", Position = UDim2.new(0, textX, 1, tight and -21 or -26), Size = UDim2.new(1, -textX - 4, 0, 20), TextColor3 = C.blue, TextSize = tight and 12 or 15, Font = UI.Fonts.display})
+	local price = UI.label(button, "🪙 " .. tostring(def.cost), {Name = "EnergyCost", Position = UDim2.new(0, textX, 1, tight and -21 or -26), Size = UDim2.new(1, -textX - 4, 0, 20), TextColor3 = C.gold, TextSize = tight and 12 or 15, Font = UI.Fonts.display})
 	local badge = UI.label(button, index==1 and "★1" or tostring(index), {Name = "SlotNumber", Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(tight and 22 or 26, tight and 15 or 18), BackgroundColor3 = C.background, BackgroundTransparency = 0.08, TextSize = 10, TextColor3 = tint, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
 	UI.corner(badge, 5)
 	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 8, 1, -3), Size = UDim2.new(1, -16, 0, 2), BackgroundColor3 = tint, BackgroundTransparency = equipped and 0 or 0.65})
@@ -263,7 +263,7 @@ end
 -- Lobby locations and the HUD share these panels. The HUD offers a quick
 -- route to playing, forming a team and spending earned progression points.
 local modeTint = {
-	normal = C.green, ranked = Color3.fromRGB(255, 138, 61), infinite = Color3.fromRGB(177, 119, 243),
+	normal = C.green, ranked = Color3.fromRGB(255, 138, 61), tutorial = C.gold,
 	cards = Color3.fromRGB(177,119,243),
 }
 for id, destination in pairs(Catalog.Destinations) do
@@ -271,9 +271,9 @@ for id, destination in pairs(Catalog.Destinations) do
 end
 local modeLockHints = {
 	normal = {pt = "Conclua o treinamento.", en = "Complete training."},
-	ranked = {pt = "Vença qualquer mapa na campanha normal.", en = "Clear any map in the normal campaign."},
-	infinite = {pt = "Vença qualquer mapa no modo ranqueado.", en = "Win any map on ranked mode."},
-	cards = {pt = "Vença a campanha normal.", en = "Win the normal campaign."},
+	ranked = {pt = "Vença qualquer mapa da campanha.", en = "Win any campaign map."},
+	cards = {pt = "Vença qualquer mapa da campanha.", en = "Win any campaign map."},
+	tutorial = {pt = "Sempre disponível.", en = "Always available."},
 }
 
 local function makeLeader(id,callback)
@@ -297,7 +297,7 @@ local function contextHero(body, data)
 	heroPortrait(showcase,id,{Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(104,132)})
 	UI.label(showcase,L(rarity.name),{Position=UDim2.fromOffset(118,0),Size=UDim2.new(1,-122,0,20),TextColor3=tint,Font=Enum.Font.GothamBold})
 	UI.label(showcase,L(def.name),{Position=UDim2.fromOffset(118,25),Size=UDim2.new(1,-122,0,62),TextSize=23,Font=Enum.Font.GothamBlack,TextWrapped=true})
-	UI.label(showcase,number(def.cost)..T(" Energia"," Energy"),{Position=UDim2.fromOffset(118,95),Size=UDim2.new(1,-122,0,25),TextColor3=C.blue})
+	UI.label(showcase,"🪙 "..number(def.cost)..T(" Ouro na partida"," Gold in battle"),{Position=UDim2.fromOffset(118,95),Size=UDim2.new(1,-122,0,25),TextColor3=C.gold})
 	smallText(body,L(def.description),0,48)
 	local tabs=UI.row(body,44)
 	for index,tab in ipairs({{id="power",label=T("PODER E EQUIPE","POWER & SQUAD")},{id="defense",label=T("NA DEFESA","ON DEFENSE")}}) do
@@ -306,7 +306,7 @@ local function contextHero(body, data)
 	if heroDetailTab=="defense" then
 	UI.section(body,T("NA DEFESA","ON DEFENSE"),T("Valores da torre inicial, antes de maestria, talentos e outros bônus.","Starting tower values, before mastery, talents and other bonuses."))
 	local stats=UI.row(body,116)
-	for index,entry in ipairs({{T("DANO","DAMAGE"),tostring(def.damage)},{T("ALCANCE","RANGE"),tostring(def.range).." studs"},{T("INTERVALO","INTERVAL"),string.format("%.2f s",def.interval)},{T("POSICIONAR","PLACE"),number(def.cost)..T(" Energia"," Energy")}}) do
+	for index,entry in ipairs({{T("DANO","DAMAGE"),tostring(def.damage)},{T("ALCANCE","RANGE"),tostring(def.range).." studs"},{T("INTERVALO","INTERVAL"),string.format("%.2f s",def.interval)},{T("POSICIONAR","PLACE"),"🪙 "..number(def.cost)}}) do
 		local card=UI.roundFrame(stats,{Name="HeroStat_"..index,Position=UDim2.new((index-1)%2/2,0,0,math.floor((index-1)/2)*58),Size=UDim2.new(0.5,-6,0,52),BackgroundColor3=tint:Lerp(C.panel,0.9)},tint:Lerp(C.stroke,0.6))
 		UI.label(card,entry[1],{Position=UDim2.fromOffset(8,4),Size=UDim2.new(1,-16,0,18),TextSize=10,TextColor3=C.muted,Font=Enum.Font.GothamBold})
 		UI.label(card,entry[2],{Position=UDim2.fromOffset(8,24),Size=UDim2.new(1,-16,0,24),TextSize=14,TextColor3=tint,Font=Enum.Font.GothamBold})
@@ -578,7 +578,7 @@ end
 local function contextLeaderboard(body)
 	local maps=Rules.MapsForMode(boardMode)
 	if not table.find(maps,boardMap) then boardMap=maps[1] end
- categoryTabs(body,"BoardMode",{{id="ranked",label=T("RANQUEADO","RANKED")},{id="infinite",label=T("INFINITO","ENDLESS")}},boardMode,function(id) boardMode=id; boardData=nil; renderContext(); loadBoard() end)
+ boardMode="ranked"
  if boardMode=="ranked" then
   local rank=Rules.RankForWaves(boardData and boardData.personal or 0)
   UI.section(body,T("SEU RANK: ","YOUR RANK: ")..(language=="en" and rank.en or rank.pt),T("Bronze 10 • Prata 20 • Ouro 30 • Diamante 40 • Lenda 50 ondas","Bronze 10 • Silver 20 • Gold 30 • Diamond 40 • Legend 50 waves"))
@@ -833,7 +833,7 @@ local function contextSquad(body)
 end
 
 local function contextSettings(body)
- UI.button(body,T("APRENDER A JOGAR • 8 ONDAS","LEARN TO PLAY • 8 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,44)})
+ UI.button(body,T("APRENDER A JOGAR • 20 ONDAS","LEARN TO PLAY • 20 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,44)})
 	UI.section(body, T("Seu jeito de jogar", "Your experience"), T("Acessibilidade e apresentação. As regras de combate são iguais para todos.", "Accessibility and presentation. Combat rules are the same for everyone."))
 	local settings = profile().settings or {}
 	local effectsOn = settings.effects
@@ -921,8 +921,8 @@ local function contextModes(body)
 	if not profile().tutorialComplete then
 		local first=UI.roundFrame(body,{Name="FirstMission",Size=UDim2.new(1,-6,0,168),BackgroundColor3=C.gold:Lerp(C.panel,0.78)},C.gold)
 		UI.label(first,T("COMECE AQUI!","START HERE!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,36),TextSize=26,Font=Enum.Font.GothamBlack,TextColor3=C.gold})
-		UI.label(first,T("Aprenda em 8 ondas e ganhe 1.000 Ouro na primeira vitória.","Learn in 8 waves and earn 1,000 Gold on your first victory."),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
-		UI.button(first,T("JOGAR O TREINO • 8 ONDAS","PLAY TRAINING • 8 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Name="PlayMode_tutorial",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
+		UI.label(first,T("Aprenda em 20 ondas e ganhe 1.000 Ouro na primeira vitória.","Learn in 20 waves and earn 1,000 Gold on your first victory."),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
+		UI.button(first,T("JOGAR O TREINO • 20 ONDAS","PLAY TRAINING • 20 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Name="PlayMode_tutorial",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
 	end
 	local colors={manhattan=C.coral,gamma=C.green,asgard=C.gold,hydra=C.red,wakanda=C.violet,latveria=C.blue}
 	local lastDistrict
@@ -936,8 +936,9 @@ local function contextModes(body)
 			lastDistrict=district
 			local headings={
 				center={T("CAMPANHA","CAMPAIGN"),T("Os três portais do centro do refúgio. Comece por aqui!","The three portals in the middle of the refuge. Start here!")},
+				expedition={T("EXPEDIÇÕES","EXPEDITIONS"),T("Campanhas mais longas nos cantos do sul: Wakanda, Asgard e a final, Latvéria (70 ondas).","Longer campaigns in the southern corners: Wakanda, Asgard and the finale, Latveria (70 waves).")},
 				arena={T("ARENA COMPETITIVA","COMPETITIVE ARENA"),T("Três portais vizinhos. Cada mapa tem seu placar e exige uma estratégia diferente.","Three neighboring portals. Each map has its own leaderboard and calls for a different strategy.")},
-				special={T("MODOS ESPECIAIS","SPECIAL MODES"),T("Cartas que mudam a partida e ondas sem fim.","Cards that change the run and endless waves.")},
+				special={T("TREINO E CARTAS","TRAINING & CARDS"),T("Treino de 20 ondas e o roguelike de cartas.","The 20-wave training and the card roguelike.")},
 			}
 			local heading=headings[district]
 			if heading then UI.section(body,heading[1],heading[2]) end
@@ -946,7 +947,8 @@ local function contextModes(body)
 		local card=UI.roundFrame(body,{Name="Destination_"..id,Size=UDim2.new(1,-6,0,178),BackgroundColor3=tint:Lerp(C.panel,0.88)},tint)
 		UI.mapArt(card,map,tint,{Position=UDim2.fromOffset(10,18),Size=UDim2.fromOffset(96,76)})
 		UI.label(card,L(map.name),{Position=UDim2.fromOffset(118,10),Size=UDim2.new(1,-132,0,42),TextSize=19,Font=Enum.Font.GothamBlack,TextColor3=tint,TextWrapped=true})
-		UI.label(card,L(mode.name).." • "..(mode.waves==0 and T("SEM FIM","ENDLESS") or "50 "..T("ONDAS","WAVES")),{Position=UDim2.fromOffset(118,54),Size=UDim2.new(1,-132,0,24),TextSize=12,Font=Enum.Font.GothamBold,TextWrapped=true})
+		local waves=Rules.WaveCount(destination.modeId,destination.mapId)
+		UI.label(card,L(mode.name).." • "..(waves==0 and T("SEM FIM","ENDLESS") or tostring(waves).." "..T("ONDAS","WAVES")),{Position=UDim2.fromOffset(118,54),Size=UDim2.new(1,-132,0,24),TextSize=12,Font=Enum.Font.GothamBold,TextWrapped=true})
 		UI.label(card,allowed and L(map.description) or L(modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(118,81),Size=UDim2.new(1,-132,0,40),TextSize=11,TextWrapped=true,TextColor3=C.muted})
 		local button=UI.button(card,allowed and T("JOGAR NESTE MAPA","PLAY THIS MAP") or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function() act("StartMatch",{destinationId=id}) end,{Name="PlayDestination_"..id,Position=UDim2.fromOffset(12,126),Size=UDim2.new(1,-24,0,44),BackgroundColor3=allowed and C.green or tint,TextSize=17})
 		if not allowed then
@@ -964,13 +966,13 @@ local function contextModes(body)
 		end
 	end
 	if profile().tutorialComplete then
-		UI.secondary(body,T("TREINAR DE NOVO • 8 ONDAS","TRAIN AGAIN • 8 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Size=UDim2.new(1,-6,0,44)})
+		UI.secondary(body,T("TREINAR DE NOVO • 20 ONDAS","TRAIN AGAIN • 20 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Size=UDim2.new(1,-6,0,44)})
 	end
 end
 
 local function contextBases(body)
 	categoryTabs(body,"BaseNavigation",{{id="inventory",label=T("HERÓIS","HEROES")},{id="bases",label=T("BASES","BASES")}},"bases",function(id) openContext(id) end)
-	smallText(body,T("Equipe 1 base. Evolua com Energia na partida. O nível reinicia a cada partida; sua coleção fica salva.","Equip 1 base. Upgrade with Energy in battle. Levels reset each match; your collection is saved."),0,58)
+	smallText(body,T("Equipe 1 base. Evolua com o Ouro da partida. O nível reinicia a cada partida; sua coleção fica salva.","Equip 1 base. Upgrade with match Gold in battle. Levels reset each match; your collection is saved."),0,58)
 	UI.button(body,T("LOJA DE BAÚS DE BASES","BASE CHEST SHOP"),function() openContext("chests",{chestId="base_rare"}) end,{Size=UDim2.new(1,-6,0,44),BackgroundColor3=C.gold,TextSize=13})
 	for _,id in ipairs(Catalog.BaseOrder) do
 		local def=Catalog.Bases[id]; local stats=Rules.BaseStats(id,1)
@@ -981,7 +983,7 @@ local function contextBases(body)
 		UI.label(row,L(def.name),{Position=UDim2.fromOffset(116,10),Size=UDim2.new(1,-126,0,62),TextSize=17,TextWrapped=true,TextColor3=C.background,Font=Enum.Font.GothamBlack})
 		UI.label(row,L(Catalog.Rarities[def.rarity].name),{Position=UDim2.fromOffset(116,76),Size=UDim2.new(1,-126,0,25),TextSize=13,TextColor3=C.background})
 		UI.label(row,L(def.description),{Position=UDim2.fromOffset(12,115),Size=UDim2.new(1,-24,0,48),TextSize=13,TextWrapped=true,TextColor3=C.background})
-		UI.label(row,"+"..stats.income..T(" Energia/onda  •  +"," Energy/wave  •  +")..stats.hp..T(" vida*"," HP*"),{Position=UDim2.fromOffset(12,164),Size=UDim2.new(1,-24,0,30),TextSize=12,TextColor3=C.background})
+		UI.label(row,"+"..stats.income..T(" Ouro/onda  •  +"," Gold/wave  •  +")..stats.hp..T(" vida*"," HP*"),{Position=UDim2.fromOffset(12,164),Size=UDim2.new(1,-24,0,30),TextSize=12,TextColor3=C.background})
 		local button=UI.button(row,equipped and T("EQUIPADA","EQUIPPED") or owned and T("EQUIPAR BASE","EQUIP BASE") or T("ENCONTRAR NOS BAÚS","FIND IN CHESTS"),function()
 			if owned then act("EquipBase",{baseId=id}) else openContext("chests",{chestId="base_rare"}) end
 		end,{Name="EquipBase_"..id,Position=UDim2.fromOffset(12,204),Size=UDim2.new(1,-24,0,44),BackgroundColor3=equipped and C.green or tint,TextSize=13})
@@ -1388,7 +1390,8 @@ local function updatePortal(model, p)
 			label.Text = T("BLOQUEADO", "LOCKED") .. "\n" .. L(modeLockHints[modeId])
 			label.TextColor3 = C.red
 		elseif mode then
-			local waves = mode.waves == 0 and T("ONDAS INFINITAS", "ENDLESS WAVES") or (tostring(mode.waves) .. T(" ONDAS", " WAVES"))
+			local count = Rules.WaveCount(modeId, mapId)
+			local waves = count == 0 and T("ONDAS INFINITAS", "ENDLESS WAVES") or (tostring(count) .. T(" ONDAS", " WAVES"))
 			label.Text = (modeId == "tutorial" and (T("TREINAMENTO", "TRAINING") .. "\n") or "") .. (mapId and Catalog.Upper(mapName(mapId)) or T("MAPA ALEATÓRIO","RANDOM MAP")) .. "\n" .. waves .. "  •  " .. T("ENTRE PARA JOGAR", "STEP IN TO PLAY")
 			label.TextColor3 = modeTint[portalId] or C.green
 		end
@@ -1840,10 +1843,10 @@ local function towerPanel(tower)
 		return
 	end
 	if tower.level < 4 then
-		UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. number(tower.upgradeCost) .. " ⚡", function() act("UpgradeTower", {towerId = tower.id}) end, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = 13})
+		UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. "🪙 " .. number(tower.upgradeCost), function() act("UpgradeTower", {towerId = tower.id}) end, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = 13})
 	elseif tower.level == 4 then
 		for branch = 1, 2 do
-			local label = L(def.branches[branch].name) .. " • " .. number(tower.upgradeCost) .. " ⚡"
+			local label = L(def.branches[branch].name) .. " • 🪙 " .. number(tower.upgradeCost)
 			local position = wide and UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY) or UDim2.fromOffset(12, actionY + (branch - 1) * 42)
 			local size = wide and UDim2.fromOffset(half, actionH) or UDim2.fromOffset(w - 24, 40)
 			UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Position = position, Size = size, TextSize = wide and 10 or 11, BackgroundColor3 = branch == 1 and C.green or C.blue})
@@ -1855,7 +1858,7 @@ local function towerPanel(tower)
 		local index = table.find(priorityOrder, tower.priority) or 1
 		act("SetPriority", {towerId = tower.id, priority = priorityOrder[index % #priorityOrder + 1]})
 	end, {Position = UDim2.fromOffset(12, rowY), Size = UDim2.fromOffset(half, rowH), TextSize = 11})
-	UI.secondary(panel, T("Vender • ", "Sell • ") .. number(math.floor((tower.invested or 0) * 0.7)) .. " ⚡", function()
+	UI.secondary(panel, T("Vender • ", "Sell • ") .. "🪙 " .. number(math.floor((tower.invested or 0) * 0.7)), function()
 		act("SellTower", {towerId = tower.id}, closeTowerPanel)
 	end, {Position = UDim2.fromOffset(18 + half, rowY), Size = UDim2.fromOffset(half, rowH), TextColor3 = C.red, TextSize = 11})
 end
@@ -1915,9 +1918,9 @@ local function updateUpgradeBoards(match)
 			seen[id] = true
 			board.tower = tower
 			local cost = tower.upgradeCost or 0
-			local affordable = (match.energy or 0) >= cost
+			local affordable = (match.cash or 0) >= cost
 			local nextLevel = (tower.level or 1) + 1
-			board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("⬆ " .. T("NV", "LV") .. tostring(nextLevel))) .. "  " .. number(cost) .. "⚡"
+			board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("⬆ " .. T("NV", "LV") .. tostring(nextLevel))) .. "  🪙" .. number(cost)
 			board.button.BackgroundColor3 = affordable and C.green or C.card
 			board.button.TextColor3 = affordable and C.background or C.muted
 		end
@@ -1973,27 +1976,27 @@ local function openBaseUpgrade()
 	UI.label(art,L(def.name).."\n"..T("NÍVEL ","LEVEL ")..base.level.." / 5",{Position=UDim2.fromOffset(114,4),Size=UDim2.new(1,-124,1,-8),TextSize=18,Font=Enum.Font.GothamBlack,TextWrapped=true,ZIndex=48})
 	local function line(text,color,height) UI.label(body,text,{Size=UDim2.new(1,-8,0,height or 28),TextSize=13,TextWrapped=true,TextColor3=color or C.text,ZIndex=48}) end
 	line(L(def.description),C.muted,46)
-	line(T("RENDA POR ONDA: ","INCOME PER WAVE: ")..stats.income.." → "..nextStats.income..T(" Energia"," Energy"),C.gold)
+	line(T("RENDA POR ONDA: ","INCOME PER WAVE: ")..stats.income.." → "..nextStats.income..T(" Ouro"," Gold"),C.gold)
 	line(T("VIDA EXTRA DO NÚCLEO: ","EXTRA CORE HP: ")..math.floor(stats.hp/(state.match.partySize or 1)).." → "..math.floor(nextStats.hp/(state.match.partySize or 1)),C.green)
 	if stats.damage>0 then line(T("DANO: ","DAMAGE: ")..stats.damage.." → "..nextStats.damage..T(" • ALCANCE: "," • RANGE: ")..stats.range.." → "..nextStats.range,C.coral) end
 	if stats.wall>0 then line(T("BARRICADA: ","BARRICADE: ")..(base.wall or 0).."/"..stats.wall.." → "..nextStats.wall..T(" HP • regenera após 5 s"," HP • regenerates after 5 s"),C.blue,40) end
 	if stats.soldier>0 then line(T("SOLDADO: ","SOLDIER: ")..stats.soldier.." → "..nextStats.soldier..T(" HP • a cada "," HP • every ")..stats.interval.." s",C.violet,40) end
-	local button=UI.button(body,base.level>=5 and T("NÍVEL MÁXIMO","MAXIMUM LEVEL") or T("EVOLUIR • ","UPGRADE • ")..stats.upgradeCost..T(" ENERGIA"," ENERGY"),function()
+	local button=UI.button(body,base.level>=5 and T("NÍVEL MÁXIMO","MAXIMUM LEVEL") or T("EVOLUIR • ","UPGRADE • ").."🪙 "..stats.upgradeCost,function()
 		act("UpgradeBase",{expectedLevel=base.level},function() audio:Cue("upgrade"); shade:Destroy() end)
 	end,{Name="ConfirmBaseUpgrade",Size=UDim2.new(1,-8,0,48),TextSize=14,BackgroundColor3=C.green,ZIndex=48})
-	if base.level>=5 or (state.match.energy or 0)<stats.upgradeCost then UI.disabled(button) end
+	if base.level>=5 or (state.match.cash or 0)<stats.upgradeCost then UI.disabled(button) end
 	refs.refreshBaseModal=function()
 		if not shade.Parent then refs.refreshBaseModal=nil; return end
 		local current=state.match
 		if not current or not current.base or current.base.level~=base.level then shade:Destroy(); refs.refreshBaseModal=nil; return end
-		local missing=math.max(0,stats.upgradeCost-(current.energy or 0))
+		local missing=math.max(0,stats.upgradeCost-(current.cash or 0))
 		if base.level>=5 then return end
-		button.Text=missing>0 and T("FALTAM ","NEED ")..number(missing)..T(" ENERGIA"," ENERGY") or T("EVOLUIR • ","UPGRADE • ")..stats.upgradeCost..T(" ENERGIA"," ENERGY")
+		button.Text=missing>0 and T("FALTAM ","NEED ").."🪙 "..number(missing) or T("EVOLUIR • ","UPGRADE • ").."🪙 "..stats.upgradeCost
 		if missing>0 then UI.disabled(button)
 		else button.Active=true; button.AutoButtonColor=true; button.BackgroundColor3=C.green; button.TextColor3=C.background end
 	end
 	refs.refreshBaseModal()
-	line(T("Energia desta partida. Ouro da conta não é gasto. Renda exige contribuição na onda.","Match Energy only. Account Gold is not spent. Income requires contribution to the wave."),C.muted,48)
+	line(T("Usa o Ouro desta partida. O Ouro do lobby nunca é gasto aqui. Renda exige contribuição na onda.","Uses this match's Gold. Lobby Gold is never spent here. Income requires contribution to the wave."),C.muted,48)
 end
 
 local function renderMatch()
@@ -2023,6 +2026,10 @@ local function renderMatch()
 	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 13 or 15, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center})
 	surface(refs.waveInfo,C.stroke)
 	refs.skip = UI.button(main, T("PRONTO", "READY"), function() act("SkipWave", {}) end, {Position = at(layout.skip), Size = dims(layout.skip), BackgroundColor3 = C.green, TextSize = 18})
+	-- Competitive only: everyone agreeing between waves ends the run and keeps the record.
+	refs.endVote = UI.button(main, T("ENCERRAR PARTIDA", "END RUN"), function()
+		act("VoteEnd", {on = not (state.match and state.match.endVote)})
+	end, {Name = "VoteEndRun", Position = UDim2.fromOffset(layout.skip.x, layout.skip.y + layout.skip.h + 6), Size = UDim2.fromOffset(layout.skip.w, 40), BackgroundColor3 = C.red, TextSize = 14, Visible = false})
 	local bossRect = layout.boss
 	refs.boss = UI.roundFrame(main, {Position = at(bossRect), Size = dims(bossRect), BackgroundColor3 = Color3.fromRGB(66,30,44), Visible = false}, C.red)
 	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 3), Size = UDim2.new(1, -24, 0, 22), TextColor3 = C.red, Font = UI.Fonts.display, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Center})
@@ -2087,11 +2094,14 @@ updateMatch = function()
 	refs.hpText.Text = T("BASE ", "CORE ") .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  +" .. math.ceil(match.shield) or "") .. T("\n↑ EVOLUIR", "\n↑ UPGRADE")
 	refs.hp.Size = UDim2.fromScale(math.clamp((match.baseHP or 0) / (match.maxBaseHP or 100), 0, 1), 1)
 	refs.hp.BackgroundColor3 = (match.baseHP or 0)/math.max(1,match.maxBaseHP or 100) > 0.3 and C.green or C.red
-	refs.matchGold.Text = "● " .. number(match.goldEarned) .. T(" OURO", " GOLD")
+	-- Lobby Gold this run has banked so far: a reward, not money to spend.
+	refs.matchGold.Text = "🏆 +" .. number(match.goldEarned) .. T(" PRÊMIO", " REWARD")
 	local towerCount = 0
 	for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId then towerCount += 1 end end
-	refs.energy.Text = "⚡ " .. number(match.energy)..T(" ENERGIA"," ENERGY")
-	refs.energy.TextSize=mobile() and 11 or 14
+	-- Match Gold in hand, plus what is still lying on the ground to collect.
+	local waiting = match.coinsWaiting or 0
+	refs.energy.Text = "🪙 " .. number(match.cash) .. (waiting > 0 and ("  +" .. number(waiting) .. T(" no chão", " on ground")) or "")
+	refs.energy.TextSize=mobile() and 12 or 16
 	if refs.speedToggle then
 		local fast, voted = (match.speed or 1) == 2, (match.speedVote or 1) == 2
 		local party = match.partySize or 1
@@ -2106,6 +2116,13 @@ updateMatch = function()
 		refs.autoSkipToggle.TextColor3 = match.autoSkip and C.background or C.text
 	end
 	refs.skip.Visible = state.phase == "Preparing"
+	if refs.endVote then
+		local canEnd = match.modeId == "ranked" and state.phase == "Preparing" and (match.completedWaves or 0) >= 1
+		refs.endVote.Visible = canEnd
+		if canEnd then
+			refs.endVote.Text = (match.endVote and T("✓ ENCERRAR", "✓ END RUN") or T("ENCERRAR PARTIDA", "END RUN")) .. "  " .. tostring(match.endVotes or 0) .. "/" .. tostring(match.partySize or 1)
+		end
+	end
 	refs.skip.Text = T("PRONTO", "READY") .. "  •  " .. tostring(math.max(0, math.ceil(match.prepRemaining or 0))) .. "s" .. (match.skipVotes and "  (" .. tostring(match.skipVotes) .. "/" .. tostring(#(state.players or {})) .. ")" or "")
 	local threatNames = {}
 	for _, id in ipairs(match.threats or match.nextThreats or {}) do
@@ -2134,7 +2151,7 @@ updateMatch = function()
 		local selected = selectedHero == id
 		card.button.BackgroundColor3 = selected and colorFor(id):Lerp(C.background, 0.7) or C.card
 		card.line.BackgroundTransparency = selected and 0 or 0.65
-		card.price.TextColor3 = (match.energy or 0) >= Catalog.Heroes[id].cost and C.blue or C.red
+		card.price.TextColor3 = (match.cash or 0) >= Catalog.Heroes[id].cost and C.gold or C.red
 	end
 	updateUpgradeBoards(match)
 	if selectedTower then
@@ -2158,7 +2175,7 @@ end
 
 local function renderResults()
 	local result = state.results or {}
-	local victory = result.victory == true
+	local victory = result.victory == true or result.ended == true
 	local veil = UI.frame(main, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.12})
 	local panel = UI.roundFrame(veil, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -32, 1, -50), BackgroundColor3 = C.panel}, victory and C.green or C.red)
 	UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 590)}, panel)
@@ -2170,7 +2187,7 @@ local function renderResults()
 	local celebration=UI.row(content,short and 44 or 72)
 	local emblemSize=short and 36 or 48
 	UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.fromOffset(2,short and 4 or 12),Size=UDim2.fromOffset(emblemSize,emblemSize)})
-	UI.label(celebration, victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("VAMOS TENTAR DE NOVO?", "LET'S TRY AGAIN!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.GothamBlack, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
+	UI.label(celebration, result.ended and T("RECORDE GUARDADO!", "RECORD SAVED!") or victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("VAMOS TENTAR DE NOVO?", "LET'S TRY AGAIN!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.GothamBlack, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
 	UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal"), {Size = UDim2.new(1, -6, 0, short and 18 or 26), TextColor3 = C.muted, TextSize = short and 11 or 13, TextXAlignment = Enum.TextXAlignment.Center})
 	-- Core rewards stay together and appear before the optional detailed history,
 	-- including on short screens where three large rows needed several scrolls.
@@ -2277,7 +2294,7 @@ local function celebrateChanges(previousGold, previousMatch, phaseChanged)
 	if not (activeMatch() and match and previousMatch and previousMatch.runId == match.runId) then return end
 	if refs.matchGold and (match.goldEarned or 0) > (previousMatch.goldEarned or 0) then celebrate:Pop(refs.matchGold, 0.12) end
 	local cleared = match.completedWaves or 0
-	if cleared > (previousMatch.completedWaves or 0) and not Rules.IsBossWave(match.modeId, cleared) then
+	if cleared > (previousMatch.completedWaves or 0) and not Rules.IsBossWave(match.modeId, cleared, match.mapId) then
 		-- Boss waves get their own, bigger banner when the boss falls.
 		celebrate:Banner({pt = "ONDA " .. cleared .. " VENCIDA!", en = "WAVE " .. cleared .. " CLEARED!"}, nil, C.green, {cue = "wave"})
 	end
@@ -2334,6 +2351,12 @@ fxRemote.OnClientEvent:Connect(function(event)
 	if event.kind == "Notice" then
 		showToast(event.text, event.tone == "boss")
 		if event.tone == "boss" then audio:Cue("boss", 4) end
+	elseif event.kind == "WaveCash" then
+		-- The wave bonus lands straight in the wallet: show it next to the Gold.
+		if refs.energy and refs.energy.Parent and tonumber(event.amount) then
+			celebrate:Float("+" .. number(event.amount) .. " 🪙", refs.energy, C.gold)
+			celebrate:Pop(refs.energy, 0.12)
+		end
 	elseif event.kind == "OpenPanel" and state and state.phase == "Lobby" then
 		if contextBuilders[event.panel] then
 			openContext(event.panel, {
@@ -2406,7 +2429,7 @@ local function updateAfkBanner()
 		return
 	end
 	if not afkBanner then
-		afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(330, 58), BackgroundColor3 = C.background}, C.gold)
+		afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(math.min(460, screenSize().X - 24), 58), BackgroundColor3 = C.background}, C.gold)
 		afkTitle = UI.label(afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 28), TextSize = 18, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center})
 		afkDetail = UI.label(afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
 	end
@@ -2414,7 +2437,15 @@ local function updateAfkBanner()
 	afkBanner.Visible = true
 	afkTitle.Text = "💤 " .. Catalog.Upper(L(farm.name))
 	afkTitle.TextColor3 = tint
+	-- Session clock, what has really been paid, and whether the last minute is
+	-- still being saved: the server sets all of it, the banner only reads it.
+	local session = math.floor(tonumber(player:GetAttribute("AfkSession")) or 0)
+	local earned = tonumber(player:GetAttribute("AfkEarned")) or 0
+	local saving = player:GetAttribute("AfkSaving") == true
 	afkDetail.Text = L(farm.rate) .. "  •  " .. T("próximo em ", "next in ") .. tostring(player:GetAttribute("AfkNext") or 60) .. "s"
+		.. "  •  " .. string.format("%d:%02d", math.floor(session / 60), session % 60)
+		.. "  •  +" .. number(earned) .. (kind == "gold" and " 🪙" or " XP")
+		.. "  " .. (saving and T("salvando…", "saving…") or "✓")
 end
 pcall(function()
 	player.Idled:Connect(function()

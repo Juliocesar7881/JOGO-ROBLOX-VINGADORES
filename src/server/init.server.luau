@@ -718,21 +718,35 @@ local function stepAfk(elapsed, visitors)
 		local clock = afkClock[player.UserId]
 		if kind then
 			if not clock or clock.kind ~= kind then
-				clock = { kind = kind, seconds = 0 }
+				clock = { kind = kind, seconds = 0, minutes = 0, earned = 0, session = 0,
+					sessionId = "afk:" .. kind .. ":" .. tostring(player.UserId) .. ":" .. HttpService:GenerateGUID(false) }
 				afkClock[player.UserId] = clock
 			end
-			clock.seconds += elapsed
+			-- The clock stops at a full minute until that minute is confirmed as
+			-- saved: a failed save is retried, never skipped or paid twice
+			-- (each minute has its own award id, so a retry is idempotent).
+			if not clock.paying then clock.seconds = math.min(interval, clock.seconds + elapsed) end
+			clock.session = (clock.session or 0) + elapsed
 			if clock.seconds >= interval and not clock.paying then
-				clock.seconds -= interval
 				clock.paying = true
+				local minute = (clock.minutes or 0) + 1
 				task.spawn(function()
-					local ok = profiles:GrantAfk(player, kind, 1)
+					local ok = profiles:GrantAfk(player, kind, 1, (clock.sessionId or "afk") .. ":" .. minute)
 					clock.paying = false
-					if not ok then warn("[Doomsday] AFK payout failed for " .. tostring(player.UserId)) end
+					if ok then
+						clock.seconds, clock.minutes = 0, minute
+						local reward = Rules.AfkReward(kind, 1)
+						clock.earned = (clock.earned or 0) + (reward and (reward.gold + reward.xp) or 0)
+					else
+						warn("[Doomsday] AFK payout failed for " .. tostring(player.UserId) .. "; retrying")
+					end
 				end)
 			end
 			player:SetAttribute("AfkZone", kind)
 			player:SetAttribute("AfkNext", math.max(0, math.ceil(interval - clock.seconds)))
+			player:SetAttribute("AfkSession", math.floor(clock.session))
+			player:SetAttribute("AfkEarned", clock.earned or 0)
+			player:SetAttribute("AfkSaving", clock.paying == true)
 		else
 			afkClock[player.UserId] = nil
 		end
@@ -741,8 +755,7 @@ local function stepAfk(elapsed, visitors)
 		if not inLobby[player] or not afkClock[player.UserId] then
 			if not inLobby[player] then afkClock[player.UserId] = nil end
 			if player:GetAttribute("AfkZone") ~= nil then
-				player:SetAttribute("AfkZone", nil)
-				player:SetAttribute("AfkNext", nil)
+				for _, key in ipairs({ "AfkZone", "AfkNext", "AfkSession", "AfkEarned", "AfkSaving" }) do player:SetAttribute(key, nil) end
 			end
 		end
 	end

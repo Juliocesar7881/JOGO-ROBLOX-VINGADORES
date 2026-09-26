@@ -173,6 +173,16 @@ local function buildEnemy(def)
 			end
 			local mask = part(model, Vector3.new(1.15, 1.1, 0.25) * scale, Color3.fromRGB(196, 158, 78), Enum.Material.Metal)
 			mask.CFrame = CFrame.new(0, 3.35 * scale, -0.55 * scale)
+		elseif def.id == "loki" then
+			-- Horned helm and a long green cape: readable from the camera height.
+			for _, side in ipairs({ -1, 1 }) do
+				local horn = part(model, Vector3.new(0.28, 1.6, 0.35) * scale, Color3.fromRGB(226, 183, 72), Enum.Material.Metal)
+				horn.CFrame = CFrame.new(side * 0.55 * scale, 4.5 * scale, 0.1 * scale) * CFrame.Angles(-0.35, 0, -side * 0.4)
+			end
+			local cape = part(model, Vector3.new(2.3, 3.2, 0.25) * scale, Color3.fromRGB(38, 102, 58), Enum.Material.Fabric)
+			cape.CFrame = CFrame.new(0, 2.0 * scale, 0.6 * scale)
+			local collar = part(model, Vector3.new(1.9, 0.35, 1.2) * scale, Color3.fromRGB(226, 183, 72), Enum.Material.Metal)
+			collar.CFrame = CFrame.new(0, 3.05 * scale, 0)
 		elseif def.id == "doom" then
 			local cloak = part(model, Vector3.new(2.6, 3.4, 0.35) * scale, Color3.fromRGB(41, 62, 48), Enum.Material.Fabric)
 			cloak.CFrame = CFrame.new(0, 2.1 * scale, 0.6 * scale)
@@ -199,6 +209,8 @@ local function buildEnemy(def)
 	for _, piece in ipairs(model:GetChildren()) do
 		if piece:IsA("BasePart") then
 			if def.stealth and piece.Material ~= Enum.Material.Neon and piece.Name ~= "Shadow" then piece.Transparency = 0.32 end
+			-- Loki's illusions shimmer: half there, so they read as fakes.
+			if def.illusion and piece.Name ~= "Shadow" then piece.Transparency = math.max(piece.Transparency, 0.45) end
 			table.insert(pieces, {part = piece, rest = torso.CFrame:Inverse() * piece.CFrame, transparency = piece.Transparency})
 		end
 	end
@@ -800,7 +812,8 @@ function Effects:Handle(event)
 		local key = tostring(event.id)
 		local current = self.coins[key]
 		if current then current.position, current.value = event.position, event.value; return end
-		local coin = part(self.folder, Vector3.new(0.22, 1.15, 1.15), UI.Colors.gold, Enum.Material.Neon)
+		-- Match Gold pays for heroes now, so the coins are big enough to spot.
+		local coin = part(self.folder, Vector3.new(0.3, 1.7, 1.7), UI.Colors.gold, Enum.Material.Neon)
 		coin.Name, coin.Shape = "PersonalGold", Enum.PartType.Cylinder
 		self.coins[key] = {part = coin, position = event.position, id = event.id, value = event.value, requestedAt = -10, born = self.clock}
 	elseif event.kind == "CoinRemove" then

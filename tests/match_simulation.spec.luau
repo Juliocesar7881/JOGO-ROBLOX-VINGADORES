@@ -271,7 +271,7 @@ local function buildPhase(match, player, heroes)
 	end
 	-- Upgrade first: a tall tower beats a wide one in this game.
 	for _, tower in ipairs(snapshot.towers) do
-		if tower.ownerId == player.UserId and tower.upgradeCost > 0 and snapshot.energy >= tower.upgradeCost then
+		if tower.ownerId == player.UserId and tower.upgradeCost > 0 and snapshot.cash >= tower.upgradeCost then
 			local branch = nil
 			if tower.level == 4 then branch = 1 end
 			if match:Handle(player, "UpgradeTower", { towerId = tower.id, branch = branch }) then
@@ -286,7 +286,7 @@ local function buildPhase(match, player, heroes)
 		local heroId
 		for offset = 0, #heroes - 1 do
 			local candidate = heroes[((mine + offset) % #heroes) + 1]
-			if Catalog.Heroes[candidate].cost <= snapshot.energy then heroId = candidate break end
+			if Catalog.Heroes[candidate].cost <= snapshot.cash then heroId = candidate break end
 		end
 		if not heroId then break end
 		local placed = false
@@ -335,10 +335,16 @@ end
 local function simulate(options)
 	local profile = newProfile(options.profile)
 	if options.loadout then profile.loadout = options.loadout end
+	-- The bot picks up every coin it earns, like a commander walking the road:
+	-- match Gold on the ground is what pays for heroes.
+	local function pickup(target)
+		if options.pickup ~= false then target.passes = table.clone(target.passes or {}); target.passes.collector = true end
+	end
+	pickup(profile)
 	local members, byUser = {}, {[1]=profile}
 	for id=1,(options.size or 1) do
 		table.insert(members,newPlayer(id,options.characterAt))
-		if id>1 then byUser[id]=newProfile(options.profile); byUser[id].loadout=profile.loadout end
+		if id>1 then byUser[id]=newProfile(options.profile); byUser[id].loadout=profile.loadout; pickup(byUser[id]) end
 	end
 	local profiles = newProfiles(profile,options.size and byUser or nil)
 	local world = newWorld()
@@ -384,7 +390,7 @@ local function simulate(options)
 			lastWave = snapshot.wave
 			if snapshot.baseHP > lastHP then monotonic = false end
 			lastHP = snapshot.baseHP
-			if snapshot.energy < 0 then negativeEnergy = true end
+			if snapshot.cash < 0 then negativeEnergy = true end
 			peakEnemies = math.max(peakEnemies, snapshot.enemies)
 			if snapshot.boss then
 				bossSeen = true
@@ -415,9 +421,9 @@ if tutorial then
 	check(tutorial.match.phase == "Results", "tutorial reaches the results screen")
 	check(tutorial.results ~= nil, "tutorial produces a result")
 	check(tutorial.results.victory == true, "a defended tutorial is a win")
-	check(tutorial.results.waves == 8, "tutorial clears all 8 waves, got " .. tostring(tutorial.results.waves))
-	check(tutorial.seconds >= 120 and tutorial.seconds <= 900,
-		"tutorial lasts 2-15 min, got " .. string.format("%.1f min", tutorial.seconds / 60))
+	check(tutorial.results.waves == 20, "tutorial clears all 20 waves, got " .. tostring(tutorial.results.waves))
+	check(tutorial.seconds >= 180 and tutorial.seconds <= 1500,
+		"tutorial lasts 3-25 min, got " .. string.format("%.1f min", tutorial.seconds / 60))
 	check(tutorial.bossSeen, "the tutorial boss shows up")
 	check(tutorial.world.towers > 0, "towers are built in the world")
 	-- Teaching is paced across the run: a new commander should be told about
@@ -440,7 +446,7 @@ check(campaign ~= nil, "campaign ran")
 if campaign then
 	check(campaign.match.phase == "Results", "campaign terminates instead of hanging")
 	check(campaign.monotonic, "waves only move forward and the core never heals itself")
-	check(not campaign.negativeEnergy, "energy never goes negative")
+	check(not campaign.negativeEnergy, "match Gold never goes negative")
 	check(campaign.peakEnemies <= Config.MaxEnemies, "the enemy cap holds")
 	check(campaign.bossSeen, "a boss reaches the field")
 	check(campaign.results.waves >= 30,
@@ -448,7 +454,9 @@ if campaign then
 	check(campaign.casts > 3, "the bot uses its hero ability, got " .. tostring(campaign.casts) .. " casts")
 	check((campaign.log.Ability or 0) == campaign.casts, "every cast is announced to the clients")
 	check(campaign.picks == 0, "the campaign offers no cards")
-	local expectedBosses = { [10] = "Lagarto infectado", [20] = "Abominável infectado", [30] = "Caveira Vermelha infectado", [40] = "Killmonger infectado", [50] = "Doutor Destino" }
+	-- Manhattan's own boss, the Lizard, waits for the last wave; the rest
+	-- of the cast comes first, in story order.
+	local expectedBosses = { [10] = "Abominável infectado", [20] = "Caveira Vermelha infectado", [30] = "Killmonger infectado", [40] = "Lagarto infectado" }
 	for wave, name in pairs(expectedBosses) do
 		if campaign.results.waves >= wave then check(campaign.bossWaves[wave] == name, "wave " .. wave .. " brings " .. name .. ", saw " .. tostring(campaign.bossWaves[wave])) end
 	end
@@ -467,12 +475,13 @@ if campaign then
 	end
 	print(line)
 	if campaign.results.victory then
-		check(campaign.finalBossWave == 50, "the final boss is the wave-50 boss")
-		-- Fifty waves are a long run by design. This harness never uses the
-		-- unanimous ready vote, so it measures the slowest possible session.
-		check(campaign.seconds >= 25 * 60 and campaign.seconds <= 62 * 60,
-			"a full 50-wave campaign stays inside 25-62 min, got " .. string.format("%.1f min", campaign.seconds / 60))
-		print(string.format("  50 ondas, medido %.1f min sem usar o voto de pronto", campaign.seconds / 60))
+		check(campaign.finalBossWave == 40, "Manhattan's final boss is the wave-40 boss")
+		check(campaign.results.gold >= Rules.RunGold("normal", "manhattan", 40, true), "a victory pays the whole campaign reward")
+		-- This harness never uses the unanimous ready vote, so it measures the
+		-- slowest possible session.
+		check(campaign.seconds >= 18 * 60 and campaign.seconds <= 50 * 60,
+			"a full 40-wave campaign stays inside 18-50 min, got " .. string.format("%.1f min", campaign.seconds / 60))
+		print(string.format("  40 ondas, medido %.1f min sem usar o voto de pronto", campaign.seconds / 60))
 	end
 end
 
@@ -488,27 +497,29 @@ if undefended then
 		undefended.match.wave, undefended.seconds / 60, undefended.results.gold))
 end
 
-print("--- manual pickup vs collector drone ---")
--- The tutorial pays no gold, so no coins exist there to compare.
-local manual = simulate({ mapId = "manhattan", modeId = "normal", characterAt = v3(88, 0, 66) })
+print("--- picking up match Gold ---")
+-- Match Gold pays for heroes, so a commander who never picks it up starves:
+-- only the starting purse and the wave bonus reach the wallet.
+local starved = simulate({ mapId = "manhattan", modeId = "normal", pickup = false, characterAt = v3(88, 0, 66) })
 local drone = simulate({ mapId = "manhattan", modeId = "normal", profile = { passes = { collector = true } } })
-if manual and drone then
-	check(manual.results.gold == drone.results.gold,
-		string.format("manual and drone collection pay the same total (%d vs %d)",
-			manual.results.gold, drone.results.gold))
+if starved and drone then
 	check((drone.log.CoinRemove or 0) > 0, "the drone actually picks coins up")
-	print(string.format("  manual %d gold, drone %d gold", manual.results.gold, drone.results.gold))
+	check((starved.log.CoinRemove or 0) == 0, "coins left on the ground stay there")
+	check(starved.results.waves <= drone.results.waves, string.format("leaving the Gold on the ground never helps (%d vs %d waves)", starved.results.waves, drone.results.waves))
+	check(starved.results.gold <= drone.results.gold, "lobby Gold comes from the run, never from coins")
+	print(string.format("  sem pegar %d ondas, pegando %d ondas", starved.results.waves, drone.results.waves))
 end
 
-print("--- endless, Asgard ---")
-local endless = simulate({ mapId = "asgard", modeId = "infinite", profile = {
-	campaign = { manhattan = { normal = true, ranked = true } },
+print("--- competitive, HYDRA ---")
+local endless = simulate({ mapId = "hydra", modeId = "ranked", profile = {
+	campaign = { manhattan = { normal = true } },
 } })
 if endless then
-	check(endless.match.phase == "Results", "endless ends in defeat rather than looping forever")
-	check(#endless.profiles.bests > 0, "endless records a leaderboard best")
-	check(endless.results.waves >= 5, "endless survives a few waves, got " .. tostring(endless.results.waves))
-	check(endless.picks == 0, "endless offers no cards")
+	check(endless.match.phase == "Results", "competitive ends in defeat rather than looping forever")
+	check(#endless.profiles.bests > 0, "competitive records a leaderboard best")
+	check(endless.results.waves >= 5, "competitive survives a few waves, got " .. tostring(endless.results.waves))
+	check(endless.picks == 0, "competitive offers no cards")
+	check(endless.results.gold == Rules.RunGold("ranked", "hydra", endless.results.waves, false), "every completed competitive wave pays its lobby Gold")
 	print(string.format("  survived %d waves in %.1f min", endless.results.waves, endless.seconds / 60))
 end
 
@@ -523,11 +534,11 @@ if cardRun then
 	print(string.format("  %d waves, %d cartas, %.1f min, victory=%s", cardRun.results.waves, cardRun.picks, cardRun.seconds / 60, tostring(cardRun.results.victory)))
 end
 
-print("--- ranked, wakanda ---")
+print("--- competitive, wakanda ---")
 local hardRun = simulate({ mapId = "wakanda", modeId = "ranked", profile = { campaign = { manhattan = { normal = true } } } })
 if hardRun then
-	check(hardRun.match.phase == "Results", "the ranked run terminates")
-	check(hardRun.picks == 0, "ranked mode offers no cards")
+	check(hardRun.match.phase == "Results", "the competitive run terminates")
+	check(hardRun.picks == 0, "competitive offers no cards")
 	print(string.format("  %d waves, %.1f min, victory=%s", hardRun.results.waves, hardRun.seconds / 60, tostring(hardRun.results.victory)))
 end
 
@@ -537,18 +548,18 @@ if economy then
 	local match = economy.match
 	local player = economy.player
 	match.running, match.phase = true, "Preparing"
-	local before = match:Snapshot(player).energy
+	local before = match:Snapshot(player).cash
 	local placed = match:Handle(player, "PlaceTower", { heroId = "ironman", position = v3(-70, 0, -30) })
 	check(placed, "a tower can be placed on open ground")
-	local spent = before - match:Snapshot(player).energy
+	local spent = before - match:Snapshot(player).cash
 	check(spent == Catalog.Heroes.ironman.cost, "placing charges exactly the hero cost")
 	local entrance = Catalog.Maps.manhattan.paths[1][1]
 	local onPath = match:Handle(player, "PlaceTower", { heroId = "ironman", position = v3(entrance[1], 0, entrance[2]) })
 	check(not onPath, "the route itself cannot be built on")
 	local towerId = match:Snapshot(player).towers[1].id
-	local beforeSale = match:Snapshot(player).energy
+	local beforeSale = match:Snapshot(player).cash
 	match:Handle(player, "SellTower", { towerId = towerId })
-	local refund = match:Snapshot(player).energy - beforeSale
+	local refund = match:Snapshot(player).cash - beforeSale
 	check(refund == math.floor(spent * 0.7), "selling refunds 70 percent, got " .. tostring(refund))
 	check(not match:Handle(player, "PlaceTower", { heroId = "strange", position = v3(-70, 0, -30) }),
 		"an unequipped hero cannot be placed")
@@ -563,21 +574,24 @@ do
 	check(match:Start({player},"manhattan","normal","talent-test"),"Talented account starts a match")
 	local p = match.participants[player.UserId]
 	check(match.maxBaseHP==112 and match.baseHP==112,"Vitality raises actual and maximum base HP")
-	check(p.energy==Config.StartEnergy+40,"Preparation talent grants initial Energy")
+	check(p.cash==Config.StartCash+40,"Preparation talent grants initial Energy")
 	check(match:Snapshot(player).maxBaseHP==112,"HUD receives increased maximum HP")
 	p.contributed=true
 	for i=1,10 do
-		local enemy={id=i,hp=1,maxHP=1,def={},armorUntil=0,markUntil=0,shield=0,gold=1,position=v3(0,0,0)}
+		local enemy={id=i,hp=1,maxHP=1,def={},armorUntil=0,markUntil=0,shield=0,cash=1,position=v3(0,0,0)}
 		match.enemies[i],match.alive=enemy,1
 		match:_damage(enemy,10,nil,nil)
 	end
-	check(p.goldEarned==12,"Fractional kill bonuses accumulate instead of vanishing on small coins")
+	local dropped=0 for _,coin in pairs(p.coins) do dropped+=coin.value end
+	check(dropped==12,"Fractional kill bonuses accumulate instead of vanishing on small coins, got "..dropped)
+	check(p.goldEarned==0,"Kills drop match Gold, never lobby Gold")
 	match.wave,match.baseHP,match.baseWasDamaged=5,108,true
 	match:_endWave()
 	check(match.baseHP==110,"Repair talent restores HP every five completed waves")
-	check(p.goldEarned==16 and profile.gold==16,"Wave talent pays only the earned amount at checkpoint")
+	local banked=Rules.WaveGold("normal",5)+2*2
+	check(p.goldEarned==banked and profile.gold==banked,"A completed wave banks its lobby Gold plus the wave talent, got "..p.goldEarned)
 	match:_endWave()
-	check(p.goldEarned==16 and match.baseHP==110,"Duplicate wave completion cannot duplicate gold or repairs")
+	check(p.goldEarned==banked and match.baseHP==110,"Duplicate wave completion cannot duplicate gold or repairs")
 	match:Finish(true)
 	check(profiles.awards["talent-test:final"].noDamage==false,"Repair cannot award a false flawless medal")
 	local idleProfile=newProfile({talents={roundGold=5}})
@@ -657,7 +671,7 @@ do
 		local farAway = distanceBetween(far.position, at) > stats.radius + 6
 		local boss = def.kind ~= "chain" and spawn(match, "lizard", 100.2, 1) or nil
 		local payload = { skillId = def.id, position = at, towerId = tower.id }
-		local energyBefore, coreBefore = p.energy, match.baseHP
+		local energyBefore, coreBefore = p.cash, match.baseHP
 		match.baseHP = match.maxBaseHP - 20
 		coreBefore = match.baseHP
 		local hpBefore = {}
@@ -723,7 +737,7 @@ do
 			for _, enemy in ipairs(near) do if enemy.hp < hpBefore[1] * 0.999 then struck += 1 end end
 			check(struck == math.min(stats.count, #near), "chain strikes exactly its count of enemies: " .. label .. " " .. struck)
 		elseif def.kind == "energy" then
-			check(p.energy == energyBefore + math.floor(stats.power * (200 + 10 * match.wave)), "energy scales with the wave: " .. label)
+			check(p.cash == energyBefore + math.floor(stats.power * (200 + 10 * match.wave)), "energy scales with the wave: " .. label)
 		elseif def.kind == "pull" then
 			for index, enemy in ipairs(near) do check(math.abs(enemy.progress - (100 + (index - 1) * 0.5 - stats.power)) < 0.001, "pull pushes enemies back: " .. label) end
 			check(boss.progress == 100.2, "a boss cannot be pulled: " .. label)
@@ -1060,13 +1074,13 @@ do
 	end
 	do -- economy: instants
 		local match, player, p, take = withCard("supplyDrop")
-		local before = p.energy
+		local before = p.cash
 		take()
-		check(p.energy == before + 350 and #p.cards == 1, "supplies grant 350 Energy")
+		check(p.cash == before + 350 and #p.cards == 1, "supplies grant 350 Energy")
 		local m2, pl2, p2, take2 = withCard("warChest")
-		local before2 = p2.energy
+		local before2 = p2.cash
 		take2()
-		check(p2.energy == before2 + 900, "the war chest grants 900 Energy")
+		check(p2.cash == before2 + 900, "the war chest grants 900 Energy")
 		local m3, pl3, p3, take3 = withCard("medic")
 		m3.baseHP = 50
 		take3()
@@ -1081,37 +1095,38 @@ do
 		local outcomes = { win = false, lose = false }
 		for wave = 1, 40 do
 			local match, player, p, take = withCard("gambler", function(m) m.wave = wave end)
-			local before = p.energy
+			local before = p.cash
 			take()
-			if p.energy == before + 600 then outcomes.win = true
-			elseif p.energy == math.max(0, before - 200) then outcomes.lose = true
-			else check(false, "the gamble must end at +600 or -200, got " .. (p.energy - before)) end
+			if p.cash == before + 600 then outcomes.win = true
+			elseif p.cash == math.max(0, before - 200) then outcomes.lose = true
+			else check(false, "the gamble must end at +600 or -200, got " .. (p.cash - before)) end
 		end
 		check(outcomes.win and outcomes.lose, "the gamble can go either way")
-		local m, pl, p, take = withCard("gambler", function(match, _, part) part.energy = 50 end)
+		local m, pl, p, take = withCard("gambler", function(match, _, part) part.cash = 50 end)
 		take()
-		check(p.energy >= 0, "a lost gamble never leaves negative Energy")
+		check(p.cash >= 0, "a lost gamble never leaves negative Energy")
 	end
 	do -- economy: rates
 		local match, player, p, take = withCard("coinRain")
 		p.contributed = true
 		take()
 		local enemy = spawn(match, "zombie", 10, 1)
-		enemy.gold = 100
+		enemy.cash = 100
 		match:_damage(enemy, 1e9, nil, { trueDamage = true })
-		check(p.goldEarned == 115, "coin rain pays 15% more, got " .. p.goldEarned)
+		local dropped = 0 for _, coin in pairs(p.coins) do dropped += coin.value end
+		check(dropped == 115, "coin rain drops 15% more match Gold, got " .. dropped)
 		local m2, pl2, p2, take2 = withCard("income")
 		p2.contributed = true
 		take2()
-		local before = p2.energy
+		local before = p2.cash
 		m2.wave = 10; m2.completedWaves = 9; m2.alive = 0; m2.spawnIndex = 1; m2.pendingSpawns = {}
 		m2:_endWave()
-		check(p2.energy - before == math.floor((90 + 10 * 12) * 1.2)+p2.base.stats.income, "the supply network raises wave income by 20%")
+		check(p2.cash - before == math.floor((90 + 10 * 12) * 1.2)+p2.base.stats.income, "the supply network raises wave income by 20%")
 		local m3, pl3, p3, take3 = withCard("discount")
 		take3()
-		local before3 = p3.energy
+		local before3 = p3.cash
 		place(m3, pl3, "ironman")
-		check(before3 - p3.energy == math.floor(Catalog.Heroes.ironman.cost * 0.92), "the arms contract discounts placement by 8%")
+		check(before3 - p3.cash == math.floor(Catalog.Heroes.ironman.cost * 0.92), "the arms contract discounts placement by 8%")
 	end
 	do -- abilities and support
 		local match, player, p, take = withCard("abilityPower")
@@ -1147,10 +1162,10 @@ end
 --==============================================================================
 print("--- bosses ---")
 do
-	local match, player = stage({ modeId = "normal", wave = 50 })
+	local match, player = stage({ modeId = "normal", mapId = "gamma", wave = 50 })
 	local doom = spawn(match, "doom", 20, 1)
 	check(doom.final == true, "the wave-50 boss is the final boss")
-	local mini, miniPlayer = stage({ modeId = "normal", wave = 30 })
+	local mini, miniPlayer = stage({ modeId = "normal", mapId = "gamma", wave = 30 })
 	local skull = spawn(mini, "redskull", 20, 1)
 	check(skull.final == false, "an ordinary boss is not the final boss")
 	match.elapsed = doom.nextPower
@@ -1162,15 +1177,80 @@ do
 	mini:_enemiesStep(0.1)
 	check(math.abs(skull.nextPower - (mini.elapsed + 14)) < 0.001, "an ordinary boss uses a power every 14 seconds")
 	check(match:Snapshot(player).boss and match:Snapshot(player).boss.final == true, "the HUD is told it is the final boss")
-	local endless, endlessPlayer = stage({ modeId = "infinite", wave = 60, profile = { campaign = { manhattan = { normal = true, ranked = true } } } })
+	local endless, endlessPlayer = stage({ modeId = "ranked", mapId = "hydra", wave = 60, profile = { campaign = { manhattan = { normal = true } } } })
 	local cycled = spawn(endless, "lizard", 20, 1)
-	check(cycled.final == false, "endless has no final boss")
+	check(cycled.final == false, "competitive has no final boss")
 	-- Upcoming boss, for the wave bar.
-	local counter, counterPlayer = stage({ modeId = "normal", wave = 12 })
+	local counter, counterPlayer = stage({ modeId = "normal", mapId = "gamma", wave = 12 })
 	counter.phase = "Preparing"
 	check(counter:Snapshot(counterPlayer).nextBoss == 20, "the HUD knows the next boss wave")
 	counter.wave = 49
 	check(counter:Snapshot(counterPlayer).nextBoss == 50, "wave 50 is the last boss")
+end
+
+--==============================================================================
+-- Match Gold on the ground, Loki's illusions, and ending a competitive run
+--==============================================================================
+print("--- match Gold, magnet, Loki and the end vote ---")
+do
+	-- A kill drops a pile; the wallet only grows when it is picked up.
+	local match, player = stage({ modeId = "normal", mapId = "gamma", wave = 5 })
+	local p = match.participants[player.UserId]
+	p.contributed = true
+	local zombie = spawn(match, "zombie", 40, 1)
+	local before = p.cash
+	match:_damage(zombie, 1e9, nil, { trueDamage = true })
+	local pileId, pile = next(p.coins)
+	check(pile ~= nil and pile.value == Rules.KillCash("zombie"), "a kill drops the enemy's match Gold on the ground")
+	check(p.cash == before, "dropped Gold is not in the wallet until it is picked up")
+	check(match:Snapshot(player).coinsWaiting == pile.value, "the HUD is told how much Gold waits on the ground")
+	-- Out of the magnet's reach the server refuses the pickup.
+	local far = newPlayer(player.UserId, pile.position + v3(40, 0, 0))
+	check(not match:Handle(far, "CollectCoin", { coinId = pileId }), "a pile out of reach cannot be taken")
+	local near = newPlayer(player.UserId, pile.position + v3(Config.CollectRadius - 1, 0, 0))
+	check(match:Handle(near, "CollectCoin", { coinId = pileId }), "walking up to a pile collects it")
+	check(p.cash == before + pile.value and next(p.coins) == nil, "picked-up Gold lands in the wallet exactly once")
+	check(not match:Handle(near, "CollectCoin", { coinId = pileId }), "the same pile cannot be taken twice")
+	-- Magnetism widens the reach.
+	local magnetMatch, magnetPlayer = stage({ modeId = "normal", mapId = "gamma", wave = 5, profile = { talents = { magnet = 5 }, campaign = { manhattan = { normal = true } } } })
+	local reach = magnetMatch:Snapshot(magnetPlayer).magnet
+	check(math.abs(reach - Config.CollectRadius * (1 + 5 * Catalog.Talents.magnet.effect / 100)) < 1e-9, "Magnetism widens the magnet by its talent effect")
+	check(reach > Config.CollectRadius * 1.5, "a maxed magnet reaches much further")
+
+	-- Loki fills the road with worthless illusions that fade on their own.
+	local asgard, asgardPlayer = stage({ modeId = "normal", mapId = "asgard", wave = 50 })
+	local loki = spawn(asgard, "loki", 30, 1)
+	check(loki.final == true, "Loki is Asgard's final boss")
+	asgard.elapsed = loki.nextPower
+	local aliveBefore = asgard.alive
+	asgard:_enemiesStep(0.1)
+	local illusions = {}
+	for _, enemy in pairs(asgard.enemies) do if enemy.enemyId == "illusion" then table.insert(illusions, enemy) end end
+	check(#illusions >= 3 and asgard.alive - aliveBefore == #illusions, "Loki's power conjures illusions")
+	local ap = asgard.participants[asgardPlayer.UserId]
+	ap.contributed = true
+	asgard:_damage(illusions[1], 1e9, nil, { trueDamage = true })
+	check(next(ap.coins) == nil, "an illusion drops no Gold")
+	-- 8.5 s later: the illusions (8 s) are gone, Loki's next power (9 s) is not due.
+	asgard.elapsed += 8.5
+	asgard:_enemiesStep(0.1)
+	local left = 0
+	for _, enemy in pairs(asgard.enemies) do if enemy.enemyId == "illusion" then left += 1 end end
+	check(left == 0 and asgard.baseHP == asgard.maxBaseHP, "illusions fade on their own and never hurt the core")
+
+	-- Competitive: the whole squad agrees between waves, and the record stays.
+	local arena, arenaPlayer = stage({ modeId = "ranked", mapId = "hydra", wave = 12 })
+	arena.phase, arena.completedWaves = "Preparing", 12
+	local normalRun, normalPlayer = stage({ modeId = "normal", mapId = "gamma", wave = 3 })
+	normalRun.phase, normalRun.completedWaves = "Preparing", 3
+	check(not normalRun:Handle(normalPlayer, "VoteEnd", { on = true }), "only the competitive arena can be ended by vote")
+	arena.phase = "Wave"
+	check(not arena:Handle(arenaPlayer, "VoteEnd", { on = true }), "the vote only happens between waves")
+	arena.phase = "Preparing"
+	local ok, reply = arena:Handle(arenaPlayer, "VoteEnd", { on = true })
+	check(ok and reply.ended == true, "a solo commander ends the run on their own")
+	local _, ended = arena:Snapshot(arenaPlayer)
+	check(ended and ended.ended == true and ended.victory == false and ended.waves == 12, "the run ends as a kept record, not a loss")
 end
 
 --==============================================================================
@@ -1205,7 +1285,7 @@ for size=2,4 do
 			check(result and result.waves==run.results.waves,"all members receive the same completed waves")
 			check(snapshot.towerLimit==Rules.TowerLimit(size),"group uses correct tower cap")
 			check(run.byUser[member.UserId].gold>0,"each contributing player receives persistent gold")
-			check(snapshot.energy>=0,"cooperative energy never goes negative")
+			check(snapshot.cash>=0,"cooperative energy never goes negative")
 		end
 		check(run.match.size==size,"party scaling stays fixed through results")
 	end
@@ -1217,26 +1297,26 @@ do
 		local match,player=stage({profile={equippedBase=id,bases={[id]=true}}})
 		local p=match.participants[player.UserId]
 		check(p.base.id==id,"owned base selected at start: "..id)
-		p.energy=20000; local gold=p.profile.gold
-		local before=p.energy
+		p.cash=20000; local gold=p.profile.gold
+		local before=p.cash
 		check(not match:Handle(player,"UpgradeBase",{expectedLevel=2}),"stale base upgrade rejected")
-		check(p.energy==before,"stale upgrade spends nothing")
+		check(p.cash==before,"stale upgrade spends nothing")
 		for level=1,4 do
 			local hp=match.baseHP; local max=match.maxBaseHP; local old=p.base.stats
 			check(match:Handle(player,"UpgradeBase",{expectedLevel=level}),"upgrade base "..id.." at "..level)
-			check(p.base.level==level+1 and p.energy==before-old.upgradeCost,"base upgrade charges match Energy exactly once")
+			check(p.base.level==level+1 and p.cash==before-old.upgradeCost,"base upgrade charges match Energy exactly once")
 			check(match.baseHP-hp==match.maxBaseHP-max and match.maxBaseHP>max,"upgrade adds new HP without free full repair")
-			before=p.energy
+			before=p.cash
 		end
 		check(not match:Handle(player,"UpgradeBase",{expectedLevel=5}),"base stops at five levels")
 		check(p.profile.gold==gold,"base upgrades never spend permanent Gold")
-		p.contributed=true; before=p.energy; match:_endWave()
-		check(p.energy-before==90+match.wave*12+p.base.stats.income,"completed wave grants base income once")
-		before=p.energy; match:_endWave(); check(p.energy==before,"duplicate end-wave cannot farm income")
+		p.contributed=true; before=p.cash; match:_endWave()
+		check(p.cash-before==90+match.wave*12+p.base.stats.income,"completed wave grants base income once")
+		before=p.cash; match:_endWave(); check(p.cash==before,"duplicate end-wave cannot farm income")
 	end
 	local match,player=stage({profile={equippedBase="worldtree",bases={worldtree=true}}})
-	local p=match.participants[player.UserId]; local energy=p.energy; match:_endWave()
-	check(p.energy==energy,"idle farm earns no income without contribution")
+	local p=match.participants[player.UserId]; local energy=p.cash; match:_endWave()
+	check(p.cash==energy,"idle farm earns no income without contribution")
 	local fresh,freshPlayer=stage({profile={equippedBase="worldtree",bases={}}})
 	check(fresh.participants[freshPlayer.UserId].base.id=="outpost","forged base selection falls back to starter")
 	local wall,defender=stage({profile={equippedBase="bunker",bases={bunker=true}}})
@@ -1274,19 +1354,19 @@ do
 		local run=MatchService.new(Config,Catalog,Rules,Waves,newProfiles(byUser[8001],byUser),newWorld(),newRemotes({}),function() end)
 		check(run:Start(members,"manhattan","normal","base-coop-"..size),"cooperative bases start")
 		check(run.maxBaseHP==Config.BaseHP+size*math.floor(Rules.BaseStats("reactor",1).hp/size),"group HP contributions use fixed party divisor")
-		local p=run.participants[8001]; p.energy=1000
+		local p=run.participants[8001]; p.cash=1000
 		check(run:Handle(members[1],"UpgradeBase",{expectedLevel=1}),"commander upgrades personal module")
 		check(run.participants[8002].base.level==1 and p.base.level==2,"upgrade cannot change teammate module")
-		local hp=run.maxBaseHP; local energy=p.energy
+		local hp=run.maxBaseHP; local energy=p.cash
 		run:OnLeave(members[1]); check(run:Reconnect(members[1]),"base owner reconnects")
-		check(run.maxBaseHP==hp and p.energy==energy and p.base.level==2,"reconnect restores base without duplicating HP or Energy")
+		check(run.maxBaseHP==hp and p.cash==energy and p.base.level==2,"reconnect restores base without duplicating HP or Energy")
 	end
 end
 
 print("--- performance guard ---")
 do
 	local match, player = stage({ wave = 45 })
-	match.participants[player.UserId].energy = 1e6
+	match.participants[player.UserId].cash = 1e6
 	for _ = 1, 12 do place(match, player, "ironman") end
 	local calls = 0
 	local original = Rules.TowerStats

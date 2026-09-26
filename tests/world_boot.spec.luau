@@ -75,10 +75,11 @@ if sanctuary then
 		if piece.Name=="ForestTrail" and piece.CanCollide then trails+=1 end
 		if piece:IsA("BasePart") then check(piece.Position.Z>150,"Forest stays outside all combat terrain bounds") end
 	end
-	check(trees>=30,"Forest surrounds the plaza with mature trees, got "..tostring(trees))
+	-- The districts took over the corners; the forest still rings the island.
+	check(trees>=20,"Forest surrounds the plaza with mature trees, got "..tostring(trees))
 	check(stones==7 and trails>=7,"Exploration paths and jumping stones are traversable")
 	check(sanctuary:FindFirstChild("AuroraHeart")~=nil and sanctuary:FindFirstChild("AuroraFalls")~=nil,"Tree landmark and waterfall exist")
-	check(countClass(lobby,"BasePart")<3500,"Expanded lobby remains under its geometry budget")
+	check(countClass(lobby,"BasePart")<3500,"Expanded lobby remains under its geometry budget, got "..tostring(countClass(lobby,"BasePart")))
 end
 
 -- Mobile performance budget: shadow-casting is opt-in for the handful of big

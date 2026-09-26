@@ -31,7 +31,7 @@ for _, rarity in ipairs(Catalog.RarityOrder) do
 	local rarityInfo = Catalog.Rarities[rarity]
 	line("## " .. (RARITY_PT[rarity] or rarity) .. " — " .. tostring(rarityInfo.robux) .. " Robux (compra direta)")
 	line("")
-	line("| Herói | Custo (Energia) | Ataque | Dano | Alcance | Intervalo | Habilidade |")
+	line("| Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |")
 	line("| --- | --- | --- | --- | --- | --- | --- |")
 	for _, id in ipairs(Catalog.HeroOrder) do
 		local hero = Catalog.Heroes[id]

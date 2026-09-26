@@ -30,20 +30,28 @@ local STATUS = { stunned = 1, slowed = 2, marked = 4, burning = 8, shielded = 16
 -- them. Keyed by wave number; waves without an entry stay quiet on purpose.
 local TUTORIAL_LESSONS = {
 	[2] = {
-		"Toque em uma torre para melhorar, vender ou mudar a prioridade. Colete moedas caminhando perto delas.",
-		"Select a tower to upgrade, sell or change targeting. Walk near coins to collect them.",
+		"Cada inimigo derrotado derruba Ouro no chão. Ande perto das moedas para pegar: é com esse Ouro que você compra e melhora heróis.",
+		"Every defeated enemy drops Gold on the ground. Walk near the coins to pick them up: that Gold buys and upgrades your heroes.",
 	},
 	[4] = {
+		"Toque em uma torre para melhorar, vender ou mudar a prioridade.",
+		"Select a tower to upgrade, sell or change targeting.",
+	},
+	[7] = {
 		"Sua habilidade ativa vem do herói no PRIMEIRO slot da equipe. Use o botão grande durante a onda: ela recarrega sozinha.",
 		"Your active ability comes from the hero in the FIRST slot of your squad. Use the big button during a wave; it recharges on its own.",
 	},
-	[6] = {
+	[11] = {
 		"Antes de cada onda o aviso mostra as ameaças. Tocar em PRONTO começa a onda mais cedo.",
 		"Before each wave the banner lists the threats. Pressing READY starts the wave early.",
 	},
-	[8] = {
-		"Última onda. Ao vencer você recebe 600 de Ouro: abra baús na loja do lobby para recrutar novos heróis.",
-		"Final wave. Winning grants 600 Gold: open chests at the lobby shop to recruit new heroes.",
+	[15] = {
+		"Na árvore de Evolução do lobby, Magnetismo aumenta o raio do ímã que puxa o Ouro do chão.",
+		"In the lobby's Talent tree, Magnetism widens the magnet that pulls Gold off the ground.",
+	},
+	[20] = {
+		"Última onda: derrote o chefe para concluir o treino e ganhar 1.000 de Ouro para abrir baús no lobby.",
+		"Final wave: beat the boss to finish training and earn 1,000 Gold to open chests in the lobby.",
 	},
 }
 
@@ -152,10 +160,11 @@ function Match:Start(members, mapId, modeId, runId)
 	self:_previewThreats()
 	for index, player in ipairs(members) do
 		local profile = self.profiles:Snapshot(player)
-		self.participants[player.UserId] = {player=player,profile=profile,index=index,energy=self.config.StartEnergy + ((profile.talents or {}).startingEnergy or 0)*20,
+		-- cash is match Gold: dropped by enemies, spent on heroes, never saved.
+		self.participants[player.UserId] = {player=player,profile=profile,index=index,cash=(self.config.StartCash or self.config.StartEnergy or 600) + ((profile.talents or {}).startingEnergy or 0)*20,
 			killGoldRemainder=0,startLevel=profile.level or 1,
 			goldEarned=0,xpEarned=0,waveGold=0,coins={},cooldowns={},cards={},cardOffers={},mods={},modsVersion=0,
-			perm={},waveHeroes={},contributed=false,towerCount=0,bossKills=0,disconnectedAt=nil,returned=false,collected=0,
+			perm={},waveHeroes={},contributed=false,towerCount=0,bossKills=0,disconnectedAt=nil,returned=false,collected=0,endVote=false,
 			masteryEarned={},rallyUntil=0,rallyStat=nil,rallyValue=0,
 			-- Remembered between matches: a commander who plays on 2x and
 			-- auto-skip does not have to switch them on every single run.
@@ -173,13 +182,18 @@ function Match:Start(members, mapId, modeId, runId)
 		self.world:MovePlayer(player,true,index)
 	end
 	if modeId == "tutorial" then
-		self:_notice("TREINAMENTO • Escolha Homem de Ferro e posicione ao lado da rota. Use Energia para melhorar suas torres.",
-			"TRAINING • Select Iron Man and place him beside the path. Use Energy to upgrade your towers.")
+		self:_notice("TREINAMENTO • Escolha Homem de Ferro e posicione ao lado da rota. Os inimigos derrubam Ouro: pegue para comprar mais heróis.",
+			"TRAINING • Select Iron Man and place him beside the path. Enemies drop Gold: pick it up to buy more heroes.")
 	elseif self.cardMode then
 		self:_notice("ROGUELIKE DE CARTAS • A cada 5 ondas escolha uma carta. Chefe a cada 10 ondas. 50 ondas.",
 			"CARD ROGUELIKE • Pick a card every 5 waves. A boss every 10 waves. 50 waves.")
+	elseif modeId == "ranked" then
+		self:_notice("COMPETITIVO • Ondas sem fim. Entre as ondas o grupo pode votar para encerrar e guardar o recorde.",
+			"COMPETITIVE • Endless waves. Between waves the squad can vote to end and keep the record.")
 	else
-		self:_notice("Defenda o núcleo. Prepare sua equipe antes da primeira onda.", "Defend the core. Prepare your team before the first wave.")
+		local total = self.rules.WaveCount(modeId, mapId)
+		self:_notice("Defenda o núcleo por "..total.." ondas. Pegue o Ouro que os inimigos derrubam para comprar heróis.",
+			"Defend the core for "..total.." waves. Pick up the Gold enemies drop to buy heroes.")
 	end
 	return true
 end
@@ -272,12 +286,13 @@ function Match:_spawn(spec)
 	local id = self:_nextId("e")
 	local hp = def.hp * (spec.hpMultiplier or 1)
 	local routeIndex = self.routeCache[spec.pathIndex or 1] and (spec.pathIndex or 1) or 1
-	local final = def.boss and not spec.rewardless and self.rules.IsFinalWave(self.modeId, self.wave)
+	local final = def.boss and not spec.rewardless and self.rules.IsFinalWave(self.modeId, self.wave, self.mapId)
 	local enemy = {id=id,def=def,enemyId=spec.enemyId,hp=hp,maxHP=hp,progress=spec.progress or 0,
-		routeIndex=routeIndex,gold=spec.rewardless and 0 or (spec.gold or 0),rewardless=spec.rewardless,
+		routeIndex=routeIndex,cash=spec.rewardless and 0 or (spec.cash or self.rules.KillCash(spec.enemyId)),rewardless=spec.rewardless,
 		position=self:_pathPosition(routeIndex,spec.progress or 0),slow=0,slowUntil=0,revealUntil=0,
 		mark=0,markUntil=0,armorBreak=0,armorUntil=0,nextPower=self.elapsed+10,summons=0,
-		phase=1,shield=0,lastHit=0,portalUntil=0,stunUntil=0,stunImmuneUntil=0,final=final == true}
+		phase=1,shield=0,lastHit=0,portalUntil=0,stunUntil=0,stunImmuneUntil=0,final=final == true,
+		expiresAt=def.illusion and self.elapsed+8 or nil}
 	self.enemies[id], self.alive = enemy, self.alive + 1
 	if def.boss and not spec.rewardless then
 		if final then
@@ -316,9 +331,10 @@ function Match:_beginWave()
 	end
 end
 
+-- A pile of match Gold on the ground for one commander. Piles near each other
+-- merge, so a crowded road stays readable. Only its owner sees and takes it.
 function Match:_coin(p, position, amount)
 	if amount <= 0 then return end
-	p.waveGold += amount p.goldEarned += amount
 	local nearest, nearestDistance, count = nil, math.huge, 0
 	for id,c in pairs(p.coins) do
 		count+=1 local d=distanceXZ(c.position,position)
@@ -377,11 +393,11 @@ function Match:_damage(enemy, amount, tower, stats)
 		self:_fx({kind="EnemyDown",id=enemy.id,enemyId=enemy.enemyId,position=enemy.position,boss=enemy.def.boss==true})
 		for _, p in pairs(self.participants) do
 			if p.contributed and not p.returned and not p.disconnectedAt then
-				local exactGold = enemy.gold * (1 + talent(p,"killGold")*0.04 + cardStat(p,"killGold")) + p.killGoldRemainder
-				local earnedGold = math.floor(exactGold + 0.000001)
-				p.killGoldRemainder = exactGold - earnedGold
-				self:_coin(p,enemy.position,earnedGold)
-				if not enemy.rewardless then p.energy+=math.max(2,enemy.def.reward or 4) end
+				-- Every contributor gets their own pile; talents and cards grow it.
+				local exactCash = enemy.cash * (1 + talent(p,"killGold")*0.04 + cardStat(p,"killGold")) + p.killGoldRemainder
+				local earnedCash = math.floor(exactCash + 0.000001)
+				p.killGoldRemainder = exactCash - earnedCash
+				self:_coin(p,enemy.position,earnedCash)
 				if enemy.def.boss and not enemy.rewardless then p.bossKills+=1 end
 			end
 		end
@@ -549,6 +565,10 @@ function Match:_power(enemy)
 			for _,t in pairs(self.towers) do if distanceXZ(t.position,enemy.position)<22 then t.stunnedUntil=self.elapsed+1.5 end end
 		end
 		enemy.hint="Feche a invasão; alterne suas fontes de dano / Stop the invasion; mix your damage sources"
+	elseif id=="loki" then
+		-- Illusions: worthless decoys that pull fire for a few seconds.
+		self:_summon(enemy,2+enemy.phase+bonus,"illusion")
+		enemy.hint="Ilusões somem sozinhas; mire no Loki verdadeiro / Illusions fade on their own; aim at the real Loki"
 	end
 	self:_fx({kind="Pulse",position=enemy.position,radius=24,color=Color3.fromRGB(104,255,119),shake=enemy.final and 1 or 0.7})
 end
@@ -573,6 +593,11 @@ function Match:_enemiesStep(dt)
 				else enemy.dot=nil end
 			end
 			if enemy.hp<=0 then continue end
+			if enemy.expiresAt and self.elapsed>=enemy.expiresAt then
+				self.enemies[enemy.id]=nil self.alive-=1
+				self:_fx({kind="EnemyDown",id=enemy.id,enemyId=enemy.enemyId,position=enemy.position,boss=false,faded=true})
+				continue
+			end
 			if enemy.def.boss and not enemy.rewardless then
 				enemy.phase=enemy.hp/enemy.maxHP<0.33 and 3 or (enemy.hp/enemy.maxHP<0.66 and 2 or 1)
 				if self.elapsed>=enemy.nextPower-2 and not enemy.telegraphed then
@@ -666,13 +691,17 @@ function Match:_endWave()
 	for _,p in pairs(self.participants) do
 		if not p.returned then
 			if p.contributed and not p.disconnectedAt then
-				local bonus = talent(p,"roundGold") * 2
-				p.waveGold += bonus p.goldEarned += bonus
+				-- Lobby Gold for the completed wave, banked now so a later
+				-- defeat or disconnect never takes it back.
+				local banked = self.rules.WaveGold(self.modeId, self.wave) + talent(p,"roundGold") * 2
+				p.waveGold += banked p.goldEarned += banked
 			end
 			self:_checkpoint(p,"wave:"..self.wave,true)
 			if p.contributed and not p.disconnectedAt then
-				p.energy+=math.floor((90+self.wave*12)*(1+cardStat(p,"energyIncome")))+p.base.stats.income
-				if self.modeId=="infinite" or self.modeId=="ranked" then
+				local income = math.floor(self.rules.WaveCash(self.wave)*(1+cardStat(p,"energyIncome")))+p.base.stats.income
+				p.cash += income
+				self:_fx({kind="WaveCash",amount=income},p.player)
+				if self.modeId=="ranked" then
 					task.spawn(function() self.profiles:RecordBest(p.player,self.mapId,self.size,self.completedWaves,self.modeId) end)
 				end
 			end
@@ -682,9 +711,10 @@ function Match:_endWave()
 		end
 	end
 	self:_processRewards()
-	local total=self.rules.WaveCount(self.modeId)
+	local total=self.rules.WaveCount(self.modeId,self.mapId)
 	if total>0 and self.wave>=total then self:Finish(true) return end
 	self.phase,self.prepRemaining,self.skipVotes="Preparing",self.config.PreparationSeconds,{}
+	for _,other in pairs(self.participants) do other.endVote=false end
 	if offering then
 		self.prepRemaining = math.max(self.prepRemaining, CARD_SECONDS)
 		self:_notice("CARTAS • Escolha uma carta antes da próxima onda.","CARDS • Pick a card before the next wave.")
@@ -692,7 +722,7 @@ function Match:_endWave()
 	self:_previewThreats()
 end
 
-function Match:Finish(victory)
+function Match:Finish(victory, ended)
 	if not self.running then return end
 	self.running,self.phase=false,"Results"
 	self.enemies,self.alive={},0
@@ -705,11 +735,11 @@ function Match:Finish(victory)
 		if not p.returned then
 			local bonus=0
 			if victory and p.contributed and not p.disconnectedAt then
-				bonus=math.floor(self.rules.VictoryGold(self.modeId) * (1+talent(p,"victoryGold")*0.02))
+				bonus=math.floor(self.rules.VictoryGold(self.modeId,self.mapId) * (1+talent(p,"victoryGold")*0.02))
 			end
 			self:_checkpoint(p,"remaining",false)
 			if not p.disconnectedAt then
-				table.insert(self.rewardQueue,{player=p.player,id=self.runId..":final",reward={gold=bonus,xp=victory and (self.modeId=="ranked" and 200 or 150) or 0,
+				table.insert(self.rewardQueue,{player=p.player,id=self.runId..":final",reward={gold=bonus,xp=victory and 150 or 0,
 					mapId=self.mapId,modeId=self.modeId,victory=victory and p.contributed,tutorial=self.modeId=="tutorial",finished=true,
 					noDamage=not self.baseWasDamaged,mastery={},waves=0}})
 			end
@@ -718,16 +748,20 @@ function Match:Finish(victory)
 				if self.modeId=="tutorial" and not p.profile.tutorialComplete then p.goldEarned+=self.catalog.Chests.rare.cost
 				elseif self.modeId=="normal" and not ((p.profile.campaign[self.mapId] or {}).normal) then p.goldEarned+=500 end
 			end
-			p.xpEarned+=victory and (self.modeId=="ranked" and 200 or 150)*(p.profile.passes and p.profile.passes.training and 1.25 or 1) or 0
-			p.results={victory=victory,waves=self.completedWaves,gold=math.floor(p.goldEarned),xp=math.floor(p.xpEarned),
+			p.xpEarned+=victory and 150*(p.profile.passes and p.profile.passes.training and 1.25 or 1) or 0
+			p.results={victory=victory,ended=ended==true,waves=self.completedWaves,gold=math.floor(p.goldEarned),xp=math.floor(p.xpEarned),
 				mapId=self.mapId,modeId=self.modeId,mastery=p.masteryEarned,startLevel=p.startLevel,cards=table.clone(p.cards)}
 			p.coins={}
 			self:_fx({kind="Clear"},p.player)
 		end
 	end
 	self:_processRewards()
-	self:_notice(victory and "VITÓRIA • A resistência continua!" or "BASE DESTRUÍDA • Seu progresso conquistado foi preservado.",
-		victory and "VICTORY • The resistance lives on!" or "BASE DESTROYED • Your earned progress is preserved.")
+	if ended then
+		self:_notice("PARTIDA ENCERRADA • Recorde de "..self.completedWaves.." ondas guardado.", "RUN ENDED • Record of "..self.completedWaves.." waves saved.")
+	else
+		self:_notice(victory and "VITÓRIA • A resistência continua!" or "BASE DESTRUÍDA • Seu progresso conquistado foi preservado.",
+			victory and "VICTORY • The resistance lives on!" or "BASE DESTROYED • Your earned progress is preserved.")
+	end
 	-- One hook lets the bootstrap close out seats, telemetry and travel together.
 	if self.onFinish then
 		local ok,problem=pcall(self.onFinish,victory)
@@ -748,12 +782,12 @@ function Match:_chooseCard(p, id)
 	p.modsVersion += 1
 	local instant = card.instant
 	if instant then
-		if instant.energy then p.energy += instant.energy end
+		if instant.energy then p.cash += instant.energy end
 		if instant.maxHealth then self.maxBaseHP += instant.maxHealth end
 		if instant.heal then self.baseHP = math.min(self.maxBaseHP, self.baseHP + instant.heal) end
 		if instant.gamble then
 			-- Decided here and nowhere else, so a client can never rig the coin.
-			if Random.new(self.seed + self.wave * 31 + p.index * 7 + #p.cards):NextNumber() < 0.5 then p.energy += 600 else p.energy = math.max(0, p.energy - 200) end
+			if Random.new(self.seed + self.wave * 31 + p.index * 7 + #p.cards):NextNumber() < 0.5 then p.cash += 600 else p.cash = math.max(0, p.cash - 200) end
 		end
 	end
 	self:_fx({kind="CardPicked",cardId=id,rarity=card.rarity},p.player)
@@ -853,7 +887,7 @@ function ABILITY_HANDLERS.chain(self, p, stats, at)
 end
 
 function ABILITY_HANDLERS.energy(self, p, stats)
-	p.energy += math.floor(stats.power * (200 + 10 * self.wave))
+	p.cash += math.floor(stats.power * (200 + 10 * self.wave))
 end
 
 function ABILITY_HANDLERS.pull(self, p, stats, at)
@@ -953,15 +987,17 @@ function Match:_basesStep(dt)
 		if self.phase~="Wave" then continue end
 		local source={ownerId=uid}
 		if stats.damage>0 and self.elapsed>=base.nextAttack then
+			-- The gun measures its range from the same spot it fires from.
+			local muzzle=base.visualPosition or self.corePosition
 			local target,best=nil,-math.huge
 			for _,enemy in pairs(self.enemies) do
 				local remaining=self.routeCache[enemy.routeIndex].total-enemy.progress
-				if enemy.hp>0 and not enemy.def.stealth and distanceXZ(enemy.position,self.corePosition)<=stats.range and -remaining>best then target,best=enemy,-remaining end
+				if enemy.hp>0 and not enemy.def.stealth and distanceXZ(enemy.position,muzzle)<=stats.range and -remaining>best then target,best=enemy,-remaining end
 			end
 			if target then
 				base.nextAttack=self.elapsed+1.2
 				self:_damage(target,stats.damage,source,{damageType=base.id=="sanctum" and "magic" or "tech"})
-				self:_fx({kind="BaseShot",from=(base.visualPosition or self.corePosition)+Vector3.new(0,6,0),to=target.position+Vector3.new(0,target.def.air and 8 or 2,0),color=Color3.fromRGB(unpack(self.catalog.Bases[base.id].color))})
+				self:_fx({kind="BaseShot",from=muzzle+Vector3.new(0,6,0),to=target.position+Vector3.new(0,target.def.air and 8 or 2,0),color=Color3.fromRGB(unpack(self.catalog.Bases[base.id].color))})
 			end
 		end
 		if stats.wall>0 and base.wall>0 then
@@ -1026,10 +1062,10 @@ function Match:Step(dt)
 	for _,p in pairs(self.participants) do
 		if not p.returned and not p.disconnectedAt then
 			local root=p.player.Character and p.player.Character:FindFirstChild("HumanoidRootPart")
-			local radius=self.config.CollectRadius*(1+talent(p,"magnet")*0.08)
+			local radius=self:_magnet(p)
 			for id,coin in pairs(p.coins) do
 				if (p.profile.passes and p.profile.passes.collector) or (root and (root.Position-coin.position).Magnitude<=radius) then
-					p.collected+=coin.value p.coins[id]=nil self:_fx({kind="CoinRemove",id=id},p.player)
+					p.collected+=coin.value p.cash+=coin.value p.coins[id]=nil self:_fx({kind="CoinRemove",id=id,value=coin.value},p.player)
 				end
 			end
 		end
@@ -1087,6 +1123,12 @@ function Match:Step(dt)
 	end
 end
 
+-- How far a commander's magnet reaches for match Gold on the ground.
+function Match:_magnet(p)
+	local per = ((self.catalog.Talents.magnet or {}).effect or 15) / 100
+	return self.config.CollectRadius*(1+talent(p,"magnet")*per)
+end
+
 function Match:_validBuild(position)
 	if not validPosition(position) or math.abs(position.X)>106 or math.abs(position.Z)>106 then return false end
 	local p=Vector3.new(position.X,0,position.Z)
@@ -1110,8 +1152,8 @@ function Match:Handle(player,action,payload)
 		local base=p.base; local stats=base.stats
 		if payload.expectedLevel~=base.level then return false,"Base atualizada. / Base changed." end
 		if base.level>=5 then return false,"Base no máximo. / Base maxed." end
-		if p.energy<stats.upgradeCost then return false,"Energia insuficiente. / Not enough Energy." end
-		p.energy-=stats.upgradeCost; base.level+=1
+		if p.cash<stats.upgradeCost then return false,"Ouro insuficiente. / Not enough Gold." end
+		p.cash-=stats.upgradeCost; base.level+=1
 		base.stats=self.rules.BaseStats(base.id,base.level)
 		local added=math.floor(base.stats.hp/self.size)-math.floor(stats.hp/self.size)
 		self.maxBaseHP+=added; self.baseHP+=added
@@ -1124,18 +1166,18 @@ function Match:Handle(player,action,payload)
 		if not hero or not contains(p.profile.loadout,id) or not p.profile.heroes[id] then return false,"Herói não equipado. / Hero not equipped." end
 		if p.towerCount>=self.rules.TowerLimit(self.size) then return false,"Limite de torres atingido. / Tower limit reached." end
 		local cost=math.floor(hero.cost*(1-math.clamp(cardStat(p,"discount"),0,0.5)))
-		if p.energy<cost then return false,"Energia insuficiente. / Not enough Energy." end
+		if p.cash<cost then return false,"Ouro insuficiente. / Not enough Gold." end
 		if not self:_validBuild(payload.position) then return false,"Posição inválida: mantenha distância da rota e das torres. / Keep clear of paths and towers." end
 		local towerId=self:_nextId("t") local pos=Vector3.new(payload.position.X,0,payload.position.Z)
 		local tower={id=towerId,heroId=id,ownerId=player.UserId,position=pos,level=1,branch=nil,priority="First",invested=cost,nextAttack=0}
 		tower.model=self.world:MakeTower(towerId,id,pos,player.UserId)
-		self.towers[towerId]=tower p.energy-=cost p.towerCount+=1
+		self.towers[towerId]=tower p.cash-=cost p.towerCount+=1
 		return true,{towerId=towerId}
 	elseif action=="UpgradeTower" or action=="SellTower" or action=="SetPriority" then
 		local tower=self.towers[payload.towerId]
 		if not tower or tower.ownerId~=player.UserId then return false,"Torre inválida. / Invalid tower." end
 		if action=="SellTower" then
-			p.energy+=math.floor(tower.invested*0.7) p.towerCount-=1 tower.model:Destroy() self.towers[tower.id]=nil return true
+			p.cash+=math.floor(tower.invested*0.7) p.towerCount-=1 tower.model:Destroy() self.towers[tower.id]=nil return true
 		elseif action=="SetPriority" then
 			if not contains({"First","Last","Strongest","Nearest"},payload.priority) then return false,"Prioridade inválida." end
 			tower.priority=payload.priority return true
@@ -1143,8 +1185,8 @@ function Match:Handle(player,action,payload)
 		local stats=self:_baseStats(tower)
 		if tower.level>=5 then return false,"Melhoria máxima. / Maximum upgrade." end
 		if tower.level==4 and payload.branch~=1 and payload.branch~=2 then return false,"Escolha uma especialização. / Choose a specialization." end
-		if p.energy<stats.upgradeCost then return false,"Energia insuficiente. / Not enough Energy." end
-		p.energy-=stats.upgradeCost tower.invested+=stats.upgradeCost tower.level+=1
+		if p.cash<stats.upgradeCost then return false,"Ouro insuficiente. / Not enough Gold." end
+		p.cash-=stats.upgradeCost tower.invested+=stats.upgradeCost tower.level+=1
 		if tower.level==5 then tower.branch=payload.branch end
 		local mastery=p.profile.heroes[tower.heroId]
 		self.world:UpgradeTower(tower.model,tower.level,tower.branch,mastery and mastery.level or 1)
@@ -1155,6 +1197,16 @@ function Match:Handle(player,action,payload)
 		p.skip=true self.skipVotes[player.UserId]=true
 		self:_checkSkip()
 		return true
+	elseif action=="VoteEnd" then
+		if self.modeId~="ranked" then return false,"Só no competitivo. / Competitive only." end
+		if self.phase~="Preparing" or self.completedWaves<1 then return false,"Vote entre as ondas. / Vote between waves." end
+		if type(payload.on)~="boolean" then return false,"Voto inválido. / Invalid vote." end
+		p.endVote=payload.on
+		for _,other in pairs(self.participants) do
+			if not other.returned and not other.disconnectedAt and not other.endVote then return true,{ended=false} end
+		end
+		self:Finish(false,true)
+		return true,{ended=true}
 	elseif action=="SetSpeed" then
 		if payload.speed~=1 and payload.speed~=2 then return false,"Velocidade inválida. / Invalid speed." end
 		p.speedVote=payload.speed
@@ -1170,8 +1222,8 @@ function Match:Handle(player,action,payload)
 		return self:_chooseCard(p,payload.cardId),"Carta inválida. / Invalid card."
 	elseif action=="CollectCoin" then
 		local coin=p.coins[payload.coinId] local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if not coin or not root or (root.Position-coin.position).Magnitude>self.config.CollectRadius*(1+talent(p,"magnet")*0.08)+1 then return false,"Moeda fora do alcance. / Coin out of range." end
-		p.collected+=coin.value p.coins[payload.coinId]=nil self:_fx({kind="CoinRemove",id=payload.coinId},player) return true
+		if not coin or not root or (root.Position-coin.position).Magnitude>self:_magnet(p)+1 then return false,"Moeda fora do alcance. / Coin out of range." end
+		p.collected+=coin.value p.cash+=coin.value p.coins[payload.coinId]=nil self:_fx({kind="CoinRemove",id=payload.coinId,value=coin.value},player) return true
 	elseif action=="CastSkill" then
 		return self:_castAbility(player,p,payload)
 	end
@@ -1203,17 +1255,20 @@ function Match:Snapshot(player)
 	local speedVotes=0 for _,other in pairs(self.participants) do if not other.returned and other.speedVote==2 then speedVotes+=1 end end
 	-- The next boss wave, so the wave bar can count down to it.
 	local nextBoss
-	local total=self.rules.WaveCount(self.modeId)
+	local total=self.rules.WaveCount(self.modeId,self.mapId)
 	for wave=self.wave+ (self.phase=="Wave" and 0 or 1), (total>0 and total or self.wave+10) do
-		if self.rules.IsBossWave(self.modeId, wave) then nextBoss=wave break end
+		if self.rules.IsBossWave(self.modeId, wave, self.mapId) then nextBoss=wave break end
 	end
+	local waiting,endVotes=0,0
+	for _,coin in pairs(p.coins) do waiting+=coin.value end
+	for _,other in pairs(self.participants) do if not other.returned and other.endVote then endVotes+=1 end end
 	return {runId=self.runId,mapId=self.mapId,modeId=self.modeId,wave=self.wave,totalWaves=total,
 		base={id=p.base.id,level=p.base.level,stats=table.clone(p.base.stats),wall=math.floor(p.base.wall)},
-		completedWaves=self.completedWaves,baseHP=self.baseHP,maxBaseHP=self.maxBaseHP,shield=self.shield,energy=math.floor(p.energy),towerLimit=self.rules.TowerLimit(self.size),
+		completedWaves=self.completedWaves,baseHP=self.baseHP,maxBaseHP=self.maxBaseHP,shield=self.shield,cash=math.floor(p.cash),coinsWaiting=waiting,magnet=self:_magnet(p),towerLimit=self.rules.TowerLimit(self.size),
 		prepRemaining=math.max(0,math.ceil(self.prepRemaining)),enemies=self.alive,elapsed=self.elapsed,ability=ability,
 		cards=table.clone(p.cards),cardOffers=p.cardOffers,cardMode=self.cardMode,goldEarned=p.goldEarned,xpEarned=p.xpEarned,towers=towers,boss=boss,
 		partySize=self.size,skipVotes=votes,nextBoss=nextBoss,threats=self.phase=="Preparing" and self.nextThreats or nil,
-		speed=self:Speed(),speedVote=p.speedVote or 1,speedVotes=speedVotes,autoSkip=p.autoSkip==true},p.results
+		speed=self:Speed(),speedVote=p.speedVote or 1,speedVotes=speedVotes,autoSkip=p.autoSkip==true,endVote=p.endVote==true,endVotes=endVotes},p.results
 end
 
 return Match

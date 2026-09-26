@@ -326,7 +326,7 @@ local function noticed(player, fragment)
 	end
 	return false
 end
-check(noticed(ana, "campanha normal"), "the refusal tells the newcomer to train first")
+check(noticed(ana, "campanha"), "the refusal tells the newcomer to win a campaign first")
 local anaRoot = ana.Character.HumanoidRootPart
 local hardPad = workspace:FindFirstChild("DoomLobby").Portal_ranked.Pad
 check((anaRoot.Position - hardPad.Position).Magnitude > 6, "and the newcomer is set down outside that portal")
@@ -352,7 +352,7 @@ frames(0.5)
 --==============================================================================
 say("--- tutorial ---")
 check(not request(ana,"StartMatch",{destinationId="missing"}).ok,"unknown destination rejected")
-check(not request(ana,"StartMatch",{mapId="wakanda",modeId="normal"}).ok,"manual map-mode mismatch rejected")
+check(not request(ana,"StartMatch",{mapId="asgard",modeId="cards"}).ok,"manual map-mode mismatch rejected")
 check(not request(ana,"StartMatch",{destinationId="ranked",mapId="manhattan",modeId="normal"}).ok,"forged fields cannot bypass destination unlock")
 check(request(ana,"StartMatch",{mapId="manhattan",modeId="tutorial"}).ok,"optional tutorial starts explicitly")
 check(latest(ana).match and latest(ana).match.modeId=="tutorial","tutorial stays separate from the campaign portal")
@@ -374,7 +374,7 @@ local function manage(player)
 		if request(player, "ChooseCard", { cardId = match.cardOffers[1] }).ok then protocolsChosen += 1 end
 	end
 	for index, spot in ipairs(SPOTS) do
-		if not used[index] and (latest(player).match.energy or 0) >= 250 then
+		if not used[index] and (latest(player).match.cash or 0) >= 250 then
 			local hero = index % 2 == 1 and "ironman" or "hawkeye"
 			local placed = request(player, "PlaceTower", { heroId = hero, position = spot })
 			if placed.ok then
@@ -384,7 +384,7 @@ local function manage(player)
 		end
 	end
 	for _, tower in ipairs(latest(player).match.towers or {}) do
-		if tower.ownerId == player.UserId and tower.level < 5 and (latest(player).match.energy or 0) >= tower.upgradeCost then
+		if tower.ownerId == player.UserId and tower.level < 5 and (latest(player).match.cash or 0) >= tower.upgradeCost then
 			local payload = { towerId = tower.id }
 			if tower.level == 4 then payload.branch = 1 end
 			if request(player, "UpgradeTower", payload).ok then upgrades += 1 end
@@ -402,7 +402,8 @@ local function collect(player)
 end
 
 local sawWave, sawPriority, sold = false, false, false
-for _ = 1, 260 do
+-- Training is 20 waves: enough loop for all of them plus the results screen.
+for _ = 1, 900 do
 	local snap = latest(ana)
 	if snap.phase == "Results" then break end
 	if snap.phase == "Preparing" then
@@ -473,7 +474,7 @@ for _ = 1, 200 do
 	frames(2)
 end
 check(coinsCollected >= 1, "personal coins were collected by walking to them, got " .. coinsCollected)
-check((latest(ana).match.goldEarned or 0) > 0, "the campaign pays gold as enemies fall")
+check((latest(ana).match.goldEarned or 0) > 0, "the campaign banks lobby gold for every completed wave")
 
 -- Drop out mid-battle and come back: same match, same towers.
 local towersBefore = #(latest(ana).match.towers or {})

@@ -15,7 +15,8 @@ return {
 	GroupId = 0,
 	MaxPartySize = 4,
 	BaseHP = 100,
-	StartEnergy = 600,
+	-- Match Gold each commander starts a run with (enemies drop the rest).
+	StartCash = 600,
 	PreparationSeconds = 10,
 	ReconnectSeconds = 120,
 	MaxEnemies = 180,
@@ -25,7 +26,8 @@ return {
 	SimulationStep = 0.1,
 	TowerRadius = 3,
 	PathHalfWidth = 6,
-	CollectRadius = 6,
+	-- Base magnet reach for match Gold on the ground; Magnetism widens it.
+	CollectRadius = 8,
 	Products = {
 		Passes = {
 			collector = { id = 0 }, training = { id = 0 },

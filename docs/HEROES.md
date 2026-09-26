@@ -12,7 +12,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 
 ## Comum — 79 Robux (compra direta)
 
-| Herói | Custo (Energia) | Ataque | Dano | Alcance | Intervalo | Habilidade |
+| Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Homem de Ferro** — Dano tecnológico versátil | 250 | único (ar) | 20 | 27 | 0.90s | Rajada Repulsora |
 | **Gavião Arqueiro** — Longo alcance e alvos prioritários | 180 | único (ar) | 27 | 33 | 1.60s | Tiro Mortal |
@@ -21,7 +21,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 
 ## Raro — 199 Robux (compra direta)
 
-| Herói | Custo (Energia) | Ataque | Dano | Alcance | Intervalo | Habilidade |
+| Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Homem-Aranha** — Desaceleração e controle | 280 | área | 14 | 24 | 1.10s | Teia Gigante |
 | **Viúva Negra** — Revela camuflados e marca alvos | 260 | único (ar) | 14 | 25 | 0.75s | Marca da Viúva |
@@ -38,7 +38,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 
 ## Épico — 449 Robux (compra direta)
 
-| Herói | Custo (Energia) | Ataque | Dano | Alcance | Intervalo | Habilidade |
+| Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Capitão América** — Ricochetes e suporte às torres | 360 | corrente | 17 | 23 | 1.05s | Escudo de Vibranium |
 | **Pantera Negra** — Ataques rápidos e enfraquece armadura | 400 | único | 19 | 19 | 0.48s | Wakanda para Sempre |
@@ -54,7 +54,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 
 ## Lendário — 999 Robux (compra direta)
 
-| Herói | Custo (Energia) | Ataque | Dano | Alcance | Intervalo | Habilidade |
+| Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Thor** — Relâmpagos encadeados e defesa aérea | 550 | corrente (ar) | 32 | 26 | 1.50s | Chamado do Trovão ⚡ (ultimate) |
 | **Feiticeira Escarlate** — Dano mágico persistente em área | 650 | queima contínua (ar) | 34 | 26 | 1.80s | Hex Escarlate ⚡ (ultimate) |
@@ -65,7 +65,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 
 ## Mítico — 1999 Robux (compra direta)
 
-| Herói | Custo (Energia) | Ataque | Dano | Alcance | Intervalo | Habilidade |
+| Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Capitã Marvel** — Feixe cósmico devastador | 780 | feixe (ar) | 68 | 30 | 1.50s | Nova Fotônica ⚡ (ultimate) |
 | **Surfista Prateado** — Energia cósmica encadeada | 800 | corrente (ar) | 34 | 32 | 1.20s | Julgamento Cósmico ⚡ (ultimate) |
@@ -88,7 +88,7 @@ maestria exigida crescendo por rank e multiplicados pela raridade do herói
 | Marca da Viúva | Viúva Negra | 55s | Revela camuflados e faz alvos sofrerem +20% de dano por 9 s em 30 studs. |
 | Partículas Pym | Homem-Formiga | 45s | Uma torre sua ataca 50% mais rápido por 8 s. |
 | Enxame Elétrico | Vespa | 50s | Ferroa 6 inimigos: 16% da vida máxima de cada um. |
-| Sucata Valiosa | Rocket | 60s | Recebe Energia na hora: 60% de uma onda inteira de renda. |
+| Sucata Valiosa | Rocket | 60s | Recebe Ouro da partida na hora: 60% de uma onda inteira de renda. |
 | Sentido Radar | Demolidor | 70s | Revela camuflados por 14 s e marca alvos (+12% de dano) em 45 studs. |
 | Dez Anéis | Shang-Chi | 55s | Empurra inimigos 26 studs para trás na rota em 24 studs. Chefes não são afetados. |
 | Escudo de Vibranium | Capitão América | 90s | Um escudo absorve 20 de dano à base por 10 s. |

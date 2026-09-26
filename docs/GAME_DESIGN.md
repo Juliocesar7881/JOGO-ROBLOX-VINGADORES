@@ -8,66 +8,71 @@ desatualizado; use-o para qualquer número de herói/habilidade específico.
 
 ## O laço principal
 
-1. O lobby tem quatro portais, dois baús, loja Robux, missões e placar.
-   As exposições de heróis foram removidas; a coleção continua no HUD.
-   Pisar na área verde de um baú abre sua loja sem gastar Ouro. É preciso
-   confirmar a abertura para pagar. Sair e voltar à área permite reabrir;
-   ficar parado depois de fechar não força o menu novamente. O botão de
-   proximidade permanece como alternativa. Andar para longe fecha o painel.
-2. Cada portal é um elevador: entrar nele começa uma contagem regressiva;
-   quem entra junto vai para o mesmo grupo (até 4). O servidor **sorteia o
-   mapa** entre os cinco disponíveis a cada partida — o jogador nunca escolhe
-   o mapa diretamente.
-3. Uma partida (exceto Infinito) tem sempre **50 ondas**, com um chefe a
-   cada 10 (ondas 10/20/30/40) e o chefe final, mais forte, na onda 50.
-4. Ao vencer ou perder, Ouro/XP ganhos na partida são creditados
-   imediatamente; a conta nunca perde progresso por queda de conexão (ver
-   `RejoinService` em `IMPLEMENTATION.md`).
+1. O lobby é uma ilha dividida em distritos (`World.Districts`): três portais
+   de campanha no centro (Manhattan, Complexo Gama, HYDRA), as outras três
+   expedições nos cantos do sul (Wakanda e Asgard a oeste, Latvéria a leste),
+   a arena competitiva a leste (três portais e o placar da temporada), treino e
+   cartas no canto nordeste, o mercado (baús e Robux) no canto noroeste e a
+   zona AFK a oeste. O botão JOGAR oferece os mesmos destinos sem atravessar o
+   lobby.
+2. Cada portal é um elevador com **destino fixo** (`Catalog.Destinations`):
+   mapa e modo nunca são sorteados. Quem entra junto vai para o mesmo grupo
+   (até 4).
+3. A duração depende do destino (`Rules.WaveCount`): treino 20 ondas;
+   campanha Manhattan 40, Gama/HYDRA/Wakanda/Asgard 50, Latvéria 70; cartas 50;
+   competitivo **sem fim**. Chefe a cada 10 ondas; na campanha o último é o
+   chefe do próprio mapa (Asgard: Loki corrompido), e os anteriores percorrem o
+   resto do elenco sem nunca antecipar o chefe final.
+4. O Ouro do lobby é pago pela partida (ver Economia). Ondas concluídas ficam
+   guardadas mesmo com derrota ou queda de conexão (`RejoinService`).
 
-## Ritmo e emoção
+## Economia da partida (`Rules.KillCash`, `Rules.WaveCash`, `Rules.RunGold`)
 
-- **Velocidade 2x e AUTO** ficam ao lado do poder do líder (tecla F para 2x).
-  Em grupo, o 2x só liga quando todos pedem; o AUTO conta como PRONTO em toda
-  preparação. As duas escolhas ficam salvas para a próxima partida. A
-  preparação continua em segundos reais: o 2x acelera a luta, não o tempo
-  para construir. Uma campanha solo cai de ~42 para ~18 minutos com os dois.
-- **Primeira partida:** para quem ainda não treinou, o menu JOGAR começa com
-  o treino de 8 ondas, que na primeira vitória paga 1.000 Ouro — um baú.
-- **Baú:** revelação em tela cheia; o baú treme e sobe de cor em cor até a
-  raridade sorteada, estoura com raios e confete e mostra o herói (toque
-  pula). A aba BAÚS ganha um "!" sempre que há Ouro para abrir um.
-- **Celebrações:** onda vencida, chefe derrotado, o nome do seu ultimate,
-  subir de nível, vitória (com contagem dos prêmios) e um incentivo na
-  derrota; o Ouro "pula" e sobe "+N" quando cresce; todo botão afunda ao
-  toque. "Menos efeitos e flashes" remove flash, tremor e confete.
-- **Códigos, grupo e amigos:** caixa de código promocional (`Codes.luau`,
-  só no servidor), prêmio único por entrar no grupo do jogo (se
-  `GroupId` estiver configurado) e botão de convidar amigos.
+- **Ouro da partida** (🪙): cada inimigo derrotado derruba moedas no chão; é
+  preciso andar perto para pegar (o ímã: `Config.CollectRadius`, ampliado pelo
+  talento Magnetismo, +15% por ponto; o passe Drone Coletor pega tudo). Esse
+  Ouro paga, melhora e vende heróis e evolui a base. Ao fim de cada onda entra
+  um bônus direto (`Rules.WaveCash` + renda da base). Começa com
+  `Config.StartCash`. **Não existe mais Energia**, e esse Ouro nunca sai da
+  partida.
+- **Ouro do lobby** (baús): nunca vem do que foi gasto na partida. Cada onda
+  concluída guarda uma parte garantida; a vitória paga o resto. Campanha: 40 por
+  onda na vitória (2.000 em 50 ondas, 1.600 em 40, 2.800 em 70); derrota paga
+  só 40% das ondas concluídas. Cartas: 2.500 na vitória. Competitivo: 25 por
+  onda e +100 a cada dez, tudo guardado. Treino: 1.000 na primeira vitória.
 
 ## Modos (`Catalog.Modes`, portais em `Catalog.PortalOrder`)
 
-| Modo | Ondas | Multiplicador de vida | Recompensa | Desbloqueio |
-| --- | --- | --- | --- | --- |
-| Treinamento | 8 | 0.6× | 1× | Sempre disponível, opcional (Opções → Aprender a jogar) |
-| Campanha (`normal`) | 50 | 1.2× | 1× | Sempre disponível |
-| Ranqueado (`ranked`) | 50 | 1.45× | 1.5× | Após vencer a Campanha |
-| Cartas (`cards`) | 50 | 1.6× | 1.25× | Após vencer a Campanha |
-| Infinito (`infinite`) | sem fim | 1.1× | 1× | Após vencer o Ranqueado |
+| Modo | Ondas | Multiplicador de vida | Desbloqueio |
+| --- | --- | --- | --- |
+| Treinamento (`tutorial`) | 20 (chefe simplificado no fim) | 0.6× | Sempre disponível e recomendado; não bloqueia a campanha |
+| Campanha (`normal`) | 40–70 conforme o mapa | 1.2× | Sempre disponível |
+| Competitivo (`ranked`) | sem fim | 1.45× | Primeira vitória de campanha |
+| Cartas (`cards`) | 50 | 1.6× | Primeira vitória de campanha |
 
-Ranqueado é o modo mais difícil por design (ver `docs/BALANCE.md`): é ele que
-alimenta o rank sazonal (`Rules.RankForWaves`, placar por
-mapa/tamanho/temporada). Cartas é um roguelike leve: a cada 5 ondas
-completas o comandante escolhe uma de três cartas (`Catalog.Cards`, 23
-cartas em `Catalog.CardOrder`) que altera a partida em andamento — dano,
-alcance, economia, ou um evento instantâneo (cura, Energia, aposta).
+O competitivo é o único modo sem fim: registra só ondas concluídas, separado
+por mapa, tamanho inicial do grupo e temporada de 60 dias (versão de placar
+`comp2`; os placares do antigo ranqueado finito e do infinito casual ficam
+arquivados). Entre as ondas o grupo pode votar para encerrar e guardar o
+recorde. Cartas é um roguelike leve: depois das ondas 5, 10 … 45 o comandante
+escolhe uma de três cartas (`Catalog.Cards`); nenhuma carta depois da vitória.
 
 ## Mapas (`Catalog.MapOrder`)
 
 Manhattan (ruas em zigue-zague), Complexo Gama (braços do reator), HYDRA
 (corredores industriais alternados), Fronteira de Wakanda (espiral na
-savana) e Fortaleza da Latvéria (três entradas na neve) — cada um com seu
-próprio chefe (`bossId`), paleta de iluminação e rota. O mapa de uma partida
-é sempre sorteado pelo servidor; nenhum modo deixa escolher.
+savana), Fortaleza da Latvéria (três entradas na neve) e Ponte de Asgard —
+cada um com seu próprio chefe (`bossId`), paleta de iluminação e rota.
+
+## Zona AFK
+
+Duas salas no lobby: +5 Ouro ou +10 XP por minuto inteiro parado dentro delas,
+medido e pago pelo servidor. Cada minuto tem um id de pagamento: uma falha de
+salvamento é repetida sem pagar em dobro, e o relógio só zera depois de
+confirmado. O aviso na tela mostra tempo de sessão, próximo pagamento, total
+recebido e se está salvando. O servidor dedicado com renovação a cada 15
+minutos (para evitar a desconexão por inatividade) ainda **não** existe: exige
+lugar publicado e teste real de mais de uma hora.
 
 ## Heróis e habilidades
 

@@ -1,4 +1,69 @@
-# Situação de produção — combate, loja e pacote de publicação
+# Situação de produção
+
+Este registro separa o que está pronto e verificado do que ainda depende de
+teste real, de arte ou de configuração. Plano de referência: "Plano de
+produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
+
+## Etapa 1 — estrutura e regras (2026-09-26)
+
+### Concluído e verificado por testes automatizados
+
+- **Ouro da partida substitui a Energia.** Cada inimigo derruba moedas
+  (`Rules.KillCash`) que precisam ser pegas (ímã = `Config.CollectRadius`,
+  +15%/ponto de Magnetismo; o Drone Coletor pega tudo). Esse Ouro paga,
+  melhora e vende heróis e evolui a base; bônus direto no fim da onda
+  (`Rules.WaveCash`). Simulação: bot que não pega moedas cai na onda ~19; bot que
+  pega vence as 40 ondas de Manhattan.
+- **Ouro do lobby só pelo resultado da partida** (`Rules.RunGold`): vitória paga
+  tudo (campanha 40/onda: 2.000 em 50, 1.600 em 40, 2.800 em 70; cartas 2.500);
+  derrota paga 40% das ondas concluídas; competitivo 25/onda +100 a cada dez.
+  Ondas concluídas ficam guardadas mesmo com derrota ou queda.
+- **Ondas por destino:** treino 20; campanha Manhattan 40, Gama/HYDRA/Wakanda/
+  Asgard 50, Latvéria 70; cartas 50; competitivo sem fim. Chefe a cada 10; o
+  último da campanha é o chefe do mapa; os anteriores nunca antecipam o final.
+- **Loki corrompido** é o chefe de Asgard: ilusões temporárias, sem recompensa,
+  que somem sozinhas e não ferem o núcleo.
+- **Infinito casual removido.** Competitivo (`ranked`) é o único modo sem fim,
+  com três entradas (HYDRA, Wakanda, Latvéria), placar novo `comp2` por mapa,
+  tamanho do grupo e temporada, e voto unânime para encerrar entre ondas.
+- **Desbloqueios:** treino e campanha sempre abertos; primeira vitória de
+  campanha abre cartas e competitivo. Nada depende de vencer um modo sem fim.
+- **Cartas:** oferta depois das ondas 5…45; nenhuma depois da vitória.
+- **Lobby:** 11 portais — 3 campanhas no centro, 3 expedições nos cantos do sul,
+  3 competitivos na arena (com placar da temporada), cartas e treino no canto
+  nordeste; mercado no noroeste; zona AFK no oeste.
+- **Correções do plano (3.3):** a arma da base mede o alcance do mesmo ponto de
+  onde dispara; o pagamento AFK só zera o relógio depois de confirmado e cada
+  minuto tem id próprio (repetir nunca paga em dobro).
+- Duração medida na simulação (sem o voto de pronto): treino 12,7 min;
+  Manhattan 34,4 min; cartas 48,7 min; competitivo ~40 min até a onda 39.
+
+### Implementado, aguardando teste real (Studio/aplicativo)
+
+- Leitura visual das moedas maiores, do ímã e do aviso "no chão".
+- Distritos novos do lobby (cantos do sul) e colisões com a floresta.
+- Voto de encerrar no competitivo com grupo de 2–4 pessoas.
+- Aviso do AFK (sessão, total recebido, salvando).
+
+### Depende de arte ou configuração
+
+- Modelos, texturas e animações finais dos 36 heróis, inimigos e chefes
+  (etapas 2 e 5 do plano): hoje são modelos procedurais de desenvolvimento.
+- Áudio publicado (IDs), passes e produtos (IDs), grupo (`GroupId`).
+
+### Pendente
+
+- Lugar AFK separado com renovação por teleporte a cada 15 min (exige lugar
+  publicado e teste de 1 h sem interação; não há garantia da API).
+- Validação compartilhada de construção (prévia × servidor) com superfícies
+  demarcadas e motivos específicos de recusa.
+- Barreiras e soldados: conferência visual × regra de contato no Studio.
+- Rolagem dos painéis preservada durante atualizações periódicas.
+- Amostra visual da etapa 2 (Manhattan, Homem de Ferro, Hulk, Homem-Aranha,
+  quatro inimigos, Lagarto) e sessão com três pessoas de fora.
+
+## Histórico anterior
+
 
 Este registro distingue código existente de aprovação para lançamento.
 

@@ -32,16 +32,23 @@ for _, rarity in Catalog.RarityOrder do
 end
 equal(#Catalog.MapOrder, 6, "Campaign map count")
 equal(#Catalog.EnemyOrder, 23, "Enemy families")
-equal(#Catalog.BossOrder, 5, "Boss count")
-equal(#Catalog.ModeOrder, 5, "Four modes plus training")
-equal(#Catalog.PortalOrder, 4, "Four portals")
+equal(#Catalog.BossOrder, 6, "Six bosses: one per map, Loki for Asgard")
+equal(#Catalog.ModeOrder, 4, "Campaign, competitive and cards plus training")
+equal(#Catalog.PortalOrder, 4, "Four kinds of portal")
 equal(#Catalog.AbilityOrder, 36, "One ability per hero")
 check(Catalog.Modes.daily == nil and Catalog.Modes.bossrush == nil, "Daily challenge and boss rush are gone")
+check(Catalog.Modes.infinite == nil and Catalog.Modes.hard == nil, "The casual endless and hard modes are gone")
 check(Catalog.Skills == nil and Catalog.Protocols == nil, "The old skill and protocol systems are gone")
-for _, modeId in { "normal", "ranked", "cards" } do equal(Catalog.Modes[modeId].waves, 50, modeId .. " runs 50 waves") end
-equal(Catalog.Modes.infinite.waves, 0, "Endless has no last wave")
+equal(Catalog.Modes.tutorial.waves, 20, "Training runs 20 waves")
+equal(Catalog.Modes.cards.waves, 50, "Cards run 50 waves")
+equal(Catalog.Modes.ranked.waves, 0, "Competitive is endless")
+for mapId, waves in { manhattan = 40, gamma = 50, hydra = 50, wakanda = 50, asgard = 50, latveria = 70 } do
+	equal(Rules.WaveCount("normal", mapId), waves, "Campaign length on " .. mapId)
+end
+equal(Rules.WaveCount("ranked", "hydra"), 0, "Competitive never ends")
+equal(Catalog.Maps.asgard.bossId, "loki", "Asgard's final boss is Loki")
 check(Catalog.Modes.cards.cards == true, "Only the card mode offers cards")
-check(not Catalog.Modes.normal.cards and not Catalog.Modes.ranked.cards and not Catalog.Modes.infinite.cards, "Other modes offer no cards")
+check(not Catalog.Modes.normal.cards and not Catalog.Modes.ranked.cards and not Catalog.Modes.tutorial.cards, "Other modes offer no cards")
 
 local rarityCount = {}
 local seenAbility = {}
@@ -161,15 +168,21 @@ approx(Rules.TowerStats("ironman", 1, nil, { airDamage = 0.25 }).airDamage, 0.25
 local profile = { tutorialComplete = false, campaign = {} }
 check(Rules.CanStart(profile, "manhattan", "tutorial"), "Training always available")
 check(not Rules.CanStart(profile, "gamma", "tutorial"), "Training map fixed")
-check(Rules.CanStart(profile, "manhattan", "normal"), "Campaign is available immediately")
-profile.tutorialComplete = true
-local campaignMaps = { manhattan = true, gamma = true, hydra = true }
-for _, mapId in Catalog.MapOrder do equal(Rules.CanStart(profile, mapId, "normal"),campaignMaps[mapId]==true,"Campaign runs on the three central portals only: "..mapId) end
-equal(#Catalog.DestinationOrder, 8, "Three campaign, three ranked and two special portals")
-for _, id in Catalog.DestinationOrder do
-	local def = Catalog.Destinations[id]
-	check(def and Catalog.Maps[def.mapId] and Catalog.Modes[def.modeId], "Destination is a real map/mode pair: " .. id)
-	check(def.district == "center" or def.district == "arena" or def.district == "special", "Destination belongs to a lobby district: " .. id)
+check(Rules.CanStart(profile, "manhattan", "normal"), "Campaign is available immediately, training is only recommended")
+for _, mapId in Catalog.MapOrder do check(Rules.CanStart(profile, mapId, "normal"), "Every map has a campaign: " .. mapId) end
+equal(#Catalog.DestinationOrder, 11, "Six campaigns, three competitive, cards and training")
+do
+	local perMode, campaigns = {}, {}
+	for _, id in Catalog.DestinationOrder do
+		local def = Catalog.Destinations[id]
+		check(def and Catalog.Maps[def.mapId] and Catalog.Modes[def.modeId], "Destination is a real map/mode pair: " .. id)
+		check(({ center = true, expedition = true, arena = true, special = true })[def.district], "Destination belongs to a lobby district: " .. id)
+		perMode[def.modeId] = (perMode[def.modeId] or 0) + 1
+		if def.modeId == "normal" then campaigns[def.mapId] = (campaigns[def.mapId] or 0) + 1 end
+	end
+	equal(perMode.normal, 6, "Six campaign entrances"); equal(perMode.ranked, 3, "Three competitive entrances")
+	equal(perMode.cards, 1, "One card entrance"); equal(perMode.tutorial, 1, "One training entrance")
+	for _, mapId in Catalog.MapOrder do equal(campaigns[mapId], 1, "One campaign entrance per map: " .. mapId) end
 end
 
 -- AFK farm: a small, fixed pay per whole minute, and nothing for nonsense.
@@ -181,47 +194,39 @@ check(Catalog.Afk.gold.gold <= 10 and Catalog.Afk.xp.xp <= 20, "AFK farms pay ve
 for _, bad in { { "gold", 0 }, { "gold", 1.5 }, { "gold", 11 }, { "gems", 1 }, { nil, 1 }, { "xp", "1" } } do
 	check(Rules.AfkReward(bad[1], bad[2]) == nil, "Invalid AFK payout refused: " .. tostring(bad[1]) .. "/" .. tostring(bad[2]))
 end
-check(not Rules.CanStart(profile, "manhattan", "ranked"), "Hard requires a normal clear")
-check(not Rules.CanStart(profile, "gamma", "cards"), "Cards require a normal clear")
-check(not Rules.CanStart(profile, "asgard", "infinite"), "Endless requires a ranked clear")
-profile.campaign.gamma = { normal = true }
-check(Rules.CanStart(profile, "wakanda", "ranked"), "Any map's normal clear opens ranked everywhere")
-check(Rules.CanStart(profile, "gamma", "cards"), "A legacy campaign clear still opens the Gamma card destination")
-check(not Rules.CanStart(profile, "asgard", "infinite"), "A normal clear does not open endless")
-profile.campaign.latveria = { ranked = true }
-check(Rules.CanStart(profile, "asgard", "infinite"), "A ranked clear opens endless")
+profile.tutorialComplete = true
+check(not Rules.CanStart(profile, "hydra", "ranked"), "Competitive requires a campaign victory")
+check(not Rules.CanStart(profile, "gamma", "cards"), "Cards require a campaign victory")
+check(not Rules.CanStart(profile, "asgard", "infinite"), "The removed endless mode cannot start")
+profile.campaign.asgard = { normal = true }
+check(Rules.CanStart(profile, "wakanda", "ranked"), "Any campaign victory opens every competitive map")
+check(Rules.CanStart(profile, "gamma", "cards"), "Any campaign victory opens cards")
+check(not Rules.CanStart(profile, "manhattan", "ranked"), "Only authored competitive maps start")
 check(not Rules.CanStart(profile, "invalid", "normal"), "Unknown maps rejected")
 check(not Rules.CanStart(profile, "manhattan", "daily"), "The removed daily mode cannot start")
 check(not Rules.CanStart(profile, "manhattan", "bossrush"), "The removed boss rush cannot start")
 
 do
 	local gate = { tutorialComplete = false, campaign = {} }
-	check(Rules.ModeUnlocked(gate, "tutorial"), "Portal gate: training is open to a newcomer")
-	for _, modeId in { "ranked", "cards", "infinite" } do check(not Rules.ModeUnlocked(gate, modeId), "Portal gate: " .. modeId .. " needs training") end
-	gate.tutorialComplete = true
-	check(Rules.ModeUnlocked(gate, "normal"), "Portal gate: campaign opens after training")
-	check(not Rules.ModeUnlocked(gate, "ranked") and not Rules.ModeUnlocked(gate, "cards"), "Portal gate: ranked and cards need a normal clear")
+	check(Rules.ModeUnlocked(gate, "tutorial") and Rules.ModeUnlocked(gate, "normal"), "Portal gate: training and campaign are open to a newcomer")
+	for _, modeId in { "ranked", "cards" } do check(not Rules.ModeUnlocked(gate, modeId), "Portal gate: " .. modeId .. " needs a campaign victory") end
 	gate.campaign.manhattan = { normal = true }
 	check(Rules.ModeUnlocked(gate, "ranked") and Rules.ModeUnlocked(gate, "cards"), "Portal gate: ranked and cards open after any clear")
-	check(not Rules.ModeUnlocked(gate, "infinite"), "Portal gate: endless still needs a ranked clear")
-	gate.campaign.hydra = { ranked = true }
-	check(Rules.ModeUnlocked(gate, "infinite"), "Portal gate: endless opens after a ranked clear")
+	check(not Rules.ModeUnlocked(gate, "infinite"), "Portal gate: no endless mode to unlock")
 	check(not Rules.ModeUnlocked(gate, "invalid"), "Portal gate: unknown modes stay locked")
 	check(not Rules.ModeUnlocked(nil, "normal"), "Portal gate: missing profile stays locked")
 	check(not Rules.ModeUnlocked({ tutorialComplete = true, campaign = "corrupt" }, "ranked"), "A damaged campaign record locks instead of crashing")
 end
 
-equal(Rules.PortalMode({ tutorialComplete = false }, "normal"), "normal", "Campaign always launches 50 waves")
-equal(Rules.PortalMode({ tutorialComplete = false }, "ranked"), "ranked", "Only the campaign portal redirects to training")
-equal(Rules.PortalMode({ tutorialComplete = true }, "normal"), "normal", "Trained commanders get the campaign")
-for _, modeId in Catalog.PortalOrder do
+equal(Rules.PortalMode({ tutorialComplete = false }, "normal"), "normal", "The campaign portal launches the campaign")
+equal(Rules.PortalMode({ tutorialComplete = false }, "training"), "tutorial", "The training portal launches training")
+for _, modeId in { "ranked", "cards" } do
 	check(string.find(Rules.ModeLockReason(modeId), " / ", 1, true) ~= nil, "Localized lock reason for " .. modeId)
-	check(type(Rules.ModeLockReason(modeId, { tutorialComplete = false })) == "string", "Missing unlock is explained for " .. modeId)
 end
 
 -- The map is drawn, never chosen, and every map is reachable.
 equal(Rules.PickMap("tutorial", 0.9), "manhattan", "Training is always Manhattan")
-local playable={tutorialComplete=true,campaign={manhattan={normal=true},hydra={ranked=true}}}
+local playable={tutorialComplete=true,campaign={manhattan={normal=true}}}
 for _,map in ipairs(Catalog.MapOrder) do
 	for _,mode in ipairs(Catalog.PortalOrder) do
 		local expected=false
@@ -233,16 +238,39 @@ end
 --==============================================================================
 -- Bosses and waves
 --==============================================================================
-for wave = 1, 60 do
-	local boss = wave % 10 == 0
-	equal(Rules.IsBossWave("normal", wave), boss, "Boss on every tenth wave: " .. wave)
-	check(not Rules.IsBossWave("tutorial", wave), "Training has no scheduled boss")
+for wave = 1, 80 do
+	equal(Rules.IsBossWave("normal", wave, "latveria"), wave % 10 == 0, "Boss on every tenth wave: " .. wave)
+	equal(Rules.IsBossWave("ranked", wave, "hydra"), wave % 10 == 0, "Competitive boss on every tenth wave: " .. wave)
+	equal(Rules.IsBossWave("tutorial", wave, "manhattan"), wave == 20, "Training has one simplified boss, at the end")
 end
-equal(Rules.BossId(10), "lizard", "Wave 10 boss"); equal(Rules.BossId(20), "abomination", "Wave 20 boss")
-equal(Rules.BossId(30), "redskull", "Wave 30 boss"); equal(Rules.BossId(40), "killmonger", "Wave 40 boss")
-equal(Rules.BossId(50), "doom", "Wave 50 boss is Doctor Doom"); equal(Rules.BossId(60), "lizard", "Endless keeps cycling the bosses")
-check(Rules.IsFinalWave("normal", 50) and not Rules.IsFinalWave("normal", 40), "Wave 50 is the final wave")
-check(not Rules.IsFinalWave("infinite", 50), "Endless has no final wave")
+for _, mapId in Catalog.MapOrder do
+	local total = Rules.WaveCount("normal", mapId)
+	check(Rules.IsFinalWave("normal", total, mapId) and not Rules.IsFinalWave("normal", total - 10, mapId), "Final wave is the map's last: " .. mapId)
+	equal(Rules.BossId(total, mapId, "normal"), Catalog.Maps[mapId].bossId, "The campaign ends with the map's own boss: " .. mapId)
+	for wave = 10, total - 10, 10 do
+		check(Rules.BossId(wave, mapId, "normal") ~= Catalog.Maps[mapId].bossId, "The final boss is never met early: " .. mapId .. " wave " .. wave)
+	end
+end
+check(not Rules.IsFinalWave("ranked", 50, "hydra"), "Competitive has no final wave")
+equal(Rules.BossId(10, "hydra", "ranked"), "lizard", "Competitive cycles the whole cast in order")
+equal(Rules.BossId(70, "hydra", "ranked"), "lizard", "Competitive keeps cycling the bosses")
+equal(Rules.BossId(20, "manhattan", "tutorial"), "lizard", "Training's boss is the Lizard")
+
+-- Match Gold is what enemies drop; lobby Gold is paid for the run.
+for _, id in Catalog.EnemyOrder do check(Rules.KillCash(id) >= 2, "Every enemy drops match Gold: " .. id) end
+equal(Rules.KillCash("illusion"), 0, "Loki's illusions drop nothing")
+check(Rules.WaveCash(10) > Rules.WaveCash(1), "Later waves pay more match Gold")
+equal(Rules.RunGold("normal", "gamma", 50, true), 2000, "A 50-wave campaign victory pays 2,000")
+equal(Rules.RunGold("normal", "manhattan", 40, true), 1600, "A 40-wave campaign victory pays 1,600")
+equal(Rules.RunGold("normal", "latveria", 70, true), 2800, "A 70-wave campaign victory pays 2,800")
+equal(Rules.RunGold("cards", "gamma", 50, true), 2500, "A card victory pays 2,500")
+check(Rules.RunGold("normal", "gamma", 25, false) * 4 < Rules.RunGold("normal", "gamma", 50, true), "A defeat pays far less than a victory")
+for waves = 1, 49 do
+	check(Rules.RunGold("normal", "gamma", waves + 1, false) > Rules.RunGold("normal", "gamma", waves, false), "More waves always pay more")
+end
+equal(Rules.RunGold("ranked", "hydra", 70, false), 70 * 25 + 7 * 100, "Competitive: 25 a wave and 100 every ten")
+equal(Rules.VictoryGold("tutorial", "manhattan"), 0, "Training pays its first-clear bonus elsewhere")
+equal(Rules.VictoryGold("ranked", "hydra"), 0, "Competitive has no victory")
 
 for _, mapId in Catalog.MapOrder do
 	local map = Catalog.Maps[mapId]
@@ -253,49 +281,46 @@ for _, mapId in Catalog.MapOrder do
 		end
 	end
 	for _, modeId in Catalog.ModeOrder do
-		local waves = if modeId == "infinite" then 70 else Rules.WaveCount(modeId)
+		local authored = false
+		for _, def in pairs(Catalog.Destinations) do if def.mapId == mapId and def.modeId == modeId then authored = true end end
+		if not authored then continue end
+		local total = Rules.WaveCount(modeId, mapId)
+		local waves = if total == 0 then 70 else total
 		for partySize = 1, 4 do
-			local totalGold = 0
 			for wave = 1, waves do
 				local specs = Waves.Generate(mapId, modeId, wave, partySize, 12345)
 				check(#specs > 0 and #specs <= 180, "Wave bounded by active enemy budget")
-				local waveGold, bosses = 0, 0
+				local bosses, bossId = 0, nil
 				for _, spec in specs do
 					local enemy = Catalog.Enemies[spec.enemyId]
 					check(enemy ~= nil, "Wave references a real enemy")
 					check(spec.pathIndex >= 1 and spec.pathIndex <= #map.paths, "Valid path assignment")
 					check(spec.hpMultiplier > 0 and Rules.IsFinite(spec.hpMultiplier), "Finite positive HP")
-					check(spec.delay >= 0 and spec.gold >= 0 and spec.gold % 1 == 0, "Valid spawn timing and gold")
-					if enemy.boss then bosses += 1 end
+					check(spec.delay >= 0, "Valid spawn timing")
+					equal(spec.cash, Rules.KillCash(spec.enemyId), "Each enemy drops its own match Gold")
+					if enemy.boss then bosses += 1; bossId = spec.enemyId end
 					if mapId == "hydra" then equal(spec.pathIndex, (wave - 1) % 2 + 1, "Announced alternating HYDRA path") end
-					waveGold += spec.gold
 				end
-				equal(waveGold, Rules.RewardBudget(modeId, wave), "Integer reward conservation")
-				local expectedBosses = if modeId == "tutorial" then (wave == 8 and 1 or 0) else (Rules.IsBossWave(modeId, wave) and 1 or 0)
-				equal(bosses, expectedBosses, string.format("Exactly the scheduled bosses: %s %s wave %d", mapId, modeId, wave))
-				totalGold += waveGold
+				equal(bosses, Rules.IsBossWave(modeId, wave, mapId) and 1 or 0, string.format("Exactly the scheduled bosses: %s %s wave %d", mapId, modeId, wave))
+				if bossId then equal(bossId, Rules.BossId(wave, mapId, modeId), "The scheduled boss walks in") end
 			end
-			if modeId == "normal" then equal(totalGold, 1400, "Normal gold budget independent of group size") end
-			if modeId == "ranked" then equal(totalGold, 2200, "Hard gold budget") end
-			if modeId == "cards" then equal(totalGold, 1800, "Card mode gold budget") end
-			if modeId == "tutorial" then equal(totalGold, 0, "Tutorial receives one-time completion gold") end
-			if modeId == "infinite" then equal(totalGold, 70 * 25 + 7 * 100, "Endless rewards") end
 		end
 	end
 end
-check(Rules.VictoryGold("normal") > 0 and Rules.VictoryGold("ranked") > Rules.VictoryGold("normal"), "Victory pays more on ranked")
-equal(Rules.VictoryGold("tutorial"), 0, "Training pays its bonus elsewhere")
 
--- Every enemy family appears in a normal run, on every map, with no chapter gate.
+-- Every enemy family appears in a campaign run, and every boss in some campaign.
 do
-	local seen = {}
-	for wave = 1, 50 do
+	local seen, bosses = {}, {}
+	for wave = 1, 40 do
 		for _, spec in Waves.Generate("manhattan", "normal", wave, 1, 7) do seen[spec.enemyId] = true end
 	end
 	for _, id in Catalog.EnemyOrder do
 		if not Catalog.Enemies[id].faction or Catalog.Enemies[id].faction=="sinister" then check(seen[id], "Manhattan meets its families and variants, including " .. id) end
 	end
-	for _, id in Catalog.BossOrder do check(seen[id], "A normal run meets every boss, including " .. id) end
+	for _, mapId in Catalog.MapOrder do
+		for wave = 10, Rules.WaveCount("normal", mapId), 10 do bosses[Rules.BossId(wave, mapId, "normal")] = true end
+	end
+	for _, id in Catalog.BossOrder do check(bosses[id], "The campaigns meet every boss, including " .. id) end
 end
 
 -- The final boss is the strongest thing in the run.
@@ -318,17 +343,22 @@ equal(#first, #second, "Deterministic spawn count")
 for index, spec in first do
 	for key, value in spec do equal(second[index][key], value, "Deterministic wave specification") end
 end
-equal(#Waves.Generate("manhattan", "normal", 51, 1), 0, "Campaign terminates after 50")
-equal(#Waves.Generate("manhattan", "cards", 51, 1), 0, "Card mode terminates after 50")
-check(#Waves.Generate("manhattan", "infinite", 51, 1) > 0, "Endless keeps going")
-local final = Waves.Generate("manhattan", "normal", 50, 1)
+equal(#Waves.Generate("manhattan", "normal", 41, 1), 0, "Manhattan's campaign ends after 40")
+equal(#Waves.Generate("gamma", "normal", 51, 1), 0, "A 50-wave campaign ends after 50")
+check(#Waves.Generate("latveria", "normal", 70, 1) > 0 and #Waves.Generate("latveria", "normal", 71, 1) == 0, "Latveria runs exactly 70")
+equal(#Waves.Generate("gamma", "cards", 51, 1), 0, "Card mode terminates after 50")
+equal(#Waves.Generate("manhattan", "tutorial", 21, 1), 0, "Training terminates after 20")
+check(#Waves.Generate("hydra", "ranked", 120, 1) > 0, "Competitive keeps going")
+check(#Waves.Generate("hydra", "ranked", 120, 4) <= 101, "Competitive grows tougher, not more crowded (100 plus its boss)")
+check(Waves.Generate("hydra", "ranked", 120, 1)[1].hpMultiplier > Waves.Generate("hydra", "ranked", 60, 1)[1].hpMultiplier, "Competitive health keeps climbing")
+local final = Waves.Generate("gamma", "normal", 50, 1)
 check(Catalog.Enemies[final[#final].enemyId].boss, "Final campaign boss")
 local threats = Waves.Threats(final)
 check(threats.boss and threats.air and threats.armor, "Upcoming wave warns about threats")
 local solo = Waves.Generate("manhattan", "normal", 1, 1)
 local squad = Waves.Generate("manhattan", "normal", 1, 4)
 check(squad[1].hpMultiplier > solo[1].hpMultiplier, "Fixed-size cooperative difficulty")
-check(Waves.Generate("manhattan", "ranked", 20, 1)[1].hpMultiplier > Waves.Generate("manhattan", "normal", 20, 1)[1].hpMultiplier, "Hard is harder")
+check(Waves.Generate("hydra", "ranked", 20, 1)[1].hpMultiplier > Waves.Generate("hydra", "normal", 20, 1)[1].hpMultiplier, "Competitive is harder")
 check(not pcall(function() Waves.Generate("manhattan", "normal", 1, 0) end), "Reject invalid party size")
 check(not pcall(function() Waves.Generate("manhattan", "normal", 0 / 0, 1) end), "Reject malformed wave")
 -- The map changes the roads, not the difficulty.
@@ -554,7 +584,7 @@ for wave = 1, 60 do
 	equal(Rules.CardWave("cards", wave), expected, "Cards after every fifth wave until the boss: " .. wave)
 	check(not Rules.CardWave("normal", wave) and not Rules.CardWave("ranked", wave) and not Rules.CardWave("tutorial", wave), "Only the card mode offers cards")
 end
-check(Rules.CardWave("cards", 45) and not Rules.CardWave("cards", 50), "Nine picks per run, none before the final boss")
+check(Rules.CardWave("cards", 45) and not Rules.CardWave("cards", 50), "Nine picks per run, none after the victory")
 
 do
 	local owned = {}

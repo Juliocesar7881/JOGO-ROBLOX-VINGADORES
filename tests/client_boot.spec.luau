@@ -164,7 +164,7 @@ end
 local function matchSnapshot(profile, phase, extra)
 	local match = {
 		runId = "run", mapId = "manhattan", modeId = "normal", wave = 3, totalWaves = 50, completedWaves = 2,
-		baseHP = 86, maxBaseHP = 100, shield = 0, energy = 940, towerLimit = 16, prepRemaining = 9, enemies = 0, elapsed = 120,
+		baseHP = 86, maxBaseHP = 100, shield = 0, cash = 940, coinsWaiting = 60, towerLimit = 16, prepRemaining = 9, enemies = 0, elapsed = 120,
 		ability = {id = Catalog.Heroes.ironman.ability, heroId = "ironman", rank = 1, target = "area", cooldown = 0, cooldownTotal = 60, radius = 20}, cardOffers = {}, cards = {}, goldEarned = 150, xpEarned = 40,
 		partySize = 2, skipVotes = 1, threats = { "runner", "flyer" }, towers = towers(),
 	}
@@ -443,9 +443,9 @@ local function session(screen)
 
 	step("per-viewer lobby cosmetics", function()
 		local lobby = workspace:FindFirstChild("DoomLobby")
-		-- Collections now live in the HUD; only the locked Infinito portal
-		-- needs a world shroud for this veteran.
-		check(countNamed(lobby, "LockShroud") == 1, tag .. ": the veteran sees only the locked infinite portal")
+		-- Collections live in the HUD, and a veteran with a campaign victory
+		-- has every portal open: no world shroud at all.
+		check(countNamed(lobby, "LockShroud") == 0, tag .. ": the veteran sees every portal open")
 		local highlights = 0
 		for _, item in ipairs(lobby:GetDescendants()) do if rawget(item, "__class") == "Highlight" then highlights += 1 end end
 		check(highlights == 0, tag .. ": removed hero statues leave no equipped world highlights")
@@ -457,8 +457,8 @@ local function session(screen)
 		check(nextMap ~= nil and string.find(campaignSign, "MANHATTAN", 1, true) ~= nil,
 			tag .. ": the campaign sign names the next unbeaten sector, got " .. campaignSign)
 		check(string.find(campaignSign, "ENTRE PARA JOGAR", 1, true) ~= nil, tag .. ": the campaign sign invites the viewer in")
-		local lockedSign = lobby.Portal_infinite.Sign.Board:FindFirstChildOfClass("TextLabel").Text
-		check(string.find(lockedSign, "BLOQUEADO", 1, true) ~= nil, tag .. ": a locked portal's sign says so, got " .. lockedSign)
+		local arenaSign = lobby.Portal_ranked.Sign.Board:FindFirstChildOfClass("TextLabel").Text
+		check(string.find(arenaSign, "ONDAS INFINITAS", 1, true) ~= nil, tag .. ": the competitive sign promises endless waves, got " .. arenaSign)
 		check(countNamed(lobby, "StartHere") == 0, tag .. ": a veteran gets no first-visit beacon")
 	end)
 
@@ -560,7 +560,7 @@ local function session(screen)
 		fx({kind="OpenPanel",panel="chests",chestId="base_supply"})
 		check(countNamed(gui,"ChestDisplay_base_supply")==1,tag..": base chest selected independently of hero chests")
 		check(countNamed(gui,"ChestOdds_workshop")==1 and countNamed(gui,"ChestOdds_ironman")==0,tag..": base chest displays actual base pool")
-		push(matchSnapshot(p,"Preparing",{base={id="workshop",level=1,stats=Rules.BaseStats("workshop",1),wall=0},energy=1000}))
+		push(matchSnapshot(p,"Preparing",{base={id="workshop",level=1,stats=Rules.BaseStats("workshop",1),wall=0},cash=1000}))
 		local open=named(gui,"OpenBaseUpgrade"); if open then open.Activated:Fire(); flush() end
 		check(countNamed(gui,"ConfirmBaseUpgrade")==1,tag..": core bar opens upgrade comparison")
 		local upgrade=named(gui,"ConfirmBaseUpgrade"); if upgrade then upgrade.Activated:Fire(); flush() end
@@ -909,7 +909,7 @@ local function session(screen)
 		profile.heroes.thor = { xp = 0, level = 1 }
 		profile.gold = 0
 		push(lobbySnapshot(profile))
-		check(countNamed(workspace:FindFirstChild("DoomLobby"), "LockShroud") == 1, tag .. ": gaining a hero does not create a lobby statue")
+		check(countNamed(workspace:FindFirstChild("DoomLobby"), "LockShroud") == 0, tag .. ": gaining a hero does not create a lobby statue")
 	end)
 
 	step("a newcomer sees locks and the first-visit pointer", function()
@@ -920,9 +920,13 @@ local function session(screen)
 		-- Before training four portals are locked (the campaign portal runs
 		-- training instead), ten heroes are unowned, and seven skills sit above
 		-- level 1.
-		check(countNamed(lobby, "LockShroud") == 5, tag .. ": a newcomer sees the five locked destination portals")
+		-- Training and all six campaigns are open; the three competitive
+		-- portals and cards wait for a first campaign victory.
+		check(countNamed(lobby, "LockShroud") == 4, tag .. ": a newcomer sees the four locked destination portals")
 		local campaignSign = lobby.Portal_normal.Sign.Board:FindFirstChildOfClass("TextLabel").Text
-		check(string.find(campaignSign, "50 ONDAS", 1, true) ~= nil, tag .. ": for a newcomer the campaign portal is the training portal, got " .. campaignSign)
+		check(string.find(campaignSign, "40 ONDAS", 1, true) ~= nil, tag .. ": Manhattan's campaign sign shows its 40 waves, got " .. campaignSign)
+		local lockedSign = lobby.Portal_ranked.Sign.Board:FindFirstChildOfClass("TextLabel").Text
+		check(string.find(lockedSign, "BLOQUEADO", 1, true) ~= nil, tag .. ": a locked portal's sign says so, got " .. lockedSign)
 		check(countNamed(lobby, "StartHere") == 1, tag .. ": a newcomer sees one START HERE beacon")
 		local newcomerBoard = lobby.Board_quests.Panel.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(newcomerBoard, "TREINE", 1, true) ~= nil, tag .. ": the mission board points a newcomer to training, got " .. newcomerBoard)
@@ -1048,7 +1052,7 @@ local function session(screen)
 		if second then second.Activated:Fire(); flush() end
 		check(frameAt(main, layout.tower) ~= nil, tag .. ": evolving opens the panel where the branch is chosen")
 		click("×")
-		push(matchSnapshot(profile, "Preparing", { energy = 100 }))
+		push(matchSnapshot(profile, "Preparing", { cash = 100 }))
 		first = board("t1") and board("t1"):FindFirstChildOfClass("TextButton")
 		check(first ~= nil and not green(first.BackgroundColor3), tag .. ": an upgrade the player cannot afford is not green")
 		push(matchSnapshot(profile, "Preparing"))

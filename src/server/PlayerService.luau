@@ -487,15 +487,18 @@ end
 
 -- AFK farm pay. Never a client action: the lobby loop calls it after the
 -- server itself has watched the commander stand in a farm for a minute.
-function PlayerService:GrantAfk(player, kind, minutes)
+-- paymentId names the minute being paid: retrying the same id after a lost
+-- response is recognised by the transaction ledger and never pays twice.
+function PlayerService:GrantAfk(player, kind, minutes, paymentId)
 	local reward = self.rules.AfkReward(kind, minutes)
 	if not reward then return false, "Farm AFK inválido." end
+	if paymentId ~= nil and not validId(paymentId) then return false, "Pagamento AFK inválido." end
 	return self:_transaction(player, function(profile)
 		profile.gold += reward.gold
 		profile.xp += reward.xp
 		profile.stats.goldEarned += reward.gold
 		return true, { kind = kind, gold = reward.gold, xp = reward.xp }
-	end)
+	end, paymentId)
 end
 
 function PlayerService:Get(player)
@@ -846,8 +849,13 @@ function PlayerService:_season()
 	return math.max(1, math.floor((os.time() - epoch) / ((self.config.SeasonDays or 60) * DAY)) + 1)
 end
 
+-- Competitive boards are keyed by version, map, starting party size and
+-- period. "comp2" is the endless competitive arena: results from the old
+-- finite ranked mode and the casual endless mode stay archived under their
+-- old keys and are never imported.
+local COMPETITIVE_VERSION = "comp2"
 function PlayerService:_boardKey(mapId, size, period, modeId)
-	return (modeId == "ranked" and "ranked:" or "") .. tostring(self.config.BalanceVersion or "1") .. ":" .. mapId .. ":" .. tostring(size) .. ":" .. period
+	return COMPETITIVE_VERSION .. ":" .. tostring(self.config.BalanceVersion or "1") .. ":" .. mapId .. ":" .. tostring(size) .. ":" .. period
 end
 
 function PlayerService:_boardStore(key)
@@ -855,8 +863,7 @@ function PlayerService:_boardStore(key)
 end
 
 function PlayerService:RecordBest(player, mapId, size, waves, modeId)
-	if modeId ~= nil and modeId ~= "infinite" and modeId ~= "ranked" then return false end
-	if modeId == "ranked" and waves > 50 then return false end
+	if modeId ~= "ranked" then return false end
 	if not self.catalog.Maps[mapId] or not integer(size, 1, 4) or not integer(waves, 1, 1000000) then return false end
 	local seasonal = self:_boardKey(mapId, size, "s" .. tostring(self:_season()), modeId)
 	local allTime = self:_boardKey(mapId, size, "all", modeId)
@@ -906,7 +913,7 @@ function PlayerService:_flushBoards(player)
 end
 
 function PlayerService:Leaderboard(mapId, size, period, modeId)
-	if modeId ~= nil and modeId ~= "infinite" and modeId ~= "ranked" then return nil, "Modo de placar inválido." end
+	if modeId ~= nil and modeId ~= "ranked" then return nil, "Modo de placar inválido." end
 	if not self.catalog.Maps[mapId] or not integer(size, 1, 4) then return nil, "Placar inválido." end
 	period = period or ("s" .. tostring(self:_season()))
 	if period ~= "all" then

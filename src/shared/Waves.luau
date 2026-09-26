@@ -5,15 +5,17 @@ local Waves = {}
 
 -- Stable generator: no server/client clock or global random state affects a wave.
 --
--- Every fixed-length run is 50 waves. A boss walks in on every tenth wave, in
--- story order, and the last wave brings the strongest of them all. The map does
--- not change how ranked a wave is: it only changes the roads the wave walks.
+-- A run's length comes from Rules.WaveCount (per map for the campaign, endless
+-- in the competitive arena). A boss walks in on every tenth wave and the last
+-- wave of a fixed run brings that map's own boss at full strength. Enemies
+-- carry no lobby Gold: they drop match Gold (Rules.KillCash) when they die.
 function Waves.Generate(mapId, modeId, wave, partySize, seed)
 	local map, mode = Catalog.Maps[mapId], Catalog.Modes[modeId]
 	assert(map and mode, "Unknown map or mode")
 	assert(Rules.IsFinite(wave) and wave >= 1 and wave == math.floor(wave), "Invalid wave")
 	assert(Rules.IsFinite(partySize) and partySize >= 1 and partySize <= 4 and partySize == math.floor(partySize), "Invalid party size")
-	if mode.waves > 0 and wave > mode.waves then return {} end
+	local total = Rules.WaveCount(modeId, mapId)
+	if total > 0 and wave > total then return {} end
 	seed = if Rules.IsFinite(seed) then math.floor(seed) else 0
 	local randomState = (math.abs(seed) + wave * 7919 + map.chapter * 97) % 2147483647
 	local function random(count)
@@ -22,11 +24,14 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed)
 	end
 	local result = {}
 	local partyScale = ({ 1, 1.65, 2.25, 2.85 })[partySize]
-	local progress = if modeId == "tutorial" then math.min(wave, 8) else wave
+	-- Training climbs at half speed, so its 20 waves stay gentle.
+	local progress = if modeId == "tutorial" then math.floor((math.min(wave, 20) + 1) / 2) else wave
 	-- Health climbs steadily, then a little faster once the late waves begin.
 	local growth = 1 + (progress - 1) * 0.045 + math.max(0, progress - 30) * 0.012
 	local hpMultiplier = mode.hpMultiplier * partyScale * growth * (map.difficulty or 1)
-	if modeId == "infinite" and wave > 50 then hpMultiplier *= 1.045 ^ math.min(250, wave - 50) end
+	-- Competitive never ends: past wave 50 health keeps climbing while the
+	-- head count stays capped, so the arena gets harder, not more crowded.
+	if modeId == "ranked" and wave > 50 then hpMultiplier *= 1.045 ^ math.min(250, wave - 50) end
 	local function pathFor(index)
 		if mapId == "hydra" then return (wave - 1) % #map.paths + 1 end
 		if mapId == "latveria" then
@@ -43,11 +48,11 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed)
 			enemyId = enemyId,
 			delay = if index == 1 then 0 else (if modeId == "tutorial" then 1.25 else math.max(0.35, 0.85 - wave * 0.011)),
 			pathIndex = pathFor(index), hpMultiplier = hpMultiplier * (override or 1),
-			speedMultiplier = 1, gold = 0, rewardless = false,
-			energy = enemy.reward,
+			speedMultiplier = 1, rewardless = false,
+			cash = Rules.KillCash(enemyId),
 		})
 	end
-	local count = if modeId == "tutorial" then 6 + wave * 2 else math.min(100, 9 + math.floor(wave * 1.4))
+	local count = if modeId == "tutorial" then 6 + wave else math.min(100, 9 + math.floor(wave * 1.4))
 	local pool = { "zombie", "zombie", "zombie" }
 	local ranked = modeId == "ranked"
 	if wave >= 3 then table.insert(pool, "runner") end
@@ -62,30 +67,19 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed)
 		if wave >= 28 then table.insert(pool, "armored"); table.insert(pool, "brute") end
 		if wave >= 36 then table.insert(pool, "flyer"); table.insert(pool, "stealth"); table.insert(pool, "summoner") end
 		if ranked and wave >= 20 then table.insert(pool, "armored"); table.insert(pool, "support") end
-	elseif wave >= 6 then
+	elseif wave >= 12 then
 		table.insert(pool, "flyer")
 	end
 	for index = 1, count do add(pool[random(#pool)], index) end
-	-- Bosses: one on every tenth wave, the strongest on the last.
+	-- Bosses: one on every tenth wave, the map's own boss on the last.
 	if modeId == "tutorial" then
-		if wave == 8 then add("lizard", #result + 1, 0.14) end
-	elseif Rules.IsBossWave(modeId, wave) then
+		if Rules.IsFinalWave(modeId, wave, mapId) then add("lizard", #result + 1, 0.25) end
+	elseif Rules.IsBossWave(modeId, wave, mapId) then
 		local override
-		if Rules.IsFinalWave(modeId, wave) then override = 1.2
-		elseif modeId == "infinite" then override = 1
+		if Rules.IsFinalWave(modeId, wave, mapId) then override = 1.2
+		elseif modeId == "ranked" then override = 1
 		else override = 0.3 + wave * 0.012 end
-		add(Rules.BossId(wave), #result + 1, override)
-	end
-	-- Allocate integer gold exactly once over legitimate spawns; summoned adds always use zero.
-	local budget = Rules.RewardBudget(modeId, wave)
-	local weightTotal = 0
-	for _, spec in result do weightTotal += Catalog.Enemies[spec.enemyId].reward end
-	local cumulative, assigned = 0, 0
-	for _, spec in result do
-		cumulative += Catalog.Enemies[spec.enemyId].reward
-		local target = math.floor(budget * cumulative / weightTotal)
-		spec.gold = target - assigned
-		assigned = target
+		add(Rules.BossId(wave, mapId, modeId), #result + 1, override)
 	end
 	return result
 end
