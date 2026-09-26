@@ -71,6 +71,31 @@ produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
   o herói escolhido sobe ao palco com o anel do alcance real e ataca três
   bonecos por 30 s; sem recompensa, sem dano real.
 
+### Rodada seguinte (2026-09-26/27), concluído e verificado por testes
+
+- **Área proibida marcada ao posicionar:** faixa das ruas, círculo de cada
+  torre e base e borda da área, com os mesmos números de `Rules.BuildCheck`.
+- **Animações do herói:** respiração parada (perto da câmera), pulo com coluna
+  dourada ao melhorar, braços erguidos na habilidade, e **interrupção
+  visível** (estrelas e postura caída) quando um chefe paralisa a torre.
+- **Leitura dos inimigos:** suporte ligado a quem acelera, camuflado sólido
+  ao ser revelado, invocador com orbes das invocações restantes e aviso antes
+  de invocar, faíscas na armadura, corredor inclinado, poeira do brutamontes.
+- **Áudio:** 12 sons próprios novos, entre eles um ambiente por mapa e um som
+  por família de arma. No máximo 4 sons de arma por quarto de segundo, mais
+  baixos com a distância. Aviso quando a habilidade volta.
+- **Estados de tela:** placar e preços da loja Robux mostram carregando,
+  indisponível e falha com **tentar novamente**.
+- **Toque mínimo de 48 px** em todos os botões de partida e do lobby testados.
+- **Níveis com nomes próprios:** NV (conta), MAESTRIA (herói, 1–20), RANK
+  (habilidade, 1–5), Melhoria (torre, só na partida).
+- **Coleta de Ouro:** heróis coletores (Falcão, Homem-Formiga, Rocket, Senhor
+  das Estrelas) e habilidades de área recolhem o seu Ouro. Nada cria Ouro.
+- **Pipeline de arte final:** `.rbxmx` do Studio em `assets/models` com autor
+  e permissão; o jogo passa a usar o modelo sozinho (heróis, retratos,
+  inimigos, ponto de disparo `Muzzle`, animações opcionais).
+- Só se mexe na barra do lobby o que tem novidade.
+
 ### Implementado, aguardando teste real (Studio/aplicativo)
 
 - Leitura visual das moedas maiores, do ímã e do aviso "no chão".
@@ -91,6 +116,10 @@ produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 
 ### Pendente
 
+- Arte final: exportar os modelos do Studio para `assets/models` (o caminho
+  está pronto; faltam os modelos). Sugestão do plano: começar pela amostra
+  Homem de Ferro, Hulk, Homem-Aranha, quatro inimigos e Lagarto.
+- Áudio: importar os 25 WAVs de `assets/audio` na conta e preencher os IDs.
 - Lugar AFK: publicar `Doomsday-Afk.rbxlx`, configurar `AfkPlaceId` e testar
   por 1 h sem interação no aplicativo (a renovação por teleporte a cada 15 min
   é uma hipótese; a API não garante).
