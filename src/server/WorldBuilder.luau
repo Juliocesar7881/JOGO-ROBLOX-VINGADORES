@@ -106,6 +106,8 @@ end
 -- hero-gallery statues both call this, so a hero looks like the same
 -- character everywhere instead of two unrelated blockouts.
 local FIGURE_SCALE = { hulk = 1.35, groot = 1.55, rocket = 0.72, wasp = 0.9, silversurfer = 1.05 }
+-- Armoured heroes catch the sky and street lamps; cloth stays matte.
+local SHINY_SUIT = { ironman = true, warmachine = true, panther = true, antman = true, vision = true, nova = true, silversurfer = true }
 -- Sign text is shouted in capitals; string.upper does not know accents, so
 -- World.new swaps in the catalog's accent-aware version.
 local upper = string.upper
@@ -179,6 +181,7 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 			made:SetAttribute("PoseJoint", (origin * CFrame.new(V(side * 1.14 * width, 4.22, 0) * scale)).Position)
 		elseif position.Y > 2.45 then made:SetAttribute("PoseGroup", "Body") end
 		made.Shape = shape or Enum.PartType.Block
+		if SHINY_SUIT[heroId] and made.Material ~= Enum.Material.Neon then made.Reflectance = 0.12 end
 		return made
 	end
 	local function oval(name, size, position, tint, surface, rotation)
@@ -235,10 +238,18 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		or heroId == "falcon" or heroId == "bucky" or heroId == "shangchi" or heroId == "captainmarvel" or heroId == "rocket"
 		or heroId=="storm" or heroId=="jean" or heroId=="gambit" or heroId=="psylocke" or heroId=="cyclops"
 	for _, side in ipairs({ -1, 1 }) do
-		local eyeWidth = heroId == "spiderman" and 0.48 or 0.34
-		piece("Eye", V(eyeWidth, heroId == "spiderman" and 0.34 or 0.16, 0.12), V(side * 0.31, 5.49, -0.716), exposed and ink or white,
-			(heroId == "ironman" or heroId == "vision" or heroId == "warmachine" or heroId == "silversurfer" or heroId == "ghostrider") and Enum.Material.Neon or Enum.Material.SmoothPlastic, CFrame.Angles(0, 0, side * 0.13))
-		if exposed then piece("Brow", V(0.43, 0.1, 0.12), V(side * 0.31, 5.66, -0.7), ink, fabric, CFrame.Angles(0, 0, side * 0.18)) end
+		if exposed then
+			-- Cartoon eyes read at tower distance where a thin slit vanished:
+			-- a white eye, a dark pupil looking slightly inward, a catchlight.
+			piece("Eye", V(0.3, 0.28, 0.1), V(side * 0.31, 5.47, -0.705), white, Enum.Material.SmoothPlastic, CFrame.Angles(0, 0, side * 0.1))
+			piece("Pupil", V(0.15, 0.2, 0.06), V(side * 0.28, 5.45, -0.76), ink, Enum.Material.SmoothPlastic)
+			piece("Catchlight", V(0.05, 0.05, 0.03), V(side * 0.25, 5.5, -0.795), white, Enum.Material.Neon)
+			piece("Brow", V(0.43, 0.1, 0.12), V(side * 0.31, 5.7, -0.7), ink, fabric, CFrame.Angles(0, 0, side * 0.18))
+		else
+			local eyeWidth = heroId == "spiderman" and 0.48 or 0.34
+			piece("Eye", V(eyeWidth, heroId == "spiderman" and 0.34 or 0.16, 0.12), V(side * 0.31, 5.49, -0.716), white,
+				(heroId == "ironman" or heroId == "vision" or heroId == "warmachine" or heroId == "silversurfer" or heroId == "ghostrider") and Enum.Material.Neon or Enum.Material.SmoothPlastic, CFrame.Angles(0, 0, side * 0.13))
+		end
 	end
 	if exposed then
 		oval("Nose", V(0.23, 0.3, 0.26), V(0, 5.28, -0.76), face)
@@ -2654,6 +2665,11 @@ end
 -- The city wall: buildings with a face toward the battlefield
 --==============================================================================
 local FACADES = {}
+local CITY_BILLBOARDS = {
+	{ "STARK INDUSTRIES", { 255, 196, 72 } }, { "DAILY BUGLE", { 255, 90, 90 } }, { "OSCORP", { 110, 220, 255 } },
+	{ "AVENGERS", { 240, 240, 255 } }, { "S.H.I.E.L.D.", { 140, 200, 255 } }, { "PYM TECH", { 255, 120, 150 } },
+	{ "ROXXON", { 255, 160, 60 } }, { "BAXTER", { 120, 170, 255 } },
+}
 
 -- `face` sits at the bottom centre of the building's inner face, looking into
 -- the map; the body extends behind it (+Z in face space).
@@ -2707,6 +2723,30 @@ function FACADES.city(folder, theme, rng, face, width, height, depth)
 		prop(folder, "WaterTank", Vector3.new(4, 3.6, 3.6), upright(top * CFrame.new(0, 4.4, 0)), Color3.fromRGB(104, 76, 54), Enum.Material.WoodPlanks).Shape = Enum.PartType.Cylinder
 	elseif roll < 0.7 then
 		prop(folder, "RoofUnit", Vector3.new(3, 1.6, 2.4), face * CFrame.new(rng:NextNumber(-width / 4, width / 4), height + 1.7, depth / 2 + rng:NextNumber(-3, 3)), Color3.fromRGB(120, 124, 128), Enum.Material.Metal)
+	elseif width >= 12 then
+		-- An empty roof gets a lit billboard facing the battlefield. The brand
+		-- comes from the building's position, not the RNG, so adding signs
+		-- never reshuffles the rest of the city.
+		local spot = face.Position
+		local brand = CITY_BILLBOARDS[math.floor(math.abs(spot.X) * 7 + math.abs(spot.Z) * 3) % #CITY_BILLBOARDS + 1]
+		local tint = Color3.fromRGB(brand[2][1], brand[2][2], brand[2][3])
+		local w, h = math.min(width * 0.75, 15), 4.6
+		local panelCf = face * CFrame.new(0, height + 2.5 + h / 2, 2)
+		for _, lateral in ipairs({ -w / 3, w / 3 }) do
+			prop(folder, "BillboardLeg", Vector3.new(0.35, 1.6, 0.35), face * CFrame.new(lateral, height + 1.7, 2.3), Color3.fromRGB(40, 42, 46), Enum.Material.Metal)
+		end
+		local panel = prop(folder, "Billboard", Vector3.new(w, h, 0.4), panelCf, Color3.fromRGB(18, 20, 30), Enum.Material.SmoothPlastic)
+		for _, edge in ipairs({ -1, 1 }) do
+			prop(folder, "BillboardTrim", Vector3.new(w + 0.4, 0.3, 0.5), panelCf * CFrame.new(0, edge * (h / 2 + 0.1), -0.02), tint, Enum.Material.Neon)
+		end
+		local gui = Instance.new("SurfaceGui")
+		gui.Name, gui.Face, gui.CanvasSize = "Artwork", Enum.NormalId.Front, Vector2.new(math.floor(w * 40), math.floor(h * 40))
+		gui.LightInfluence, gui.Brightness, gui.Parent = 0, 1.6, panel
+		local text = Instance.new("TextLabel")
+		text.Name, text.BackgroundTransparency, text.Size = "Brand", 1, UDim2.fromScale(0.92, 0.8)
+		text.Position, text.Text, text.Font = UDim2.fromScale(0.04, 0.1), brand[1], Enum.Font.FredokaOne
+		text.TextScaled, text.TextColor3 = true, tint:Lerp(Color3.new(1, 1, 1), 0.3)
+		text.TextStrokeColor3, text.TextStrokeTransparency, text.Parent = Color3.fromRGB(8, 8, 12), 0.2, gui
 	end
 	if height > 60 then
 		prop(folder, "Antenna", Vector3.new(0.3, 8, 0.3), face * CFrame.new(0, height + 4.9, depth / 2), Color3.fromRGB(60, 62, 66), Enum.Material.Metal)
@@ -3167,6 +3207,16 @@ function World:MakeTower(id, heroId, position, ownerId)
 	local ring = part(model, "PowerRing", Vector3.new(0.15, 5.8, 5.8), CFrame.new(position.X, 0.12, position.Z)*flat, color, Enum.Material.Neon)
 	base.Shape, ring.Shape = Enum.PartType.Cylinder, Enum.PartType.Cylinder
 	ring.CanCollide = false
+	-- A layered emplacement instead of a flat disc: a dark skirt under the
+	-- ring (never above it, or the recoil animation would be hidden), a
+	-- glowing inset in the hero's colour and three studs on the rim.
+	local skirt = part(model, "PlatformSkirt", Vector3.new(0.12, 6.6, 6.6), CFrame.new(position.X, 0.06, position.Z)*flat, Color3.fromRGB(30, 35, 48), Enum.Material.Metal)
+	local inset = part(model, "PlatformInset", Vector3.new(0.06, 4.1, 4.1), CFrame.new(position.X, 0.6, position.Z)*flat, color, Enum.Material.Neon)
+	skirt.Shape, inset.Shape = Enum.PartType.Cylinder, Enum.PartType.Cylinder
+	inset.Transparency = 0.45
+	for _, offset in ipairs({ { 2.45, 0 }, { -2.45, 0 }, { 0, -2.45 } }) do
+		part(model, "PlatformStud", Vector3.new(0.42, 0.22, 0.42), CFrame.new(position.X + offset[1], 0.62, position.Z + offset[2]), color:Lerp(Color3.new(1, 1, 1), 0.35), Enum.Material.Neon)
+	end
 	-- The server owns the ring's canonical width; the client's firing recoil
 	-- animates around it and restores to whatever this says, so an upgrade
 	-- landing mid-recoil is never undone by the animation finishing late.
@@ -3177,8 +3227,9 @@ function World:MakeTower(id, heroId, position, ownerId)
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") then p.CanCollide = false p:SetAttribute("TowerId", id) end end
 	model.PrimaryPart, model.Parent = base, self.Towers
 	self:ClearClutter(position, 2.9)
-	local title = label(head, hero.name.pt, Vector3.new(0, 2, 0), Color3.fromRGB(229, 243, 247), 145, 55)
-	title.TextSize = 12
+	local title = label(head, hero.name.pt, Vector3.new(0, 2, 0), color:Lerp(Color3.new(1, 1, 1), 0.75), 145, 55)
+	title.Font, title.TextSize = Enum.Font.FredokaOne, 15
+	title.TextStrokeColor3, title.TextStrokeTransparency = Color3.fromRGB(12, 13, 20), 0
 	return model
 end
 
