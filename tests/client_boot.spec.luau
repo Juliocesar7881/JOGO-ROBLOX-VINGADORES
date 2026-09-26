@@ -531,6 +531,28 @@ local function session(screen)
 		push(lobbySnapshot(veteranProfile()))
 	end)
 
+	step("the talent honeycomb: select, requirements, zoom", function()
+		local evolved = veteranProfile()
+		evolved.talents, evolved.talentPoints = {}, 3
+		push(lobbySnapshot(evolved))
+		fx({kind="OpenPanel",panel="talents"})
+		check(countNamed(gui, "TalentHex_roundGold") == 1 and countNamed(gui, "TalentHex_abilityPower") == 1, tag .. ": every talent is a hexagon on the map")
+		clickNamed("TalentNode_killGold")
+		check(named(gui, "Talent_killGold") ~= nil, tag .. ": tapping a hexagon shows its card")
+		local nowNext = named(gui, "TalentNowNext")
+		check(nowNext and string.find(nowNext.Text, "Próximo", 1, true) ~= nil, tag .. ": the card shows now and next values, got " .. tostring(nowNext and nowNext.Text))
+		local locked = named(gui, "UpgradeTalent_killGold")
+		check(locked and locked.Active == false, tag .. ": a talent whose parent is too low cannot be bought")
+		local tree = named(gui, "TalentTree")
+		local before = tree and tree.CanvasSize.X.Offset
+		clickNamed("TalentZoomIn")
+		local after = named(gui, "TalentTree")
+		check(before and after and after.CanvasSize.X.Offset > before, tag .. ": zooming in grows the map")
+		clickNamed("TalentZoomOut")
+		clickNamed("CloseContext")
+		push(lobbySnapshot(veteranProfile()))
+	end)
+
 	step("gallery and shop category navigation", function()
 		fx({kind="OpenPanel",panel="inventory"})
 		for slot=1,5 do check(countNamed(gui,"SquadSlot_"..slot)==1,tag..": squad has visible slot "..slot) end

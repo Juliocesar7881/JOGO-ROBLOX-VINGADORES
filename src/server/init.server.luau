@@ -191,6 +191,10 @@ match.onFinish = function(victory)
 			local waves = results and results.waves or match.completedWaves
 			local gold = results and results.gold or 0
 			analytics:MatchFinished(member, mapId, modeId, victory, waves, seconds, gold)
+			-- Match Gold actually picked up per minute: how well the magnet and
+			-- the collecting habit work in real play.
+			local p = match.participants[member.UserId]
+			if p then analytics:Custom(member, "MatchGoldPerMinute", math.floor((p.collected or 0) * 60 / math.max(1, seconds)), mapId, modeId) end
 			if modeId == "tutorial" and victory then analytics:TutorialStep(member, 3, "Complete") end
 		end
 	end
@@ -682,6 +686,10 @@ end)
 
 Players.PlayerRemoving:Connect(function(player)
 	local wasPlaying = match:Has(player)
+	-- Leaving mid-battle, by wave: the abandonment curve the launch plan asks for.
+	if wasPlaying and match.running then
+		pcall(function() analytics:Custom(player, "LeftMidMatch", match.wave or 0, match.mapId, match.modeId) end)
+	end
 	pcall(function() match:OnLeave(player) end)
 	pcall(function() party:Remove(player) end)
 	pcall(function() cosmetics:Release(player) end)
@@ -761,6 +769,9 @@ local function stepAfk(elapsed, visitors)
 			player:SetAttribute("AfkEarned", clock.earned or 0)
 			player:SetAttribute("AfkSaving", clock.paying == true)
 		else
+			if clock and (clock.minutes or 0) > 0 then
+				pcall(function() analytics:Custom(player, "AfkSession", clock.minutes, clock.kind) end)
+			end
 			afkClock[player.UserId] = nil
 		end
 	end
