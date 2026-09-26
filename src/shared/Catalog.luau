@@ -383,10 +383,26 @@ Catalog.Enemies = {
 -- Modes
 --==============================================================================
 -- Every mode except training and endless is a 50-wave run: a boss at 10, 20, 30
--- and 40, and the strongest boss of all on wave 50. The map is never chosen; it
--- is drawn at random when the portal launches. The card mode is the roguelike:
+-- and 40, and the strongest boss of all on wave 50. Each destination owns its
+-- map/mode pair. The card mode is the roguelike:
 -- after every fifth wave each commander picks one of three cards.
 Catalog.PortalOrder = { "normal", "ranked", "cards", "infinite" }
+-- Each entrance is an authored destination, with a fixed map and ruleset.
+Catalog.DestinationOrder = { "normal", "cards", "infinite", "ranked", "ranked_wakanda", "ranked_latveria" }
+Catalog.Destinations = {
+	normal = {modeId="normal",mapId="manhattan",x=-58,z=300},
+	cards = {modeId="cards",mapId="gamma",x=-30,z=300},
+	infinite = {modeId="infinite",mapId="asgard",x=-2,z=300},
+	ranked = {modeId="ranked",mapId="hydra",x=30,z=291},
+	ranked_wakanda = {modeId="ranked",mapId="wakanda",x=58,z=291},
+	ranked_latveria = {modeId="ranked",mapId="latveria",x=86,z=291},
+}
+Catalog.Maps.asgard = {
+	id="asgard",difficulty=1,name=text("Ponte de Asgard","Asgard Bridge"),chapter=6,bossId="doom",color={220,184,96},
+	description=text("Defenda a ponte dourada contra uma invasão sem fim. As curvas recompensam alcance e controle.","Defend the golden bridge against an endless invasion. Its bends reward range and control."),
+	paths={{{-92,-80},{-60,-80},{-60,-40},{50,-40},{50,0},{-50,0},{-50,40},{60,40},{60,80},{88,80}}},
+}
+table.insert(Catalog.MapOrder,"asgard")
 Catalog.ModeOrder = { "tutorial", "normal", "ranked", "cards", "infinite" }
 Catalog.Modes = {
 	tutorial = { id = "tutorial", name = text("Treinamento", "Training"), waves = 8, hpMultiplier = 0.6, rewardMultiplier = 1,

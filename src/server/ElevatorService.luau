@@ -2,10 +2,7 @@
 -- Mode portals as elevators, the way the big Roblox tower defenses do it:
 -- stepping onto a portal's pad puts you in its car, a short countdown runs,
 -- anyone who steps on meanwhile rides along, and at zero the match starts.
--- No menu is involved. Everything here is the server's call — who is on the
--- pad, which map, whether each rider may play it — and the client only draws
--- the countdown and offers Leave. The map is never chosen: it is drawn at random
--- the moment the car departs.
+-- Every portal has a fixed map/mode pair. All riders share that destination.
 local Elevator = {}
 Elevator.__index = Elevator
 
@@ -29,8 +26,7 @@ function Elevator.new(options)
 		changed = options.changed or function() end,
 		eject = options.eject or function() end,
 		available = options.available or function() return true end,
-		-- A number in [0,1) for the map draw; injected so tests can pin it.
-		random = options.random or function() return math.random() end,
+		serial = 0,
 		cars = {}, riding = {}, refused = {},
 	}, Elevator)
 end
@@ -39,8 +35,7 @@ function Elevator:_announce(car)
 	for _, rider in ipairs(car.riders) do self.changed(rider) end
 end
 
--- The host is whoever stepped on first; the mode follows their profile (the
--- campaign portal runs training until they have trained).
+-- The host is whoever stepped on first; the portal determines the mode.
 function Elevator:Plan(portalId)
 	local car = self.cars[portalId]
 	local host = car and car.riders[1]
@@ -73,7 +68,7 @@ function Elevator:_board(player, portalId)
 		if planned then
 			-- Whether someone may play a mode never depends on which map is
 			-- drawn, so any map stands in for the check.
-			local allowed, reason = self.rules.CanStart(profile, self.rules.PickMap(planned, 0), planned)
+			local allowed, reason = self.rules.CanStart(profile, self.rules.PortalMap(portalId), planned)
 			if not allowed then
 				self:_refuse(player, portalId, reason or self.rules.ModeLockReason(planned, profile))
 				return
@@ -84,7 +79,8 @@ function Elevator:_board(player, portalId)
 		return
 	end
 	if not car then
-		car = { portalId = portalId, riders = {}, remaining = COUNTDOWN }
+		self.serial += 1
+		car = { portalId = portalId, riders = {}, remaining = COUNTDOWN, id=tostring(self.serial) }
 		self.cars[portalId] = car
 	end
 	table.insert(car.riders, player)
@@ -125,8 +121,8 @@ function Elevator:_depart(portalId)
 		car.remaining = 2
 		return
 	end
-	-- Drawn once, for everyone aboard, at the moment of departure.
-	local mapId = self.rules.PickMap(modeId, self.random())
+	-- Resolve from the server catalog, never from a client-provided map.
+	local mapId = self.rules.PortalMap(portalId)
 	local going = {}
 	for _, player in ipairs(table.clone(car.riders)) do
 		local profile = self.profileOf(player)
@@ -196,6 +192,7 @@ function Elevator:Snapshot(player)
 	local riders = {}
 	for _, rider in ipairs(car.riders) do table.insert(riders, { userId = rider.UserId, name = rider.Name }) end
 	return {
+		carId=car.id, mapId=self.rules.PortalMap(portalId),
 		portalId = portalId, modeId = modeId, riders = riders, max = MAX_RIDERS,
 		remaining = math.max(0, math.ceil(car.remaining)), host = car.riders[1] == player,
 	}

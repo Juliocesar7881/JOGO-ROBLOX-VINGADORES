@@ -434,7 +434,12 @@ local tutorialTower = {}
 
 local function startMatch(player, payload)
 	local mapId, modeId = payload.mapId, payload.modeId
-	if type(mapId) ~= "string" or type(modeId) ~= "string" or not Catalog.Maps[mapId] or not Catalog.Modes[modeId] then
+	if payload.destinationId then
+		local destination = type(payload.destinationId)=="string" and Catalog.Destinations[payload.destinationId]
+		if not destination then return {ok=false,message=text("Destino inválido.","Invalid destination.")} end
+		mapId,modeId=destination.mapId,destination.modeId
+	end
+	if type(mapId) ~= "string" or not Catalog.Maps[mapId] or type(modeId) ~= "string" or not Catalog.Modes[modeId] then
 		return { ok = false, message = text("Mapa ou modo invalido.", "Invalid map or mode.") }
 	end
 	if match:Has(player) then
@@ -447,8 +452,6 @@ local function startMatch(player, payload)
 		return { ok = false, message = text("Apenas o lider inicia a defesa.", "Only the party leader starts the defense.") }
 	end
 	local members = party:Members(player)
-	-- Both the HUD's Play button and the physical portals draw a server map.
-	mapId = Rules.PickMap(modeId, math.random())
 	for _, member in ipairs(members) do
 		local profile = profiles:Snapshot(member)
 		if not profile then
@@ -727,6 +730,8 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 			local shopOK,shopProblem=pcall(world.StepShopEntries,world,visitors)
 			if not shopOK then warn("[Doomsday] Shop entry failed: "..tostring(shopProblem)) end
+			local recoveryOK,recoveryProblem=pcall(world.RecoverLobbyVisitors,world,visitors)
+			if not recoveryOK then warn("[Doomsday] Lobby recovery failed: "..tostring(recoveryProblem)) end
 		end
 	end
 
@@ -755,9 +760,9 @@ if role ~= "Match" then
 		-- First pass runs right away: waiting a full cycle left the totem
 		-- reading "Carregando…" for the first half minute of every server.
 		while true do
-			local ok, rows = pcall(function() return profiles:Leaderboard("manhattan", 1, nil, "ranked") end)
+			local ok, rows = pcall(function() return profiles:Leaderboard("hydra", 1, nil, "ranked") end)
 			if ok then
-				local applied = pcall(function() world:UpdateLeaderboardBoard(rows, "RANQUEADO • " .. Catalog.Maps.manhattan.name.pt) end)
+				local applied = pcall(function() world:UpdateLeaderboardBoard(rows, "RANQUEADO • " .. Catalog.Maps.hydra.name.pt) end)
 				if not applied then warn("[Doomsday] Leaderboard totem refresh failed") end
 			end
 			task.wait(30)

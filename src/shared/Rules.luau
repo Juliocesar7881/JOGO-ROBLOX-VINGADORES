@@ -95,22 +95,43 @@ function Rules.CanStart(profile, mapId, modeId)
 	if modeId == "tutorial" then
 		return mapId == "manhattan", "O treinamento acontece em Manhattan / Training takes place in Manhattan"
 	end
+	local destination=false
+	for _,def in pairs(Catalog.Destinations) do
+		if def.mapId==mapId and def.modeId==modeId then destination=true; break end
+	end
+	if not destination then return false,"Este mapa tem seu próprio modo. / This map has its own mode." end
 	if not Rules.ModeUnlocked(profile, modeId) then return false, Rules.ModeLockReason(modeId, profile) end
 	return true
 end
 
--- The campaign portal trains a commander who has not trained yet.
+-- Training is a separate opt-in choice; portals retain their named mode.
 function Rules.PortalMode(profile, portalId)
-	return portalId
+	local def=Catalog.Destinations[portalId]
+	return def and def.modeId or nil
 end
 
--- The map is never chosen: it is drawn when the portal launches. Training is
--- the only exception and always runs in Manhattan.
-function Rules.PickMap(modeId, roll)
-	if modeId == "tutorial" then return "manhattan" end
-	local count = #Catalog.MapOrder
-	local index = math.floor(math.clamp(number(roll, 0), 0, 0.999999) * count) + 1
-	return Catalog.MapOrder[index]
+function Rules.PortalMap(portalId)
+	local def=Catalog.Destinations[portalId]
+	return def and def.mapId or nil
+end
+
+function Rules.MapsForMode(modeId)
+	local maps={}
+	for _,id in ipairs(Catalog.DestinationOrder) do
+		local def=Catalog.Destinations[id]
+		if def.modeId==modeId then table.insert(maps,def.mapId) end
+	end
+	return maps
+end
+
+-- Legacy callers get the first authored destination, never a random map.
+function Rules.PickMap(modeId, _roll)
+	if modeId=="tutorial" then return "manhattan" end
+	for _,id in ipairs(Catalog.DestinationOrder) do
+		local def=Catalog.Destinations[id]
+		if def.modeId==modeId then return def.mapId end
+	end
+	return nil
 end
 
 function Rules.RankForWaves(waves)

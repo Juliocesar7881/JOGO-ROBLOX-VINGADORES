@@ -19,6 +19,7 @@ UI.Colors = {
 }
 
 UI.Themes = {
+	guide = {color=UI.Colors.gold, icon="guide"}, maps = {color=UI.Colors.gold, icon="bolt"},
 	inventory = {color=UI.Colors.coral, icon="hero"}, hero = {color=UI.Colors.coral, icon="hero"}, squad = {color=UI.Colors.coral, icon="hero"},
 	talents = {color=UI.Colors.violet, icon="star"}, chests = {color=UI.Colors.gold, icon="chest"},
 	premium = {color=UI.Colors.green, icon="shop"}, shop = {color=UI.Colors.green, icon="shop"},
@@ -205,7 +206,17 @@ function UI.illustration(parent, kind, tint, properties)
 		if radius then UI.corner(p,radius) end
 		return p
 	end
-	if kind=="hero" then
+	if kind=="guide" then
+		shape(.23,.52,.54,.40,Color3.fromRGB(68,122,106),7)
+		shape(.17,.47,.66,.13,gold,2)
+		shape(.64,.5,.12,.29,gold,2,-10)
+		shape(.13,.12,.74,.40,cream,13)
+		shape(.21,.23,.58,.17,ink,5)
+		shape(.29,.27,.07,.08,Color3.fromRGB(146,232,186),2)
+		shape(.64,.27,.07,.08,Color3.fromRGB(146,232,186),2)
+		shape(.72,.02,.04,.14,cream,2)
+		shape(.67,0,.14,.10,gold,7)
+	elseif kind=="hero" then
 		shape(.16,.65,.68,.29,ink,9)
 		shape(.22,.67,.56,.19,tint,7)
 		shape(.23,.05,.54,.68,ink,12)
@@ -298,6 +309,34 @@ end
 
 -- A miniature expedition vignette makes the mode screen a destination
 -- selector, not a stack of identical text boxes.
+-- Route previews come directly from the map catalog, so selecting a map
+-- teaches its geometry instead of showing an unrelated landscape picture.
+function UI.mapArt(parent,map,tint,properties)
+	local root=UI.frame(parent,properties)
+	root.Name="MapRoutePreview"
+	root.BackgroundColor3=tint:Lerp(UI.Colors.background,0.85)
+	UI.corner(root,8)
+	root.ClipsDescendants=true
+	if not map then
+		UI.label(root,"?",{Size=UDim2.fromScale(1,1),TextSize=48,Font=Enum.Font.GothamBlack,TextColor3=tint,TextXAlignment=Enum.TextXAlignment.Center})
+		return root
+	end
+	local function project(point) return 7+(point[1]+100)/200*82,7+(point[2]+100)/200*62 end
+	for _,route in ipairs(map.paths) do
+		for i=2,#route do
+			local x1,y1=project(route[i-1]); local x2,y2=project(route[i])
+			local dx,dy=x2-x1,y2-y1
+			UI.frame(root,{Name="RouteSegment",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset((x1+x2)/2,(y1+y2)/2),Size=UDim2.fromOffset(math.sqrt(dx*dx+dy*dy)+2,3),Rotation=math.deg(math.atan2(dy,dx)),BackgroundColor3=tint})
+		end
+		for _,index in ipairs({1,#route}) do
+			local x,y=project(route[index])
+			local dot=UI.frame(root,{Position=UDim2.fromOffset(x-3,y-3),Size=UDim2.fromOffset(6,6),BackgroundColor3=index==1 and UI.Colors.red or UI.Colors.cream})
+			UI.corner(dot,3)
+		end
+	end
+	return root
+end
+
 function UI.expeditionArt(parent, kind, tint, properties)
 	local art=UI.frame(parent,properties)
 	art.BackgroundColor3=tint:Lerp(UI.Colors.background,0.7)
@@ -353,11 +392,36 @@ function UI.emblem(parent, kind, tint, properties)
 end
 
 function UI.list(parent, gap, horizontal)
-	return UI.create("UIListLayout", {
+	local layout=UI.create("UIListLayout", {
 		Padding = UDim.new(0, gap or 10),
 		FillDirection = horizontal and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 	}, parent)
+	if parent:IsA("ScrollingFrame") then
+		-- Only the list owns the canvas extent. AutomaticCanvasSize also
+		-- measures nested/scaled decorations and can feed back into its size.
+		parent.AutomaticCanvasSize=Enum.AutomaticSize.None
+		local function resizeCanvas()
+			if parent:GetAttribute("UpdatingCanvas") then return end
+			local size=layout.AbsoluteContentSize
+			parent.CanvasSize=horizontal and UDim2.fromOffset(math.ceil(size.X)+8,0) or UDim2.fromOffset(0,math.ceil(size.Y)+8)
+		end
+		layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(resizeCanvas)
+	end
+	return layout
+end
+
+function UI.finishScrollUpdate(frame)
+	local layout=frame:FindFirstChildOfClass("UIListLayout")
+	if not layout then return end
+	-- Read after all rows exist; transient empty layouts must never shrink
+	-- the canvas and clamp a player's scroll position back to zero.
+	local size=layout.AbsoluteContentSize
+	frame:SetAttribute("UpdatingCanvas",nil)
+	if size then
+		local horizontal=layout.FillDirection==Enum.FillDirection.Horizontal
+		frame.CanvasSize=horizontal and UDim2.fromOffset(math.ceil(size.X)+8,0) or UDim2.fromOffset(0,math.ceil(size.Y)+8)
+	end
 end
 
 function UI.padding(parent, value)
@@ -379,10 +443,10 @@ function UI.scroll(parent, properties)
 end
 
 function UI.section(parent, title, subtitle)
-	local frame = UI.frame(parent, {BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, subtitle and 66 or 38)})
-	UI.label(frame, title, {Font = Enum.Font.GothamBold, TextSize = 24, Size = UDim2.new(1, 0, 0, 32)})
+	local frame = UI.frame(parent, {BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, subtitle and 100 or 48)})
+	UI.label(frame, title, {Font = Enum.Font.GothamBold, TextSize = 19, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Size = UDim2.new(1, 0, 0, 46)})
 	if subtitle then
-		UI.label(frame, subtitle, {TextColor3 = UI.Colors.muted, TextSize = 13, Position = UDim2.fromOffset(0, 34), Size = UDim2.new(1, 0, 0, 30), TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
+		UI.label(frame, subtitle, {TextColor3 = UI.Colors.muted, TextSize = 12, Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 0, 50), TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
 	end
 	return frame
 end
@@ -428,11 +492,13 @@ function UI.rememberHero(heroId, source)
 	local origin = torso and torso.Position or Vector3.zero
 	for _, child in ipairs(source:GetDescendants()) do
 		if child:IsA("BasePart") and not portraitExcluded[child.Name] and (not tagged or child:GetAttribute("HeroVisual") == true) then
+			local mesh=child:FindFirstChildOfClass("SpecialMesh")
 			table.insert(parts, {
 				class = child.ClassName, name = child.Name, size = child.Size,
 				cf = CFrame.new(-origin) * child.CFrame, color = child.Color,
 				material = child.Material, shape = child:IsA("Part") and child.Shape or nil,
 				transparency = child.Transparency or 0,
+				meshType=mesh and mesh.MeshType, meshScale=mesh and mesh.Scale,
 			})
 		end
 	end
@@ -451,7 +517,8 @@ function UI.heroModel(parent, heroId, source)
 			Anchored = true, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false,
 		}
 		if descriptor.shape then properties.Shape = descriptor.shape end
-		UI.create(descriptor.class, properties, model)
+		local rendered=UI.create(descriptor.class, properties, model)
+		if descriptor.meshType then UI.create("SpecialMesh",{MeshType=descriptor.meshType,Scale=descriptor.meshScale},rendered) end
 	end
 	return model
 end
@@ -486,6 +553,39 @@ function UI.color(value)
 		return Color3.fromRGB(r, g, b)
 	end
 	return UI.Colors.green
+end
+
+-- Shared by collection controls: search accepts names with or without accents,
+-- and ties always resolve to the catalog order so live updates don't shuffle it.
+function UI.searchKey(value)
+	local text=string.lower(tostring(value or ""))
+	for _,pair in ipairs({{"á","a"},{"à","a"},{"â","a"},{"ã","a"},{"é","e"},{"ê","e"},{"í","i"},{"ó","o"},{"ô","o"},{"õ","o"},{"ú","u"},{"ç","c"},{"Á","a"},{"À","a"},{"Â","a"},{"Ã","a"},{"É","e"},{"Ê","e"},{"Í","i"},{"Ó","o"},{"Ô","o"},{"Õ","o"},{"Ú","u"},{"Ç","c"}}) do
+		text=string.gsub(text,pair[1],pair[2])
+	end
+	return (text:gsub("^%s+",""):gsub("%s+$",""))
+end
+
+function UI.collectionEntries(catalog,profile,options,language)
+	local entries,indexes={},{}
+	local query=UI.searchKey(options.query)
+	for index,id in ipairs(catalog.HeroOrder) do
+		indexes[id]=index
+		local def=catalog.Heroes[id]
+		local owned=(profile.heroes or {})[id]
+		local searchable=UI.searchKey(id.." "..def.name.pt.." "..def.name.en.." "..def.role.pt.." "..def.role.en)
+		if (options.ownership=="all" or owned) and (options.rarity=="all" or options.rarity==def.rarity)
+			and (query=="" or string.find(searchable,query,1,true)) then table.insert(entries,id) end
+	end
+	local function key(id)
+		local def=catalog.Heroes[id]
+		if options.sort=="name" then return UI.searchKey(def.name[language] or def.name.pt) end
+		if options.sort=="rarity" then return -(table.find(catalog.RarityOrder,def.rarity) or 0) end
+		if options.sort=="level" then return -((profile.heroes or {})[id] and profile.heroes[id].level or 0) end
+		if options.sort=="cost" then return def.cost end
+		return indexes[id]
+	end
+	table.sort(entries,function(a,b) local x,y=key(a),key(b); if x==y then return indexes[a]<indexes[b] end; return x<y end)
+	return entries
 end
 
 -- Every HUD below is laid out from the real usable screen size, in pixels.

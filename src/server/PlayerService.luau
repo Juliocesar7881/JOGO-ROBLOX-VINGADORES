@@ -811,12 +811,15 @@ function PlayerService:Award(player, awardId, reward)
 		end
 		if profile.stats.bosses >= 10 then achievement(profile, "bosses10", "Caçador de ameaças", "Threat hunter", now) end
 		if profile.stats.waves >= 100 then achievement(profile, "waves100", "Guardião das ondas", "Wave guardian", now) end
-		-- The campaign is beaten once every one of its five maps has been cleared.
-		local cleared = 0
-		for _, mapId in ipairs(self.catalog.MapOrder) do
-			if profile.campaign[mapId] and profile.campaign[mapId].normal then cleared += 1 end
+		-- Only authored campaign destinations count; other maps have other modes.
+		local cleared, required = 0, 0
+		for _, destination in pairs(self.catalog.Destinations) do
+			if destination.modeId=="normal" then
+				required += 1
+				if profile.campaign[destination.mapId] and profile.campaign[destination.mapId].normal then cleared += 1 end
+			end
 		end
-		if cleared >= #self.catalog.MapOrder then achievement(profile, "campaign", "Última Defesa", "Last Defense", now, "title") end
+		if required>0 and cleared >= required then achievement(profile, "campaign", "Última Defesa", "Last Defense", now, "title") end
 		local newLevel = levelFor(profile.xp, 50, xpThreshold)
 		if newLevel >= 10 then achievement(profile, "commander10", "Comandante", "Commander", now, "title") end
 		if newLevel >= 50 then achievement(profile, "commander50", "Comandante supremo", "Supreme commander", now, "title") end

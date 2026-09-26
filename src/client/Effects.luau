@@ -23,19 +23,20 @@ local function buildEnemy(def)
 	local color = UI.color(def.color)
 	local scale = def.boss and 2.1 or (family == "brute" and 1.45 or 1)
 	local torso = part(model, Vector3.new(1.6, 1.7, 0.85) * scale, color)
-	torso.Shape, torso.Material = Enum.PartType.Ball, def.boss and Enum.Material.SmoothPlastic or Enum.Material.Fabric
+	torso.Material = Enum.Material.SmoothPlastic
 	torso.Name = "Torso"
 	torso.CFrame = CFrame.new(0, 2 * scale, 0)
 	model.PrimaryPart = torso
 	local head = part(model, Vector3.new(1.05, 1, 0.95) * scale, color:Lerp(Color3.fromRGB(135, 174, 115), 0.35))
-	head.Shape = Enum.PartType.Ball
+	local headMesh=Instance.new("SpecialMesh")
+	headMesh.MeshType,headMesh.Parent=Enum.MeshType.Sphere,head
 	head.Name = "Head"
 	head.CFrame = CFrame.new(0, 3.35 * scale, 0)
 	local legHeight = 1.25 * scale
 	local legs, arms, wings = {}, {}, {}
 	for _, x in ipairs({-1, 1}) do
 		local arm = part(model, Vector3.new(0.48, 1.6, 0.5) * scale, color:Lerp(Color3.new(), 0.2))
-		arm.Shape = Enum.PartType.Ball
+		arm.Name = "Arm"
 		arm.CFrame = CFrame.new(x * 1.05 * scale, 1.95 * scale, -0.18 * scale) * CFrame.Angles(-0.3, 0, x * 0.16)
 		table.insert(arms, {part = arm, base = torso.CFrame:Inverse() * arm.CFrame, side = x})
 		local leg = part(model, Vector3.new(0.56 * scale, legHeight, 0.6 * scale), Color3.fromRGB(34, 38, 43))

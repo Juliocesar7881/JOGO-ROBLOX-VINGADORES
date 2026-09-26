@@ -71,6 +71,8 @@ local function harness(options)
 			if not options.stubbornEject then player.root.Position = position end
 		end,
 		available = function(player) return not blocked[player] end,
+		random = options.random,
+		previousMap = options.previousMap,
 		day = function() return options.day or 0 end,
 	})
 	local everyone = {}
@@ -108,7 +110,7 @@ do
 	h.step(0.25)
 	local snap = h.service:Snapshot(ana)
 	check(snap ~= nil, "stepping onto the campaign pad boards its car")
-	check(snap and snap.modeId == "normal" and snap.mapId == nil, "a newcomer's campaign portal runs training in Manhattan")
+	check(snap and snap.modeId == "normal" and snap.mapId == "manhattan", "a newcomer's campaign portal runs training in Manhattan")
 	check(snap and snap.host == true and #snap.riders == 1 and snap.max == 4, "the first rider is the host of a one-rider car")
 	check(snap and snap.remaining == 8, "a fresh car counts down from eight seconds, got " .. tostring(snap and snap.remaining))
 	check((h.log.changed[ana] or 0) >= 1, "boarding pushes the rider a new snapshot")
@@ -191,7 +193,7 @@ do
 	at(host, "normal")
 	h.step(0.25)
 	local plan = h.service:Snapshot(host)
-	check(plan and plan.modeId == "normal" and plan.mapId == nil, "map not disclosed before random departure")
+	check(plan and plan.modeId == "normal" and plan.mapId == "manhattan", "map not disclosed before random departure")
 	at(rookie, "normal")
 	h.step(0.25)
 	check(h.service:Snapshot(rookie) ~= nil, "trained players can join any normal map")
@@ -268,12 +270,34 @@ do
 	local vet = veteran()
 	h.add(vet); at(vet, "cards"); h.step(0.25)
 	local plan = h.service:Snapshot(vet)
-	check(plan and plan.modeId == "cards" and plan.mapId == nil, "cards portal waits for random selection")
+	check(plan and plan.modeId == "cards" and plan.mapId == "gamma", "cards portal announces Gamma")
 	h.step(9)
 	local run = h.log.launches[1]
 	check(run and run.modeId == "cards" and run.mapId ~= nil, "cards departure selects a real map")
 
 end
 
+print("--- fixed destinations ---")
+for index,id in ipairs({"ranked","ranked_wakanda","ranked_latveria","infinite"}) do
+	ZONES[id]={center=v3(100+index*30,4,0),size=v3(12,9,7),exit=v3(100+index*30,4,10)}
+end
+for _,id in ipairs({"normal","cards","infinite","ranked","ranked_wakanda","ranked_latveria"}) do
+	local h=harness()
+	local host,guest=veteran(),veteran()
+	host.profile.campaign.hydra={ranked=true}; guest.profile.campaign.hydra={ranked=true}
+	h.add(host,guest); at(host,id); at(guest,id); h.step(0.25)
+	check(h.service:Snapshot(host).mapId==Rules.PortalMap(id),"fixed destination announced: "..id)
+	h.step(9)
+	local run=h.log.launches[1]
+	check(run and #run.riders==2 and run.mapId==Rules.PortalMap(id) and run.modeId==Rules.PortalMode(host.profile,id),"duo arrives at authored map/mode: "..id)
+end
+do
+	local h=harness()
+	local p=veteran(); h.add(p); at(p,"cards"); h.step(0.25)
+	check(h.service:Snapshot(p).mapId=="gamma","map is known before departure")
+	h.step(9)
+	check(h.log.launches[1].mapId=="gamma" and h.log.launches[1].modeId=="cards","card portal always launches Gamma")
+	check(h.service.SelectMap==nil,"the client cannot reroute a fixed portal")
+end
 print(string.format("%s elevator: %d checks, %d failures", failures == 0 and "PASS" or "FAIL", checks, failures))
 if failures > 0 then error("elevator failed", 0) end

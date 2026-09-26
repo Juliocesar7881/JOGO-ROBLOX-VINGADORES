@@ -1,5 +1,168 @@
 # Refúgio da Aurora — revisão visual
 
+## Arquipélago e correção da rolagem — 25/09/2026
+
+A correção anterior do painel não cobria a reconstrução da janela enquanto
+o usuário estava rolando. Agora `ContextPanel` e `ContextBody` permanecem
+vivos nas atualizações do mesmo painel, inclusive no recálculo do layout.
+A substituição das linhas suspende a atualização do canvas vazio, evitando
+que o Roblox reduza a área rolável e leve `CanvasPosition` a zero. O relógio
+dos prêmios não reconstrói inventário/lojas; o indicador de prêmios continua
+atualizando separadamente.
+
+No renderer real do Studio, inventário, loja Robux, mapas, baús e prêmios
+foram rolados até 370 pixels. Cada painel recebeu 12 mudanças de perfil,
+além de uma reconstrução explícita de conteúdo: todos mantiveram o mesmo
+ScrollingFrame e a posição 370. Os testes do cliente também verificam que
+mudanças apenas no relógio dos prêmios preservam os cartões do inventário.
+
+O lobby recebeu três áreas ligadas por pontes de madeira:
+
+- Aldeia do Bosque: três cabanas de telhados diferentes, chaminés,
+  jardineiras, poço, piquenique e bancos utilizáveis.
+- Ilha dos Exploradores: percurso opcional de troncos, escadas e mirante.
+- Jardim das Estrelas: lago ornamental, flores, observatório e telescópio.
+
+Trilhas contornam a árvore central; placas e o guia em PT/EN indicam os
+destinos. Serviços e portais permanecem concentrados na praça. A construção
+final tem 3.216 peças, abaixo do orçamento de 3.500, e mantém os 15 pontos
+de interação anteriores. As novas áreas são exploração livre, sem exigir
+compra ou oferecer vantagens nas partidas.
+
+Verificação automatizada: suíte completa aprovada antes do acabamento;
+após as adições, testes de mundo (4.082 verificações) e cliente (3.348,
+seis resoluções) aprovados novamente. Desempenho/toque em aparelhos reais,
+compras publicadas e teleporte entre lugares continuam sendo validações
+separadas. A arte desta entrega usa geometria e materiais do Roblox.
+
+No Studio, o avatar atravessou as três pontes, subiu a escada do mirante e
+entrou em uma cabana. A primeira travessia leste revelou uma pedra e uma
+lanterna bloqueando o caminho: os obstáculos foram reposicionados/removidos,
+e a repetição passou. Um teste automatizado de espaço livre protege agora
+o corredor central das pontes contra árvores, pedras e postes da expansão.
+Captura da aldeia em `test-results/lobby-village-review.png`.
+
+## Destinos fixos, painéis e personagens — revisão anterior, 25/09/2026
+
+Esta revisão substitui a escolha livre descrita na seção histórica abaixo.
+
+| Portal | Mapa exclusivo | Regra |
+|---|---|---|
+| Campanha | Ruas de Manhattan | 50 ondas |
+| Cartas | Complexo Gama | 50 ondas, cartas a cada cinco |
+| Infinito | Ponte de Asgard | Até a derrota |
+| Competitivo 1 | Instalação da HYDRA | Ranqueado, 50 ondas |
+| Competitivo 2 | Fronteira de Wakanda | Ranqueado, 50 ondas |
+| Competitivo 3 | Fortaleza da Latvéria | Ranqueado, 50 ondas |
+
+Os três portais competitivos ficam juntos à direita da praça, em posições
+distintas. Entrar na área inicia a contagem para até quatro jogadores.
+Letreiros mostram mapa e modo; prédios, tanques, cristais e colunas diferenciam
+as entradas. Jogar e o balcão da praça oferecem os mesmos destinos, com uma
+ação direta. Não existe mais seleção aleatória nem troca de mapa pelo líder.
+Os requisitos de desbloqueio permanecem e o treino é opcional, em oito ondas.
+
+Asgard tem uma rota própria, paleta dourada, mármore, torres e iluminação
+quente. A API valida cada combinação; enviar campos de outro mapa junto a um
+destino não altera o que ele representa. Os placares mostram só os mapas do
+modo selecionado. A conquista de campanha conta apenas destinos de campanha;
+progresso histórico dos outros mapas é preservado.
+
+Nos painéis, o tamanho rolável vem somente do conteúdo da lista. Foi removida
+a combinação de medição automática com escala animada da janela. Atualizações
+do perfil preservam a posição da rolagem. O teste repete 25 atualizações em
+seis resoluções e verifica posição, altura e rolagem. No Studio, posição e
+extensão do inventário permaneceram constantes durante a observação; a rolagem
+continuou respondendo à interação. O relato original de descida contínua não
+se reproduziu no primeiro teste parado, antes da correção preventiva.
+
+Os 36 heróis compartilham a correção de geometria: braços/pernas contínuos,
+tronco sólido, materiais lisos e cabeça com mesh esférica que preserva as
+proporções. Retratos copiam essa mesh. Inimigos também usam torso e braços
+contínuos. Rocket, Groot e outros mantêm a escala de personagem nas torres.
+Não foram importados assets nem criadas exposições permanentes no lobby.
+
+Capturas de revisão em `test-results/heroes-shapes-fixed.png`,
+`test-results/heroes-inventory-fixed.png` e `test-results/lobby-fixed-destinations.png`.
+Os bonecos alinhados na última captura são clones temporários de inspeção,
+ausentes do build. Os testes de combate, mundo, perfis, portais e cliente são
+executados com `python tools/test.py`; compras publicadas, teleporte real e
+desempenho em celular seguem pendentes de validação externa.
+
+Resultado final: suíte completa aprovada, incluindo 3.936 verificações de
+mundo/modelos, 3.186 do cliente, 287 do bootstrap do servidor e 1.245 da
+simulação de partidas. Os três arquivos `dist/Doomsday-*.rbxlx` foram regenerados.
+
+## Histórico: escolha livre de mapas — substituída
+
+Mapa e modo são escolhas separadas. O botão Jogar mostra o mapa selecionado;
+tocar nele abre seis cartões: os cinco cenários e Aleatório. Cada cenário
+mostra um desenho das rotas reais do catálogo. Escolher um cartão leva aos
+modos Campanha, Cartas, Ranqueado e Infinito, com seus requisitos existentes.
+O treino continua separado em Manhattan, com oito ondas.
+
+O balcão Escolher mapa, na praça, abre a mesma galeria. Nos portais, o primeiro
+jogador é o líder e usa o botão Mapa para escolher para todos. Abrir a galeria
+concede uma única janela de até 20 segundos por grupo; confirmar retoma a
+contagem curta. A escolha aparece no HUD de todos. Sair do portal transfere
+a liderança ao próximo participante, preservando o destino. O servidor valida
+líder, proximidade, identificador do grupo e mapa antes de aceitar a alteração.
+
+Aleatório exclui o último mapa registrado para o líder naquele servidor.
+Esse histórico é temporário e não persiste entre servidores. É possível
+repetir qualquer mapa escolhendo seu cartão explicitamente.
+
+Referência de organização: o [blog oficial do Toilet Tower Defense](https://blog.toilettowerdefense.com/og-event-update/)
+descreve um lobby com mapas e dificuldades próprias. A implementação aqui usa
+os cenários, desenhos e interface do projeto; não importa assets desse jogo.
+
+Verificação automatizada: 189 verificações do serviço de portais, 2.772 do
+cliente em seis resoluções, 3.457 do mundo e toda a suíte `python tools/test.py`
+passaram. Incluem escolha explícita, sorteio, transferência de liderança,
+pedidos inválidos e envio da seleção pelo HUD. Os três lugares foram gerados
+novamente em `dist/`. O lobby agora tem 2.383 peças e 15 pontos interativos.
+Teleporte publicado e uso em celulares reais continuam como validações externas.
+
+No Studio, a galeria foi inspecionada no renderer. Um pedido de início pelo
+cliente com `wakanda` + `normal` retornou sucesso; o estado do servidor confirmou
+esse par e o HUD exibiu Fronteira de Wakanda / Campanha, com 50 ondas. Capturas
+locais: `test-results/map-gallery.png` e `test-results/map-selected-wakanda.png`.
+O código temporário que abria a galeria para inspeção foi removido após o teste.
+
+## Continuação — 25/09/2026
+
+O lobby ganhou quatro serviços físicos: Nico/guia, equipe, Academia e bases.
+Todos abrem as telas reais existentes e usam a validação de proximidade do
+servidor. Missões e placar foram movidos para a aproximação do bosque, voltados
+para a praça; não é mais necessário passar por trás dos portais para encontrá-los.
+
+O guia também está no HUD. Ele indica treino para iniciantes, talentos quando
+há pontos disponíveis ou preparação da equipe, conforme o perfil. Seus oito
+atalhos abrem jogar, equipe, bases, Academia, baús, missões, placares e opções.
+Não concede recompensas nem altera o inventário por conta própria.
+
+A vila agora tem um farol, balcões de madeira, molduras nas placas, Nico
+modelado no cenário, três bancos com assentos utilizáveis, flores e acabamento
+na praça. Bandeirolas e cristais têm movimento local; menos efeitos interrompe
+essas animações. A câmera inicial enquadra os portais e o farol.
+
+As placas principais e os quatro novos prompts alternam entre português e
+inglês. Visitantes que caem abaixo da ilha retornam ao spawn com velocidade
+zerada; participantes de partidas e jogadores em teleporte não entram nesse
+processamento. A recuperação usa o loop existente de 0,25 segundo do lobby.
+
+Verificação: testes reais dos módulos com dublês do Roblox cobrem os oito
+atalhos nas seis resoluções, tradução de placas/prompts, distância dos 14
+pontos de interação e recuperação de queda. A construção tem 2.369 peças,
+abaixo do orçamento de 3.500. O guia e o cenário foram inspecionados no Studio.
+Esta revisão não substitui testes de toque/desempenho em aparelhos reais,
+nem valida compras e teleporte numa experiência publicada.
+
+No Studio, a entrada no piso verde abriu a loja de baús de heróis e o teste
+de queda retornou o avatar a aproximadamente `(0, 3.3, 345)`, com velocidade
+vertical próxima de zero. Os suportes centrais que escondiam o texto dos
+quadros foram substituídos por pés laterais.
+
 ## Entrega
 
 - Praça de pedra com grama integrada, caminhos até portais e lojas, jardins,

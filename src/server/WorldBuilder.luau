@@ -40,6 +40,7 @@ local function wallSign(parent,name,cf,size,title,subtitle,tint)
 	gui.LightInfluence,gui.Parent=0,panel
 	local function text(value,y,h,color,fontSize)
 		local t=Instance.new("TextLabel")
+		t.Name=y==34 and "Title" or "Subtitle"
 		t.BackgroundTransparency,t.Text,t.Font=1,value,Enum.Font.GothamBlack
 		t.Position,t.Size=UDim2.new(0.04,0,0,y),UDim2.new(0.92,0,0,h)
 		t.TextColor3,t.TextSize,t.Parent=color,fontSize,gui
@@ -115,7 +116,8 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 	-- The local -Z axis is the face of every figure, also used by portrait
 	-- cameras. Posed limbs and all accessories share the same scale/origin.
 	local V = Vector3.new
-	local metal, fabric = Enum.Material.Metal, Enum.Material.Fabric
+	-- Clean toy-like surfaces keep faces and costume colors readable at game scale.
+	local metal, fabric = Enum.Material.SmoothPlastic, Enum.Material.SmoothPlastic
 	local red, gold = Color3.fromRGB(183, 36, 49), Color3.fromRGB(227, 181, 78)
 	local navy, ink = Color3.fromRGB(24, 53, 98), Color3.fromRGB(24, 28, 39)
 	local silver, skin = Color3.fromRGB(184, 198, 212), Color3.fromRGB(232, 181, 147)
@@ -176,34 +178,40 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 			made:SetAttribute("PoseGroup", side < 0 and "LeftArm" or "RightArm")
 			made:SetAttribute("PoseJoint", (origin * CFrame.new(V(side * 1.14 * width, 4.22, 0) * scale)).Position)
 		elseif position.Y > 2.45 then made:SetAttribute("PoseGroup", "Body") end
-		if shape then made.Shape = shape end
+		made.Shape = shape or Enum.PartType.Block
 		return made
 	end
 	local function oval(name, size, position, tint, surface, rotation)
-		return piece(name, size, position, tint, surface, rotation, Enum.PartType.Ball)
+		local made=piece(name, size, position, tint, surface, rotation)
+		-- PartType.Ball normalizes dimensions in the renderer: it turns long
+		-- body pieces into disconnected beads. A mesh preserves this ellipsoid.
+		local mesh=Instance.new("SpecialMesh")
+		mesh.MeshType=Enum.MeshType.Sphere
+		mesh.Parent=made
+		return made
 	end
 	local function link(name, from, to, thickness, tint, surface)
 		local length = (to - from).Magnitude
 		return piece(name, V(thickness, thickness, length + thickness * 0.25), (from + to) / 2,
-			tint, surface, CFrame.lookAt(V(), to - from), Enum.PartType.Ball)
+			tint, surface, CFrame.lookAt(V(), to - from))
 	end
 	local function disc(name, center, diameter, thickness, tint, surface)
 		return piece(name, V(thickness, diameter, diameter), center, tint, surface,
 			CFrame.Angles(0, math.pi / 2, 0), Enum.PartType.Cylinder)
 	end
-	local torso = oval("Suit", V(2.3 * width, 2.35, 1.38), V(0, 3.48, 0), suit)
-	oval("Abdomen", V(1.72 * width, 1.4, 1.2), V(0, 2.67, 0), suit)
+	local torso = piece("Suit", V(2.1 * width, 1.9, 1.25), V(0, 3.48, 0), suit)
+	piece("Abdomen", V(1.72 * width, 1.1, 1.15), V(0, 2.67, 0), suit)
 	piece("Belt", V(1.85 * width, 0.3, 1.28), V(0, 2.35, 0), bulky and trim or ink, metal)
 	piece("Buckle", V(0.38, 0.34, 0.13), V(0, 2.35, -0.7), trim, metal)
 	oval("Collar", V(1.18, 0.5, 1.02), V(0, 4.56, 0), suit)
-	local head = oval("Mask", V(bulky and 1.6 or 1.45, 1.6, 1.38), V(0, 5.38, -0.05), face, bulky and Enum.Material.SmoothPlastic or material)
+	local head = oval("Mask", V(bulky and 1.6 or 1.45, 1.6, 1.38), V(0, 5.38, -0.05), face, Enum.Material.SmoothPlastic)
 	local hands = {}
 	for _, side in ipairs({ -1, 1 }) do
 		local hip, knee, ankle = V(side * 0.57 * width, 2.12, 0), V(side * 0.69 * width, 1.21, -side * 0.07), V(side * 0.78 * width, 0.37, side * 0.13)
 		local legColor = (heroId == "spiderman" or bulky) and trim or suit:Lerp(ink, 0.25)
 		link("Thigh", hip, knee, bulky and 1.1 or 0.8, legColor)
 		link("Shin", knee, ankle, bulky and 0.86 or 0.65, bulky and suit or trim)
-		oval("Boot", V(bulky and 1.15 or 0.83, 0.54, 1.32), ankle + V(0, -0.1, -0.28), bulky and suit or (heroId == "spiderman" and red or trim), bulky and Enum.Material.SmoothPlastic or material)
+		piece("Boot", V(bulky and 1.15 or 0.83, 0.54, 1.12), ankle + V(0, -0.1, -0.18), bulky and suit or (heroId == "spiderman" and red or trim), Enum.Material.SmoothPlastic)
 		local shoulder = V(side * 1.14 * width, 4.22, 0)
 		local elbow = V(side * 1.65 * width, 3.53, -0.15)
 		local hand = V(side * 1.58 * width, 2.84, -0.49)
@@ -218,7 +226,7 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		hands[side] = hand
 		oval("Shoulder", V(bulky and 1.7 or 1.05, bulky and 1.48 or 0.94, bulky and 1.47 or 1.08), shoulder, suit)
 		link("UpperArm", shoulder, elbow, bulky and 1.25 or 0.72, suit)
-		oval("Elbow", V(0.66, 0.66, 0.66), elbow, bulky and suit or ink)
+		oval("Elbow", V(0.6, 0.6, 0.6), elbow, suit)
 		link("Gauntlet", elbow, hand, bulky and 1.12 or 0.76, (heroId == "spiderman" or bulky) and suit or trim)
 		oval("Hand", V(bulky and 1.18 or 0.67, bulky and 1.06 or 0.67, bulky and 1.05 or 0.72), hand, bulky and suit or (heroId == "wanda" or heroId == "strange") and skin or suit)
 	end
@@ -488,6 +496,12 @@ end
 -- this is a top-down tower defense, and reading 80 enemies at once matters
 -- more than atmosphere.
 local MAP_LIGHTING = {
+	asgard = {
+		sun=2.6,clockTime=15.5,ambient={128,115,99},outdoor={174,153,120},
+		atmosphereColor={242,215,174},atmosphereDensity=0.2,glare=0.12,
+		tint={255,239,205},contrast=0.04,saturation=0.06,brightness=0.02,
+		bloom=0.25,fogColor={178,157,137},fogEnd=720,
+	},
 	manhattan = {
 		sun = 2.3, clockTime = 16.4, ambient = { 104, 107, 128 }, outdoor = { 128, 137, 151 },
 		atmosphereColor = { 190, 208, 235 }, atmosphereDensity = 0.22, glare = 0.08,
@@ -562,7 +576,6 @@ local MODE_COLOR = {
 	infinite = Color3.fromRGB(110, 140, 255),
 }
 -- Four modes, evenly spaced along the operations gates.
-local MODE_X = { -45, -15, 15, 45 }
 
 -- The premium shop: everything sold for Robux, kept apart from the chest shop.
 local SHOP_STANDS = {
@@ -583,7 +596,7 @@ function World:ApplyLobbyLighting()
 	local lighting = game:GetService("Lighting")
 	lighting.ClockTime, lighting.Brightness = 15.6, 2.5
 	lighting.ExposureCompensation = 0.1
-	lighting.Ambient, lighting.OutdoorAmbient = Color3.fromRGB(128, 143, 164), Color3.fromRGB(155, 166, 186)
+	lighting.Ambient, lighting.OutdoorAmbient = Color3.fromRGB(88, 95, 96), Color3.fromRGB(137, 146, 136)
 	lighting.FogColor, lighting.FogStart, lighting.FogEnd = Color3.fromRGB(31, 40, 58), 260, 900
 	local atmos = ensureLightingEffect(lighting, "Atmosphere", "Atmosphere")
 	atmos.Density, atmos.Offset, atmos.Color, atmos.Decay, atmos.Glare, atmos.Haze = 0.26, 0.15, Color3.fromRGB(147, 179, 184), Color3.fromRGB(90, 110, 130), 0.1, 1
@@ -633,12 +646,16 @@ end
 -- menu at all (ElevatorService owns the pad). The sign beside it is written
 -- by each viewer's client with the map this portal will take *them* to, and
 -- a portal they cannot use yet is shrouded locally, per viewer.
-local function buildModePortal(lobby, x, z, modeId, mode)
-	local tint = MODE_COLOR[modeId] or MODE_COLOR.normal
+local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
+	local modeId=destination.modeId
+	local colors={manhattan={255,164,112},gamma={135,235,113},asgard={255,206,82},hydra={255,129,134},wakanda={203,170,255},latveria={104,232,190}}
+	local tint = rgb(colors[destination.mapId])
 	local model = Instance.new("Model")
-	model.Name, model.Parent = "Portal_" .. modeId, lobby
+	model.Name, model.Parent = "Portal_" .. portalId, lobby
 	model:SetAttribute("Kind", "ModePortal")
 	model:SetAttribute("ModeId", modeId)
+	model:SetAttribute("PortalId", portalId)
+	model:SetAttribute("MapId", destination.mapId)
 	local plinth = part(model, "Plinth", Vector3.new(15, 1, 10), CFrame.new(x, 0.5, z), Color3.fromRGB(38, 50, 65), Enum.Material.DiamondPlate)
 	local pad = part(model, "Pad", Vector3.new(12, 0.12, 7), CFrame.new(x, 1.06, z + 0.5), tint, Enum.Material.Neon)
 	pad.CanCollide, pad.Transparency = false, 0.35
@@ -660,7 +677,35 @@ local function buildModePortal(lobby, x, z, modeId, mode)
 	emitter(pad, tint, 6, 2, 0.7, 1.2, Vector3.new(0, 5, 0))
 	local glow = Instance.new("PointLight")
 	glow.Color, glow.Range, glow.Brightness, glow.Parent = tint, 18, 0.9, glass
-	wallSign(model,"ModeHeader",CFrame.new(x,17,z-3.6)*CFrame.Angles(0,math.pi,0),Vector3.new(16,3.8,0.5),upper(mode.name.pt),"SELECIONE SUA OPERAÇÃO",tint)
+	wallSign(model,"ModeHeader",CFrame.new(x,17,z-3.6)*CFrame.Angles(0,math.pi,0),Vector3.new(23,4.5,0.5),upper(map.name.pt),upper(mode.name.pt),tint)
+	-- Small landmarks identify the destination even before the sign is read.
+	for _,side in ipairs({-1,1}) do
+		local at=CFrame.new(x+side*10,0,z-4)
+		local function detail(name,size,offset,color,material)
+			return artPart(model,name,size,at*offset,color,material)
+		end
+		if map.id=="manhattan" then
+			detail("SkylineTower",Vector3.new(3.5,10,4),CFrame.new(0,5,0),Color3.fromRGB(123,91,72),Enum.Material.Brick)
+			for floor=1,4 do
+				for column=-1,1,2 do detail("SkylineWindow",Vector3.new(0.8,1,0.1),CFrame.new(column,1+floor*1.8,2.06),ART.gold,Enum.Material.Neon) end
+			end
+		elseif map.id=="gamma" then
+			local tank=detail("GammaTank",Vector3.new(3.8,7,3.8),CFrame.new(0,3.5,0),Color3.fromRGB(89,111,81),Enum.Material.Metal)
+			tank.Shape=Enum.PartType.Cylinder; tank.CFrame=at*CFrame.new(0,3.5,0)*CFrame.Angles(0,0,math.pi/2); tank.Size=Vector3.new(7,3.8,3.8)
+			detail("GammaWindow",Vector3.new(2.4,4,0.2),CFrame.new(0,3.8,1.9),tint,Enum.Material.Neon)
+		elseif map.id=="wakanda" then
+			detail("VibraniumPlinth",Vector3.new(4,2,4),CFrame.new(0,1,0),ART.gold,Enum.Material.Marble)
+			detail("VibraniumCrystal",Vector3.new(2.6,6,2.6),CFrame.new(0,5,0)*CFrame.Angles(0.16,0,side*0.2),tint,Enum.Material.Neon)
+		elseif map.id=="hydra" then
+			detail("HydraBunker",Vector3.new(4.5,5,4.5),CFrame.new(0,2.5,0),Color3.fromRGB(70,77,70),Enum.Material.DiamondPlate)
+			detail("HydraBand",Vector3.new(4.6,0.7,4.6),CFrame.new(0,4.2,0),tint,Enum.Material.Neon)
+		else
+			local golden=map.id=="asgard"
+			detail("CitadelPillar",Vector3.new(3.5,10,3.5),CFrame.new(0,5,0),golden and ART.pearl or Color3.fromRGB(90,93,99),golden and Enum.Material.Marble or Enum.Material.Cobblestone)
+			detail("CitadelCrown",Vector3.new(4.4,0.9,4.4),CFrame.new(0,10,0),golden and ART.gold or tint,Enum.Material.Metal)
+			for corner=-1,1,2 do detail("CitadelFinial",Vector3.new(0.8,2,0.8),CFrame.new(corner*1.5,11,1.5),golden and ART.gold or tint,Enum.Material.Metal) end
+		end
+	end
 	-- The per-viewer sign: which map, how many waves, or what is still missing.
 	local sign = part(model, "Sign", Vector3.new(11, 2.2, 0.3), CFrame.new(x, 1.9, z + 5.6) * CFrame.Angles(0, math.pi, 0), ART.ink, Enum.Material.Metal)
 	local surface = Instance.new("SurfaceGui")
@@ -846,10 +891,11 @@ function World:BuildLobby()
 	wallSign(lobby,"CommandIdentity",CFrame.new(0,8,276)*CFrame.Angles(0,math.pi,0),Vector3.new(18,4,0.5),"DOOMSDAY","REFÚGIO DA AURORA / AURORA REFUGE",ART.gold)
 
 	-- Four mode portals: color, signage and unlock state are all per mode,
-	-- never a shared tabbed list. The map behind them is drawn, never chosen.
-	for index, modeId in ipairs(self.catalog.PortalOrder) do
-		local _, zone = buildModePortal(lobby, MODE_X[index], 300, modeId, self.catalog.Modes[modeId])
-		self.portalZones[modeId] = zone
+	-- never a shared tabbed list. Each group's host may choose its map.
+	for _, portalId in ipairs(self.catalog.DestinationOrder) do
+		local destination=self.catalog.Destinations[portalId]
+		local _, zone = buildModePortal(lobby, destination.x, destination.z, portalId, self.catalog.Modes[destination.modeId], destination, self.catalog.Maps[destination.mapId])
+		self.portalZones[portalId] = zone
 	end
 
 	-- The collection lives in the HUD; the plaza stays clear of hero statues.
@@ -881,8 +927,8 @@ function World:BuildLobby()
 		"LOJA PREMIUM", "ROBUX", Color3.fromRGB(207, 180, 231))
 
 	-- Mission board and hall-of-fame totem flank the bridge entrance.
-	buildBoard(lobby, -14, 251, "quests", "MISSÕES\nDA RESISTÊNCIA", self.openPanel)
-	local _, leaderboardText = buildBoard(lobby, 14, 251, "leaderboard", "SALÃO DA FAMA\nCarregando…", self.openPanel)
+	buildBoard(lobby, -23, 393, "quests", "MISSÕES\nDA RESISTÊNCIA", self.openPanel)
+	local _, leaderboardText = buildBoard(lobby, 23, 405, "leaderboard", "SALÃO DA FAMA\nCarregando…", self.openPanel)
 	self.leaderboardText = leaderboardText
 
 	-- Engine nacelles and a suspended deck silhouette make the hub readable from above.
@@ -896,10 +942,26 @@ function World:BuildLobby()
 	self:DressLobby(lobby)
 	self:ArtDirectLobby(lobby)
 	self:BuildForestSanctuary(lobby)
+	self:FinishLobby(lobby)
+	self:ExpandForestVillage(lobby)
 end
 
 -- Check root positions on the server, not Touched events from every limb.
 -- Closing a menu while standing on a pad keeps it closed until re-entry.
+function World:RecoverLobbyVisitors(players)
+	-- Only visitors supplied by the lobby loop are eligible: never teleport a
+	-- commander out of an active battle or an account waiting on a transfer.
+	for _,player in ipairs(players) do
+		local character=player.Character
+		local root=character and character:FindFirstChild("HumanoidRootPart")
+		if root and root.Position.Y < -24 then
+			character:PivotTo(CFrame.new(self.lobbySpawn))
+			root.AssemblyLinearVelocity=Vector3.zero
+			root.AssemblyAngularVelocity=Vector3.zero
+		end
+	end
+end
+
 function World:StepShopEntries(players)
 	local occupants={}
 	for _,player in ipairs(players) do
@@ -986,6 +1048,7 @@ function World:BuildForestSanctuary(lobby)
 			local tint=ancient and Color3.fromRGB(225-i*12,159+i*11,53+i*9) or Color3.fromRGB(48+i*8,116+i*12,61+i*7)
 			local leaf=piece(ancient and "AuroraCanopy" or "ForestCanopy",V(crown,crown*0.77,crown),CFrame.new(endpoint)*CFrame.Angles(0,seed,0),tint,Enum.Material.Grass,false)
 			leaf.Shape=Enum.PartType.Ball
+			leaf.CastShadow=ancient or i==1
 		end
 	end
 	-- Deliberately keep the plaza, portal approach and signed trails clear.
@@ -1108,6 +1171,207 @@ function World:BuildForestSanctuary(lobby)
 	wallSign(forest,"ForestDirections",CFrame.new(14,3.2,398),V(11,3,0.45),"BOSQUE DA AURORA","TRILHAS  /  MIRANTE  /  ENCONTROS",ART.gold)
 end
 
+-- Optional exploration radiates from the compact service plaza. Each island
+-- has a different silhouette and a continuous route back to the main woods.
+function World:ExpandForestVillage(lobby)
+	local scene=Instance.new("Model")
+	scene.Name,scene.Parent="AuroraArchipelago",lobby
+	local V=Vector3.new
+	local wood=Color3.fromRGB(119,81,51)
+	local cream=Color3.fromRGB(234,215,176)
+	local stone=Color3.fromRGB(99,115,103)
+	local grass=Color3.fromRGB(92,153,78)
+	local gold=Color3.fromRGB(236,186,84)
+	local leaf=Color3.fromRGB(68,127,88)
+	local function p(name,size,cf,color,material,solid)
+		local obj=artPart(scene,name,size,cf,color,material)
+		obj.CanCollide=solid==true
+		return obj
+	end
+	local function disk(name,at,diameter,height,color,material,solid)
+		local obj=p(name,V(height,diameter,diameter),CFrame.new(at)*CFrame.Angles(0,0,math.pi/2),color,material,solid)
+		obj.Shape=Enum.PartType.Cylinder
+		return obj
+	end
+	local function beam(name,a,b,width,height,color,material,solid)
+		return p(name,V(width,height,(b-a).Magnitude),CFrame.lookAt((a+b)/2,b),color,material,solid)
+	end
+	local function trail(a,b,width)
+		beam("IslandTrail",a,b,width,0.16,Color3.fromRGB(204,183,137),Enum.Material.Sand,true)
+	end
+	local function sign(name,position,pt,en,subPT,subEN,tint)
+		local facing=name=="PlazaDirections" and math.pi or 0
+		wallSign(scene,name,CFrame.new(position)*CFrame.Angles(0,facing,0),V(17,4,0.4),pt,subPT,tint)
+		local board=scene:FindFirstChild(name)
+		local surface=board and board:FindFirstChild("Artwork")
+		if surface then
+			for _,entry in ipairs({{"Title",pt,en},{"Subtitle",subPT,subEN}}) do
+				local text=surface:FindFirstChild(entry[1])
+				if text then text:SetAttribute("LobbyTextPT",entry[2]); text:SetAttribute("LobbyTextEN",entry[3]) end
+			end
+		end
+		for _,side in ipairs({-1,1}) do p("IslandSignPost",V(0.6,5,0.6),CFrame.new(position+V(side*7.4,-3,0)),wood,Enum.Material.Wood,true) end
+	end
+	local function island(id,x,z,diameter)
+		disk(id.."Cliff",V(x,-11,z),diameter-3,21,stone,Enum.Material.Slate,true)
+		local top=disk(id.."Ground",V(x,-1,z),diameter,2,grass,Enum.Material.Grass,true)
+		top:SetAttribute("ExplorationIsland",id)
+		disk(id.."Underside",V(x,-27,z),diameter*0.7,14,Color3.fromRGB(75,93,88),Enum.Material.Rock,true)
+	end
+	local function bridge(id,a,b)
+		local direction=(b-a).Unit
+		local side=V(-direction.Z,0,direction.X)
+		local deck=beam("BridgeDeck",a,b,10,0.7,wood,Enum.Material.WoodPlanks,true)
+		deck:SetAttribute("BridgeId",id)
+		for _,s in ipairs({-1,1}) do
+			beam("BridgeRail",a+side*s*5+V(0,3,0),b+side*s*5+V(0,3,0),0.3,0.4,cream,Enum.Material.Wood,true)
+			for i=0,4 do
+				local at=a:Lerp(b,i/4)+side*s*5
+				p("BridgePost",V(0.65,4,0.65),CFrame.new(at+V(0,1.6,0)),wood,Enum.Material.Wood,true)
+			end
+		end
+		for i=1,5 do
+			local at=a:Lerp(b,i/6)
+			p("BridgeCrossPlank",V(10,0.12,0.3),CFrame.lookAt(at+V(0,0.4,0),at+direction+V(0,0.4,0)),cream,Enum.Material.Wood,false)
+		end
+	end
+	local function tree(x,z,h,tint)
+		p("OuterTrunk",V(2,h*0.7,2),CFrame.new(x,h*0.35,z),wood,Enum.Material.Wood,true)
+		for i=0,2 do
+			local crown=p("OuterCanopy",V(14-i*2,10,14-i*2),CFrame.new(x+(i-1)*2,h*0.62+i*3,z),tint,Enum.Material.Grass,false)
+			local mesh=Instance.new("SpecialMesh"); mesh.MeshType=Enum.MeshType.Sphere; mesh.Parent=crown
+		end
+	end
+	local function seat(x,y,z,angle)
+		local cf=CFrame.new(x,y,z)*CFrame.Angles(0,angle or 0,0)
+		local chair=Instance.new("Seat")
+		chair.Name,chair.Size,chair.CFrame="ExplorerSeat",V(3,0.6,2.4),cf
+		chair.Anchored,chair.Color,chair.Material=true,wood,Enum.Material.WoodPlanks
+		chair.Parent=scene
+		p("ExplorerSeatBack",V(3,2,0.4),cf*CFrame.new(0,1,1.2),cream,Enum.Material.Wood,true)
+	end
+	island("Explorer",-204,426,124)
+	island("Starlight",194,460,136)
+	island("Woodland",0,556,178)
+	bridge("explorers",V(-120,0.65,400),V(-165,0.65,419))
+	bridge("starlight",V(119,0.65,431),V(157,0.65,447))
+	bridge("woodland",V(0,0.65,484),V(0,0.65,516))
+	-- Walk around the Aurora tree's trunk and roots to reach the north bridge.
+	trail(V(28,0.18,438),V(28,0.18,478),12)
+	trail(V(28,0.18,478),V(0,0.18,484),12)
+	trail(V(0,0.18,516),V(0,0.18,581),13)
+	trail(V(-165,0.18,419),V(-216,0.18,432),11)
+	trail(V(157,0.18,447),V(222,0.18,461),11)
+	trail(V(-43,0.18,535),V(43,0.18,535),11)
+	trail(V(-43,0.18,535),V(-43,0.18,541),10)
+	trail(V(43,0.18,535),V(43,0.18,541),10)
+	-- Small village: open frontages, colored roofs and places to sit together.
+	for i,def in ipairs({{-43,550,Color3.fromRGB(171,86,74)},{43,550,Color3.fromRGB(77,132,139)},{0,598,Color3.fromRGB(128,103,166)}}) do
+		local x,z,tint=def[1],def[2],def[3]
+		p("CottageDeck",V(22,1,18),CFrame.new(x,0.5,z),wood,Enum.Material.WoodPlanks,true)
+		p("CottageBack",V(22,9,0.8),CFrame.new(x,5,z+8),cream,Enum.Material.Plaster,true)
+		for _,side in ipairs({-1,1}) do
+			p("CottageWall",V(0.8,9,16),CFrame.new(x+side*10.6,5,z),cream,Enum.Material.Plaster,true)
+			p("CottageRoof",V(12.5,0.8,21),CFrame.new(x+side*5.6,11,z)*CFrame.Angles(0,0,-side*0.3),tint,Enum.Material.WoodPlanks,true)
+			p("CottagePillar",V(1,10,1),CFrame.new(x+side*9,5,z-8),wood,Enum.Material.Wood,true)
+			p("CottageWindow",V(0.1,3.2,3),CFrame.new(x+side*11.1,5,z),Color3.fromRGB(164,219,205),Enum.Material.Glass,false)
+		end
+		p("CottageCounter",V(9,2.5,3),CFrame.new(x,2.2,z+4),tint,Enum.Material.WoodPlanks,true)
+		seat(x-5,1.4,z+3,math.pi/2); seat(x+5,1.4,z+3,-math.pi/2)
+		p("CottageStep",V(10,0.45,3),CFrame.new(x,0.2,z-10),stone,Enum.Material.Cobblestone,true)
+		p("CottageLintel",V(21,0.8,0.9),CFrame.new(x,9,z-8.3),wood,Enum.Material.Wood,true)
+		p("CottageRidge",V(0.7,0.7,22),CFrame.new(x,13,z),cream,Enum.Material.Wood,false)
+		p("CottageChimney",V(2.4,6,2.4),CFrame.new(x+6,12,z+3),stone,Enum.Material.Brick,true)
+		p("CottageChimneyCap",V(3.2,0.6,3.2),CFrame.new(x+6,15.2,z+3),cream,Enum.Material.Slate,false)
+		for _,side in ipairs({-1,1}) do
+			p("CottageFrontWall",V(4.2,8,0.8),CFrame.new(x+side*8,5,z-8),cream,Enum.Material.Plaster,true)
+			p("CottagePlanter",V(4.5,1.4,2.3),CFrame.new(x+side*8,1,z-10),wood,Enum.Material.WoodPlanks,true)
+			p("CottageHerbs",V(4,0.7,2),CFrame.new(x+side*8,2,z-10),leaf,Enum.Material.Grass,false)
+			for f=-1,1 do p("CottageBlossom",V(0.6,0.35,0.6),CFrame.new(x+side*8+f*1.2,2.5,z-10),i==1 and gold or Color3.fromRGB(232,152,174),Enum.Material.SmoothPlastic,false) end
+		end
+	end
+	-- A shared well and picnic corner give the village a lived-in centre.
+	disk("VillageWellBase",V(22,0.4,574),12,0.8,stone,Enum.Material.Cobblestone,true)
+	disk("VillageWellWater",V(22,1,574),7,0.3,Color3.fromRGB(89,161,172),Enum.Material.Glass,false)
+	for i=0,9 do
+		local a=i*math.pi/5
+		p("VillageWellStone",V(2.7,2.4,1.3),CFrame.new(22+math.sin(a)*4,1.6,574+math.cos(a)*4)*CFrame.Angles(0,a,0),cream,Enum.Material.Cobblestone,true)
+	end
+	for _,side in ipairs({-1,1}) do
+		p("VillageWellPost",V(0.8,9,0.8),CFrame.new(22+side*5,4.5,574),wood,Enum.Material.Wood,true)
+		p("VillageWellRoof",V(7,0.6,12),CFrame.new(22+side*3,10,574)*CFrame.Angles(0,0,-side*0.3),Color3.fromRGB(109,136,123),Enum.Material.WoodPlanks,true)
+	end
+	beam("VillageWellSpindle",V(17,6,574),V(27,6,574),0.6,0.6,wood,Enum.Material.Wood,false)
+	p("VillageWellRope",V(0.14,4,0.14),CFrame.new(22,4,574),cream,Enum.Material.Fabric,false)
+	p("PicnicTable",V(10,0.6,5),CFrame.new(-27,3,577),wood,Enum.Material.WoodPlanks,true)
+	for _,side in ipairs({-1,1}) do
+		p("PicnicLeg",V(0.8,3,4),CFrame.new(-27+side*3.5,1.5,577),wood,Enum.Material.Wood,true)
+		seat(-27,1.7,577+side*4,side==1 and 0 or math.pi)
+	end
+	-- Explorer tower has real stairs and a safe, fenced viewing deck.
+	p("ExplorerTowerFoot",V(16,2,16),CFrame.new(-218,1,445),stone,Enum.Material.Cobblestone,true)
+	for i=1,14 do
+		p("ExplorerStair",V(9,0.75,2.3),CFrame.new(-218,i*0.75,421+i*1.65),wood,Enum.Material.WoodPlanks,true)
+	end
+	p("ExplorerTowerDeck",V(20,1,20),CFrame.new(-218,10.9,454),wood,Enum.Material.WoodPlanks,true)
+	for _,side in ipairs({-1,1}) do
+		p("TowerSupport",V(1.2,11,1.2),CFrame.new(-218+side*9,5.5,461),wood,Enum.Material.Wood,true)
+		beam("TowerRail",V(-218+side*9,14,445),V(-218+side*9,14,463),0.6,0.6,cream,Enum.Material.Wood,true)
+	end
+	beam("TowerRail",V(-227,14,463),V(-209,14,463),0.6,0.6,cream,Enum.Material.Wood,true)
+	seat(-218,12,459,0)
+	for i=1,8 do
+		disk("ExplorerJump",V(-186+math.sin(i)*5,0.4+(i%3)*0.55,391+i*5),4.8,0.8,i%2==0 and gold or stone,Enum.Material.Slate,true)
+	end
+	-- Star garden surrounds a shallow reflecting pool; the telescope is a landmark.
+	disk("StarPoolRim",V(205,0.25,480),27,0.5,cream,Enum.Material.Marble,true)
+	local pool=disk("StarPoolWater",V(205,0.55,480),24,0.2,Color3.fromRGB(96,185,183),Enum.Material.Glass,false)
+	pool.Transparency=0.28
+	disk("ObservatoryDeck",V(215,0.5,442),24,1,wood,Enum.Material.WoodPlanks,true)
+	for _,side in ipairs({-1,1}) do
+		for _,depth in ipairs({-1,1}) do p("ObservatoryPillar",V(1,11,1),CFrame.new(215+side*8,6,442+depth*8),cream,Enum.Material.Marble,true) end
+		p("ObservatoryRoof",V(12,0.8,23),CFrame.new(215+side*5,12.2,442)*CFrame.Angles(0,0,-side*0.35),Color3.fromRGB(77,100,143),Enum.Material.WoodPlanks,true)
+	end
+	p("TelescopeStand",V(1.2,4,1.2),CFrame.new(215,3,442),gold,Enum.Material.Metal,true)
+	beam("TelescopeTube",V(215,4.5,444),V(215,7,437),2,2,Color3.fromRGB(65,96,127),Enum.Material.Metal,false)
+	seat(203,1.3,460,math.pi/2); seat(228,1.3,463,-math.pi/2)
+	for i=1,10 do
+		local angle=i*math.pi*2/10
+		local x,z=205+math.cos(angle)*20,480+math.sin(angle)*20
+		p("StarFlowerStem",V(0.18,1.6,0.18),CFrame.new(x,0.8,z),leaf,Enum.Material.SmoothPlastic,false)
+		p("StarFlower",V(1.1,0.25,1.1),CFrame.new(x,1.7,z)*CFrame.Angles(0,angle,0),i%2==0 and gold or cream,Enum.Material.SmoothPlastic,false)
+	end
+	for _,center in ipairs({{-204,426,52},{194,460,58},{0,556,77}}) do
+		for i=0,7 do
+			local a=i*math.pi/4
+			-- The southern entrance stays open, so the bridge is visible.
+			if i~=6 then tree(center[1]+math.cos(a)*center[3],center[2]+math.sin(a)*center[3],20+(i%3)*4,i%2==0 and leaf or Color3.fromRGB(119,158,82)) end
+		end
+		for i=1,3 do
+			local a=i*1.7
+			-- The west edge of the star island is the bridge landing.
+			if not (center[1]==194 and i==2) then
+				p("IslandOutcrop",V(7+i,3+i,5+i),CFrame.new(center[1]+math.cos(a)*(center[3]-7),1.5,center[2]+math.sin(a)*(center[3]-7))*CFrame.Angles(0,a,0.15),stone,Enum.Material.Rock,true)
+			end
+		end
+	end
+	for _,at in ipairs({{-57,580},{54,583},{-29,611},{30,611},{-226,414},{-181,453},{232,487},{180,490}}) do
+		tree(at[1],at[2],17,Color3.fromRGB(101,145,79))
+	end
+	for _,at in ipairs({{-157,407},{144,453},{11,519},{-27,526},{27,526},{-12,584},{-200,441},{195,465}}) do
+		local x,z=at[1],at[2]
+		p("VillageLampFoot",V(2.5,0.7,2.5),CFrame.new(x,0.35,z),stone,Enum.Material.Cobblestone,true)
+		p("VillageLampPost",V(0.5,7,0.5),CFrame.new(x,3.5,z),wood,Enum.Material.Wood,true)
+		local lamp=p("VillageLantern",V(1.3,1.8,1.3),CFrame.new(x,7,z),Color3.fromRGB(255,217,144),Enum.Material.Neon,false)
+		p("VillageLanternCap",V(1.8,0.35,1.8),CFrame.new(x,8,z),wood,Enum.Material.Wood,false)
+		local light=Instance.new("PointLight"); light.Color=lamp.Color; light.Brightness=0.5; light.Range=10; light.Shadows=false; light.Parent=lamp
+	end
+	sign("ExplorerSign",V(-184,6,410),"ILHA DOS EXPLORADORES","EXPLORER ISLAND","SUBA • PULE • DESCUBRA","CLIMB • JUMP • EXPLORE",gold)
+	sign("StarlightSign",V(177,6,437),"JARDIM DAS ESTRELAS","STARLIGHT GARDEN","UM CANTINHO PARA ENCONTRAR AMIGOS","A PLACE TO MEET FRIENDS",Color3.fromRGB(159,201,235))
+	sign("WoodlandSign",V(0,8,535),"ALDEIA DO BOSQUE","WOODLAND VILLAGE","SUA AVENTURA CONTINUA AQUI","YOUR ADVENTURE CONTINUES HERE",Color3.fromRGB(176,216,134))
+	sign("PlazaDirections",V(17,5,481),"PRAÇA E PORTAIS","PLAZA & PORTALS","VOLTE PELA TRILHA CENTRAL","FOLLOW THE CENTRAL TRAIL BACK",cream)
+end
+
 function World:ArtDirectLobby(lobby)
 	local V=Vector3.new
 	local art=Instance.new("Model")
@@ -1148,9 +1412,13 @@ function World:ArtDirectLobby(lobby)
 	walk(V(-66,0.11,307),V(-66,0.11,394),12)
 	walk(V(43,0.11,326),V(43,0.11,385),13)
 	walk(V(-54,0.11,314),V(54,0.11,314),13)
-	for _,x in ipairs(MODE_X) do
-		walk(V(x,0.12,300),V(x,0.12,318),10)
+	for _,portalId in ipairs(self.catalog.DestinationOrder) do
+		local destination=self.catalog.Destinations[portalId]
+		local x=destination.x
+		walk(V(x,0.12,destination.z),V(x,0.12,322),10)
 	end
+	walk(V(24,0.11,318),V(96,0.11,318),13)
+	wallSign(lobby,"RankedQuarter",CFrame.new(58,24,278)*CFrame.Angles(0,math.pi,0),V(36,4,0.5),"ARENA COMPETITIVA","3 MAPAS • 3 ESTRATÉGIAS",ART.gold)
 	-- Broken stone gatehouse behind the retained magic rings, with cloth
 	-- pennants and masonry instead of a metal roof spanning the whole square.
 	for _,x in ipairs({-61,-20,20,61}) do
@@ -1258,61 +1526,177 @@ function World:ArtDirectLobby(lobby)
 end
 
 
---==============================================================================
--- The carrier in the sky: ocean far below, rotors, parked jets, deck lights
---==============================================================================
+-- Authored service locations and finishing pass. Every new desk opens an
+-- existing lobby screen; no progression or purchase is granted by scenery.
+function World:FinishLobby(lobby)
+	local V=Vector3.new
+	local scene=Instance.new("Model")
+	scene.Name,scene.Parent="VillageDetails",lobby
+	local wood=Color3.fromRGB(104,72,46)
+	local pale=Color3.fromRGB(231,213,173)
+	local green=Color3.fromRGB(63,109,96)
+	local stone=Color3.fromRGB(155,145,116)
+	local function p(name,size,cf,color,material,solid)
+		local obj=artPart(scene,name,size,cf,color,material)
+		obj.CanCollide=solid==true
+		return obj
+	end
+	local function localized(target,pt,en)
+		target:SetAttribute("LobbyTextPT",pt)
+		target:SetAttribute("LobbyTextEN",en)
+	end
+	local signs={
+		CommandIdentity={"DOOMSDAY","DOOMSDAY","REFÚGIO DA AURORA","AURORA REFUGE"},
+		ChestShopSign={"BAÚS","CHESTS","OURO","GOLD"},
+		PremiumShopSign={"LOJA ROBUX","ROBUX SHOP","HERÓIS • PASSES • OURO","HEROES • PASSES • GOLD"},
+		SanctuaryArchSign={"BOSQUE DA AURORA","AURORA WOODS","EXPLORE COM AMIGOS","EXPLORE WITH FRIENDS"},
+		AuroraWelcome={"ÁRVORE DA AURORA","AURORA TREE","UM LUGAR PARA VOLTAR","A PLACE TO RETURN TO"},
+		LookoutPlaque={"MIRANTE","LOOKOUT","CACHOEIRA DA AURORA","AURORA FALLS"},
+		ForestDirections={"BOSQUE DA AURORA","AURORA WOODS","TRILHAS • MIRANTE","TRAILS • LOOKOUT"},
+	}
+	for _,obj in ipairs(lobby:GetDescendants()) do
+		local texts=signs[obj.Name]
+		if obj.Name=="ModeHeader" then
+			local def=self.catalog.Modes[obj.Parent:GetAttribute("ModeId")]
+			local map=self.catalog.Maps[obj.Parent:GetAttribute("MapId")]
+			if def and map then texts={upper(map.name.pt),upper(map.name.en),upper(def.name.pt),upper(def.name.en)} end
+		elseif obj.Name=="RankedQuarter" then
+			texts={"ARENA COMPETITIVA","COMPETITIVE ARENA","3 MAPAS • 3 ESTRATÉGIAS","3 MAPS • 3 STRATEGIES"}
+		elseif obj.Name=="ChestNameplate" then
+			local base=obj.Parent:GetAttribute("ChestId")=="base_rare"
+			texts={base and "BASES" or "HERÓIS",base and "BASES" or "HEROES","BAÚS A PARTIR DE 400 OURO","CHESTS FROM 400 GOLD"}
+		end
+		if texts then
+			obj.Color,obj.Material=Color3.fromRGB(40,66,56),Enum.Material.WoodPlanks
+			local surface=obj:FindFirstChild("Artwork")
+			if surface then
+				localized(surface:FindFirstChild("Title"),texts[1],texts[2])
+				localized(surface:FindFirstChild("Subtitle"),texts[3],texts[4])
+			end
+		end
+	end
+	local services={
+		{id="maps",x=-37,z=315,pt="ESCOLHER MAPA",en="CHOOSE MAP",color=Color3.fromRGB(238,190,88)},
+		{id="guide",x=-13,z=360,pt="NICO • GUIA",en="NICO • GUIDE",color=Color3.fromRGB(238,190,88)},
+		{id="inventory",x=-43,z=355,pt="SUA EQUIPE",en="YOUR TEAM",color=Color3.fromRGB(242,160,111)},
+		{id="talents",x=-43,z=379,pt="ACADEMIA",en="ACADEMY",color=Color3.fromRGB(189,158,218)},
+		{id="bases",x=67,z=355,pt="SUAS BASES",en="YOUR BASES",color=Color3.fromRGB(150,209,141)},
+	}
+	for _,def in ipairs(services) do
+		local board,text=buildBoard(lobby,def.x,def.z,def.id,def.pt,self.openPanel)
+		localized(text,def.pt.."\nTOQUE OU PRESSIONE E",def.en.."\nTAP OR PRESS E")
+		local prompt=board.PrimaryPart:FindFirstChildOfClass("ProximityPrompt")
+		if prompt then localized(prompt,def.pt,def.en) end
+		p("ServiceDesk",V(8,2.4,3),CFrame.new(def.x,1.2,def.z),wood,Enum.Material.WoodPlanks,true)
+		p("ServiceDeskTop",V(8.6,0.35,3.5),CFrame.new(def.x,2.6,def.z),pale,Enum.Material.WoodPlanks,true)
+		p("ServiceDeskStripe",V(7.4,0.45,0.15),CFrame.new(def.x,1.8,def.z-1.6),def.color,Enum.Material.Fabric)
+		for i=-1,1 do
+			p("DeskBook",V(1.4,0.2,1.8),CFrame.new(def.x+i*1.6,2.9,def.z)*CFrame.Angles(0,i*0.12,0),i==0 and def.color or green,Enum.Material.SmoothPlastic)
+		end
+	end
+	-- Notice boards face the arrival square and have real frames and feet.
+	for _,model in ipairs(lobby:GetChildren()) do
+		if model:GetAttribute("Kind")=="Board" then
+			local board=model.PrimaryPart
+			local oldPost=model:FindFirstChild("Post")
+			if oldPost then oldPost:Destroy() end
+			local point=board.Position
+			local facing=CFrame.lookAt(V(point.X,5.4,point.Z),V(0,5.4,345))
+			board.CFrame=facing
+			board.Color,board.Material=Color3.fromRGB(40,66,56),Enum.Material.Wood
+			for _,side in ipairs({-1,1}) do
+				p("NoticeLeg",V(0.65,4,0.65),facing*CFrame.new(side*3.65,-3.4,0.45),wood,Enum.Material.Wood)
+				p("NoticeFrame",V(0.35,5.7,0.65),facing*CFrame.new(side*4.25,0,0),wood,Enum.Material.Wood)
+				p("NoticeFrame",V(8.8,0.35,0.65),facing*CFrame.new(0,side*2.7,0),pale,Enum.Material.Wood)
+			end
+			p("NoticeRoof",V(9.6,0.55,2.2),facing*CFrame.new(0,3,0)*CFrame.Angles(0.16,0,0),green,Enum.Material.WoodPlanks)
+		end
+	end
+	-- Nico is an original little mechanical caretaker, not a hero exhibit.
+	-- Its prompt is the guide desk's prompt; there is only one tap target.
+	local origin=CFrame.new(-7,0,361)*CFrame.Angles(0,-0.2,0)
+	p("GuideBoot",V(0.8,0.6,1.3),origin*CFrame.new(-0.5,0.4,0),wood,Enum.Material.Metal)
+	p("GuideBoot",V(0.8,0.6,1.3),origin*CFrame.new(0.5,0.4,0),wood,Enum.Material.Metal)
+	p("GuideBody",V(1.8,2,1.1),origin*CFrame.new(0,1.7,0),green,Enum.Material.Metal)
+	p("GuideScarf",V(1.9,0.4,1.2),origin*CFrame.new(0,2.65,0),ART.gold,Enum.Material.Fabric)
+	local head=p("GuideHead",V(2.1,1.5,1.5),origin*CFrame.new(0,3.5,0),pale,Enum.Material.Metal)
+	head.Shape=Enum.PartType.Ball
+	p("GuideVisor",V(1.5,0.65,0.15),origin*CFrame.new(0,3.55,-0.73),Color3.fromRGB(29,50,47),Enum.Material.Glass)
+	for _,side in ipairs({-1,1}) do
+		p("GuideEye",V(0.18,0.23,0.08),origin*CFrame.new(side*0.37,3.57,-0.85),Color3.fromRGB(158,237,197),Enum.Material.Neon)
+		p("GuideArm",V(0.6,1.5,0.65),origin*CFrame.new(side*1.2,1.8,0)*CFrame.Angles(0,0,side*0.17),pale,Enum.Material.Metal)
+	end
+	p("GuideAntenna",V(0.13,0.8,0.13),origin*CFrame.new(0.7,4.5,0),wood,Enum.Material.Metal)
+	local tip=p("GuideAntennaTip",V(0.35,0.35,0.35),origin*CFrame.new(0.7,4.95,0),ART.gold,Enum.Material.Neon)
+	tip.Shape=Enum.PartType.Ball
+	-- Beacon above the lodge is visible between the gates and from the forest.
+	for _,x in ipairs({-4,4}) do
+		for _,z in ipairs({262,270}) do
+			p("BeaconColumn",V(1,17,1),CFrame.new(x,17,z),wood,Enum.Material.Wood).CastShadow=true
+		end
+	end
+	for _,y in ipairs({13,21}) do
+		p("BeaconDeck",V(11,0.7,11),CFrame.new(0,y,266),green,Enum.Material.WoodPlanks).CastShadow=true
+	end
+	for i=0,3 do
+		local cf=CFrame.new(0,24.6,266)*CFrame.Angles(0,i*math.pi/2,0)
+		p("BeaconWindow",V(6,6,0.16),cf*CFrame.new(0,0,-4),Color3.fromRGB(164,217,197),Enum.Material.Glass).Transparency=0.55
+		p("BeaconRoof",V(12,0.7,7.3),CFrame.new(0,29.5,266)*CFrame.Angles(0,i*math.pi/2,0)*CFrame.new(0,0,-2.7)*CFrame.Angles(-0.45,0,0),green,Enum.Material.WoodPlanks).CastShadow=true
+	end
+	local crystal=p("BeaconCrystal",V(2.6,4,2.6),CFrame.new(0,24.6,266)*CFrame.Angles(0,0,0.4),Color3.fromRGB(255,219,135),Enum.Material.Neon)
+	local light=Instance.new("PointLight")
+	light.Color,light.Range,light.Brightness,light.Parent=ART.gold,24,0.8,crystal
+	-- The square reads as one space; remove dark borders that crossed its
+	-- centre like a giant grid, and keep a ring of individually laid stones.
+	local art=lobby:FindFirstChild("CommandAtrium")
+	for _,obj in ipairs(art and art:GetChildren() or {}) do
+		if obj.Name=="PathBorder" then obj.Color=Color3.fromRGB(150,145,113); obj.Transparency=0.55 end
+		if obj.Name=="CourtInset" then obj.Material=Enum.Material.Concrete; obj.Color=Color3.fromRGB(191,178,144) end
+		if obj.Name=="VillagePath" then obj.Color=Color3.fromRGB(175,164,130) end
+		if obj.Name=="FountainRim" or obj.Name=="FountainPillar" then obj.CanCollide=true end
+	end
+	for i=0,31 do
+		local a=i*math.pi/16
+		p("CourtyardPaver",V(4.4,0.18,1.8),CFrame.new(math.sin(a)*26,0.25,345+math.cos(a)*26)*CFrame.Angles(0,a,0),i%3==0 and pale or stone,Enum.Material.Slate)
+	end
+	-- Benches have real seats. Stay outside every interaction pad and path.
+	for _,spot in ipairs({{-17,380},{36,369},{-36,326}}) do
+		local cf=CFrame.new(spot[1],0,spot[2])
+		local seat=Instance.new("Seat")
+		seat.Name,seat.Size,seat.CFrame="VillageSeat",V(6,0.45,2),cf*CFrame.new(0,1.9,0)
+		seat.Anchored,seat.Material,seat.Color,seat.Parent=true,Enum.Material.WoodPlanks,wood,scene
+		p("BenchBack",V(6,1.8,0.4),cf*CFrame.new(0,3,1),wood,Enum.Material.WoodPlanks,true)
+		for _,x in ipairs({-2,2}) do p("BenchLeg",V(0.5,1.7,1.8),cf*CFrame.new(x,0.85,0),stone,Enum.Material.Slate,true) end
+	end
+	-- Painted wooden counters replace the old metal display boxes underneath
+	-- the awnings. Retain stand names and prompts for purchase validation.
+	for _,model in ipairs(lobby:GetChildren()) do
+		if model:GetAttribute("Kind")=="ShopStand" then
+			for _,obj in ipairs(model:GetChildren()) do
+				if obj.Name=="ShowcaseCanopy" or obj.Name=="ShowcasePillar" or obj.Name=="DisplayLight" then obj:Destroy()
+				elseif obj.Name=="Stand" then obj.Color=wood; obj.Material=Enum.Material.WoodPlanks
+				elseif obj.Name=="DisplayInset" then obj.Color=pale; obj.Material=Enum.Material.WoodPlanks end
+			end
+		end
+	end
+	-- Flower clusters and stones soften the grass/path junctions, deliberately
+	-- avoiding the open plaza and the green chest pads.
+	for _,spot in ipairs({{-35,344},{-35,370},{32,331},{34,382},{-16,398},{16,398},{77,329},{77,385}}) do
+		for i=1,5 do
+			local x,z=spot[1]+math.cos(i*2.4)*2,spot[2]+math.sin(i*2.4)*2
+			p("FlowerStem",V(0.12,0.8,0.12),CFrame.new(x,0.6,z),green,Enum.Material.SmoothPlastic)
+			for petal=0,3 do
+				local a=petal*math.pi/2
+				local leaf=p("FlowerPetal",V(0.5,0.15,0.35),CFrame.new(x+math.cos(a)*0.2,1,z+math.sin(a)*0.2)*CFrame.Angles(0,-a,0),i%2==0 and Color3.fromRGB(239,168,139) or pale,Enum.Material.SmoothPlastic)
+				leaf.Shape=Enum.PartType.Ball
+			end
+			p("FlowerCenter",V(0.16,0.12,0.16),CFrame.new(x,1.1,z),ART.gold,Enum.Material.SmoothPlastic)
+		end
+	end
+end
+
+
 local OCEAN_Y = -134
-
-local function buildRotor(lobby, x, z)
-	local model = Instance.new("Model")
-	model.Name, model.Parent = "Rotor", lobby
-	local metal, dark = Color3.fromRGB(52, 64, 78), Color3.fromRGB(24, 32, 42)
-	local hub = part(model, "RotorHub", Vector3.new(3, 4, 4), CFrame.new(x, -1, z) * CFrame.Angles(0, 0, math.pi / 2), metal, Enum.Material.Metal)
-	hub.Shape = Enum.PartType.Cylinder
-	-- A hollow housing from twelve angled segments, open to the sky below.
-	for i = 0, 11 do
-		local angle = i * math.pi / 6
-		part(model, "RotorHousing", Vector3.new(8.2, 3, 1.6), CFrame.new(x, -1, z) * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0, -15), dark, Enum.Material.Metal)
-	end
-	local rim = part(model, "RotorRim", Vector3.new(0.3, 31, 31), CFrame.new(x, 0.55, z) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(59, 195, 239), Enum.Material.Neon)
-	rim.Shape, rim.Transparency = Enum.PartType.Cylinder, 0.55
-	for i = 0, 2 do
-		part(model, "Blade", Vector3.new(2.2, 0.35, 13), CFrame.new(x, -0.6, z) * CFrame.Angles(0, i * math.pi * 2 / 3, 0) * CFrame.new(0, 0, -7.4), Color3.fromRGB(150, 162, 176), Enum.Material.Metal)
-	end
-	-- The arm that holds it to the hull.
-	local toward = x > 0 and -1 or 1
-	part(model, "RotorArm", Vector3.new(10, 2.2, 5), CFrame.new(x + toward * 17, -1.5, z), metal, Enum.Material.Metal)
-	for _, p in ipairs(model:GetChildren()) do p.CanCollide, p.CanQuery = false, false end
-	model.PrimaryPart = hub
-	return model
-end
-
-local function buildJet(lobby, x, z, yaw)
-	local model = Instance.new("Model")
-	model.Name, model.Parent = "Jet", lobby
-	local body, trim = Color3.fromRGB(132, 142, 154), Color3.fromRGB(78, 88, 100)
-	local origin = CFrame.new(x, 0, z) * CFrame.Angles(0, yaw, 0)
-	local fuselage = part(model, "Fuselage", Vector3.new(2.6, 2.2, 15), origin * CFrame.new(0, 2.3, 0), body, Enum.Material.Metal)
-	fuselage.CastShadow = true
-	local nose = Instance.new("WedgePart")
-	nose.Name, nose.Size, nose.CFrame = "Nose", Vector3.new(2.6, 2.2, 4), origin * CFrame.new(0, 2.3, -9.5)
-	nose.Color, nose.Material, nose.Anchored, nose.CastShadow = body, Enum.Material.Metal, true, false
-	nose.Parent = model
-	part(model, "Cockpit", Vector3.new(1.6, 1.1, 3.6), origin * CFrame.new(0, 3.7, -4), Color3.fromRGB(30, 64, 80), Enum.Material.Glass)
-	for _, side in ipairs({ -1, 1 }) do
-		local wing = part(model, "Wing", Vector3.new(6.4, 0.3, 5.2), origin * CFrame.new(side * 4.1, 2.1, 1.2) * CFrame.Angles(0, -side * 0.35, 0), trim, Enum.Material.Metal)
-		wing.CastShadow = true
-		part(model, "TailFin", Vector3.new(0.3, 3, 3), origin * CFrame.new(side * 0.9, 4.3, 6.2) * CFrame.Angles(0, 0, side * 0.3), trim, Enum.Material.Metal)
-		part(model, "Stabilizer", Vector3.new(2.6, 0.25, 2.2), origin * CFrame.new(side * 2.3, 2.3, 6.6), trim, Enum.Material.Metal)
-		local glow = part(model, "Afterburner", Vector3.new(0.2, 1.2, 1.2), origin * CFrame.new(side * 0.6, 2.3, 7.6) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromRGB(80, 200, 255), Enum.Material.Neon)
-		glow.Shape = Enum.PartType.Cylinder
-		part(model, "Gear", Vector3.new(0.4, 1.3, 0.4), origin * CFrame.new(side * 1.4, 0.65, 2), Color3.fromRGB(30, 30, 32), Enum.Material.Metal)
-	end
-	part(model, "Gear", Vector3.new(0.4, 1.3, 0.4), origin * CFrame.new(0, 0.65, -6), Color3.fromRGB(30, 30, 32), Enum.Material.Metal)
-	for _, p in ipairs(model:GetChildren()) do p.CanQuery = false end
-	model.PrimaryPart = fuselage
-	return model
-end
 
 function World:DressLobby(lobby)
 	workspace.Terrain:FillBlock(CFrame.new(0, OCEAN_Y, 320), Vector3.new(1400, 12, 1400), Enum.Material.Water)
@@ -1457,6 +1841,20 @@ local STREET_THEME = {
 		sidewalk = { "brazierSmall", "pine" },
 		clouds = { cover = 0.8, density = 0.55, color = Color3.fromRGB(120, 130, 160) },
 	},
+}
+
+-- Parts of the city are scenery: shadows only where they add depth, and never
+STREET_THEME.asgard = {
+	ground={Enum.Material.Marble,Color3.fromRGB(210,197,167)},
+	patches={{Enum.Material.Sandstone,Color3.fromRGB(191,172,133)},{Enum.Material.Marble,Color3.fromRGB(237,219,184)}},
+	road={Enum.Material.Marble,Color3.fromRGB(196,158,74)},
+	walk={Enum.Material.Sandstone,Color3.fromRGB(224,208,176)},
+	curb={Enum.Material.Metal,Color3.fromRGB(243,199,93)},
+	lamp="crystal",lampColor=Color3.fromRGB(153,226,246),poleColor=Color3.fromRGB(212,172,74),
+	facade="castle",bodies={{Enum.Material.Marble,Color3.fromRGB(233,214,168)},{Enum.Material.Sandstone,Color3.fromRGB(194,160,96)}},
+	glass=Color3.fromRGB(60,121,151),lit=Color3.fromRGB(147,224,255),accent=Color3.fromRGB(239,190,67),
+	heights={24,45},outer={"pine","rock","statue"},rock=Enum.Material.Marble,
+	sidewalk={"planter","brazierSmall"},clouds={cover=0.3,density=0.2,color=Color3.fromRGB(246,222,192)},
 }
 
 -- Parts of the city are scenery: shadows only where they add depth, and never
@@ -2545,7 +2943,7 @@ function World:MakeTower(id, heroId, position, ownerId)
 	-- animates around it and restores to whatever this says, so an upgrade
 	-- landing mid-recoil is never undone by the animation finishing late.
 	ring:SetAttribute("BaseSize", 5.8)
-	local scale = heroId == "hulk" and 1.35 or 1
+	local scale = FIGURE_SCALE[heroId] or 1
 	local origin = CFrame.new(position.X, 0.55, position.Z)
 	local torso, head = heroFigure(model, heroId, hero, origin, scale)
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") then p.CanCollide = false p:SetAttribute("TowerId", id) end end

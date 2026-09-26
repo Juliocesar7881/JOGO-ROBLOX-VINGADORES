@@ -48,6 +48,20 @@ check(countClass(lobby, "BasePart") > 40,
 	"the lobby has real geometry, got " .. tostring(countClass(lobby, "BasePart")) .. " parts")
 check(lobby:FindFirstChild("LobbySpawn") ~= nil, "the lobby has a spawn point")
 check(world.lobbySpawn ~= nil, "the spawn position is recorded for MovePlayer")
+do
+	local root={Position=v3(165,-30,380),AssemblyLinearVelocity=v3(0,-70,0)}
+	local moves=0
+	local character={FindFirstChild=function(_,name) return name=="HumanoidRootPart" and root or nil end,
+		PivotTo=function(_,cf) moves+=1; root.Position=cf.Position end}
+	world:RecoverLobbyVisitors({{Character=character},{}})
+	check(moves==1 and root.Position==world.lobbySpawn,"fallen visitor returns to the lobby spawn")
+	check(root.AssemblyLinearVelocity.Magnitude==0 and root.AssemblyAngularVelocity.Magnitude==0,"recovery removes falling momentum")
+	world:RecoverLobbyVisitors({{Character=character}})
+	check(moves==1,"visitor already on the island is not teleported again")
+	root.Position=v3(0,-30,0)
+	world:RecoverLobbyVisitors({})
+	check(moves==1,"absent match participants are never moved by lobby recovery")
+end
 
 local sanctuary=lobby:FindFirstChild("AuroraSanctuary")
 check(sanctuary~=nil,"Forest sanctuary is owned by the lobby model")
@@ -81,7 +95,7 @@ do
 	local hull = lobby:FindFirstChild("Helicarrier")
 	check(hull ~= nil and hull.CastShadow == true, "the helicarrier hull still casts a shadow")
 	local lobbyEmitters = countClass(lobby, "ParticleEmitter")
-	check(lobbyEmitters == 10, "each mode portal breathes particles from its glass and its pad, got " .. tostring(lobbyEmitters) .. "/10")
+	check(lobbyEmitters == 14, "each destination emits from its glass and pad, plus the two shops, got " .. tostring(lobbyEmitters))
 end
 
 -- Every physical location is its own Model, tagged with a Kind attribute the
@@ -95,7 +109,7 @@ for _, child in ipairs(lobby:GetChildren()) do
 	end
 end
 
-check(#(byKind.ModePortal or {}) == 4, "one portal per mode, got " .. tostring(#(byKind.ModePortal or {})))
+check(#(byKind.ModePortal or {}) == 6, "one portal per destination, got " .. tostring(#(byKind.ModePortal or {})))
 local portalModes = {}
 for _, model in ipairs(byKind.ModePortal or {}) do portalModes[model:GetAttribute("ModeId")] = true end
 for _, modeId in ipairs(Catalog.PortalOrder) do
@@ -112,7 +126,7 @@ do
 	end
 	local zones = world.portalZones or {}
 	for _, model in ipairs(byKind.ModePortal or {}) do
-		local modeId = model:GetAttribute("ModeId")
+		local modeId = model:GetAttribute("PortalId")
 		local zone = zones[modeId]
 		check(zone ~= nil, modeId .. " publishes an elevator zone")
 		if zone then
@@ -178,11 +192,22 @@ end
 
 check(#(byKind.ShopStand or {}) == 6, "one stand per pass plus one gold vault, got "
 	.. tostring(#(byKind.ShopStand or {})))
-check(#(byKind.Board or {}) == 2, "a mission board and a leaderboard totem, got "
+check(#(byKind.Board or {}) == 7, "missions, ranking, guide, maps, team, academy and base desks, got "
 	.. tostring(#(byKind.Board or {})))
 local boardIds = {}
 for _, model in ipairs(byKind.Board or {}) do boardIds[model:GetAttribute("BoardId")] = true end
 check(boardIds.quests and boardIds.leaderboard, "both the quest board and the leaderboard totem exist")
+for _,id in ipairs({"guide","inventory","talents","bases"}) do
+	check(boardIds[id],"functional service desk exists: "..id)
+end
+for _,id in ipairs({"quests","leaderboard"}) do
+	local board=lobby:FindFirstChild("Board_"..id)
+	check(board.PrimaryPart.Position.Z>345,"public notice board is reachable from the forest approach: "..id)
+	check(board:FindFirstChild("Post")==nil,"central support no longer obscures notice text: "..id)
+end
+local details=lobby:FindFirstChild("VillageDetails")
+check(details and details:FindFirstChild("GuideHead")~=nil,"Nico welcomes players at the guide desk")
+check(countClass(details,"Seat")==3,"village benches provide usable seats")
 check(world.leaderboardText ~= nil, "the leaderboard totem exposes a text label to update")
 
 local ok2, err2 = pcall(function() world:UpdateLeaderboardBoard({ { rank = 1, name = "Tester", waves = 30 } }, "Manhattan") end)
@@ -231,12 +256,45 @@ do
 		end
 	end
 	check(#wrong == 0, "every lobby prompt opens its own panel and refuses a distant player: " .. table.concat(wrong, ", "))
-	local expected = 2 + 6 + 2
+	local expected = 2 + 6 + 7
 	check(refused == expected, "the distance re-check refused all " .. expected .. " far presses, got " .. tostring(refused))
 end
 
 local totalPrompts = countClass(lobby, "ProximityPrompt")
-local expectedPrompts = 2 + 6 + 2
+local archipelago=lobby:FindFirstChild("AuroraArchipelago")
+check(archipelago~=nil,"exploration archipelago is built")
+if archipelago then
+	local bridges,islands,seats=0,0,0
+	for _,obj in ipairs(archipelago:GetChildren()) do
+		if obj:GetAttribute("ExplorationIsland") then
+			islands+=1
+			check(obj.CanCollide and obj.Size.Y>=120,"exploration island has a broad solid ground")
+		end
+		if obj:GetAttribute("BridgeId") then
+			bridges+=1
+			check(obj.CanCollide and obj.Size.X>=10,"bridge has a solid walkable deck")
+		end
+		if obj:IsA("Seat") then seats+=1 end
+	end
+	check(islands==3 and bridges==3,"all three exploration islands have a bridge")
+	check(seats>=9,"new areas provide real usable seats")
+	check(archipelago:FindFirstChild("ExplorerStair")~=nil,"lookout has walkable stairs")
+	check(archipelago:FindFirstChild("TelescopeTube")~=nil,"star garden has its telescope landmark")
+	-- Keep a player-width corridor free of scenery along every new bridge.
+	for _,route in ipairs({{-120,400,-165,419},{119,431,157,447},{0,484,0,516}}) do
+		local dx,dz=route[3]-route[1],route[4]-route[2]
+		for _,obj in ipairs(archipelago:GetChildren()) do
+			if obj.Name=="IslandOutcrop" or obj.Name=="VillageLampFoot" or obj.Name=="OuterTrunk" then
+				local x,z=obj.Position.X,obj.Position.Z
+				local t=math.clamp(((x-route[1])*dx+(z-route[2])*dz)/(dx*dx+dz*dz),0,1)
+				local distance=math.sqrt((x-route[1]-t*dx)^2+(z-route[2]-t*dz)^2)
+				local radius=math.sqrt(obj.Size.X^2+obj.Size.Z^2)*0.5
+				check(distance>radius+2.5,"bridge corridor is clear of "..obj.Name)
+			end
+		end
+	end
+end
+local expectedPrompts = 2 + 6 + 7
 check(totalPrompts == expectedPrompts,
 	"every physical location is interactive, got " .. tostring(totalPrompts) .. "/" .. tostring(expectedPrompts))
 print(string.format("  %d parts, %d locais interativos", countClass(lobby, "BasePart"), totalPrompts))
@@ -539,7 +597,11 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 	if portrait then
 		for _, piece in ipairs(portrait:GetDescendants()) do
 			if piece:IsA("BasePart") then check(piece:GetAttribute("HeroVisual") == true, heroId .. " portrait excludes world furniture") end
+			if piece:IsA("BasePart") and table.find({"Suit","Thigh","Shin","UpperArm","Gauntlet"},piece.Name) then
+				check(piece.Shape==Enum.PartType.Block,heroId.." uses continuous body segments: "..piece.Name)
+			end
 		end
+		check(portrait.Mask:FindFirstChildOfClass("SpecialMesh")~=nil,heroId.." preserves head proportions with a mesh")
 	end
 end
 world:Build("manhattan")

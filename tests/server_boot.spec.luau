@@ -334,7 +334,7 @@ stepOut(ana)
 stepInto(ana, "normal")
 frames(0.5)
 local riding = latest(ana).elevator
-check(riding ~= nil and riding.modeId == "normal" and riding.mapId == nil, "the campaign portal boards a newcomer for training in Manhattan")
+check(riding ~= nil and riding.modeId == "normal" and riding.mapId == "manhattan", "the campaign portal announces its fixed Manhattan destination")
 check(riding and riding.host == true and #riding.riders == 1 and riding.remaining > 0, "as the first rider, with a countdown running")
 check(not request(ana, "ElevatorMap", { step = 1 }).ok, "the first rider may switch the sector")
 check(request(ana, "ElevatorLeave", {}).ok, "Leave is answered")
@@ -351,6 +351,9 @@ frames(0.5)
 -- The tutorial, played through Request exactly as a client would
 --==============================================================================
 say("--- tutorial ---")
+check(not request(ana,"StartMatch",{destinationId="missing"}).ok,"unknown destination rejected")
+check(not request(ana,"StartMatch",{mapId="wakanda",modeId="normal"}).ok,"manual map-mode mismatch rejected")
+check(not request(ana,"StartMatch",{destinationId="ranked",mapId="manhattan",modeId="normal"}).ok,"forged fields cannot bypass destination unlock")
 check(request(ana,"StartMatch",{mapId="manhattan",modeId="tutorial"}).ok,"optional tutorial starts explicitly")
 check(latest(ana).match and latest(ana).match.modeId=="tutorial","tutorial stays separate from the campaign portal")
 check(not request(ana, "BuyHero", { heroId = "spiderman" }).ok, "lobby actions are refused inside a match")
@@ -454,7 +457,8 @@ say("--- campaign ---")
 local goldBefore = latest(ana).profile.gold
 stepOut(ana)
 stepInto(ana, "normal")
-check(rideUntilDeparture(ana), "the campaign portal starts the campaign after training")
+check(request(ana,"StartMatch",{destinationId="normal",mapId="wakanda",modeId="ranked"}).ok,"destination start accepts the catalog ID")
+check(latest(ana).match.mapId=="manhattan" and latest(ana).match.modeId=="normal","server resolves destination rather than forged map/mode fields")
 check(latest(ana).match.modeId == "normal" and Catalog.Maps[latest(ana).match.mapId] ~= nil, "and picks the first unbeaten sector")
 used, towerIds = {}, {}
 for _ = 1, 200 do

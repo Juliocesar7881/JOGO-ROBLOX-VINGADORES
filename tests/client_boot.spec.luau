@@ -286,7 +286,7 @@ local function session(screen)
 	function runService:IsStudio() return true end
 	function runService:IsServer() return false end
 	local input = { InputBegan = newSignal(), TouchTapInWorld = newSignal(), TouchEnabled = false }
-	function input:GetFocusedTextBox() return nil end
+	function input:GetFocusedTextBox() return self.focused end
 	function input:GetMouseLocation() return Vector2.new(SCREEN.w / 2, SCREEN.h / 2) end
 	local guiService = {}
 	function guiService:GetGuiInset() return Vector2.new(0, 58), Vector2.new(0, 0) end
@@ -331,10 +331,12 @@ local function session(screen)
 
 	local current = lobbySnapshot(veteranProfile())
 	local actions = {}
+	local actionPayloads = {}
 	-- What the mocked server answers to OpenChest; nil keeps the plain {} reply.
 	local chestResult
 	requestRemote.InvokeServer = function(_, action, payload)
 		table.insert(actions, action)
+		actionPayloads[action] = payload
 		if action == "Sync" then return { ok = true, data = current } end
 		if action == "ProductInfo" then
 			if payload.key == "vip" then return { ok = true, data = { id = 777, price = 299, name = "VIP" } } end
@@ -429,7 +431,7 @@ local function session(screen)
 		for _, child in ipairs(main:GetChildren()) do
 			if child.Visible ~= false then visible += 1 end
 		end
-		check(visible == 4, tag .. ": the idle lobby shows only the pill and two buttons, got " .. visible .. " elements")
+		check(visible == 5, tag .. ": the idle lobby shows counters, play/settings, dock and guide, got " .. visible .. " elements")
 		local bad = offscreen(main, SCREEN)
 		check(#bad == 0, tag .. ": every lobby element is on screen: " .. table.concat(bad, ", "))
 	end)
@@ -447,7 +449,7 @@ local function session(screen)
 		-- Each portal's sign names what stepping in starts for this viewer.
 		local nextMap = "random"
 		local campaignSign = lobby.Portal_normal.Sign.Board:FindFirstChildOfClass("TextLabel").Text
-		check(nextMap ~= nil and string.find(campaignSign, "MAPA ALEATÓRIO", 1, true) ~= nil,
+		check(nextMap ~= nil and string.find(campaignSign, "MANHATTAN", 1, true) ~= nil,
 			tag .. ": the campaign sign names the next unbeaten sector, got " .. campaignSign)
 		check(string.find(campaignSign, "ENTRE PARA JOGAR", 1, true) ~= nil, tag .. ": the campaign sign invites the viewer in")
 		local lockedSign = lobby.Portal_infinite.Sign.Board:FindFirstChildOfClass("TextLabel").Text
@@ -469,6 +471,16 @@ local function session(screen)
 
 	local contextSlot = lobbyLayout.context
 	local function contextOpen() return main:FindFirstChild("ContextPanel") ~= nil end
+	step("refuge guide reaches every core lobby screen",function()
+		for _,id in ipairs({"modes","inventory","bases","talents","chests","quests","leaderboard","settings"}) do
+			clickNamed("FirstVisitHint")
+			check(named(gui,"RefugeWelcome")~=nil,tag..": guide opens from the persistent button")
+			check(#offscreen(main,SCREEN)==0,tag..": guide stays inside usable screen")
+			clickNamed("GuideLink_"..id)
+			check(contextOpen() and named(gui,"RefugeWelcome")==nil,tag..": guide opens "..id)
+			clickNamed("CloseContext")
+		end
+	end)
 	step("a portal opens no menu", function()
 		fx({ kind = "OpenPanel", panel = "play", modeId = "normal" })
 		check(not contextOpen(), tag .. ": an unknown panel request opens nothing; portals are walked into")
@@ -652,10 +664,14 @@ local function session(screen)
 		click("×")
 		click("JOGAR")
 		check(contextOpen(), tag .. ": Play opens a clear choice of modes")
-		for _, modeId in ipairs(Catalog.PortalOrder) do
-			check(named(gui, "PlayMode_" .. modeId) ~= nil, tag .. ": the mode menu explains " .. modeId)
+		for _,id in ipairs(Catalog.DestinationOrder) do
+			local tile=named(gui,"Destination_"..id)
+			check(tile and named(tile,"RouteSegment"),tag..": destination has route preview "..id)
+			check(named(gui,"PlayDestination_"..id)~=nil,tag..": direct play action "..id)
 		end
-		clickNamed("PlayMode_normal")
+		check(named(gui,"OpenMapSelection")==nil,tag..": no arbitrary map-mode selector")
+		clickNamed("PlayDestination_normal")
+		check(actionPayloads.StartMatch.destinationId=="normal",tag..": start sends the authored destination")
 		check(asked("StartMatch"), tag .. ": campaign can be started from its visible HUD action")
 		click("×")
 		clickNamed("Nav_inventory")
@@ -664,6 +680,69 @@ local function session(screen)
 		check(asked("SaveLoadout"), tag .. ": a formation can be saved")
 	end)
 
+	step("collection search, sorting, base and direct leader selection",function()
+		check(named(gui,"FormationBaseName")~=nil,tag..": formation shows its equipped base")
+		local search=named(gui,"HeroSearch")
+		input.focused=search
+		search.Text="ferro"
+		search:GetPropertyChangedSignal("Text"):Fire()
+		local changed=veteranProfile(); changed.gold=3500
+		push(lobbySnapshot(changed)); frames(1/30,5)
+		check(named(gui,"HeroSearch")==search and search.Text=="ferro",tag..": live profile refresh preserves focused search text")
+		input.focused=nil
+		search.FocusLost:Fire(true); flush(); frames(1/30,2)
+		check(named(gui,"Collection_ironman")~=nil and named(gui,"Collection_hawkeye")==nil,tag..": search returns only matching owned hero")
+		clickNamed("ClearHeroFilters")
+		clickNamed("InventoryTabs_all")
+		search=named(gui,"HeroSearch"); search.Text="capitao"; search.FocusLost:Fire(true); flush()
+		check(named(gui,"Collection_captain")~=nil,tag..": name search ignores Portuguese accents")
+		search=named(gui,"HeroSearch"); search.Text="xyz-no-hero"; search.FocusLost:Fire(true); flush()
+		check(#named(gui,"HeroGallery"):GetChildren()==0,tag..": unmatched search has empty gallery")
+		check(named(gui,"HeroGallery").Size.Y.Offset>=0,tag..": empty gallery never has negative height")
+		clickNamed("ClearHeroFilters")
+		clickNamed("CycleHeroRarity")
+		check(named(gui,"Collection_ironman")~=nil and named(gui,"Collection_thor")==nil,tag..": rarity filter narrows the collection")
+		clickNamed("ClearHeroFilters")
+		clickNamed("InventoryTabs_owned")
+		clickNamed("CycleHeroSort"); clickNamed("CycleHeroSort")
+		local rows=named(gui,"HeroGallery"):GetChildren()
+		check(rows[1].Name=="Collection_ironman",tag..": mastery sort shows highest level first")
+		clickNamed("SquadSlot_1")
+		check(named(gui,"CancelLeaderPick")~=nil,tag..": highlighted first slot opens leader selection")
+		clickNamed("FormationHero_spiderman")
+		check(actionPayloads.SetLoadout.heroes[1]=="spiderman",tag..": collection directly sends the chosen leader")
+		check(actionPayloads.SetLoadout.heroes[2]=="ironman",tag..": changing leader preserves previous squad members")
+		clickNamed("FormationHero_ironman")
+		check(named(gui,"MakeLeader_ironman")~=nil,tag..": hero details open on power and squad actions")
+		clickNamed("HeroDetail_defense")
+		check(named(gui,"HeroStat_1") and named(gui,"HeroBranch_2") and named(gui,"HeroTargets"),tag..": hero details explain stats, targets and specialization paths")
+		clickNamed("BackToInventory")
+	end)
+
+	step("open panels preserve scroll during live profile refresh",function()
+		local startRect=screenRect(named(gui,"ContextPanel"),gui,SCREEN)
+		local originalBody=named(gui,"ContextBody")
+		for i=1,25 do
+			local body=named(gui,"ContextBody")
+			body.CanvasPosition=Vector2.new(0,140)
+			local changed=veteranProfile(); changed.gold=5000+i
+			push(lobbySnapshot(changed)); frames(1/30,8)
+			local updated=named(gui,"ContextBody")
+			check(updated==originalBody,tag..": live update retains the actual scroll frame "..i)
+			local panelRect=screenRect(named(gui,"ContextPanel"),gui,SCREEN)
+			check(updated.CanvasPosition.Y==140,tag..": refresh preserves scroll "..i)
+			check(panelRect.y==startRect.y and panelRect.h==startRect.h,tag..": panel does not drift "..i)
+			check(updated.AutomaticCanvasSize==Enum.AutomaticSize.None,tag..": list alone owns canvas size")
+		end
+		local oldCard=named(gui,"HeroArtwork")
+		for i=1,10 do
+			local changed=veteranProfile(); changed.gold=5025
+			changed.rewards={claimable=0,playedSeconds=i,serverNow=100+i}
+			push(lobbySnapshot(changed)); frames(1/30,4)
+		end
+		check(named(gui,"ContextBody")==originalBody,tag..": reward timer leaves inventory scroll frame intact")
+		check(named(gui,"HeroArtwork")==oldCard,tag..": timer changes do not rebuild inventory content")
+	end)
 	step("daily rewards: badge, free chest, login streak, playtime and milestones", function()
 		-- The previous step leaves the inventory panel open, which hides the
 		-- dock on short screens; close it first so the gift tab is reachable.
@@ -751,7 +830,7 @@ local function session(screen)
 	step("standing in a portal shows the elevator card", function()
 		local riding = lobbySnapshot(veteranProfile())
 		riding.elevator = {
-			portalId = "normal", modeId = "normal", mapId = "gamma", max = 4, remaining = 6, host = true, maps = 3,
+			portalId = "normal", modeId = "normal", mapId = "manhattan", carId="review-car", max = 4, remaining = 6, host = true,
 			riders = { { userId = LOCAL_ID, name = "Tester" }, { userId = ALLY_ID, name = "Ally" } },
 		}
 		click("×")
@@ -779,8 +858,8 @@ local function session(screen)
 		local joined = table.concat(labels(), " | ")
 		check(string.find(joined, "2/4", 1, true) ~= nil and string.find(joined, "Ally", 1, true) ~= nil,
 			tag .. ": the card lists who is riding, got " .. joined)
-		check(string.find(joined, "MAPA ALEATÓRIO", 1, true) ~= nil, tag .. ": the card names the sector")
-		check(not asked("ElevatorMap"), tag .. ": no manual map selection")
+		check(string.find(joined, "MANHATTAN", 1, true) ~= nil, tag .. ": the card names the sector")
+		check(named(gui,"PortalChooseMap")==nil,tag..": fixed portal has no map switch")
 		fx({ kind = "OpenPanel", panel = "quests" })
 		check(main:FindFirstChild("ContextPanel") ~= nil, tag .. ": a panel opened while riding stops above the card")
 		local panelRect = screenRect(named(gui, "ContextPanel"), gui, SCREEN)
@@ -836,7 +915,7 @@ local function session(screen)
 		-- Before training four portals are locked (the campaign portal runs
 		-- training instead), ten heroes are unowned, and seven skills sit above
 		-- level 1.
-		check(countNamed(lobby, "LockShroud") == 3, tag .. ": a newcomer sees the three locked mode portals")
+		check(countNamed(lobby, "LockShroud") == 5, tag .. ": a newcomer sees the five locked destination portals")
 		local campaignSign = lobby.Portal_normal.Sign.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(campaignSign, "50 ONDAS", 1, true) ~= nil, tag .. ": for a newcomer the campaign portal is the training portal, got " .. campaignSign)
 		check(countNamed(lobby, "StartHere") == 1, tag .. ": a newcomer sees one START HERE beacon")
@@ -1170,6 +1249,14 @@ local function session(screen)
 		english.settings.language = "en"
 		push(lobbySnapshot(english))
 		check(findButton(gui, "SETTINGS") ~= nil, tag .. ": the HUD speaks English after the switch")
+		local village=workspace:FindFirstChild("DoomLobby")
+		local guide=village:FindFirstChild("Board_guide").PrimaryPart
+		check(guide.Board:FindFirstChildOfClass("TextLabel").Text:find("NICO • GUIDE",1,true)~=nil,
+			tag..": service desk signage changes language")
+		check(guide:FindFirstChildOfClass("ProximityPrompt").ObjectText=="NICO • GUIDE",
+			tag..": service prompt changes language")
+		local chest=village:FindFirstChild("ChestShopSign").Artwork
+		check(chest.Title.Text=="CHESTS" and chest.Subtitle.Text=="GOLD",tag..": chest shop sign changes language")
 		push(matchSnapshot(english, "Preparing"))
 		check(findButton(gui, "READY") ~= nil, tag .. ": the match HUD speaks English too")
 	end)

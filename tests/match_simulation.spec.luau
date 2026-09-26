@@ -500,8 +500,8 @@ if manual and drone then
 	print(string.format("  manual %d gold, drone %d gold", manual.results.gold, drone.results.gold))
 end
 
-print("--- endless, Gamma ---")
-local endless = simulate({ mapId = "gamma", modeId = "infinite", profile = {
+print("--- endless, Asgard ---")
+local endless = simulate({ mapId = "asgard", modeId = "infinite", profile = {
 	campaign = { manhattan = { normal = true, ranked = true } },
 } })
 if endless then
@@ -512,8 +512,8 @@ if endless then
 	print(string.format("  survived %d waves in %.1f min", endless.results.waves, endless.seconds / 60))
 end
 
-print("--- card roguelike, hydra ---")
-local cardRun = simulate({ mapId = "hydra", modeId = "cards", profile = { campaign = { manhattan = { normal = true } } } })
+print("--- card roguelike, Gamma ---")
+local cardRun = simulate({ mapId = "gamma", modeId = "cards", profile = { campaign = { manhattan = { normal = true } } } })
 if cardRun then
 	check(cardRun.match.phase == "Results", "the card run terminates")
 	check(cardRun.picks == math.min(9, math.floor(cardRun.results.waves / 5)), "one card per five completed waves, got " .. cardRun.picks .. " picks for " .. cardRun.results.waves .. " waves")
@@ -603,7 +603,7 @@ local function stage(options)
 	local log = {}
 	local world = newWorld()
 	local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, newRemotes(log), function() end)
-	local started, problem = match:Start({ player }, options.mapId or "manhattan", options.modeId or "normal", "stage-" .. stagedPlayers)
+	local started, problem = match:Start({ player }, options.mapId or Rules.PickMap(options.modeId or "normal",0), options.modeId or "normal", "stage-" .. stagedPlayers)
 	check(started, "staged match starts: " .. tostring(problem))
 	match.phase = "Wave"
 	match.wave = options.wave or 10

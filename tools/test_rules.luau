@@ -30,7 +30,7 @@ for _, rarity in Catalog.RarityOrder do
 		check(not string.find(shouted, lower, 1, true), "No lowercase accent survives: " .. rarity .. " " .. shouted)
 	end
 end
-equal(#Catalog.MapOrder, 5, "Campaign map count")
+equal(#Catalog.MapOrder, 6, "Campaign map count")
 equal(#Catalog.EnemyOrder, 23, "Enemy families")
 equal(#Catalog.BossOrder, 5, "Boss count")
 equal(#Catalog.ModeOrder, 5, "Four modes plus training")
@@ -163,16 +163,16 @@ check(Rules.CanStart(profile, "manhattan", "tutorial"), "Training always availab
 check(not Rules.CanStart(profile, "gamma", "tutorial"), "Training map fixed")
 check(Rules.CanStart(profile, "manhattan", "normal"), "Campaign is available immediately")
 profile.tutorialComplete = true
-for _, mapId in Catalog.MapOrder do check(Rules.CanStart(profile, mapId, "normal"), "Every map can be drawn for the campaign: " .. mapId) end
+for _, mapId in Catalog.MapOrder do equal(Rules.CanStart(profile, mapId, "normal"),mapId=="manhattan","Campaign map is fixed: "..mapId) end
 check(not Rules.CanStart(profile, "manhattan", "ranked"), "Hard requires a normal clear")
-check(not Rules.CanStart(profile, "manhattan", "cards"), "Cards require a normal clear")
-check(not Rules.CanStart(profile, "manhattan", "infinite"), "Endless requires a ranked clear")
+check(not Rules.CanStart(profile, "gamma", "cards"), "Cards require a normal clear")
+check(not Rules.CanStart(profile, "asgard", "infinite"), "Endless requires a ranked clear")
 profile.campaign.gamma = { normal = true }
 check(Rules.CanStart(profile, "wakanda", "ranked"), "Any map's normal clear opens ranked everywhere")
-check(Rules.CanStart(profile, "hydra", "cards"), "Any map's normal clear opens cards everywhere")
-check(not Rules.CanStart(profile, "manhattan", "infinite"), "A normal clear does not open endless")
+check(Rules.CanStart(profile, "gamma", "cards"), "A legacy campaign clear still opens the Gamma card destination")
+check(not Rules.CanStart(profile, "asgard", "infinite"), "A normal clear does not open endless")
 profile.campaign.latveria = { ranked = true }
-check(Rules.CanStart(profile, "manhattan", "infinite"), "A ranked clear opens endless")
+check(Rules.CanStart(profile, "asgard", "infinite"), "A ranked clear opens endless")
 check(not Rules.CanStart(profile, "invalid", "normal"), "Unknown maps rejected")
 check(not Rules.CanStart(profile, "manhattan", "daily"), "The removed daily mode cannot start")
 check(not Rules.CanStart(profile, "manhattan", "bossrush"), "The removed boss rush cannot start")
@@ -204,11 +204,14 @@ end
 
 -- The map is drawn, never chosen, and every map is reachable.
 equal(Rules.PickMap("tutorial", 0.9), "manhattan", "Training is always Manhattan")
-local drawn = {}
-for step = 0, 999 do drawn[Rules.PickMap("normal", step / 1000)] = (drawn[Rules.PickMap("normal", step / 1000)] or 0) + 1 end
-for _, mapId in Catalog.MapOrder do equal(drawn[mapId], 200, "The draw is even across maps: " .. mapId) end
-check(Catalog.Maps[Rules.PickMap("normal", 1)] ~= nil and Catalog.Maps[Rules.PickMap("normal", -3)] ~= nil, "Out-of-range rolls still land on a map")
-check(Catalog.Maps[Rules.PickMap("normal", 0 / 0)] ~= nil, "A NaN roll still lands on a map")
+local playable={tutorialComplete=true,campaign={manhattan={normal=true},hydra={ranked=true}}}
+for _,map in ipairs(Catalog.MapOrder) do
+	for _,mode in ipairs(Catalog.PortalOrder) do
+		local expected=false
+		for _,def in pairs(Catalog.Destinations) do if def.mapId==map and def.modeId==mode then expected=true end end
+		equal(Rules.CanStart(playable,map,mode),expected,"Only authored combinations start: "..map.."/"..mode)
+	end
+end
 
 --==============================================================================
 -- Bosses and waves
@@ -701,4 +704,4 @@ do
 	check(atStatus.collection.milestones[1].ready, "Reaching a milestone's exact count makes it ready")
 end
 
-print("PASS " .. assertions .. " assertions: catalog, heroes, abilities, chests and odds, cards, talents, unlocks, random map, 50-wave bosses, wave economy on every map/mode/party size, daily rewards")
+print("PASS " .. assertions .. " assertions: catalog, heroes, abilities, chests and odds, cards, talents, unlocks, fixed destinations, 50-wave bosses, wave economy on every map/mode/party size, daily rewards")
