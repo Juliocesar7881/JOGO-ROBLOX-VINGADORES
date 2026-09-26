@@ -634,7 +634,16 @@ local function session(screen)
 		click("Adicionar à equipe")
 		check(asked("SetLoadout"),tag .. ": owned hero can be equipped")
 		fx({kind="OpenPanel",panel="hero",heroId="ironman"})
-		click("MELHORAR")
+		-- Mastery, ability rank, account level and tower upgrade each have their own word.
+		local function shows(fragment)
+			for _, item in ipairs(gui:GetDescendants()) do
+				if type(item.Text) == "string" and string.find(item.Text, fragment, 1, true) then return true end
+			end
+			return false
+		end
+		check(shows("Maestria do herói") and shows("RANK 1"), tag .. ": the hero page names mastery and ability rank apart")
+		check(not shows("Nível do herói"), tag .. ": the hero page no longer calls mastery a level")
+		click("RANK ")
 		check(asked("UpgradeAbility"),tag .. ": leader ability upgrades through server")
 		fx({ kind = "OpenPanel", panel = "quests" })
 		click("Resgatar recompensa")
@@ -1179,6 +1188,11 @@ local function session(screen)
 
 	step("the tower panel in every state", function()
 		check(selectTower("t1") ~= nil, tag .. ": an owned tower opens its panel in the " .. layout.towerVariant .. " slot")
+		local upgradeLine = false
+		for _, item in ipairs(gui:GetDescendants()) do
+			if type(item.Text) == "string" and string.find(item.Text, "Melhoria 2/5", 1, true) then upgradeLine = true end
+		end
+		check(upgradeLine, tag .. ": a tower's in-match upgrade reads as Melhoria, not a level")
 		click("MELHORAR")
 		check(asked("UpgradeTower"), tag .. ": the upgrade button reaches the server")
 		click("Alvo:")

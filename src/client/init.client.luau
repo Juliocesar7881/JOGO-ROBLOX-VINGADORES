@@ -351,20 +351,20 @@ local function contextHero(body, data)
 		if old then table.remove(list,old) elseif #list<5 then table.insert(list,id) else showToast(T("A equipe tem 5 heróis. Retire um primeiro.","Squad full. Unequip a hero first."),true); return end
 		act("SetLoadout",{heroes=list})
 	end,{Size=UDim2.new(1,-6,0,44)})
-	UI.section(body,T("MELHORE SEU PODER","UPGRADE YOUR POWER"),T("Nível do herói ","Hero level ")..owned.level.."/20")
+	UI.section(body,T("MELHORE A HABILIDADE","UPGRADE THE ABILITY"),T("Maestria do herói ","Hero mastery ")..owned.level.."/20"..T("  •  rank da habilidade ","  •  ability rank ")..rank.."/"..Catalog.AbilityRanks.max)
 	local offer=Rules.AbilityUpgrade(def,rank)
 	if offer then
-		local buy=UI.button(body,T("MELHORAR • ","UPGRADE • ")..number(offer.cost)..T(" Ouro • Herói nível "," Gold • Hero level ")..offer.mastery,function()
+		local buy=UI.button(body,T("RANK ","RANK ")..(rank+1)..T(" • ",": ")..number(offer.cost)..T(" Ouro • maestria "," Gold • mastery ")..offer.mastery,function()
 			act("UpgradeAbility",{heroId=id,expectedRank=rank},function() audio:Cue("upgrade") end)
 		end,{Name="UpgradeAbility_"..id,Size=UDim2.new(1,-6,0,46),BackgroundColor3=tint})
 		if owned.level<offer.mastery or (profile().gold or 0)<offer.cost then UI.disabled(buy) end
   if owned.level<offer.mastery then
-   smallText(body,T("Seu herói precisa do nível ","Your hero needs level ")..offer.mastery..T(". Jogue usando este herói para evoluir.",". Play with this hero to progress."),0,42)
+   smallText(body,T("Seu herói precisa de maestria ","Your hero needs mastery ")..offer.mastery..T(". Jogue usando este herói para evoluir.",". Play with this hero to progress."),0,42)
   elseif (profile().gold or 0)<offer.cost then
    smallText(body,T("Faltam ","You need ")..number(offer.cost-(profile().gold or 0))..T(" Ouro para esta melhoria."," more Gold for this upgrade."),0,32)
   end
  else
-  UI.label(body,T("PODER NO NÍVEL MÁXIMO!","POWER AT MAX LEVEL!"),{Size=UDim2.new(1,-6,0,32),TextColor3=C.gold,Font=Enum.Font.GothamBold,TextSize=13})
+  UI.label(body,T("HABILIDADE NO RANK MÁXIMO!","ABILITY AT MAX RANK!"),{Size=UDim2.new(1,-6,0,32),TextColor3=C.gold,Font=Enum.Font.GothamBold,TextSize=13})
  end
  local progress=UI.row(body,12)
  for level=1,Catalog.AbilityRanks.max do
@@ -372,7 +372,7 @@ local function contextHero(body, data)
  end
 	for level=1,Catalog.AbilityRanks.max do
 		local row=UI.roundFrame(body,{Name="AbilityRank_"..level,Size=UDim2.new(1,-6,0,84),BackgroundColor3=level<=rank and tint:Lerp(C.background,0.85) or C.card},level<=rank and tint or C.stroke)
-		UI.label(row,T("NÍVEL ","LEVEL ")..level..(level<=rank and " ✓" or ""),{Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-24,0,22),TextColor3=tint,Font=Enum.Font.GothamBold})
+		UI.label(row,"RANK "..level..(level<=rank and " ✓" or ""),{Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-24,0,22),TextColor3=tint,Font=Enum.Font.GothamBold})
 		UI.label(row,Rules.AbilityText(ability,level,language),{Position=UDim2.fromOffset(12,31),Size=UDim2.new(1,-24,0,45),TextSize=11,TextWrapped=true})
 	end
 
@@ -833,7 +833,7 @@ local function contextSquad(body)
 		inventoryView.rarity=Catalog.RarityOrder[index+1] or "all"; renderContext()
 	end,{Name="CycleHeroRarity",Size=UDim2.new(0.5,-5,0,44),TextSize=11})
 	local sorts={"collection","rarity","level","cost","name"}
-	local sortNames={collection=T("COLEÇÃO","COLLECTION"),rarity=T("RARIDADE ↓","RARITY ↓"),level=T("NÍVEL ↓","LEVEL ↓"),cost=T("CUSTO ↑","COST ↑"),name=T("NOME A–Z","NAME A–Z")}
+	local sortNames={collection=T("COLEÇÃO","COLLECTION"),rarity=T("RARIDADE ↓","RARITY ↓"),level=T("MAESTRIA ↓","MASTERY ↓"),cost=T("CUSTO ↑","COST ↑"),name=T("NOME A–Z","NAME A–Z")}
 	UI.secondary(filterRow,sortNames[inventoryView.sort].." ›",function() inventoryView.sort=sorts[(table.find(sorts,inventoryView.sort) or 0)%#sorts+1]; renderContext() end,{Name="CycleHeroSort",Position=UDim2.new(0.5,0,0,0),Size=UDim2.new(0.5,-6,0,44),TextSize=11})
 	local entries=UI.collectionEntries(Catalog,profile(),{query=inventoryView.query,rarity=inventoryView.rarity,sort=inventoryView.sort,ownership=inventoryFilter},language)
 	local filterActive=inventoryView.query~="" or inventoryView.rarity~="all"
@@ -858,7 +858,7 @@ local function contextSquad(body)
   heroPortrait(row,id,{Position=UDim2.new(0,5,0,28),Size=UDim2.new(1,-10,0,100)})
   UI.label(row,Catalog.Upper(L(rarity.name)),{Position=UDim2.fromOffset(9,7),Size=UDim2.new(1,-18,0,18),TextColor3=C.background,Font=Enum.Font.GothamBlack,TextSize=10})
   UI.label(row,heroName(id),{Position=UDim2.fromOffset(9,131),Size=UDim2.new(1,-18,0,38),Font=Enum.Font.GothamBlack,TextSize=13,TextWrapped=true,TextColor3=C.background})
-  UI.label(row,owned and (T("NÍVEL ","LEVEL ")..owned.level.."/20") or T("AINDA NÃO TEM","NOT OWNED YET"),{Position=UDim2.fromOffset(9,172),Size=UDim2.new(1,-18,0,18),TextSize=10,TextColor3=C.panel})
+  UI.label(row,owned and (T("MAESTRIA ","MASTERY ")..owned.level.."/20") or T("AINDA NÃO TEM","NOT OWNED YET"),{Position=UDim2.fromOffset(9,172),Size=UDim2.new(1,-18,0,18),TextSize=10,TextColor3=C.panel})
 	UI.label(row,L(def.role),{Position=UDim2.fromOffset(9,191),Size=UDim2.new(1,-18,0,28),TextWrapped=true,TextSize=10,TextColor3=C.panel})
   UI.button(row,inventoryView.leaderPick and owned and T("ESCOLHER LÍDER","CHOOSE LEADER") or slot==1 and T("★ LÍDER","★ LEADER") or slot and (T("NA EQUIPE • ","EQUIPPED • ")..slot) or T("VER HERÓI","VIEW HERO"),function()
 		if inventoryView.leaderPick and owned then makeLeader(id,function() inventoryView.leaderPick=false; renderContext() end) else openContext("hero",{heroId=id}) end
@@ -1989,7 +1989,7 @@ local function towerPanel(tower)
 	local def = Catalog.Heroes[tower.heroId]
 	local own = tower.ownerId == player.UserId
 	local half = math.floor((w - 30) / 2)
-	local levelText = T("Nível ", "Level ") .. tostring(tower.level) .. "/5" .. (tower.branch and "  •  " .. L(def.branches[tower.branch].name) or "")
+	local levelText = T("Melhoria ", "Upgrade ") .. tostring(tower.level) .. "/5" .. (tower.branch and "  •  " .. L(def.branches[tower.branch].name) or T("  •  só nesta partida", "  •  this match only"))
 	UI.secondary(panel, "×", closeTowerPanel, {Name="CloseTower",Position = UDim2.fromOffset(w - 46, 4), Size = UDim2.fromOffset(40, 40), TextSize = 24})
 	local actionY, actionH, rowY, rowH
 	if wide then
@@ -2089,7 +2089,7 @@ local function updateUpgradeBoards(match)
 			local cost = tower.upgradeCost or 0
 			local affordable = (match.cash or 0) >= cost
 			local nextLevel = (tower.level or 1) + 1
-			board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("⬆ " .. T("NV", "LV") .. tostring(nextLevel))) .. "  🪙" .. number(cost)
+			board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("⬆ " .. tostring(nextLevel) .. "/5")) .. "  🪙" .. number(cost)
 			board.button.BackgroundColor3 = affordable and C.green or C.card
 			board.button.TextColor3 = affordable and C.background or C.muted
 		end
@@ -2142,7 +2142,7 @@ local function openBaseUpgrade()
 	local body=UI.scroll(panel,{Position=UDim2.fromOffset(14,58),Size=UDim2.new(1,-28,1,-70),ZIndex=47}); UI.list(body,10)
 	local art=UI.row(body,106); art.ZIndex=47
 	UI.basePortrait(art,def,{Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(104,104),ZIndex=48})
-	UI.label(art,L(def.name).."\n"..T("NÍVEL ","LEVEL ")..base.level.." / 5",{Position=UDim2.fromOffset(114,4),Size=UDim2.new(1,-124,1,-8),TextSize=18,Font=Enum.Font.GothamBlack,TextWrapped=true,ZIndex=48})
+	UI.label(art,L(def.name).."\n"..T("MELHORIA ","UPGRADE ")..base.level.." / 5",{Position=UDim2.fromOffset(114,4),Size=UDim2.new(1,-124,1,-8),TextSize=18,Font=Enum.Font.GothamBlack,TextWrapped=true,ZIndex=48})
 	local function line(text,color,height) UI.label(body,text,{Size=UDim2.new(1,-8,0,height or 28),TextSize=13,TextWrapped=true,TextColor3=color or C.text,ZIndex=48}) end
 	line(L(def.description),C.muted,46)
 	line(T("RENDA POR ONDA: ","INCOME PER WAVE: ")..stats.income.." → "..nextStats.income..T(" Ouro"," Gold"),C.gold)
