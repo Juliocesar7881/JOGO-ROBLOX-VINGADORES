@@ -3221,7 +3221,9 @@ function World:MakeTower(id, heroId, position, ownerId)
 	-- animates around it and restores to whatever this says, so an upgrade
 	-- landing mid-recoil is never undone by the animation finishing late.
 	ring:SetAttribute("BaseSize", 5.8)
-	local scale = FIGURE_SCALE[heroId] or 1
+	-- Towers stand a head taller than a commander, so a hero reads as the
+	-- defence it is from the far camera, not as another avatar in the crowd.
+	local scale = (FIGURE_SCALE[heroId] or 1) * 1.15
 	local origin = CFrame.new(position.X, 0.55, position.Z)
 	local torso, head = heroFigure(model, heroId, hero, origin, scale)
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") then p.CanCollide = false p:SetAttribute("TowerId", id) end end

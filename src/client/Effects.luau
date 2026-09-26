@@ -16,12 +16,23 @@ local function part(parent, size, color, material)
 	return p
 end
 
+-- Infected used to be people: each one keeps whatever it was wearing.
+local SHIRTS = {
+	Color3.fromRGB(176, 58, 52), Color3.fromRGB(58, 96, 160), Color3.fromRGB(214, 190, 120), Color3.fromRGB(92, 128, 72),
+	Color3.fromRGB(226, 226, 218), Color3.fromRGB(122, 74, 150), Color3.fromRGB(230, 140, 50), Color3.fromRGB(64, 64, 72),
+}
+local PANTS = { Color3.fromRGB(48, 66, 104), Color3.fromRGB(34, 38, 43), Color3.fromRGB(110, 96, 70), Color3.fromRGB(70, 74, 82) }
+
 local function buildEnemy(def)
 	local family=def.family or def.id
 	local model = Instance.new("Model")
 	model.Name = "EnemyVisual"
 	local color = UI.color(def.color)
 	local scale = def.boss and 2.1 or (family == "brute" and 1.45 or 1)
+	-- Only the plain infected varies in height: other families hang props
+	-- at fixed offsets that a different scale would leave floating.
+	if def.id == "zombie" then scale *= 0.93 + math.random() * 0.14 end
+	local shambler = family == "zombie"
 	local torso = part(model, Vector3.new(1.6, 1.7, 0.85) * scale, color)
 	torso.Material = Enum.Material.SmoothPlastic
 	torso.Name = "Torso"
@@ -34,17 +45,43 @@ local function buildEnemy(def)
 	head.CFrame = CFrame.new(0, 3.35 * scale, 0)
 	local legHeight = 1.25 * scale
 	local legs, arms, wings = {}, {}, {}
+	local pants = def.boss and Color3.fromRGB(34, 38, 43) or PANTS[math.random(1, #PANTS)]
 	for _, x in ipairs({-1, 1}) do
 		local arm = part(model, Vector3.new(0.48, 1.6, 0.5) * scale, color:Lerp(Color3.new(), 0.2))
 		arm.Name = "Arm"
-		arm.CFrame = CFrame.new(x * 1.05 * scale, 1.95 * scale, -0.18 * scale) * CFrame.Angles(-0.3, 0, x * 0.16)
+		if shambler then
+			-- The classic shamble: both arms reaching for the core ahead.
+			local shoulder = Vector3.new(x * 1.02, 2.72, -0.1) * scale
+			arm.CFrame = CFrame.new(shoulder + Vector3.new(0, -0.25, -0.76) * scale) * CFrame.Angles(1.25, 0, x * 0.06)
+		else
+			arm.CFrame = CFrame.new(x * 1.05 * scale, 1.95 * scale, -0.18 * scale) * CFrame.Angles(-0.3, 0, x * 0.16)
+		end
 		table.insert(arms, {part = arm, base = torso.CFrame:Inverse() * arm.CFrame, side = x})
-		local leg = part(model, Vector3.new(0.56 * scale, legHeight, 0.6 * scale), Color3.fromRGB(34, 38, 43))
+		local leg = part(model, Vector3.new(0.56 * scale, legHeight, 0.6 * scale), pants)
 		local base = CFrame.new(x * 0.44 * scale, 0.57 * scale, 0)
 		leg.CFrame = base
 		table.insert(legs, {part = leg, base = torso.CFrame:Inverse() * base, side = x})
 		local eye = part(model, Vector3.new(0.17, 0.13, 0.08) * scale, Color3.fromRGB(163, 255, 88), Enum.Material.Neon)
 		eye.CFrame = CFrame.new(x * 0.24 * scale, 3.48 * scale, -0.5 * scale)
+	end
+	-- Three pieces every common enemy shares: a shirt over the upper torso
+	-- (green belly showing below it), a slack dark jaw and, on the ground, a
+	-- contact shadow — the parts cast no real shadow, so they used to float.
+	local shirt
+	if not def.boss then
+		shirt = part(model, Vector3.new(1.7, 1.2, 0.95) * scale, SHIRTS[math.random(1, #SHIRTS)], Enum.Material.Fabric)
+		shirt.Name, shirt.CFrame = "Shirt", CFrame.new(0, 2.28 * scale, 0)
+		local jaw = part(model, Vector3.new(0.55, 0.12, 0.1) * scale, Color3.fromRGB(28, 22, 26))
+		jaw.Name, jaw.CFrame = "Jaw", CFrame.new(0, 3.08 * scale, -0.46 * scale)
+		if def.id == "zombie" and math.random() < 0.55 then
+			local hair = part(model, Vector3.new(1.08, 0.4, 0.98) * scale, Color3.fromRGB(math.random(30, 90), math.random(22, 60), math.random(18, 40)), Enum.Material.Fabric)
+			hair.Name, hair.CFrame = "Hair", CFrame.new(0, 3.72 * scale, 0.06 * scale) * CFrame.Angles(-0.12, 0, 0)
+		end
+	end
+	if not def.air then
+		local shadow = part(model, Vector3.new(0.05, 2.3 * scale, 2.3 * scale), Color3.new(0, 0, 0))
+		shadow.Name, shadow.Shape, shadow.Transparency = "Shadow", Enum.PartType.Cylinder, 0.55
+		shadow.CFrame = CFrame.new(0, 0.06, 0) * CFrame.Angles(0, 0, math.pi / 2)
 	end
 	if def.air then
 		for _, side in ipairs({ -1, 1 }) do
@@ -161,7 +198,7 @@ local function buildEnemy(def)
 	local pieces = {}
 	for _, piece in ipairs(model:GetChildren()) do
 		if piece:IsA("BasePart") then
-			if def.stealth and piece.Material ~= Enum.Material.Neon then piece.Transparency = 0.32 end
+			if def.stealth and piece.Material ~= Enum.Material.Neon and piece.Name ~= "Shadow" then piece.Transparency = 0.32 end
 			table.insert(pieces, {part = piece, rest = torso.CFrame:Inverse() * piece.CFrame, transparency = piece.Transparency})
 		end
 	end
@@ -172,7 +209,7 @@ local function buildEnemy(def)
 		model = model, bar = hp, status = status, scale = scale, def = def, lastHP = nil,
 		legs = def.air and nil or legs, arms = arms, wings = wings, legHeight = legHeight,
 		pieces = pieces, billboard = billboard,
-		flashParts = { { part = torso, color = torso.Color }, { part = head, color = head.Color } },
+		flashParts = { { part = torso, color = torso.Color }, { part = head, color = head.Color }, shirt and { part = shirt, color = shirt.Color } or nil },
 		flashUntil = nil,
 	}
 end
