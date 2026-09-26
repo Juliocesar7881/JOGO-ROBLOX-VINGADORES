@@ -1336,6 +1336,53 @@ local function session(screen)
 		frames(1 / 30, 2)
 	end)
 
+	step("enemy families read at a glance: links, reveal, summons and armour", function()
+		push(matchSnapshot(profile, "Wave", { enemies = 4 }))
+		local visuals = workspace:FindFirstChild("DoomClientVisuals")
+		fx({ kind = "EnemySync", enemies = {
+			{ id = 501, enemyId = "support", position = v3(10, 0, -15), hp = 100, maxHP = 100, st = 0 },
+			{ id = 502, enemyId = "zombie", position = v3(14, 0, -15), hp = 40, maxHP = 40, st = 256, lk = 501 },
+			{ id = 503, enemyId = "stealth", position = v3(20, 0, -15), hp = 60, maxHP = 60, st = 0 },
+			{ id = 504, enemyId = "summoner", position = v3(26, 0, -15), hp = 190, maxHP = 190, st = 0, ch = 1 },
+		} })
+		frames(1 / 30, 2)
+		check(countNamed(visuals, "SupportLink") == 1, tag .. ": a support is linked to the one enemy it hastens")
+		local charges = 0
+		for _, model in ipairs(visuals:GetChildren()) do
+			if model.Name == "EnemyVisual" then charges += countNamed(model, "Charge") end
+		end
+		check(charges == 1, tag .. ": a summoner shows one orb per summons left, got " .. charges)
+		local function cloakTransparency()
+			for _, model in ipairs(visuals:GetChildren()) do
+				local torso = model.Name == "EnemyVisual" and model:FindFirstChild("Torso")
+				local seen = torso and (torso.Transparency or 0)
+				if seen and seen > 0 and seen < 0.5 then return seen end
+			end
+			return 0
+		end
+		check(cloakTransparency() > 0, tag .. ": a cloaked enemy is see-through")
+		fx({ kind = "EnemySync", enemies = {
+			{ id = 501, enemyId = "support", position = v3(10, 0, -15), hp = 100, maxHP = 100, st = 0 },
+			{ id = 502, enemyId = "zombie", position = v3(14, 0, -15), hp = 40, maxHP = 40, st = 0 },
+			{ id = 503, enemyId = "stealth", position = v3(20, 0, -15), hp = 60, maxHP = 60, st = 128 },
+			{ id = 504, enemyId = "summoner", position = v3(26, 0, -15), hp = 190, maxHP = 190, st = 0, ch = 0 },
+		} })
+		frames(1 / 30, 2)
+		check(countNamed(visuals, "SupportLink") == 0, tag .. ": the link goes when the haste ends")
+		check(cloakTransparency() == 0, tag .. ": a revealed cloaked enemy turns solid")
+		local spent = 0
+		for _, model in ipairs(visuals:GetChildren()) do
+			if model.Name == "EnemyVisual" then spent += countNamed(model, "Charge") end
+		end
+		check(spent == 0, tag .. ": a summoner with no summons left shows no orbs")
+		local before = countNamed(visuals, "CombatEffect")
+		fx({ kind = "Shot", from = v3(10, 4, 10), to = v3(14, 2, -15), color = Color3.fromRGB(200, 200, 200), towerId = "t1", armored = true })
+		check(countNamed(visuals, "ArmorSpark") == 3, tag .. ": a hit on armour throws sparks")
+		check(countNamed(visuals, "CombatEffect") >= before, tag .. ": the shot itself still renders")
+		fx({ kind = "Clear" })
+		frames(1 / 30, 2)
+	end)
+
 	step("reduced effects still runs every path", function()
 		local calm = veteranProfile()
 		calm.settings.lowFX = true

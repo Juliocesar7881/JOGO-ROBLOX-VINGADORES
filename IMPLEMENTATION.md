@@ -489,6 +489,11 @@ toda melhoria de torre, para a animação (pulo e coluna dourada).
 `TowersStunned {towerIds, duration}`: torres interrompidas por um poder de
 chefe (estrelas e postura caída). Cada torre do snapshot traz `stunned`
 (segundos restantes) enquanto estiver interrompida.
+`EnemySync` traz por inimigo `lk` (id do suporte que o acelera, se houver) e,
+nos invocadores, `ch` (invocações restantes, 0–2). Os bits de `st` ganham
+`128` (camuflado revelado) e `256` (acelerado por suporte). `Shot` traz
+`armored = true` quando o alvo tem armadura de 25% ou mais (faíscas). Uma
+invocação é anunciada 1,5 s antes com um `Pulse` que segue o invocador.
 
 **Construção.** Prévia e servidor chamam `Rules.BuildCheck(mapId, position,
 towers, config, blockers)`; recusas usam `Rules.BuildReasons` (`bounds`,

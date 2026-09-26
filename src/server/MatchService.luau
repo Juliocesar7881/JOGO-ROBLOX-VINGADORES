@@ -24,7 +24,7 @@ local BOSS_STUN_SHARE, BOSS_STUN_IMMUNITY = 0.25, 15
 -- Seconds a commander has to choose a card before the next wave begins.
 local CARD_SECONDS = 30
 
-local STATUS = { stunned = 1, slowed = 2, marked = 4, burning = 8, shielded = 16, weakened = 32, vulnerable = 64 }
+local STATUS = { stunned = 1, slowed = 2, marked = 4, burning = 8, shielded = 16, weakened = 32, vulnerable = 64, revealed = 128, boosted = 256 }
 -- Every boss power leaves an opening: for a few seconds after it the boss
 -- takes extra damage, shown over its head, so the rhythm rewards timing.
 local VULNERABLE_SECONDS, VULNERABLE_BONUS = 3, 0.25
@@ -538,7 +538,8 @@ function Match:_attack(tower, stats)
 	end
 	local c=self.catalog.Heroes[tower.heroId].color
 	local visualHeight = target.def.air and 8 or target.def.boss and 4.2 or target.enemyId=="brute" and 2.9 or 2
-	self:_fx({kind="Shot",from=tower.position+Vector3.new(0,4,0),to=target.position+Vector3.new(0,visualHeight,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp})
+	self:_fx({kind="Shot",from=tower.position+Vector3.new(0,4,0),to=target.position+Vector3.new(0,visualHeight,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp,
+		armored=(target.def.armor or 0)>=0.25 or nil})
 	if attack=="splash" or attack=="dot" then self:_fx({kind="Pulse",position=target.position,radius=stats.splash or 8,color=Color3.fromRGB(c[1],c[2],c[3])}) end
 	return true
 end
@@ -610,6 +611,8 @@ function Match:_statusOf(enemy)
 	if enemy.shield > 0 then flags += STATUS.shielded end
 	if enemy.armorUntil > self.elapsed and enemy.armorBreak > 0 then flags += STATUS.weakened end
 	if enemy.vulnerableUntil and enemy.vulnerableUntil > self.elapsed then flags += STATUS.vulnerable end
+	if enemy.def.stealth and enemy.revealUntil > self.elapsed then flags += STATUS.revealed end
+	if enemy.boostUntil and enemy.boostUntil > self.elapsed then flags += STATUS.boosted end
 	return flags
 end
 
@@ -643,15 +646,27 @@ function Match:_enemiesStep(dt)
 					if enemy.shield>0 then self:_power(enemy) end
 				end
 				if enemy.regenUntil and enemy.regenUntil>self.elapsed then enemy.hp=math.min(enemy.maxHP,enemy.hp+enemy.maxHP*0.009*dt) end
-			elseif enemy.enemyId=="summoner" and self.elapsed>=enemy.nextPower and enemy.summons<2 then
-				enemy.summons+=1 enemy.nextPower=self.elapsed+12 self:_summon(enemy,3,"zombie")
+			elseif enemy.enemyId=="summoner" and enemy.summons<2 then
+				-- A summons is announced a moment ahead and opens a portal; the
+				-- orbs on the staff show how many are left (EnemySync "ch").
+				if not enemy.summonTold and self.elapsed>=enemy.nextPower-1.5 then
+					enemy.summonTold=true
+					self:_fx({kind="Pulse",position=enemy.position,radius=6,color=Color3.fromRGB(190,110,255),duration=1.5,
+						followEnemyId=enemy.id,warningText={pt="INVOCANDO",en="SUMMONING"}})
+				end
+				if self.elapsed>=enemy.nextPower then
+					enemy.summons+=1 enemy.nextPower=self.elapsed+12 enemy.summonTold=false self:_summon(enemy,3,"zombie")
+					self:_fx({kind="Pulse",position=enemy.position,radius=7,color=Color3.fromRGB(190,110,255)})
+				end
 			end
 			if enemy.stunUntil > self.elapsed then continue end
 			local speed=enemy.def.speed
 			if enemy.slowUntil>self.elapsed then speed*=1-enemy.slow else enemy.slow=0 end
 			if enemy.frenzyUntil and enemy.frenzyUntil>self.elapsed then speed*=1.2 end
 			for _,support in pairs(self.enemies) do
-				if support.enemyId=="support" and support.id~=enemy.id and distanceXZ(support.position,enemy.position)<18 then speed*=1.12 break end
+				if support.enemyId=="support" and support.id~=enemy.id and distanceXZ(support.position,enemy.position)<18 then
+					speed*=1.12 enemy.boostedBy=support.id enemy.boostUntil=self.elapsed+0.3 break
+				end
 			end
 			enemy.progress+=speed*dt enemy.position=self:_pathPosition(enemy.routeIndex,enemy.progress)
 			if enemy.progress>=self.routeCache[enemy.routeIndex].total then
@@ -1145,7 +1160,13 @@ function Match:Step(dt)
 		self.syncTimer=0 local enemies={}
 		-- Replicate route position, not a second visual flight offset. Client
 		-- torso height and Shot endpoints use the same 8-stud airborne center.
-		for _,e in pairs(self.enemies) do table.insert(enemies,{id=e.id,enemyId=e.enemyId,position=e.position,hp=e.hp,maxHP=e.maxHP,phase=e.phase,st=self:_statusOf(e),final=e.final or nil}) end
+		-- lk: the support hastening this enemy, for the link the client draws;
+		-- ch: a summoner's summons left.
+		for _,e in pairs(self.enemies) do
+			local boosted=e.boostUntil and e.boostUntil>self.elapsed
+			table.insert(enemies,{id=e.id,enemyId=e.enemyId,position=e.position,hp=e.hp,maxHP=e.maxHP,phase=e.phase,st=self:_statusOf(e),final=e.final or nil,
+				lk=boosted and e.boostedBy or nil,ch=e.enemyId=="summoner" and math.max(0,2-(e.summons or 0)) or nil})
+		end
 		-- The heaviest few hits since the last sync, one number per enemy.
 		local hits, order = {}, {}
 		for id, amount in pairs(self.hitBuffer) do

@@ -1285,6 +1285,48 @@ do
 	lab.elapsed += 3.1
 	check(math.floor(lab:_statusOf(brute) / 64) % 2 == 0, "the opening closes after three seconds")
 
+	-- Enemy families read without names: the server says who a support is
+	-- hastening, when a cloaked enemy is revealed, how many summons are left
+	-- (announced ahead) and when a shot hits armour.
+	local reads, readsPlayer = stage({ modeId = "normal", mapId = "manhattan", wave = 12 })
+	local readEvents = {}
+	local readFx = reads._fx
+	reads._fx = function(self, event, ...) table.insert(readEvents, event) return readFx(self, event, ...) end
+	local medic = spawn(reads, "support", 40, 1)
+	local walker = spawn(reads, "zombie", 42, 1)
+	reads:_enemiesStep(0.05)
+	check(walker.boostedBy == medic.id and math.floor(reads:_statusOf(walker) / 256) % 2 == 1, "a support names the enemy it hastens")
+	local cloak = spawn(reads, "stealth", 20, 1)
+	check(math.floor(reads:_statusOf(cloak) / 128) % 2 == 0, "a cloaked enemy is not shown as revealed")
+	cloak.revealUntil = reads.elapsed + 1
+	check(math.floor(reads:_statusOf(cloak) / 128) % 2 == 1, "a revealed cloaked enemy is flagged")
+	local caller = spawn(reads, "summoner", 10, 1)
+	reads.elapsed = caller.nextPower - 1.4
+	reads:_enemiesStep(0.01)
+	local told
+	for _, event in ipairs(readEvents) do if event.kind == "Pulse" and event.followEnemyId == caller.id and event.warningText then told = event end end
+	check(told ~= nil and caller.summons == 0, "a summons is announced before it happens")
+	reads.elapsed = caller.nextPower
+	reads:_enemiesStep(0.01)
+	check(caller.summons == 1, "the summons happens on time")
+	reads.syncTimer = 1e6
+	reads:Step(0)
+	local sync
+	for _, event in ipairs(readEvents) do if event.kind == "EnemySync" then sync = event end end
+	local rows = {}
+	for _, row in ipairs(sync and sync.enemies or {}) do rows[row.id] = row end
+	check(rows[caller.id] and rows[caller.id].ch == 1, "a summoner's summons left travel with the sync")
+	check(rows[walker.id] and rows[walker.id].lk == medic.id, "the hastened enemy's support travels with the sync")
+	check(rows[medic.id] and rows[medic.id].lk == nil, "an enemy nobody hastens carries no link")
+	local plated = spawn(reads, "armored", 60, 1)
+	local gunner = place(reads, readsPlayer, "hawkeye")
+	plated.position = gunner.position + v3(3, 0, 0)
+	for id, enemy in pairs(reads.enemies) do if enemy ~= plated then reads.enemies[id] = nil end end
+	reads:_attack(gunner, reads:_towerStats(gunner))
+	local shot
+	for _, event in ipairs(readEvents) do if event.kind == "Shot" and event.towerId == gunner.id then shot = event end end
+	check(shot ~= nil and shot.armored == true, "a shot on armour says so, for the sparks")
+
 	-- Competitive past wave 70: no old 50-wave cap anywhere.
 	local deep, deepPlayer = stage({ modeId = "ranked", mapId = "latveria", wave = 149 })
 	local dp = deep.participants[deepPlayer.UserId]

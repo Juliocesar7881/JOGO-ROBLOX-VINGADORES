@@ -45,6 +45,7 @@ local function buildEnemy(def)
 	head.CFrame = CFrame.new(0, 3.35 * scale, 0)
 	local legHeight = 1.25 * scale
 	local legs, arms, wings = {}, {}, {}
+	local charges = nil
 	local pants = def.boss and Color3.fromRGB(34, 38, 43) or PANTS[math.random(1, #PANTS)]
 	for _, x in ipairs({-1, 1}) do
 		local arm = part(model, Vector3.new(0.48, 1.6, 0.5) * scale, color:Lerp(Color3.new(), 0.2))
@@ -128,6 +129,14 @@ local function buildEnemy(def)
 		staff.CFrame = CFrame.new(1.35, 1.9, -0.3)
 		local orb = part(model, Vector3.new(0.75, 0.75, 0.75), Color3.fromRGB(220, 131, 255), Enum.Material.Neon)
 		orb.Shape, orb.CFrame = Enum.PartType.Ball, CFrame.new(1.35, 3.9, -0.3)
+		-- One small orb per summons left: the limit of reinforcements is visible.
+		charges = {}
+		for index = 1, 2 do
+			local charge = part(model, Vector3.new(0.38, 0.38, 0.38), Color3.fromRGB(240, 190, 255), Enum.Material.Neon)
+			charge.Name, charge.Shape = "Charge", Enum.PartType.Ball
+			charge.CFrame = CFrame.new(1.35 + (index == 1 and -0.42 or 0.42), 3.5, -0.3)
+			table.insert(charges, charge)
+		end
 	end
 	if def.faction then
 		local material=def.faction=="doombot" and Enum.Material.Metal or Enum.Material.Fabric
@@ -227,7 +236,7 @@ local function buildEnemy(def)
 	return {
 		model = model, bar = hp, status = status, scale = scale, def = def, lastHP = nil,
 		legs = def.air and nil or legs, arms = arms, wings = wings, legHeight = legHeight,
-		pieces = pieces, billboard = billboard, groundShadow = groundShadow,
+		pieces = pieces, billboard = billboard, groundShadow = groundShadow, charges = charges,
 		flashParts = { { part = torso, color = torso.Color }, { part = head, color = head.Color }, shirt and { part = shirt, color = shirt.Color } or nil },
 		flashUntil = nil,
 	}
@@ -245,6 +254,7 @@ function Effects.new(player, request, getState, audio)
 	self.shakeAmount = 0
 	self.towerModels, self.popups, self.popupPool = nil, {}, {}
 	self.aims, self.aimsOrder = {}, {}
+	self.links, self.dustBudget = {}, 0
 	self.dying, self.collecting = {}, {}
 	self.shotSerial = 0
 	self.connection = RunService.RenderStepped:Connect(function(dt) self:Step(dt) end)
@@ -295,7 +305,7 @@ function Effects:_poolEnemy(record)
 	end
 	record.billboard.Enabled = true
 	record.lastHP, record.target, record.phase, record.animated = nil, nil, nil, nil
-	record.hitAt, record.statusFlags = nil, nil
+	record.hitAt, record.statusFlags, record.revealed, record.link, record.lastStep = nil, nil, nil, nil, nil
 	record.model.Parent = nil
 	self.pool[record.def.id] = self.pool[record.def.id] or {}
 	table.insert(self.pool[record.def.id], record)
@@ -515,6 +525,34 @@ function Effects:_turnTowers(dt)
 			if settled and not firing then record.active = false end
 		end
 	end
+end
+
+-- A support hastens the infected around it; a thin green line joins it to
+-- every enemy it is speeding up, as named by the server (EnemySync "lk").
+local MAX_LINKS = 24
+function Effects:_drawLinks(lowFX)
+	local used = 0
+	if not lowFX then
+		for _, enemy in pairs(self.enemies) do
+			local support = enemy.link and self.enemies[enemy.link]
+			if support and used < MAX_LINKS then
+				local a = support.position + Vector3.new(0, 2.8 * support.scale, 0)
+				local b = enemy.position + Vector3.new(0, 2 * enemy.scale, 0)
+				if (b - a).Magnitude > 0.3 then
+					used += 1
+					local line = self.links[used]
+					if not line then
+						line = part(nil, Vector3.one, Color3.fromRGB(174, 248, 115), Enum.Material.Neon)
+						line.Name, line.Transparency = "SupportLink", 0.45
+						self.links[used] = line
+					end
+					line.Size, line.CFrame = Vector3.new(0.12, 0.12, (b - a).Magnitude), CFrame.lookAt((a + b) / 2, b)
+					line.Parent = self.folder
+				end
+			end
+		end
+	end
+	for index = used + 1, #self.links do self.links[index].Parent = nil end
 end
 
 -- Floating damage numbers read straight off the HP the periodic EnemySync
@@ -910,12 +948,30 @@ function Effects:Handle(event)
 			local english = state and state.profile and state.profile.settings and state.profile.settings.language == "en"
 			local flags, words = tonumber(enemy.st) or 0, {}
 			current.statusFlags = flags
-			for _, status in ipairs({{64,"VULNERÁVEL!","VULNERABLE!"},{16,"ESCUDO","SHIELD"},{1,"ATORDOADO","STUNNED"},{4,"MARCADO","MARKED"},{32,"FRÁGIL","WEAKENED"},{8,"QUEIMANDO","BURNING"},{2,"LENTO","SLOWED"}}) do
+			for _, status in ipairs({{64,"VULNERÁVEL!","VULNERABLE!"},{128,"REVELADO","REVEALED"},{16,"ESCUDO","SHIELD"},{1,"ATORDOADO","STUNNED"},{4,"MARCADO","MARKED"},{32,"FRÁGIL","WEAKENED"},{8,"QUEIMANDO","BURNING"},{2,"LENTO","SLOWED"},{256,"ACELERADO","HASTED"}}) do
 				if math.floor(flags/status[1])%2==1 then table.insert(words,status[english and 3 or 2]) end
 				if #words==2 then break end
 			end
 			current.status.Visible = #words > 0
 			current.status.Text = table.concat(words," · ")
+			-- A cloaked enemy turns solid, with a red flash, the moment it is revealed.
+			if current.def.stealth then
+				local revealed = math.floor(flags / 128) % 2 == 1
+				if revealed ~= (current.revealed == true) then
+					current.revealed = revealed
+					for _, piece in ipairs(current.pieces) do
+						if piece.part.Name ~= "Shadow" and piece.part.Material ~= Enum.Material.Neon then
+							piece.part.Transparency = revealed and 0 or piece.transparency
+						end
+					end
+					if revealed and not lowFX then self:_impact(enemy.position + Vector3.new(0, 2, 0), Color3.fromRGB(255, 90, 90), 1.4) end
+				end
+			end
+			current.link = enemy.lk and tostring(enemy.lk) or nil
+			if current.charges then
+				local left = tonumber(enemy.ch) or 0
+				for index, charge in ipairs(current.charges) do charge.Parent = index <= left and current.model or nil end
+			end
 		end
 		for id in pairs(self.enemies) do if not seen[id] then self:Release(id) end end
 		-- A dense horde must stay visible beneath its UI. Boss bars always
@@ -965,7 +1021,17 @@ function Effects:Handle(event)
 		self:_aim(event.towerId, event.to)
 		self:_recoil(event.towerId)
 		if typeof(event.from) ~= "Vector3" or typeof(event.to) ~= "Vector3" or #self.shots >= 80 then return end
-		self:_heroShot(event, state and state.profile and state.profile.settings.lowFX)
+		local lowFX = state and state.profile and state.profile.settings.lowFX
+		self:_heroShot(event, lowFX)
+		-- Armour takes part of the hit: pale sparks fly off instead of a clean impact.
+		if event.armored and not lowFX then
+			for index = 1, 3 do
+				local angle = index * 2.1 + self.shotSerial
+				local away = event.to + Vector3.new(math.cos(angle) * 1.1, 0.9, math.sin(angle) * 1.1)
+				local spark = self:_effect(Vector3.new(0.08, 0.08, 0.6), CFrame.lookAt(event.to, away), Color3.fromRGB(236, 234, 214), 0.16, nil, 0.1)
+				if spark then spark.part.Name, spark.from, spark.to = "ArmorSpark", event.to, away end
+			end
+		end
 	elseif event.kind == "Pulse" and typeof(event.position) == "Vector3" then
 		local radius = event.radius or 8
 		-- A telegraph carries its own duration and holds at full size: it marks
@@ -1051,6 +1117,7 @@ function Effects:Step(dt)
 		for _,leg in ipairs(record.legs) do leg.part.CFrame=pivot*leg.base*CFrame.Angles(lowAllyFX and 0 or math.sin(self.clock*10+leg.side*math.pi/2)*0.4,0,0) end
 	end
 	self.clock += dt
+	if self.clock >= (self.dustResetAt or 0) then self.dustBudget, self.dustResetAt = 0, self.clock + 0.5 end
 	local state = self.getState()
 	local settings = state and state.profile and state.profile.settings or {}
 	for _, enemy in pairs(self.enemies) do
@@ -1066,6 +1133,9 @@ function Effects:Step(dt)
 		local bob = settings.lowFX and 0 or math.sin(self.clock * (enemy.def.air and 4 or 8) + enemy.phase) * (enemy.def.air and 0.2 or 0.055)
 		local position = enemy.position + Vector3.new(0, 2 * enemy.scale + bob + (enemy.def.air and 6 or 0), 0)
 		local pivot = CFrame.lookAt(position, position + enemy.direction)
+		local family = enemy.def.family or enemy.def.id
+		-- Runners sprint leaning into the road; everyone else walks upright.
+		if family == "runner" and (enemy.statusFlags or 0) % 2 == 0 and not settings.lowFX then pivot *= CFrame.Angles(-0.3, 0, 0) end
 		enemy.model:PivotTo(pivot)
 		if enemy.groundShadow then
 			enemy.groundShadow.CFrame = CFrame.new(enemy.position.X, enemy.position.Y + 0.08, enemy.position.Z) * CFrame.Angles(0, 0, math.pi / 2)
@@ -1076,6 +1146,15 @@ function Effects:Step(dt)
 			-- Reset them once when lowFX changes, so legs never freeze mid-stride.
 			local phase = self.clock * (enemy.def.speed or 7) * 0.85 + enemy.phase
 			local stopped = settings.lowFX or (enemy.statusFlags or 0)%2==1
+			-- A brute's footfalls raise dust: a small, budgeted ring on the road.
+			if family == "brute" and not stopped and not settings.lowFX then
+				local stride = math.floor(phase / math.pi)
+				if enemy.lastStep and stride ~= enemy.lastStep and self.dustBudget < 8 then
+					self.dustBudget += 1
+					self:_groundImpact(enemy.position, Color3.fromRGB(150, 128, 98), 1.4 * enemy.scale)
+				end
+				enemy.lastStep = stride
+			end
 			if enemy.legs then
 				local hip = CFrame.new(0, enemy.legHeight / 2, 0)
 				for _, leg in ipairs(enemy.legs) do
@@ -1106,6 +1185,7 @@ function Effects:Step(dt)
 			for _, piece in ipairs(death.record.pieces) do piece.part.Transparency = piece.transparency + (1 - piece.transparency) * life end
 		end
 	end
+	self:_drawLinks(settings.lowFX)
 	self:_turnTowers(dt)
 	for i = #self.shots, 1, -1 do
 		local effect = self.shots[i]
