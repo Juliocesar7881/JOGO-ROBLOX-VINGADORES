@@ -127,6 +127,54 @@ function Rules.MapsForMode(modeId)
 	return maps
 end
 
+--==============================================================================
+-- Building: the one placement rule
+--==============================================================================
+-- The client's preview and the server's check call this same function, so a
+-- spot the preview shows green is a spot the server accepts. blockers are the
+-- solid things of a match that are not roads: the core and every base, as
+-- { x, z, r } circles. config supplies PathHalfWidth and TowerRadius.
+Rules.BUILD_LIMIT = 106
+Rules.BuildReasons = {
+	bounds = { pt = "Fora da área de construção", en = "Outside the build area" },
+	path = { pt = "Muito perto do caminho", en = "Too close to the path" },
+	occupied = { pt = "Espaço ocupado", en = "Space taken" },
+	cash = { pt = "Ouro insuficiente", en = "Not enough Gold" },
+	limit = { pt = "Limite de heróis", en = "Hero limit reached" },
+}
+
+local function segmentDistanceXZ(px, pz, ax, az, bx, bz)
+	local dx, dz = bx - ax, bz - az
+	local square = dx * dx + dz * dz
+	local t = if square > 0 then math.clamp(((px - ax) * dx + (pz - az) * dz) / square, 0, 1) else 0
+	local cx, cz = ax + dx * t - px, az + dz * t - pz
+	return math.sqrt(cx * cx + cz * cz)
+end
+
+function Rules.BuildCheck(mapId, position, towers, config, blockers)
+	local map = Catalog.Maps[mapId]
+	if not map or type(position) ~= "table" and typeof(position) ~= "Vector3" then return false, "bounds" end
+	local x, z = position.X, position.Z
+	if not Rules.IsFinite(x) or not Rules.IsFinite(z) then return false, "bounds" end
+	if math.abs(x) > Rules.BUILD_LIMIT or math.abs(z) > Rules.BUILD_LIMIT then return false, "bounds" end
+	local radius = number(config and config.TowerRadius, 3)
+	local clearance = number(config and config.PathHalfWidth, 6) + radius
+	for _, route in ipairs(map.paths) do
+		for index = 1, #route - 1 do
+			local a, b = route[index], route[index + 1]
+			if segmentDistanceXZ(x, z, a[1], a[2], b[1], b[2]) < clearance then return false, "path" end
+		end
+	end
+	for _, tower in ipairs(towers or {}) do
+		local tx, tz = tower.X or (tower.position and tower.position.X), tower.Z or (tower.position and tower.position.Z)
+		if tx and tz and math.sqrt((tx - x) ^ 2 + (tz - z) ^ 2) < radius * 2 then return false, "occupied" end
+	end
+	for _, blocker in ipairs(blockers or {}) do
+		if math.sqrt((blocker.x - x) ^ 2 + (blocker.z - z) ^ 2) < (blocker.r or 0) + radius then return false, "occupied" end
+	end
+	return true
+end
+
 -- What a stretch of whole minutes in an AFK chamber pays. nil for anything
 -- that is not a farm or not a sane number of minutes.
 function Rules.AfkReward(kind, minutes)

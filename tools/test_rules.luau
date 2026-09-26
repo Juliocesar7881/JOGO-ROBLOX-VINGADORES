@@ -185,6 +185,39 @@ do
 	for _, mapId in Catalog.MapOrder do equal(campaigns[mapId], 1, "One campaign entrance per map: " .. mapId) end
 end
 
+-- One placement rule for the preview and the server, with a reason for every refusal.
+do
+	local config = { PathHalfWidth = 6, TowerRadius = 3 }
+	local function at(x, z) return { X = x, Y = 0, Z = z } end
+	-- Manhattan's first road runs along z = -80 from x = -92 (see its paths).
+	local road = Catalog.Maps.manhattan.paths[1]
+	local a, b = road[1], road[2]
+	local mid = { (a[1] + b[1]) / 2, (a[2] + b[2]) / 2 }
+	local ok, reason = Rules.BuildCheck("manhattan", at(mid[1], mid[2]), {}, config)
+	check(not ok and reason == "path", "building on the road is refused as too close to the path")
+	local function clearSpot()
+		for x = -100, 100, 2 do
+			for z = -100, 100, 2 do
+				if Rules.BuildCheck("manhattan", at(x, z), {}, config) then return x, z end
+			end
+		end
+	end
+	local x, z = clearSpot()
+	check(x ~= nil, "Manhattan has open ground")
+	ok, reason = Rules.BuildCheck("manhattan", at(x, z), { at(x + 2, z) }, config)
+	check(not ok and reason == "occupied", "a spot next to another tower is taken")
+	check(Rules.BuildCheck("manhattan", at(x, z), { at(x + 6.01, z) }, config), "towers may stand two radii apart")
+	ok, reason = Rules.BuildCheck("manhattan", at(x, z), {}, config, { { x = x + 5, z = z, r = 6.5 } })
+	check(not ok and reason == "occupied", "a base or the core blocks building on it")
+	ok, reason = Rules.BuildCheck("manhattan", at(Rules.BUILD_LIMIT + 0.5, 0), {}, config)
+	check(not ok and reason == "bounds", "outside the build area is refused")
+	check(not Rules.BuildCheck("manhattan", at(0 / 0, 0), {}, config), "a NaN position is refused")
+	check(not Rules.BuildCheck("nowhere", at(x, z), {}, config), "an unknown map is refused")
+	for _, key in { "bounds", "path", "occupied", "cash", "limit" } do
+		check(Rules.BuildReasons[key] and Rules.BuildReasons[key].pt and Rules.BuildReasons[key].en, "every refusal has a bilingual reason: " .. key)
+	end
+end
+
 -- AFK farm: a small, fixed pay per whole minute, and nothing for nonsense.
 equal(Rules.AfkReward("gold", 1).gold, Catalog.Afk.gold.gold, "Gold farm pays its rate")
 equal(Rules.AfkReward("gold", 1).xp, 0, "Gold farm pays no XP")

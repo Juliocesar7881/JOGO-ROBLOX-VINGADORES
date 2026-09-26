@@ -3218,6 +3218,57 @@ function World:UpdateBase(index, base, core)
 	return at
 end
 
+-- A barricade stands across each road exactly where its rule stops enemies:
+-- BARRIER_DISTANCE studs before the core (MatchService._basesStep). Roads
+-- that share their last stretch share one barrier.
+local BARRIER_DISTANCE = 15
+World.BarrierDistance = BARRIER_DISTANCE
+function World:UpdateBarrier(index, base, routes, health)
+	local name = "PlayerBarrier_" .. index
+	local old = self.Scenery and self.Scenery:FindFirstChild(name)
+	if old then old:Destroy() end
+	if not self.Scenery or not base.stats or (base.stats.wall or 0) <= 0 then return end
+	local model = Instance.new("Model")
+	model.Name, model.Parent = name, self.Scenery
+	local tint = Color3.fromRGB(unpack(self.catalog.Bases[base.id].color))
+	local placed = {}
+	for _, route in ipairs(routes or {}) do
+		local remaining, at, direction = math.max(0, route.total - BARRIER_DISTANCE), nil, nil
+		for i, length in ipairs(route.lengths) do
+			if remaining <= length then
+				local a, b = route.points[i], route.points[i + 1]
+				at, direction = a:Lerp(b, if length > 0 then remaining / length else 0), (b - a).Unit
+				break
+			end
+			remaining -= length
+		end
+		local duplicate = false
+		for _, other in ipairs(placed) do if at and (other - at).Magnitude < 3 then duplicate = true end end
+		if at and not duplicate then
+			table.insert(placed, at)
+			local cf = CFrame.lookAt(at + Vector3.new(0, 2.2, 0), at + direction + Vector3.new(0, 2.2, 0))
+			local field = part(model, "BarrierField", Vector3.new(12, 4.4, 0.5), cf, tint, Enum.Material.ForceField)
+			field.CanCollide, field.CanQuery = false, false
+			for _, side in ipairs({ -1, 1 }) do
+				local post = part(model, "BarrierPost", Vector3.new(0.8, 5.4, 0.8), cf * CFrame.new(side * 6.4, 0.5, 0), Color3.fromRGB(53, 48, 61), Enum.Material.Metal)
+				post.CanCollide = false
+				local cap = part(model, "BarrierLight", Vector3.new(0.9, 0.35, 0.9), cf * CFrame.new(side * 6.4, 3.3, 0), tint, Enum.Material.Neon)
+				cap.CanCollide = false
+			end
+		end
+	end
+	self:SetBarrierHealth(index, health or 1)
+end
+
+-- A worn barricade fades; a fresh one glows solid.
+function World:SetBarrierHealth(index, ratio)
+	local model = self.Scenery and self.Scenery:FindFirstChild("PlayerBarrier_" .. index)
+	if not model then return end
+	for _, piece in ipairs(model:GetChildren()) do
+		if piece.Name == "BarrierField" then piece.Transparency = 0.25 + 0.7 * (1 - math.clamp(ratio, 0, 1)) end
+	end
+end
+
 function World:MakeTower(id, heroId, position, ownerId)
 	local hero = self.catalog.Heroes[heroId]
 	local model = Instance.new("Model")

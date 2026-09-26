@@ -178,6 +178,7 @@ function Match:Start(members, mapId, modeId, runId)
 		local extra=math.floor(p.base.stats.hp/self.size)
 		self.maxBaseHP+=extra; self.baseHP+=extra
 		if self.world.UpdateBase then p.base.visualPosition=self.world:UpdateBase(p.index,p.base,self.corePosition) end
+		if self.world.UpdateBarrier then self.world:UpdateBarrier(p.index,p.base,self.routeCache,1) end
 		self:_fx({kind="Clear"},player)
 		self.world:MovePlayer(player,true,index)
 	end
@@ -984,6 +985,11 @@ function Match:_basesStep(dt)
 		if p.returned or p.disconnectedAt then continue end
 		local base=p.base; local stats=base.stats
 		if self.elapsed-base.wallHitAt>=5 then base.wall=math.min(stats.wall,base.wall+stats.regen*dt) end
+		-- The barricade on the road shows how much it has left.
+		if stats.wall>0 and self.world.SetBarrierHealth then
+			local ratio=base.wall/stats.wall
+			if math.abs(ratio-(base.shownWall or -1))>=0.1 or (ratio>=1 and base.shownWall~=1) then base.shownWall=ratio; self.world:SetBarrierHealth(p.index,ratio) end
+		end
 		if self.phase~="Wave" then continue end
 		local source={ownerId=uid}
 		if stats.damage>0 and self.elapsed>=base.nextAttack then
@@ -1003,7 +1009,7 @@ function Match:_basesStep(dt)
 		if stats.wall>0 and base.wall>0 then
 			for _,enemy in pairs(self.enemies) do
 				local remaining=self.routeCache[enemy.routeIndex].total-enemy.progress
-				if enemy.hp>0 and not enemy.def.air and remaining<=15 then
+				if enemy.hp>0 and not enemy.def.air and remaining<=(self.world.BarrierDistance or 15) then
 					local spent=math.min(base.wall,enemy.hp+enemy.shield)
 					base.wall-=spent; base.wallHitAt=self.elapsed
 					self:_damage(enemy,spent,source,{trueDamage=true})
@@ -1129,14 +1135,24 @@ function Match:_magnet(p)
 	return self.config.CollectRadius*(1+talent(p,"magnet")*per)
 end
 
-function Match:_validBuild(position)
-	if not validPosition(position) or math.abs(position.X)>106 or math.abs(position.Z)>106 then return false end
-	local p=Vector3.new(position.X,0,position.Z)
-	for _,route in pairs(self.routeCache) do
-		for i=1,#route.points-1 do if segmentDistance(p,route.points[i],route.points[i+1])<self.config.PathHalfWidth+self.config.TowerRadius then return false end end
+-- The solid things of a battlefield that are not roads: the core and every
+-- commander's base. Sent to the clients too, so the preview agrees.
+function Match:_blockers()
+	local list={}
+	if self.corePosition then table.insert(list,{x=self.corePosition.X,z=self.corePosition.Z,r=8}) end
+	for _,p in pairs(self.participants) do
+		local at=p.base and p.base.visualPosition
+		if at then table.insert(list,{x=at.X,z=at.Z,r=6.5}) end
 	end
-	for _,tower in pairs(self.towers) do if distanceXZ(position,tower.position)<self.config.TowerRadius*2 then return false end end
-	return true
+	return list
+end
+
+-- The shared placement rule (Rules.BuildCheck): true, or false and a reason key.
+function Match:_validBuild(position)
+	if not validPosition(position) then return false,"bounds" end
+	local towers={}
+	for _,tower in pairs(self.towers) do table.insert(towers,tower.position) end
+	return self.rules.BuildCheck(self.mapId,position,towers,self.config,self:_blockers())
 end
 
 function Match:Handle(player,action,payload)
@@ -1159,15 +1175,19 @@ function Match:Handle(player,action,payload)
 		self.maxBaseHP+=added; self.baseHP+=added
 		base.wall+=base.stats.wall-stats.wall
 		if self.world.UpdateBase then base.visualPosition=self.world:UpdateBase(p.index,base,self.corePosition) end
+		if self.world.UpdateBarrier then self.world:UpdateBarrier(p.index,base,self.routeCache,base.stats.wall>0 and base.wall/base.stats.wall or 1) end
 		self:_fx({kind="Pulse",position=self.corePosition,radius=12,color=Color3.fromRGB(unpack(self.catalog.Bases[base.id].color)),duration=0.5})
 		return true
 	elseif action=="PlaceTower" then
 		local id=payload.heroId local hero=type(id)=="string" and self.catalog.Heroes[id]
 		if not hero or not contains(p.profile.loadout,id) or not p.profile.heroes[id] then return false,"Herói não equipado. / Hero not equipped." end
-		if p.towerCount>=self.rules.TowerLimit(self.size) then return false,"Limite de torres atingido. / Tower limit reached." end
+		local reasons=self.rules.BuildReasons
+		local function refuse(key) return false,reasons[key].pt..". / "..reasons[key].en.."." end
+		if p.towerCount>=self.rules.TowerLimit(self.size) then return refuse("limit") end
 		local cost=math.floor(hero.cost*(1-math.clamp(cardStat(p,"discount"),0,0.5)))
-		if p.cash<cost then return false,"Ouro insuficiente. / Not enough Gold." end
-		if not self:_validBuild(payload.position) then return false,"Posição inválida: mantenha distância da rota e das torres. / Keep clear of paths and towers." end
+		if p.cash<cost then return refuse("cash") end
+		local valid,reason=self:_validBuild(payload.position)
+		if not valid then return refuse(reason or "bounds") end
 		local towerId=self:_nextId("t") local pos=Vector3.new(payload.position.X,0,payload.position.Z)
 		local tower={id=towerId,heroId=id,ownerId=player.UserId,position=pos,level=1,branch=nil,priority="First",invested=cost,nextAttack=0}
 		tower.model=self.world:MakeTower(towerId,id,pos,player.UserId)
@@ -1264,7 +1284,7 @@ function Match:Snapshot(player)
 	for _,other in pairs(self.participants) do if not other.returned and other.endVote then endVotes+=1 end end
 	return {runId=self.runId,mapId=self.mapId,modeId=self.modeId,wave=self.wave,totalWaves=total,
 		base={id=p.base.id,level=p.base.level,stats=table.clone(p.base.stats),wall=math.floor(p.base.wall)},
-		completedWaves=self.completedWaves,baseHP=self.baseHP,maxBaseHP=self.maxBaseHP,shield=self.shield,cash=math.floor(p.cash),coinsWaiting=waiting,magnet=self:_magnet(p),towerLimit=self.rules.TowerLimit(self.size),
+		completedWaves=self.completedWaves,baseHP=self.baseHP,maxBaseHP=self.maxBaseHP,shield=self.shield,cash=math.floor(p.cash),coinsWaiting=waiting,magnet=self:_magnet(p),blockers=self:_blockers(),towerLimit=self.rules.TowerLimit(self.size),
 		prepRemaining=math.max(0,math.ceil(self.prepRemaining)),enemies=self.alive,elapsed=self.elapsed,ability=ability,
 		cards=table.clone(p.cards),cardOffers=p.cardOffers,cardMode=self.cardMode,goldEarned=p.goldEarned,xpEarned=p.xpEarned,towers=towers,boss=boss,
 		partySize=self.size,skipVotes=votes,nextBoss=nextBoss,threats=self.phase=="Preparing" and self.nextThreats or nil,

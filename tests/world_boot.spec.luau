@@ -252,6 +252,43 @@ do
 	end
 end
 
+-- A barricade stands across the road exactly where its rule stops enemies.
+do
+	world:Build("manhattan")
+	local routes = {}
+	for index, route in ipairs(Catalog.Maps.manhattan.paths) do
+		local points, lengths, total = {}, {}, 0
+		for _, point in ipairs(route) do table.insert(points, v3(point[1], 0, point[2])) end
+		for i = 1, #points - 1 do lengths[i] = (points[i + 1] - points[i]).Magnitude; total += lengths[i] end
+		routes[index] = { points = points, lengths = lengths, total = total }
+	end
+	local bunker = { id = "bunker", level = 1, stats = { wall = 120 } }
+	world:UpdateBarrier(1, bunker, routes, 1)
+	local model = world.Scenery:FindFirstChild("PlayerBarrier_1")
+	check(model ~= nil, "a wall base raises a barricade on the battlefield")
+	local fields = 0
+	for _, piece in ipairs(model and model:GetChildren() or {}) do
+		if piece.Name == "BarrierField" then
+			fields += 1
+			-- Distance to the core along the road must be the rule's distance.
+			local route = routes[1]
+			local finish = route.points[#route.points]
+			local last = route.points[#route.points - 1]
+			local along = (finish - last).Magnitude
+			local fromEnd = (v3(piece.Position.X, 0, piece.Position.Z) - finish).Magnitude
+			check(along < WorldBuilder.BarrierDistance or math.abs(fromEnd - WorldBuilder.BarrierDistance) < 0.01, "the barricade stands where enemies are stopped, got " .. tostring(fromEnd))
+			check(piece.CanCollide == false, "the barricade never traps avatars")
+		end
+	end
+	check(fields >= 1, "each road into the core gets its barricade")
+	world:SetBarrierHealth(1, 0.2)
+	local faded = model and model:FindFirstChild("BarrierField")
+	check(faded and faded.Transparency > 0.7, "a worn barricade fades")
+	world:UpdateBarrier(1, { id = "outpost", level = 1, stats = { wall = 0 } }, routes, 1)
+	check(world.Scenery:FindFirstChild("PlayerBarrier_1") == nil, "a base without a wall has no barricade")
+	check(WorldBuilder.StreetRules.BUILD_LIMIT == 106, "the street builder and the placement rule share the build limit")
+end
+
 local ok2, err2 = pcall(function() world:UpdateLeaderboardBoard({ { rank = 1, name = "Tester", waves = 30 } }, "Manhattan") end)
 check(ok2, "UpdateLeaderboardBoard accepts real rows: " .. tostring(err2))
 check(world.leaderboardText.Text:find("Tester") ~= nil, "the totem text reflects the rows it was given")

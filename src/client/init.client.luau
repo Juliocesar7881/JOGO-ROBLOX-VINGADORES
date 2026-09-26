@@ -1171,11 +1171,15 @@ renderContext = function()
 		UI.list(body,10)
 	end
 	body.ScrollBarImageColor3=tint
+	-- A refresh from the server rebuilds the rows, never the reader's place in
+	-- the list: remember the scroll and put it back once the rows exist.
+	local keepScroll=reuse and body.CanvasPosition or nil
 	body:SetAttribute("UpdatingCanvas",true)
 	UI.clear(body)
 	local builder = contextBuilders[contextPanel.kind]
 	if builder then builder(body, contextPanel) end
 	UI.finishScrollUpdate(body)
+	if keepScroll then body.CanvasPosition=keepScroll end
 	-- Keep panel geometry stable while Roblox lays out its scrolling content.
 	contextPanel.animate=nil
 end
@@ -1647,23 +1651,33 @@ local function distanceToSegment(point, a, b)
 	return (point - (a + delta * t)).Magnitude
 end
 
+-- The same placement rule the server applies (Rules.BuildCheck), plus the
+-- wallet and the hero limit, so the preview never promises what the server
+-- refuses. Returns true, or false and the reason key.
+local placementReason = nil
 local function positionValid(position)
-	if not state or not state.match or not selectedHero then return false end
-	if math.abs(position.X) > 107 or math.abs(position.Z) > 107 then return false end
-	local map = Catalog.Maps[state.match.mapId]
-	for _, path in ipairs(map and map.paths or {}) do
-		for index = 1, #path - 1 do
-			local a, b = Vector3.new(path[index][1], 0, path[index][2]), Vector3.new(path[index + 1][1], 0, path[index + 1][2])
-			if distanceToSegment(position, a, b) < 9 then return false end
-		end
+	if not state or not state.match or not selectedHero then return false, "bounds" end
+	local match = state.match
+	local towers, mine = {}, 0
+	for _, tower in ipairs(match.towers or {}) do
+		if typeof(tower.position) == "Vector3" then table.insert(towers, tower.position) end
+		if tower.ownerId == player.UserId then mine += 1 end
 	end
-	for _, tower in ipairs(state.match.towers or {}) do
-		if typeof(tower.position) == "Vector3" then
-			local flat = Vector3.new(tower.position.X, 0, tower.position.Z)
-			if (flat - position).Magnitude < 6 then return false end
-		end
-	end
+	local ok, reason = Rules.BuildCheck(match.mapId, position, towers, Config, match.blockers)
+	if not ok then return false, reason end
+	if mine >= (match.towerLimit or 16) then return false, "limit" end
+	local hero = Catalog.Heroes[selectedHero]
+	local discount = math.clamp(Rules.CardTotals(match.cards).discount or 0, 0, 0.5)
+	if hero and (match.cash or 0) < math.floor(hero.cost * (1 - discount)) then return false, "cash" end
 	return true
+end
+
+-- The range a new tower of this hero really gets: mastery, talents and cards.
+local function effectiveRange(heroId)
+	local perm = Rules.PermanentModifiers(profile(), heroId)
+	local cards = Rules.CardTotals(state and state.match and state.match.cards)
+	local stats = Rules.TowerStats(heroId, 1, nil, { rangeBonus = perm.rangeBonus + (cards.range or 0), damageBonus = perm.damageBonus, attackSpeedBonus = perm.attackSpeedBonus })
+	return stats.range
 end
 
 local function raycast(screenPosition, groundOnly)
@@ -1684,8 +1698,8 @@ end
 
 local function updatePreview(position)
 	selectedPosition = Vector3.new(position.X, 0, position.Z)
-	local radius = selectedHero and Catalog.Heroes[selectedHero].range or (state.match and state.match.ability and state.match.ability.radius or 20)
-	placementValid = not selectedHero or positionValid(selectedPosition)
+	local radius = selectedHero and effectiveRange(selectedHero) or (state.match and state.match.ability and state.match.ability.radius or 20)
+	if selectedHero then placementValid, placementReason = positionValid(selectedPosition) else placementValid, placementReason = true, nil end
 	local tint = placementValid and C.green or C.red
 	placementRing = rangeRing(placementRing, selectedPosition, radius, tint)
 	if selectedHero then
@@ -1709,7 +1723,8 @@ local function updatePreview(position)
 	end
 	if refs.confirm then
 		refs.confirm.BackgroundColor3 = placementValid and C.green or C.red
-		refs.confirm.Text = placementValid and T("CONFIRMAR", "CONFIRM") or T("POSIÇÃO INVÁLIDA", "INVALID POSITION")
+		local reason = placementReason and Rules.BuildReasons[placementReason]
+		refs.confirm.Text = placementValid and T("CONFIRMAR", "CONFIRM") or Catalog.Upper(reason and L(reason) or T("POSIÇÃO INVÁLIDA", "INVALID POSITION"))
 	end
 	if refs.placement then refs.placement.Visible = true end
 end

@@ -801,6 +801,20 @@ local function session(screen)
 		check(contextOpen(), tag .. ": inventory reopens for the next check")
 	end)
 
+	step("a server refresh keeps the reader's place in a list", function()
+		local body = named(gui, "ContextBody")
+		check(body ~= nil, tag .. ": the inventory list is open")
+		if body then
+			body.CanvasPosition = Vector2.new(0, 240)
+			local richer = veteranProfile()
+			richer.gold = (richer.gold or 0) + 123
+			push(lobbySnapshot(richer))
+			local after = named(gui, "ContextBody")
+			check(after == body, tag .. ": the refreshed panel keeps the same list")
+			check(after and after.CanvasPosition and after.CanvasPosition.Y == 240, tag .. ": the scroll position survives a server update")
+		end
+	end)
+
 	step("focused panels preserve navigation and usable touch space", function()
 		local context = named(gui, "ContextPanel")
 		local body = named(gui, "ContextBody")
