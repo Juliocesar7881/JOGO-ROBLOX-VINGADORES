@@ -244,7 +244,7 @@ function Effects.new(player, request, getState, audio)
 	self.shotPool, self.clock, self.collectAt = {}, 0, 0
 	self.shakeAmount = 0
 	self.towerModels, self.popups, self.popupPool = nil, {}, {}
-	self.aims = {}
+	self.aims, self.aimsOrder = {}, {}
 	self.dying, self.collecting = {}, {}
 	self.shotSerial = 0
 	self.connection = RunService.RenderStepped:Connect(function(dt) self:Step(dt) end)
@@ -345,7 +345,7 @@ end
 -- Every transform starts from the rest pose; repeated shots cannot drift.
 function Effects:_recoil(towerId)
 	local model = self:_towerModel(towerId)
-	local pose = model and self.aims[model]
+	local pose = model and self:_record(model)
 	if pose then pose.firedAt, pose.active = self.clock, true end
 	local ring = model and model:FindFirstChild("PowerRing")
 	if not ring or ring:GetAttribute("Recoiling") then return end
@@ -370,24 +370,37 @@ end
 -- safe to capture their resting CFrames once and rotate from those.
 local FIXED_TOWER_PARTS = { Platform = true, PowerRing = true }
 
+-- One pose record per hero figure, created the first time the figure needs to
+-- move (aim, idle, upgrade, cast or interruption) and dropped with the model.
+function Effects:_record(model)
+	local record = self.aims[model]
+	if record then return record end
+	local base = model.PrimaryPart
+	if not base then return nil end
+	local parts = {}
+	for _, child in ipairs(model:GetChildren()) do
+		if child:IsA("BasePart") and child:GetAttribute("HeroGeometry") and not FIXED_TOWER_PARTS[child.Name] then
+			local joint = child:GetAttribute("PoseJoint")
+			table.insert(parts, { part = child, rest = child.CFrame, group = child:GetAttribute("PoseGroup"),
+				joint = typeof(joint) == "Vector3" and CFrame.new(joint) or nil })
+		end
+	end
+	local scale = model:GetAttribute("FigureScale") or 1
+	record = { parts = parts, pivot = CFrame.new(base.Position), yaw = 0, target = 0, active = false, scale = scale,
+		heroId = model:GetAttribute("HeroId"), ownerId = model:GetAttribute("OwnerId"),
+		waist = CFrame.new(base.Position + Vector3.new(0, 2.4 * scale, 0)),
+		head = base.Position + Vector3.new(0, 6.2 * scale, 0), breath = (#self.aimsOrder + 1) * 1.7 }
+	self.aims[model] = record
+	table.insert(self.aimsOrder, model)
+	return record
+end
+
 function Effects:_aim(towerId, target)
 	local model = self:_towerModel(towerId)
 	local base = model and model.PrimaryPart
 	if not base or typeof(target) ~= "Vector3" then return end
-	local record = self.aims[model]
-	if not record then
-		local parts = {}
-		for _, child in ipairs(model:GetChildren()) do
-			if child:IsA("BasePart") and child:GetAttribute("HeroGeometry") and not FIXED_TOWER_PARTS[child.Name] then
-				local joint = child:GetAttribute("PoseJoint")
-				table.insert(parts, { part = child, rest = child.CFrame, group = child:GetAttribute("PoseGroup"),
-					joint = typeof(joint) == "Vector3" and CFrame.new(joint) or nil })
-			end
-		end
-		record = { parts = parts, pivot = CFrame.new(base.Position), yaw = 0, target = 0, active = false,
-			heroId = model:GetAttribute("HeroId"), waist = CFrame.new(base.Position + Vector3.new(0, 2.4 * (model:GetAttribute("FigureScale") or 1), 0)) }
-		self.aims[model] = record
-	end
+	local record = self:_record(model)
+	if not record then return end
 	local offset = target - base.Position
 	if math.abs(offset.X) + math.abs(offset.Z) < 0.5 then return end
 	-- Figures are built facing -Z.
@@ -395,35 +408,110 @@ function Effects:_aim(towerId, target)
 	record.active = true
 end
 
+-- A tower hit by a boss power is interrupted for a moment. It slumps and a
+-- ring of stars circles its head, so an idle hero never looks like a bug.
+function Effects:_stun(towerId, duration)
+	local model = self:_towerModel(towerId)
+	local record = model and self:_record(model)
+	if not record then return end
+	record.stunUntil = self.clock + math.clamp(tonumber(duration) or 1.5, 0.2, 6)
+	record.stars = record.stars or {}
+	if #record.stars == 0 then
+		for index = 1, 3 do
+			local star = part(self.folder, Vector3.new(0.45, 0.45, 0.45), Color3.fromRGB(255, 226, 92), Enum.Material.Neon)
+			star.Name, star.Shape = "StunStar", Enum.PartType.Ball
+			record.stars[index] = star
+		end
+	end
+end
+
+-- Idle heroes breathe, but only the ones near the camera: a full map of
+-- sixteen towers rewriting every part each frame is wasted work on a phone.
+local IDLE_DISTANCE = 110
+local IDLE_SCAN = 1
+
+function Effects:_registerIdle()
+	local world = workspace:FindFirstChild("DoomWorld")
+	local towers = world and world:FindFirstChild("Towers")
+	for _, model in ipairs(towers and towers:GetChildren() or {}) do
+		if not self.aims[model] and model.PrimaryPart then self:_record(model) end
+	end
+end
+
 function Effects:_turnTowers(dt)
 	local state = self.getState()
 	local reduced = state and state.profile and state.profile.settings and state.profile.settings.lowFX
-	for model, record in pairs(self.aims) do
-		if model.Parent == nil then
+	if self.clock >= (self.idleScanAt or 0) then
+		self.idleScanAt = self.clock + IDLE_SCAN
+		if not reduced then self:_registerIdle() end
+	end
+	local camera = workspace.CurrentCamera
+	local eye = camera and camera.CFrame.Position
+	for index = #self.aimsOrder, 1, -1 do
+		local model = self.aimsOrder[index]
+		local record = self.aims[model]
+		if model.Parent == nil or not record then
+			if record then for _, star in ipairs(record.stars or {}) do star:Destroy() end end
 			self.aims[model] = nil
-		elseif record.active then
+			table.remove(self.aimsOrder, index)
+			continue
+		end
+		local age = record.firedAt and self.clock - record.firedAt or 1
+		local firing = age < 0.42
+		local castAge = record.castAt and self.clock - record.castAt or 1
+		local casting = castAge < 0.75
+		local hopAge = record.hopAt and self.clock - record.hopAt or 1
+		local hopping = hopAge < 0.55
+		local stunned = record.stunUntil and self.clock < record.stunUntil
+		local near = eye and (eye - record.pivot.Position).Magnitude < IDLE_DISTANCE
+		local idle = not reduced and near
+		if record.stars and not stunned then
+			for _, star in ipairs(record.stars) do star:Destroy() end
+			record.stars = nil
+		end
+		if record.active or casting or hopping or stunned or idle or record.posed then
 			local delta = ((record.target - record.yaw + math.pi) % (2 * math.pi)) - math.pi
 			local settled = math.abs(delta) < 0.01
 			record.yaw = settled and record.target or record.yaw + delta * math.min(1, dt * 14)
-			local turn = record.pivot * CFrame.Angles(0, record.yaw, 0) * record.pivot:Inverse()
-			local age = record.firedAt and self.clock - record.firedAt or 1
-			local firing = age < 0.42
 			local pulse = firing and math.sin(math.clamp(age / 0.42, 0, 1) * math.pi) or 0
-			if reduced then pulse = 0 end
+			local cast = casting and math.sin(math.clamp(castAge / 0.75, 0, 1) * math.pi) or 0
+			local hop = hopping and math.sin(math.clamp(hopAge / 0.55, 0, 1) * math.pi) or 0
+			local breathe = idle and math.sin(self.clock * 2.1 + record.breath) * 0.05 * record.scale or 0
+			local slump = stunned and 1 or 0
+			if reduced then pulse, cast, hop = 0, 0, 0 end
 			local melee = record.heroId == "hulk" or record.heroId == "thor" or record.heroId == "groot" or record.heroId == "shangchi"
 			local magic = record.heroId == "wanda" or record.heroId == "strange" or record.heroId == "silversurfer"
-			local body = record.waist * CFrame.Angles(-pulse * (melee and 0.12 or 0.035), 0, 0) * record.waist:Inverse()
+			-- Upgrades lift the whole figure off the pedestal; everything else
+			-- bends from the waist or the shoulders over planted legs.
+			local lift = CFrame.new(0, hop * 1.1 * record.scale, 0)
+			local turn = lift * record.pivot * CFrame.Angles(0, record.yaw, 0) * record.pivot:Inverse()
+			local wobble = stunned and math.sin(self.clock * 6) * 0.1 or 0
+			local lean = -pulse * (melee and 0.12 or 0.035) + cast * 0.2 + slump * 0.22
+			local body = record.waist * CFrame.Angles(lean, 0, wobble) * record.waist:Inverse() * CFrame.new(0, breathe, 0)
 			for _, entry in ipairs(record.parts) do
 				if entry.part.Parent then
 					local transform = turn
 					if entry.group then transform *= body end
 					if entry.joint then
 						local side = entry.group == "LeftArm" and -1 or 1
-						transform *= entry.joint * CFrame.Angles(-pulse * (melee and 0.65 or magic and 0.28 or 0.16), 0, magic and side * pulse * 0.16 or 0) * entry.joint:Inverse()
+						-- Figures face -Z, so a positive turn about X swings an arm forward
+						-- and up: overhead for a cast, a little for the hop, down and limp
+						-- when interrupted. The firing kick stays the existing small recoil.
+						local raise = -pulse * (melee and 0.65 or magic and 0.28 or 0.16) + cast * 2.1 - slump * 0.35 + hop * 0.6
+						transform *= entry.joint * CFrame.Angles(raise, 0, (magic and side * pulse * 0.16 or 0) + side * cast * 0.35) * entry.joint:Inverse()
 					end
 					entry.part.CFrame = transform * entry.rest
 				end
 			end
+			if record.stars then
+				for number, star in ipairs(record.stars) do
+					local angle = self.clock * 4 + number * math.pi * 2 / 3
+					star.CFrame = CFrame.new(record.head + Vector3.new(math.cos(angle) * 1.4, 0.3 + math.sin(self.clock * 5 + number) * 0.15, math.sin(angle) * 1.4))
+				end
+			end
+			-- A figure that has come to rest keeps its last pose until the next
+			-- motion; one extra pass returns it exactly to rest.
+			record.posed = firing or casting or hopping or stunned or idle
 			if settled and not firing then record.active = false end
 		end
 	end
@@ -708,7 +796,35 @@ function Effects:Handle(event)
 	elseif event.kind == "CardPicked" then
 		if self.audio then self.audio:Cue("upgrade") end
 		return
+	elseif event.kind == "TowerUpgrade" then
+		-- The upgraded hero hops off its pedestal in a column of gold.
+		local model = self:_towerModel(event.towerId)
+		local record = model and self:_record(model)
+		if record then
+			record.hopAt = self.clock
+			local state = self.getState()
+			local lowFX = state and state.profile and state.profile.settings and state.profile.settings.lowFX
+			if not lowFX then
+				local base = model.PrimaryPart.Position
+				self:_groundImpact(base, UI.Colors.gold, 4 + (tonumber(event.level) or 1))
+				self:_effect(Vector3.new(8 * record.scale, 1.2, 1.2), CFrame.new(base + Vector3.new(0, 4 * record.scale, 0)) * CFrame.Angles(0, 0, math.pi / 2), UI.Colors.gold, 0.45, Enum.PartType.Cylinder, 0.55)
+			end
+			if self.audio and record.ownerId == self.player.UserId then self.audio:Cue("upgrade", 0.2) end
+		end
+		return
+	elseif event.kind == "TowersStunned" then
+		for _, id in ipairs(event.towerIds or {}) do self:_stun(id, event.duration) end
+		return
 	elseif event.kind == "Ability" then
+		-- The caster's own copies of the leader hero raise their arms.
+		local world = workspace:FindFirstChild("DoomWorld")
+		local towers = world and world:FindFirstChild("Towers")
+		for _, model in ipairs(towers and towers:GetChildren() or {}) do
+			if model:GetAttribute("HeroId") == event.heroId and model:GetAttribute("OwnerId") == event.ownerId then
+				local record = self:_record(model)
+				if record then record.castAt = self.clock end
+			end
+		end
 		local state=self.getState()
 		local lowFX=state and state.profile and state.profile.settings and state.profile.settings.lowFX
 		local tint=UI.color(event.color)
@@ -913,7 +1029,10 @@ function Effects:Handle(event)
 			table.insert(self.popupPool, popup)
 		end
 		self.popups = {}
-		self.aims = {}
+		for _, record in pairs(self.aims) do
+			for _, star in ipairs(record.stars or {}) do star:Destroy() end
+		end
+		self.aims, self.aimsOrder = {}, {}
 		self.towerModels, self.shakeAmount, self.shotSerial = nil, 0, 0
 		if self.drone then self.drone:Destroy(); self.drone = nil end
 	end

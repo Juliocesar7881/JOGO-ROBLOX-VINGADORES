@@ -484,7 +484,11 @@ herói próprio; põe o herói no palco por 30 s, sem dano real nem recompensa).
 `CoinRemove` passa a trazer `value`. `BossArrive {enemyId, final, position}`:
 entrada de um chefe (faixa com nome e som). O Campo de Treino reaproveita
 `Shot` com `towerId = "training"` e `heroId`; `OpenPanel` ganha o painel
-`training` (tapete verde do campo).
+`training` (tapete verde do campo). `TowerUpgrade {towerId, level, branch}`:
+toda melhoria de torre, para a animação (pulo e coluna dourada).
+`TowersStunned {towerIds, duration}`: torres interrompidas por um poder de
+chefe (estrelas e postura caída). Cada torre do snapshot traz `stunned`
+(segundos restantes) enquanto estiver interrompida.
 
 **Construção.** Prévia e servidor chamam `Rules.BuildCheck(mapId, position,
 towers, config, blockers)`; recusas usam `Rules.BuildReasons` (`bounds`,

@@ -1295,6 +1295,47 @@ local function session(screen)
 		frames(1 / 30, 2)
 	end)
 
+	step("heroes move between shots: breathing, upgrade, cast and interruption", function()
+		push(matchSnapshot(profile, "Wave", { enemies = 0 }))
+		world:MakeTower("anim1", "ironman", v3(20, 0, 30), LOCAL_ID)
+		local model
+		for _, candidate in ipairs(workspace:FindFirstChild("DoomWorld").Towers:GetChildren()) do
+			if candidate:GetAttribute("TowerId") == "anim1" then model = candidate end
+		end
+		local body, hand
+		for _, piece in ipairs(model and model:GetChildren() or {}) do
+			if piece:GetAttribute("PoseGroup") == "Body" and not body then body = piece end
+			if piece:GetAttribute("PoseGroup") == "RightArm" and (not hand or piece.Position.Y < hand.Position.Y) then hand = piece end
+		end
+		check(body ~= nil and hand ~= nil, tag .. ": the hero figure carries pose groups")
+		if not (body and hand) then return end
+		local restBody, restHand = body.Position, hand.Position
+		-- Breathing only runs near the camera; look at this hero from close by.
+		workspace.CurrentCamera.CFrame = CFrame.new(20, 30, 70)
+		local drift = 0
+		for _ = 1, 12 do
+			frames(1 / 10, 1)
+			drift = math.max(drift, math.abs(body.Position.Y - restBody.Y))
+		end
+		check(drift > 0.01 and drift < 0.2, tag .. ": an idle hero near the camera breathes, gently, got " .. string.format("%.3f", drift))
+		fx({ kind = "TowerUpgrade", towerId = "anim1", level = 2 })
+		frames(0.12, 2)
+		check(body.Position.Y > restBody.Y + 0.4, tag .. ": an upgraded hero hops off its pedestal")
+		frames(0.2, 4)
+		check(math.abs(body.Position.Y - restBody.Y) < 0.15, tag .. ": and lands back where it stood")
+		fx({ kind = "Ability", abilityId = "repulsorBarrage", abilityKind = "blast", heroId = "ironman", ownerId = LOCAL_ID, position = v3(0, 0, 0), radius = 10, color = Color3.fromRGB(255, 80, 80) })
+		frames(0.12, 3)
+		check(hand.Position.Y > restHand.Y + 0.5, tag .. ": the leader's hero raises its arms as the ability goes off")
+		fx({ kind = "TowersStunned", towerIds = { "anim1" }, duration = 1 })
+		frames(1 / 30, 2)
+		local visuals = workspace:FindFirstChild("DoomClientVisuals")
+		check(countNamed(visuals, "StunStar") == 3, tag .. ": an interrupted tower shows stars circling its head")
+		frames(0.3, 5)
+		check(countNamed(visuals, "StunStar") == 0, tag .. ": the stars go when the interruption ends")
+		fx({ kind = "Clear" })
+		frames(1 / 30, 2)
+	end)
+
 	step("reduced effects still runs every path", function()
 		local calm = veteranProfile()
 		calm.settings.lowFX = true

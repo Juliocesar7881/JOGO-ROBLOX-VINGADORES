@@ -1257,8 +1257,26 @@ do
 	local lab, labPlayer = stage({ modeId = "normal", mapId = "gamma", wave = 20 })
 	local brute = spawn(lab, "abomination", 30, 1)
 	local steady = spawn(lab, "abomination", 31, 1)
+	-- The same power interrupts a tower beside it, and every client is told.
+	local labTower = place(lab, labPlayer, "ironman")
+	brute.position = labTower.position + v3(4, 0, 0)
+	local labEvents = {}
+	local labFx = lab._fx
+	lab._fx = function(self, event, ...) table.insert(labEvents, event) return labFx(self, event, ...) end
 	lab.elapsed = brute.nextPower
 	lab:_power(brute)
+	local stunnedEvent
+	for _, event in ipairs(labEvents) do if event.kind == "TowersStunned" then stunnedEvent = event end end
+	check(stunnedEvent ~= nil and table.find(stunnedEvent.towerIds, labTower.id) ~= nil and stunnedEvent.duration > 0,
+		"an interrupting boss power names the towers it stopped")
+	local stunnedRow
+	for _, row in ipairs(lab:Snapshot(labPlayer).towers) do if row.id == labTower.id then stunnedRow = row end end
+	check(stunnedRow ~= nil and (stunnedRow.stunned or 0) > 0, "the interrupted tower says so in the snapshot")
+	lab.participants[labPlayer.UserId].cash = 1e6
+	check(lab:Handle(labPlayer, "UpgradeTower", { towerId = labTower.id }), "the interrupted tower can still be upgraded")
+	local upgradeEvent
+	for _, event in ipairs(labEvents) do if event.kind == "TowerUpgrade" then upgradeEvent = event end end
+	check(upgradeEvent ~= nil and upgradeEvent.towerId == labTower.id and upgradeEvent.level == 2, "an upgrade is announced to every client for its animation")
 	local hpA, hpB = brute.hp, steady.hp
 	lab:_damage(brute, 100, nil, { trueDamage = true })
 	lab:_damage(steady, 100, nil, { trueDamage = true })

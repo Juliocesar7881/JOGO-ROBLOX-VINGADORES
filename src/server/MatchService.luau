@@ -549,6 +549,16 @@ function Match:_summon(enemy, count, enemyId)
 	end
 end
 
+-- Boss powers interrupt nearby towers for a moment. Every client is told which
+-- ones, so an interrupted hero is shown as interrupted, not as a bug.
+function Match:_stunTowers(center, radius, seconds)
+	local ids={}
+	for _,t in pairs(self.towers) do
+		if distanceXZ(t.position,center)<radius then t.stunnedUntil=self.elapsed+seconds table.insert(ids,t.id) end
+	end
+	if #ids>0 then self:_fx({kind="TowersStunned",towerIds=ids,duration=seconds}) end
+end
+
 -- Boss powers, telegraphed two seconds ahead. Every boss has a distinct
 -- mechanic so the ten-wave rhythm teaches a new lesson each time; the final one
 -- combines them and works faster.
@@ -559,14 +569,14 @@ function Match:_power(enemy)
 		enemy.regenUntil=self.elapsed+6 enemy.regenDamage=0 enemy.hint="Concentre dano para interromper a regeneração / Focus fire to stop regeneration"
 	elseif id=="abomination" then
 		enemy.fortifyUntil=self.elapsed+5 enemy.hint="Impacto próximo / Impact nearby"
-		for _,t in pairs(self.towers) do if distanceXZ(t.position,enemy.position)<24 then t.stunnedUntil=self.elapsed+1.8 end end
+		self:_stunTowers(enemy.position,24,1.8)
 	elseif id=="redskull" then
 		self:_summon(enemy,4,"runner")
 		for _,e in pairs(self.enemies) do if not e.def.boss then e.frenzyUntil=self.elapsed+7 end end
 		enemy.hint="Elimine os reforços / Clear the reinforcements"
 	elseif id=="killmonger" then
 		if enemy.shield>0 then
-			for _,t in pairs(self.towers) do if distanceXZ(t.position,enemy.position)<28 then t.stunnedUntil=self.elapsed+2 end end
+			self:_stunTowers(enemy.position,28,2)
 			enemy.shield=0
 		else
 			enemy.shield=enemy.maxHP*0.08 enemy.dischargeAt=self.elapsed+5
@@ -579,7 +589,7 @@ function Match:_power(enemy)
 		enemy.fortifyUntil=self.elapsed+4
 		if enemy.final then
 			-- The final form also silences the towers around him.
-			for _,t in pairs(self.towers) do if distanceXZ(t.position,enemy.position)<22 then t.stunnedUntil=self.elapsed+1.5 end end
+			self:_stunTowers(enemy.position,22,1.5)
 		end
 		enemy.hint="Feche a invasão; alterne suas fontes de dano / Stop the invasion; mix your damage sources"
 	elseif id=="loki" then
@@ -1233,6 +1243,7 @@ function Match:Handle(player,action,payload)
 		if tower.level==5 then tower.branch=payload.branch end
 		local mastery=p.profile.heroes[tower.heroId]
 		self.world:UpgradeTower(tower.model,tower.level,tower.branch,mastery and mastery.level or 1)
+		self:_fx({kind="TowerUpgrade",towerId=tower.id,level=tower.level,branch=tower.branch})
 		return true
 	elseif action=="SkipWave" then
 		if self.phase~="Preparing" then return false,"Aguarde o intervalo. / Wait for preparation." end
@@ -1280,7 +1291,8 @@ function Match:Snapshot(player)
 	for _,t in pairs(self.towers) do
 		local stats=self:_towerStats(t)
 		table.insert(towers,{id=t.id,heroId=t.heroId,ownerId=t.ownerId,position=t.position,level=t.level,branch=t.branch,
-			priority=t.priority,invested=t.invested,damage=stats.damage,range=stats.range,rate=stats.rate,upgradeCost=stats.upgradeCost})
+			priority=t.priority,invested=t.invested,damage=stats.damage,range=stats.range,rate=stats.rate,upgradeCost=stats.upgradeCost,
+			stunned=(t.stunnedUntil or 0)>self.elapsed and math.ceil((t.stunnedUntil-self.elapsed)*10)/10 or nil})
 	end
 	-- The ability the commander fights with: always the first slot's hero.
 	local ability
