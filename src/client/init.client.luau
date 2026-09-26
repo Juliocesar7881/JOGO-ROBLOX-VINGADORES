@@ -107,11 +107,30 @@ local function welcomePanel(panel)
 	TweenService:Create(scale,TweenInfo.new(0.18,Enum.EasingStyle.Quad),{Scale=1}):Play()
 end
 
+-- Menus blur the world behind them, like the big Roblox games do. Local to
+-- this client's Lighting, skipped on "fewer effects", eased in and out.
+local function menuBlur(on)
+	pcall(function()
+		local lighting = game:GetService("Lighting")
+		local blur = lighting:FindFirstChild("DoomMenuBlur")
+		local lowFX = state and state.profile and state.profile.settings and state.profile.settings.lowFX
+		if on and lowFX then on = false end
+		if on and not blur then
+			blur = Instance.new("BlurEffect")
+			blur.Name, blur.Size, blur.Parent = "DoomMenuBlur", 0, lighting
+		end
+		if not blur then return end
+		local target = on and 14 or 0
+		local ok, tweens = pcall(game.GetService, game, "TweenService")
+		if ok and tweens then tweens:Create(blur, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = target}):Play() else blur.Size = target end
+	end)
+end
+
 local function surface(label,tint)
-	label.BackgroundColor3=C.background
-	label.BackgroundTransparency=0.08
-	UI.corner(label,10)
-	UI.stroke(label,tint or C.stroke,1)
+	label.BackgroundColor3=C.ink
+	label.BackgroundTransparency=0.25
+	UI.corner(label,12)
+	UI.stroke(label,tint or C.ink,2)
 	return label
 end
 
@@ -232,9 +251,9 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 	UI.corner(portraitBack,11)
 	heroPortrait(button, id, {Position = UDim2.fromOffset(3, 3), Size = UDim2.fromOffset(portraitW, height - 6)})
 	local textX = portraitW + 9
-	UI.label(button, L(def.name), {Name = "HeroName", Position = UDim2.fromOffset(textX, tight and 3 or 7), Size = UDim2.new(1, -textX - 5, 0, tight and 26 or 32), TextSize = tight and 10 or 12, Font = Enum.Font.GothamBold, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
-	if index==1 then UI.stroke(button,C.gold,2.5) end
-	local price = UI.label(button, "⚡ " .. tostring(def.cost), {Name = "EnergyCost", Position = UDim2.new(0, textX, 1, tight and -20 or -24), Size = UDim2.new(1, -textX - 4, 0, 18), TextColor3 = C.blue, TextSize = tight and 10 or 12, Font = Enum.Font.GothamBold})
+	UI.label(button, L(def.name), {Name = "HeroName", Position = UDim2.fromOffset(textX, tight and 3 or 7), Size = UDim2.new(1, -textX - 5, 0, tight and 26 or 32), TextSize = tight and 12 or 14, Font = UI.Fonts.display, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
+	if index==1 then UI.stroke(button,C.gold,3.5) end
+	local price = UI.label(button, "⚡ " .. tostring(def.cost), {Name = "EnergyCost", Position = UDim2.new(0, textX, 1, tight and -21 or -26), Size = UDim2.new(1, -textX - 4, 0, 20), TextColor3 = C.blue, TextSize = tight and 12 or 15, Font = UI.Fonts.display})
 	local badge = UI.label(button, index==1 and "★1" or tostring(index), {Name = "SlotNumber", Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(tight and 22 or 26, tight and 15 or 18), BackgroundColor3 = C.background, BackgroundTransparency = 0.08, TextSize = 10, TextColor3 = tint, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
 	UI.corner(badge, 5)
 	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 8, 1, -3), Size = UDim2.new(1, -16, 0, 2), BackgroundColor3 = tint, BackgroundTransparency = equipped and 0 or 0.65})
@@ -906,19 +925,37 @@ local function contextModes(body)
 		UI.button(first,T("JOGAR O TREINO • 8 ONDAS","PLAY TRAINING • 8 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Name="PlayMode_tutorial",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
 	end
 	local colors={manhattan=C.coral,gamma=C.green,asgard=C.gold,hydra=C.red,wakanda=C.violet,latveria=C.blue}
+	local lastDistrict
 	for _,id in ipairs(Catalog.DestinationOrder) do
 		local destination=Catalog.Destinations[id]
 		local map,mode=Catalog.Maps[destination.mapId],Catalog.Modes[destination.modeId]
 		local tint=colors[destination.mapId]
-		if id=="ranked" then UI.section(body,T("ARENA COMPETITIVA","COMPETITIVE ARENA"),T("Três portais vizinhos. Cada mapa tem seu placar e exige uma estratégia diferente.","Three neighboring portals. Each map has its own leaderboard and calls for a different strategy.")) end
+		-- One heading per lobby district, in the order the portals stand.
+		local district=destination.district or "center"
+		if district~=lastDistrict then
+			lastDistrict=district
+			local headings={
+				center={T("CAMPANHA","CAMPAIGN"),T("Os três portais do centro do refúgio. Comece por aqui!","The three portals in the middle of the refuge. Start here!")},
+				arena={T("ARENA COMPETITIVA","COMPETITIVE ARENA"),T("Três portais vizinhos. Cada mapa tem seu placar e exige uma estratégia diferente.","Three neighboring portals. Each map has its own leaderboard and calls for a different strategy.")},
+				special={T("MODOS ESPECIAIS","SPECIAL MODES"),T("Cartas que mudam a partida e ondas sem fim.","Cards that change the run and endless waves.")},
+			}
+			local heading=headings[district]
+			if heading then UI.section(body,heading[1],heading[2]) end
+		end
 		local allowed=Rules.ModeUnlocked(profile(),destination.modeId)
 		local card=UI.roundFrame(body,{Name="Destination_"..id,Size=UDim2.new(1,-6,0,178),BackgroundColor3=tint:Lerp(C.panel,0.88)},tint)
 		UI.mapArt(card,map,tint,{Position=UDim2.fromOffset(10,18),Size=UDim2.fromOffset(96,76)})
 		UI.label(card,L(map.name),{Position=UDim2.fromOffset(118,10),Size=UDim2.new(1,-132,0,42),TextSize=19,Font=Enum.Font.GothamBlack,TextColor3=tint,TextWrapped=true})
 		UI.label(card,L(mode.name).." • "..(mode.waves==0 and T("SEM FIM","ENDLESS") or "50 "..T("ONDAS","WAVES")),{Position=UDim2.fromOffset(118,54),Size=UDim2.new(1,-132,0,24),TextSize=12,Font=Enum.Font.GothamBold,TextWrapped=true})
 		UI.label(card,allowed and L(map.description) or L(modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(118,81),Size=UDim2.new(1,-132,0,40),TextSize=11,TextWrapped=true,TextColor3=C.muted})
-		local button=UI.button(card,allowed and T("JOGAR NESTE MAPA","PLAY THIS MAP") or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function() act("StartMatch",{destinationId=id}) end,{Name="PlayDestination_"..id,Position=UDim2.fromOffset(12,126),Size=UDim2.new(1,-24,0,44),BackgroundColor3=tint,TextSize=13})
-		if not allowed then UI.disabled(button) end
+		local button=UI.button(card,allowed and T("JOGAR NESTE MAPA","PLAY THIS MAP") or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function() act("StartMatch",{destinationId=id}) end,{Name="PlayDestination_"..id,Position=UDim2.fromOffset(12,126),Size=UDim2.new(1,-24,0,44),BackgroundColor3=allowed and C.green or tint,TextSize=17})
+		if not allowed then
+			UI.disabled(button)
+			-- A lock sticker over the map art, like a locked level card.
+			local lock=UI.label(card,"🔒 "..T("BLOQUEADO","LOCKED"),{Name="LockedPill",Position=UDim2.fromOffset(14,70),Size=UDim2.fromOffset(92,24),BackgroundTransparency=0,BackgroundColor3=C.ink,TextSize=12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			UI.corner(lock,12)
+			UI.stroke(lock,Color3.new(1,1,1),1.5)
+		end
 		if destination.modeId=="ranked" then
 			button.Size=UDim2.new(0.64,-18,0,44)
 			UI.secondary(card,T("PLACAR","LEADERBOARD"),function()
@@ -1078,7 +1115,7 @@ renderContext = function()
 	refreshNavigation()
 	if not contextPanel or not state or state.phase ~= "Lobby" then
 		contextRefreshPending=false
-		if refs.context then refs.context:Destroy(); refs.context=nil end
+		if refs.context then refs.context:Destroy(); refs.context=nil; menuBlur(false) end
 		return
 	end
 	local panel=refs.context
@@ -1111,6 +1148,7 @@ renderContext = function()
 	local gloss=UI.frame(band,{Name="Shine",Position=UDim2.new(0,8,0,4),Size=UDim2.new(1,-16,0.34,0),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.8,Active=false})
 	UI.corner(gloss,8)
 	refs.context = panel
+	if not reuse then menuBlur(true) end
 	panel:SetAttribute("ContextKind",contextPanel.kind)
 	local titles = {hero = T("GALERIA DE HERÓIS", "HERO GALLERY"), skill = T("TREINAMENTO", "TRAINING"), shop = T("SUPRIMENTOS", "SUPPLIES"), quests = T("CENTRAL DE MISSÕES", "MISSION BOARD"), leaderboard = T("LENDAS DA RESISTÊNCIA", "RESISTANCE LEGENDS"), squad = T("FORMAÇÃO TÁTICA", "TACTICAL FORMATION"), settings = T("OPÇÕES", "SETTINGS")}
 	titles.talents = T("ÁRVORE DE EVOLUÇÃO", "TALENT TREE")
@@ -1186,6 +1224,7 @@ closeContext = function()
 	contextPanel = nil
 	confirmChest = nil
 	if refs.context then refs.context:Destroy(); refs.context = nil end
+	menuBlur(false)
 	lobbyChrome(true)
 	refreshNavigation()
 	if refs.firstVisitHint then refs.firstVisitHint.Visible = not (state and state.elevator) end
@@ -1966,33 +2005,34 @@ local function renderMatch()
 	local class = layout.class
 	local compact = class.compact
 	local topRect = layout.top
-	local top = UI.roundFrame(main, {Position = at(topRect), Size = dims(topRect), BackgroundColor3 = C.background},C.green:Lerp(C.stroke,0.6))
+	local top = UI.roundFrame(main, {Position = at(topRect), Size = dims(topRect), BackgroundColor3 = C.ink, BackgroundTransparency = 0.2})
 	UI.frame(top, {Position = UDim2.fromOffset(0, 12), Size = UDim2.new(0, 3, 1, -24), BackgroundColor3 = C.green})
-	refs.wave = UI.label(top, "", {Position = at(layout.wave, topRect), Size = dims(layout.wave), TextSize = class.short and 16 or (compact and 17 or 21), Font = Enum.Font.GothamBold, TextColor3 = C.green})
+	refs.wave = UI.label(top, "", {Position = at(layout.wave, topRect), Size = dims(layout.wave), TextSize = class.short and 18 or (compact and 20 or 26), Font = UI.Fonts.display, TextColor3 = C.green})
 	refs.map = UI.label(top, "", {Position = at(layout.map, topRect), Size = dims(layout.map), TextWrapped=class.narrow, TextSize = compact and 10 or 12, TextColor3 = C.muted})
-	refs.hpText = UI.button(top, "", openBaseUpgrade, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 12 or 15, Font = Enum.Font.GothamBold})
+	refs.hpText = UI.button(top, "", openBaseUpgrade, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
+	UI.outline(refs.hpText, 2)
 	refs.hp = UI.bar(top, C.green, at(layout.hpBar, topRect), dims(layout.hpBar))
-	refs.matchGold = UI.label(main, "", {Position = at(layout.gold), Size = dims(layout.gold), TextSize = compact and 13 or 16, TextColor3 = C.gold, Font = Enum.Font.GothamBold, TextXAlignment = class.narrow and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right})
-	refs.energy = UI.label(main, "", {Position = at(layout.energy), Size = dims(layout.energy), TextColor3 = C.blue, Font = Enum.Font.GothamBold, TextSize = compact and 14 or 18, TextXAlignment = class.narrow and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left})
+	refs.matchGold = UI.label(main, "", {Position = at(layout.gold), Size = dims(layout.gold), TextSize = compact and 16 or 20, TextColor3 = C.gold, Font = UI.Fonts.display, TextXAlignment = class.narrow and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right})
+	refs.energy = UI.label(main, "", {Position = at(layout.energy), Size = dims(layout.energy), TextColor3 = C.blue, Font = UI.Fonts.display, TextSize = compact and 16 or 21, TextXAlignment = class.narrow and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left})
 	surface(refs.matchGold,C.gold:Lerp(C.stroke,0.5))
 	surface(refs.energy,C.blue:Lerp(C.stroke,0.5))
-	refs.matchGold.BackgroundColor3,refs.matchGold.TextColor3,refs.matchGold.BackgroundTransparency=C.gold,C.background,0
-	refs.energy.BackgroundColor3,refs.energy.TextColor3,refs.energy.BackgroundTransparency=C.blue,C.background,0
+	refs.matchGold.BackgroundColor3,refs.matchGold.TextColor3,refs.matchGold.BackgroundTransparency=C.ink,C.gold,0.2
+	refs.energy.BackgroundColor3,refs.energy.TextColor3,refs.energy.BackgroundTransparency=C.ink,C.blue,0.2
 	refs.energy.TextXAlignment=Enum.TextXAlignment.Center
 	refs.matchGold.TextXAlignment=Enum.TextXAlignment.Center
-	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 11 or 13, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center})
+	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 13 or 15, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center})
 	surface(refs.waveInfo,C.stroke)
-	refs.skip = UI.secondary(main, T("PRONTO", "READY"), function() act("SkipWave", {}) end, {Position = at(layout.skip), Size = dims(layout.skip), TextSize = 12})
+	refs.skip = UI.button(main, T("PRONTO", "READY"), function() act("SkipWave", {}) end, {Position = at(layout.skip), Size = dims(layout.skip), BackgroundColor3 = C.green, TextSize = 18})
 	local bossRect = layout.boss
 	refs.boss = UI.roundFrame(main, {Position = at(bossRect), Size = dims(bossRect), BackgroundColor3 = Color3.fromRGB(66,30,44), Visible = false}, C.red)
-	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 5), Size = UDim2.new(1, -24, 0, 18), TextColor3 = C.red, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center})
+	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 3), Size = UDim2.new(1, -24, 0, 22), TextColor3 = C.red, Font = UI.Fonts.display, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Center})
 	refs.bossHP = UI.bar(refs.boss, C.red, UDim2.fromOffset(12, 27), UDim2.new(1, -24, 0, 7))
 	refs.bossHint = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 37), Size = UDim2.new(1, -24, 0, bossRect.h - 41), TextColor3 = C.muted, TextSize = 11, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center})
-	refs.hint = UI.label(main, "", {Position = at(layout.hint), Size = dims(layout.hint), TextColor3 = C.green, TextSize = compact and 12 or 13, Font = Enum.Font.GothamBold, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
+	refs.hint = UI.label(main, "", {Position = at(layout.hint), Size = dims(layout.hint), TextColor3 = C.green, TextSize = compact and 13 or 15, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
 	surface(refs.hint,C.green)
 	refs.placement = UI.roundFrame(main, {Position = at(layout.placement), Size = dims(layout.placement), Visible = false})
-	refs.confirm = UI.button(refs.placement, T("CONFIRMAR", "CONFIRM"), confirmPlacement, {Position = UDim2.fromOffset(6, 6), Size = UDim2.new(0.65, -9, 1, -12), TextSize = 12})
-	UI.secondary(refs.placement, T("Cancelar", "Cancel"), clearPlacement, {Position = UDim2.new(0.65, 2, 0, 6), Size = UDim2.new(0.35, -8, 1, -12), TextSize = 12})
+	refs.confirm = UI.button(refs.placement, T("CONFIRMAR", "CONFIRM"), confirmPlacement, {Position = UDim2.fromOffset(6, 6), Size = UDim2.new(0.65, -9, 1, -12), TextSize = 17})
+	UI.button(refs.placement, T("Cancelar", "Cancel"), clearPlacement, {Position = UDim2.new(0.65, 2, 0, 6), Size = UDim2.new(0.35, -8, 1, -12), BackgroundColor3 = C.red, TextSize = 15})
 	local abilities = UI.frame(main, {BackgroundTransparency = 1, Position = at(layout.abilities), Size = dims(layout.abilities)})
 	UI.list(abilities, 8, true)
 	refs.abilityButtons = {}
