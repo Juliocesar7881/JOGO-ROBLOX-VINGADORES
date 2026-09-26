@@ -90,7 +90,92 @@ def source_entries(root: Path = ROOT) -> list[Path]:
     return paths
 
 
-def build_tree(role: str, root: Path = ROOT) -> ET.Element:
+# Final art made in Studio: one Model per .rbxmx under assets/models, listed in
+# assets/models/manifest.json with its author and the permission to use it.
+# Anything unlisted, unlicensed or carrying a script is refused: art may only
+# change how something looks, never run code.
+ART_KINDS = {"heroes": "Heroes", "enemies": "Enemies"}
+ART_FORBIDDEN = {"Script", "LocalScript", "ModuleScript", "CoreScript"}
+
+
+def art_entries(art_root: Path) -> list[tuple[str, str, Path]]:
+    files = {path.relative_to(art_root).as_posix() for path in art_root.rglob("*.rbxmx")} if art_root.is_dir() else set()
+    manifest_path = art_root / "manifest.json"
+    if not manifest_path.is_file():
+        if files:
+            raise ValueError(f"Art files without assets/models/manifest.json: {sorted(files)}")
+        return []
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    unknown = set(manifest) - set(ART_KINDS) - {"format", "notes"}
+    if unknown:
+        raise ValueError(f"Unknown art kinds in manifest: {sorted(unknown)}")
+    entries, listed = [], set()
+    for kind, folder in ART_KINDS.items():
+        for art_id, entry in sorted((manifest.get(kind) or {}).items()):
+            if not isinstance(entry, dict) or not entry.get("file"):
+                raise ValueError(f"Art {kind}/{art_id} needs a file")
+            if not str(entry.get("author", "")).strip() or not str(entry.get("permission", "")).strip():
+                raise ValueError(f"Art {kind}/{art_id} needs an author and a permission to use it")
+            path = art_root / entry["file"]
+            if not path.is_file():
+                raise ValueError(f"Art {kind}/{art_id}: missing file {entry['file']}")
+            listed.add(Path(entry["file"]).as_posix())
+            entries.append((folder, art_id, path))
+    unlisted = files - listed
+    if unlisted:
+        raise ValueError(f"Art files missing from the manifest (author/permission): {sorted(unlisted)}")
+    return entries
+
+
+def embed_art(tree: ET.Element, replicated: ET.Element, art_root: Path) -> None:
+    entries = art_entries(art_root)
+    if not entries:
+        return
+    art, _ = item(replicated, "Folder", "DoomArt")
+    folders: dict[str, ET.Element] = {}
+    shared: dict[str, ET.Element] = {}
+    for folder, art_id, path in entries:
+        document = ET.parse(path).getroot()
+        models = document.findall("Item")
+        if len(models) != 1 or models[0].attrib.get("class") != "Model":
+            raise ValueError(f"{path.name}: must hold exactly one Model")
+        model = models[0]
+        for node in model.iter("Item"):
+            if node.attrib.get("class") in ART_FORBIDDEN:
+                raise ValueError(f"{path.name}: art may not contain scripts ({node.attrib['class']})")
+        # Referents are only unique inside the file; prefix them per model and
+        # repoint every reference inside it (a Model's PrimaryPart, joints).
+        prefix = "ART" + hashlib.sha256(f"{folder}/{art_id}".encode()).hexdigest()[:10] + "_"
+        mapping = {}
+        for node in model.iter("Item"):
+            old = node.attrib.get("referent")
+            if old:
+                mapping[old] = prefix + old
+                node.attrib["referent"] = prefix + old
+        for ref in model.iter("Ref"):
+            if ref.text in mapping:
+                ref.text = mapping[ref.text]
+        properties = model.find("Properties")
+        if properties is None:
+            properties = ET.SubElement(model, "Properties")
+        name = properties.find("string[@name='Name']")
+        if name is None:
+            name = ET.SubElement(properties, "string", {"name": "Name"})
+        name.text = art_id
+        if folder not in folders:
+            folders[folder], _ = item(art, "Folder", folder)
+        folders[folder].append(model)
+        for entry in document.findall("SharedStrings/SharedString"):
+            shared.setdefault(entry.attrib["md5"], entry)
+    if shared:
+        container = tree.find("SharedStrings")
+        if container is None:
+            container = ET.SubElement(tree, "SharedStrings")
+        for key in sorted(shared):
+            container.append(shared[key])
+
+
+def build_tree(role: str, root: Path = ROOT, art_root: Path | None = None) -> ET.Element:
     if role not in ROLES.values():
         raise ValueError(f"Unknown place role: {role}")
     paths = source_entries(root)
@@ -205,6 +290,7 @@ def build_tree(role: str, root: Path = ROOT) -> ET.Element:
         prop(properties, "ProtectedString", "Source", source)
         if class_name in {"Script", "LocalScript"}:
             prop(properties, "bool", "Disabled", False)
+    embed_art(tree, replicated, art_root if art_root is not None else root / "assets" / "models")
     return tree
 
 

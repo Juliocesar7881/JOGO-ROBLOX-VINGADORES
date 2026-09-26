@@ -551,6 +551,18 @@ function UI.rememberHero(heroId, source)
 end
 
 function UI.heroModel(parent, heroId, source)
+	-- Final art is cloned as it is (a MeshPart cannot be rebuilt from its
+	-- properties by a script); portraits and previews never animate it.
+	local art = source and source:FindFirstChild("HeroFigure", true)
+	if art and art:GetAttribute("HeroArt") then
+		local model = UI.create("Model", {Name = heroId}, parent)
+		local copy = art:Clone()
+		for _, item in ipairs(copy:GetDescendants()) do
+			if item:IsA("BasePart") then item.Anchored, item.CanCollide, item.CanTouch, item.CanQuery, item.CastShadow = true, false, false, false, false end
+		end
+		copy.Parent = model
+		return model
+	end
 	UI.rememberHero(heroId, source)
 	local model = UI.create("Model", {Name = heroId}, parent)
 	for _, descriptor in ipairs(portraitGeometry[heroId] or {}) do

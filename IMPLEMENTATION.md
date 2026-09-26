@@ -507,3 +507,18 @@ towers, config, blockers)`; recusas usam `Rules.BuildReasons` (`bounds`,
 
 **Títulos cosméticos.** `PlayerService:GrantCosmetic(player, featId)` (hoje
 só `parkour`), chamado pelo servidor; não existe ação de cliente.
+
+## Final art contract
+
+Modelos definitivos feitos no Studio entram por `assets/models` (ver
+[assets/models/README.md](assets/models/README.md)). `tools/build.py` embute
+cada `.rbxmx` listado em `assets/models/manifest.json` em
+`ReplicatedStorage.DoomArt.Heroes|Enemies/<id>`, prefixando os `referent` e
+fundindo `SharedStrings`. Recusa arquivo sem autor/permissão, fora do
+manifesto ou com scripts. Em jogo, `WorldBuilder.heroFigure` usa
+`DoomArt.Heroes[heroId]` quando existe (torres, retratos, Campo de Treino) e
+`Effects` usa `DoomArt.Enemies[enemyId]` (ou o da família). O tiro sai do
+`Attachment` `Muzzle`; animações opcionais vêm de atributos numéricos do Model
+(`IdleAnimation`, `AttackAnimation`, `AbilityAnimation`, `UpgradeAnimation`,
+`WalkAnimation`). Arte nunca altera alcance, colisão ou regras.
+

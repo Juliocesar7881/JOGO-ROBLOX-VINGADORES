@@ -742,6 +742,38 @@ check(worlds == 1, "only one world model survives a rebuild, got " .. tostring(w
 --==============================================================================
 -- Towers
 --==============================================================================
+print("--- final art ---")
+do
+	-- A stand-in for a model an artist exported from Studio.
+	local storage = game:GetService("ReplicatedStorage")
+	local art = Instance.new("Folder")
+	art.Name, art.Parent = "DoomArt", storage
+	local heroes = Instance.new("Folder")
+	heroes.Name, heroes.Parent = "Heroes", art
+	local template = Instance.new("Model")
+	template.Name, template.Parent = "ironman", heroes
+	local body = Instance.new("Part")
+	body.Name, body.Size, body.CFrame, body.Parent = "ArtBody", v3(2, 5, 1), CFrame.new(0, 2.5, 0), template
+	local head = Instance.new("Part")
+	head.Name, head.Size, head.CFrame, head.Parent = "Head", v3(1, 1, 1), CFrame.new(0, 5.5, 0), template
+	local muzzle = Instance.new("Attachment")
+	muzzle.Name, muzzle.Parent = "Muzzle", body
+	template.PrimaryPart = body
+	world:Build("manhattan")
+	local tower = world:MakeTower("art1", "ironman", v3(20, 0, 20), 1)
+	local figure = tower:FindFirstChild("HeroFigure")
+	check(figure ~= nil and figure:GetAttribute("HeroArt") == true, "a hero with final art uses it for its tower")
+	check(tower:FindFirstChild("Suit", true) == nil, "the generated figure is not built next to the art")
+	check(figure and figure:FindFirstChild("ArtBody") ~= nil and figure:FindFirstChild("Muzzle", true) ~= nil, "the art keeps its parts and its muzzle")
+	local art1 = figure and figure:FindFirstChild("ArtBody")
+	check(art1 ~= nil and art1.CanCollide == false and art1:GetAttribute("TowerId") == "art1", "art parts never collide and still select their tower")
+	check(tower:FindFirstChild("Platform") ~= nil and tower:FindFirstChild("PowerRing") ~= nil, "the platform and ring stay: they are gameplay, not art")
+	check(template:FindFirstChild("ArtBody") ~= nil, "the template itself is left untouched")
+	local plain = world:MakeTower("plain1", "hawkeye", v3(-20, 0, 20), 1)
+	check(plain:FindFirstChild("HeroFigure") == nil and plain:FindFirstChild("Suit", true) ~= nil, "a hero without art keeps its generated figure")
+	art:Destroy()
+end
+
 print("--- towers ---")
 local portraits = game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
 check(portraits ~= nil, "portrait library survives separately from the map")

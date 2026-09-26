@@ -23,7 +23,74 @@ local SHIRTS = {
 }
 local PANTS = { Color3.fromRGB(48, 66, 104), Color3.fromRGB(34, 38, 43), Color3.fromRGB(110, 96, 70), Color3.fromRGB(70, 74, 82) }
 
+local function artTemplate(kind, id)
+	local art = ReplicatedStorage:FindFirstChild("DoomArt")
+	local folder = art and art:FindFirstChild(kind)
+	local template = folder and id and folder:FindFirstChild(id)
+	return template and template:IsA("Model") and template or nil
+end
+
+-- An animation id stored as an attribute on the art model, loaded once.
+local function artTrack(record, holder, key)
+	record.tracks = record.tracks or {}
+	if record.tracks[key] ~= nil then return record.tracks[key] or nil end
+	local id = tonumber(holder:GetAttribute(key)) or 0
+	local track = false
+	if id > 0 and record.animator then
+		local ok, loaded = pcall(function()
+			local animation = Instance.new("Animation")
+			animation.AnimationId = "rbxassetid://" .. tostring(math.floor(id))
+			return record.animator:LoadAnimation(animation)
+		end)
+		if ok and loaded then track = loaded end
+	end
+	record.tracks[key] = track
+	return track or nil
+end
+
+local function playArt(record, holder, key, looped)
+	local track = artTrack(record, holder, key)
+	if track then pcall(function() track.Looped = looped == true; track:Play() end) end
+end
+
+-- Final art for an enemy: pivot at the feet, animated only by its Animator
+-- (WalkAnimation); the record keeps the fields every enemy record has.
+local function buildArtEnemy(def, template)
+	local model = template:Clone()
+	model.Name = "EnemyVisual"
+	local pieces, torso = {}, model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
+	for _, piece in ipairs(model:GetDescendants()) do
+		if piece:IsA("BasePart") then
+			piece.CanCollide, piece.CanTouch, piece.CanQuery = false, false, false
+			table.insert(pieces, {part = piece, rest = piece.CFrame, transparency = piece.Transparency or 0})
+		end
+	end
+	local _, size = model:GetBoundingBox()
+	local scale = math.max(0.5, (size and size.Y or 4.4) / 4.4)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size = UDim2.fromOffset(def.boss and 108 or 45, 8)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, (size and size.Y or 4.4) + 0.6, 0)
+	billboard.AlwaysOnTop, billboard.MaxDistance, billboard.Adornee, billboard.Parent = true, 180, torso, model
+	local bg = UI.frame(billboard, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(22, 19, 26)})
+	UI.corner(bg, 3)
+	local hp = UI.frame(bg, {Name = "HP", Size = UDim2.fromScale(1, 1), BackgroundColor3 = def.boss and UI.Colors.red or UI.Colors.green})
+	UI.corner(hp, 3)
+	local status = UI.label(billboard, "", {Name="Status", Position=UDim2.new(0.5,-75,0,-19), Size=UDim2.fromOffset(150,17),
+		TextSize=11, TextColor3=UI.Colors.gold, TextStrokeTransparency=0.25, Visible=false})
+	local record = {
+		model = model, bar = hp, status = status, scale = scale, def = def, lastHP = nil, art = true,
+		legs = nil, arms = {}, wings = {}, legHeight = 0, pieces = pieces, billboard = billboard,
+		flashParts = { torso and { part = torso, color = torso.Color } or nil }, flashUntil = nil,
+	}
+	local controller = model:FindFirstChildWhichIsA("AnimationController", true) or model:FindFirstChildWhichIsA("Humanoid", true)
+	record.animator = controller and controller:FindFirstChildOfClass("Animator") or nil
+	playArt(record, model, "WalkAnimation", true)
+	return record
+end
+
 local function buildEnemy(def)
+	local template = artTemplate("Enemies", def.id) or artTemplate("Enemies", def.family)
+	if template then return buildArtEnemy(def, template) end
 	local family=def.family or def.id
 	local model = Instance.new("Model")
 	model.Name = "EnemyVisual"
@@ -396,12 +463,20 @@ function Effects:_record(model)
 		end
 	end
 	local scale = model:GetAttribute("FigureScale") or 1
+	local figure = model:FindFirstChild("HeroFigure")
+	if figure and not figure:GetAttribute("HeroArt") then figure = nil end
 	record = { parts = parts, pivot = CFrame.new(base.Position), yaw = 0, target = 0, active = false, scale = scale,
+		figure = figure, figureRest = figure and figure:GetPivot() or nil,
 		heroId = model:GetAttribute("HeroId"), ownerId = model:GetAttribute("OwnerId"),
 		waist = CFrame.new(base.Position + Vector3.new(0, 2.4 * scale, 0)),
 		head = base.Position + Vector3.new(0, 6.2 * scale, 0), breath = (#self.aimsOrder + 1) * 1.7 }
 	self.aims[model] = record
 	table.insert(self.aimsOrder, model)
+	if figure then
+		local controller = figure:FindFirstChildWhichIsA("AnimationController", true) or figure:FindFirstChildWhichIsA("Humanoid", true)
+		record.animator = controller and controller:FindFirstChildOfClass("Animator") or nil
+		playArt(record, figure, "IdleAnimation", true)
+	end
 	return record
 end
 
@@ -495,6 +570,13 @@ function Effects:_turnTowers(dt)
 			-- bends from the waist or the shoulders over planted legs.
 			local lift = CFrame.new(0, hop * 1.1 * record.scale, 0)
 			local turn = lift * record.pivot * CFrame.Angles(0, record.yaw, 0) * record.pivot:Inverse()
+			if record.figure then
+				-- Final art turns and hops as one piece; its own animations do the rest.
+				record.figure:PivotTo(turn * record.figureRest)
+				if record.firedAt ~= record.playedFire and firing then record.playedFire = record.firedAt; playArt(record, record.figure, "AttackAnimation") end
+				if record.castAt ~= record.playedCast and casting then record.playedCast = record.castAt; playArt(record, record.figure, "AbilityAnimation") end
+				if record.hopAt ~= record.playedHop and hopping then record.playedHop = record.hopAt; playArt(record, record.figure, "UpgradeAnimation") end
+			end
 			local wobble = stunned and math.sin(self.clock * 6) * 0.1 or 0
 			local lean = -pulse * (melee and 0.12 or 0.035) + cast * 0.2 + slump * 0.22
 			local body = record.waist * CFrame.Angles(lean, 0, wobble) * record.waist:Inverse() * CFrame.new(0, breathe, 0)
@@ -671,6 +753,9 @@ function Effects:_heroShot(event, lowFX)
 	local heroId = model and model:GetAttribute("HeroId") or event.heroId
 	local muzzle = model and model:FindFirstChild(MUZZLE_PARTS[heroId] or "Hand")
 	if muzzle then from = muzzle.Position end
+	-- Final art names its own emission point.
+	local attachment = model and model:FindFirstChild("Muzzle", true)
+	if attachment and attachment:IsA("Attachment") and typeof(attachment.WorldPosition) == "Vector3" then from = attachment.WorldPosition end
 	local color = UI.color(event.color)
 	local white = Color3.fromRGB(218, 246, 255)
 	local delta = target - from
@@ -1151,7 +1236,7 @@ function Effects:Step(dt)
 		end
 		enemy.position = enemy.position:Lerp(enemy.target, math.min(1, dt * 12))
 		local bob = settings.lowFX and 0 or math.sin(self.clock * (enemy.def.air and 4 or 8) + enemy.phase) * (enemy.def.air and 0.2 or 0.055)
-		local position = enemy.position + Vector3.new(0, 2 * enemy.scale + bob + (enemy.def.air and 6 or 0), 0)
+		local position = enemy.position + Vector3.new(0, (enemy.art and 0 or 2 * enemy.scale) + bob + (enemy.def.air and 6 or 0), 0)
 		local pivot = CFrame.lookAt(position, position + enemy.direction)
 		local family = enemy.def.family or enemy.def.id
 		-- Runners sprint leaning into the road; everyone else walks upright.

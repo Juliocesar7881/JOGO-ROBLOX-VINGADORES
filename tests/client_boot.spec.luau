@@ -1377,6 +1377,52 @@ local function session(screen)
 		frames(1 / 30, 2)
 	end)
 
+	step("final art: enemies are cloned from their template and heroes shoot from their Muzzle", function()
+		local art = Instance.new("Folder")
+		art.Name, art.Parent = "DoomArt", replicated
+		local enemies = Instance.new("Folder")
+		enemies.Name, enemies.Parent = "Enemies", art
+		local template = Instance.new("Model")
+		template.Name, template.Parent = "brute", enemies
+		local body = Instance.new("Part")
+		body.Name, body.Size, body.CFrame, body.Parent = "BruteArt", v3(3, 6, 2), CFrame.new(0, 3, 0), template
+		template.PrimaryPart = body
+		push(matchSnapshot(profile, "Wave", { enemies = 1 }))
+		fx({ kind = "EnemySync", enemies = { { id = 901, enemyId = "brute", position = v3(30, 0, -15), hp = 100, maxHP = 172, st = 0 } } })
+		frames(1 / 30, 2)
+		local visuals = workspace:FindFirstChild("DoomClientVisuals")
+		check(countNamed(visuals, "BruteArt") == 1, tag .. ": an enemy with final art is cloned from it")
+		local cloned = named(visuals, "BruteArt")
+		check(cloned ~= nil and math.abs(cloned.Position.X - 30) < 1, tag .. ": and walks where the server puts it")
+		fx({ kind = "Clear" })
+		frames(1 / 30, 2)
+		art:Destroy()
+		-- A tower whose figure is final art fires from the Muzzle it names.
+		local model
+		for _, candidate in ipairs(workspace:FindFirstChild("DoomWorld").Towers:GetChildren()) do
+			if candidate:GetAttribute("TowerId") == "t1" then model = candidate end
+		end
+		local figure = Instance.new("Model")
+		figure.Name, figure.Parent = "HeroFigure", model
+		figure:SetAttribute("HeroArt", true)
+		local muzzle = Instance.new("Attachment")
+		muzzle.Name, muzzle.WorldPosition, muzzle.Parent = "Muzzle", v3(11, 7, 12), figure
+		push(matchSnapshot(profile, "Wave", { enemies = 0 }))
+		local before = #workspace:FindFirstChild("DoomClientVisuals"):GetChildren()
+		fx({ kind = "Shot", from = v3(10, 4, 10), to = v3(14, 2, -15), color = Color3.fromRGB(200, 200, 200), towerId = "t1", heroId = "ironman" })
+		local fromMuzzle = false
+		for _, item in ipairs(workspace:FindFirstChild("DoomClientVisuals"):GetChildren()) do
+			if item.Name == "CombatEffect" and item.Size and item.Size.Z > 1 then
+				local startPoint = item.CFrame * v3(0, 0, item.Size.Z / 2)
+				if (startPoint - v3(11, 7, 12)).Magnitude < 0.5 then fromMuzzle = true end
+			end
+		end
+		check(fromMuzzle, tag .. ": the shot leaves from the art's Muzzle")
+		figure:Destroy()
+		fx({ kind = "Clear" })
+		frames(1 / 30, 2)
+	end)
+
 	step("every hero's shot has a weapon sound", function()
 		local EffectsModule = require(effectsScript)
 		local missing = {}

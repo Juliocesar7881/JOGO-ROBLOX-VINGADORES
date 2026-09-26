@@ -267,9 +267,28 @@ function METHODS:GetDescendants()
 	return out
 end
 
-function METHODS:FindFirstChild(name)
+function METHODS:FindFirstChild(name, recursive)
 	for _, child in ipairs(rawget(self, "__children")) do
 		if child.Name == name then return child end
+	end
+	if recursive then
+		for _, child in ipairs(rawget(self, "__children")) do
+			local found = child:FindFirstChild(name, true)
+			if found then return found end
+		end
+	end
+	return nil
+end
+
+function METHODS:FindFirstChildWhichIsA(className, recursive)
+	for _, child in ipairs(rawget(self, "__children")) do
+		if child:IsA(className) then return child end
+	end
+	if recursive then
+		for _, child in ipairs(rawget(self, "__children")) do
+			local found = child:FindFirstChildWhichIsA(className, true)
+			if found then return found end
+		end
 	end
 	return nil
 end
@@ -352,8 +371,39 @@ function METHODS:PivotTo(target)
 	end
 	props.CFrame = target
 end
-function METHODS:GetPivot() return rawget(self, "__props").CFrame or CFrame.new() end
-function METHODS:Clone() return newInstance(rawget(self, "__class")) end
+function METHODS:GetPivot()
+	local props = rawget(self, "__props")
+	if props.PrimaryPart and rawget(props.PrimaryPart, "__props").CFrame then return rawget(props.PrimaryPart, "__props").CFrame end
+	return props.CFrame or CFrame.new()
+end
+-- A real deep copy: properties, attributes and children, with references
+-- inside the copied tree (a Model's PrimaryPart) pointing at the copies.
+function METHODS:Clone()
+	local map = {}
+	local function copy(source)
+		local made = newInstance(rawget(source, "__class"))
+		map[source] = made
+		local props = rawget(made, "__props")
+		for key, value in pairs(rawget(source, "__props")) do
+			if key ~= "Parent" then props[key] = value end
+		end
+		for key, value in pairs(rawget(source, "__attributes")) do rawget(made, "__attributes")[key] = value end
+		for _, child in ipairs(rawget(source, "__children")) do
+			local childCopy = copy(child)
+			rawget(childCopy, "__props").Parent = made
+			table.insert(rawget(made, "__children"), childCopy)
+		end
+		return made
+	end
+	local root = copy(self)
+	for original, made in pairs(map) do
+		local props = rawget(made, "__props")
+		for key, value in pairs(props) do
+			if type(value) == "table" and map[value] and key ~= "Parent" then props[key] = map[value] end
+		end
+	end
+	return root
+end
 
 local function newSignal()
 	local signal = { handlers = {} }

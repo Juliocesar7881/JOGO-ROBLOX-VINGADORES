@@ -84,6 +84,9 @@ produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 
 - Modelos, texturas e animações finais dos 36 heróis, inimigos e chefes
   (etapas 2 e 5 do plano): hoje são modelos procedurais de desenvolvimento.
+  O caminho para a arte está pronto: exportar do Studio como `.rbxmx` para
+  `assets/models`, registrar autor e permissão no manifesto e o jogo passa a
+  usar o modelo sozinho (ver `assets/models/README.md`).
 - Áudio publicado (IDs), passes e produtos (IDs), grupo (`GroupId`).
 
 ### Pendente

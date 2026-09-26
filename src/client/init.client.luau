@@ -1858,7 +1858,7 @@ local function updatePreview(position)
 			local bounds, size = ghost:GetBoundingBox()
 			ghostLift = size.Y * 0.5 - bounds.Position.Y + 0.15
 			ghostParts = {}
-			for _, part in ipairs(ghost:GetChildren()) do
+			for _, part in ipairs(ghost:GetDescendants()) do
 				if part:IsA("BasePart") then
 					table.insert(ghostParts, {part = part, cf = part.CFrame, color = part.Color})
 					part.Transparency = 0.35

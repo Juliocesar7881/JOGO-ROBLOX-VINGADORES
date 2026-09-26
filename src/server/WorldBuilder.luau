@@ -125,7 +125,48 @@ local upper = string.upper
 -- Per-map campaign lengths for the portal signs, set by World.new.
 local campaignWaves = {}
 
+-- Final art made in Studio (tools/build.py embeds assets/models into
+-- ReplicatedStorage.DoomArt): a Model per hero or enemy id. When one exists it
+-- replaces the generated figure everywhere the figure is used — towers,
+-- portraits, the training yard — and changes nothing but the look.
+local function artTemplate(kind, id)
+	local art = game:GetService("ReplicatedStorage"):FindFirstChild("DoomArt")
+	local folder = art and art:FindFirstChild(kind)
+	local template = folder and id and folder:FindFirstChild(id)
+	return template and template:IsA("Model") and template or nil
+end
+World.ArtTemplate = artTemplate
+
+-- The authoring contract (assets/models/README.md): facing -Z, pivot at the
+-- centre of the feet, an optional Attachment named Muzzle where shots leave,
+-- optional Animator with animation ids in attributes. Visual size is the
+-- artist's; a tower adds only its usual emphasis. Rigged models keep their
+-- joints alive: only the root stays anchored.
+local function artFigure(parent, template, origin, emphasis)
+	local figure = template:Clone()
+	figure.Name = "HeroFigure"
+	figure:SetAttribute("HeroArt", true)
+	local rigged = figure:FindFirstChildWhichIsA("Motor6D", true) ~= nil
+	for _, item in ipairs(figure:GetDescendants()) do
+		if item:IsA("BasePart") then
+			item.CanCollide, item.CanTouch = false, false
+			item.Anchored = not rigged or item == figure.PrimaryPart
+			item:SetAttribute("HeroVisual", true)
+		end
+	end
+	if emphasis and emphasis ~= 1 and figure.ScaleTo then
+		pcall(function() figure:ScaleTo(figure:GetScale() * emphasis) end)
+	end
+	figure:PivotTo(origin)
+	figure.Parent = parent
+	parent:SetAttribute("FigureScale", 1)
+	local torso = figure.PrimaryPart or figure:FindFirstChildWhichIsA("BasePart", true)
+	return torso, figure:FindFirstChild("Head", true) or torso
+end
+
 local function heroFigure(parent, heroId, hero, origin, scale)
+	local template = artTemplate("Heroes", heroId)
+	if template then return artFigure(parent, template, origin, (scale or 1) / (FIGURE_SCALE[heroId] or 1)) end
 	scale = scale or FIGURE_SCALE[heroId] or 1
 	parent:SetAttribute("FigureScale", scale)
 	-- The local -Z axis is the face of every figure, also used by portrait
@@ -3443,7 +3484,7 @@ function World:MakeTower(id, heroId, position, ownerId)
 	local scale = (FIGURE_SCALE[heroId] or 1) * 1.15
 	local origin = CFrame.new(position.X, 0.55, position.Z)
 	local torso, head = heroFigure(model, heroId, hero, origin, scale)
-	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") then p.CanCollide = false p:SetAttribute("TowerId", id) end end
+	for _, p in ipairs(model:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false p:SetAttribute("TowerId", id) end end
 	model.PrimaryPart, model.Parent = base, self.Towers
 	self:ClearClutter(position, 2.9)
 	local title = label(head, hero.name.pt, Vector3.new(0, 2, 0), color:Lerp(Color3.new(1, 1, 1), 0.75), 145, 55)
