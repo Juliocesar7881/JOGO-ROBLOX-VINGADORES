@@ -494,6 +494,8 @@ nos invocadores, `ch` (invocações restantes, 0–2). Os bits de `st` ganham
 `128` (camuflado revelado) e `256` (acelerado por suporte). `Shot` traz
 `armored = true` quando o alvo tem armadura de 25% ou mais (faíscas). Uma
 invocação é anunciada 1,5 s antes com um `Pulse` que segue o invocador.
+`CoinRemove` pode trazer `to` (Vector3): a moeda foi recolhida por uma torre
+coletora (`hero.pickup`) ou por uma habilidade de área, e voa até esse ponto.
 
 **Construção.** Prévia e servidor chamam `Rules.BuildCheck(mapId, position,
 towers, config, blockers)`; recusas usam `Rules.BuildReasons` (`bounds`,

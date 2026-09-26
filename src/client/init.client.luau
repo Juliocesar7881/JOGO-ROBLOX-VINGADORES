@@ -312,6 +312,7 @@ local function contextHero(body, data)
 	UI.label(showcase,L(def.name),{Position=UDim2.fromOffset(118,25),Size=UDim2.new(1,-122,0,62),TextSize=23,Font=Enum.Font.GothamBlack,TextWrapped=true})
 	UI.label(showcase,"🪙 "..number(def.cost)..T(" Ouro na partida"," Gold in battle"),{Position=UDim2.fromOffset(118,95),Size=UDim2.new(1,-122,0,25),TextColor3=C.gold})
 	smallText(body,L(def.description),0,48)
+	if def.pickup then smallText(body,"🧲 "..T("Coletor: a torre puxa o seu Ouro que cai a até ","Scavenger: the tower pulls in your Gold landing within ")..def.pickup.." studs.",0,34) end
 	local tabs=UI.row(body,44)
 	for index,tab in ipairs({{id="power",label=T("PODER E EQUIPE","POWER & SQUAD")},{id="defense",label=T("NA DEFESA","ON DEFENSE")}}) do
 		UI.button(tabs,tab.label,function() heroDetailTab=tab.id; renderContext() end,{Name="HeroDetail_"..tab.id,Position=UDim2.new((index-1)/2,0,0,0),Size=UDim2.new(0.5,-6,0,44),TextSize=11,BackgroundColor3=heroDetailTab==tab.id and tint or C.card,TextColor3=heroDetailTab==tab.id and C.background or C.text})
@@ -2339,6 +2340,7 @@ updateMatch = function()
 				-- The wide panel has a single line for stats; the tall one has two.
 				refs.towerStats.Text = T("Dano ", "Damage ") .. number(tower.damage) .. "  •  " .. string.format("%.1f", tower.rate or 0) .. T("/s", "/s")
 					.. (refs.towerWide and "  •  " or "\n") .. T("Alcance ", "Range ") .. string.format("%.1f", tower.range or 0)
+					.. (Catalog.Heroes[tower.heroId] and Catalog.Heroes[tower.heroId].pickup and ("  •  🧲 " .. Catalog.Heroes[tower.heroId].pickup) or "")
 			end
 			if typeof(tower.position) == "Vector3" then towerRing = rangeRing(towerRing, tower.position, tower.range or 20, colorFor(tower.heroId)) end
 		end

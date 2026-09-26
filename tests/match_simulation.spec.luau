@@ -500,7 +500,9 @@ end
 print("--- picking up match Gold ---")
 -- Match Gold pays for heroes, so a commander who never picks it up starves:
 -- only the starting purse and the wave bonus reach the wallet.
-local starved = simulate({ mapId = "manhattan", modeId = "normal", pickup = false, characterAt = v3(88, 0, 66) })
+-- It never walks to a coin and never casts (an area power sweeps up Gold);
+-- its squad has no scavenger heroes.
+local starved = simulate({ mapId = "manhattan", modeId = "normal", pickup = false, cast = false, characterAt = v3(88, 0, 66) })
 local drone = simulate({ mapId = "manhattan", modeId = "normal", profile = { passes = { collector = true } } })
 if starved and drone then
 	check((drone.log.CoinRemove or 0) > 0, "the drone actually picks coins up")
@@ -1326,6 +1328,38 @@ do
 	local shot
 	for _, event in ipairs(readEvents) do if event.kind == "Shot" and event.towerId == gunner.id then shot = event end end
 	check(shot ~= nil and shot.armored == true, "a shot on armour says so, for the sparks")
+
+	-- Scavenger towers and area powers sweep up their owner's Gold: less
+	-- walking, never more Gold.
+	local areaHero
+	for _, heroId in ipairs(Catalog.HeroOrder) do
+		local ability = Catalog.Abilities[Catalog.Heroes[heroId].ability]
+		if ability and ability.target == "area" and not areaHero then areaHero = heroId end
+	end
+	local scav, scavPlayer = stage({ modeId = "normal", mapId = "manhattan", wave = 5, loadout = { areaHero, "rocket" } })
+	local sp = scav.participants[scavPlayer.UserId]
+	sp.cash = 1e6
+	local scavenger = place(scav, scavPlayer, "rocket")
+	check(Catalog.Heroes.rocket.pickup ~= nil, "Rocket is a scavenger")
+	scav:_coin(sp, scavenger.position + v3(6, 0, 0), 25)
+	scav:_coin(sp, v3(-40, 0, 90), 30)
+	local collectedBefore = sp.collected
+	local farId
+	for id, coin in pairs(sp.coins) do if coin.value == 30 then farId = id end end
+	scav:Step(0.1)
+	check(sp.collected - collectedBefore == 25, "a scavenger tower pulls in the Gold that lands beside it, got " .. tostring(sp.collected - collectedBefore))
+	check(farId ~= nil and sp.coins[farId] ~= nil, "Gold far from any scavenger stays on the ground")
+	local sweepEvents = {}
+	local sweepFx = scav._fx
+	scav._fx = function(self, event, ...) table.insert(sweepEvents, event) return sweepFx(self, event, ...) end
+	spawn(scav, "zombie", 5, 1)
+	scav.phase = "Wave" -- the empty wave above already ended
+	local cast = scav:Handle(scavPlayer, "CastSkill", { position = v3(-40, 0, 90) })
+	check(cast, "an area power is cast over the Gold")
+	check(sp.coins[farId] == nil and sp.collected - collectedBefore == 55, "an area power sweeps up the caster's Gold inside it")
+	local flown
+	for _, event in ipairs(sweepEvents) do if event.kind == "CoinRemove" and event.id == farId then flown = event end end
+	check(flown ~= nil and typeof(flown.to) == "Vector3", "swept coins fly to where they were collected")
 
 	-- Competitive past wave 70: no old 50-wave cap anywhere.
 	local deep, deepPlayer = stage({ modeId = "ranked", mapId = "latveria", wave = 149 })

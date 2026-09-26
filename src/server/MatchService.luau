@@ -362,6 +362,19 @@ function Match:_coin(p, position, amount)
 	self:_fx({kind="CoinSpawn",id=id,position=p.coins[id].position,value=p.coins[id].value},p.player)
 end
 
+-- Collects a commander's Gold within radius of a point (a scavenger tower,
+-- an ability's area). The coins fly to that point; the total never changes.
+function Match:_collectAround(p, center, radius)
+	local count=0
+	for id,coin in pairs(p.coins) do
+		if distanceXZ(coin.position,center)<=radius then
+			p.collected+=coin.value p.cash+=coin.value p.coins[id]=nil count+=1
+			self:_fx({kind="CoinRemove",id=id,value=coin.value,to=center+Vector3.new(0,3,0)},p.player)
+		end
+	end
+	return count
+end
+
 function Match:_contribute(tower)
 	local p = self.participants[tower.ownerId]
 	if p and not p.returned and not p.disconnectedAt then
@@ -1010,6 +1023,8 @@ function Match:_castAbility(player, p, payload)
 	p.contributed = true
 	p.waveHeroes[heroId] = true
 	p.cooldowns[def.id] = self.elapsed + stats.cooldown
+	-- An area power also sweeps up the caster's Gold lying inside it.
+	if def.target == "area" and (stats.radius or 0) > 0 then self:_collectAround(p, at, stats.radius) end
 	self:_fx({kind="Ability", abilityId=def.id, abilityKind=def.kind, heroId=heroId, position=at, radius=stats.radius,
 		duration=stats.duration, power=stats.power, points=points, towerId=tower and tower.id, ownerId=player.UserId,
 		ultimate=def.ultimate or nil, extras=#extraFx>0 and extraFx or nil,
@@ -1119,6 +1134,13 @@ function Match:Step(dt)
 			for id,coin in pairs(p.coins) do
 				if (p.profile.passes and p.profile.passes.collector) or (root and (root.Position-coin.position).Magnitude<=radius) then
 					p.collected+=coin.value p.cash+=coin.value p.coins[id]=nil self:_fx({kind="CoinRemove",id=id,value=coin.value},p.player)
+				end
+			end
+			-- Scavenger heroes pull in their owner's Gold that lands near them.
+			if next(p.coins) then
+				for _,tower in pairs(self.towers) do
+					local hero=tower.ownerId==p.player.UserId and self.catalog.Heroes[tower.heroId]
+					if hero and hero.pickup then self:_collectAround(p,tower.position,hero.pickup) end
 				end
 			end
 		end

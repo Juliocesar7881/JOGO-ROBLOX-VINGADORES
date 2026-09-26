@@ -81,6 +81,9 @@ Catalog.HeroOrder = {
 	"thor", "wanda", "strange", "ghostrider",
 	"captainmarvel", "silversurfer",
 }
+-- pickup: this hero's towers pull in their owner's match Gold that lands
+-- within that many studs (scavengers: Falcão, Homem-Formiga, Rocket, Senhor das
+-- Estrelas). It only saves walking; it never creates Gold.
 -- Every hero owns exactly one active ability. In a match, the active ability
 -- is the one belonging to the hero standing in the FIRST slot of the loadout.
 Catalog.Heroes = {
@@ -109,7 +112,7 @@ Catalog.Heroes = {
 		id = "falcon", rarity = "common", ability = "airCommand",
 		name = text("Falcão", "Falcon"), role = text("Ataque rápido contra voadores", "Fast strikes against flyers"), cost = 220,
 		description = text("Rasantes rápidos: ótimo contra voadores e alvos ágeis.", "Fast dives: great against flyers and agile targets."),
-		damage = 16, range = 30, interval = 0.68, color = { 196, 52, 60 }, attack = "single", damageType = "physical", air = true,
+		pickup = 14, damage = 16, range = 30, interval = 0.68, color = { 196, 52, 60 }, attack = "single", damageType = "physical", air = true,
 		branches = {
 			{ name = text("Rasante", "Dive Bomb"), description = text("Mais dano e mais alcance.", "More damage and more range."), mods = { mul("damage", 1.3), add("range", 6) } },
 			{ name = text("Drone Redwing", "Redwing Drone"), description = text("Ataca quase o dobro de vezes.", "Attacks almost twice as often."), mods = { mul("interval", 0.6) } },
@@ -150,7 +153,7 @@ Catalog.Heroes = {
 		id = "antman", rarity = "rare", ability = "growth",
 		name = text("Homem-Formiga", "Ant-Man"), role = text("Ataques rápidos e pisões", "Fast attacks and stomps"), cost = 380,
 		description = text("Ataques rápidos alternam com pisões gigantes.", "Quick attacks alternate with giant stomps."),
-		damage = 22, range = 26, interval = 0.7, color = { 205, 72, 72 }, attack = "single", damageType = "tech", air = false, splash = 8, stompEvery = 5,
+		pickup = 14, damage = 22, range = 26, interval = 0.7, color = { 205, 72, 72 }, attack = "single", damageType = "tech", air = false, splash = 8, stompEvery = 5,
 		branches = {
 			{ name = text("Gigante", "Giant-Man"), description = text("Pisões gigantes acontecem com mais frequência.", "Giant stomps happen more frequently."), mods = { set("periodicSplash", 2) } },
 			{ name = text("Impacto Pym", "Pym Impact"), description = text("Pisões alcançam uma área enorme.", "Stomps reach an enormous area."), mods = { set("splash", 16), set("periodicSplash", 4) } },
@@ -170,7 +173,7 @@ Catalog.Heroes = {
 		id = "rocket", rarity = "rare", ability = "salvage",
 		name = text("Rocket", "Rocket"), role = text("Explosivos em área", "Area explosives"), cost = 330,
 		description = text("Um arsenal improvisado que explode em pequenas áreas.", "An improvised arsenal that bursts in small areas."),
-		damage = 15, range = 26, interval = 1.3, color = { 168, 112, 78 }, attack = "splash", damageType = "tech", air = true, splash = 4.5,
+		pickup = 14, damage = 15, range = 26, interval = 1.3, color = { 168, 112, 78 }, attack = "splash", damageType = "tech", air = true, splash = 4.5,
 		branches = {
 			{ name = text("Arsenal explosivo", "Explosive Arsenal"), description = text("Explosões enormes e mais dano.", "Huge blasts and more damage."), mods = { set("splash", 10), mul("damage", 1.3) } },
 			{ name = text("Metralhadora grande", "Big Gun"), description = text("Dispara quase o dobro de vezes.", "Fires almost twice as often."), mods = { mul("interval", 0.6) } },
@@ -251,7 +254,7 @@ Catalog.Heroes = {
 		id = "starlord", rarity = "epic", ability = "awesomeMix",
 		name = text("Senhor das Estrelas", "Star-Lord"), role = text("Rajadas rápidas de blasters", "Rapid blaster fire"), cost = 430,
 		description = text("Blasters gêmeos disparam em rajadas muito rápidas.", "Twin blasters fire in very rapid bursts."),
-		damage = 16, range = 25, interval = 0.32, color = { 186, 56, 68 }, attack = "single", damageType = "tech", air = true,
+		pickup = 14, damage = 16, range = 25, interval = 0.32, color = { 186, 56, 68 }, attack = "single", damageType = "tech", air = true,
 		branches = {
 			{ name = text("Blasters gêmeos", "Twin Blasters"), description = text("Cadência ainda maior.", "An even higher fire rate."), mods = { mul("interval", 0.7) } },
 			{ name = text("Granada de gravidade", "Gravity Grenade"), description = text("Explosões em área que desaceleram.", "Area blasts that slow."), mods = { set("attack", "splash"), set("splash", 9), set("slow", 0.3) } },

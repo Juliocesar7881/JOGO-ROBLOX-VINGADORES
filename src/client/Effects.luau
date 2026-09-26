@@ -1024,7 +1024,8 @@ function Effects:Handle(event)
 			local character = self.player.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart")
 			if root and #self.collecting < 16 then
-				coin.from, coin.born = coin.part.Position, self.clock
+				-- Coins swept up by a tower or a power fly there, not to the commander.
+				coin.from, coin.born, coin.to = coin.part.Position, self.clock, typeof(event.to) == "Vector3" and event.to or nil
 				table.insert(self.collecting, coin)
 			else
 				coin.part:Destroy()
@@ -1261,7 +1262,7 @@ function Effects:Step(dt)
 	for index = #self.collecting, 1, -1 do
 		local coin = self.collecting[index]
 		local life = math.clamp((self.clock - coin.born) / 0.3, 0, 1)
-		local target = self.drone and self.drone.Position or (root and root.Position)
+		local target = coin.to or (self.drone and self.drone.Position) or (root and root.Position)
 		if life >= 1 or not target then
 			if target and not settings.lowFX and (coin.value or 0) > 0 then self:_popup(target, coin.value, UI.Colors.gold, "+") end
 			coin.part:Destroy()

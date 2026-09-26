@@ -30,7 +30,11 @@ desatualizado; use-o para qualquer número de herói/habilidade específico.
 
 - **Ouro da partida** (🪙): cada inimigo derrotado derruba moedas no chão; é
   preciso andar perto para pegar (o ímã: `Config.CollectRadius`, ampliado pelo
-  talento Magnetismo, +15% por ponto; o passe Drone Coletor pega tudo). Esse
+  talento Magnetismo, +15% por ponto; o passe Drone Coletor pega tudo). Também
+  ajudam: heróis **coletores** (Falcão, Homem-Formiga, Rocket e Senhor das
+  Estrelas, campo `pickup` no catálogo) puxam o seu Ouro que cai a até 14
+  studs da torre, e toda **habilidade de área** recolhe o seu Ouro dentro do
+  raio dela. Nada disso cria Ouro; só poupa caminhada. Esse
   Ouro paga, melhora e vende heróis e evolui a base. Ao fim de cada onda entra
   um bônus direto (`Rules.WaveCash` + renda da base). Começa com
   `Config.StartCash`. **Não existe mais Energia**, e esse Ouro nunca sai da
