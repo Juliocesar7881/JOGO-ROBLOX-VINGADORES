@@ -3,7 +3,8 @@
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 if ($WindowHandle -ne 0) { $studioHandle = [IntPtr]$WindowHandle } else {
-  $studioProc = Get-Process RobloxStudioBeta | Where-Object { $_.MainWindowTitle -like '*Doomsday*' -or $_.MainWindowTitle -like '*Tower Defense*' } | Select-Object -First 1
+  # The experience title is localized: a Portuguese Studio shows "Defesa de Torre ...".
+  $studioProc = Get-Process RobloxStudioBeta | Where-Object { $_.MainWindowTitle -like '*Doomsday*' -or $_.MainWindowTitle -like '*Tower Defense*' -or $_.MainWindowTitle -like '*Defesa de Torre*' } | Select-Object -First 1
   if (-not $studioProc) { throw 'Doomsday is not open in Studio.' }
   $studioHandle = $studioProc.MainWindowHandle
 }
