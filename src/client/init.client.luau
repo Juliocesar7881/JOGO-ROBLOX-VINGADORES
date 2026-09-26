@@ -2484,7 +2484,10 @@ fxRemote.OnClientEvent:Connect(function(event)
 			})
 		end
 	else
-		if event.kind == "EnemyDown" and event.boss and activeMatch() then
+		if event.kind == "BossArrive" and activeMatch() then
+			local def = Catalog.Enemies[event.enemyId]
+			celebrate:Banner(def and def.name or {pt = "CHEFE", en = "BOSS"}, event.final and {pt = "⚠ CHEFE FINAL", en = "⚠ FINAL BOSS"} or {pt = "⚠ CHEFE", en = "⚠ BOSS"}, C.red, {big = event.final == true, cue = "boss", duration = 2.2})
+		elseif event.kind == "EnemyDown" and event.boss and activeMatch() then
 			local def = Catalog.Enemies[event.enemyId]
 			celebrate:Banner({pt = "CHEFE DERROTADO!", en = "BOSS DEFEATED!"}, def and def.name or nil, C.gold, {big = true, cue = "victory", confetti = 50})
 		elseif event.kind == "Ability" and event.ultimate and event.ownerId == player.UserId then

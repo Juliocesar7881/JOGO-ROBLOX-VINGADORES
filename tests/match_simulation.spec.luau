@@ -1267,6 +1267,25 @@ do
 	lab.elapsed += 3.1
 	check(math.floor(lab:_statusOf(brute) / 64) % 2 == 0, "the opening closes after three seconds")
 
+	-- Competitive past wave 70: no old 50-wave cap anywhere.
+	local deep, deepPlayer = stage({ modeId = "ranked", mapId = "latveria", wave = 149 })
+	local dp = deep.participants[deepPlayer.UserId]
+	dp.contributed = true
+	deep.completedWaves = 148
+	local recorded = {}
+	deep.profiles.RecordBest = function(_, _, _, _, waves) table.insert(recorded, waves); return true end
+	deep:_endWave()
+	check(deep.running and deep.completedWaves == 149 and deep.phase == "Preparing", "competitive keeps going past wave 149")
+	check(recorded[1] == 149, "a record past wave 70 is kept, got " .. tostring(recorded[1]))
+	local deepWave = Waves.Generate("latveria", "ranked", 150, 4, 1)
+	check(#deepWave > 0 and #deepWave <= Config.MaxEnemies, "wave 150 still spawns, within the crowd cap")
+	check(dp.goldEarned >= Rules.WaveGold("ranked", 149), "wave 149 still pays lobby Gold")
+
+	-- A boss arrives with an entrance the client can show.
+	local entrance, _, _, entranceLog = stage({ modeId = "normal", mapId = "gamma", wave = 10 })
+	entrance:_spawn({ enemyId = "abomination", pathIndex = 1, progress = 0 })
+	check((entranceLog.BossArrive or 0) >= 1, "a boss entering the road sends BossArrive")
+
 	-- Competitive: the whole squad agrees between waves, and the record stays.
 	local arena, arenaPlayer = stage({ modeId = "ranked", mapId = "hydra", wave = 12 })
 	arena.phase, arena.completedWaves = "Preparing", 12

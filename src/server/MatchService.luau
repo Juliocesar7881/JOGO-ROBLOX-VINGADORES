@@ -309,6 +309,8 @@ function Match:_spawn(spec)
 		expiresAt=def.illusion and self.elapsed+8 or nil}
 	self.enemies[id], self.alive = enemy, self.alive + 1
 	if def.boss and not spec.rewardless then
+		-- A short entrance: name, title and a rumble, before the fight.
+		self:_fx({kind="BossArrive",enemyId=spec.enemyId,final=final==true,position=enemy.position})
 		if final then
 			self:_notice("CHEFE FINAL • "..def.name.pt.." chegou! O mais forte de todos.", "FINAL BOSS • "..def.name.en.." has arrived! The strongest of all.","boss")
 		else
@@ -1084,6 +1086,10 @@ function Match:Step(dt)
 	for _,p in pairs(self.participants) do
 		if not p.returned and not p.disconnectedAt then
 			local root=p.player.Character and p.player.Character:FindFirstChild("HumanoidRootPart")
+			-- Falling off the battlefield puts the commander back at their post.
+			if root and root.Position.Y < -30 and self.world.MovePlayer then
+				pcall(function() self.world:MovePlayer(p.player,true,p.index) end)
+			end
 			local radius=self:_magnet(p)
 			for id,coin in pairs(p.coins) do
 				if (p.profile.passes and p.profile.passes.collector) or (root and (root.Position-coin.position).Magnitude<=radius) then
