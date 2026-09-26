@@ -1214,7 +1214,8 @@ function Match:Handle(player,action,payload)
 		local tower={id=towerId,heroId=id,ownerId=player.UserId,position=pos,level=1,branch=nil,priority="First",invested=cost,nextAttack=0}
 		tower.model=self.world:MakeTower(towerId,id,pos,player.UserId)
 		self.towers[towerId]=tower p.cash-=cost p.towerCount+=1
-		return true,{towerId=towerId}
+		self:_fx({kind="Pulse",position=pos,radius=5,color=Color3.fromRGB(unpack(hero.color)),duration=0.45})
+		return true,{towerId=towerId,cost=cost}
 	elseif action=="UpgradeTower" or action=="SellTower" or action=="SetPriority" then
 		local tower=self.towers[payload.towerId]
 		if not tower or tower.ownerId~=player.UserId then return false,"Torre inválida. / Invalid tower." end

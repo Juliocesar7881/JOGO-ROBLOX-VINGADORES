@@ -163,6 +163,10 @@ end
 local function act(action, payload, callback)
 	if pending[action] then return end
 	pending[action] = true
+	-- A slow answer says it is being handled, instead of looking like a dead button.
+	task.delay(0.6, function()
+		if pending[action] and not activeMatch() then showToast(T("⏳ Processando…", "⏳ Working…")) end
+	end)
 	task.spawn(function()
 		local result = request(action, payload)
 		pending[action] = nil
@@ -1900,7 +1904,13 @@ end
 local function confirmPlacement()
 	if selectedHero and selectedPosition and placementValid then
 		local hero, position = selectedHero, selectedPosition
-		act("PlaceTower", {heroId = hero, position = position}, function() audio:Cue("place", 0.05); clearPlacement() end)
+		act("PlaceTower", {heroId = hero, position = position}, function(reply)
+			audio:Cue("place", 0.05); clearPlacement()
+			-- The price the server actually charged, floating off the wallet.
+			if reply and tonumber(reply.cost) and refs.energy and refs.energy.Parent then
+				celebrate:Float("-" .. number(reply.cost) .. " 🪙", refs.energy, C.red)
+			end
+		end)
 	elseif selectedSkill and selectedPosition and Catalog.Abilities[selectedSkill].target ~= "tower" then
 		local skill, position = selectedSkill, selectedPosition
 		act("CastSkill", {skillId = skill, position = position}, function() clearPlacement() end)
