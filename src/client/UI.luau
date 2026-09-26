@@ -730,7 +730,8 @@ function UI.matchLayout(width, height, options)
 	-- when five comfortable cards cannot fit, as on a landscape phone.
 	layout.cardW = math.max(layout.cardW, math.min(160, math.floor((layout.heroCards.w - 42) / 5)))
 
-	local placementH, hintH = 56, 40
+	-- Every control a thumb must hit on a phone is at least 48 x 48 pixels.
+	local placementH, hintH = 60, 40
 	local bossH = class.short and 60 or 76
 	if class.short then
 		local columnW = math.min(300, width - 2 * pad - 220)
@@ -739,7 +740,7 @@ function UI.matchLayout(width, height, options)
 		local area = columnX - gap - pad
 		local skipW = math.min(208, area)
 		local bossW = math.min(560, area)
-		layout.skip = rect(pad + math.floor((area - skipW) / 2), bannerY, skipW, 44)
+		layout.skip = rect(pad + math.floor((area - skipW) / 2), bannerY, skipW, 48)
 		layout.boss = rect(pad + math.floor((area - bossW) / 2), bannerY, bossW, bossH)
 		layout.placement = rect(columnX, columnBottom - placementH, columnW, placementH)
 		layout.hint = rect(columnX, layout.placement.y - 4 - hintH, columnW, hintH)
@@ -748,7 +749,7 @@ function UI.matchLayout(width, height, options)
 	else
 		local skipW = math.min(208, width - 2 * pad)
 		local bossW = math.min(560, width - 2 * pad)
-		layout.skip = rect(math.floor((width - skipW) / 2), bannerY, skipW, 44)
+		layout.skip = rect(math.floor((width - skipW) / 2), bannerY, skipW, 48)
 		layout.boss = rect(math.floor((width - bossW) / 2), bannerY, bossW, bossH)
 		local placementW = math.min(430, width - 2 * pad)
 		if abilitiesW == 0 or pad + abilitiesW + 12 + placementW <= width - pad then
@@ -795,8 +796,8 @@ function UI.protocolLayout(width, height)
 			card = rect(panel.x + 14 + (index - 1) * (cardW + 12), panel.y + headerH, cardW, panelH - headerH - 14)
 		end
 		cards[index] = card
-		buttons[index] = rect(card.x + 10, card.y + card.h - 50, card.w - 20, 44)
-		descriptions[index] = rect(card.x + 12, card.y + 34, card.w - 24, card.h - 34 - 54)
+		buttons[index] = rect(card.x + 10, card.y + card.h - 54, card.w - 20, 48)
+		descriptions[index] = rect(card.x + 12, card.y + 34, card.w - 24, card.h - 34 - 58)
 	end
 	return { class = class, stacked = stacked, panel = panel, headerH = headerH, cards = cards, buttons = buttons, descriptions = descriptions }
 end
@@ -808,7 +809,7 @@ function UI.lobbyLayout(width, height)
 	width, height = clampScreen(width, height)
 	local class = UI.sizeClass(width, height)
 	local pad = class.compact and 10 or 14
-	local rowH = 44
+	local rowH = 48
 	local buttonW = class.compact and 78 or 100
 	local settings = rect(width - pad - buttonW, pad, buttonW, rowH)
 	local squad = rect(settings.x - 8 - buttonW, pad, buttonW, rowH)

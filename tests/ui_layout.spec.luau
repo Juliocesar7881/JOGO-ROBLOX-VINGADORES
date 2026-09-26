@@ -43,7 +43,7 @@ for _, device in ipairs(DEVICES) do
 	check(not rectsOverlap(H.squad, H.settings), label .. ": the squad button never overlaps settings")
 	check(H.settings.x + H.settings.w <= math.max(320, device.width), label .. ": settings stays on screen")
 	check(H.pill.w >= 100, label .. ": the gold pill keeps room for a number, got " .. H.pill.w)
-	check(H.squad.w >= 46 and H.settings.w >= 46 and H.squad.h >= 44, label .. ": buttons stay thumb-sized")
+	check(H.squad.w >= 46 and H.settings.w >= 46 and H.squad.h >= 48, label .. ": buttons stay thumb-sized")
 	-- The whole point of the redesign: the corners are corners, not a bar.
 	check(H.pill.w + H.squad.w + H.settings.w <= math.max(320, device.width) * 0.8 or device.width < 560,
 		label .. ": the corner HUD leaves the middle of the top edge to the world")
@@ -159,10 +159,10 @@ for _, screen in ipairs(SCREENS) do
 		check(L.tower.w >= 250, tag .. ": the tower panel stays wide enough for its buttons, got " .. L.tower.w)
 
 		-- Thumb-sized controls.
-		check(L.skip.h >= 44 and L.buttonH >= 44, tag .. ": ready and ability buttons are thumb-sized")
-		check(L.heroCards.h - 14 >= 44, tag .. ": hero cards stay tall enough to tap")
+		check(L.skip.h >= 48 and L.buttonH >= 48, tag .. ": ready and ability buttons are thumb-sized")
+		check(L.heroCards.h - 14 >= 48, tag .. ": hero cards stay tall enough to tap")
 		check(L.heroCards.w >= L.cardW, tag .. ": at least one hero card is fully visible, band " .. L.heroCards.w)
-		check(L.placement.h - 12 >= 44, tag .. ": confirm and cancel are thumb-sized")
+		check(L.placement.h - 12 >= 48, tag .. ": confirm and cancel are thumb-sized")
 		check(L.waveInfo.w >= 120, tag .. ": the threat banner keeps room to be read, got " .. L.waveInfo.w)
 	end
 end
@@ -179,7 +179,7 @@ for _, screen in ipairs(SCREENS) do
 		check(within(P.cards[index], P.panel), tag .. ": card " .. index .. " sits inside the panel")
 		check(within(P.buttons[index], P.cards[index]), tag .. ": CHOOSE " .. index .. " sits inside its card")
 		check(inside(P.buttons[index], screen.w, screen.h), tag .. ": CHOOSE " .. index .. " is reachable on screen")
-		check(P.buttons[index].h >= 44, tag .. ": CHOOSE " .. index .. " is tappable")
+		check(P.buttons[index].h >= 48, tag .. ": CHOOSE " .. index .. " is tappable")
 		check(P.descriptions[index].h >= 42, tag .. ": card " .. index .. " keeps at least three lines for its effect and tradeoff")
 		for other = index + 1, 3 do
 			check(not overlaps(P.cards[index], P.cards[other]), tag .. ": cards " .. index .. " and " .. other .. " do not overlap")
@@ -210,7 +210,7 @@ for _, screen in ipairs(SCREENS) do
 	check(H.elevator.h >= 80, tag .. ": the elevator card fits its countdown and Leave button")
 	-- Inventory and progression now have persistent, labelled navigation;
 	-- keep its width bounded so it does not become four giant desktop strips.
-	check(H.navigation.h >= 44 and H.navigation.w <= 720, tag .. ": navigation is tappable and bounded on desktop")
+	check(H.navigation.h >= 48 and H.navigation.w <= 720, tag .. ": navigation is tappable and bounded on desktop")
 	local covered = H.pill.w * H.pill.h + H.squad.w * H.squad.h + H.settings.w * H.settings.h + H.navigation.w * H.navigation.h
 	check(covered <= screen.w * screen.h * 0.23, tag .. ": at least 77% of the idle view remains world space")
 	for _, wide in ipairs({false, true}) do
