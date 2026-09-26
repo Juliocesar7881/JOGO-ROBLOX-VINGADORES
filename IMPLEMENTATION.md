@@ -9,7 +9,7 @@ Contadores de garantia são independentes. O perfil adiciona `bases: {[id]: true
 e `equippedBase`; migração concede `outpost` sem modificar Ouro ou heróis.
 
 `EquipBase {baseId}` só funciona no lobby com uma base possuída.
-`UpgradeBase {expectedLevel}` só funciona na partida; valida nível e Energia
+`UpgradeBase {expectedLevel}` só funciona na partida; valida nível e Ouro da partida
 no servidor. A intenção não aceita custo, dano, renda ou ID de outro jogador.
 `match.base` replica `{id, level, stats, wall}` do jogador. `Rules.BaseStats`
 centraliza custos e atributos. A contribuição de vida ao núcleo é dividida
@@ -146,8 +146,8 @@ visuais só em uma cópia descartável e intercepta as intenções de rede.
 
 `ranked` substitui `hard` nos catálogos, portais e partidas. `normal` não
 redireciona para `tutorial`; o tutorial permanece explicitamente selecionável.
-`Leaderboard` aceita `modeId="ranked"|"infinite"`; omissão conserva o placar
-Infinito por compatibilidade. `RecordBest` recebe o modo apenas no servidor;
+`Leaderboard` aceita apenas `modeId="ranked"` (competitivo sem fim, versão `comp2`); omissão lê o mesmo placar
+`RecordBest` recebe o modo apenas no servidor;
 no Ranqueado rejeita pontuações acima de 50. As chaves de Ranqueado têm prefixo
 próprio e continuam separadas por mapa/equipe/temporada/versão. Não existe
 remote para enviar pontuação. `Rules.RankForWaves` define os seis ranks.
@@ -177,7 +177,7 @@ Esta seção substitui os contratos históricos de habilidades e compras abaixo.
   alvo, raio, recarga restante/total. Não há `SetSkills` nem `BuySkill`.
 - `ChooseCard {cardId}` aceita somente uma oferta do servidor no modo cartas.
   Snapshot: `cardOffers`, `cards`, `cardMode`. Não há `ChooseProtocol`.
-- Elevadores usam `normal`, `hard`, `cards`, `infinite`; `ElevatorMap` removido.
+- Elevadores usam os destinos de `Catalog.DestinationOrder` (campanha ×6, competitivo ×3, cartas, treino); `ElevatorMap` removido; `ElevatorStart` deixa o primeiro passageiro começar antes do fim da contagem.
   Mapa é sorteado no servidor ao partir, sem escolha pelo primeiro passageiro.
 - FX: `Ability`, `CardPicked`, `EnemyDown`, além dos eventos existentes.
   Efeitos são locais; não calculam dano nem recompensa.
@@ -462,3 +462,33 @@ travelling client can read it.
 ## Ownership
 
 Root owns Config, bootstrap, MatchService, WorldBuilder, PartyService, integration and documentation; all of these now exist. Persistence agent owns PlayerService and persistence-specific tests. UI agent owns client files. Catalog/build agent owns Catalog, pure shared Rules/Waves modules, tools/build.py and tools/test files. Avoid modifying another agent's files; message contracts changes first.
+
+
+## Etapa 1 do plano de produção (2026-09-26): mudanças de contrato
+
+**Moeda da partida.** `Energia` não existe mais. O snapshot da partida troca
+`energy` por `cash` (Ouro da partida na carteira) e acrescenta `coinsWaiting`
+(Ouro no chão ainda não coletado), `magnet` (alcance do ímã em studs),
+`blockers` (`{x,z,r}` do núcleo e das bases, usados pela prévia de construção),
+`endVote`/`endVotes` (voto de encerrar no competitivo). `goldEarned` continua
+sendo o Ouro **do lobby** guardado pela partida.
+
+**Ações novas.** `VoteEnd {on}` (partida, competitivo, entre ondas; unânime
+encerra com `results.ended = true`), `ElevatorStart {}` (lobby, só o primeiro
+passageiro), `BuyGuaranteed {itemId}` (lobby, só contas com itens aleatórios
+pagos restritos; preço `Rules.GuaranteedPrice`), `LeaveAfk {}` (lobby, tira o
+jogador da sala AFK).
+
+**FX novo.** `WaveCash {amount}`: bônus de Ouro da partida ao fim da onda.
+`CoinRemove` passa a trazer `value`.
+
+**Construção.** Prévia e servidor chamam `Rules.BuildCheck(mapId, position,
+towers, config, blockers)`; recusas usam `Rules.BuildReasons` (`bounds`,
+`path`, `occupied`, `cash`, `limit`).
+
+**AFK.** O servidor publica atributos no jogador: `AfkZone`, `AfkNext`,
+`AfkSession`, `AfkEarned`, `AfkSaving`. Cada minuto é pago por
+`PlayerService:GrantAfk(player, kind, 1, paymentId)` com id próprio.
+
+**Títulos cosméticos.** `PlayerService:GrantCosmetic(player, featId)` (hoje
+só `parkour`), chamado pelo servidor; não existe ação de cliente.

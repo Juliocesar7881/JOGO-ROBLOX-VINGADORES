@@ -24,7 +24,10 @@ local BOSS_STUN_SHARE, BOSS_STUN_IMMUNITY = 0.25, 15
 -- Seconds a commander has to choose a card before the next wave begins.
 local CARD_SECONDS = 30
 
-local STATUS = { stunned = 1, slowed = 2, marked = 4, burning = 8, shielded = 16, weakened = 32 }
+local STATUS = { stunned = 1, slowed = 2, marked = 4, burning = 8, shielded = 16, weakened = 32, vulnerable = 64 }
+-- Every boss power leaves an opening: for a few seconds after it the boss
+-- takes extra damage, shown over its head, so the rhythm rewards timing.
+local VULNERABLE_SECONDS, VULNERABLE_BONUS = 3, 0.25
 
 -- One lesson per tutorial wave, in the order a new commander actually needs
 -- them. Keyed by wave number; waves without an entry stay quiet on purpose.
@@ -233,6 +236,16 @@ function Match:_previewThreats()
 	if not self.running and self.phase ~= "Preparing" then return end
 	local ok, specs = pcall(self.waves.Generate, self.mapId, self.modeId, self.wave + 1, self.size, self.seed)
 	if not ok or type(specs) ~= "table" then return end
+	-- Which roads the next wave walks, and whether that changed: the client
+	-- animates them during preparation and warns about a new entrance.
+	local paths, used = {}, {}
+	for _, spec in ipairs(specs) do
+		if not used[spec.pathIndex] then used[spec.pathIndex] = true; table.insert(paths, spec.pathIndex) end
+	end
+	table.sort(paths)
+	local signature = table.concat(paths, ",")
+	self.newEntrance = self.lastPathSignature ~= nil and self.lastPathSignature ~= signature
+	self.lastPathSignature, self.nextPaths = signature, paths
 	local seen = {}
 	for _, spec in ipairs(specs) do
 		local def = self.catalog.Enemies[spec.enemyId]
@@ -381,6 +394,7 @@ function Match:_damage(enemy, amount, tower, stats)
 		if enemy.def.stealth and stats and (stats.stealthDamage or 0) ~= 0 then damage*=1+stats.stealthDamage end
 	end
 	if enemy.markUntil>self.elapsed then damage*=1+enemy.mark end
+	if enemy.vulnerableUntil and enemy.vulnerableUntil>self.elapsed then damage*=1+VULNERABLE_BONUS end
 	if enemy.shield>0 then local absorbed=math.min(damage,enemy.shield) enemy.shield-=absorbed damage-=absorbed end
 	enemy.hp-=damage enemy.lastHit=self.elapsed
 	self:_recordHit(enemy, damage)
@@ -572,6 +586,7 @@ function Match:_power(enemy)
 		enemy.hint="Ilusões somem sozinhas; mire no Loki verdadeiro / Illusions fade on their own; aim at the real Loki"
 	end
 	self:_fx({kind="Pulse",position=enemy.position,radius=24,color=Color3.fromRGB(104,255,119),shake=enemy.final and 1 or 0.7})
+	enemy.vulnerableUntil=self.elapsed+VULNERABLE_SECONDS
 end
 
 function Match:_statusOf(enemy)
@@ -582,6 +597,7 @@ function Match:_statusOf(enemy)
 	if enemy.dot and enemy.dot.untilTime > self.elapsed then flags += STATUS.burning end
 	if enemy.shield > 0 then flags += STATUS.shielded end
 	if enemy.armorUntil > self.elapsed and enemy.armorBreak > 0 then flags += STATUS.weakened end
+	if enemy.vulnerableUntil and enemy.vulnerableUntil > self.elapsed then flags += STATUS.vulnerable end
 	return flags
 end
 
@@ -1288,6 +1304,7 @@ function Match:Snapshot(player)
 		prepRemaining=math.max(0,math.ceil(self.prepRemaining)),enemies=self.alive,elapsed=self.elapsed,ability=ability,
 		cards=table.clone(p.cards),cardOffers=p.cardOffers,cardMode=self.cardMode,goldEarned=p.goldEarned,xpEarned=p.xpEarned,towers=towers,boss=boss,
 		partySize=self.size,skipVotes=votes,nextBoss=nextBoss,threats=self.phase=="Preparing" and self.nextThreats or nil,
+			nextPaths=self.phase=="Preparing" and self.nextPaths or nil,newEntrance=self.phase=="Preparing" and self.newEntrance or nil,
 		speed=self:Speed(),speedVote=p.speedVote or 1,speedVotes=speedVotes,autoSkip=p.autoSkip==true,endVote=p.endVote==true,endVotes=endVotes},p.results
 end
 

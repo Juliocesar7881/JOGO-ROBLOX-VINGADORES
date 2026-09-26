@@ -18,6 +18,7 @@ local Effects = require(script:WaitForChild("Effects"))
 local Audio = require(script:WaitForChild("Audio"))
 local Nameplates = require(script:WaitForChild("Nameplates"))
 local Celebrate = require(script:WaitForChild("Celebrate"))
+local RoutePreview = require(script:WaitForChild("RoutePreview"))
 local remotes = ReplicatedStorage:WaitForChild("DoomRemotes")
 local requestRemote = remotes:WaitForChild("Request")
 local stateRemote = remotes:WaitForChild("State")
@@ -172,6 +173,7 @@ end
 local audio = Audio.new(function() return state end)
 local nameplates = Nameplates.new(player, function() return language end)
 local effects = Effects.new(player, request, function() return state end, audio)
+local routePreview = RoutePreview.new(effects.folder, Catalog, C)
 
 local function smallText(parent, text, y, h)
 	return UI.label(parent, text, {Position = UDim2.fromOffset(14, y), Size = UDim2.new(1, -28, 0, h or 40), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
@@ -2268,6 +2270,9 @@ updateMatch = function()
 		card.price.TextColor3 = (match.cash or 0) >= Catalog.Heroes[id].cost and C.gold or C.red
 	end
 	updateUpgradeBoards(match)
+	if routePreview:Update(state.phase, match, profile().settings and profile().settings.lowFX) then
+		showToast(T("NOVA ENTRADA! Os inimigos vão chegar por outro caminho.", "NEW ENTRANCE! Enemies will come another way."), true)
+	end
 	if selectedTower then
 		local tower = findTower(selectedTower)
 		if not tower then selectedTower = nil; if refs.towerPanel then refs.towerPanel.Visible = false end; if towerRing then towerRing:Destroy(); towerRing = nil end
@@ -2601,6 +2606,7 @@ RunService.RenderStepped:Connect(function(dt)
 		afkBannerAt = os.clock() + 0.25
 		updateAfkBanner()
 	end
+	routePreview:Step(dt or 1 / 60, state and state.phase)
 	-- The dock breathes, and anything waiting for the player wiggles.
 	if not (profile().settings and profile().settings.lowFX) then
 		local now = os.clock()

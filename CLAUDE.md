@@ -36,7 +36,7 @@ Useful narrower runs:
   with Iron Man, ranked mode: the way to check one hero's power in isolation
   (`tests/hero_sweep.luau`).
 - `python tests/test_match_simulation.py --sweep duel` — raw tower DPS at
-  equal Energy budget, no ability (`tests/duel_sweep.luau`).
+  equal match-Gold budget, no ability (`tests/duel_sweep.luau`).
 - `.tools/luau/luau.exe tools/gen_heroes_doc.luau > docs/HEROES.md` —
   regenerate the hero reference after any Catalog change.
 - `python tools/generate_audio.py` — rebuild the original WAVs in

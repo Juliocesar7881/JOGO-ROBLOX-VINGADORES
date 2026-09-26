@@ -1238,6 +1238,35 @@ do
 	for _, enemy in pairs(asgard.enemies) do if enemy.enemyId == "illusion" then left += 1 end end
 	check(left == 0 and asgard.baseHP == asgard.maxBaseHP, "illusions fade on their own and never hurt the core")
 
+	-- The next wave's roads are announced before it starts, and a change of
+	-- entrance is flagged (HYDRA alternates its entrance every wave).
+	local hydra, hydraPlayer = stage({ modeId = "normal", mapId = "hydra", wave = 1 })
+	hydra.phase = "Preparing"
+	hydra:_previewThreats()
+	hydra:_previewThreats() -- the same wave again: nothing changed
+	local first = hydra:Snapshot(hydraPlayer)
+	check(first.nextPaths and #first.nextPaths >= 1 and not first.newEntrance, "preparation names the roads of the next wave")
+	hydra.wave = 2
+	hydra:_previewThreats()
+	local second = hydra:Snapshot(hydraPlayer)
+	check(second.nextPaths and second.nextPaths[1] ~= first.nextPaths[1] and second.newEntrance == true, "a changed entrance is flagged before the wave")
+	hydra.phase = "Wave"
+	check(hydra:Snapshot(hydraPlayer).nextPaths == nil, "the preview is only sent during preparation")
+
+	-- After a boss power comes an opening: extra damage for a few seconds.
+	local lab, labPlayer = stage({ modeId = "normal", mapId = "gamma", wave = 20 })
+	local brute = spawn(lab, "abomination", 30, 1)
+	local steady = spawn(lab, "abomination", 31, 1)
+	lab.elapsed = brute.nextPower
+	lab:_power(brute)
+	local hpA, hpB = brute.hp, steady.hp
+	lab:_damage(brute, 100, nil, { trueDamage = true })
+	lab:_damage(steady, 100, nil, { trueDamage = true })
+	check(math.abs((hpA - brute.hp) - 125) < 1e-6 and math.abs((hpB - steady.hp) - 100) < 1e-6, "a boss that just used its power takes 25% more damage")
+	check(math.floor(lab:_statusOf(brute) / 64) % 2 == 1, "the opening is shown as VULNERABLE")
+	lab.elapsed += 3.1
+	check(math.floor(lab:_statusOf(brute) / 64) % 2 == 0, "the opening closes after three seconds")
+
 	-- Competitive: the whole squad agrees between waves, and the record stays.
 	local arena, arenaPlayer = stage({ modeId = "ranked", mapId = "hydra", wave = 12 })
 	arena.phase, arena.completedWaves = "Preparing", 12

@@ -400,7 +400,8 @@ local function session(screen)
 	local audioScript = moduleScript(clientScript, "Audio", __AUDIO__)
 	local nameplatesScript = moduleScript(clientScript, "Nameplates", __NAMEPLATES__)
 	local celebrateScript = moduleScript(clientScript, "Celebrate", __CELEBRATE__)
-	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript }) do loaded[item] = nil end
+	local routeScript = moduleScript(clientScript, "RoutePreview", __ROUTEPREVIEW__)
+	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript }) do loaded[item] = nil end
 	loaded[shared.Config] = nil
 
 	if not step("init.client boots and syncs", function() __CLIENT__(clientScript, clockOs); flush() end) then return end
@@ -1054,6 +1055,17 @@ local function session(screen)
 			tag .. ": your own ultimate shouts its name, accents intact, got " .. bannerTitle())
 		frames(1 / 30, 120)
 		check(named(overlays, "CelebrationBanner") == nil, tag .. ": banners clear themselves")
+		push(matchSnapshot(profile, "Preparing"))
+	end)
+
+	step("the next wave's roads light up during preparation", function()
+		local profile = veteranProfile()
+		push(matchSnapshot(profile, "Preparing", { nextPaths = { 1 }, newEntrance = true }))
+		local arrows = countNamed(workspace, "RouteArrow")
+		check(arrows > 0, tag .. ": arrows walk the next wave's road, got " .. arrows)
+		push(matchSnapshot(profile, "Wave", { nextPaths = nil }))
+		frames(1 / 30, 2)
+		check(countNamed(workspace, "RouteArrow") == 0, tag .. ": the arrows clear when the wave starts")
 		push(matchSnapshot(profile, "Preparing"))
 	end)
 

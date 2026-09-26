@@ -781,7 +781,7 @@ function Effects:Handle(event)
 			local english = state and state.profile and state.profile.settings and state.profile.settings.language == "en"
 			local flags, words = tonumber(enemy.st) or 0, {}
 			current.statusFlags = flags
-			for _, status in ipairs({{16,"ESCUDO","SHIELD"},{1,"ATORDOADO","STUNNED"},{4,"MARCADO","MARKED"},{32,"FRÁGIL","WEAKENED"},{8,"QUEIMANDO","BURNING"},{2,"LENTO","SLOWED"}}) do
+			for _, status in ipairs({{64,"VULNERÁVEL!","VULNERABLE!"},{16,"ESCUDO","SHIELD"},{1,"ATORDOADO","STUNNED"},{4,"MARCADO","MARKED"},{32,"FRÁGIL","WEAKENED"},{8,"QUEIMANDO","BURNING"},{2,"LENTO","SLOWED"}}) do
 				if math.floor(flags/status[1])%2==1 then table.insert(words,status[english and 3 or 2]) end
 				if #words==2 then break end
 			end
