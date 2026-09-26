@@ -2673,12 +2673,17 @@ RunService.RenderStepped:Connect(function(dt)
 		updateAfkBanner()
 	end
 	routePreview:Step(dt or 1 / 60, state and state.phase)
-	-- The dock breathes, and anything waiting for the player wiggles.
+	-- Only real news moves: a dock icon bobs while it has something waiting
+	-- (a chest to open, a gift, talent points) and its badge wiggles; every
+	-- other button stays still.
 	if not (profile().settings and profile().settings.lowFX) then
 		local now = os.clock()
-		for _, entry in pairs(refs.navigation or {}) do
+		local waiting = { chests = refs.chestsBadge, rewards = refs.rewardsBadge }
+		for id, entry in pairs(refs.navigation or {}) do
 			if entry.icon and entry.icon.Parent then
-				entry.icon.Position = UDim2.new(0.5, entry.iconX, 0, 2 + math.sin(now * 2.2 + entry.phase) * 2.5)
+				local flag = waiting[id] or entry.badge
+				local news = flag ~= nil and flag.Parent ~= nil and flag.Visible ~= false
+				entry.icon.Position = UDim2.new(0.5, entry.iconX, 0, 2 + (news and math.sin(now * 2.2 + entry.phase) * 2.5 or 0))
 			end
 		end
 		for _, badge in ipairs({refs.chestsBadge, refs.rewardsBadge}) do

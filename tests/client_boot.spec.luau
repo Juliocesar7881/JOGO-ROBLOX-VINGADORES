@@ -1423,6 +1423,31 @@ local function session(screen)
 		frames(1 / 30, 2)
 	end)
 
+	step("only dock icons with news move", function()
+		local calm = veteranProfile()
+		calm.gold = 0
+		calm.rewards = { claimable = 0 }
+		push(lobbySnapshot(calm))
+		local function iconY(id)
+			local button = named(gui, "Nav_" .. id)
+			local icon = button and named(button, "NavIcon")
+			return icon and icon.Position.Y.Offset
+		end
+		local samples = {}
+		for _ = 1, 6 do
+			frames(0.2, 1)
+			for _, id in ipairs({ "inventory", "premium" }) do
+				local y = iconY(id)
+				if y then samples[id] = samples[id] or {}; table.insert(samples[id], y) end
+			end
+		end
+		local moved = false
+		for _, list in pairs(samples) do
+			for _, y in ipairs(list) do if math.abs(y - list[1]) > 0.01 then moved = true end end
+		end
+		check(next(samples) ~= nil and not moved, tag .. ": dock icons with nothing waiting stay still")
+	end)
+
 	step("every hero's shot has a weapon sound", function()
 		local EffectsModule = require(effectsScript)
 		local missing = {}
