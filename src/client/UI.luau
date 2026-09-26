@@ -1,22 +1,29 @@
 -- UI primitives shared by the lobby and match controller. No external assets required.
 local UI = {}
 
+-- Candy palette for a kids' game: saturated accents on deep navy, white
+-- text with a black outline, and thick dark borders around everything.
 UI.Colors = {
-	background = Color3.fromRGB(28, 32, 33),
-	panel = Color3.fromRGB(41, 47, 46),
-	card = Color3.fromRGB(57, 65, 61),
-	stroke = Color3.fromRGB(112, 123, 109),
-	text = Color3.fromRGB(255, 248, 232),
-	muted = Color3.fromRGB(196, 202, 187),
-	green = Color3.fromRGB(135, 235, 113),
-	gold = Color3.fromRGB(255, 206, 82),
-	red = Color3.fromRGB(255, 129, 134),
-	blue = Color3.fromRGB(120, 212, 255),
-	coral = Color3.fromRGB(255, 164, 112),
-	violet = Color3.fromRGB(203, 170, 255),
-	pink = Color3.fromRGB(255, 159, 215),
-	cream = Color3.fromRGB(255, 239, 195),
+	background = Color3.fromRGB(22, 24, 36),
+	panel = Color3.fromRGB(35, 39, 56),
+	card = Color3.fromRGB(50, 55, 78),
+	stroke = Color3.fromRGB(96, 106, 140),
+	ink = Color3.fromRGB(12, 13, 20),
+	text = Color3.fromRGB(255, 255, 255),
+	muted = Color3.fromRGB(190, 198, 222),
+	green = Color3.fromRGB(88, 224, 79),
+	gold = Color3.fromRGB(255, 210, 63),
+	red = Color3.fromRGB(255, 77, 94),
+	blue = Color3.fromRGB(63, 169, 255),
+	coral = Color3.fromRGB(255, 138, 61),
+	violet = Color3.fromRGB(169, 112, 255),
+	pink = Color3.fromRGB(255, 111, 198),
+	cream = Color3.fromRGB(255, 241, 204),
 }
+
+-- One bubbly display face for titles, numbers and buttons; Gotham stays for
+-- small running text, where legibility matters more than personality.
+UI.Fonts = { display = Enum.Font.FredokaOne, bold = Enum.Font.GothamBold, body = Enum.Font.Gotham }
 
 UI.Themes = {
 	guide = {color=UI.Colors.gold, icon="guide"}, maps = {color=UI.Colors.gold, icon="bolt"},
@@ -25,7 +32,7 @@ UI.Themes = {
 	premium = {color=UI.Colors.green, icon="shop"}, shop = {color=UI.Colors.green, icon="shop"},
 	rewards = {color=UI.Colors.pink, icon="gift"}, modes = {color=UI.Colors.green, icon="bolt"},
 	quests = {color=UI.Colors.coral, icon="star"}, leaderboard = {color=UI.Colors.gold, icon="trophy"},
-	settings = {color=UI.Colors.cream, icon="bolt"}, bases={color=UI.Colors.green,icon="heart"},
+	settings = {color=UI.Colors.blue, icon="bolt"}, bases={color=UI.Colors.green,icon="heart"},
 }
 
 function UI.create(className, properties, parent)
@@ -41,24 +48,32 @@ function UI.corner(parent, radius)
 	return UI.create("UICorner", {CornerRadius = UDim.new(0, radius or 16)}, parent)
 end
 
+-- The border of a control. Named, so a text outline on the same object is
+-- never mistaken for it, and selection states recolour this one border.
 function UI.stroke(parent, color, thickness)
-	-- Reusing a border lets selection states highlight a control without
-	-- stacking multiple strokes with competing colours on the same edge.
-	local existing = parent:FindFirstChildOfClass("UIStroke")
+	local existing = parent:FindFirstChild("Border")
 	if existing then
-		existing.Color = color or UI.Colors.stroke
+		existing.Color = color or UI.Colors.ink
 		existing.Thickness = thickness or 1
-		existing.Transparency = 0.15
+		existing.Transparency = 0
 		return existing
 	end
-	return UI.create("UIStroke", {Color = color or UI.Colors.stroke, Thickness = thickness or 1, Transparency = 0.15, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, parent)
+	return UI.create("UIStroke", {Name = "Border", Color = color or UI.Colors.ink, Thickness = thickness or 1, Transparency = 0, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, LineJoinMode = Enum.LineJoinMode.Round}, parent)
 end
 
--- Color is still a property of the control (selected/affordable states can
--- update it), while a restrained vertical shade gives game panels depth.
-function UI.shade(parent, rotation)
+-- The black outline around display text that every kids' game uses: it keeps
+-- white words readable over any colour, sky or button.
+function UI.outline(textObject, thickness)
+	local existing = textObject:FindFirstChild("TextOutline")
+	if existing then existing.Thickness = thickness or existing.Thickness; return existing end
+	return UI.create("UIStroke", {Name = "TextOutline", Color = UI.Colors.ink, Thickness = thickness or 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual, LineJoinMode = Enum.LineJoinMode.Round}, textObject)
+end
+
+-- A vertical shade that makes a flat colour read as a rounded, lit object.
+function UI.shade(parent, rotation, depth)
 	local gradient = parent:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient", {}, parent)
-	gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(231, 232, 221))
+	local low = 1 - (depth or 0.16)
+	gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(low, low, low))
 	gradient.Rotation = rotation or 90
 	return gradient
 end
@@ -69,38 +84,66 @@ function UI.frame(parent, properties)
 	return UI.create("Frame", defaults, parent)
 end
 
+-- Panels and cards: rounded, a thick dark border (or the caller's accent),
+-- and a gentle top-lit shade.
 function UI.roundFrame(parent, properties, color)
 	local frame = UI.frame(parent, properties)
-	UI.corner(frame)
-	UI.stroke(frame, color)
-	UI.shade(frame)
+	UI.corner(frame, 16)
+	UI.stroke(frame, color or UI.Colors.ink, color and 2 or 3)
+	UI.shade(frame, 90, 0.1)
 	return frame
 end
+
+local DISPLAY_FONTS = { [Enum.Font.GothamBlack] = true, [Enum.Font.FredokaOne] = true }
 
 function UI.label(parent, text, properties)
 	local defaults = {
 		BackgroundTransparency = 1, BorderSizePixel = 0, Text = text,
-		Font = Enum.Font.Gotham, TextColor3 = UI.Colors.text, TextSize = 15,
+		Font = UI.Fonts.body, TextColor3 = UI.Colors.text, TextSize = 15,
 		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
 		Size = UDim2.new(1, 0, 0, 24), TextTruncate = Enum.TextTruncate.AtEnd,
 	}
 	for key, value in pairs(properties or {}) do defaults[key] = value end
-	return UI.create("TextLabel", defaults, parent)
+	-- Display text becomes the bubbly face with a black outline, unless it is
+	-- dark text printed on a light surface (then an outline would smear it).
+	local display = DISPLAY_FONTS[defaults.Font]
+	if display then defaults.Font = UI.Fonts.display end
+	local label = UI.create("TextLabel", defaults, parent)
+	local color = defaults.TextColor3
+	local bright = typeof(color) ~= "Color3" or (color.R + color.G + color.B) > 1.2
+	if display and bright and (defaults.TextSize or 0) >= 12 then
+		UI.outline(label, (defaults.TextSize or 15) >= 26 and 3 or ((defaults.TextSize or 15) >= 17 and 2 or 1.5))
+	end
+	return label
 end
 
+local function isDark(color)
+	return typeof(color) == "Color3" and (color.R + color.G + color.B) < 0.75
+end
+
+-- Candy buttons: saturated fill, thick dark border, a glossy highlight on the
+-- top half and white outlined text. Invisible hit areas stay invisible.
 function UI.button(parent, text, callback, properties)
 	local defaults = {
 		BackgroundColor3 = UI.Colors.green, BorderSizePixel = 0, AutoButtonColor = true,
-		Text = text, TextColor3 = UI.Colors.background, Font = Enum.Font.GothamBold,
+		Text = text, TextColor3 = UI.Colors.text, Font = UI.Fonts.display,
 		TextSize = 15, Size = UDim2.new(0, 140, 0, 44), TextWrapped = true,
 	}
 	for key, value in pairs(properties or {}) do defaults[key] = value end
+	local visible = (defaults.BackgroundTransparency or 0) < 1
+	if visible then
+		defaults.Font = (defaults.Font == Enum.Font.GothamBold or DISPLAY_FONTS[defaults.Font]) and UI.Fonts.display or defaults.Font
+		-- Dark text on a colour was the old style; white-and-outline reads better.
+		if isDark(defaults.TextColor3) and not isDark(defaults.BackgroundColor3) then defaults.TextColor3 = UI.Colors.text end
+	end
 	local button = UI.create("TextButton", defaults, parent)
-	UI.corner(button, 10)
-	UI.shade(button)
-	if (defaults.BackgroundTransparency or 0) < 1 then
-		local border = UI.stroke(button, UI.Colors.background, 2)
-		border.Transparency = 0.1
+	UI.corner(button, 12)
+	if visible then
+		UI.shade(button, 90, 0.26)
+		UI.stroke(button, UI.Colors.ink, 3)
+		local shine = UI.frame(button, {Name = "Shine", Position = UDim2.new(0, 6, 0, 4), Size = UDim2.new(1, -12, 0.36, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.78, Active = false, ZIndex = button.ZIndex})
+		UI.corner(shine, 8)
+		UI.outline(button, (defaults.TextSize or 15) >= 20 and 2.5 or 2)
 	end
 	if callback then button.Activated:Connect(callback) end
 	-- Every button squashes under the finger and springs back: the smallest
@@ -114,8 +157,9 @@ function UI.button(parent, text, callback, properties)
 			press.Scale = target
 		end
 	end
-	button.MouseButton1Down:Connect(function() if button.Active ~= false then squash(0.93, 0.07) end end)
-	button.MouseButton1Up:Connect(function() squash(1, 0.24, Enum.EasingStyle.Back) end)
+	button.MouseButton1Down:Connect(function() if button.Active ~= false then squash(0.9, 0.07) end end)
+	button.MouseButton1Up:Connect(function() squash(1, 0.28, Enum.EasingStyle.Back) end)
+	button.MouseEnter:Connect(function() if button.Active ~= false then squash(1.05, 0.12) end end)
 	button.MouseLeave:Connect(function() squash(1, 0.15) end)
 	return button
 end
@@ -124,15 +168,13 @@ function UI.secondary(parent, text, callback, properties)
 	properties = properties or {}
 	properties.BackgroundColor3 = properties.BackgroundColor3 or UI.Colors.card
 	properties.TextColor3 = properties.TextColor3 or UI.Colors.text
-	local button = UI.button(parent, text, callback, properties)
-	UI.stroke(button).Transparency = 0.15
-	return button
+	return UI.button(parent, text, callback, properties)
 end
 
 function UI.disabled(button)
 	button.Active = false
 	button.AutoButtonColor = false
-	button.BackgroundColor3 = UI.Colors.panel
+	button.BackgroundColor3 = Color3.fromRGB(92, 96, 112)
 	button.TextColor3 = UI.Colors.muted
 end
 
@@ -444,7 +486,7 @@ end
 
 function UI.section(parent, title, subtitle)
 	local frame = UI.frame(parent, {BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, subtitle and 100 or 48)})
-	UI.label(frame, title, {Font = Enum.Font.GothamBold, TextSize = 19, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Size = UDim2.new(1, 0, 0, 46)})
+	UI.label(frame, title, {Font = UI.Fonts.display, TextSize = 21, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Size = UDim2.new(1, 0, 0, 46)})
 	if subtitle then
 		UI.label(frame, subtitle, {TextColor3 = UI.Colors.muted, TextSize = 12, Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 0, 50), TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
 	end
@@ -462,11 +504,12 @@ function UI.grid(parent, height, width)
 end
 
 function UI.bar(parent, color, position, size)
-	local base = UI.frame(parent, {BackgroundColor3 = UI.Colors.background, Position = position, Size = size})
-	UI.corner(base, 5)
+	local base = UI.frame(parent, {BackgroundColor3 = UI.Colors.ink, Position = position, Size = size})
+	UI.corner(base, 8)
+	UI.stroke(base, UI.Colors.ink, 2)
 	local fill = UI.frame(base, {BackgroundColor3 = color, Size = UDim2.fromScale(0, 1)})
-	UI.corner(fill, 5)
-	UI.shade(fill)
+	UI.corner(fill, 8)
+	UI.shade(fill, 90, 0.3)
 	return fill
 end
 
@@ -787,9 +830,16 @@ function UI.lobbyLayout(width, height)
 		local h = math.min(class.compact and 330 or 400, bottom - contextTop)
 		return rect(math.floor((width - contextW) / 2), bottom - h, contextW, h)
 	end
+	-- The side quest tracker needs a wide, tall screen; phones keep the view clear.
+	local tracker
+	if not class.compact and not class.short then
+		local trackerW, trackerY = 240, settings.y + rowH + 16
+		local trackerH = math.min(28 + 3 * 56, hint.y - 12 - trackerY)
+		if trackerH >= 84 then tracker = rect(width - pad - trackerW, trackerY, trackerW, trackerH) end
+	end
 	return {
 		class = class, pill = pill, squad = squad, settings = settings, navigation = navigation,
-		elevator = elevator, hint = hint,
+		elevator = elevator, hint = hint, tracker = tracker,
 		context = contextAbove(navigation.y - 8),
 		contextRiding = contextAbove(elevator.y - 8),
 	}

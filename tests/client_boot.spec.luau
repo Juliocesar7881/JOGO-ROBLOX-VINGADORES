@@ -431,7 +431,12 @@ local function session(screen)
 		for _, child in ipairs(main:GetChildren()) do
 			if child.Visible ~= false then visible += 1 end
 		end
-		check(visible == 5, tag .. ": the idle lobby shows counters, play/settings, dock and guide, got " .. visible .. " elements")
+		-- Wide screens add the side quest tracker; phones keep the view clear.
+		local tracker = main:FindFirstChild("QuestTracker")
+		check((tracker ~= nil) == (lobbyLayout.tracker ~= nil), tag .. ": the quest tracker shows exactly on screens with room for it")
+		if tracker then check(frameAt(main, lobbyLayout.tracker) ~= nil, tag .. ": the quest tracker sits where lobbyLayout puts it") end
+		local expected = tracker and 6 or 5
+		check(visible == expected, tag .. ": the idle lobby shows counters, play/settings, dock, guide and quests, got " .. visible .. " elements")
 		local bad = offscreen(main, SCREEN)
 		check(#bad == 0, tag .. ": every lobby element is on screen: " .. table.concat(bad, ", "))
 	end)

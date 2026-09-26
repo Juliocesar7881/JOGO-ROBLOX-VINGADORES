@@ -1052,6 +1052,9 @@ local function lobbyChrome(visible)
 			item.Visible=visible and not (name=="LobbyNavigation" and state and state.elevator and UI.sizeClass(size.X,size.Y).short)
 		end
 	end
+	-- The side tracker yields to any open panel, modal or not.
+	local tracker=main:FindFirstChild("QuestTracker")
+	if tracker then tracker.Visible=visible and contextPanel==nil end
 end
 
 local function refreshNavigation()
@@ -1093,14 +1096,20 @@ renderContext = function()
 	lobbyChrome(not slot.modal)
 	local theme=UI.Themes[contextPanel.kind] or UI.Themes.inventory
 	local tint=theme.color
-	if not panel then panel=UI.roundFrame(main,{Name="ContextPanel",BackgroundColor3=C.background,Active=true},tint:Lerp(C.stroke,0.35)) end
+	if not panel then panel=UI.roundFrame(main,{Name="ContextPanel",BackgroundColor3=C.background,Active=true}) end
 	panel.Position,panel.Size=at(slot),dims(slot)
 	if reuse then
 		for _,child in ipairs(panel:GetChildren()) do
 			if child~=body and not child:IsA("UIComponent") then child:Destroy() end
 		end
 	end
-	UI.ribbon(panel,tint,46)
+	-- Header: a band in the screen's colour, the title in big outlined
+	-- letters tilted like a sticker, and a round red close button.
+	local band=UI.frame(panel,{Name="TitleRibbon",Position=UDim2.fromOffset(4,4),Size=UDim2.new(1,-8,0,52),BackgroundColor3=tint,Active=false})
+	UI.corner(band,13)
+	UI.shade(band,90,0.32)
+	local gloss=UI.frame(band,{Name="Shine",Position=UDim2.new(0,8,0,4),Size=UDim2.new(1,-16,0.34,0),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.8,Active=false})
+	UI.corner(gloss,8)
 	refs.context = panel
 	panel:SetAttribute("ContextKind",contextPanel.kind)
 	local titles = {hero = T("GALERIA DE HERÓIS", "HERO GALLERY"), skill = T("TREINAMENTO", "TRAINING"), shop = T("SUPRIMENTOS", "SUPPLIES"), quests = T("CENTRAL DE MISSÕES", "MISSION BOARD"), leaderboard = T("LENDAS DA RESISTÊNCIA", "RESISTANCE LEGENDS"), squad = T("FORMAÇÃO TÁTICA", "TACTICAL FORMATION"), settings = T("OPÇÕES", "SETTINGS")}
@@ -1110,9 +1119,13 @@ renderContext = function()
 	titles.bases=T("MINHA BASE","MY BASE")
 	titles.chests=T("BAÚS • OURO","CHESTS • GOLD"); titles.premium=T("LOJA ROBUX","ROBUX SHOP"); titles.inventory=T("INVENTÁRIO","INVENTORY")
 	titles.inventory=T("MEUS HERÓIS","MY HEROES"); titles.modes=T("VAMOS JOGAR!","LET'S PLAY!"); titles.rewards=T("PRÊMIOS DIÁRIOS","DAILY REWARDS")
-	UI.illustration(panel,theme.icon,tint,{Position=UDim2.fromOffset(12,9),Size=UDim2.fromOffset(36,36)})
-	UI.label(panel, titles[contextPanel.kind] or "DOOMSDAY", {Position = UDim2.fromOffset(51, 16), Size = UDim2.new(1, -111, 0, 24), TextColor3 = C.background, Font = Enum.Font.GothamBlack, TextSize = 15})
-	UI.button(panel, "×", closeContext, {Name="CloseContext",Position = UDim2.new(1, -49, 0, 7), Size = UDim2.fromOffset(40, 40), TextSize = 27,BackgroundColor3=C.red,TextColor3=C.background})
+	local medal=UI.frame(panel,{Name="TitleMedal",Position=UDim2.fromOffset(8,6),Size=UDim2.fromOffset(48,48),BackgroundColor3=C.ink,Active=false})
+	UI.corner(medal,24)
+	UI.stroke(medal,Color3.new(1,1,1),2)
+	UI.illustration(medal,theme.icon,tint,{Position=UDim2.fromOffset(6,6),Size=UDim2.fromOffset(36,36)})
+	UI.label(panel, titles[contextPanel.kind] or "DOOMSDAY", {Name="ContextTitle",Position = UDim2.fromOffset(62, 8), Size = UDim2.new(1, -124, 0, 42), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = size.X < 560 and 19 or 24, Rotation = -2})
+	local close=UI.button(panel, "×", closeContext, {Name="CloseContext",Position = UDim2.new(1, -54, 0, 5), Size = UDim2.fromOffset(46, 46), TextSize = 32,BackgroundColor3=C.red})
+	close:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(0,23)
 	if not body then
 		body=UI.scroll(panel,{Name="ContextBody",Position=UDim2.fromOffset(14,62),Size=UDim2.new(1,-28,1,-74),ScrollBarImageColor3=tint})
 		UI.list(body,10)
@@ -1162,7 +1175,7 @@ openContext = function(kind, data)
 	confirmChest = nil
 	data.kind = kind
 	data.animate=true
-	data.anchor = anchorPosition(kind, data)
+	data.anchor = not data.hud and anchorPosition(kind, data) or nil
 	contextPanel = data
 	if kind == "leaderboard" then boardData = nil; loadBoard() end
 	if refs.firstVisitHint then refs.firstVisitHint.Visible = false end
@@ -1287,6 +1300,8 @@ local function animateLobby(dt)
 				collect(model, "Blade", "RotorHub", 2.6, 0)
 			elseif model.Name == "Radar" then
 				collect(model, "RadarDish", "RadarMast", 0.9, 0)
+			elseif model:GetAttribute("Kind") == "AfkZone" then
+				collect(model, "AfkIcon", nil, 1.4, 0.35)
 			elseif model.Name == "CommandAtrium" then
 				collect(model, "AuroraCrystal", nil, 0.25, 0.12)
 				for _,child in ipairs(model:GetChildren()) do
@@ -1455,25 +1470,37 @@ renderLobby = function()
 	local size = screenSize()
 	local hud = UI.lobbyLayout(size.X, size.Y)
 	local compact = hud.class.compact
-	local pill = UI.roundFrame(main, {Name = "LobbyPill", Position = at(hud.pill), Size = dims(hud.pill), BackgroundColor3 = C.background}, C.stroke)
-	UI.illustration(pill,"coin",C.gold,{Position=UDim2.fromOffset(7,9),Size=UDim2.fromOffset(25,25)})
-	refs.gold = UI.label(pill, goldText(), {Position = UDim2.fromOffset(33, 0), Size = UDim2.new(1, -76, 1, -4), TextSize = compact and 14 or 18, Font = Enum.Font.GothamBlack, TextColor3 = C.gold})
-	refs.commander = UI.label(pill, levelText(), {Position = UDim2.new(1, -42, 0, 0), Size = UDim2.new(0, 34, 1, -4), TextSize = compact and 10 or 12, Font = Enum.Font.GothamBold, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Right})
-	local track = UI.frame(pill, {Position = UDim2.new(0, 10, 1, -6), Size = UDim2.new(1, -20, 0, 3), BackgroundColor3 = C.stroke})
-	refs.levelBar = UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = Color3.fromRGB(139,82,193)})
+	-- Gold and level float over the world like stickers: a big coin, a big
+	-- outlined number, and the level in a star with its XP bar underneath.
+	local pill = UI.frame(main, {Name = "LobbyPill", Position = at(hud.pill), Size = dims(hud.pill), BackgroundColor3 = C.ink, BackgroundTransparency = 0.4})
+	UI.corner(pill, 22)
+	UI.stroke(pill, C.ink, 2)
+	UI.illustration(pill,"coin",C.gold,{Position=UDim2.fromOffset(2,2),Size=UDim2.fromOffset(40,40)})
+	refs.gold = UI.label(pill, goldText(), {Name = "GoldAmount", Position = UDim2.fromOffset(46, 0), Size = UDim2.new(1, -96, 1, -6), TextSize = compact and 19 or 25, Font = UI.Fonts.display, TextColor3 = C.gold})
+	local star = UI.illustration(pill,"star",C.violet,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-2,0,0),Size=UDim2.fromOffset(44,44)})
+	star.ZIndex = 2
+	refs.commander = UI.label(pill, levelText(), {Position = UDim2.new(1, -46, 0, 0), Size = UDim2.new(0, 44, 1, -2), TextSize = compact and 11 or 13, Font = UI.Fonts.display, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
+	local track = UI.frame(pill, {Position = UDim2.new(0, 46, 1, -9), Size = UDim2.new(1, -96, 0, 6), BackgroundColor3 = C.ink})
+	UI.corner(track, 3)
+	refs.levelBar = UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.violet})
+	UI.corner(refs.levelBar, 3)
 	UI.button(pill, "", function() openContext("talents", {}) end, {Name = "OpenTalentTree", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1})
-	UI.button(main, T("JOGAR", "PLAY"), function() openContext("modes", {}) end, {Name = "SquadButton", Position = at(hud.squad), Size = dims(hud.squad), BackgroundColor3=C.green,TextSize = compact and 12 or 14})
-	UI.secondary(main, T("OPÇÕES", "SETTINGS"), function() openContext("settings", {}) end, {Name = "SettingsButton", Position = at(hud.settings), Size = dims(hud.settings), TextSize = compact and 11 or 12})
+	UI.button(main, T("JOGAR", "PLAY"), function() openContext("modes", {}) end, {Name = "SquadButton", Position = at(hud.squad), Size = dims(hud.squad), BackgroundColor3=C.green,TextSize = compact and 16 or 20})
+	UI.secondary(main, T("OPÇÕES", "SETTINGS"), function() openContext("settings", {}) end, {Name = "SettingsButton", Position = at(hud.settings), Size = dims(hud.settings), BackgroundColor3 = C.blue, TextSize = compact and 13 or 15})
 
 	local dock=UI.frame(main,{Name="LobbyNavigation",Position=at(hud.navigation),Size=dims(hud.navigation),BackgroundTransparency=1})
 	local nav={{"inventory",T("HERÓIS","HEROES"),C.coral,"hero"},{"talents",T("EVOLUÇÃO","TALENTS"),C.violet,"star"},{"chests",T("BAÚS","CHESTS"),C.gold,"chest"},{"premium","ROBUX",C.green,"shop"},{"rewards",T("PRÊMIOS","GIFTS"),C.pink,"gift"}}
 	refs.navigation={}
 	for i,entry in ipairs(nav) do
-		local button=UI.button(dock,entry[2],function() openContext(entry[1],{}) end,{Name="Nav_"..entry[1],Position=UDim2.new((i-1)/#nav,0,0,0),Size=UDim2.new(1/#nav,-5,1,0),BackgroundColor3=C.panel,TextColor3=C.text,TextTransparency=1})
-		UI.stroke(button,entry[3]:Lerp(C.panel,0.6),1)
-		local artSize=hud.class.short and 30 or compact and 38 or 49
-		UI.illustration(button,entry[4],entry[3],{Position=UDim2.new(0.5,-artSize/2,0,4),Size=UDim2.fromOffset(artSize,artSize)})
-		UI.label(button,entry[2],{Position=UDim2.new(0,0,1,-23),Size=UDim2.new(1,0,0,19),TextSize=compact and 10 or 11,Font=Enum.Font.GothamBold,TextColor3=C.text,TextXAlignment=Enum.TextXAlignment.Center})
+		-- Big floating icons, no box: a soft coloured glow, the illustration and
+		-- an outlined label, the way the biggest Roblox games dress their dock.
+		local button=UI.button(dock,entry[2],function() openContext(entry[1],{}) end,{Name="Nav_"..entry[1],Position=UDim2.new((i-1)/#nav,0,0,0),Size=UDim2.new(1/#nav,-5,1,0),BackgroundTransparency=1,TextTransparency=1})
+		local artSize=hud.class.short and 34 or compact and 46 or 60
+		local glow=UI.frame(button,{Name="IconGlow",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0,artSize/2+2),Size=UDim2.fromOffset(artSize+8,artSize+8),BackgroundColor3=entry[3],BackgroundTransparency=0.72,Active=false})
+		UI.corner(glow,(artSize+8)/2)
+		UI.stroke(glow,entry[3],2).Transparency=0.35
+		UI.illustration(button,entry[4],entry[3],{Name="NavIcon",Position=UDim2.new(0.5,-artSize/2,0,2),Size=UDim2.fromOffset(artSize,artSize)})
+		UI.label(button,entry[2],{Position=UDim2.new(0,-4,1,-21),Size=UDim2.new(1,8,0,20),TextSize=compact and 13 or 15,Font=UI.Fonts.display,TextColor3=C.text,TextXAlignment=Enum.TextXAlignment.Center,TextTruncate=Enum.TextTruncate.None})
 		if entry[1]=="chests" then
 			local chestBadge=UI.roundFrame(button,{Name="ChestsBadge",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,4),Size=UDim2.fromOffset(18,18),BackgroundColor3=C.gold,Visible=canOpenChest(),ZIndex=5},C.background)
 			UI.corner(chestBadge,9)
@@ -1496,11 +1523,48 @@ renderLobby = function()
 		refs.navigation[entry[1]]={button=button,line=line,tint=entry[3],badge=badge}
 	end
 
-	refs.firstVisitHint=UI.button(main,T("GUIA DO REFÚGIO  •  FALE COM NICO","REFUGE GUIDE  •  MEET NICO"),function() openContext("guide",{}) end,{
-		Name="FirstVisitHint",Position=at(hud.hint),Size=dims(hud.hint),BackgroundColor3=C.background,
-		TextColor3=C.cream,TextSize=compact and 11 or 13,
+	-- Nico, the refuge's little robot, gives the next step in a speech strip.
+	refs.firstVisitHint=UI.button(main,"",function() openContext("guide",{}) end,{
+		Name="FirstVisitHint",Position=at(hud.hint),Size=dims(hud.hint),BackgroundColor3=C.ink,BackgroundTransparency=0.25,
 	})
+	do
+		local hint=refs.firstVisitHint
+		hint:FindFirstChild("Border").Color=C.gold
+		UI.illustration(hint,"guide",C.gold,{Position=UDim2.fromOffset(4,-10),Size=UDim2.fromOffset(46,46)})
+		local p=profile()
+		local tip=not p.tutorialComplete and T("Entre no portal de CAMPANHA para jogar!","Step into a CAMPAIGN portal to play!")
+			or (canOpenChest() and T("Você tem Ouro para um baú! Vá até a LOJA.","You have Gold for a chest! Visit the MARKET."))
+			or T("Fale com o Nico: dicas, mapas e segredos do refúgio.","Talk to Nico: tips, maps and refuge secrets.")
+		UI.label(hint,tip,{Name="GuideTip",Position=UDim2.fromOffset(54,0),Size=UDim2.new(1,-60,1,0),TextSize=compact and 12 or 14,Font=UI.Fonts.display,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None})
+	end
 	refs.firstVisitHint.Visible=not state.elevator and contextPanel==nil
+	refs.questTracker=nil
+	if hud.tracker then
+		local quests={}
+		for _,quest in pairs(profile().quests or {}) do if not quest.claimed then table.insert(quests,quest) end end
+		table.sort(quests,function(a,b)
+			local ra,rb=(a.progress or 0)>=(a.target or 1),(b.progress or 0)>=(b.target or 1)
+			if ra~=rb then return ra end
+			return tostring(a.id)<tostring(b.id)
+		end)
+		if #quests>0 then
+			local r=hud.tracker
+			local tracker=UI.button(main,"",function() openContext("quests",{hud=true}) end,{Name="QuestTracker",Position=at(r),Size=dims(r),BackgroundTransparency=1})
+			refs.questTracker=tracker
+			UI.label(tracker,T("MISSÕES","QUESTS"),{Position=UDim2.fromOffset(0,0),Size=UDim2.new(1,-4,0,26),TextSize=20,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Right})
+			for index=1,math.min(3,#quests) do
+				local quest=quests[index]
+				local ready=(quest.progress or 0)>=(quest.target or 1)
+				local row=UI.frame(tracker,{Name="QuestRow_"..index,Position=UDim2.fromOffset(0,28+(index-1)*56),Size=UDim2.new(1,0,0,52),BackgroundColor3=C.ink,BackgroundTransparency=0.35})
+				UI.corner(row,10)
+				local fade=UI.create("UIGradient",{Transparency=NumberSequence.new(0.6,0),Rotation=0},row)
+				UI.label(row,L(quest.name),{Position=UDim2.fromOffset(8,2),Size=UDim2.new(1,-14,0,20),TextSize=13,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Right})
+				UI.label(row,ready and T("PRONTO! RESGATE","READY! CLAIM") or (number(quest.progress or 0).." / "..number(quest.target or 1)),{Position=UDim2.fromOffset(8,20),Size=UDim2.new(1,-14,0,22),TextSize=ready and 15 or 18,Font=UI.Fonts.display,TextColor3=ready and C.green or C.gold,TextXAlignment=Enum.TextXAlignment.Right})
+				local bar=UI.bar(row,ready and C.green or C.gold,UDim2.new(0,8,1,-9),UDim2.new(0.55,0,0,6))
+				bar.Size=UDim2.fromScale(math.clamp((quest.progress or 0)/math.max(1,quest.target or 1),0,1),1)
+			end
+		end
+	end
 
 	elevatorSignature = nil
 	renderElevator()
