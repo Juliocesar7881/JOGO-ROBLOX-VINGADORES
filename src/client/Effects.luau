@@ -214,13 +214,20 @@ local function buildEnemy(def)
 			table.insert(pieces, {part = piece, rest = torso.CFrame:Inverse() * piece.CFrame, transparency = piece.Transparency})
 		end
 	end
+	-- Flyers keep a shadow on the road below them, so their lane reads from
+	-- above; it is repositioned every frame, apart from the bobbing body.
+	local groundShadow
+	if def.air then
+		groundShadow = part(model, Vector3.new(0.05, 2.6 * scale, 2.6 * scale), Color3.new(0, 0, 0))
+		groundShadow.Name, groundShadow.Shape, groundShadow.Transparency = "GroundShadow", Enum.PartType.Cylinder, 0.62
+	end
 	model:PivotTo(CFrame.new(0, 0, 0))
 	-- Torso and head are the two parts a hit flash recolors: a Highlight per
 	-- enemy would be prettier and completely unaffordable at 180 of them.
 	return {
 		model = model, bar = hp, status = status, scale = scale, def = def, lastHP = nil,
 		legs = def.air and nil or legs, arms = arms, wings = wings, legHeight = legHeight,
-		pieces = pieces, billboard = billboard,
+		pieces = pieces, billboard = billboard, groundShadow = groundShadow,
 		flashParts = { { part = torso, color = torso.Color }, { part = head, color = head.Color }, shirt and { part = shirt, color = shirt.Color } or nil },
 		flashUntil = nil,
 	}
@@ -315,6 +322,12 @@ end
 -- so a stale cache just costs one extra folder scan on the next miss.
 function Effects:_towerModel(towerId)
 	if not towerId then return nil end
+	-- The lobby training yard's hero is not a tower, but aims and fires like one.
+	if towerId == "training" then
+		local lobby = workspace:FindFirstChild("DoomLobby")
+		local yard = lobby and lobby:FindFirstChild("TrainingYard")
+		return yard and yard:FindFirstChild("TrainingHero")
+	end
 	local cached = self.towerModels and self.towerModels[towerId]
 	if cached and cached.Parent then return cached end
 	local world = workspace:FindFirstChild("DoomWorld")
@@ -514,7 +527,7 @@ local MUZZLE_PARTS = {ironman="Repulsor",hawkeye="Arrow",spiderman="Hand",thor="
 function Effects:_heroShot(event, lowFX)
 	local from, target = event.from, event.to
 	local model = self:_towerModel(event.towerId)
-	local heroId = model and model:GetAttribute("HeroId")
+	local heroId = model and model:GetAttribute("HeroId") or event.heroId
 	local muzzle = model and model:FindFirstChild(MUZZLE_PARTS[heroId] or "Hand")
 	if muzzle then from = muzzle.Position end
 	local color = UI.color(event.color)
@@ -935,6 +948,9 @@ function Effects:Step(dt)
 		local position = enemy.position + Vector3.new(0, 2 * enemy.scale + bob + (enemy.def.air and 6 or 0), 0)
 		local pivot = CFrame.lookAt(position, position + enemy.direction)
 		enemy.model:PivotTo(pivot)
+		if enemy.groundShadow then
+			enemy.groundShadow.CFrame = CFrame.new(enemy.position.X, enemy.position.Y + 0.08, enemy.position.Z) * CFrame.Angles(0, 0, math.pi / 2)
+		end
 		if enemy.flashUntil and self.clock >= enemy.flashUntil then clearFlash(enemy) end
 		if not settings.lowFX or enemy.animated then
 			-- All limb rests are relative to the torso pivot, not the floor.

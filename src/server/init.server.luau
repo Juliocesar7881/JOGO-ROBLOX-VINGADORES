@@ -464,6 +464,9 @@ local MATCH_ACTIONS = {
 -- Coin pickups arrive several times per second and already answer with their
 -- own FX event, so they never trigger a full snapshot broadcast.
 local QUIET_ACTIONS = { CollectCoin = true }
+-- The lobby training yard's stage (see stepTraining): who stands there and until when.
+local TRAINING_SECONDS = 30
+local training = nil
 -- Actions that move gold, so the economy can be read from the funnels instead
 -- of being inferred from balance snapshots.
 local ECONOMY_ACTIONS = { OpenChest = "Chest", UpgradeAbility = "Upgrade", ClaimQuest = "Gameplay" }
@@ -614,6 +617,21 @@ local function route(player, action, payload)
 		if not farm or not character then return { ok = false } end
 		pcall(function() character:PivotTo(CFrame.new(farm.x + 16, 4, farm.z)) end)
 		return { ok = true }
+	end
+	if action == "TrainHero" then
+		local heroId = type(payload) == "table" and payload.heroId
+		local hero = type(heroId) == "string" and Catalog.Heroes[heroId]
+		local snapshot = profiles:Get(player)
+		if role == "Match" or match:Has(player) or not world:NearTraining(player) then
+			return { ok = false, message = text("Vá até o Campo de Treino.", "Walk to the training yard.") }
+		end
+		if not hero or not (snapshot and snapshot.heroes and snapshot.heroes[heroId]) then
+			return { ok = false, message = text("Você ainda não tem esse herói.", "You do not own that hero yet.") }
+		end
+		local stats = Rules.TowerStats(hero, 1)
+		world:ShowTrainingHero(heroId, stats.range)
+		training = { heroId = heroId, stats = stats, shots = 0, age = 0, nextAt = 0.6 }
+		return { ok = true, data = { heroId = heroId, range = stats.range, interval = stats.interval, damage = stats.damage } }
 	end
 	if action == "ElevatorStart" then
 		return { ok = elevator:StartNow(player), message = text("Só quem entrou primeiro pode começar.", "Only the first rider can start.") }
@@ -783,6 +801,30 @@ if role == "Afk" then
 	Players.PlayerAdded:Connect(arrived)
 	for _, player in ipairs(Players:GetPlayers()) do arrived(player) end
 end
+-- Training yard: one hero at a time on the lobby stage, firing cosmetic
+-- shots at the dummies. Nothing is damaged, earned or recorded.
+local function stepTraining(dt)
+	if not training then return end
+	training.age += dt
+	local now = training.age
+	if now >= TRAINING_SECONDS then
+		world:ClearTrainingHero()
+		training = nil
+		return
+	end
+	if now < training.nextAt then return end
+	training.nextAt = now + math.max(0.35, training.stats.interval)
+	training.shots += 1
+	local from, to = world:TrainingShot(training.shots)
+	local c = Catalog.Heroes[training.heroId].color
+	for _, viewer in ipairs(Players:GetPlayers()) do
+		if not match:Has(viewer) then
+			remotes.FX:FireClient(viewer, { kind = "Shot", from = from, to = to, color = Color3.fromRGB(c[1], c[2], c[3]),
+				towerId = "training", heroId = training.heroId, style = training.stats.attack })
+		end
+	end
+end
+
 local function stepAfk(elapsed, visitors)
 	local interval = Catalog.Afk.interval
 	local inLobby = {}
@@ -860,6 +902,8 @@ RunService.Heartbeat:Connect(function(dt)
 	if ticks >= 6 then accumulator = 0 end
 
 	if role ~= "Match" then
+		local trainingOK, trainingProblem = pcall(stepTraining, math.min(dt, 0.5))
+		if not trainingOK then warn("[Doomsday] Training yard failed: " .. tostring(trainingProblem)); training = nil end
 		elevatorTimer += dt
 		if elevatorTimer >= 0.25 then
 			local elapsed = elevatorTimer

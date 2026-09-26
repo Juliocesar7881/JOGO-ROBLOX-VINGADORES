@@ -477,10 +477,14 @@ sendo o Ouro **do lobby** guardado pela partida.
 encerra com `results.ended = true`), `ElevatorStart {}` (lobby, só o primeiro
 passageiro), `BuyGuaranteed {itemId}` (lobby, só contas com itens aleatórios
 pagos restritos; preço `Rules.GuaranteedPrice`), `LeaveAfk {}` (lobby, tira o
-jogador da sala AFK).
+jogador da sala AFK), `TrainHero {heroId}` (lobby, perto do Campo de Treino,
+herói próprio; põe o herói no palco por 30 s, sem dano real nem recompensa).
 
 **FX novo.** `WaveCash {amount}`: bônus de Ouro da partida ao fim da onda.
-`CoinRemove` passa a trazer `value`.
+`CoinRemove` passa a trazer `value`. `BossArrive {enemyId, final, position}`:
+entrada de um chefe (faixa com nome e som). O Campo de Treino reaproveita
+`Shot` com `towerId = "training"` e `heroId`; `OpenPanel` ganha o painel
+`training` (tapete verde do campo).
 
 **Construção.** Prévia e servidor chamam `Rules.BuildCheck(mapId, position,
 towers, config, blockers)`; recusas usam `Rules.BuildReasons` (`bounds`,

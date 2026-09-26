@@ -322,6 +322,48 @@ do
 	check(groot and hulk and groot.X < hulk.X and groot.Y >= hulk.Y * 0.9, "Groot is tall and narrower than Hulk")
 end
 
+-- The training yard: a pad that opens the panel once, a stage whose ring is
+-- the hero's real reach, and dummies every shot lands on. Nothing is a tower.
+do
+	local yard = lobby:FindFirstChild("TrainingYard")
+	check(yard ~= nil, "the lobby has a training yard")
+	local dummies = 0
+	for _, child in ipairs(yard and yard:GetChildren() or {}) do if child.Name == "TrainingDummy" then dummies += 1 end end
+	check(dummies == #WorldBuilder.Training.dummies and dummies >= 3, "the yard has its dummies, got " .. dummies)
+	local special
+	for _, d in ipairs(WorldBuilder.Districts) do if d.id == "special" then special = d end end
+	for _, spot in ipairs({ WorldBuilder.Training.stage, WorldBuilder.Training.pad, table.unpack(WorldBuilder.Training.dummies) }) do
+		check(special and spot.X > special.x0 and spot.X < special.x1 and spot.Z > special.z0 and spot.Z < special.z1, "the yard stays inside the training district")
+		for portalId, destination in pairs(Catalog.Destinations) do
+			check(math.abs(spot.X - destination.x) > 9 or math.abs(spot.Z - destination.z) > 9, "the yard keeps clear of portal " .. portalId)
+		end
+	end
+	local root = { Position = world.shopZones.training.center }
+	local trainee = { UserId = 811, Character = { FindFirstChild = function(_, name) return name == "HumanoidRootPart" and root or nil end } }
+	local before = #panels
+	world:StepShopEntries({ trainee })
+	world:StepShopEntries({ trainee })
+	check(#panels == before + 1 and panels[#panels].panel == "training", "stepping on the yard pad opens the training panel once")
+	check(world:NearTraining(trainee), "standing on the pad is near the yard")
+	root.Position = v3(0, 4, 345)
+	check(not world:NearTraining(trainee), "the spawn plaza is not near the yard")
+	local figure = world:ShowTrainingHero("hulk", 17)
+	check(figure ~= nil and figure.Parent == yard and figure:GetAttribute("HeroId") == "hulk", "a chosen hero stands on the stage")
+	check(figure and figure.PrimaryPart ~= nil, "the stage hero can be aimed by the client")
+	check(math.abs(world.trainingRange.Size.Y - 34) < 1e-6 and world.trainingRange.Transparency < 1, "the floor ring is the hero's reach")
+	world:ShowTrainingHero("ironman", 20)
+	local heroes = 0
+	for _, child in ipairs(yard:GetChildren()) do if child.Name == "TrainingHero" then heroes += 1 end end
+	check(heroes == 1, "one hero at a time on the stage")
+	local from, to = world:TrainingShot(4)
+	check(typeof(from) == "Vector3" and typeof(to) == "Vector3" and (to - from).Magnitude < 20, "a training shot reaches a dummy from the stage")
+	world:ClearTrainingHero()
+	check(yard:FindFirstChild("TrainingHero") == nil and world.trainingRange.Transparency == 1, "the stage empties after training")
+	for _, part in ipairs(yard:GetDescendants()) do
+		if part:IsA("BasePart") then check(part.CanCollide == false, "yard pieces never trap avatars: " .. part.Name) end
+	end
+end
+
 local ok2, err2 = pcall(function() world:UpdateLeaderboardBoard({ { rank = 1, name = "Tester", waves = 30 } }, "Manhattan") end)
 check(ok2, "UpdateLeaderboardBoard accepts real rows: " .. tostring(err2))
 check(world.leaderboardText.Text:find("Tester") ~= nil, "the totem text reflects the rows it was given")

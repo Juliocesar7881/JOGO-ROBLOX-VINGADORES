@@ -1143,6 +1143,26 @@ local contextBuilders = {
 	hero = contextHero, chests = contextChests, premium = contextPremium, inventory = contextSquad, shop = contextShop,
 	quests = contextQuests, leaderboard = contextLeaderboard, squad = contextSquad, settings = contextSettings,
 	rewards = contextRewards,
+	-- Lobby training yard: pick an owned hero and watch it hit the dummies.
+	-- The server shows the figure and fires the shots; nothing is earned.
+	training = function(body)
+		UI.section(body, T("Campo de treino", "Training yard"), T("Escolha um herói para ver o ataque e o alcance real (nível 1) nos bonecos. Aqui não há recompensas.", "Pick a hero to watch its attack and real reach (level 1) on the dummies. Nothing is earned here."))
+		local grid = UI.grid(body, 74, 200)
+		local shown = 0
+		for index, id in ipairs(Catalog.HeroOrder) do
+			if (profile().heroes or {})[id] then
+				shown += 1
+				local def = Catalog.Heroes[id]
+				local button = heroCard(grid, id, index, 200, 74, function()
+					act("TrainHero", {heroId = id}, function()
+						showToast(T("No palco: ", "On stage: ") .. L(def.name) .. T(" • alcance ", " • reach ") .. tostring(def.range))
+					end)
+				end)
+				button.LayoutOrder = index
+			end
+		end
+		if shown == 0 then UI.label(body, T("Abra um baú para conseguir seu primeiro herói.", "Open a chest to get your first hero."), {Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.muted}) end
+	end,
 }
 
 fetchProducts = function()
@@ -1240,6 +1260,7 @@ renderContext = function()
 	panel:SetAttribute("ContextKind",contextPanel.kind)
 	local titles = {hero = T("GALERIA DE HERÓIS", "HERO GALLERY"), skill = T("TREINAMENTO", "TRAINING"), shop = T("SUPRIMENTOS", "SUPPLIES"), quests = T("CENTRAL DE MISSÕES", "MISSION BOARD"), leaderboard = T("LENDAS DA RESISTÊNCIA", "RESISTANCE LEGENDS"), squad = T("FORMAÇÃO TÁTICA", "TACTICAL FORMATION"), settings = T("OPÇÕES", "SETTINGS")}
 	titles.talents = T("ÁRVORE DE EVOLUÇÃO", "TALENT TREE")
+	titles.training = T("CAMPO DE TREINO", "TRAINING YARD")
 	titles.guide = T("REFÚGIO DA AURORA", "AURORA REFUGE")
 	titles.maps = T("ESCOLHA SEU MAPA", "CHOOSE YOUR MAP")
 	titles.bases=T("MINHA BASE","MY BASE")

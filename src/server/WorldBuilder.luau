@@ -664,6 +664,13 @@ local DISTRICTS = {
 }
 World.Districts = DISTRICTS
 
+-- Training yard in front of the training portal, between the two portal
+-- lanes: a stage, a pad and three dummies. Watching a hero attack here grants
+-- nothing; it only shows how far and how fast each one reaches.
+local TRAINING = { stage = Vector3.new(82, 0, 403), pad = Vector3.new(82, 0, 409.5),
+	dummies = { Vector3.new(75.5, 0, 397.5), Vector3.new(82, 0, 395.5), Vector3.new(88.5, 0, 397.5) } }
+World.Training = TRAINING
+
 -- Lighting is one global service, shared by the lobby and whichever match map
 -- is built. Standalone servers keep both areas in the same Workspace, so
 -- whoever finishes a match and walks back must see the lobby's own mood
@@ -1031,6 +1038,7 @@ function World:BuildLobby()
 	self:FinishLobby(lobby)
 	self:ExpandForestVillage(lobby)
 	self:BuildDistricts(lobby)
+	self:BuildTrainingYard(lobby)
 end
 
 -- Check root positions on the server, not Touched events from every limb.
@@ -1068,6 +1076,10 @@ function World:StepShopEntries(players)
 					self.openPanel(player,"chests",{chestId=id})
 					break
 				end
+			end
+			if not occupants[player.UserId] and inside(self.shopZones.training,0) then
+				occupants[player.UserId]="training"
+				self.openPanel(player,"training",{})
 			end
 		end
 	end
@@ -1979,6 +1991,76 @@ function World:BuildDistricts(lobby)
 end
 
 -- Whether a lobby visitor is standing on the last jump stone of the parkour.
+function World:BuildTrainingYard(lobby)
+	local yard = Instance.new("Model")
+	yard.Name, yard.Parent = "TrainingYard", lobby
+	local flat = CFrame.Angles(0, 0, math.pi / 2)
+	local stage = TRAINING.stage
+	local platform = artPart(yard, "TrainingStage", Vector3.new(0.5, 6, 6), CFrame.new(stage.X, 0.25, stage.Z) * flat, Color3.fromRGB(65, 83, 107), Enum.Material.Metal)
+	platform.Shape = Enum.PartType.Cylinder
+	local range = artPart(yard, "TrainingRange", Vector3.new(0.08, 20, 20), CFrame.new(stage.X, 0.16, stage.Z) * flat, ART.gold, Enum.Material.Neon)
+	range.Shape, range.Transparency = Enum.PartType.Cylinder, 1
+	local pad = artPart(yard, "TrainingPad", Vector3.new(5, 0.12, 5), CFrame.new(TRAINING.pad.X, 0.2, TRAINING.pad.Z), Color3.fromRGB(88, 214, 141), Enum.Material.Neon)
+	pad.Transparency = 0.3
+	local title = label(pad, "CAMPO DE TREINO\npise aqui • sem recompensas", Vector3.new(0, 4.5, 0), ART.gold, 230, 90)
+	title.Font = Enum.Font.FredokaOne
+	for _, spot in ipairs(TRAINING.dummies) do
+		local dummy = Instance.new("Model")
+		dummy.Name, dummy.Parent = "TrainingDummy", yard
+		artPart(dummy, "Post", Vector3.new(0.5, 3.4, 0.5), CFrame.new(spot.X, 1.7, spot.Z), Color3.fromRGB(122, 86, 58), Enum.Material.Wood)
+		artPart(dummy, "Body", Vector3.new(2, 2.2, 1), CFrame.new(spot.X, 3.6, spot.Z), Color3.fromRGB(214, 190, 140), Enum.Material.Fabric)
+		local head = artPart(dummy, "Head", Vector3.new(1.4, 1.4, 1.4), CFrame.new(spot.X, 5.4, spot.Z), Color3.fromRGB(214, 190, 140), Enum.Material.Fabric)
+		head.Shape = Enum.PartType.Ball
+		-- The target faces the stage, so every shot visibly lands on it.
+		artPart(dummy, "Target", Vector3.new(1.1, 1.1, 0.1), CFrame.new(spot.X, 3.7, spot.Z + 0.52), Color3.fromRGB(233, 72, 72), Enum.Material.Neon)
+	end
+	self.trainingYard, self.trainingRange = yard, range
+	self.shopZones.training = { center = Vector3.new(TRAINING.pad.X, 3, TRAINING.pad.Z), size = Vector3.new(5, 6, 5) }
+end
+
+-- One hero at a time stands on the stage; the ring on the floor is its real
+-- reach at level one. Purely visual: nothing here is a tower or earns anything.
+function World:ShowTrainingHero(heroId, range)
+	self:ClearTrainingHero()
+	local hero = self.catalog.Heroes[heroId]
+	if not hero or not self.trainingYard then return nil end
+	local stage = TRAINING.stage
+	local figure = Instance.new("Model")
+	figure.Name = "TrainingHero"
+	figure:SetAttribute("TowerId", "training") figure:SetAttribute("HeroId", heroId)
+	local anchor = artPart(figure, "Platform", Vector3.new(1, 0.2, 1), CFrame.new(stage.X, 0.4, stage.Z), Color3.fromRGB(65, 83, 107), Enum.Material.Metal)
+	anchor.Transparency = 1
+	local _, head = heroFigure(figure, heroId, hero, CFrame.new(stage.X, 0.5, stage.Z), (FIGURE_SCALE[heroId] or 1) * 1.15)
+	for _, p in ipairs(figure:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide, p.CanQuery, p.CanTouch = false, false, false end end
+	figure.PrimaryPart, figure.Parent = anchor, self.trainingYard
+	if head then
+		local title = label(head, hero.name.pt, Vector3.new(0, 2, 0), rgb(hero.color):Lerp(Color3.new(1, 1, 1), 0.75), 145, 60)
+		title.Font = Enum.Font.FredokaOne
+	end
+	if self.trainingRange then
+		self.trainingRange.Size = Vector3.new(0.08, range * 2, range * 2)
+		self.trainingRange.Color = rgb(hero.color)
+		self.trainingRange.Transparency = 0.72
+	end
+	return figure
+end
+
+function World:ClearTrainingHero()
+	local old = self.trainingYard and self.trainingYard:FindFirstChild("TrainingHero")
+	if old then old:Destroy() end
+	if self.trainingRange then self.trainingRange.Transparency = 1 end
+end
+
+function World:TrainingShot(index)
+	local stage, spot = TRAINING.stage, TRAINING.dummies[(index - 1) % #TRAINING.dummies + 1]
+	return Vector3.new(stage.X, 4, stage.Z), Vector3.new(spot.X, 3.7, spot.Z + 0.5)
+end
+
+function World:NearTraining(player)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	return root ~= nil and (root.Position - Vector3.new(TRAINING.pad.X, root.Position.Y, TRAINING.pad.Z)).Magnitude <= 28
+end
+
 function World:ParkourReached(player)
 	local goal=self.parkourGoal
 	local root=goal and player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")

@@ -61,6 +61,15 @@ produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 - **Telemetria:** saída no meio da partida por onda, Ouro da partida coletado
   por minuto e duração das sessões AFK.
 - **Lugar AFK dedicado** (código pronto, desligado até configurar `AfkPlaceId`).
+- **Entrada dos chefes:** faixa com nome ("⚠ CHEFE" / "⚠ CHEFE FINAL") e som
+  quando o chefe entra na rua.
+- **Queda na partida:** quem cai do mapa volta ao próprio posto.
+- **Competitivo além da onda 70:** teste chega à onda 149 sem limite antigo,
+  com recorde, Ouro por onda e horda dentro do teto.
+- **Voadores** têm sombra no chão da rota.
+- **Campo de Treino** no canto de treino/cartas: tapete verde abre o painel,
+  o herói escolhido sobe ao palco com o anel do alcance real e ataca três
+  bonecos por 30 s; sem recompensa, sem dano real.
 
 ### Implementado, aguardando teste real (Studio/aplicativo)
 
@@ -68,6 +77,8 @@ produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 - Distritos novos do lobby (cantos do sul) e colisões com a floresta.
 - Voto de encerrar no competitivo com grupo de 2–4 pessoas.
 - Aviso do AFK (sessão, total recebido, salvando).
+- Campo de Treino: posição entre as duas pistas dos portais e leitura dos
+  disparos no lobby.
 
 ### Depende de arte ou configuração
 
