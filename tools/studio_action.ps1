@@ -1,9 +1,9 @@
-param([ValidateSet('play','stop','command')][string]$Action, [string]$ScriptPath, [long]$WindowHandle = 0)
+﻿param([ValidateSet('play','stop','command')][string]$Action, [string]$ScriptPath, [long]$WindowHandle = 0)
 # Operates only on the open Doomsday Studio window through UI Automation.
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 if ($WindowHandle -ne 0) { $studioHandle = [IntPtr]$WindowHandle } else {
-  $studioProc = Get-Process RobloxStudioBeta | Where-Object { $_.MainWindowTitle -like '*Doomsday*' } | Select-Object -First 1
+  $studioProc = Get-Process RobloxStudioBeta | Where-Object { $_.MainWindowTitle -like '*Doomsday*' -or $_.MainWindowTitle -like '*Tower Defense*' } | Select-Object -First 1
   if (-not $studioProc) { throw 'Doomsday is not open in Studio.' }
   $studioHandle = $studioProc.MainWindowHandle
 }
@@ -12,12 +12,16 @@ function Named($root, $name) {
   return $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty,$name)))
 }
 if ($Action -eq 'command') {
+  # Portuguese or English Studio UI.
   $toolbar = Named $studioElement 'Comando'
+  if (-not $toolbar) { $toolbar = Named $studioElement 'Command Bar' }
+  if (-not $toolbar) { $toolbar = Named $studioElement 'Command' }
   $edit = $toolbar.FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Edit)))
   $code = Get-Content -Raw -Encoding UTF8 -LiteralPath $ScriptPath
   $edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($code)
   Start-Sleep -Milliseconds 150
   $run = Named $toolbar 'Correr'
+  if (-not $run) { $run = Named $toolbar 'Run' }
   $run.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
 } else {
   $menu = Named $studioElement 'Teste'

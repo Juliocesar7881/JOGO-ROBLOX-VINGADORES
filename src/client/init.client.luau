@@ -247,6 +247,9 @@ local modeTint = {
 	normal = C.green, ranked = Color3.fromRGB(255, 138, 61), infinite = Color3.fromRGB(177, 119, 243),
 	cards = Color3.fromRGB(177,119,243),
 }
+for id, destination in pairs(Catalog.Destinations) do
+	if not modeTint[id] then modeTint[id] = modeTint[destination.modeId] end
+end
 local modeLockHints = {
 	normal = {pt = "Conclua o treinamento.", en = "Complete training."},
 	ranked = {pt = "Vença qualquer mapa na campanha normal.", en = "Clear any map in the normal campaign."},
@@ -1136,6 +1139,8 @@ local CONTEXT_ANCHOR = {
 
 local function anchorPosition(kind, data)
 	local spec = CONTEXT_ANCHOR[kind]
+	-- The arena's scoreboard kiosk opens the same leaderboard panel.
+	if kind == "leaderboard" and data.board == "arena" then spec = { kind = "Scoreboard", attribute = "BoardId", value = "arena" } end
 	if not spec then return nil end
 	local wanted = spec.value or data[spec.field]
 	if not wanted then return nil end
@@ -2285,8 +2290,45 @@ UserInputService.TouchTapInWorld:Connect(function(position, processed)
 	if not processed then handleWorldPointer(position) end
 end)
 
+-- AFK farm banner. The server marks the commander standing in a farm chamber
+-- (attributes AfkZone / AfkNext) and pays each minute itself; this only shows
+-- it, and keeps Roblox's idle kick from ending a farm the player chose.
+local afkBanner, afkTitle, afkDetail, afkBannerAt = nil, nil, nil, 0
+local function updateAfkBanner()
+	local kind = player:GetAttribute("AfkZone")
+	local farm = kind and Catalog.Afk[kind]
+	if not farm then
+		if afkBanner then afkBanner.Visible = false end
+		return
+	end
+	if not afkBanner then
+		afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(330, 58), BackgroundColor3 = C.background}, C.gold)
+		afkTitle = UI.label(afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 28), TextSize = 18, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center})
+		afkDetail = UI.label(afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
+	end
+	local tint = UI.color(farm.color)
+	afkBanner.Visible = true
+	afkTitle.Text = "💤 " .. Catalog.Upper(L(farm.name))
+	afkTitle.TextColor3 = tint
+	afkDetail.Text = L(farm.rate) .. "  •  " .. T("próximo em ", "next in ") .. tostring(player:GetAttribute("AfkNext") or 60) .. "s"
+end
+pcall(function()
+	player.Idled:Connect(function()
+		if not player:GetAttribute("AfkZone") then return end
+		pcall(function()
+			local virtual = game:GetService("VirtualUser")
+			virtual:CaptureController()
+			virtual:ClickButton2(Vector2.new())
+		end)
+	end)
+end)
+
 local nameplateAt, anchorCheckAt = 0, 0
 RunService.RenderStepped:Connect(function(dt)
+	if os.clock() >= afkBannerAt then
+		afkBannerAt = os.clock() + 0.25
+		updateAfkBanner()
+	end
 	if contextRefreshPending and not UserInputService:GetFocusedTextBox() then renderContext() end
 	animateLobby(dt or 1 / 60)
 	celebrate:Step(dt or 1 / 60)

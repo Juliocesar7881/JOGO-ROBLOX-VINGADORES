@@ -124,6 +124,14 @@ function Rules.MapsForMode(modeId)
 	return maps
 end
 
+-- What a stretch of whole minutes in an AFK chamber pays. nil for anything
+-- that is not a farm or not a sane number of minutes.
+function Rules.AfkReward(kind, minutes)
+	local farm = type(kind) == "string" and Catalog.Afk and Catalog.Afk[kind]
+	if type(farm) ~= "table" or type(minutes) ~= "number" or minutes ~= math.floor(minutes) or minutes < 1 or minutes > 10 then return nil end
+	return { gold = (farm.gold or 0) * minutes, xp = (farm.xp or 0) * minutes }
+end
+
 -- Legacy callers get the first authored destination, never a random map.
 function Rules.PickMap(modeId, _roll)
 	if modeId=="tutorial" then return "manhattan" end

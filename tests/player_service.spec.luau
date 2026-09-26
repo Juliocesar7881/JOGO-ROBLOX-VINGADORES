@@ -121,11 +121,27 @@ check(initial.skills == nil and initial.activeSkills == nil and initial.passives
 check(initial.paidRandomRestricted == false, "Regional restriction defaults to open")
 check(not pcall(function() PlayerService.new(config, Catalog) end), "The service refuses to start without the shared Rules")
 
+-- AFK farm pay is server-internal: a small fixed amount per minute, and the
+-- client can never ask for it by name.
+do
+	local p1 = player(4242)
+	service:Load(p1)
+	local before = service:Get(p1)
+	local paidOK, paidWhy = service:GrantAfk(p1, "gold", 1)
+	check(paidOK, "AFK gold minute is paid: " .. tostring(paidWhy) .. " loaded=" .. tostring(service:Get(p1) ~= nil))
+	check(service:Get(p1).gold == before.gold + Catalog.Afk.gold.gold and service:Get(p1).xp == before.xp, "AFK gold pays only its gold rate")
+	check(service:GrantAfk(p1, "xp", 2), "AFK XP minutes are paid")
+	check(service:Get(p1).xp == before.xp + Catalog.Afk.xp.xp * 2 and service:Get(p1).gold == before.gold + Catalog.Afk.gold.gold, "AFK XP pays only its XP rate")
+	check(not service:GrantAfk(p1, "gems", 1) and not service:GrantAfk(p1, "gold", 0) and not service:GrantAfk(p1, "gold", 60), "Invalid AFK payouts refused")
+	local handled, asked = service:Handle(p1, "GrantAfk", { kind = "gold", minutes = 10 }, true)
+	check(not handled and not asked, "No client action pays AFK gold")
+	check(service:Get(p1).gold == before.gold + Catalog.Afk.gold.gold, "Refused AFK requests change nothing")
+end
 -- Mutations and reward idempotency, including retries AFTER a successful commit.
 replayCallback = true
 failAfter = 1
 check(service:Award(p1, "tutorial:finish", { tutorial = true, finished = true, victory = true, modeId = "tutorial", mapId = "manhattan", gold = 0, xp = 100, mastery = { ironman = 10 } }), "Tutorial award survives lost response")
-check(service:Get(p1).gold == 1000, "Repeated UpdateAsync callbacks cannot duplicate tutorial gold")
+check(service:Get(p1).gold == 1000, "Repeated UpdateAsync callbacks cannot duplicate tutorial gold, got " .. tostring(service:Get(p1).gold))
 check(service:Get(p1).tutorialComplete, "Tutorial unlock saved")
 check(service:Award(p1, "tutorial:finish", { tutorial = true, finished = true, victory = true, gold = 999999 }), "Duplicate award acknowledged")
 check(service:Get(p1).gold == 1000 and service:Get(p1).xp == 100, "Duplicate award is inert")

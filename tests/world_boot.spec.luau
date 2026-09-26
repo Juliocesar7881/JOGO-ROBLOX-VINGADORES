@@ -75,7 +75,7 @@ if sanctuary then
 		if piece.Name=="ForestTrail" and piece.CanCollide then trails+=1 end
 		if piece:IsA("BasePart") then check(piece.Position.Z>150,"Forest stays outside all combat terrain bounds") end
 	end
-	check(trees>=40,"Forest surrounds the plaza with mature trees")
+	check(trees>=30,"Forest surrounds the plaza with mature trees, got "..tostring(trees))
 	check(stones==7 and trails>=7,"Exploration paths and jumping stones are traversable")
 	check(sanctuary:FindFirstChild("AuroraHeart")~=nil and sanctuary:FindFirstChild("AuroraFalls")~=nil,"Tree landmark and waterfall exist")
 	check(countClass(lobby,"BasePart")<3500,"Expanded lobby remains under its geometry budget")
@@ -95,7 +95,7 @@ do
 	local hull = lobby:FindFirstChild("Helicarrier")
 	check(hull ~= nil and hull.CastShadow == true, "the helicarrier hull still casts a shadow")
 	local lobbyEmitters = countClass(lobby, "ParticleEmitter")
-	check(lobbyEmitters == 14, "each destination emits from its glass and pad, plus the two shops, got " .. tostring(lobbyEmitters))
+	check(lobbyEmitters == #Catalog.DestinationOrder * 2 + 2 + #Catalog.AfkOrder, "each destination emits from its glass and pad, plus the two shops and each AFK farm, got " .. tostring(lobbyEmitters))
 end
 
 -- Every physical location is its own Model, tagged with a Kind attribute the
@@ -109,7 +109,7 @@ for _, child in ipairs(lobby:GetChildren()) do
 	end
 end
 
-check(#(byKind.ModePortal or {}) == 6, "one portal per destination, got " .. tostring(#(byKind.ModePortal or {})))
+check(#(byKind.ModePortal or {}) == #Catalog.DestinationOrder, "one portal per destination, got " .. tostring(#(byKind.ModePortal or {})))
 local portalModes = {}
 for _, model in ipairs(byKind.ModePortal or {}) do portalModes[model:GetAttribute("ModeId")] = true end
 for _, modeId in ipairs(Catalog.PortalOrder) do
@@ -210,6 +210,47 @@ check(details and details:FindFirstChild("GuideHead")~=nil,"Nico welcomes player
 check(countClass(details,"Seat")==3,"village benches provide usable seats")
 check(world.leaderboardText ~= nil, "the leaderboard totem exposes a text label to update")
 
+-- Lobby districts: AFK chambers are walk-in zones the server reads, and the
+-- arena scoreboard takes one column per ranked map.
+do
+	local function visitorAt(position)
+		local root = { Position = position }
+		return { UserId = 900, Character = { FindFirstChild = function(_, name) return name == "HumanoidRootPart" and root or nil end } }
+	end
+	for _, kind in ipairs(Catalog.AfkOrder) do
+		local zone = world.afkZones and world.afkZones[kind]
+		check(zone ~= nil, "AFK farm publishes its zone: " .. kind)
+		if zone then
+			check(world:AfkZoneOf(visitorAt(zone.center)) == kind, "standing in the " .. kind .. " chamber is farming " .. kind)
+			check(world:AfkZoneOf(visitorAt(zone.center + v3(0, 30, 0))) == nil, "flying over a chamber is not farming")
+		end
+		check(lobby:FindFirstChild("AfkZone_" .. kind) ~= nil, "AFK chamber model exists: " .. kind)
+	end
+	check(world:AfkZoneOf(visitorAt(v3(0, 4, 345))) == nil, "the spawn plaza is not an AFK farm")
+	check(world:AfkZoneOf({ Character = nil }) == nil, "a player without a character farms nothing")
+	for portalId, zone in pairs(world.portalZones) do
+		for _, kind in ipairs(Catalog.AfkOrder) do
+			check(world:AfkZoneOf(visitorAt(zone.center)) == nil, "portal " .. portalId .. " is not inside an AFK chamber")
+		end
+	end
+	local rankedMaps = 0
+	for _, def in pairs(Catalog.Destinations) do if def.modeId == "ranked" then rankedMaps += 1 end end
+	check(#(world.arenaColumns or {}) == rankedMaps, "one arena column per ranked map")
+	world:UpdateArenaScoreboard({ hydra = { { rank = 1, name = "Campeão", waves = 42 } }, wakanda = {} })
+	local columns = {}
+	for _, column in ipairs(world.arenaColumns or {}) do columns[column.mapId] = column.label.Text end
+	check(columns.hydra and columns.hydra:find("Campeão") ~= nil, "the arena shows the top ranked player of each map")
+	check(columns.wakanda == "Seja o primeiro!", "an empty ranked map invites the first player")
+	check(columns.latveria == "Carregando…", "a map without fresh data keeps its previous text")
+	for _, d in ipairs(WorldBuilder.Districts or {}) do
+		local floor
+		for _, obj in ipairs(lobby:GetDescendants()) do
+			if obj.Name == "DistrictFloor" and obj:GetAttribute("District") == d.id then floor = obj end
+		end
+		check(floor ~= nil, "district has its own floor: " .. d.id)
+	end
+end
+
 local ok2, err2 = pcall(function() world:UpdateLeaderboardBoard({ { rank = 1, name = "Tester", waves = 30 } }, "Manhattan") end)
 check(ok2, "UpdateLeaderboardBoard accepts real rows: " .. tostring(err2))
 check(world.leaderboardText.Text:find("Tester") ~= nil, "the totem text reflects the rows it was given")
@@ -218,7 +259,7 @@ check(world.leaderboardText.Text:find("Tester") ~= nil, "the totem text reflects
 -- panel with the identifiers that name it, and the server-side distance
 -- re-check must refuse a player standing across the deck.
 do
-	local expectedPanel = { HeroPedestal = "hero", ChestStand = "chests", ShopStand = "shop" }
+	local expectedPanel = { HeroPedestal = "hero", ChestStand = "chests", ShopStand = "shop", Scoreboard = "leaderboard" }
 	local function playerAt(position)
 		local root = { Position = position }
 		return { Character = { FindFirstChild = function(_, name) return name == "HumanoidRootPart" and root or nil end } }
@@ -226,7 +267,7 @@ do
 	local wrong, refused = {}, 0
 	for _, model in ipairs(lobby:GetChildren()) do
 		local kind = model:GetAttribute("Kind")
-		if kind and kind ~= "ModePortal" then
+		if kind and kind ~= "ModePortal" and kind ~= "AfkZone" then
 			local prompt
 			for _, item in ipairs(model:GetDescendants()) do
 				if item:IsA("ProximityPrompt") or rawget(item, "__class") == "ProximityPrompt" then prompt = item end
@@ -256,7 +297,7 @@ do
 		end
 	end
 	check(#wrong == 0, "every lobby prompt opens its own panel and refuses a distant player: " .. table.concat(wrong, ", "))
-	local expected = 2 + 6 + 7
+	local expected = 2 + 6 + 7 + 1
 	check(refused == expected, "the distance re-check refused all " .. expected .. " far presses, got " .. tostring(refused))
 end
 
@@ -294,7 +335,8 @@ if archipelago then
 		end
 	end
 end
-local expectedPrompts = 2 + 6 + 7
+-- Chests, Robux stands, boards and desks, plus the arena scoreboard kiosk.
+local expectedPrompts = 2 + 6 + 7 + 1
 check(totalPrompts == expectedPrompts,
 	"every physical location is interactive, got " .. tostring(totalPrompts) .. "/" .. tostring(expectedPrompts))
 print(string.format("  %d parts, %d locais interativos", countClass(lobby, "BasePart"), totalPrompts))

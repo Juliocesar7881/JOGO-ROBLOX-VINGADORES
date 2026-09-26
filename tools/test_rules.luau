@@ -163,7 +163,24 @@ check(Rules.CanStart(profile, "manhattan", "tutorial"), "Training always availab
 check(not Rules.CanStart(profile, "gamma", "tutorial"), "Training map fixed")
 check(Rules.CanStart(profile, "manhattan", "normal"), "Campaign is available immediately")
 profile.tutorialComplete = true
-for _, mapId in Catalog.MapOrder do equal(Rules.CanStart(profile, mapId, "normal"),mapId=="manhattan","Campaign map is fixed: "..mapId) end
+local campaignMaps = { manhattan = true, gamma = true, hydra = true }
+for _, mapId in Catalog.MapOrder do equal(Rules.CanStart(profile, mapId, "normal"),campaignMaps[mapId]==true,"Campaign runs on the three central portals only: "..mapId) end
+equal(#Catalog.DestinationOrder, 8, "Three campaign, three ranked and two special portals")
+for _, id in Catalog.DestinationOrder do
+	local def = Catalog.Destinations[id]
+	check(def and Catalog.Maps[def.mapId] and Catalog.Modes[def.modeId], "Destination is a real map/mode pair: " .. id)
+	check(def.district == "center" or def.district == "arena" or def.district == "special", "Destination belongs to a lobby district: " .. id)
+end
+
+-- AFK farm: a small, fixed pay per whole minute, and nothing for nonsense.
+equal(Rules.AfkReward("gold", 1).gold, Catalog.Afk.gold.gold, "Gold farm pays its rate")
+equal(Rules.AfkReward("gold", 1).xp, 0, "Gold farm pays no XP")
+equal(Rules.AfkReward("xp", 3).xp, Catalog.Afk.xp.xp * 3, "XP farm scales with whole minutes")
+equal(Rules.AfkReward("xp", 1).gold, 0, "XP farm pays no gold")
+check(Catalog.Afk.gold.gold <= 10 and Catalog.Afk.xp.xp <= 20, "AFK farms pay very little per minute")
+for _, bad in { { "gold", 0 }, { "gold", 1.5 }, { "gold", 11 }, { "gems", 1 }, { nil, 1 }, { "xp", "1" } } do
+	check(Rules.AfkReward(bad[1], bad[2]) == nil, "Invalid AFK payout refused: " .. tostring(bad[1]) .. "/" .. tostring(bad[2]))
+end
 check(not Rules.CanStart(profile, "manhattan", "ranked"), "Hard requires a normal clear")
 check(not Rules.CanStart(profile, "gamma", "cards"), "Cards require a normal clear")
 check(not Rules.CanStart(profile, "asgard", "infinite"), "Endless requires a ranked clear")

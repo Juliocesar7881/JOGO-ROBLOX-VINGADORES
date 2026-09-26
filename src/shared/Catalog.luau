@@ -388,14 +388,30 @@ Catalog.Enemies = {
 -- after every fifth wave each commander picks one of three cards.
 Catalog.PortalOrder = { "normal", "ranked", "cards", "infinite" }
 -- Each entrance is an authored destination, with a fixed map and ruleset.
-Catalog.DestinationOrder = { "normal", "cards", "infinite", "ranked", "ranked_wakanda", "ranked_latveria" }
+-- The lobby is laid out in districts: the campaign portals stand in the centre,
+-- the competitive arena on the east side, the special modes in the north-east
+-- corner. facing turns a portal about Y; 0 faces the spawn (+Z).
+Catalog.DestinationOrder = { "normal", "normal_gamma", "normal_hydra", "ranked", "ranked_wakanda", "ranked_latveria", "cards", "infinite" }
 Catalog.Destinations = {
-	normal = {modeId="normal",mapId="manhattan",x=-58,z=300},
-	cards = {modeId="cards",mapId="gamma",x=-30,z=300},
-	infinite = {modeId="infinite",mapId="asgard",x=-2,z=300},
-	ranked = {modeId="ranked",mapId="hydra",x=30,z=291},
-	ranked_wakanda = {modeId="ranked",mapId="wakanda",x=58,z=291},
-	ranked_latveria = {modeId="ranked",mapId="latveria",x=86,z=291},
+	normal = {modeId="normal",mapId="manhattan",x=-50,z=300,district="center"},
+	normal_gamma = {modeId="normal",mapId="gamma",x=0,z=292,district="center"},
+	normal_hydra = {modeId="normal",mapId="hydra",x=50,z=300,district="center"},
+	ranked = {modeId="ranked",mapId="hydra",x=108,z=306,facing=-math.pi/2,district="arena"},
+	ranked_wakanda = {modeId="ranked",mapId="wakanda",x=108,z=341,facing=-math.pi/2,district="arena"},
+	ranked_latveria = {modeId="ranked",mapId="latveria",x=108,z=376,facing=-math.pi/2,district="arena"},
+	cards = {modeId="cards",mapId="gamma",x=64,z=422,facing=math.pi,district="special"},
+	infinite = {modeId="infinite",mapId="asgard",x=100,z=422,facing=math.pi,district="special"},
+}
+-- AFK farm: standing in one of these lobby chambers pays a small amount every
+-- minute, measured and paid by the server. Deliberately far below playing:
+-- a campaign run earns roughly 70 Gold a minute.
+Catalog.AfkOrder = { "gold", "xp" }
+Catalog.Afk = {
+	interval = 60,
+	gold = { id = "gold", gold = 5, xp = 0, x = -112, z = 318, color = { 255, 206, 82 },
+		name = text("Farm de Ouro AFK", "AFK Gold Farm"), rate = text("+5 OURO POR MINUTO", "+5 GOLD PER MINUTE") },
+	xp = { id = "xp", gold = 0, xp = 10, x = -112, z = 368, color = { 120, 200, 255 },
+		name = text("Farm de XP AFK", "AFK XP Farm"), rate = text("+10 XP POR MINUTO", "+10 XP PER MINUTE") },
 }
 Catalog.Maps.asgard = {
 	id="asgard",difficulty=1,name=text("Ponte de Asgard","Asgard Bridge"),chapter=6,bossId="doom",color={220,184,96},

@@ -485,6 +485,19 @@ function PlayerService:_payReward(profile, reward, rolls, now, current)
 	return paid
 end
 
+-- AFK farm pay. Never a client action: the lobby loop calls it after the
+-- server itself has watched the commander stand in a farm for a minute.
+function PlayerService:GrantAfk(player, kind, minutes)
+	local reward = self.rules.AfkReward(kind, minutes)
+	if not reward then return false, "Farm AFK inválido." end
+	return self:_transaction(player, function(profile)
+		profile.gold += reward.gold
+		profile.xp += reward.xp
+		profile.stats.goldEarned += reward.gold
+		return true, { kind = kind, gold = reward.gold, xp = reward.xp }
+	end)
+end
+
 function PlayerService:Get(player)
 	return self:Snapshot(player)
 end

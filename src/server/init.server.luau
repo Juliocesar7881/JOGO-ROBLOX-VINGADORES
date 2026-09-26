@@ -704,6 +704,50 @@ local step = math.clamp(tonumber(Config.SimulationStep) or 0.1, 1 / 60, 0.25)
 local snapshotInterval = math.max(0.2, tonumber(Config.SnapshotInterval) or 0.5)
 local accumulator, snapshotTimer, arrivalTimer, snapshotCycle, elevatorTimer = 0, 0, 0, 0, 0
 
+-- AFK farm: the server watches each lobby visitor's position and pays one
+-- minute at a time to whoever stood in a farm chamber all minute. Stepping out
+-- resets the clock. The client is only told (through player attributes) which
+-- farm it is in and how long until the next payout, to draw its banner.
+local afkClock = {}
+local function stepAfk(elapsed, visitors)
+	local interval = Catalog.Afk.interval
+	local inLobby = {}
+	for _, player in ipairs(visitors) do
+		inLobby[player] = true
+		local kind = world:AfkZoneOf(player)
+		local clock = afkClock[player.UserId]
+		if kind then
+			if not clock or clock.kind ~= kind then
+				clock = { kind = kind, seconds = 0 }
+				afkClock[player.UserId] = clock
+			end
+			clock.seconds += elapsed
+			if clock.seconds >= interval and not clock.paying then
+				clock.seconds -= interval
+				clock.paying = true
+				task.spawn(function()
+					local ok = profiles:GrantAfk(player, kind, 1)
+					clock.paying = false
+					if not ok then warn("[Doomsday] AFK payout failed for " .. tostring(player.UserId)) end
+				end)
+			end
+			player:SetAttribute("AfkZone", kind)
+			player:SetAttribute("AfkNext", math.max(0, math.ceil(interval - clock.seconds)))
+		else
+			afkClock[player.UserId] = nil
+		end
+	end
+	for _, player in ipairs(Players:GetPlayers()) do
+		if not inLobby[player] or not afkClock[player.UserId] then
+			if not inLobby[player] then afkClock[player.UserId] = nil end
+			if player:GetAttribute("AfkZone") ~= nil then
+				player:SetAttribute("AfkZone", nil)
+				player:SetAttribute("AfkNext", nil)
+			end
+		end
+	end
+end
+
 RunService.Heartbeat:Connect(function(dt)
 	-- 2x speed is match time running twice as fast as the frame clock; the
 	-- six-tick cap still bounds the work done in any one frame.
@@ -732,6 +776,8 @@ RunService.Heartbeat:Connect(function(dt)
 			if not shopOK then warn("[Doomsday] Shop entry failed: "..tostring(shopProblem)) end
 			local recoveryOK,recoveryProblem=pcall(world.RecoverLobbyVisitors,world,visitors)
 			if not recoveryOK then warn("[Doomsday] Lobby recovery failed: "..tostring(recoveryProblem)) end
+			local afkOK,afkProblem=pcall(stepAfk,elapsed,visitors)
+			if not afkOK then warn("[Doomsday] AFK farm step failed: "..tostring(afkProblem)) end
 		end
 	end
 
@@ -765,6 +811,14 @@ if role ~= "Match" then
 				local applied = pcall(function() world:UpdateLeaderboardBoard(rows, "RANQUEADO • " .. Catalog.Maps.hydra.name.pt) end)
 				if not applied then warn("[Doomsday] Leaderboard totem refresh failed") end
 			end
+			-- The arena's season board: one solo column per ranked map.
+			local boards = {}
+			for _, mapId in ipairs(Rules.MapsForMode("ranked")) do
+				local found, mapRows = pcall(function() return profiles:Leaderboard(mapId, 1, nil, "ranked") end)
+				if found and mapRows then boards[mapId] = mapRows end
+			end
+			local shown = pcall(function() world:UpdateArenaScoreboard(boards) end)
+			if not shown then warn("[Doomsday] Arena scoreboard refresh failed") end
 			task.wait(30)
 		end
 	end)

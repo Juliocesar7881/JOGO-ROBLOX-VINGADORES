@@ -587,6 +587,22 @@ local SHOP_STANDS = {
 	{ kind = "pass", key = "vip" },
 }
 
+-- The lobby's districts around the central plaza. Each footprint is cleared
+-- of scenery before its own floor and props are laid, so nothing from the
+-- forest pokes through a shop counter or a portal pad.
+local MARKET = { chestZ = 412, standZ = 436, standX = { -106, -94.4, -82.8, -71.2, -59.6, -48 } }
+local DISTRICTS = {
+	{ id = "market", x0 = -114, x1 = -44, z0 = 394, z1 = 446, color = Color3.fromRGB(207, 180, 231),
+		title = { "MERCADO", "MARKET" }, subtitle = { "BAÚS • LOJA ROBUX", "CHESTS • ROBUX SHOP" } },
+	{ id = "special", x0 = 44, x1 = 114, z0 = 394, z1 = 446, color = Color3.fromRGB(177, 119, 243),
+		title = { "MODOS ESPECIAIS", "SPECIAL MODES" }, subtitle = { "CARTAS • INFINITO", "CARDS • ENDLESS" } },
+	{ id = "arena", x0 = 86, x1 = 140, z0 = 288, z1 = 392, color = Color3.fromRGB(255, 138, 61),
+		title = { "ARENA COMPETITIVA", "COMPETITIVE ARENA" }, subtitle = { "3 MAPAS • PLACAR DA TEMPORADA", "3 MAPS • SEASON LEADERBOARD" } },
+	{ id = "afk", x0 = -140, x1 = -86, z0 = 288, z1 = 392, color = Color3.fromRGB(120, 200, 255),
+		title = { "ZONA AFK", "AFK ZONE" }, subtitle = { "FIQUE PARADO E GANHE", "STAND STILL AND EARN" } },
+}
+World.Districts = DISTRICTS
+
 -- Lighting is one global service, shared by the lobby and whichever match map
 -- is built. Standalone servers keep both areas in the same Workspace, so
 -- whoever finishes a match and walks back must see the lobby's own mood
@@ -641,6 +657,9 @@ function World.new(catalog, openPanel)
 	return self
 end
 
+-- Each map's signature colour on portals and lobby signage.
+local PORTAL_COLORS={manhattan={255,164,112},gamma={135,235,113},asgard={255,206,82},hydra={255,129,134},wakanda={203,170,255},latveria={104,232,190}}
+
 -- Every mode is its own portal, and a portal is an elevator: stepping onto
 -- its pad boards it and the match starts after a short countdown, with no
 -- menu at all (ElevatorService owns the pad). The sign beside it is written
@@ -648,18 +667,23 @@ end
 -- a portal they cannot use yet is shrouded locally, per viewer.
 local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
 	local modeId=destination.modeId
-	local colors={manhattan={255,164,112},gamma={135,235,113},asgard={255,206,82},hydra={255,129,134},wakanda={203,170,255},latveria={104,232,190}}
-	local tint = rgb(colors[destination.mapId])
+	local tint = rgb(PORTAL_COLORS[destination.mapId])
+	-- Everything is authored facing +Z (the spawn) and turned as one piece, so
+	-- a district can face its portals toward its own entrance.
+	local yaw = destination.facing or 0
+	local base = CFrame.new(x, 0, z) * CFrame.Angles(0, yaw, 0)
+	local function at(dx, y, dz) return base * CFrame.new(dx, y, dz) end
 	local model = Instance.new("Model")
 	model.Name, model.Parent = "Portal_" .. portalId, lobby
 	model:SetAttribute("Kind", "ModePortal")
 	model:SetAttribute("ModeId", modeId)
 	model:SetAttribute("PortalId", portalId)
 	model:SetAttribute("MapId", destination.mapId)
-	local plinth = part(model, "Plinth", Vector3.new(15, 1, 10), CFrame.new(x, 0.5, z), Color3.fromRGB(38, 50, 65), Enum.Material.DiamondPlate)
-	local pad = part(model, "Pad", Vector3.new(12, 0.12, 7), CFrame.new(x, 1.06, z + 0.5), tint, Enum.Material.Neon)
+	model:SetAttribute("District", destination.district or "center")
+	local plinth = part(model, "Plinth", Vector3.new(15, 1, 10), at(0, 0.5, 0), Color3.fromRGB(38, 50, 65), Enum.Material.DiamondPlate)
+	local pad = part(model, "Pad", Vector3.new(12, 0.12, 7), at(0, 1.06, 0.5), tint, Enum.Material.Neon)
 	pad.CanCollide, pad.Transparency = false, 0.35
-	local ringFrame=CFrame.new(x,7.5,z-3.6)
+	local ringFrame=at(0,7.5,-3.6)
 	arc(model,"PortalArmor",ringFrame,6.8,1.5,2.3,ART.pearl,Enum.Material.Metal,24)
 	arc(model,"PortalGasket",ringFrame*CFrame.new(0,0,1.2),6.25,0.52,0.25,ART.ink,Enum.Material.Metal,32)
 	arc(model,"Frame",ringFrame*CFrame.new(0,0,1.4),6.2,0.18,0.18,tint,Enum.Material.Neon,32)
@@ -677,12 +701,12 @@ local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
 	emitter(pad, tint, 6, 2, 0.7, 1.2, Vector3.new(0, 5, 0))
 	local glow = Instance.new("PointLight")
 	glow.Color, glow.Range, glow.Brightness, glow.Parent = tint, 18, 0.9, glass
-	wallSign(model,"ModeHeader",CFrame.new(x,17,z-3.6)*CFrame.Angles(0,math.pi,0),Vector3.new(23,4.5,0.5),upper(map.name.pt),upper(mode.name.pt),tint)
+	wallSign(model,"ModeHeader",at(0,17,-3.6)*CFrame.Angles(0,math.pi,0),Vector3.new(23,4.5,0.5),upper(map.name.pt),upper(mode.name.pt),tint)
 	-- Small landmarks identify the destination even before the sign is read.
 	for _,side in ipairs({-1,1}) do
-		local at=CFrame.new(x+side*10,0,z-4)
+		local landmark=at(side*10,0,-4)
 		local function detail(name,size,offset,color,material)
-			return artPart(model,name,size,at*offset,color,material)
+			return artPart(model,name,size,landmark*offset,color,material)
 		end
 		if map.id=="manhattan" then
 			detail("SkylineTower",Vector3.new(3.5,10,4),CFrame.new(0,5,0),Color3.fromRGB(123,91,72),Enum.Material.Brick)
@@ -691,7 +715,7 @@ local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
 			end
 		elseif map.id=="gamma" then
 			local tank=detail("GammaTank",Vector3.new(3.8,7,3.8),CFrame.new(0,3.5,0),Color3.fromRGB(89,111,81),Enum.Material.Metal)
-			tank.Shape=Enum.PartType.Cylinder; tank.CFrame=at*CFrame.new(0,3.5,0)*CFrame.Angles(0,0,math.pi/2); tank.Size=Vector3.new(7,3.8,3.8)
+			tank.Shape=Enum.PartType.Cylinder; tank.CFrame=landmark*CFrame.new(0,3.5,0)*CFrame.Angles(0,0,math.pi/2); tank.Size=Vector3.new(7,3.8,3.8)
 			detail("GammaWindow",Vector3.new(2.4,4,0.2),CFrame.new(0,3.8,1.9),tint,Enum.Material.Neon)
 		elseif map.id=="wakanda" then
 			detail("VibraniumPlinth",Vector3.new(4,2,4),CFrame.new(0,1,0),ART.gold,Enum.Material.Marble)
@@ -707,7 +731,7 @@ local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
 		end
 	end
 	-- The per-viewer sign: which map, how many waves, or what is still missing.
-	local sign = part(model, "Sign", Vector3.new(11, 2.2, 0.3), CFrame.new(x, 1.9, z + 5.6) * CFrame.Angles(0, math.pi, 0), ART.ink, Enum.Material.Metal)
+	local sign = part(model, "Sign", Vector3.new(11, 2.2, 0.3), at(0, 1.9, 5.6) * CFrame.Angles(0, math.pi, 0), ART.ink, Enum.Material.Metal)
 	local surface = Instance.new("SurfaceGui")
 	surface.Name, surface.Face, surface.Parent = "Board", Enum.NormalId.Front, sign
 	surface.LightInfluence, surface.SizingMode, surface.CanvasSize = 0, Enum.SurfaceGuiSizingMode.FixedSize, Vector2.new(280, 136)
@@ -717,10 +741,12 @@ local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
 	text.Text = (mode.waves == 0 and "ONDAS INFINITAS" or (tostring(mode.waves) .. " ONDAS")) .. "\nENTRE PARA JOGAR"
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= plinth then p.CanCollide = false end end
 	model.PrimaryPart = plinth
+	-- The rider box is axis-aligned; a quarter turn swaps its width and depth.
+	local sideways = math.abs(math.sin(yaw)) > 0.5
 	return model, {
-		center = Vector3.new(x, 4, z + 0.5), size = Vector3.new(12, 9, 7),
-		-- Toward the spawn, clear of the pad and of the sign.
-		exit = Vector3.new(x, 4, z + 9),
+		center = at(0, 4, 0.5).Position, size = sideways and Vector3.new(7, 9, 12) or Vector3.new(12, 9, 7),
+		-- Toward the district's entrance, clear of the pad and of the sign.
+		exit = at(0, 4, 9).Position,
 	}
 end
 
@@ -900,31 +926,26 @@ function World:BuildLobby()
 
 	-- The collection lives in the HUD; the plaza stays clear of hero statues.
 
-	-- The chest shop, east of the plaza: Gold for heroes, by chance.
-	local chestZ = { rare = 338, legendary = 374 }
+	-- The market fills the north-west corner: the Gold chests in front, the
+	-- Robux counters along the back, both facing the plaza.
+	local chestX = { rare = -80, base_rare = -50 }
 	-- Two welcoming shop pads; all ten chest tiers live in the shop selector.
 	for _, chestId in ipairs({"rare", "base_rare"}) do
-		chestZ.base_rare=374
-		local _,zone=buildChestStand(lobby, 58, chestZ[chestId], chestId, self.catalog.Chests[chestId], self.openPanel)
+		local _,zone=buildChestStand(lobby, chestX[chestId], MARKET.chestZ, chestId, self.catalog.Chests[chestId], self.openPanel)
 		self.shopZones[chestId]=zone
 	end
-	wallSign(lobby, "ChestShopSign", CFrame.new(67, 8, 356) * CFrame.Angles(0, math.pi / 2, 0), Vector3.new(16, 3.4, 0.5),
+	wallSign(lobby, "ChestShopSign", CFrame.new(-65, 11, MARKET.chestZ + 7), Vector3.new(16, 3.4, 0.5),
 		"LOJA DE BAÚS", "OURO / GOLD", ART.gold)
-	for _, z in ipairs({ 322, 390 }) do
-		artPart(lobby, "ChestShopPillar", Vector3.new(2, 15, 2), CFrame.new(69, 7.5, z), ART.pearl, Enum.Material.Metal).CastShadow = true
-		artPart(lobby, "ChestShopPillarLight", Vector3.new(0.3, 12, 0.3), CFrame.new(67.9, 7.5, z), ART.gold, Enum.Material.Neon)
-	end
 
-	-- The premium shop, west of the plaza: everything sold for Robux.
+	-- The premium row: everything sold for Robux.
 	local showcase = self.catalog.Heroes.silversurfer
-	local shopZ = { 316, 330, 344, 358, 372, 386 }
 	for index, entry in ipairs(SHOP_STANDS) do
 		local pass = entry.kind == "pass" and self.catalog.Products.Passes[entry.key]
 		local displayName = pass and pass.name.pt or (entry.kind == "hero" and "Vitrine de Heróis" or "Cofre de Ouro")
-		buildShopStand(lobby, -66, shopZ[index], entry.kind, entry.key, displayName, self.openPanel, entry.kind == "hero" and showcase or nil)
+		buildShopStand(lobby, MARKET.standX[index], MARKET.standZ, entry.kind, entry.key, displayName, self.openPanel, entry.kind == "hero" and showcase or nil)
 	end
-	wallSign(lobby, "PremiumShopSign", CFrame.new(-74, 8, 351) * CFrame.Angles(0, -math.pi / 2, 0), Vector3.new(18, 3.4, 0.5),
-		"LOJA PREMIUM", "ROBUX", Color3.fromRGB(207, 180, 231))
+	wallSign(lobby, "PremiumShopSign", CFrame.new(-77, 12.5, MARKET.standZ + 6.5), Vector3.new(18, 3.4, 0.5),
+		"LOJA ROBUX", "ROBUX", Color3.fromRGB(207, 180, 231))
 
 	-- Mission board and hall-of-fame totem flank the bridge entrance.
 	buildBoard(lobby, -23, 393, "quests", "MISSÕES\nDA RESISTÊNCIA", self.openPanel)
@@ -944,6 +965,7 @@ function World:BuildLobby()
 	self:BuildForestSanctuary(lobby)
 	self:FinishLobby(lobby)
 	self:ExpandForestVillage(lobby)
+	self:BuildDistricts(lobby)
 end
 
 -- Check root positions on the server, not Touched events from every limb.
@@ -1412,13 +1434,14 @@ function World:ArtDirectLobby(lobby)
 	walk(V(-66,0.11,307),V(-66,0.11,394),12)
 	walk(V(43,0.11,326),V(43,0.11,385),13)
 	walk(V(-54,0.11,314),V(54,0.11,314),13)
+	-- Only the campaign portals open straight onto the plaza; the districts
+	-- lay their own floors and trails (World:BuildDistricts).
 	for _,portalId in ipairs(self.catalog.DestinationOrder) do
 		local destination=self.catalog.Destinations[portalId]
-		local x=destination.x
-		walk(V(x,0.12,destination.z),V(x,0.12,322),10)
+		if (destination.district or "center")=="center" then
+			walk(V(destination.x,0.12,destination.z),V(destination.x,0.12,322),10)
+		end
 	end
-	walk(V(24,0.11,318),V(96,0.11,318),13)
-	wallSign(lobby,"RankedQuarter",CFrame.new(58,24,278)*CFrame.Angles(0,math.pi,0),V(36,4,0.5),"ARENA COMPETITIVA","3 MAPAS • 3 ESTRATÉGIAS",ART.gold)
 	-- Broken stone gatehouse behind the retained magic rings, with cloth
 	-- pennants and masonry instead of a metal roof spanning the whole square.
 	for _,x in ipairs({-61,-20,20,61}) do
@@ -1455,33 +1478,6 @@ function World:ArtDirectLobby(lobby)
 	local crystal=piece("AuroraCrystal",V(1.7,2.7,1.7),CFrame.new(at+V(0,5.1,0))*CFrame.Angles(0,0,0.35),Color3.fromRGB(151,232,186),Enum.Material.Glass)
 	crystal.Transparency=0.12
 	disk("CrystalCollar",at+V(0,3.9,0),3,0.3,ART.gold,Enum.Material.Metal)
-	-- Tailored canvas stalls: visible seams, scalloped valances, timber posts,
-	-- crates and warm lamps. Open fronts preserve every existing shop trigger.
-	local function stall(x,z,width,depth,tint,side)
-		local cf=CFrame.new(x,0,z)*CFrame.Angles(0,side*math.pi/2,0)
-		for _,sx in ipairs({-1,1}) do
-			for _,sz in ipairs({-1,1}) do
-				piece("MarketPost",V(0.65,10,0.65),cf*CFrame.new(sx*(width/2-0.6),5,sz*(depth/2-0.6)),timber,Enum.Material.Wood).CastShadow=true
-				piece("PostFoot",V(1.2,0.8,1.2),cf*CFrame.new(sx*(width/2-0.6),0.4,sz*(depth/2-0.6)),stone,Enum.Material.Cobblestone)
-			end
-		end
-		local strips=math.floor(width/2)
-		for i=1,strips do
-			local u=-width/2+(i-0.5)*width/strips
-			local color=i%2==0 and cream or tint
-			piece("CanvasAwning",V(width/strips+0.03,0.22,depth+2),cf*CFrame.new(u,10.7,0)*CFrame.Angles(0.12,0,0),color,Enum.Material.Fabric)
-			piece("CanvasValance",V(width/strips,0.9,0.15),cf*CFrame.new(u,9.5,-depth/2-0.9),color,Enum.Material.Fabric)
-		end
-		piece("MarketRidge",V(width+1,0.35,0.35),cf*CFrame.new(0,11.1,0),timber,Enum.Material.Wood)
-		for i=0,2 do
-			local box=cf*CFrame.new(width/2+2,1+i*1.4,depth/2-1-i*0.4)
-			piece("SupplyCrate",V(2.3,1.4,2),box,Color3.fromRGB(147,101,56),Enum.Material.WoodPlanks)
-			piece("CrateStrap",V(0.2,1.45,2.05),box,Color3.fromRGB(80,76,63),Enum.Material.Metal)
-		end
-	end
-	stall(59,338,17,13,Color3.fromRGB(183,115,57),-1)
-	stall(59,374,17,13,Color3.fromRGB(87,127,96),-1)
-	for _,z in ipairs({323,351,379}) do stall(-67,z,24,12,Color3.fromRGB(124,103,153),1) end
 	-- Interior gardens bring foliage into the arrival view, rather than only
 	-- outlining the edge of the island with identical spherical trees.
 	local function garden(x,z,radius)
@@ -1695,6 +1691,238 @@ function World:FinishLobby(lobby)
 	end
 end
 
+
+-- The districts around the plaza (see DISTRICTS): the scenery inside each
+-- footprint is cleared, then the district lays its own floor, signage and
+-- props, and trails tie it back to the plaza and to the island bridges.
+-- Functional models (portals, stands, boards) are never scenery: they are
+-- direct children of the lobby, and only the four art models are cleared.
+function World:BuildDistricts(lobby)
+	local V=Vector3.new
+	local districts=Instance.new("Model")
+	districts.Name,districts.Parent="LobbyDistricts",lobby
+	local byId={}
+	for _,d in ipairs(DISTRICTS) do byId[d.id]=d end
+	local function overlaps(p,d)
+		local cf,size=p.CFrame,p.Size
+		local hx,hy,hz=size.X/2,size.Y/2,size.Z/2
+		local right,up,look=cf.RightVector,cf.UpVector,cf.LookVector
+		local ex=math.abs(right.X)*hx+math.abs(up.X)*hy+math.abs(look.X)*hz
+		local ez=math.abs(right.Z)*hx+math.abs(up.Z)*hy+math.abs(look.Z)*hz
+		local x,z=cf.Position.X,cf.Position.Z
+		return x+ex>d.x0 and x-ex<d.x1 and z+ez>d.z0 and z-ez<d.z1
+	end
+	for _,name in ipairs({"AuroraSanctuary","CommandAtrium","VillageDetails","AuroraArchipelago"}) do
+		local scenery=lobby:FindFirstChild(name)
+		for _,obj in ipairs(scenery and scenery:GetDescendants() or {}) do
+			-- The island itself (ground discs, cliffs) is far bigger than any prop.
+			if obj:IsA("BasePart") and obj.Parent and math.max(obj.Size.X,obj.Size.Y,obj.Size.Z)<120 then
+				for _,d in ipairs(DISTRICTS) do
+					if overlaps(obj,d) then obj:Destroy(); break end
+				end
+			end
+		end
+	end
+	local function localized(target,pt,en)
+		if target then target:SetAttribute("LobbyTextPT",pt); target:SetAttribute("LobbyTextEN",en) end
+	end
+	local function sign(parent,name,cf,size,title,subtitle,tint)
+		local panel=wallSign(parent,name,cf,size,title[1],subtitle[1],tint)
+		local art=panel:FindFirstChild("Artwork")
+		localized(art and art:FindFirstChild("Title"),title[1],title[2])
+		localized(art and art:FindFirstChild("Subtitle"),subtitle[1],subtitle[2])
+		return panel
+	end
+	-- Floors sit a hair above the deck and the grass so neither shows through.
+	for _,d in ipairs(DISTRICTS) do
+		local cx,cz,w,h=(d.x0+d.x1)/2,(d.z0+d.z1)/2,d.x1-d.x0,d.z1-d.z0
+		local floor=part(districts,"DistrictFloor",V(w,0.3,h),CFrame.new(cx,0.1,cz),Color3.fromRGB(176,168,146):Lerp(d.color,0.12),Enum.Material.Slate)
+		floor:SetAttribute("District",d.id)
+		for _,edge in ipairs({{V(w,0.12,0.5),V(cx,0.31,d.z0)},{V(w,0.12,0.5),V(cx,0.31,d.z1)},{V(0.5,0.12,h),V(d.x0,0.31,cz)},{V(0.5,0.12,h),V(d.x1,0.31,cz)}}) do
+			artPart(districts,"DistrictBorder",edge[1],CFrame.new(edge[2]),d.color,Enum.Material.Neon)
+		end
+	end
+	local function trail(a,b,width)
+		local sanctuary=lobby:FindFirstChild("AuroraSanctuary") or districts
+		local t=part(sanctuary,"ForestTrail",V(width,0.16,(b-a).Magnitude+1),CFrame.lookAt((a+b)/2,b),Color3.fromRGB(195,169,115),Enum.Material.Sand)
+		t.CanCollide=true
+		return t
+	end
+	trail(V(-78,0.12,352),V(-88,0.12,352),10) -- plaza -> AFK zone
+	trail(V(-54,0.12,314),V(-88,0.12,314),9)
+	trail(V(-120,0.12,391),V(-120,0.12,402),10) -- AFK zone -> explorers' bridge
+	trail(V(-44,0.12,414),V(-6,0.12,414),8) -- market -> forest avenue
+	trail(V(44,0.12,414),V(6,0.12,414),8) -- special modes -> forest avenue
+	trail(V(72,0.12,352),V(88,0.12,352),9) -- plaza -> arena
+	trail(V(54,0.12,314),V(88,0.12,314),9)
+	trail(V(118,0.12,391),V(119,0.12,431),8) -- arena -> starlight bridge
+
+	-- Market: a striped awning shades the Robux counters.
+	do
+		local d=byId.market
+		local stripes={d.color,Color3.fromRGB(246,225,178)}
+		for i=0,13 do
+			local x=-112+i*5+2.5
+			artPart(districts,"MarketAwning",V(5.05,0.22,11),CFrame.new(x,10.3,MARKET.standZ)*CFrame.Angles(0.12,0,0),stripes[i%2+1],Enum.Material.Fabric)
+			artPart(districts,"MarketValance",V(5,0.9,0.15),CFrame.new(x,9.2,MARKET.standZ-5.6),stripes[i%2+1],Enum.Material.Fabric)
+		end
+		for _,x in ipairs({-112,-77,-42}) do
+			for _,z in ipairs({MARKET.standZ-5,MARKET.standZ+5}) do
+				part(districts,"MarketPost",V(0.7,10,0.7),CFrame.new(x,5,z),Color3.fromRGB(98,64,43),Enum.Material.Wood)
+			end
+		end
+		sign(districts,"MarketTitle",CFrame.lookAt(V(-50,15,398),V(0,15,345)),V(17,4,0.5),d.title,d.subtitle,d.color)
+	end
+
+	-- Special modes: the cards and endless portals share one corner.
+	do
+		local d=byId.special
+		sign(districts,"SpecialTitle",CFrame.new(82,13,434),V(11.5,3.4,0.4),d.title,d.subtitle,d.color)
+		sign(districts,"SpecialCorner",CFrame.lookAt(V(50,15,398),V(0,15,345)),V(17,4,0.5),d.title,d.subtitle,d.color)
+	end
+
+	-- Competitive arena: a raised season scoreboard behind the three ranked
+	-- portals, readable from the plaza over their rings, plus a kiosk in
+	-- front that opens the full leaderboard.
+	do
+		local d=byId.arena
+		local board=Instance.new("Model")
+		board.Name,board.Parent="Scoreboard_arena",lobby
+		board:SetAttribute("Kind","Scoreboard")
+		board:SetAttribute("BoardId","arena")
+		for _,z in ipairs({316,366}) do
+			part(board,"ScoreboardLeg",V(1.6,33,1.6),CFrame.new(135,16.5,z),Color3.fromRGB(40,50,64),Enum.Material.Metal).CastShadow=true
+		end
+		local panel=part(board,"ScoreboardPanel",V(52,18,1),CFrame.new(134,24,341)*CFrame.Angles(0,math.pi/2,0),Color3.fromRGB(19,27,39),Enum.Material.Metal)
+		panel.CastShadow=true
+		artPart(board,"ScoreboardTrim",V(53,0.6,1.2),CFrame.new(134,33.2,341)*CFrame.Angles(0,math.pi/2,0),d.color,Enum.Material.Neon)
+		artPart(board,"ScoreboardTrim",V(53,0.6,1.2),CFrame.new(134,14.8,341)*CFrame.Angles(0,math.pi/2,0),d.color,Enum.Material.Neon)
+		local gui=Instance.new("SurfaceGui")
+		gui.Name,gui.Face,gui.LightInfluence=  "Scores",Enum.NormalId.Front,0
+		gui.SizingMode,gui.CanvasSize,gui.Parent=Enum.SurfaceGuiSizingMode.FixedSize,Vector2.new(1040,360),panel
+		local title=Instance.new("TextLabel")
+		title.Name,title.BackgroundTransparency,title.Size=  "Title",1,UDim2.new(1,0,0,64)
+		title.Font,title.TextSize,title.TextColor3,title.Text=Enum.Font.GothamBlack,44,d.color,"ARENA COMPETITIVA • PLACAR SOLO"
+		title.Parent=gui
+		localized(title,"ARENA COMPETITIVA • PLACAR SOLO","COMPETITIVE ARENA • SOLO LEADERBOARD")
+		self.arenaColumns={}
+		local maps={}
+		for _,id in ipairs(self.catalog.DestinationOrder) do
+			local def=self.catalog.Destinations[id]
+			if def.modeId=="ranked" then table.insert(maps,def.mapId) end
+		end
+		for i,mapId in ipairs(maps) do
+			local map=self.catalog.Maps[mapId]
+			local column=Instance.new("Frame")
+			column.Name,column.BackgroundTransparency="Column_"..mapId,1
+			column.Position,column.Size=UDim2.new((i-1)/#maps,8,0,70),UDim2.new(1/#maps,-16,1,-78)
+			column.Parent=gui
+			local head=Instance.new("TextLabel")
+			head.BackgroundTransparency,head.Size,head.Font,head.TextSize=1,UDim2.new(1,0,0,40),Enum.Font.GothamBlack,30
+			head.TextColor3,head.Text,head.Parent=rgb(PORTAL_COLORS[mapId] or map.color),upper(map.name.pt),column
+			local rows=Instance.new("TextLabel")
+			rows.Name,rows.BackgroundTransparency,rows.Position,rows.Size="Rows",1,UDim2.fromOffset(0,46),UDim2.new(1,0,1,-46)
+			rows.Font,rows.TextSize,rows.TextColor3=Enum.Font.GothamBold,24,Color3.fromRGB(230,240,244)
+			rows.TextXAlignment,rows.TextYAlignment,rows.Text=Enum.TextXAlignment.Left,Enum.TextYAlignment.Top,"Carregando…"
+			rows.Parent=column
+			table.insert(self.arenaColumns,{mapId=mapId,label=rows})
+		end
+		sign(board,"ArenaTitle",CFrame.new(135,37,341)*CFrame.Angles(0,math.pi/2,0),V(36,4,0.5),d.title,d.subtitle,ART.gold)
+		local kiosk=part(board,"ScoreKiosk",V(2.4,3.4,4),CFrame.new(121,1.9,323.5),Color3.fromRGB(40,50,64),Enum.Material.Metal)
+		artPart(board,"KioskScreen",V(0.2,2,3.2),CFrame.new(119.7,2.6,323.5),d.color,Enum.Material.Neon)
+		label(kiosk,"PLACAR\nLEADERBOARD",V(0,3.6,0),d.color,160,60)
+		board.PrimaryPart=kiosk
+		interactable(kiosk,"Placar / Leaderboard",function(player) self.openPanel(player,"leaderboard",{board="arena"}) end)
+	end
+
+	-- AFK zone: two open chambers facing the plaza. Standing inside one is the
+	-- whole interaction; the server pays each full minute (World:AfkZoneOf).
+	do
+		local d=byId.afk
+		self.afkZones={}
+		for _,kind in ipairs(self.catalog.AfkOrder or {}) do
+			local def=self.catalog.Afk[kind]
+			local tint=rgb(def.color)
+			local x,z=def.x,def.z
+			local model=Instance.new("Model")
+			model.Name,model.Parent="AfkZone_"..kind,lobby
+			model:SetAttribute("Kind","AfkZone")
+			model:SetAttribute("AfkKind",kind)
+			local function disk(name,y,diameter,thickness,color,material)
+				local p=part(model,name,V(thickness,diameter,diameter),CFrame.new(x,y,z)*CFrame.Angles(0,0,math.pi/2),color,material)
+				p.Shape=Enum.PartType.Cylinder
+				return p
+			end
+			local platform=disk("AfkPlatform",0.35,22,0.5,Color3.fromRGB(40,50,64),Enum.Material.Slate)
+			disk("AfkRim",0.3,23,0.36,tint,Enum.Material.Neon).CanCollide=false
+			local rune=disk("AfkRune",0.62,8,0.1,tint,Enum.Material.Neon)
+			rune.CanCollide,rune.Transparency=false,0.35
+			-- Open toward the plaza (+X): pillars stand on the diagonals.
+			for _,a in ipairs({math.pi/4,3*math.pi/4,5*math.pi/4,7*math.pi/4}) do
+				local px,pz=x+math.cos(a)*10,z+math.sin(a)*10
+				part(model,"AfkPillar",V(1.2,11,1.2),CFrame.new(px,5.8,pz),Color3.fromRGB(206,218,222),Enum.Material.Marble).CastShadow=true
+				artPart(model,"AfkPillarLight",V(0.25,9,0.25),CFrame.new(px+math.cos(a+math.pi)*0.7,5.8,pz+math.sin(a+math.pi)*0.7),tint,Enum.Material.Neon)
+			end
+			arc(model,"AfkHalo",CFrame.new(x,11.6,z)*CFrame.Angles(math.pi/2,0,0),10,0.7,0.7,tint,Enum.Material.Neon,24)
+			local icon
+			if kind=="gold" then
+				icon=part(model,"AfkIcon",V(0.8,5,5),CFrame.new(x,6,z),tint,Enum.Material.Neon)
+				icon.Shape=Enum.PartType.Cylinder
+			else
+				icon=part(model,"AfkIcon",V(4.2,4.2,4.2),CFrame.new(x,6,z),tint,Enum.Material.Neon)
+				icon.Shape=Enum.PartType.Ball
+			end
+			icon.CanCollide=false
+			emitter(icon,tint,6,2.5,0.6,1.6,Vector3.new(0,3,0))
+			local glow=Instance.new("PointLight")
+			glow.Color,glow.Range,glow.Brightness,glow.Parent=tint,16,1,icon
+			label(icon,def.rate.pt,V(0,4.2,0),tint,240,70)
+			-- Seats face the plaza, so resting players watch the lobby go by.
+			for _,dz in ipairs({-5,0,5}) do
+				local seat=Instance.new("Seat")
+				seat.Name,seat.Size,seat.CFrame="AfkSeat",V(3,0.6,2.4),CFrame.lookAt(V(x-6,1.2,z+dz),V(x+10,1.2,z+dz))
+				seat.Anchored,seat.Color,seat.Material,seat.CastShadow=true,tint:Lerp(Color3.fromRGB(40,50,64),0.55),Enum.Material.Fabric,false
+				seat.Parent=model
+			end
+			sign(model,"AfkHeader",CFrame.new(x-9.5,15.5,z)*CFrame.Angles(0,-math.pi/2,0),V(17,4,0.5),{upper(def.name.pt),upper(def.name.en)},{def.rate.pt,def.rate.en},tint)
+			model.PrimaryPart=platform
+			self.afkZones[kind]={center=V(x,4,z),size=V(20,10,20)}
+		end
+		sign(districts,"AfkTitle",CFrame.new(-133,12,343)*CFrame.Angles(0,-math.pi/2,0),V(17,4,0.5),d.title,d.subtitle,d.color)
+	end
+end
+
+-- Which AFK farm (if any) a lobby visitor stands in, from the server's own
+-- view of their character. The payout loop in the bootstrap asks this.
+function World:AfkZoneOf(player)
+	local root=player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return nil end
+	for _,kind in ipairs(self.catalog.AfkOrder or {}) do
+		local zone=self.afkZones and self.afkZones[kind]
+		if zone then
+			local offset=root.Position-zone.center
+			if math.abs(offset.X)<=zone.size.X/2 and math.abs(offset.Y)<=zone.size.Y/2 and math.abs(offset.Z)<=zone.size.Z/2 then return kind end
+		end
+	end
+	return nil
+end
+
+-- The arena's three-column season board: { [mapId] = rows } from the same
+-- solo ranked leaderboards the in-game panel reads.
+function World:UpdateArenaScoreboard(boards)
+	for _,column in ipairs(self.arenaColumns or {}) do
+		local rows=boards and boards[column.mapId]
+		if rows then
+			local lines={}
+			for index,row in ipairs(rows) do
+				if index>5 then break end
+				table.insert(lines,string.format("#%d  %s — %d",row.rank,row.name or tostring(row.userId),row.waves))
+			end
+			if #lines==0 then lines={"Seja o primeiro!"} end
+			column.label.Text=table.concat(lines,"\n")
+		end
+	end
+end
 
 local OCEAN_Y = -134
 
