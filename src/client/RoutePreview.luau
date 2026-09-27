@@ -58,8 +58,59 @@ function RoutePreview:Update(phase, match, lowFX)
 	return match.newEntrance == true
 end
 
+-- In the lobby the same glow shows the way to a place ("buy it at the
+-- shop"): a band of light from the player to it and a marker above it, until
+-- the player arrives, leaves the lobby or a minute passes. Client-only.
+function RoutePreview:ClearWay()
+	local way = self.way
+	self.way = nil
+	if way then
+		way.anchor:Destroy()
+		if way.attachment then way.attachment:Destroy() end
+	end
+end
+
+function RoutePreview:ShowWay(target, text)
+	self:ClearWay()
+	local players = game:GetService("Players")
+	local character = players.LocalPlayer and players.LocalPlayer.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not target or not root then return false end
+	local tint = self.colors.gold
+	local anchor = Instance.new("Part")
+	anchor.Name, anchor.Size, anchor.CFrame = "WayMarker", Vector3.new(1, 1, 1), CFrame.new(target + Vector3.new(0, 3, 0))
+	anchor.Anchored, anchor.Transparency, anchor.CanCollide, anchor.CanTouch, anchor.CanQuery = true, 1, false, false, false
+	anchor.Parent = self.folder
+	local from, to = Instance.new("Attachment"), Instance.new("Attachment")
+	from.Name, to.Name = "WayFrom", "WayTo"
+	from.Parent, to.Parent = root, anchor
+	local beam = Instance.new("Beam")
+	beam.Attachment0, beam.Attachment1, beam.Color = from, to, ColorSequence.new(tint)
+	beam.Width0, beam.Width1, beam.FaceCamera, beam.LightEmission, beam.Segments = 0.5, 1.6, true, 1, 24
+	beam.Transparency, beam.CurveSize0, beam.CurveSize1 = NumberSequence.new(0.2), 6, -6
+	beam.Parent = anchor
+	local marker = Instance.new("BillboardGui")
+	marker.Name, marker.Size, marker.StudsOffset, marker.AlwaysOnTop = "WayLabel", UDim2.fromOffset(190, 54), Vector3.new(0, 5, 0), true
+	marker.Adornee, marker.Parent = anchor, anchor
+	local label = Instance.new("TextLabel")
+	label.Size, label.BackgroundTransparency, label.Text, label.TextScaled = UDim2.fromScale(1, 1), 1, text, true
+	label.Font, label.TextColor3, label.TextStrokeTransparency = Enum.Font.FredokaOne, tint, 0.2
+	label.Parent = marker
+	self.way = { anchor = anchor, attachment = from, target = target, age = 0 }
+	return true
+end
+
 -- Slides every arrow forward along its road; clears itself once the wave starts.
 function RoutePreview:Step(dt, phase)
+	local way = self.way
+	if way then
+		way.age += dt
+		local players = game:GetService("Players")
+		local character = players.LocalPlayer and players.LocalPlayer.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local offset = root and (root.Position - way.target)
+		if phase ~= "Lobby" or way.age > 60 or not offset or Vector3.new(offset.X, 0, offset.Z).Magnitude < 12 then self:ClearWay() end
+	end
 	if #self.arrows == 0 then return end
 	if phase ~= "Preparing" then self:Clear(); return end
 	self.offset = (self.offset + dt * 7) % SPACING

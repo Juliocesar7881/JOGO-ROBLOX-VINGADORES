@@ -81,6 +81,11 @@ if sanctuary then
 	check(sanctuary:FindFirstChild("AuroraHeart")~=nil and sanctuary:FindFirstChild("AuroraFalls")~=nil,"Tree landmark and waterfall exist")
 	check(countClass(lobby,"BasePart")<3500,"Expanded lobby remains under its geometry budget, got "..tostring(countClass(lobby,"BasePart")))
 end
+-- Coplanar overlapping faces flicker (z-fighting) as the camera moves.
+do
+	local flickers, names = WorldBuilder.CoplanarConflicts(lobby)
+	check(flickers == 0, "no two lobby surfaces share a plane, got " .. tostring(flickers) .. " flickering pairs: " .. names)
+end
 
 -- Mobile performance budget: shadow-casting is opt-in for the handful of big
 -- landmarks, off by default for every small piece of set dressing.
@@ -191,7 +196,7 @@ do
 	end
 end
 
-check(#(byKind.ShopStand or {}) == 6, "one stand per pass plus one gold vault, got "
+check(#(byKind.ShopStand or {}) == 5, "hero showcase, gold vault and one stand per pass, got "
 	.. tostring(#(byKind.ShopStand or {})))
 check(#(byKind.Board or {}) == 7, "missions, ranking, guide, maps, team, academy and base desks, got "
 	.. tostring(#(byKind.Board or {})))
@@ -410,7 +415,7 @@ do
 		end
 	end
 	check(#wrong == 0, "every lobby prompt opens its own panel and refuses a distant player: " .. table.concat(wrong, ", "))
-	local expected = 2 + 6 + 7 + 1
+	local expected = 2 + 5 + 7 + 1
 	check(refused == expected, "the distance re-check refused all " .. expected .. " far presses, got " .. tostring(refused))
 end
 
@@ -449,7 +454,7 @@ if archipelago then
 	end
 end
 -- Chests, Robux stands, boards and desks, plus the arena scoreboard kiosk.
-local expectedPrompts = 2 + 6 + 7 + 1
+local expectedPrompts = 2 + 5 + 7 + 1
 check(totalPrompts == expectedPrompts,
 	"every physical location is interactive, got " .. tostring(totalPrompts) .. "/" .. tostring(expectedPrompts))
 print(string.format("  %d parts, %d locais interativos", countClass(lobby, "BasePart"), totalPrompts))

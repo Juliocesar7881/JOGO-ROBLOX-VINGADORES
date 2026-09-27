@@ -572,6 +572,10 @@ local function route(player, action, payload)
 			message = ok ~= true and tostring(data) or nil,
 		}
 	end
+	-- Chests are bought at the shop, never from a menu opened elsewhere.
+	if (action == "OpenChest" or action == "BuyGuaranteed") and (inMatch or role == "Match" or not world:NearMarket(player)) then
+		return { ok = false, message = text("Vá até a LOJA do Mercado para comprar baús.", "Walk to the Market SHOP to buy chests.") }
+	end
 	local flow = ECONOMY_ACTIONS[action]
 	if flow then
 		goldHint[player.UserId] = { transaction = flow, sku = payload.chestId or payload.heroId or payload.questId }

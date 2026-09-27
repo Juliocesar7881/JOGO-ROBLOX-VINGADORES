@@ -485,7 +485,7 @@ local function session(screen)
 	local contextSlot = lobbyLayout.context
 	local function contextOpen() return main:FindFirstChild("ContextPanel") ~= nil end
 	step("refuge guide reaches every core lobby screen",function()
-		for _,id in ipairs({"modes","inventory","bases","talents","chests","quests","leaderboard","settings"}) do
+		for _,id in ipairs({"modes","inventory","bases","talents","quests","leaderboard","settings"}) do
 			clickNamed("FirstVisitHint")
 			check(named(gui,"RefugeWelcome")~=nil,tag..": guide opens from the persistent button")
 			check(#offscreen(main,SCREEN)==0,tag..": guide stays inside usable screen")
@@ -493,6 +493,10 @@ local function session(screen)
 			check(contextOpen() and named(gui,"RefugeWelcome")==nil,tag..": guide opens "..id)
 			clickNamed("CloseContext")
 		end
+		-- Chests are bought at the shop: the guide shows the way, it opens no menu.
+		clickNamed("FirstVisitHint")
+		clickNamed("GuideLink_shopWay")
+		check(not contextOpen() and named(gui,"RefugeWelcome")==nil,tag..": the shop link sends the player walking, no chest menu")
 	end)
 	step("a portal opens no menu", function()
 		fx({ kind = "OpenPanel", panel = "play", modeId = "normal" })
@@ -582,8 +586,11 @@ local function session(screen)
 		frames(0.5, 20)
 		local retry=named(gui,"Buy_pass:training")
 		check(retry~=nil and retry.Text=="Tentar de novo",tag..": a price with no answer offers a retry, got "..tostring(retry and retry.Text))
-		local unsold=named(gui,"Buy_pass:formations")
-		check(unsold~=nil and unsold.Text=="Indisponível",tag..": a pass that is not configured reads unavailable")
+		click("OURO")
+		local unsold=named(gui,"Buy_product:gold1000")
+		check(unsold~=nil and unsold.Text=="Indisponível",tag..": a product that is not configured reads unavailable")
+		click("PASSES")
+		retry=named(gui,"Buy_pass:training")
 		collectorPrice=true
 		if retry then retry.Activated:Fire(); flush() end
 		frames(0.5, 4)
@@ -652,8 +659,10 @@ local function session(screen)
 		check(not contextOpen(), tag .. ": the close button dismisses the panel")
 	end)
 
-	step("the chest tab shouts when a chest is affordable", function()
-		check(named(gui, "ChestsBadge") ~= nil and named(gui, "ChestsBadge").Visible, tag .. ": 2,500 Gold lights the chest tab")
+	step("the guide points to the shop when a chest is affordable", function()
+		check(named(gui, "Nav_chests") == nil, tag .. ": the dock has no chest button; the chest shop is a place")
+		local tip = named(gui, "GuideTip")
+		check(tip ~= nil and string.find(tip.Text, "LOJA", 1, true) ~= nil, tag .. ": 2,500 Gold sends the commander to the SHOP")
 		click("JOGAR")
 		check(named(gui, "FirstMission") == nil, tag .. ": a trained commander goes straight to the modes")
 		click("×")
@@ -742,8 +751,8 @@ local function session(screen)
 		click("×")
 		clickNamed("Nav_inventory")
 		check(contextOpen(), tag .. ": Heroes opens the owned inventory")
-		click("Salvar")
-		check(asked("SaveLoadout"), tag .. ": a formation can be saved")
+		-- One team, always: no saved formations to pick between.
+		check(named(gui, "Salvar") == nil and not asked("SaveLoadout"), tag .. ": the team panel has no saved formations")
 	end)
 
 	step("collection search, sorting, base and direct leader selection",function()
@@ -891,7 +900,7 @@ local function session(screen)
 			check(element ~= nil and element.Visible == not focused,
 				tag .. ": " .. name .. " gives compact panels room and remains available on large screens")
 		end
-		for _, id in ipairs({"inventory", "talents", "chests", "premium", "rewards"}) do
+		for _, id in ipairs({"inventory", "talents", "premium", "rewards"}) do
 			local nav = named(gui, "Nav_" .. id)
 			local indicator = nav and named(nav, "SelectedTab")
 			check(indicator ~= nil and indicator.Visible == (id == "inventory"),
@@ -900,7 +909,7 @@ local function session(screen)
 		clickNamed("CloseContext")
 		check(not contextOpen() and named(gui, "LobbyNavigation").Visible ~= false,
 			tag .. ": closing a focused panel restores the navigation")
-		for _, id in ipairs({"inventory", "talents", "chests", "premium", "rewards"}) do
+		for _, id in ipairs({"inventory", "talents", "premium", "rewards"}) do
 			local indicator = named(named(gui, "Nav_" .. id), "SelectedTab")
 			check(indicator ~= nil and indicator.Visible == false, tag .. ": close clears stale selection for " .. id)
 		end
@@ -1006,7 +1015,8 @@ local function session(screen)
 		local newcomerBoard = lobby.Board_quests.Panel.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(newcomerBoard, "TREINE", 1, true) ~= nil, tag .. ": the mission board points a newcomer to training, got " .. newcomerBoard)
 		check(frameAt(main, lobbyLayout.hint) ~= nil, tag .. ": the first-visit pointer is on screen")
-		check(not named(gui, "ChestsBadge").Visible, tag .. ": no chest badge without the Gold to open one")
+		local newcomerTip = named(gui, "GuideTip")
+		check(newcomerTip ~= nil and string.find(newcomerTip.Text, "LOJA", 1, true) == nil, tag .. ": no shop nudge without the Gold to open a chest")
 		click("JOGAR")
 		check(named(gui, "FirstMission") ~= nil, tag .. ": a newcomer's play menu leads with the short training")
 		clickNamed("PlayMode_tutorial")

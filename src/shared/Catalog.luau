@@ -787,7 +787,6 @@ Catalog.Products = {
 	Passes = {
 		collector = { id = 0, price = 149, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold.") },
 		training = { id = 0, price = 199, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP.") },
-		formations = { id = 0, price = 99, name = text("Formações extras", "Extra Formations"), description = text("Cinco configurações salvas adicionais.", "Five additional saved loadouts.") },
 		vip = { id = 0, price = 299, name = text("Pacote VIP visual", "VIP Style Pack"), description = text("Título, emote, trilha e aparência especial do drone.", "Title, emote, trail and special drone appearance.") },
 	},
 	Consumables = {

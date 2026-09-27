@@ -18,10 +18,10 @@ end
 
 local DAY = 86400
 local SCHEMA_VERSION = 1
-local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "savedLoadouts", "quests", "achievements", "best", "stats", "title", "talents" }
+local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
-local ACTIONS = { BuyGuaranteed = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, SaveLoadout = true, LoadLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
+local ACTIONS = { BuyGuaranteed = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
 	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true,
 	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
@@ -98,7 +98,7 @@ local function newProfile(now)
 		codes = {},
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
-		savedLoadouts = {}, quests = {}, achievements = {}, best = {},
+		quests = {}, achievements = {}, best = {},
 		stats = { waves = 0, bosses = 0, wins = 0, matches = 0, goldEarned = 0, chests = 0 },
 		createdAt = now, updatedAt = now,
 		_receipts = {}, _awards = {}, _operations = {}, _operationOrder = {}, _dailyWins = {},
@@ -531,7 +531,6 @@ function PlayerService:Snapshot(player)
 	for _, key in ipairs(PUBLIC_FIELDS) do result[key] = copy(record.profile[key]) end
 	result.passes = copy(record.passes)
 	result.talentPoints = math.max(0, result.level - 1 - talentSpent(record.profile))
-	result.loadoutSlots = record.passes.formations and 8 or 3
 	result.paidRandomRestricted = record.randomRestricted == true
 	local now = os.time()
 	result.rewards = self.rules.RewardsStatus(record.profile, now, math.clamp(now - (record.playMark or now), 0, PLAYTIME_CAP))
@@ -691,17 +690,6 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			-- ability the player will fight with.
 			if not self:_validHeroes(profile, payload.heroes) then return false, "Escolha até cinco heróis diferentes que você possui. / Choose up to five different heroes you own." end
 			profile.loadout = copy(payload.heroes)
-		elseif action == "SaveLoadout" or action == "LoadLoadout" then
-			local limit = current.passes.formations and 8 or 3
-			if not integer(payload.slot, 1, limit) then return false, "Espaço de formação indisponível. / Formation slot unavailable." end
-			local slot = tostring(payload.slot)
-			if action == "SaveLoadout" then profile.savedLoadouts[slot] = { heroes = copy(profile.loadout) }
-			else
-				local saved = profile.savedLoadouts[slot]
-				if not saved then return false, "Este espaço está vazio. / This slot is empty." end
-				if not self:_validHeroes(profile, saved.heroes) then return false, "Esta formação precisa ser atualizada. / This formation needs updating." end
-				profile.loadout = copy(saved.heroes)
-			end
 		elseif action == "Settings" then
 			if payload.language ~= nil and payload.language ~= "pt" and payload.language ~= "en" then return false, "Idioma inválido." end
 			if payload.lowFX ~= nil and type(payload.lowFX) ~= "boolean" then return false, "Configuração inválida." end

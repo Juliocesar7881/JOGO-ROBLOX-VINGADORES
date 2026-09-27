@@ -445,6 +445,9 @@ check(lobby.profile.gold >= 600, "training pays its 600 Gold, got " .. tostring(
 
 -- The design brief's own acceptance line: a new player finishes the tutorial
 -- with a working squad and can buy a hero.
+check(not request(ana, "OpenChest", { chestId = "rare" }).ok, "chests are not sold away from the shop")
+local shopPad = workspace.DoomLobby.Chest_rare.ShopEntryPad
+ana.Character.HumanoidRootPart.CFrame = CFrame.new(shopPad.Position + v3(0, 3, 0))
 local bought = request(ana, "OpenChest", { chestId = "rare" })
 local recruited = bought.data and bought.data.result and bought.data.result.heroId
 check(bought.ok, "the tutorial's gold buys a first hero: " .. tostring(bought.message))
@@ -516,16 +519,14 @@ check(latest(ana).phase == "Lobby", "a defeat returns to the lobby too")
 check(latest(ana).profile.gold > goldBefore, "a defeat keeps the gold already earned: " .. goldBefore .. " -> " .. tostring(latest(ana).profile.gold))
 
 --==============================================================================
--- Progression the lobby panels drive: formations, abilities, missions,
+-- Progression the lobby panels drive: the team, abilities, missions,
 -- titles and the mode gates, all through Request.
 --==============================================================================
 say("--- progression ---")
-check(request(ana, "SaveLoadout", { slot = 1 }).ok, "the current squad saves to a formation slot")
+local squad = #latest(ana).profile.loadout
+check(not request(ana, "SaveLoadout", { slot = 1 }).ok, "there are no saved formations: one team, always")
 check(request(ana, "SetLoadout", { heroes = { "ironman" } }).ok, "the squad can shrink to one hero")
-check(request(ana, "LoadLoadout", { slot = 1 }).ok, "a saved formation loads back")
-check(#latest(ana).profile.loadout == 3, "loading restores the saved three-hero squad")
-check(not request(ana, "LoadLoadout", { slot = 2 }).ok, "an empty formation slot cannot be loaded")
-check(not request(ana, "SaveLoadout", { slot = 99 }).ok, "a slot beyond the owned count is refused")
+check(#latest(ana).profile.loadout == 1 and squad >= 1, "the one team is the squad the player set")
 check(not request(ana, "SetLoadout", { heroes = { "ironman", "thor" } }).ok, "an unowned hero cannot join the squad")
 check(not request(ana, "SetLoadout", { heroes = { "ironman", "ironman" } }).ok, "a hero cannot fill two squad slots")
 check(not request(ana,"SetSkills",{active={"overload"}}).ok,"obsolete independent skill selection refused")

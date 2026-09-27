@@ -33,7 +33,7 @@ return {
 	Products = {
 		Passes = {
 			collector = { id = 0 }, training = { id = 0 },
-			formations = { id = 0 }, vip = { id = 0 },
+			vip = { id = 0 },
 		},
 		Consumables = {
 			gold1000 = { id = 0 }, gold5000 = { id = 0 }, gold12000 = { id = 0 },

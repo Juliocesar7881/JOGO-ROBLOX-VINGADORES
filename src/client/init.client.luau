@@ -184,6 +184,18 @@ local audio = Audio.new(function() return state end)
 local nameplates = Nameplates.new(player, function() return language end)
 local effects = Effects.new(player, request, function() return state end, audio)
 local routePreview = RoutePreview.new(effects.folder, Catalog, C)
+-- "Buy it at the shop": close the panel and light the way to the chest pad.
+function routePreview.goShop(chestId)
+	local lobby = workspace:FindFirstChild("DoomLobby")
+	local stand = lobby and lobby:FindFirstChild("Chest_" .. (chestId or "rare"))
+	local pad = stand and (stand:FindFirstChild("ShopEntryPad") or stand.PrimaryPart)
+	closeContext()
+	if pad and routePreview:ShowWay(pad.Position, T("LOJA • PISE AQUI", "SHOP • STEP HERE")) then
+		showToast(T("Siga a luz até a LOJA: lá você compra baús de heróis e de bases.", "Follow the light to the SHOP: buy hero and base chests there."))
+	else
+		showToast(T("Os baús ficam na LOJA do Mercado, na praça.", "Chests are sold at the Market SHOP on the plaza."))
+	end
+end
 local buildOverlay = BuildOverlay.new(effects.folder, Catalog, Rules, Config, C)
 
 local function smallText(parent, text, y, h)
@@ -340,7 +352,7 @@ local function contextHero(body, data)
 	UI.section(body,L(ability.name),T("Seu primeiro herói empresta o poder especial para você!","Your first hero lends you their special power!"))
 	smallText(body,Rules.AbilityText(ability,rank,language),0,64)
 	if not owned then
-		UI.button(body,T("ENCONTRAR NOS BAÚS","FIND IN CHESTS"),function() openContext("chests",{}) end,{Size=UDim2.new(1,-6,0,44),BackgroundColor3=C.gold})
+		UI.button(body,T("IR À LOJA DE BAÚS","GO TO THE CHEST SHOP"),function() routePreview.goShop() end,{Size=UDim2.new(1,-6,0,44),BackgroundColor3=C.gold})
 		UI.secondary(body,T("Compra direta • Robux","Direct purchase • Robux"),function() openContext("premium",{}) end,{Size=UDim2.new(1,-6,0,44)})
 		return
 	end
@@ -865,16 +877,6 @@ local function contextSquad(body)
 		if inventoryView.leaderPick and owned then makeLeader(id,function() inventoryView.leaderPick=false; renderContext() end) else openContext("hero",{heroId=id}) end
 	end,{Name="FormationHero_"..id,Position=UDim2.fromOffset(7,221),Size=UDim2.new(1,-14,0,44),BackgroundColor3=id==leader and C.gold or owned and tint or C.card,TextColor3=owned and C.background or C.text,TextSize=11})
  end
-	UI.section(body, T("Formações salvas", "Saved formations"), T("Salve a equipe e seu líder.", "Save your squad and leader."))
-	local slots = profile().loadoutSlots or (profile().passes and profile().passes.formations and 8 or 3)
-	for slot = 1, slots do
-		local saved = profile().savedLoadouts and profile().savedLoadouts[tostring(slot)]
-		local row = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 64), BackgroundColor3 = C.card})
-		UI.label(row, T("Formação ", "Formation ") .. slot .. (saved and "  ✓" or ""), {Position = UDim2.fromOffset(12, 10), Size = UDim2.new(0.4, -12, 0, 36), TextSize = 12})
-		UI.secondary(row, T("Salvar", "Save"), function() act("SaveLoadout", {slot = slot}, function() showToast(T("Formação salva.", "Formation saved.")) end) end, {Position = UDim2.new(0.4, 0, 0, 10), Size = UDim2.new(0.3, -10, 0, 44)})
-		local load = UI.button(row, T("Usar", "Load"), function() act("LoadLoadout", {slot = slot}) end, {Position = UDim2.new(0.7, 0, 0, 10), Size = UDim2.new(0.3, -12, 0, 44)})
-		if not saved then UI.disabled(load) end
-	end
 end
 
 local function contextSettings(body)
@@ -1082,7 +1084,7 @@ end
 local function contextBases(body)
 	categoryTabs(body,"BaseNavigation",{{id="inventory",label=T("HERÓIS","HEROES")},{id="bases",label=T("BASES","BASES")}},"bases",function(id) openContext(id) end)
 	smallText(body,T("Equipe 1 base. Evolua com o Ouro da partida. O nível reinicia a cada partida; sua coleção fica salva.","Equip 1 base. Upgrade with match Gold in battle. Levels reset each match; your collection is saved."),0,58)
-	UI.button(body,T("LOJA DE BAÚS DE BASES","BASE CHEST SHOP"),function() openContext("chests",{chestId="base_rare"}) end,{Size=UDim2.new(1,-6,0,44),BackgroundColor3=C.gold,TextSize=13})
+	UI.button(body,T("IR À LOJA DE BASES","GO TO THE BASE SHOP"),function() routePreview.goShop("base_rare") end,{Size=UDim2.new(1,-6,0,44),BackgroundColor3=C.gold,TextSize=13})
 	for _,id in ipairs(Catalog.BaseOrder) do
 		local def=Catalog.Bases[id]; local stats=Rules.BaseStats(id,1)
 		local owned=(profile().bases or {outpost=true})[id]; local equipped=(profile().equippedBase or "outpost")==id
@@ -1094,7 +1096,7 @@ local function contextBases(body)
 		UI.label(row,L(def.description),{Position=UDim2.fromOffset(12,115),Size=UDim2.new(1,-24,0,48),TextSize=13,TextWrapped=true,TextColor3=C.background})
 		UI.label(row,"+"..stats.income..T(" Ouro/onda  •  +"," Gold/wave  •  +")..stats.hp..T(" vida*"," HP*"),{Position=UDim2.fromOffset(12,164),Size=UDim2.new(1,-24,0,30),TextSize=12,TextColor3=C.background})
 		local button=UI.button(row,equipped and T("EQUIPADA","EQUIPPED") or owned and T("EQUIPAR BASE","EQUIP BASE") or T("ENCONTRAR NOS BAÚS","FIND IN CHESTS"),function()
-			if owned then act("EquipBase",{baseId=id}) else openContext("chests",{chestId="base_rare"}) end
+			if owned then act("EquipBase",{baseId=id}) else routePreview.goShop("base_rare") end
 		end,{Name="EquipBase_"..id,Position=UDim2.fromOffset(12,204),Size=UDim2.new(1,-24,0,44),BackgroundColor3=equipped and C.green or tint,TextSize=13})
 		if equipped then UI.disabled(button) end
 	end
@@ -1131,7 +1133,7 @@ local function contextGuide(body)
 		{"inventory",T("Minha equipe","My team"),T("5 heróis • 1 líder","5 heroes • 1 leader"),"hero",C.coral},
 		{"bases",T("Minha base","My base"),T("Equipe sua defesa","Equip your defense"),"heart",C.green},
 		{"talents",T("Academia","Academy"),T("Gaste seus pontos","Spend your points"),"star",C.violet},
-		{"chests",T("Baús","Chests"),T("Heróis e bases por Ouro","Heroes and bases for Gold"),"chest",C.gold},
+		{"shopWay",T("Loja","Shop"),T("Baús de heróis e bases: ande até o Mercado","Hero and base chests: walk to the Market"),"chest",C.gold},
 		{"quests",T("Missões","Missions"),T("Objetivos e conquistas","Goals and achievements"),"star",C.coral},
 		{"leaderboard",T("Placares","Leaderboards"),T("Ranks e recordes","Ranks and records"),"trophy",C.gold},
 		{"settings",T("Opções","Settings"),T("Idioma, som e controles","Language, sound and controls"),"bolt",C.cream},
@@ -1139,7 +1141,7 @@ local function contextGuide(body)
 	local columns=screenSize().X<400 and 1 or 2
 	local grid=UI.frame(body,{Name="RefugeDirectory",Size=UDim2.new(1,-6,0,math.ceil(#links/columns)*106),BackgroundTransparency=1})
 	for i,entry in ipairs(links) do
-		local tile=UI.button(grid,"",function() openContext(entry[1],{}) end,{Name="GuideLink_"..entry[1],Position=UDim2.new(((i-1)%columns)/columns,0,0,math.floor((i-1)/columns)*106),Size=UDim2.new(1/columns,-6,0,98),BackgroundColor3=C.card})
+		local tile=UI.button(grid,"",function() if entry[1]=="shopWay" then routePreview.goShop() else openContext(entry[1],{}) end end,{Name="GuideLink_"..entry[1],Position=UDim2.new(((i-1)%columns)/columns,0,0,math.floor((i-1)/columns)*106),Size=UDim2.new(1/columns,-6,0,98),BackgroundColor3=C.card})
 		UI.illustration(tile,entry[4],entry[5],{Position=UDim2.fromOffset(10,12),Size=UDim2.fromOffset(38,38)})
 		UI.label(tile,entry[2],{Position=UDim2.fromOffset(57,10),Size=UDim2.new(1,-67,0,40),TextSize=15,Font=Enum.Font.GothamBold,TextWrapped=true,TextColor3=entry[5]})
 		UI.label(tile,entry[3],{Position=UDim2.fromOffset(12,55),Size=UDim2.new(1,-24,0,33),TextSize=12,TextWrapped=true,TextColor3=C.muted})
@@ -1681,7 +1683,7 @@ renderLobby = function()
 	UI.secondary(main, T("OPÇÕES", "SETTINGS"), function() openContext("settings", {}) end, {Name = "SettingsButton", Position = at(hud.settings), Size = dims(hud.settings), BackgroundColor3 = C.blue, TextSize = compact and 13 or 15})
 
 	local dock=UI.frame(main,{Name="LobbyNavigation",Position=at(hud.navigation),Size=dims(hud.navigation),BackgroundTransparency=1})
-	local nav={{"inventory",T("HERÓIS","HEROES"),C.coral,"hero"},{"talents",T("EVOLUÇÃO","TALENTS"),C.violet,"star"},{"chests",T("BAÚS","CHESTS"),C.gold,"chest"},{"premium","ROBUX",C.green,"shop"},{"rewards",T("PRÊMIOS","GIFTS"),C.pink,"gift"}}
+	local nav={{"inventory",T("HERÓIS","HEROES"),C.coral,"hero"},{"talents",T("EVOLUÇÃO","TALENTS"),C.violet,"star"},{"premium","ROBUX",C.green,"shop"},{"rewards",T("PRÊMIOS","GIFTS"),C.pink,"gift"}}
 	refs.navigation={}
 	for i,entry in ipairs(nav) do
 		-- Big floating icons, no box: a soft coloured glow, the illustration and
@@ -1693,12 +1695,6 @@ renderLobby = function()
 		UI.stroke(glow,entry[3],2).Transparency=0.35
 		local navIcon=UI.illustration(button,entry[4],entry[3],{Name="NavIcon",Position=UDim2.new(0.5,-artSize/2,0,2),Size=UDim2.fromOffset(artSize,artSize)})
 		UI.label(button,entry[2],{Position=UDim2.new(0,-4,1,-21),Size=UDim2.new(1,8,0,20),TextSize=compact and 13 or 15,Font=UI.Fonts.display,TextColor3=C.text,TextXAlignment=Enum.TextXAlignment.Center,TextTruncate=Enum.TextTruncate.None})
-		if entry[1]=="chests" then
-			local chestBadge=UI.roundFrame(button,{Name="ChestsBadge",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,4),Size=UDim2.fromOffset(18,18),BackgroundColor3=C.gold,Visible=canOpenChest(),ZIndex=5},C.background)
-			UI.corner(chestBadge,9)
-			UI.label(chestBadge,"!",{Size=UDim2.fromScale(1,1),TextSize=12,Font=Enum.Font.GothamBlack,TextColor3=C.background,TextXAlignment=Enum.TextXAlignment.Center})
-			refs.chestsBadge=chestBadge
-		end
 		if entry[1]=="rewards" then
 			local claimable=tonumber(profile().rewards and profile().rewards.claimable) or 0
 			local badge=UI.roundFrame(button,{Name="RewardsBadge",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,4),Size=UDim2.fromOffset(18,18),BackgroundColor3=C.red,Visible=claimable>0,ZIndex=5},C.background)
@@ -2499,7 +2495,6 @@ local function applyState(nextState)
 		if refs.gold then refs.gold.Text = goldText() end
 		if refs.commander then refs.commander.Text = levelText() end
 		if refs.levelBar then refs.levelBar.Size = UDim2.fromScale(levelProgress(), 1) end
-		if refs.chestsBadge then refs.chestsBadge.Visible=canOpenChest() end
 		if refs.rewardsBadge then
 			local claimable=tonumber(profile().rewards and profile().rewards.claimable) or 0
 			refs.rewardsBadge.Visible=claimable>0
@@ -2678,7 +2673,7 @@ RunService.RenderStepped:Connect(function(dt)
 	-- other button stays still.
 	if not (profile().settings and profile().settings.lowFX) then
 		local now = os.clock()
-		local waiting = { chests = refs.chestsBadge, rewards = refs.rewardsBadge }
+		local waiting = { rewards = refs.rewardsBadge }
 		for id, entry in pairs(refs.navigation or {}) do
 			if entry.icon and entry.icon.Parent then
 				local flag = waiting[id] or entry.badge
@@ -2686,7 +2681,7 @@ RunService.RenderStepped:Connect(function(dt)
 				entry.icon.Position = UDim2.new(0.5, entry.iconX, 0, 2 + (news and math.sin(now * 2.2 + entry.phase) * 2.5 or 0))
 			end
 		end
-		for _, badge in ipairs({refs.chestsBadge, refs.rewardsBadge}) do
+		for _, badge in ipairs({refs.rewardsBadge}) do
 			if badge and badge.Parent and badge.Visible then badge.Rotation = math.sin(now * 7) * 14 end
 		end
 	end

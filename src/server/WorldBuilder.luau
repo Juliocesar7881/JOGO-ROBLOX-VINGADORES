@@ -926,14 +926,13 @@ local SHOP_STANDS = {
 	{ kind = "product", key = "gold" },
 	{ kind = "pass", key = "collector" },
 	{ kind = "pass", key = "training" },
-	{ kind = "pass", key = "formations" },
 	{ kind = "pass", key = "vip" },
 }
 
 -- The lobby's districts around the central plaza. Each footprint is cleared
 -- of scenery before its own floor and props are laid, so nothing from the
 -- forest pokes through a shop counter or a portal pad.
-local MARKET = { chestZ = 412, standZ = 436, standX = { -106, -94.4, -82.8, -71.2, -59.6, -48 } }
+local MARKET = { chestZ = 412, standZ = 436, standX = { -104, -90.5, -77, -63.5, -50 } }
 local DISTRICTS = {
 	{ id = "market", x0 = -114, x1 = -44, z0 = 394, z1 = 446, color = Color3.fromRGB(207, 180, 231),
 		title = { "MERCADO", "MARKET" }, subtitle = { "BAÚS • LOJA ROBUX", "CHESTS • ROBUX SHOP" } },
@@ -1199,8 +1198,6 @@ local function buildShopStand(lobby, x, z, shopKind, shopKey, displayName, openP
 	elseif shopKey == "vip" then
 		part(model, "Mannequin", Vector3.new(1.6, 3.6, 1), CFrame.new(x, 2.8, z), Color3.fromRGB(255, 210, 103), Enum.Material.Neon)
 		part(model, "MannequinHead", Vector3.new(1, 1, 1), CFrame.new(x, 5, z), Color3.fromRGB(255, 210, 103))
-	elseif shopKey == "formations" then
-		for i = 1, 3 do part(model, "Rack", Vector3.new(2.6, 0.15, 1.1), CFrame.new(x, 1.2 + i * 0.85, z), Color3.fromRGB(150, 160, 170), Enum.Material.Metal) end
 	elseif shopKey == "gold" then
 		for i = 1, 3 do
 			-- A Cylinder's axis runs along X, so a coin lying flat needs its
@@ -1241,6 +1238,115 @@ local function buildBoard(lobby, x, z, boardId, titleText, openPanel)
 	model.PrimaryPart = board
 	interactable(board, titleText, function(player) openPanel(player, boardId, {}) end)
 	return model, text
+end
+
+-- Z-fighting: two faces in one plane that overlap flicker as the camera
+-- moves. Faces are compared when they are aligned with a world axis (nearly
+-- every lobby surface: floors, trails, curbs, walls, signs). A pair is
+-- harmless only when both parts are the same flat colour on an untextured
+-- material; everything else is a flicker the players see.
+local FLAT_MATERIALS = { [Enum.Material.SmoothPlastic] = true, [Enum.Material.Neon] = true, [Enum.Material.Glass] = true,
+	[Enum.Material.ForceField] = true, [Enum.Material.Plastic] = true }
+local function alignedFaces(item, out)
+	if (item.Transparency or 0) >= 0.95 or not item.Size or not item.CFrame or item:FindFirstChildOfClass("SpecialMesh") then return end
+	local shape = item:IsA("Part") and item.Shape or nil
+	if shape == Enum.PartType.Ball then return end
+	local wedge = item:IsA("WedgePart")
+	local cf, size = item.CFrame, item.Size
+	local axes, half = { cf.RightVector, cf.UpVector, cf.LookVector }, { size.X / 2, size.Y / 2, size.Z / 2 }
+	for i = 1, 3 do
+		-- A cylinder is flat only at its ends; a wedge only underneath and behind.
+		if not (shape == Enum.PartType.Cylinder and i ~= 1) then
+			local a = axes[i]
+			local world = math.abs(a.X) > 0.999 and 1 or math.abs(a.Y) > 0.999 and 2 or math.abs(a.Z) > 0.999 and 3 or nil
+			if world then
+				for _, sign in ipairs({ -1, 1 }) do
+					if not wedge or (i == 2 and sign < 0) or (i == 3 and sign > 0) then
+						local center = cf.Position + a * (half[i] * sign)
+						local c, e = { center.X, center.Y, center.Z }, { 0, 0, 0 }
+						for j = 1, 3 do
+							if j ~= i then
+								local b = axes[j] * half[j]
+								e[1] += math.abs(b.X); e[2] += math.abs(b.Y); e[3] += math.abs(b.Z)
+							end
+						end
+						local normal = (world == 1 and a.X or world == 2 and a.Y or a.Z) * sign > 0 and 1 or -1
+						-- Undersides rest on the ground or face it: nobody sees them.
+						if not (world == 2 and normal < 0) then
+							table.insert(out, { part = item, axis = world, plane = c[world], normal = normal,
+								lo = { c[1] - e[1], c[2] - e[2], c[3] - e[3] }, hi = { c[1] + e[1], c[2] + e[2], c[3] + e[3] } })
+						end
+					end
+				end
+			end
+		end
+	end
+end
+local function sameLook(a, b)
+	local ca, cb = a.Color, b.Color
+	return a.Material == b.Material and FLAT_MATERIALS[a.Material] == true
+		and math.abs(ca.R - cb.R) + math.abs(ca.G - cb.G) + math.abs(ca.B - cb.B) < 0.01
+end
+local function faceArea(face)
+	local area = 1
+	for k = 1, 3 do if k ~= face.axis then area *= face.hi[k] - face.lo[k] end end
+	return area
+end
+local function coplanarPairs(root)
+	local faces = {}
+	for _, item in ipairs(root:GetDescendants()) do
+		if item:IsA("BasePart") and not item:IsA("MeshPart") then alignedFaces(item, faces) end
+	end
+	table.sort(faces, function(a, b)
+		if a.axis ~= b.axis then return a.axis < b.axis end
+		return a.plane < b.plane
+	end)
+	local found = {}
+	for i = 1, #faces do
+		local f = faces[i]
+		for j = i + 1, #faces do
+			local g = faces[j]
+			if g.axis ~= f.axis or g.plane - f.plane > 0.012 then break end
+			if g.part ~= f.part and g.normal == f.normal and not sameLook(f.part, g.part) then
+				local overlapping = true
+				for k = 1, 3 do
+					if k ~= f.axis and math.min(f.hi[k], g.hi[k]) - math.max(f.lo[k], g.lo[k]) <= 0.02 then overlapping = false; break end
+				end
+				if overlapping then table.insert(found, { f, g }) end
+			end
+		end
+	end
+	return found
+end
+-- How many flickering pairs remain, and the first few by name for a report.
+World.CoplanarConflicts = function(root)
+	local found, names = coplanarPairs(root), {}
+	for index = 1, math.min(#found, 8) do
+		local f, g = found[index][1], found[index][2]
+		table.insert(names, string.format("%s/%s@%s%.2f", f.part.Name, g.part.Name, ({ "x", "y", "z" })[f.axis], f.plane))
+	end
+	return #found, table.concat(names, " ")
+end
+-- Push the smaller face of every flickering pair out along its normal; the
+-- big surface stays put. A few rounds settle stacks of three or more.
+function World.SeparateCoplanar(root)
+	for _ = 1, 24 do
+		local found = coplanarPairs(root)
+		if #found == 0 then return 0 end
+		local moved = {}
+		for _, pair in ipairs(found) do
+			local f, g = pair[1], pair[2]
+			if not moved[f.part] and not moved[g.part] then
+				local face, other = f, g
+				if faceArea(f) > faceArea(g) then face, other = g, f end
+				-- Just beyond the other face, whichever side of it it started.
+				local step = other.plane - face.plane + 0.04 * face.normal
+				face.part.CFrame = face.part.CFrame + Vector3.new(face.axis == 1 and step or 0, face.axis == 2 and step or 0, face.axis == 3 and step or 0)
+				moved[face.part] = true
+			end
+		end
+	end
+	return #coplanarPairs(root)
 end
 
 function World:BuildLobby()
@@ -1341,6 +1447,8 @@ function World:BuildLobby()
 			end
 		end
 	end
+	-- Last: no two surfaces of the finished lobby may share a plane.
+	World.SeparateCoplanar(lobby)
 end
 
 -- Check root positions on the server, not Touched events from every limb.
@@ -2373,6 +2481,20 @@ end
 function World:TrainingShot(index)
 	local stage, spot = TRAINING.stage, TRAINING.dummies[(index - 1) % #TRAINING.dummies + 1]
 	return Vector3.new(stage.X, 4, stage.Z), Vector3.new(spot.X, 3.7, spot.Z + 0.5)
+end
+
+-- Chests are bought at the shop: standing in the Market, around its pads
+-- and counters, on the island's ground.
+function World:NearMarket(player)
+	local root = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root or not self.lobby then return false end
+	local at = root.Position
+	for _, d in ipairs(DISTRICTS) do
+		if d.id == "market" then
+			return at.X > d.x0 - 8 and at.X < d.x1 + 8 and at.Z > d.z0 - 8 and at.Z < d.z1 + 8 and at.Y < 30
+		end
+	end
+	return false
 end
 
 function World:NearTraining(player)

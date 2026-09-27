@@ -90,7 +90,7 @@ local config = {
 	DataStoreName = "Tests", StudioMemory = true, ProfileRetries = 3, GroupId = 777,
 	Codes = { TESTE = { gold = 200 }, VELHO = { gold = 1, expires = 1 }, BAU = { gold = 0, chest = "rare" } },
 	Products = {
-		Passes = { collector = { id = 201 }, training = { id = 202 }, formations = { id = 203 } },
+		Passes = { collector = { id = 201 }, training = { id = 202 } },
 		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 } },
 		Heroes = { falcon = { id = 301 }, thor = { id = 302 }, ironman = { id = 999 } },
 	},
@@ -299,9 +299,9 @@ local _, sixHeroes = service:Handle(p1, "SetLoadout", { heroes = { "ironman", "h
 check(not sixHeroes, "A loadout holds five heroes at most")
 local _, emptyLoadout = service:Handle(p1, "SetLoadout", { heroes = {} }, true)
 check(not emptyLoadout and #service:Get(p1).loadout == 2, "A loadout cannot be empty")
-local _, saveFree = service:Handle(p1, "SaveLoadout", { slot = 3 }, true)
-local _, savePaid = service:Handle(p1, "SaveLoadout", { slot = 4 }, true)
-check(saveFree and not savePaid, "Free formation limit enforced")
+-- One team, always: saved formations are gone from the contract.
+local savedAction = service:Handle(p1, "SaveLoadout", { slot = 1 }, true)
+check(not savedAction and service:Get(p1).savedLoadouts == nil and service:Get(p1).loadoutSlots == nil, "There is one team and no formation slots")
 
 -- Developer receipts remain pending without durable storage and grant exactly once.
 local goldBeforeReceipts = service:Get(p1).gold
@@ -384,17 +384,12 @@ service = other
 
 -- Paid boosts have no unique power ceiling; only server-verified ownership applies.
 passOwners["1:202"] = true
-passOwners["1:203"] = true
 service:_refreshPasses(p1)
-check(service:Get(p1).passes.training and service:Get(p1).loadoutSlots == 8, "Verified pass ownership")
+check(service:Get(p1).passes.training, "Verified pass ownership")
 local beforeXP = service:Get(p1).xp
 local beforeMastery = service:Get(p1).heroes.ironman.xp
 check(service:Award(p1, "training-test", { xp = 100, mastery = { ironman = 100 } }), "Training award")
 check(service:Get(p1).xp == beforeXP + 125 and service:Get(p1).heroes.ironman.xp == beforeMastery + 125, "Training boost applied to both XP types")
-local _, paidSlot = service:Handle(p1, "SaveLoadout", { slot = 8 }, true)
-check(paidSlot, "Extra formations entitlement")
-local _, excessiveSlot = service:Handle(p1, "SaveLoadout", { slot = 9 }, true)
-check(not excessiveSlot, "Extra formations still bounded")
 
 check(service:Award(p1, "max-level", { xp = 1000000, gold = 100000, mastery = { ironman = 100000 } }), "Large legitimate progression award")
 local leveled = service:Get(p1)
