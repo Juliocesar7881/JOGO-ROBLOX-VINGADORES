@@ -4,6 +4,34 @@ Este registro separa o que está pronto e verificado do que ainda depende de
 teste real, de arte ou de configuração. Plano de referência: "Plano de
 produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 
+## Refinamento visual (2026-09-27)
+
+Diagnóstico com capturas do Studio (vitrine, lobby na altura do jogador e
+partida real em Manhattan). Os três problemas de maior impacto:
+
+1. **Personagens inflados.** Heróis, inimigos e chefes eram bonecos de
+   esferas; os seis chefes usavam o mesmo corpo. → Figuras articuladas no
+   esquema do avatar Roblox, proporções próprias e acessórios por herói
+   (`WorldBuilder` seção *Jointed figures*, `docs/ART_DIRECTION.md`).
+2. **Inimigos sem leitura de família.** Mesma silhueta com outra cor e
+   pernas deslizando. → Corpo, equipamento e andar por família, sincronizados
+   com a distância percorrida (`src/client/Motion.luau`).
+3. **Lobby cheio de placas.** Placas sobrepostas (uma escondia o Salão da
+   Fama) e balcões com o painel inteiro em maiúsculas. → Placa redundante
+   removida; título colorido curto e instrução pequena.
+
+| Área | Estado |
+|---|---|
+| Figuras dos 36 heróis (corpo, rosto, acessório, músculo do Hulk) | Verificado no jogo (vitrine e partida) |
+| 8 famílias + 15 variantes regionais + ilusão | Verificado na vitrine; andar do infectado verificado em partida |
+| 6 chefes com silhueta própria | Verificado na vitrine; em combate: pendente |
+| Poses de ataque, habilidade, melhoria e tontura | Implementado; testes automáticos; mira e ataque vistos em partida |
+| Evolução visível no herói (níveis 2–5, ramos) | Implementado; conferência em partida pendente |
+| Painel de melhoria acima da cabeça do herói, legível | Implementado |
+| Placas do lobby | Verificado no Studio |
+| Arte final por modelo 3D importado | Bloqueado: exige upload na conta (ver `assets/models/README.md`) |
+| Desempenho com 180 inimigos articulados no celular | Pendente: aparelho real |
+
 ## Etapa 1 — estrutura e regras (2026-09-26)
 
 ### Concluído e verificado por testes automatizados
