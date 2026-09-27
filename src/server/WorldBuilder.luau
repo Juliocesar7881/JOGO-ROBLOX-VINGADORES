@@ -610,6 +610,9 @@ HERO_EXTRAS.falcon = function(f)
 end
 HERO_EXTRAS.bucky = function(f)
 	local s = f.scale
+	-- Only the left arm is metal.
+	f.parts.RightUpperArm.Color, f.parts.RightLowerArm.Color, f.parts.RightHand.Color = Color3.fromRGB(46, 52, 62), Color3.fromRGB(46, 52, 62), HC.skin
+	for i = 1, 3 do f.add("LeftUpperArm", "ArmPlate", f.sizes.upperArm * Vector3.new(1.04, 0.06, 1.04), CFrame.new(0, f.sizes.upperArm.Y * (0.3 - i * 0.18), 0), HC.steel, METAL) end
 	f.add("LeftUpperArm", "RedStar", Vector3.new(0.06, 0.26, 0.26) * s, CFrame.new(-f.sizes.upperArm.X / 2 - 0.02 * s, 0.1 * s, 0), Color3.fromRGB(200, 40, 40), METAL)
 	f.add("RightHand", "Rifle", Vector3.new(0.22, 1.6, 0.34) * s, CFrame.new(0, -0.7 * s, -0.12 * s), HC.ink, METAL)
 	f.add("RightHand", "RifleBarrel", Vector3.new(0.1, 0.8, 0.1) * s, CFrame.new(0, -1.8 * s, -0.12 * s), HC.steel, METAL)
@@ -718,6 +721,8 @@ HERO_EXTRAS.groot = function(f)
 		f.rod(side < 0 and "LeftHand" or "RightHand", "Root", Vector3.new(0, 0, 0), Vector3.new(side * 0.2 * s, -0.7 * s, -0.1 * s), 0.12 * s, Color3.fromRGB(96, 70, 46), Enum.Material.Wood)
 	end
 	for i = -1, 1 do f.add("UpperTorso", "Bark", Vector3.new(0.14 * s, f.sizes.chest.Y * 0.9, 0.06 * s), CFrame.new(i * f.sizes.chest.X * 0.28, 0, -f.sizes.chest.Z / 2 - 0.02 * s), Color3.fromRGB(88, 62, 40), Enum.Material.Wood) end
+	-- A few leaves sprouting from the crown.
+	for i = -1, 1 do f.add("Head", "Leaf", Vector3.new(0.36, 0.1, 0.24) * s, CFrame.new(i * h.X * 0.26, h.Y * 0.56, i * 0.1 * s) * CFrame.Angles(0.2, i * 0.6, i * 0.5), Color3.fromRGB(110, 190, 80), Enum.Material.Grass, "ball") end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.3 * s, 0))
 end
 HERO_EXTRAS.wanda = function(f)
@@ -768,8 +773,8 @@ HERO_EXTRAS.captainmarvel = function(f)
 end
 HERO_EXTRAS.silversurfer = function(f)
 	local s = f.scale
-	-- The board, standing on its tail behind him.
-	f.add("UpperTorso", "Board", Vector3.new(1.3, 0.16, 3.6) * s, CFrame.new(0, -0.6 * s, f.sizes.chest.Z / 2 + 0.3 * s) * CFrame.Angles(math.pi / 2 - 0.15, 0, 0), Color3.fromRGB(226, 236, 246), METAL, "ball")
+	-- The board stands on its tail beside him, held in the left hand.
+	f.add("LeftHand", "Board", Vector3.new(0.18, 3.8, 1.3) * s, CFrame.new(-0.4 * s, -0.7 * s, 0) * CFrame.Angles(0, 0, 0.08), Color3.fromRGB(226, 236, 246), METAL, "ball").Reflectance = 0.25
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.wolverine = function(f)
@@ -1019,6 +1024,14 @@ local FACTION_GEAR = {
 		f.add("UpperTorso", "VibraniumTrace", Vector3.new(0.12, f.sizes.chest.Y * 0.8, 0.05) * Vector3.new(f.scale, 1, f.scale), CFrame.new(0, 0, -f.sizes.chest.Z / 2 - 0.03 * f.scale), Color3.fromRGB(200, 150, 255), NEON)
 	end,
 	doombot = function(f)
+		-- A robot, not an infected: the face becomes an iron mask with slits.
+		for _, item in ipairs(f.model:GetChildren()) do
+			if item:IsA("BasePart") and (item.Name == "Socket" or item.Name == "Eye" or item.Name == "Jaw" or item.Name == "Tooth" or item.Name == "Brow" or item.Name == "Hair") then item:Destroy() end
+		end
+		for _, side in ipairs({ -1, 1 }) do
+			f.add("Head", "Slit", Vector3.new(0.3, 0.08, 0.05) * f.scale, f.face(side * 0.24, 0.14, 0.03), Color3.fromRGB(110, 255, 150), NEON)
+		end
+		for i = -1, 1 do f.add("Head", "Grille", Vector3.new(0.05, 0.26, 0.05) * f.scale, f.face(i * 0.12, -0.42, 0.03), EC.ink, METAL) end
 		for _, item in ipairs(f.model:GetChildren()) do
 			if item:IsA("BasePart") and item.Name ~= "HumanoidRootPart" then item.Color, item.Reflectance = Color3.fromRGB(150, 164, 170), 0.12; item:SetAttribute("Tint", nil) end
 		end

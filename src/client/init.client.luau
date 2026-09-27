@@ -2066,9 +2066,12 @@ local function updateUpgradeBoards(match)
 		if not board then
 			local anchor = towerAnchor(tower.id)
 			if anchor then
+				-- Above the hero's own head: Hulk is far taller than Rocket.
+				local figure = anchor.Parent and anchor.Parent:FindFirstChild("HeroFigure")
+				local height = figure and tonumber(figure:GetAttribute("FigureHeight")) or 6.5
 				local gui = Instance.new("BillboardGui")
 				gui.Name, gui.Size, gui.AlwaysOnTop, gui.Active = "Upgrade_" .. id, UDim2.fromOffset(128, 34), true, true
-				gui.StudsOffset, gui.MaxDistance, gui.ResetOnSpawn = Vector3.new(0, 9, 0), 200, false
+				gui.StudsOffset, gui.MaxDistance, gui.ResetOnSpawn = Vector3.new(0, height + 2.6, 0), 200, false
 				gui.Adornee = anchor
 				board = {gui = gui}
 				board.button = UI.button(gui, "", function()
@@ -2089,7 +2092,8 @@ local function updateUpgradeBoards(match)
 			local nextLevel = (tower.level or 1) + 1
 			board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("⬆ " .. tostring(nextLevel) .. "/5")) .. "  🪙" .. number(cost)
 			board.button.BackgroundColor3 = affordable and C.green or C.card
-			board.button.TextColor3 = affordable and C.background or C.muted
+			-- Light text on green: dark text under the dark outline read as blots.
+			board.button.TextColor3 = affordable and C.text or C.muted
 		end
 	end
 	for id, board in pairs(upgradeBoards) do
