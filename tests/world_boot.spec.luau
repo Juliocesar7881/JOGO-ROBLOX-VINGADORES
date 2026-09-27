@@ -794,7 +794,8 @@ do
 	check(tower:FindFirstChild("Platform") ~= nil and tower:FindFirstChild("PowerRing") ~= nil, "the platform and ring stay: they are gameplay, not art")
 	check(template:FindFirstChild("ArtBody") ~= nil, "the template itself is left untouched")
 	local plain = world:MakeTower("plain1", "hawkeye", v3(-20, 0, 20), 1)
-	check(plain:FindFirstChild("HeroFigure") == nil and plain:FindFirstChild("Suit", true) ~= nil, "a hero without art keeps its generated figure")
+	local jointed = plain:FindFirstChild("HeroFigure")
+	check(jointed ~= nil and jointed:GetAttribute("HeroRig") == true and jointed:FindFirstChild("UpperTorso") ~= nil, "a hero without art keeps its generated, jointed figure")
 	art:Destroy()
 end
 
@@ -803,16 +804,18 @@ local portraits = game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroP
 check(portraits ~= nil, "portrait library survives separately from the map")
 for _, heroId in ipairs(Catalog.HeroOrder) do
 	local portrait = portraits and portraits:FindFirstChild(heroId)
-	check(portrait and portrait:FindFirstChild("Suit") ~= nil, heroId .. " has a portrait torso")
-	check(portrait and portrait:FindFirstChild("Mask") ~= nil, heroId .. " has a portrait head")
+	check(portrait and portrait:FindFirstChild("UpperTorso", true) ~= nil, heroId .. " has a portrait torso")
+	check(portrait and portrait:FindFirstChild("Head", true) ~= nil, heroId .. " has a portrait head")
 	if portrait then
 		for _, piece in ipairs(portrait:GetDescendants()) do
 			if piece:IsA("BasePart") then check(piece:GetAttribute("HeroVisual") == true, heroId .. " portrait excludes world furniture") end
-			if piece:IsA("BasePart") and table.find({"Suit","Thigh","Shin","UpperArm","Gauntlet"},piece.Name) then
-				check(piece.Shape==Enum.PartType.Block,heroId.." uses continuous body segments: "..piece.Name)
-			end
 		end
-		check(portrait.Mask:FindFirstChildOfClass("SpecialMesh")~=nil,heroId.." preserves head proportions with a mesh")
+		-- A jointed body: fifteen segments on Motor6D joints under one root.
+		local joints = 0
+		for _, item in ipairs(portrait:GetDescendants()) do if item:IsA("Motor6D") then joints += 1 end end
+		check(joints >= 15, heroId .. " is a jointed figure, got " .. joints .. " joints")
+		local head = portrait:FindFirstChild("Head", true)
+		check(head and head:FindFirstChildOfClass("SpecialMesh") ~= nil, heroId .. " has the classic rounded head")
 	end
 end
 world:Build("manhattan")
@@ -838,7 +841,8 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 		local ringB = other:FindFirstChild("PowerRing")
 		if sameColor(ringA and ringA.Color, ringB and ringB.Color) then table.insert(missing, heroId .. ":branch-color") end
 		local markers = model:FindFirstChild("UpgradeMarkers")
-		if not markers or not markers:FindFirstChild("BranchEmblem") then table.insert(missing, heroId .. ":branch-emblem") end
+		-- A jointed hero wears the branch (a halo in its colour) instead of an emblem.
+		if not markers or not (markers:FindFirstChild("BranchEmblem") or model:FindFirstChild("GearHalo", true)) then table.insert(missing, heroId .. ":branch-emblem") end
 		-- The client's firing recoil animates the ring and restores it to this
 		-- attribute. If an upgrade stopped publishing it, every upgraded tower
 		-- would silently snap back to its level 1 ring the next time it fired.

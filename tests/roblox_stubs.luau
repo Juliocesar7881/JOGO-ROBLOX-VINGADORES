@@ -235,6 +235,27 @@ local INHERITS = {
 local INSTANCE = {}
 local instanceCount = 0
 
+-- Joints move what they hold, as in the engine: setting a Motor6D's Transform
+-- places Part1 at Part0 * C0 * Transform * C1:Inverse(), and every joint and
+-- weld hanging from that part follows. Enough for a test to see an arm rise.
+local jointsByPart0 = setmetatable({}, { __mode = "k" })
+local JOINT_CLASSES = { Motor6D = true, Weld = true }
+local function registerJoint(joint, part0)
+	local list = jointsByPart0[part0]
+	if not list then list = {}; jointsByPart0[part0] = list end
+	table.insert(list, joint)
+end
+local function solveJoint(joint)
+	local props = rawget(joint, "__props")
+	local part0, part1 = props.Part0, props.Part1
+	if not part0 or not part1 then return end
+	local from = rawget(part0, "__props").CFrame
+	if not from then return end
+	local c0, c1 = props.C0 or CFrame.new(), props.C1 or CFrame.new()
+	rawget(part1, "__props").CFrame = from * c0 * (props.Transform or CFrame.new()) * c1:Inverse()
+	for _, child in ipairs(jointsByPart0[part1] or {}) do solveJoint(child) end
+end
+
 local function newInstance(className)
 	instanceCount += 1
 	local self = setmetatable({}, INSTANCE)
@@ -405,6 +426,7 @@ function METHODS:Clone()
 		for key, value in pairs(props) do
 			if type(value) == "table" and map[value] and key ~= "Parent" then props[key] = map[value] end
 		end
+		if JOINT_CLASSES[rawget(made, "__class")] and props.Part0 then registerJoint(made, props.Part0) end
 	end
 	return root
 end
@@ -499,6 +521,10 @@ INSTANCE.__newindex = function(self, key, value)
 		return
 	end
 	props[key] = value
+	if JOINT_CLASSES[rawget(self, "__class")] then
+		if key == "Part0" and value then registerJoint(self, value) end
+		if key == "Transform" then solveJoint(self) end
+	end
 end
 
 Instance = { new = function(className, parent)

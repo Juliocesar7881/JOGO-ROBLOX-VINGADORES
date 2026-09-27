@@ -550,7 +550,8 @@ function Match:_attack(tower, stats)
 		self:_damage(enemy,stats.damage*(1+boost),tower,stats)
 	end
 	local c=self.catalog.Heroes[tower.heroId].color
-	local visualHeight = target.def.air and 8 or target.def.boss and 4.2 or target.enemyId=="brute" and 2.9 or 2
+	-- The figure's own chest when the world knows it; otherwise the old heights.
+	local visualHeight = (self.world.AimHeight and self.world:AimHeight(target.enemyId)) or (target.def.air and 8 or target.def.boss and 4.2 or target.enemyId=="brute" and 2.9 or 2)
 	self:_fx({kind="Shot",from=tower.position+Vector3.new(0,4,0),to=target.position+Vector3.new(0,visualHeight,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp,
 		armored=(target.def.armor or 0)>=0.25 or nil})
 	if attack=="splash" or attack=="dot" then self:_fx({kind="Pulse",position=target.position,radius=stats.splash or 8,color=Color3.fromRGB(c[1],c[2],c[3])}) end

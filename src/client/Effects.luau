@@ -3,6 +3,7 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Catalog = require(ReplicatedStorage:WaitForChild("DoomShared"):WaitForChild("Catalog"))
 local UI = require(script.Parent:WaitForChild("UI"))
+local Motion = require(script.Parent:WaitForChild("Motion"))
 
 local Effects = {}
 Effects.__index = Effects
@@ -88,332 +89,92 @@ local function buildArtEnemy(def, template)
 	return record
 end
 
--- Enemies share the heroes' vinyl-toy look: every volume is an ellipsoid (a
--- block with a sphere mesh keeps its exact proportions). A common enemy stays
--- near sixteen parts, because up to 180 of them move every frame; only the
--- one boss on the field spends more.
-local function blob(parent, name, size, cf, color, material)
-	local p = part(parent, size, color, material)
-	p.Name, p.CFrame = name, cf
-	local mesh = Instance.new("SpecialMesh")
-	mesh.MeshType = Enum.MeshType.Sphere
-	mesh.Parent = p
-	return p
+-- The jointed figure the server published for this enemy (DoomFigures).
+local function figureTemplate(id)
+	local folder = ReplicatedStorage:FindFirstChild("DoomFigures")
+	local enemies = folder and folder:FindFirstChild("Enemies")
+	local template = enemies and id and enemies:FindFirstChild(id)
+	return template and template:IsA("Model") and template or nil
 end
 
-local INFECTED_EYES, INK, BONE = Color3.fromRGB(163, 255, 88), Color3.fromRGB(28, 22, 26), Color3.fromRGB(232, 226, 204)
--- Each boss's own body colours, eye glow and face.
-local BOSS_LOOK = {
-	lizard = { torso = Color3.fromRGB(96, 170, 70), head = Color3.fromRGB(113, 205, 85), arm = Color3.fromRGB(96, 170, 70),
-		leg = Color3.fromRGB(84, 54, 120), eye = Color3.fromRGB(255, 214, 60), noJaw = true },
-	abomination = { torso = Color3.fromRGB(128, 132, 74), head = Color3.fromRGB(150, 150, 84), arm = Color3.fromRGB(128, 132, 74),
-		leg = Color3.fromRGB(58, 52, 44), eye = Color3.fromRGB(255, 140, 50) },
-	redskull = { torso = Color3.fromRGB(38, 34, 40), head = Color3.fromRGB(206, 52, 44), arm = Color3.fromRGB(38, 34, 40),
-		leg = Color3.fromRGB(38, 34, 40), eye = Color3.fromRGB(255, 90, 60), eyeSize = Vector3.new(0.13, 0.15, 0.14), noJaw = true },
-	killmonger = { torso = Color3.fromRGB(34, 32, 38), head = Color3.fromRGB(212, 166, 71), arm = Color3.fromRGB(34, 32, 38),
-		leg = Color3.fromRGB(34, 32, 38), eye = Color3.fromRGB(255, 240, 190), eyeSize = Vector3.new(0.3, 0.17, 0.14), noJaw = true },
-	loki = { torso = Color3.fromRGB(30, 44, 36), head = Color3.fromRGB(226, 206, 184), arm = Color3.fromRGB(30, 44, 36),
-		leg = Color3.fromRGB(30, 34, 32), eye = Color3.fromRGB(120, 255, 150), eyeSize = Vector3.new(0.18, 0.2, 0.14) },
-	doom = { torso = Color3.fromRGB(108, 118, 126), head = Color3.fromRGB(150, 160, 166), arm = Color3.fromRGB(108, 118, 126),
-		leg = Color3.fromRGB(98, 108, 116), eye = Color3.fromRGB(110, 255, 150), noJaw = true, material = Enum.Material.Metal },
-}
-
-local function buildEnemy(def)
-	local template = artTemplate("Enemies", def.id) or artTemplate("Enemies", def.family)
-	if template then return buildArtEnemy(def, template) end
-	local family = def.family or def.id
-	local model = Instance.new("Model")
+-- A jointed enemy: every infected wears its own shirt and pants, and Motion
+-- walks it with the family's gait. Pivot at the feet, like final art.
+local function buildRigEnemy(def, template)
+	local model = template:Clone()
 	model.Name = "EnemyVisual"
-	local color = UI.color(def.color)
-	local scale = def.boss and 2.1 or (family == "brute" and 1.45 or 1)
-	-- Only the plain infected varies in height: other families hang props
-	-- at fixed offsets that a different scale would leave floating.
-	if def.id == "zombie" then scale *= 0.93 + math.random() * 0.14 end
-	local V = Vector3.new
-	local look = def.boss and BOSS_LOOK[def.id] or nil
-	local shambler, brute, hulking = family == "zombie", family == "brute", def.id == "abomination"
-	-- Model space: feet on y = 0, the torso's centre at y = 2 (the runtime
-	-- lifts the pivot by 2 * scale), the face toward -Z. Sizes are unscaled.
-	local function at(x, y, z) return CFrame.new(x * scale, y * scale, z * scale) end
-	local function add(name, size, cf, tint, material) return blob(model, name, size * scale, cf, tint, material) end
-	local bulk = brute and 1.2 or (hulking and 1.3 or (def.boss and 1.08 or 1))
-	-- The infected used to be people: the torso is the torn shirt each one
-	-- still wears, the belly showing through; brutes burst out of theirs.
-	local shirtColor = not def.boss and not brute and SHIRTS[math.random(1, #SHIRTS)] or nil
-	local bodyMaterial = look and look.material or nil
-	local torso = add("Torso", V(1.9 * bulk, 1.9, 1.15 * bulk), at(0, 2, 0), shirtColor or (look and look.torso) or color, bodyMaterial)
-	model.PrimaryPart = torso
-	local stooped = brute or hulking
-	local headSize = stooped and V(1.1, 1.05, 1.05) or V(1.3, 1.25, 1.2)
-	local headY, headZ = stooped and 3.15 or 3.45, stooped and -0.4 or -0.05
-	local head = add("Head", headSize, at(0, headY, headZ), look and look.head or color:Lerp(Color3.fromRGB(135, 174, 115), 0.35))
-	-- A point on the face: x across, dy up from the head's centre, out = how
-	-- far it stands proud of the surface.
-	local hr = headSize / 2
-	local function face(x, dy, out)
-		local k = math.max(1 - (x / hr.X) ^ 2 - (dy / hr.Y) ^ 2, 0.04)
-		return at(x, headY + dy, headZ - hr.Z * math.sqrt(k) - (out or 0))
-	end
-	local glow = look and look.eye or INFECTED_EYES
-	for _, x in ipairs({ -1, 1 }) do
-		-- The infected stare with one eye wider than the other.
-		local size = look and look.eyeSize or (shambler and x < 0 and V(0.32, 0.34, 0.14) or V(0.24, 0.27, 0.14))
-		add("Eye", size, face(x * 0.43 * hr.X, 0.08 * hr.Y / 0.625), glow, Enum.Material.Neon)
-	end
-	if not (look and look.noJaw) then add("Jaw", V(0.5, 0.2, 0.14) * (hr.X / 0.65), face(0, -0.3 * hr.Y / 0.625), INK) end
-	if not def.boss then
-		-- A heavy brow turns a round toy face into a hostile one.
-		add("Brow", V(0.95, 0.2, 0.26) * (hr.X / 0.65), face(0, 0.3 * hr.Y / 0.625, -0.04), color:Lerp(INK, 0.45))
-	end
-	local shirt
-	if shirtColor then
-		shirt = add("Belly", V(1.2, 0.75, 0.45), at(0, 1.45, -0.38), color)
-		add("Tear", V(0.4, 0.35, 0.2), at(0.45, 2.5, -0.42), color)
-		if def.id == "zombie" and math.random() < 0.55 then
-			add("Hair", V(1.26, 0.6, 1.16), at(0.06, headY + 0.42, headZ + 0.08) * CFrame.Angles(-0.12, 0, 0.1),
-				Color3.fromRGB(math.random(30, 90), math.random(22, 60), math.random(18, 40)), Enum.Material.SmoothPlastic)
+	-- Plain infected vary a little in height; everyone else keeps their size.
+	if def.id == "zombie" and model.ScaleTo then pcall(function() model:ScaleTo(0.93 + math.random() * 0.14) end) end
+	local shirt, pants = SHIRTS[math.random(1, #SHIRTS)], PANTS[math.random(1, #PANTS)]
+	local pieces, charges = {}, {}
+	for _, piece in ipairs(model:GetDescendants()) do
+		if piece:IsA("BasePart") then
+			local tint = piece:GetAttribute("Tint")
+			if tint == "shirt" then piece.Color = shirt elseif tint == "pants" then piece.Color = pants end
+			if piece.Name ~= "HumanoidRootPart" then
+				if def.stealth and piece.Material ~= Enum.Material.Neon then piece.Transparency = 0.32 end
+				-- Loki's illusions shimmer: half there, so they read as fakes.
+				if def.illusion then piece.Transparency = math.max(piece.Transparency, 0.45) end
+			end
+			if piece.Name == "Charge" then table.insert(charges, piece) end
+			table.insert(pieces, {part = piece, transparency = piece.Transparency})
 		end
 	end
-	local legHeight = 1.5 * scale
-	local legs, arms, wings = {}, {}, {}
-	local torsoInverse = torso.CFrame:Inverse()
-	local armColor = look and look.arm or color:Lerp(Color3.new(), 0.15)
-	local pants = look and look.leg or PANTS[math.random(1, #PANTS)]
-	local armSize = stooped and V(0.82, 1.7, 0.84) or V(0.52, 1.55, 0.54)
-	local limbOf = { arm = {}, leg = {} }
-	for _, x in ipairs({ -1, 1 }) do
-		local arm
-		if shambler then
-			-- The classic shamble: both arms reaching for the core ahead.
-			arm = add("Arm", armSize, at(x * 1.02, 2.47, -0.86) * CFrame.Angles(1.25, 0, x * 0.06), armColor, bodyMaterial)
-		else
-			arm = add("Arm", armSize, at(x * (1.05 * bulk + (stooped and 0.12 or 0)), 1.95, -0.18) * CFrame.Angles(-0.3, 0, x * 0.16), armColor, bodyMaterial)
-		end
-		limbOf.arm[x] = { part = arm, base = torsoInverse * arm.CFrame, side = x }
-		table.insert(arms, limbOf.arm[x])
-		-- Legs sink a little into the road, so their round ends read as feet.
-		local leg = add("Leg", V(bulk > 1 and 0.8 or 0.64, 1.5, bulk > 1 and 0.84 or 0.68), at(x * 0.44 * bulk, 0.5, 0), pants, bodyMaterial)
-		limbOf.leg[x] = { part = leg, base = torsoInverse * leg.CFrame, side = x }
-		table.insert(legs, limbOf.leg[x])
-	end
-	-- A piece that swings with a limb: its joint is the limb's, seen from it.
-	local SHOULDER, HIP = CFrame.new(0, 0.7 * scale, 0), CFrame.new(0, legHeight / 2, 0)
-	local function follow(kind, x, extra)
-		local limb = limbOf[kind][x]
-		local base = torsoInverse * extra.CFrame
-		table.insert(kind == "arm" and arms or legs, { part = extra, base = base, side = x, joint = base:Inverse() * limb.base * (kind == "arm" and SHOULDER or HIP) })
-		return extra
-	end
-	local function handAt(x) return limbOf.arm[x].part.CFrame * CFrame.new(0, -armSize.Y * 0.46 * scale, 0) end
-	local function segment(name, a, b, thick, tint, material)
-		local length = (b - a).Magnitude
-		return add(name, V(thick, thick, length + thick * 0.8), CFrame.lookAt((a + b) / 2 * scale, b * scale), tint, material)
-	end
-	local function boot(x, tint, material)
-		return follow("leg", x, add("Boot", V(0.74 * bulk, 0.5, 1.02 * bulk), at(x * 0.44 * bulk, 0.2, -0.2), tint, material))
-	end
+	local head, chest = model:FindFirstChild("Head"), model:FindFirstChild("UpperTorso")
+	local scale = model:GetAttribute("FigureScale") or 1
 	if not def.air then
-		local shadow = part(model, V(0.05, 2.3 * scale * bulk, 2.3 * scale * bulk), Color3.new(0, 0, 0))
+		-- A contact shadow under the feet: the parts cast none of their own.
+		local shadow = part(model, Vector3.new(0.05, 2.2 * scale * math.max(1, (chest and chest.Size.X or 2) / 2), 2.2 * scale), Color3.new(0, 0, 0))
 		shadow.Name, shadow.Shape, shadow.Transparency = "Shadow", Enum.PartType.Cylinder, 0.55
-		shadow.CFrame = CFrame.new(0, 0.06, 0) * CFrame.Angles(0, 0, math.pi / 2)
-	end
-	if def.air then
-		add("Jetpack", V(1.2, 1.3, 0.7), at(0, 2.3, 0.72), Color3.fromRGB(70, 78, 88), Enum.Material.Metal)
-		add("Thruster", V(0.5, 0.9, 0.5), at(0, 1.35, 0.8), Color3.fromRGB(106, 245, 207), Enum.Material.Neon)
-		for _, side in ipairs({ -1, 1 }) do
-			local wing = add("Wing", V(2.5, 0.18, 1.3), at(side * 1.75, 2.7, 0.45) * CFrame.Angles(0, side * 0.35, side * 0.12), color:Lerp(Color3.new(), 0.3), Enum.Material.SmoothPlastic)
-			table.insert(wings, { part = wing, base = torsoInverse * wing.CFrame, side = side })
-		end
-	end
-	if not def.boss and (def.armor or 0) >= 0.25 then
-		add("Plate", V(1.7, 1.3, 0.5), at(0, 2.25, -0.5), Color3.fromRGB(104, 117, 122), Enum.Material.Metal)
-	end
-	-- Recognizable silhouettes, not just eight differently colored torsos.
-	-- Each common enemy adds at most three pieces; only bosses spend more.
-	local charges = nil
-	if family == "runner" then
-		add("Scarf", V(0.6, 0.2, 1.9), at(0, 2.85, 0.9) * CFrame.Angles(-0.25, 0, 0), Color3.fromRGB(235, 156, 73), Enum.Material.SmoothPlastic)
-		add("Headband", V(1.36, 0.2, 1.26), at(0, headY + 0.18, headZ), Color3.fromRGB(200, 60, 52), Enum.Material.SmoothPlastic)
-	elseif brute then
-		add("Hump", V(1.6, 0.9, 1.0), at(0, 2.55, 0.5), color:Lerp(Color3.new(), 0.12))
-		for _, x in ipairs({ -1, 1 }) do follow("arm", x, add("Fist", V(0.95, 0.9, 0.95), handAt(x), color:Lerp(Color3.new(), 0.22))) end
-	elseif family == "armored" then
-		add("Helmet", V(1.42, 0.95, 1.34), at(0, headY + 0.3, headZ + 0.04), Color3.fromRGB(65, 80, 91), Enum.Material.Metal)
-		follow("arm", -1, add("Shield", V(1.15, 1.9, 0.3), CFrame.new(handAt(-1).Position + V(-0.05, 0.35, -0.3) * scale) * CFrame.Angles(0, -0.15, -0.12),
-			Color3.fromRGB(70, 88, 100), Enum.Material.Metal))
-	elseif def.stealth then
-		add("Hood", V(1.46, 1.3, 1.4), at(0, headY + 0.14, headZ + 0.2), Color3.fromRGB(49, 38, 68), Enum.Material.SmoothPlastic)
-		add("Cloak", V(2.1, 2.9, 0.4), at(0, 1.95, 0.55), Color3.fromRGB(72, 48, 96), Enum.Material.SmoothPlastic)
-	elseif def.id == "support" then
-		for _, x in ipairs({ -1, 1 }) do add("Tank", V(0.62, 1.5, 0.62), at(x * 0.5, 2.45, 0.78), Color3.fromRGB(174, 248, 115), Enum.Material.Neon) end
-		add("Antenna", V(0.12, 1.1, 0.12), at(0.42, 3.6, 0.7), Color3.fromRGB(80, 90, 96), Enum.Material.Metal)
-	elseif def.id == "summoner" then
-		add("Mantle", V(2.4, 0.6, 1.5), at(0, 2.85, 0), Color3.fromRGB(65, 37, 86), Enum.Material.SmoothPlastic)
-		add("Hood", V(1.46, 1.3, 1.4), at(0, headY + 0.14, headZ + 0.2), Color3.fromRGB(65, 37, 86), Enum.Material.SmoothPlastic)
-		local staff = part(model, V(0.16, 3.8, 0.16) * scale, Color3.fromRGB(89, 65, 100), Enum.Material.Metal)
-		staff.Name, staff.CFrame = "Staff", at(1.35, 1.9, -0.3)
-		follow("arm", 1, staff)
-		local orb = part(model, V(0.75, 0.75, 0.75) * scale, Color3.fromRGB(220, 131, 255), Enum.Material.Neon)
-		orb.Name, orb.Shape, orb.CFrame = "Orb", Enum.PartType.Ball, at(1.35, 3.9, -0.3)
-		follow("arm", 1, orb)
-		-- One small orb per summons left: the limit of reinforcements is visible.
-		charges = {}
-		for index = 1, 2 do
-			local charge = part(model, V(0.38, 0.38, 0.38) * scale, Color3.fromRGB(240, 190, 255), Enum.Material.Neon)
-			charge.Name, charge.Shape = "Charge", Enum.PartType.Ball
-			charge.CFrame = at(1.35 + (index == 1 and -0.42 or 0.42), 3.5, -0.3)
-			follow("arm", 1, charge)
-			table.insert(charges, charge)
-		end
-	end
-	if def.faction then
-		add("Badge", V(0.46, 0.5, 0.14), at(0, 2.5, -0.66), color:Lerp(Color3.new(1, 1, 1), 0.45), Enum.Material.Neon)
-		if def.faction == "gamma" then
-			for _, x in ipairs({ -1, 1 }) do add("Growth", V(0.85, 0.8, 0.85), at(x * 1.05, 2.85, 0.2), color, Enum.Material.Slate) end
-		elseif def.faction == "doombot" then
-			add("Mask", V(1.2, 1.1, 0.4), face(0, 0, -0.12), Color3.fromRGB(187, 203, 207), Enum.Material.Metal)
-			add("Hood", V(1.46, 1.3, 1.4), at(0, headY + 0.14, headZ + 0.2), Color3.fromRGB(41, 90, 58), Enum.Material.SmoothPlastic)
-			for _, x in ipairs({ -1, 1 }) do add("Slit", V(0.26, 0.08, 0.08), face(x * 0.26, 0.1, 0.1), INFECTED_EYES, Enum.Material.Neon) end
-		elseif def.faction == "sinister" then
-			add("Vest", V(2.08 * bulk, 1.3, 1.36 * bulk), at(0, 2.3, 0), Color3.fromRGB(164, 92, 49), Enum.Material.SmoothPlastic)
-			add("Bandana", V(1.1, 0.5, 0.5), face(0, -0.3, -0.12), Color3.fromRGB(176, 48, 44), Enum.Material.SmoothPlastic)
-		else
-			add("Helmet", V(1.42, 0.9, 1.34), at(0, headY + 0.32, headZ + 0.04), def.faction == "vibranium" and Color3.fromRGB(96, 62, 140) or color:Lerp(Color3.new(), 0.25), Enum.Material.Metal)
-		end
-	end
-	-- Only one boss exists at a time, so its silhouette can afford real detail
-	-- instead of reading as a scaled-up infected.
-	if def.id == "lizard" then
-		local coat = Color3.fromRGB(232, 234, 228)
-		add("Snout", V(0.95, 0.62, 1.15), at(0, headY - 0.14, headZ - 0.62), look.head)
-		add("Teeth", V(0.82, 0.1, 0.9), at(0, headY - 0.36, headZ - 0.7), BONE)
-		for _, x in ipairs({ -1, 1 }) do
-			add("Pupil", V(0.06, 0.2, 0.06), face(x * 0.28, 0.05, 0.07), INK)
-			add("Coat", V(0.74, 2.5, 1.24), at(x * 0.8, 1.8, -0.02), coat, Enum.Material.SmoothPlastic)
-			follow("arm", x, add("Claw", V(0.66, 0.5, 0.74), handAt(x), look.head))
-			boot(x, look.head)
-		end
-		add("Coat", V(2.1, 2.6, 0.5), at(0, 1.8, 0.42), coat, Enum.Material.SmoothPlastic)
-		for i = 0, 3 do
-			add("Tail", V(0.9 - i * 0.16, 0.8 - i * 0.14, 1.3), at(0, 1.3 - i * 0.28, 0.95 + i * 0.95) * CFrame.Angles(0.25, 0, 0), look.torso)
-			add("Crest", V(0.16, 0.62 - i * 0.08, 0.5), at(0, 3.95 - i * 0.5, 0.45 + i * 0.1), look.head:Lerp(Color3.new(1, 1, 1), 0.3))
-		end
-	elseif def.id == "abomination" then
-		local ridge = look.head:Lerp(Color3.new(1, 1, 1), 0.15)
-		add("Brow", V(1.1, 0.3, 0.5), face(0, 0.26, 0.02), ridge)
-		for _, x in ipairs({ -1, 1 }) do
-			add("Ear", V(0.16, 0.7, 0.6), at(x * 0.6, headY + 0.1, headZ + 0.1) * CFrame.Angles(0.3, 0, -x * 0.5), look.head)
-			add("Shoulder", V(1.5, 1.3, 1.4), at(x * 1.4, 2.85, 0.1), look.torso)
-			add("Gill", V(0.08, 0.45, 0.3), face(x * 0.5, -0.2, -0.02), INK)
-			follow("arm", x, add("Fist", V(1.15, 1.05, 1.15), handAt(x), look.torso:Lerp(Color3.new(), 0.2)))
-			boot(x, look.head)
-		end
-		for i = 0, 4 do add("Spine", V(0.3, 0.8 - i * 0.08, 0.3), at(0, 3.55 - i * 0.45, 0.72 - i * 0.02) * CFrame.Angles(0.5, 0, 0), ridge) end
-		add("Shorts", V(2.3, 0.95, 1.4), at(0, 1.2, 0), look.leg, Enum.Material.SmoothPlastic)
-	elseif def.id == "redskull" then
-		for _, x in ipairs({ -1, 1 }) do
-			add("Socket", V(0.42, 0.44, 0.12), face(x * 0.28, 0.06, -0.01), INK)
-			add("Cheek", V(0.3, 0.2, 0.14), face(x * 0.34, -0.14, -0.02), look.head:Lerp(Color3.new(1, 1, 1), 0.12))
-			follow("arm", x, add("Glove", V(0.62, 0.56, 0.64), handAt(x), INK))
-			boot(x, INK)
-		end
-		add("Nose", V(0.16, 0.2, 0.1), face(0, -0.12, 0.0), INK)
-		add("Teeth", V(0.62, 0.22, 0.12), face(0, -0.36, 0.0), BONE)
-		add("Coat", V(2.3, 3.1, 0.6), at(0, 1.6, 0.34), look.torso, Enum.Material.SmoothPlastic)
-		add("Collar", V(1.7, 0.5, 1.26), at(0, 2.95, 0.05), look.torso:Lerp(Color3.new(1, 1, 1), 0.08), Enum.Material.SmoothPlastic)
-		add("Belt", V(2.08 * bulk, 0.3, 1.28 * bulk), at(0, 1.62, 0), Color3.fromRGB(70, 56, 40), Enum.Material.SmoothPlastic)
-		follow("arm", -1, add("Armband", V(0.62, 0.3, 0.62), limbOf.arm[-1].part.CFrame * CFrame.new(0, 0.3 * scale, 0), Color3.fromRGB(180, 30, 36), Enum.Material.SmoothPlastic))
-		local cube = part(model, V(0.6, 0.6, 0.6) * scale, Color3.fromRGB(110, 200, 255), Enum.Material.Neon)
-		cube.Name, cube.CFrame = "Cube", CFrame.new((handAt(1) * CFrame.new(0, -0.35 * scale, -0.2 * scale)).Position) * CFrame.Angles(0.6, 0.6, 0)
-		follow("arm", 1, cube)
-	elseif def.id == "killmonger" then
-		local gold = look.head
-		for _, x in ipairs({ -1, 1 }) do
-			add("Ear", V(0.2, 0.5, 0.2), at(x * 0.42, headY + 0.6, headZ + 0.05) * CFrame.Angles(0, 0, -x * 0.25), gold, Enum.Material.Metal)
-			add("Brow", V(0.44, 0.12, 0.14), face(x * 0.26, 0.24, 0.03) * CFrame.Angles(0, 0, x * 0.35), INK)
-			add("Pauldron", V(0.95, 0.6, 1.0), at(x * 1.12 * bulk, 2.8, 0), gold, Enum.Material.Metal)
-			add("Trace", V(0.12, 1.3, 0.12), at(x * 0.4, 2.0, -0.58) * CFrame.Angles(0, 0, x * 0.3), Color3.fromRGB(255, 196, 90), Enum.Material.Neon)
-			follow("arm", x, add("Claw", V(0.62, 0.56, 0.68), handAt(x), gold, Enum.Material.Metal))
-			boot(x, gold, Enum.Material.Metal)
-		end
-		add("Muzzle", V(0.55, 0.32, 0.34), face(0, -0.28, 0.02), gold:Lerp(INK, 0.5), Enum.Material.Metal)
-		for i = -2, 2 do
-			add("Fang", V(0.14, 0.34, 0.12), at(i * 0.24, 2.58 + math.abs(i) * 0.05, -0.58 + math.abs(i) * 0.05) * CFrame.Angles(0, 0, i * 0.2), BONE)
-		end
-	elseif def.id == "loki" then
-		local gold, cape = Color3.fromRGB(226, 183, 72), Color3.fromRGB(38, 102, 58)
-		add("Helmet", V(1.4, 0.8, 1.32), at(0, headY + 0.38, headZ + 0.02), gold, Enum.Material.Metal)
-		for _, x in ipairs({ -1, 1 }) do
-			-- The horns rise from the brow, sweep out and curl back.
-			local root, bend, tip = V(x * 0.42, headY + 0.42, headZ - 0.38), V(x * 0.8, headY + 1.15, headZ - 0.2), V(x * 1.02, headY + 1.75, headZ + 0.45)
-			segment("Horn", root, bend, 0.3, gold, Enum.Material.Metal)
-			segment("Horn", bend, tip, 0.22, gold, Enum.Material.Metal)
-			add("Hair", V(0.42, 1.1, 0.5), at(x * 0.56, headY - 0.4, headZ + 0.35), INK, Enum.Material.SmoothPlastic)
-			add("Cape", V(1.1, 3.5, 0.35), at(x * 0.6, 1.7, 0.72) * CFrame.Angles(-0.12, x * 0.2, 0), cape, Enum.Material.SmoothPlastic)
-			add("Trim", V(0.2, 1.7, 0.14), at(x * 0.36, 2.1, -0.6), gold, Enum.Material.Metal)
-			boot(x, cape:Lerp(INK, 0.4))
-		end
-		add("Collar", V(1.9, 0.45, 1.3), at(0, 2.95, 0), gold, Enum.Material.Metal)
-		local hand = handAt(1)
-		local scepter = part(model, V(0.14, 3.2, 0.14) * scale, gold, Enum.Material.Metal)
-		scepter.Name, scepter.CFrame = "Scepter", CFrame.new(hand.Position + V(0, 0.9, -0.1) * scale)
-		follow("arm", 1, scepter)
-		follow("arm", 1, add("Gem", V(0.36, 0.46, 0.36), CFrame.new(hand.Position + V(0, 2.55, -0.1) * scale), Color3.fromRGB(90, 200, 255), Enum.Material.Neon))
-	elseif def.id == "doom" then
-		local cloth, gold = Color3.fromRGB(41, 90, 58), Color3.fromRGB(214, 172, 72)
-		add("Mask", V(1.16, 1.12, 0.4), face(0, -0.02, -0.12), look.head:Lerp(Color3.new(1, 1, 1), 0.1), Enum.Material.Metal)
-		add("Grille", V(0.4, 0.06, 0.06), face(0, -0.32, 0.12), INK)
-		for _, x in ipairs({ -1, 1 }) do
-			add("Slit", V(0.3, 0.09, 0.08), face(x * 0.26, 0.12, 0.12), look.eye, Enum.Material.Neon)
-			add("Cloak", V(1.3, 3.6, 0.4), at(x * 0.62, 1.8, 0.7) * CFrame.Angles(-0.1, x * 0.2, 0), cloth, Enum.Material.SmoothPlastic)
-			add("Clasp", V(0.34, 0.34, 0.16), at(x * 0.7, 2.8, -0.42), gold, Enum.Material.Metal)
-			follow("arm", x, add("Gauntlet", V(0.68, 0.68, 0.72), handAt(x), look.arm:Lerp(INK, 0.2), Enum.Material.Metal))
-			boot(x, look.leg:Lerp(INK, 0.2), Enum.Material.Metal)
-		end
-		add("Hood", V(1.56, 1.4, 1.46), at(0, headY + 0.16, headZ + 0.16), cloth, Enum.Material.SmoothPlastic)
-		add("Tunic", V(2.1 * bulk, 1.8, 1.32 * bulk), at(0, 1.55, 0), cloth, Enum.Material.SmoothPlastic)
-		add("Belt", V(2.06 * bulk, 0.3, 1.34 * bulk), at(0, 1.95, 0), Color3.fromRGB(70, 60, 44), Enum.Material.SmoothPlastic)
-		add("Buckle", V(0.36, 0.36, 0.12), at(0, 1.95, -0.74), gold, Enum.Material.Metal)
+		shadow.CFrame = model:GetPivot() * CFrame.new(0, 0.06, 0) * CFrame.Angles(0, 0, math.pi / 2)
 	end
 	local billboard = Instance.new("BillboardGui")
 	billboard.Size = UDim2.fromOffset(def.boss and 108 or 45, 8)
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, 2.7 * scale, 0)
-	billboard.AlwaysOnTop = true
-	billboard.MaxDistance = 180
-	billboard.Adornee = torso
-	billboard.Parent = model
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, (head and head.Size.Y / 2 or 1) + 0.7, 0)
+	billboard.AlwaysOnTop, billboard.MaxDistance, billboard.Adornee, billboard.Parent = true, 180, head or chest, model
 	local bg = UI.frame(billboard, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(22, 19, 26)})
 	UI.corner(bg, 3)
 	local hp = UI.frame(bg, {Name = "HP", Size = UDim2.fromScale(1, 1), BackgroundColor3 = def.boss and UI.Colors.red or UI.Colors.green})
 	UI.corner(hp, 3)
 	local status = UI.label(billboard, "", {Name="Status", Position=UDim2.new(0.5,-75,0,-19), Size=UDim2.fromOffset(150,17),
 		TextSize=11, TextColor3=UI.Colors.gold, TextStrokeTransparency=0.25, Visible=false})
-	local pieces = {}
-	for _, piece in ipairs(model:GetChildren()) do
-		if piece:IsA("BasePart") then
-			if def.stealth and piece.Material ~= Enum.Material.Neon and piece.Name ~= "Shadow" then piece.Transparency = 0.32 end
-			-- Loki's illusions shimmer: half there, so they read as fakes.
-			if def.illusion and piece.Name ~= "Shadow" then piece.Transparency = math.max(piece.Transparency, 0.45) end
-			table.insert(pieces, {part = piece, rest = torso.CFrame:Inverse() * piece.CFrame, transparency = piece.Transparency})
-		end
-	end
-	-- Flyers keep a shadow on the road below them, so their lane reads from
-	-- above; it is repositioned every frame, apart from the bobbing body.
 	local groundShadow
 	if def.air then
 		groundShadow = part(model, Vector3.new(0.05, 2.6 * scale, 2.6 * scale), Color3.new(0, 0, 0))
 		groundShadow.Name, groundShadow.Shape, groundShadow.Transparency = "GroundShadow", Enum.PartType.Cylinder, 0.62
 	end
-	model:PivotTo(CFrame.new(0, 0, 0))
-	-- Torso and head are the two parts a hit flash recolors: a Highlight per
-	-- enemy would be prettier and completely unaffordable at 180 of them.
 	return {
-		model = model, bar = hp, status = status, scale = scale, def = def, lastHP = nil,
-		legs = def.air and nil or legs, arms = arms, wings = wings, legHeight = legHeight,
-		pieces = pieces, billboard = billboard, groundShadow = groundShadow, charges = charges,
-		flashParts = { { part = torso, color = torso.Color }, { part = head, color = head.Color }, shirt and { part = shirt, color = shirt.Color } or nil },
+		model = model, bar = hp, status = status, scale = scale, def = def, lastHP = nil, art = true,
+		rig = Motion.Joints(model), gait = model:GetAttribute("Gait"),
+		legs = nil, arms = {}, wings = {}, legHeight = 0, pieces = pieces, billboard = billboard,
+		groundShadow = groundShadow, charges = #charges > 0 and charges or nil,
+		-- Flyers ride with their chest at the eight studs shots aim at.
+		airLift = def.air and (8 - (model:GetAttribute("ChestHeight") or 2)) or 0,
+		flashParts = { chest and { part = chest, color = chest.Color } or nil, head and { part = head, color = head.Color } or nil },
 		flashUntil = nil,
 	}
+end
+
+local function buildEnemy(def)
+	local template = artTemplate("Enemies", def.id) or artTemplate("Enemies", def.family)
+	if template then return buildArtEnemy(def, template) end
+	local figure = figureTemplate(def.id) or figureTemplate(def.family)
+	if figure then return buildRigEnemy(def, figure) end
+	-- The server publishes every figure before anyone can join a match; wait a
+	-- moment for it on a slow join rather than drawing nothing.
+	local folder = ReplicatedStorage:WaitForChild("DoomFigures", 5)
+	figure = folder and (figureTemplate(def.id) or figureTemplate(def.family))
+	if figure then return buildRigEnemy(def, figure) end
+	local model = Instance.new("Model")
+	model.Name = "EnemyVisual"
+	local body = part(model, Vector3.new(1.6, 3.6, 1), UI.color(def.color))
+	body.Name, body.CFrame = "UpperTorso", CFrame.new(0, 1.8, 0)
+	model.PrimaryPart = body
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size, billboard.AlwaysOnTop, billboard.Adornee, billboard.Parent = UDim2.fromOffset(45, 8), true, body, model
+	local hp = UI.frame(billboard, {Name = "HP", Size = UDim2.fromScale(1, 1), BackgroundColor3 = UI.Colors.green})
+	local status = UI.label(billboard, "", {Name = "Status", Visible = false})
+	return { model = model, bar = hp, status = status, scale = 1, def = def, art = true, arms = {}, wings = {}, legHeight = 0,
+		pieces = { { part = body, transparency = 0 } }, billboard = billboard, flashParts = { { part = body, color = body.Color } } }
 end
 
 -- Exposed for tools (the Studio showroom) and tests; gameplay uses Handle.
@@ -478,8 +239,10 @@ function Effects:_poolEnemy(record)
 	clearFlash(record)
 	for _, piece in ipairs(record.pieces) do
 		piece.part.Transparency = piece.transparency
-		piece.part.CFrame = piece.rest
+		-- A jointed figure's parts hang on its joints: only the pose resets.
+		if piece.rest then piece.part.CFrame = piece.rest end
 	end
+	if record.rig then Motion.Reset(record.rig); record.stride = nil end
 	record.billboard.Enabled = true
 	record.lastHP, record.target, record.phase, record.animated = nil, nil, nil, nil
 	record.hitAt, record.statusFlags, record.revealed, record.link, record.lastStep = nil, nil, nil, nil, nil
@@ -580,12 +343,20 @@ function Effects:_record(model)
 		heroId = model:GetAttribute("HeroId"), ownerId = model:GetAttribute("OwnerId"),
 		waist = CFrame.new(base.Position + Vector3.new(0, 2.4 * scale, 0)),
 		head = base.Position + Vector3.new(0, 6.2 * scale, 0), breath = (#self.aimsOrder + 1) * 1.7 }
+	-- The dizzy stars circle a jointed hero's real head, whatever its size.
+	local headPart = figure and figure:FindFirstChild("Head", true)
+	if headPart and headPart:IsA("BasePart") then record.head = headPart.Position + Vector3.new(0, headPart.Size.Y * 0.7, 0) end
 	self.aims[model] = record
 	table.insert(self.aimsOrder, model)
 	if figure then
 		local controller = figure:FindFirstChildWhichIsA("AnimationController", true) or figure:FindFirstChildWhichIsA("Humanoid", true)
 		record.animator = controller and controller:FindFirstChildOfClass("Animator") or nil
 		playArt(record, figure, "IdleAnimation", true)
+		-- A jointed figure is posed here, joint by joint, in its own style.
+		if figure:GetAttribute("HeroRig") then
+			record.rig = Motion.Joints(figure)
+			record.poseStyle = figure:GetAttribute("PoseStyle")
+		end
 	end
 	return record
 end
@@ -686,6 +457,12 @@ function Effects:_turnTowers(dt)
 				if record.firedAt ~= record.playedFire and firing then record.playedFire = record.firedAt; playArt(record, record.figure, "AttackAnimation") end
 				if record.castAt ~= record.playedCast and casting then record.playedCast = record.castAt; playArt(record, record.figure, "AbilityAnimation") end
 				if record.hopAt ~= record.playedHop and hopping then record.playedHop = record.hopAt; playArt(record, record.figure, "UpgradeAnimation") end
+				if record.rig then
+					Motion.Hero(record.rig, {
+						fire = pulse, fireProgress = firing and math.clamp(age / 0.42, 0, 1) or 0, cast = cast, hop = hop,
+						breathe = idle and math.sin(self.clock * 2.1 + record.breath) or 0, stunned = stunned, style = record.poseStyle,
+					})
+				end
 			end
 			local wobble = stunned and math.sin(self.clock * 6) * 0.1 or 0
 			local lean = -pulse * (melee and 0.12 or 0.035) + cast * 0.2 + slump * 0.22
@@ -1336,6 +1113,7 @@ function Effects:Step(dt)
 	local state = self.getState()
 	local settings = state and state.profile and state.profile.settings or {}
 	for _, enemy in pairs(self.enemies) do
+		local before = enemy.position
 		local delta = enemy.target - enemy.position
 		if delta.Magnitude > 0.04 then
 			local horizontal = Vector3.new(delta.X, 0, delta.Z)
@@ -1345,18 +1123,37 @@ function Effects:Step(dt)
 			end
 		end
 		enemy.position = enemy.position:Lerp(enemy.target, math.min(1, dt * 12))
-		local bob = settings.lowFX and 0 or math.sin(self.clock * (enemy.def.air and 4 or 8) + enemy.phase) * (enemy.def.air and 0.2 or 0.055)
-		local position = enemy.position + Vector3.new(0, (enemy.art and 0 or 2 * enemy.scale) + bob + (enemy.def.air and 6 or 0), 0)
+		-- Jointed figures bob with their own steps (Motion); others float a little.
+		local bob = (settings.lowFX or (enemy.rig and not enemy.def.air)) and 0 or math.sin(self.clock * (enemy.def.air and 4 or 8) + enemy.phase) * (enemy.def.air and 0.2 or 0.055)
+		local lift = enemy.airLift or (enemy.def.air and 6 or 0)
+		local position = enemy.position + Vector3.new(0, (enemy.art and 0 or 2 * enemy.scale) + bob + lift, 0)
 		local pivot = CFrame.lookAt(position, position + enemy.direction)
 		local family = enemy.def.family or enemy.def.id
 		-- Runners sprint leaning into the road; everyone else walks upright.
-		if family == "runner" and (enemy.statusFlags or 0) % 2 == 0 and not settings.lowFX then pivot *= CFrame.Angles(-0.3, 0, 0) end
+		if family == "runner" and not enemy.rig and (enemy.statusFlags or 0) % 2 == 0 and not settings.lowFX then pivot *= CFrame.Angles(-0.3, 0, 0) end
 		enemy.model:PivotTo(pivot)
 		if enemy.groundShadow then
 			enemy.groundShadow.CFrame = CFrame.new(enemy.position.X, enemy.position.Y + 0.08, enemy.position.Z) * CFrame.Angles(0, 0, math.pi / 2)
 		end
 		if enemy.flashUntil and self.clock >= enemy.flashUntil then clearFlash(enemy) end
-		if not settings.lowFX or enemy.animated then
+		if enemy.rig then
+			-- Near the camera, or everywhere with full effects: walk. Reduced
+			-- effects keep figures in a still pose (one reset when switched).
+			local stopped = (enemy.statusFlags or 0) % 2 == 1
+			if not settings.lowFX then
+				local moved = Vector3.new(enemy.position.X - before.X, 0, enemy.position.Z - before.Z).Magnitude
+				local landed = Motion.Walk(enemy, enemy.rig, enemy.gait, moved, enemy.scale, stopped, self.clock)
+				-- A heavy walker's footfalls raise dust: a small, budgeted ring.
+				if landed and (family == "brute" or enemy.def.id == "abomination") and self.dustBudget < 8 then
+					self.dustBudget += 1
+					self:_groundImpact(enemy.position, Color3.fromRGB(150, 128, 98), 1.4 * enemy.scale)
+				end
+				enemy.animated = true
+			elseif enemy.animated then
+				Motion.Reset(enemy.rig)
+				enemy.animated = false
+			end
+		elseif not settings.lowFX or enemy.animated then
 			-- All limb rests are relative to the torso pivot, not the floor.
 			-- Reset them once when lowFX changes, so legs never freeze mid-stride.
 			local phase = self.clock * (enemy.def.speed or 7) * 0.85 + enemy.phase

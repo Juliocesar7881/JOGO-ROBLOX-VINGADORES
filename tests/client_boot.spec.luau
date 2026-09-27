@@ -408,7 +408,8 @@ local function session(screen)
 	local celebrateScript = moduleScript(clientScript, "Celebrate", __CELEBRATE__)
 	local routeScript = moduleScript(clientScript, "RoutePreview", __ROUTEPREVIEW__)
 	local overlayScript = moduleScript(clientScript, "BuildOverlay", __BUILDOVERLAY__)
-	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript, overlayScript }) do loaded[item] = nil end
+	local motionScript = moduleScript(clientScript, "Motion", __MOTION__)
+	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript, overlayScript, motionScript }) do loaded[item] = nil end
 	loaded[shared.Config] = nil
 
 	if not step("init.client boots and syncs", function() __CLIENT__(clientScript, clockOs); flush() end) then return end
@@ -1190,7 +1191,7 @@ local function session(screen)
 		for _, candidate in ipairs(workspace:FindFirstChild("DoomWorld").Towers:GetChildren()) do
 			if candidate:GetAttribute("TowerId") == id then model = candidate end
 		end
-		rayHit = { Instance = model and model:FindFirstChild("Suit"), Position = v3(0, 0, 0) }
+		rayHit = { Instance = model and model:FindFirstChild("UpperTorso", true), Position = v3(0, 0, 0) }
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, KeyCode = Enum.KeyCode.Unknown, Position = v3(10, 10, 0) }, false)
 		flush()
 		return frameAt(main, layout.tower)
@@ -1243,7 +1244,7 @@ local function session(screen)
 		push(matchSnapshot(profile, "Wave", { enemies = 12, cardOffers = {} }))
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Q, Position = v3(0, 0, 0) }, false)
 		flush()
-		rayHit = { Instance = workspace:FindFirstChild("DoomWorld").Towers:GetChildren()[1]:FindFirstChild("Suit"), Position = v3(0, 0, 0) }
+		rayHit = { Instance = workspace:FindFirstChild("DoomWorld").Towers:GetChildren()[1]:FindFirstChild("UpperTorso", true), Position = v3(0, 0, 0) }
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, KeyCode = Enum.KeyCode.Unknown, Position = v3(5, 5, 0) }, false)
 		flush()
 		click("CONFIRMAR")
@@ -1262,7 +1263,7 @@ local function session(screen)
 		frames(1 / 30, 3)
 		local flyingTorso
 		for _,model in ipairs(workspace.DoomClientVisuals:GetChildren()) do
-			local torso=model:FindFirstChild("Torso")
+			local torso=model:FindFirstChild("UpperTorso")
 			if torso and torso.Position.X < -20 and torso.Position.Z > -20 then flyingTorso=torso end
 		end
 		check(flyingTorso and flyingTorso.Position.Y>7.7 and flyingTorso.Position.Y<8.3,tag..": airborne visual shares the eight-stud shot height")
@@ -1299,11 +1300,13 @@ local function session(screen)
 		for _, candidate in ipairs(workspace:FindFirstChild("DoomWorld").Towers:GetChildren()) do
 			if candidate:GetAttribute("TowerId") == "t1" then t1 = candidate end
 		end
-		local look = t1 and t1:FindFirstChild("Suit") and t1.Suit.CFrame.LookVector
+		local chest = t1 and t1:FindFirstChild("UpperTorso", true)
+		local look = chest and chest.CFrame.LookVector
 		local want = (v3(-40, 0, -60) - v3(10, 0, 10)).Unit
 		check(look ~= nil and look.X * want.X + look.Z * want.Z > 0.95, tag .. ": a hero turns to face what it shoots")
 		check(t1 and t1.Platform.CFrame.LookVector.Z < -0.99, tag .. ": the platform the server owns never turns")
-		local hand = t1 and t1:FindFirstChild("Hand")
+		-- The jointed figure: the right hand hangs on shoulder, elbow and wrist.
+		local hand = t1 and t1:FindFirstChild("RightHand", true)
 		local handRest = hand and hand.CFrame
 		fx({kind="Shot",towerId="t1",from=v3(10,4,10),to=v3(-40,2,-60),color=Color3.fromRGB(220,48,51)})
 		frames(0.1, 2)
@@ -1353,12 +1356,10 @@ local function session(screen)
 		for _, candidate in ipairs(workspace:FindFirstChild("DoomWorld").Towers:GetChildren()) do
 			if candidate:GetAttribute("TowerId") == "anim1" then model = candidate end
 		end
-		local body, hand
-		for _, piece in ipairs(model and model:GetChildren() or {}) do
-			if piece:GetAttribute("PoseGroup") == "Body" and not body then body = piece end
-			if piece:GetAttribute("PoseGroup") == "RightArm" and (not hand or piece.Position.Y < hand.Position.Y) then hand = piece end
-		end
-		check(body ~= nil and hand ~= nil, tag .. ": the hero figure carries pose groups")
+		local figure = model and model:FindFirstChild("HeroFigure")
+		local body = figure and figure:FindFirstChild("UpperTorso")
+		local hand = figure and figure:FindFirstChild("RightHand")
+		check(body ~= nil and hand ~= nil and figure:GetAttribute("HeroRig") == true, tag .. ": the hero figure is jointed")
 		if not (body and hand) then return end
 		local restBody, restHand = body.Position, hand.Position
 		-- Breathing only runs near the camera; look at this hero from close by.
@@ -1412,6 +1413,9 @@ local function session(screen)
 		for _, candidate in ipairs(workspace:FindFirstChild("DoomWorld").Towers:GetChildren()) do
 			if candidate:GetAttribute("TowerId") == "t1" then model = candidate end
 		end
+		-- Swap the generated figure for a piece of final art, then put it back.
+		local generated = model:FindFirstChild("HeroFigure")
+		if generated then generated.Parent = nil end
 		local figure = Instance.new("Model")
 		figure.Name, figure.Parent = "HeroFigure", model
 		figure:SetAttribute("HeroArt", true)
@@ -1429,6 +1433,7 @@ local function session(screen)
 		end
 		check(fromMuzzle, tag .. ": the shot leaves from the art's Muzzle")
 		figure:Destroy()
+		if generated then generated.Parent = model end
 		fx({ kind = "Clear" })
 		frames(1 / 30, 2)
 	end)
@@ -1486,7 +1491,7 @@ local function session(screen)
 		check(charges == 1, tag .. ": a summoner shows one orb per summons left, got " .. charges)
 		local function cloakTransparency()
 			for _, model in ipairs(visuals:GetChildren()) do
-				local torso = model.Name == "EnemyVisual" and model:FindFirstChild("Torso")
+				local torso = model.Name == "EnemyVisual" and model:FindFirstChild("UpperTorso")
 				local seen = torso and (torso.Transparency or 0)
 				if seen and seen > 0 and seen < 0.5 then return seen end
 			end

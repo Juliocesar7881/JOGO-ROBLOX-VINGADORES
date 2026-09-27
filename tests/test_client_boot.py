@@ -23,6 +23,7 @@ LOADERS = {
     "__CELEBRATE__": "src/client/Celebrate.luau",
     "__ROUTEPREVIEW__": "src/client/RoutePreview.luau",
     "__BUILDOVERLAY__": "src/client/BuildOverlay.luau",
+    "__MOTION__": "src/client/Motion.luau",
     "__WORLD__": "src/server/WorldBuilder.luau",
     "__CLIENT__": "src/client/init.client.luau",
 }
