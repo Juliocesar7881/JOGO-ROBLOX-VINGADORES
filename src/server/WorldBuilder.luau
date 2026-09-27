@@ -1914,7 +1914,12 @@ function World:BuildLobby()
 		"LOJA ROBUX", "ROBUX", Color3.fromRGB(207, 180, 231))
 
 	-- Mission board and hall-of-fame totem flank the bridge entrance.
-	buildBoard(lobby, -23, 393, "quests", "MISSÕES\nDA RESISTÊNCIA", self.openPanel)
+	local _, questsText = buildBoard(lobby, -23, 393, "quests", "MISSÕES", self.openPanel)
+	-- Like the service desks: a coloured title and a small how-to line.
+	questsText.TextScaled, questsText.RichText, questsText.TextSize = false, true, 36
+	questsText:SetAttribute("LobbyTextPT", '<font color="#8fd07a">MISSÕES</font>\n<font size="17" color="#b8cdd8">TOQUE OU PRESSIONE E</font>')
+	questsText:SetAttribute("LobbyTextEN", '<font color="#8fd07a">MISSIONS</font>\n<font size="17" color="#b8cdd8">TAP OR PRESS E</font>')
+	questsText.Text = questsText:GetAttribute("LobbyTextPT")
 	local _, leaderboardText = buildBoard(lobby, 23, 405, "leaderboard", "SALÃO DA FAMA\nCarregando…", self.openPanel)
 	self.leaderboardText = leaderboardText
 
@@ -2195,7 +2200,6 @@ function World:BuildForestSanctuary(lobby)
 		piece("TrailLanternPost",V(0.55,6,0.55),CFrame.new(spot[1],3,spot[2]),wood,Enum.Material.Wood,true)
 		piece("TrailLantern",V(1.1,1.3,1.1),CFrame.new(spot[1],6,spot[2]),Color3.fromRGB(255,213,130),Enum.Material.Neon,false)
 	end
-	wallSign(forest,"ForestDirections",CFrame.new(14,3.2,398),V(11,3,0.45),"BOSQUE DA AURORA","TRILHAS  /  MIRANTE  /  ENCONTROS",ART.gold)
 end
 
 -- Optional exploration radiates from the compact service plaza. Each island
@@ -2591,7 +2595,13 @@ function World:FinishLobby(lobby)
 	}
 	for _,def in ipairs(services) do
 		local board,text=buildBoard(lobby,def.x,def.z,def.id,def.pt,self.openPanel)
-		localized(text,def.pt.."\nTOQUE OU PRESSIONE E",def.en.."\nTAP OR PRESS E")
+		-- A readable title in the desk's colour and a small how-to line, not
+		-- the whole board filled with capitals.
+		text.TextScaled,text.RichText,text.TextSize=false,true,36
+		local tint=string.format('<font color="#%02x%02x%02x">',math.floor(def.color.R*255),math.floor(def.color.G*255),math.floor(def.color.B*255))
+		local how='</font>\n<font size="17" color="#b8cdd8">'
+		localized(text,tint..def.pt..how.."TOQUE OU PRESSIONE E</font>",tint..def.en..how.."TAP OR PRESS E</font>")
+		text.Text=text:GetAttribute("LobbyTextPT")
 		local prompt=board.PrimaryPart:FindFirstChildOfClass("ProximityPrompt")
 		if prompt then localized(prompt,def.pt,def.en) end
 		p("ServiceDesk",V(8,2.4,3),CFrame.new(def.x,1.2,def.z),wood,Enum.Material.WoodPlanks,true)
