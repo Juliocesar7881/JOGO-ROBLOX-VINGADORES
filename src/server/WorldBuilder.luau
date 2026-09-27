@@ -982,16 +982,18 @@ local function tinted(part, kind)
 end
 
 -- The infected face: mismatched glowing eyes, heavy brow and a dark jaw.
-local function infectedFace(f, eye)
+-- Up to 180 of them walk at once, so the common face is four pieces; a boss
+-- (one on the road) adds dark sockets and a tooth.
+local function infectedFace(f, eye, detailed)
 	local k = f.parts.Head.Size.X / BODY.head.X
 	for _, side in ipairs({ -1, 1 }) do
 		local size = side < 0 and Vector3.new(0.26, 0.28, 0.06) or Vector3.new(0.2, 0.22, 0.06)
-		f.add("Head", "Socket", (size + Vector3.new(0.1, 0.1, 0)) * k, f.face(side * 0.28, 0.12, -0.01), EC.ink, FABRIC, "ball")
+		if detailed then f.add("Head", "Socket", (size + Vector3.new(0.1, 0.1, 0)) * k, f.face(side * 0.28, 0.12, -0.01), EC.ink, FABRIC, "ball") end
 		f.add("Head", "Eye", size * k, f.face(side * 0.28, 0.12, 0.02), eye or EC.eye, NEON, "ball")
 	end
 	f.add("Head", "Brow", Vector3.new(0.9, 0.14, 0.12) * k, f.face(0, 0.42, -0.02), f.parts.Head.Color:Lerp(EC.ink, 0.35), FABRIC)
 	f.add("Head", "Jaw", Vector3.new(0.46, 0.2, 0.06) * k, f.face(0.04, -0.42, 0.0), EC.ink, FABRIC, "ball")
-	f.add("Head", "Tooth", Vector3.new(0.1, 0.08, 0.05) * k, f.face(-0.08, -0.36, 0.02), EC.bone, FABRIC)
+	if detailed then f.add("Head", "Tooth", Vector3.new(0.1, 0.08, 0.05) * k, f.face(-0.08, -0.36, 0.02), EC.bone, FABRIC) end
 end
 
 -- Clothes: a shirt over chest and upper arms, pants over hips and thighs.
@@ -1165,7 +1167,7 @@ end
 ENEMY_EXTRAS.abomination = function(f)
 	local h, c, s = f.parts.Head.Size, f.sizes.chest, f.scale
 	local ridge = f.parts.Head.Color:Lerp(FIGURE_WHITE, 0.15)
-	infectedFace(f, Color3.fromRGB(255, 140, 50))
+	infectedFace(f, Color3.fromRGB(255, 140, 50), true)
 	-- Bare, scaly skin above ragged dark shorts.
 	f.parts.UpperTorso.Color = f.parts.Head.Color
 	for _, name in ipairs({ "LowerTorso", "LeftUpperLeg", "RightUpperLeg" }) do f.parts[name].Color = Color3.fromRGB(58, 52, 44) end

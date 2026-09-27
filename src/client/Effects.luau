@@ -89,6 +89,9 @@ local function buildArtEnemy(def, template)
 	return record
 end
 
+-- Beyond this distance from the camera, a walking figure is posed every third frame.
+local FAR_WALK = 120
+
 -- The jointed figure the server published for this enemy (DoomFigures).
 local function figureTemplate(id)
 	local folder = ReplicatedStorage:FindFirstChild("DoomFigures")
@@ -1121,6 +1124,7 @@ function Effects:Step(dt)
 	if self.clock >= (self.dustResetAt or 0) then self.dustBudget, self.poofBudget, self.dustResetAt = 0, 0, self.clock + 0.5 end
 	local state = self.getState()
 	local settings = state and state.profile and state.profile.settings or {}
+	local eye = workspace.CurrentCamera and workspace.CurrentCamera.CFrame.Position
 	for _, enemy in pairs(self.enemies) do
 		local before = enemy.position
 		local delta = enemy.target - enemy.position
@@ -1150,8 +1154,16 @@ function Effects:Step(dt)
 			-- effects keep figures in a still pose (one reset when switched).
 			local stopped = (enemy.statusFlags or 0) % 2 == 1
 			if not settings.lowFX then
-				local moved = Vector3.new(enemy.position.X - before.X, 0, enemy.position.Z - before.Z).Magnitude
-				local landed = Motion.Walk(enemy, enemy.rig, enemy.gait, moved, enemy.scale, stopped, self.clock)
+				-- Far from the camera a walk is posed every third frame; the
+				-- distance walked meanwhile is kept, so the stride stays in step.
+				enemy.walked = (enemy.walked or 0) + Vector3.new(enemy.position.X - before.X, 0, enemy.position.Z - before.Z).Magnitude
+				enemy.frame = ((enemy.frame or 0) + 1) % 3
+				local far = eye and (eye - enemy.position).Magnitude > FAR_WALK or false
+				local landed = false
+				if not far or enemy.frame == 0 then
+					landed = Motion.Walk(enemy, enemy.rig, enemy.gait, enemy.walked, enemy.scale, stopped, self.clock)
+					enemy.walked = 0
+				end
 				-- A heavy walker's footfalls raise dust: a small, budgeted ring.
 				if landed and (family == "brute" or enemy.def.id == "abomination") and self.dustBudget < 8 then
 					self.dustBudget += 1
