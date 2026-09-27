@@ -35,7 +35,10 @@ def long_string(text: str) -> str:
     level = 1
     while f"]{'=' * level}]" in text:
         level += 1
-    return f"[{'=' * level}[{text}]{'=' * level}]"
+    # Lua drops a newline right after the opening bracket. A chunk that starts
+    # with one would lose it and glue two lines together ("return 2.4" + "end"
+    # became "2.4end"), so always lead with a newline for Lua to drop instead.
+    return f"[{'=' * level}[\n{text}]{'=' * level}]"
 
 
 def target(path: Path) -> tuple[str, str | None, str]:
@@ -156,6 +159,14 @@ print("DOOM_SYNC_FILE", key, #source, instance.Source == source)
         print("  studio:", report)
     if len(written) != len(files):
         raise SystemExit(f"Only {len(written)}/{len(files)} files confirmed in Studio; see its Output window.")
+    # Studio's #source counts UTF-8 bytes: a module must arrive byte for byte
+    # (scripts carry the role header on top, so they may only be longer).
+    expected = {path.resolve().relative_to(ROOT).as_posix(): (len(path.read_text(encoding="utf-8-sig").encode("utf-8")), target(path)[1] is None) for path in files}
+    for report in reports[-len(files):]:
+        key, size, _ = report.rsplit(" ", 2)
+        want, is_script = expected.get(key, (None, False))
+        if want is not None and (int(size) < want if is_script else int(size) != want):
+            raise SystemExit(f"{key} arrived with {size} bytes, expected {want}: the chunks were not joined intact.")
     if args.preview_lobby:
         count += 1
         run_command(PREVIEW.replace("DOOM_PREVIEW_OK", f"DOOM_PREVIEW_OK_{nonce}"), count)
