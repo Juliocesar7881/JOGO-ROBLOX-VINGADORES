@@ -278,7 +278,7 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 	local textX = portraitW + 9
 	UI.label(button, L(def.name), {Name = "HeroName", Position = UDim2.fromOffset(textX, tight and 3 or 7), Size = UDim2.new(1, -textX - 5, 0, tight and 26 or 32), TextSize = tight and 12 or 14, Font = UI.Fonts.display, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
 	if index==1 then UI.stroke(button,C.gold,3.5) end
-	local price = UI.label(button, "🪙 " .. tostring(def.cost), {Name = "EnergyCost", Position = UDim2.new(0, textX, 1, tight and -21 or -26), Size = UDim2.new(1, -textX - 4, 0, 20), TextColor3 = C.gold, TextSize = tight and 12 or 15, Font = UI.Fonts.display})
+	local price = UI.label(button, "💰 " .. tostring(def.cost), {Name = "EnergyCost", Position = UDim2.new(0, textX, 1, tight and -21 or -26), Size = UDim2.new(1, -textX - 4, 0, 20), TextColor3 = C.gold, TextSize = tight and 12 or 15, Font = UI.Fonts.display})
 	local badge = UI.label(button, index==1 and "★1" or tostring(index), {Name = "SlotNumber", Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(tight and 22 or 26, tight and 15 or 18), BackgroundColor3 = C.background, BackgroundTransparency = 0.08, TextSize = 10, TextColor3 = tint, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
 	UI.corner(badge, 5)
 	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 8, 1, -3), Size = UDim2.new(1, -16, 0, 2), BackgroundColor3 = tint, BackgroundTransparency = equipped and 0 or 0.65})
@@ -322,7 +322,7 @@ local function contextHero(body, data)
 	heroPortrait(showcase,id,{Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(104,132)})
 	UI.label(showcase,L(rarity.name),{Position=UDim2.fromOffset(118,0),Size=UDim2.new(1,-122,0,20),TextColor3=tint,Font=Enum.Font.GothamBold})
 	UI.label(showcase,L(def.name),{Position=UDim2.fromOffset(118,25),Size=UDim2.new(1,-122,0,62),TextSize=23,Font=Enum.Font.GothamBlack,TextWrapped=true})
-	UI.label(showcase,"🪙 "..number(def.cost)..T(" Ouro na partida"," Gold in battle"),{Position=UDim2.fromOffset(118,95),Size=UDim2.new(1,-122,0,25),TextColor3=C.gold})
+	UI.label(showcase,"💰 "..number(def.cost)..T(" Ouro na partida"," Gold in battle"),{Position=UDim2.fromOffset(118,95),Size=UDim2.new(1,-122,0,25),TextColor3=C.gold})
 	smallText(body,L(def.description),0,48)
 	if def.pickup then smallText(body,"🧲 "..T("Coletor: a torre puxa o seu Ouro que cai a até ","Scavenger: the tower pulls in your Gold landing within ")..def.pickup.." studs.",0,34) end
 	local tabs=UI.row(body,44)
@@ -332,7 +332,7 @@ local function contextHero(body, data)
 	if heroDetailTab=="defense" then
 	UI.section(body,T("NA DEFESA","ON DEFENSE"),T("Valores da torre inicial, antes de maestria, talentos e outros bônus.","Starting tower values, before mastery, talents and other bonuses."))
 	local stats=UI.row(body,116)
-	for index,entry in ipairs({{T("DANO","DAMAGE"),tostring(def.damage)},{T("ALCANCE","RANGE"),tostring(def.range).." studs"},{T("INTERVALO","INTERVAL"),string.format("%.2f s",def.interval)},{T("POSICIONAR","PLACE"),"🪙 "..number(def.cost)}}) do
+	for index,entry in ipairs({{T("DANO","DAMAGE"),tostring(def.damage)},{T("ALCANCE","RANGE"),tostring(def.range).." studs"},{T("INTERVALO","INTERVAL"),string.format("%.2f s",def.interval)},{T("POSICIONAR","PLACE"),"💰 "..number(def.cost)}}) do
 		local card=UI.roundFrame(stats,{Name="HeroStat_"..index,Position=UDim2.new((index-1)%2/2,0,0,math.floor((index-1)/2)*58),Size=UDim2.new(0.5,-6,0,52),BackgroundColor3=tint:Lerp(C.panel,0.9)},tint:Lerp(C.stroke,0.6))
 		UI.label(card,entry[1],{Position=UDim2.fromOffset(8,4),Size=UDim2.new(1,-16,0,18),TextSize=10,TextColor3=C.muted,Font=Enum.Font.GothamBold})
 		UI.label(card,entry[2],{Position=UDim2.fromOffset(8,24),Size=UDim2.new(1,-16,0,24),TextSize=14,TextColor3=tint,Font=Enum.Font.GothamBold})
@@ -531,7 +531,7 @@ local function contextChests(body,data)
 			local row=UI.roundFrame(body,{Name="Guaranteed_"..id,Size=UDim2.new(1,-6,0,58),BackgroundColor3=C.card})
 			UI.label(row,name,{Position=UDim2.fromOffset(12,4),Size=UDim2.new(1,-170,0,26),Font=UI.Fonts.display,TextSize=15})
 			UI.label(row,Catalog.Upper(L(Catalog.Rarities[rarity].name)),{Position=UDim2.fromOffset(12,30),Size=UDim2.new(1,-170,0,20),TextSize=11,TextColor3=UI.color(Catalog.Rarities[rarity].color)})
-			local button=UI.button(row,"🪙 "..number(price),function() act("BuyGuaranteed",{itemId=id}) end,{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-8,0.5,0),Size=UDim2.fromOffset(148,44),BackgroundColor3=C.gold,TextSize=14})
+			local button=UI.button(row,number(price)..T(" Ouro"," Gold"),function() act("BuyGuaranteed",{itemId=id}) end,{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-8,0.5,0),Size=UDim2.fromOffset(148,44),BackgroundColor3=C.gold,TextSize=14})
 			if (profile().gold or 0)<price then UI.disabled(button) end
 		end
 		for _,id in ipairs(Catalog.HeroOrder) do local def=Catalog.Heroes[id]; offer(id,L(def.name),def.rarity,owned[id]~=nil) end
@@ -1000,7 +1000,7 @@ local function contextTalents(body)
 		local branchTint = C.violet
 		for _, branch in ipairs(Catalog.TalentBranches) do if table.find(branch.nodes, id) then branchTint = Color3.fromRGB(unpack(branch.color)) end end
 		local rank, open = ranks[id] or 0, available(id)
-		local unit = def.unit == "%" and "%" or (def.unit == "HP" and " HP" or (def.unit == "gold" and " 🪙" or ""))
+		local unit = def.unit == "%" and "%" or (def.unit == "HP" and " HP" or (def.unit == "gold" and T(" Ouro", " Gold") or ""))
 		local function value(r) return (r > 0 and "+" or "") .. tostring(r * def.effect) .. unit end
 		local card = UI.roundFrame(body, {Name = "Talent_" .. id, Size = UDim2.new(1, -6, 0, 196), BackgroundColor3 = branchTint:Lerp(C.background, 0.78)}, branchTint)
 		UI.label(card, L(def.name), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -90, 0, 30), TextSize = 20, Font = UI.Fonts.display, TextColor3 = branchTint})
@@ -1928,7 +1928,7 @@ local function confirmPlacement()
 			audio:Cue("place", 0.05); clearPlacement()
 			-- The price the server actually charged, floating off the wallet.
 			if reply and tonumber(reply.cost) and refs.energy and refs.energy.Parent then
-				celebrate:Float("-" .. number(reply.cost) .. " 🪙", refs.energy, C.red)
+				celebrate:Float("-" .. number(reply.cost) .. " 💰", refs.energy, C.red)
 			end
 		end)
 	elseif selectedSkill and selectedPosition and Catalog.Abilities[selectedSkill].target ~= "tower" then
@@ -2010,10 +2010,10 @@ local function towerPanel(tower)
 		return
 	end
 	if tower.level < 4 then
-		UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. "🪙 " .. number(tower.upgradeCost), function() act("UpgradeTower", {towerId = tower.id}) end, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = 13})
+		UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. "💰 " .. number(tower.upgradeCost), function() act("UpgradeTower", {towerId = tower.id}) end, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = 13})
 	elseif tower.level == 4 then
 		for branch = 1, 2 do
-			local label = L(def.branches[branch].name) .. " • 🪙 " .. number(tower.upgradeCost)
+			local label = L(def.branches[branch].name) .. " • 💰 " .. number(tower.upgradeCost)
 			local position = wide and UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY) or UDim2.fromOffset(12, actionY + (branch - 1) * 42)
 			local size = wide and UDim2.fromOffset(half, actionH) or UDim2.fromOffset(w - 24, 40)
 			UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Position = position, Size = size, TextSize = wide and 10 or 11, BackgroundColor3 = branch == 1 and C.green or C.blue})
@@ -2025,7 +2025,7 @@ local function towerPanel(tower)
 		local index = table.find(priorityOrder, tower.priority) or 1
 		act("SetPriority", {towerId = tower.id, priority = priorityOrder[index % #priorityOrder + 1]})
 	end, {Position = UDim2.fromOffset(12, rowY), Size = UDim2.fromOffset(half, rowH), TextSize = 11})
-	UI.secondary(panel, T("Vender • ", "Sell • ") .. "🪙 " .. number(math.floor((tower.invested or 0) * 0.7)), function()
+	UI.secondary(panel, T("Vender • ", "Sell • ") .. "💰 " .. number(math.floor((tower.invested or 0) * 0.7)), function()
 		act("SellTower", {towerId = tower.id}, closeTowerPanel)
 	end, {Position = UDim2.fromOffset(18 + half, rowY), Size = UDim2.fromOffset(half, rowH), TextColor3 = C.red, TextSize = 11})
 end
@@ -2090,7 +2090,7 @@ local function updateUpgradeBoards(match)
 			local cost = tower.upgradeCost or 0
 			local affordable = (match.cash or 0) >= cost
 			local nextLevel = (tower.level or 1) + 1
-			board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("⬆ " .. tostring(nextLevel) .. "/5")) .. "  🪙" .. number(cost)
+			board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("⬆ " .. tostring(nextLevel) .. "/5")) .. "  💰" .. number(cost)
 			board.button.BackgroundColor3 = affordable and C.green or C.card
 			-- Light text on green: dark text under the dark outline read as blots.
 			board.button.TextColor3 = affordable and C.text or C.muted
@@ -2152,7 +2152,7 @@ local function openBaseUpgrade()
 	if stats.damage>0 then line(T("DANO: ","DAMAGE: ")..stats.damage.." → "..nextStats.damage..T(" • ALCANCE: "," • RANGE: ")..stats.range.." → "..nextStats.range,C.coral) end
 	if stats.wall>0 then line(T("BARRICADA: ","BARRICADE: ")..(base.wall or 0).."/"..stats.wall.." → "..nextStats.wall..T(" HP • regenera após 5 s"," HP • regenerates after 5 s"),C.blue,40) end
 	if stats.soldier>0 then line(T("SOLDADO: ","SOLDIER: ")..stats.soldier.." → "..nextStats.soldier..T(" HP • a cada "," HP • every ")..stats.interval.." s",C.violet,40) end
-	local button=UI.button(body,base.level>=5 and T("NÍVEL MÁXIMO","MAXIMUM LEVEL") or T("EVOLUIR • ","UPGRADE • ").."🪙 "..stats.upgradeCost,function()
+	local button=UI.button(body,base.level>=5 and T("NÍVEL MÁXIMO","MAXIMUM LEVEL") or T("EVOLUIR • ","UPGRADE • ").."💰 "..stats.upgradeCost,function()
 		act("UpgradeBase",{expectedLevel=base.level},function() audio:Cue("upgrade"); shade:Destroy() end)
 	end,{Name="ConfirmBaseUpgrade",Size=UDim2.new(1,-8,0,48),TextSize=14,BackgroundColor3=C.green,ZIndex=48})
 	if base.level>=5 or (state.match.cash or 0)<stats.upgradeCost then UI.disabled(button) end
@@ -2162,7 +2162,7 @@ local function openBaseUpgrade()
 		if not current or not current.base or current.base.level~=base.level then shade:Destroy(); refs.refreshBaseModal=nil; return end
 		local missing=math.max(0,stats.upgradeCost-(current.cash or 0))
 		if base.level>=5 then return end
-		button.Text=missing>0 and T("FALTAM ","NEED ").."🪙 "..number(missing) or T("EVOLUIR • ","UPGRADE • ").."🪙 "..stats.upgradeCost
+		button.Text=missing>0 and T("FALTAM ","NEED ").."💰 "..number(missing) or T("EVOLUIR • ","UPGRADE • ").."💰 "..stats.upgradeCost
 		if missing>0 then UI.disabled(button)
 		else button.Active=true; button.AutoButtonColor=true; button.BackgroundColor3=C.green; button.TextColor3=C.background end
 	end
@@ -2187,11 +2187,11 @@ local function renderMatch()
 	UI.outline(refs.hpText, 2)
 	refs.hp = UI.bar(top, C.green, at(layout.hpBar, topRect), dims(layout.hpBar))
 	refs.matchGold = UI.label(main, "", {Position = at(layout.gold), Size = dims(layout.gold), TextSize = compact and 16 or 20, TextColor3 = C.gold, Font = UI.Fonts.display, TextXAlignment = class.narrow and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right})
-	refs.energy = UI.label(main, "", {Position = at(layout.energy), Size = dims(layout.energy), TextColor3 = C.blue, Font = UI.Fonts.display, TextSize = compact and 16 or 21, TextXAlignment = class.narrow and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left})
+	refs.energy = UI.label(main, "", {Position = at(layout.energy), Size = dims(layout.energy), TextColor3 = C.gold, Font = UI.Fonts.display, TextSize = compact and 16 or 21, TextXAlignment = class.narrow and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left})
 	surface(refs.matchGold,C.gold:Lerp(C.stroke,0.5))
-	surface(refs.energy,C.blue:Lerp(C.stroke,0.5))
+	surface(refs.energy,C.gold:Lerp(C.stroke,0.35))
 	refs.matchGold.BackgroundColor3,refs.matchGold.TextColor3,refs.matchGold.BackgroundTransparency=C.ink,C.gold,0.2
-	refs.energy.BackgroundColor3,refs.energy.TextColor3,refs.energy.BackgroundTransparency=C.ink,C.blue,0.2
+	refs.energy.BackgroundColor3,refs.energy.TextColor3,refs.energy.BackgroundTransparency=C.ink,C.gold,0.2
 	refs.energy.TextXAlignment=Enum.TextXAlignment.Center
 	refs.matchGold.TextXAlignment=Enum.TextXAlignment.Center
 	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 13 or 15, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center})
@@ -2271,7 +2271,7 @@ updateMatch = function()
 	for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId then towerCount += 1 end end
 	-- Match Gold in hand, plus what is still lying on the ground to collect.
 	local waiting = match.coinsWaiting or 0
-	refs.energy.Text = "🪙 " .. number(match.cash) .. (waiting > 0 and ("  +" .. number(waiting) .. T(" no chão", " on ground")) or "")
+	refs.energy.Text = "💰 " .. number(match.cash) .. (waiting > 0 and ("  +" .. number(waiting) .. T(" no chão", " on ground")) or "")
 	refs.energy.TextSize=mobile() and 12 or 16
 	if refs.speedToggle then
 		local fast, voted = (match.speed or 1) == 2, (match.speedVote or 1) == 2
@@ -2531,7 +2531,7 @@ fxRemote.OnClientEvent:Connect(function(event)
 	elseif event.kind == "WaveCash" then
 		-- The wave bonus lands straight in the wallet: show it next to the Gold.
 		if refs.energy and refs.energy.Parent and tonumber(event.amount) then
-			celebrate:Float("+" .. number(event.amount) .. " 🪙", refs.energy, C.gold)
+			celebrate:Float("+" .. number(event.amount) .. " 💰", refs.energy, C.gold)
 			celebrate:Pop(refs.energy, 0.12)
 		end
 	elseif event.kind == "OpenPanel" and state and state.phase == "Lobby" then
@@ -2644,7 +2644,7 @@ local function updateAfkBanner()
 	local saving = player:GetAttribute("AfkSaving") == true
 	afkDetail.Text = L(farm.rate) .. "  •  " .. T("próximo em ", "next in ") .. tostring(player:GetAttribute("AfkNext") or 60) .. "s"
 		.. "  •  " .. string.format("%d:%02d", math.floor(session / 60), session % 60)
-		.. "  •  +" .. number(earned) .. (kind == "gold" and " 🪙" or " XP")
+		.. "  •  +" .. number(earned) .. (kind == "gold" and T(" Ouro", " Gold") or " XP")
 		.. "  " .. (saving and T("salvando…", "saving…") or "✓")
 	if afk.travel then afk.travel.Visible = player:GetAttribute("AfkTravel") == true end
 	-- On the AFK place the saving screen comes on by itself, once.
@@ -2652,7 +2652,7 @@ local function updateAfkBanner()
 	if afk.text then
 		afk.text.Text = L(farm.name) .. "\n" .. T("Sessão ", "Session ") .. string.format("%d:%02d", math.floor(session / 60), session % 60)
 			.. "\n" .. T("Próximo pagamento em ", "Next payment in ") .. tostring(player:GetAttribute("AfkNext") or 60) .. "s"
-			.. "\n" .. T("Recebido: +", "Received: +") .. number(earned) .. (kind == "gold" and " 🪙" or " XP") .. "  " .. (saving and T("(salvando…)", "(saving…)") or T("✓ salvo", "✓ saved"))
+			.. "\n" .. T("Recebido: +", "Received: +") .. number(earned) .. (kind == "gold" and T(" Ouro", " Gold") or " XP") .. "  " .. (saving and T("(salvando…)", "(saving…)") or T("✓ salvo", "✓ saved"))
 	end
 end
 pcall(function()

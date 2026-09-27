@@ -815,6 +815,15 @@ function Effects:Handle(event)
 		if event.kind == "Notice" and event.tone == "boss" and self.audio then self.audio:Cue("boss", 4) end
 	if event.shake then self:Shake(event.shake) end
 	if event.kind == "EnemyDown" then
+		-- A quick, bloodless poof where the enemy stood: it is gone, clearly.
+		local fallen = self.enemies[tostring(event.id)]
+		local state = self.getState()
+		local lowFX = state and state.profile and state.profile.settings and state.profile.settings.lowFX
+		if fallen and not event.boss and not lowFX and (self.poofBudget or 0) < 10 then
+			self.poofBudget = (self.poofBudget or 0) + 1
+			local height = fallen.def.air and (fallen.airLift or 6) + 3 or 2.2 * (fallen.scale or 1)
+			self:_impact(fallen.position + Vector3.new(0, height, 0), Color3.fromRGB(214, 255, 190), 1.8 * math.max(0.8, fallen.scale or 1))
+		end
 		self:Release(tostring(event.id))
 		if event.boss and typeof(event.position)=="Vector3" then self:_groundImpact(event.position,UI.Colors.gold,12) end
 		return
@@ -1109,7 +1118,7 @@ function Effects:Step(dt)
 		for _,leg in ipairs(record.legs) do leg.part.CFrame=pivot*leg.base*CFrame.Angles(lowAllyFX and 0 or math.sin(self.clock*10+leg.side*math.pi/2)*0.4,0,0) end
 	end
 	self.clock += dt
-	if self.clock >= (self.dustResetAt or 0) then self.dustBudget, self.dustResetAt = 0, self.clock + 0.5 end
+	if self.clock >= (self.dustResetAt or 0) then self.dustBudget, self.poofBudget, self.dustResetAt = 0, 0, self.clock + 0.5 end
 	local state = self.getState()
 	local settings = state and state.profile and state.profile.settings or {}
 	for _, enemy in pairs(self.enemies) do
