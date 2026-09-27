@@ -141,7 +141,9 @@ function UI.button(parent, text, callback, properties)
 	if visible then
 		UI.shade(button, 90, 0.26)
 		UI.stroke(button, UI.Colors.ink, 3)
-		local shine = UI.frame(button, {Name = "Shine", Position = UDim2.new(0, 6, 0, 4), Size = UDim2.new(1, -12, 0.36, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.78, Active = false, ZIndex = button.ZIndex})
+		-- A thin gloss along the top edge: it draws over the button's own text,
+		-- so it must stay above the letters, never across them.
+		local shine = UI.frame(button, {Name = "Shine", Position = UDim2.new(0, 7, 0, 3), Size = UDim2.new(1, -14, 0.18, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.84, Active = false, ZIndex = button.ZIndex})
 		UI.corner(shine, 8)
 		UI.outline(button, (defaults.TextSize or 15) >= 20 and 2.5 or 2)
 	end

@@ -33,9 +33,12 @@ task.spawn(function()
 		local chat = game:GetService("TextChatService")
 		local window = chat:WaitForChild("ChatWindowConfiguration", 10)
 		if window then
-			window.VerticalAlignment = Enum.VerticalAlignment.Center
-			window.HeightScale, window.WidthScale = 0.7, 0.9
-			window.BackgroundColor3 = C.panel
+			-- A small, see-through window on the left edge, clear of the
+			-- battlefield's middle; players can still open it bigger.
+			for key, value in pairs({ VerticalAlignment = Enum.VerticalAlignment.Center, HorizontalAlignment = Enum.HorizontalAlignment.Left,
+				HeightScale = 0.5, WidthScale = 0.55, BackgroundColor3 = C.panel, BackgroundTransparency = 0.55, TextSize = 13 }) do
+				pcall(function() window[key] = value end)
+			end
 		end
 	end)
 end)
@@ -990,7 +993,9 @@ local function contextTalents(body)
 			local selected = id == talentSelected
 			hexagon(map, "TalentHexOutline_" .. id, at, HEX + 8, selected and C.gold or C.ink, 2)
 			hexagon(map, "TalentHex_" .. id, at, HEX, rank > 0 and tint or (open and tint:Lerp(C.panel, 0.55) or C.card), 3)
-			UI.label(map, def.icon or "?", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y - 10), Size = UDim2.fromOffset(HEX, 30), TextSize = 22, Font = UI.Fonts.display, TextColor3 = open and C.text or C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 4})
+			-- A word a child can read (DANO, ALCANCE, ÍMÃ), not an abbreviation.
+			local word = UI.label(map, def.short and L(def.short) or def.icon or "?", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y - 9), Size = UDim2.fromOffset(HEX - 14, 26), TextScaled = true, Font = UI.Fonts.display, TextColor3 = open and C.text or C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 4})
+			UI.create("UITextSizeConstraint", {MaxTextSize = 20, MinTextSize = 9}, word)
 			UI.label(map, rank .. "/" .. def.maxRank, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y + 18), Size = UDim2.fromOffset(HEX, 22), TextSize = 15, Font = UI.Fonts.display, TextColor3 = rank >= def.maxRank and C.gold or C.text, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 4})
 			UI.button(map, "", function() talentSelected = id; renderContext() end, {Name = "TalentNode_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y), Size = UDim2.fromOffset(HEX, HEX), BackgroundTransparency = 1, ZIndex = 5})
 		end
@@ -2231,7 +2236,7 @@ local function renderMatch()
 		local abilityInfo = state.match.ability
 		local def = Catalog.Abilities[id]
 		local tint = colorFor(abilityInfo.heroId)
-		local button = UI.secondary(abilities, "", function() chooseSkill(id) end, {Name="LeaderPower",LayoutOrder = index, Size = UDim2.fromOffset(layout.skillW, layout.buttonH), TextSize = 11, TextTruncate = Enum.TextTruncate.AtEnd})
+		local button = UI.secondary(abilities, "", function() chooseSkill(id) end, {Name="LeaderPower",LayoutOrder = index, Size = UDim2.fromOffset(layout.skillW, layout.buttonH), TextSize = compact and 12 or 14, TextTruncate = Enum.TextTruncate.AtEnd})
 		UI.stroke(button, tint, abilityInfo.ultimate and 3 or 1.5)
 		local meter = UI.bar(button, tint, UDim2.new(0, 7, 1, -5), UDim2.new(1, -14, 0, 2))
 		refs.abilityButtons[id] = {button = button, index = index, meter = meter, tint = tint,
@@ -2269,7 +2274,9 @@ updateMatch = function()
 	local match = state.match
 	refs.wave.Text = T("ONDA ", "WAVE ") .. tostring(match.wave or 0) .. (match.totalWaves == 0 and " / ∞" or " / " .. tostring(match.totalWaves or 50))
 	refs.map.Text = mapName(match.mapId) .. "  /  " .. modeName(match.modeId)
-	refs.hpText.Text = T("BASE ", "CORE ") .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  +" .. math.ceil(match.shield) or "") .. T("\n↑ EVOLUIR", "\n↑ UPGRADE")
+	-- One line: a second one used to fall behind the health bar.
+	refs.hpText.Text = T("BASE ", "CORE ") .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  +" .. math.ceil(match.shield) or "")
+		.. (refs.layout and refs.layout.class.narrow and "  ⬆" or T("  •  ⬆ EVOLUIR", "  •  ⬆ UPGRADE"))
 	refs.hp.Size = UDim2.fromScale(math.clamp((match.baseHP or 0) / (match.maxBaseHP or 100), 0, 1), 1)
 	refs.hp.BackgroundColor3 = (match.baseHP or 0)/math.max(1,match.maxBaseHP or 100) > 0.3 and C.green or C.red
 	-- Lobby Gold this run has banked so far: a reward, not money to spend.
@@ -2324,8 +2331,9 @@ updateMatch = function()
 		local shortcut = UserInputService.TouchEnabled and "" or "Q  "
 		local label = (record.ultimate and "⚡ " or "")..record.name
 		record.button.Text = shortcut..label.."\n"..(remaining>0 and (T("Recarrega em ","Ready in ")..math.ceil(remaining).."s") or state.phase=="Preparing" and T("Na próxima onda","Next wave") or T("PRONTO!","READY!"))
-		record.button.TextColor3 = remaining > 0 and C.muted or record.tint
-		record.button.BackgroundColor3=remaining>0 and C.card or record.tint:Lerp(C.panel,0.8)
+		-- Ready: white outlined letters on the hero's colour, readable at a glance.
+		record.button.TextColor3 = remaining > 0 and C.muted or C.text
+		record.button.BackgroundColor3=remaining>0 and C.card or record.tint:Lerp(C.panel,0.45)
 		record.meter.Size = UDim2.fromScale(1 - math.clamp(remaining / math.max(match.ability and match.ability.cooldownTotal or 1, 1), 0, 1), 1)
 	end
 	for id, card in pairs(refs.heroCards or {}) do
