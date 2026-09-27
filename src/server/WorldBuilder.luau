@@ -916,7 +916,9 @@ function Figure.Gear(model, level, branch, tint)
 		local name = side < 0 and "Left" or "Right"
 		local upper, lower = figure:FindFirstChild(name .. "UpperArm"), figure:FindFirstChild(name .. "LowerArm")
 		if level >= 2 and upper then
-			gear(name .. "UpperArm", "GearShoulder", upper.Size * Vector3.new(1.3, 0.4, 1.3), CFrame.new(0, upper.Size.Y * 0.36, 0), tint:Lerp(FIGURE_WHITE, 0.2))
+			-- Gold trim reads as "upgraded" on every costume, whatever its colours.
+			local pad = gear(name .. "UpperArm", "GearShoulder", upper.Size * Vector3.new(1.34, 0.42, 1.34), CFrame.new(0, upper.Size.Y * 0.36, 0), Color3.fromRGB(240, 190, 70))
+			if pad then pad.Reflectance = 0.15 end
 		end
 		if level >= 3 and lower then
 			gear(name .. "LowerArm", "GearBracer", lower.Size * Vector3.new(1.22, 0.34, 1.22), CFrame.new(0, -lower.Size.Y * 0.2, 0), accent, NEON)
