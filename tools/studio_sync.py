@@ -23,6 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCRATCH = ROOT / "test-results" / "studio-sync"
 CHUNK = 40_000
+STUDIO_WINDOW = 0
 # Each area's container, created if a collaborator removed it.
 CONTAINERS = {
     "shared": '(function() local p=game:GetService("ReplicatedStorage"); local c=p:FindFirstChild("DoomShared"); if not c then c=Instance.new("Folder"); c.Name="DoomShared"; c.Parent=p end; return c end)()',
@@ -67,7 +68,7 @@ def run_command(code: str, index: int) -> None:
     script.write_text("_ = nil" + chr(10) + code, encoding="utf-8")
     result = subprocess.run(
         ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ROOT / "tools" / "studio_action.ps1"),
-         "-Action", "command", "-ScriptPath", str(script)],
+         "-Action", "command", "-ScriptPath", str(script), "-WindowHandle", str(STUDIO_WINDOW)],
         capture_output=True, text=True)
     if result.returncode != 0:
         raise SystemExit("Studio command bar unavailable: " + (result.stderr or result.stdout).strip())
@@ -107,10 +108,14 @@ print("DOOM_PREVIEW_OK", parts)
 
 
 def main() -> None:
+    global STUDIO_WINDOW
     parser = argparse.ArgumentParser()
     parser.add_argument("files", nargs="*")
     parser.add_argument("--preview-lobby", action="store_true")
+    parser.add_argument("--window-handle", type=int, default=0, help="Target a specific Studio window (e.g. an isolated local review).")
+    parser.add_argument("--place-id", type=int, help="Refuse to sync unless Studio has this exact published place open.")
     args = parser.parse_args()
+    STUDIO_WINDOW = args.window_handle
     files = [Path(f) for f in args.files] or sorted((ROOT / "src").glob("*/*.luau"))
     started = time.time()
     nonce = str(int(started))
@@ -120,6 +125,12 @@ def main() -> None:
     run_command(f'print("DOOM_SYNC_MODE_{nonce}", game:GetService("RunService"):IsEdit())', count)
     if not wait_for(f"DOOM_SYNC_MODE_{nonce}", started, 30).endswith("true"):
         raise SystemExit("Studio is in a playtest: press Stop, then sync again (nothing was written).")
+    if args.place_id is not None:
+        run_command(f'print("DOOM_SYNC_PLACE_{nonce}", tostring(game.PlaceId))', count)
+        actual = wait_for(f"DOOM_SYNC_PLACE_{nonce}", started, 30).split()[-1]
+        if actual != str(args.place_id):
+            raise SystemExit(f"Wrong place: expected {args.place_id}, got {actual} (nothing was written).")
+        print(f"Verified destination place {actual}")
     run_command("_G.__doomSync = {}", count)
     for path in files:
         container, child, class_name = target(path)

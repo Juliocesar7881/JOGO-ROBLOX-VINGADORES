@@ -1,5 +1,49 @@
 # Integration contract
 
+## Invocação física e filas por destino — 27/09/2026
+
+O mercado tem dois salões: **Invocar heróis** (`Chest_rare`) e **Invocar bases**
+(`Chest_base_rare`). Aproximar-se do piso verde abre a coleção correspondente.
+Cada salão permite escolher seus cinco baús existentes, consultar as chances
+efetivas e confirmar uma invocação. Não mudam preços, garantias ou compensações.
+No computador, retratos/chances e compra aparecem lado a lado. Em telas menores,
+os baús ficam numa faixa horizontal; cada coleção conserva sua rolagem.
+`OpenChest` e `BuyGuaranteed` validam no servidor a presença no salão da coleção;
+campos irrelevantes do cliente não podem escolher outra zona de compra.
+
+**Base ativa** substitui o botão Jogar no HUD. `EquipBase` continua validando
+posse no lobby; a base entra automaticamente na próxima partida. O resultado
+de uma invocação de base também permite ativá-la. Não existe colocação manual
+da base no campo.
+
+Cada destino do catálogo possui três filas independentes: o ID antigo mantém
+a fila 1; `id:2` e `id:3` identificam as outras. São quatro lugares por fila,
+com ordem de contato validada pela posição do personagem, contagem própria,
+saída e bloqueio da quinta pessoa. `elevator` acrescenta `queueId`, `slot` e
+`departing`. O primeiro jogador pode antecipar a partida; o destino permanece
+fixo. Durante um teleporte pendente os lugares ficam reservados e não há uma
+segunda partida do mesmo grupo. Falhas devolvem a fila à contagem para tentar
+novamente.
+
+`StartMatch` é recusado para clientes antigos. Só uma fila física inicia a
+partida. O guia mostra o caminho ao portal, inclusive para o treinamento.
+No Studio/Standalone continua havendo uma batalha por servidor; outras filas
+aguardam. Em produção, servidores Lobby usam o teleporte reservado existente.
+
+As placas usam uma prévia 3D ilustrada com as rotas de cada mapa, sem IDs de
+imagem externos. O cliente monta a SurfaceGui em PlayerGui e define Adornee e
+CurrentCamera com uma câmera local (câmeras do servidor não replicam).
+ViewportFrames dentro de Workspace não são renderizados pelo
+Roblox. Os modelos das prévias são excluídos da correção de faces do cenário.
+Não são fotografias capturadas dos mapas nem assets copiados das referências.
+
+Verificação: filas, lotação, ordem, saída, falha/concorrência de transferência,
+compra no salão correto, bootstrap e layout PT/EN cobertos pela suíte local.
+O teleporte publicado com três grupos e o toque/desempenho em celular real
+continuam exigindo a experiência publicada e aparelhos de teste.
+Para sincronizar no Team Create correto, use `--place-id 97132875544830`
+com `tools/studio_sync.py`; um destino diferente é recusado antes de escrever.
+
 ## Bases e recrutamento — 2026.4
 
 `Catalog.Chests` contém dez IDs; `HeroChestOrder` e `BaseChestOrder` separam

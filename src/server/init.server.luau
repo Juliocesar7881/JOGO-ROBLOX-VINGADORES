@@ -473,47 +473,10 @@ local training = nil
 local ECONOMY_ACTIONS = { OpenChest = "Chest", UpgradeAbility = "Upgrade", ClaimQuest = "Gameplay" }
 local tutorialTower = {}
 
-local function startMatch(player, payload)
-	local mapId, modeId = payload.mapId, payload.modeId
-	if payload.destinationId then
-		local destination = type(payload.destinationId)=="string" and Catalog.Destinations[payload.destinationId]
-		if not destination then return {ok=false,message=text("Destino inválido.","Invalid destination.")} end
-		mapId,modeId=destination.mapId,destination.modeId
-	end
-	if type(mapId) ~= "string" or not Catalog.Maps[mapId] or type(modeId) ~= "string" or not Catalog.Modes[modeId] then
-		return { ok = false, message = text("Mapa ou modo invalido.", "Invalid map or mode.") }
-	end
-	if match:Has(player) then
-		return { ok = false, message = text("Voce ja esta em uma partida.", "You are already in a match.") }
-	end
-	if travelling[player.UserId] then
-		return { ok = false, message = text("Preparando sua partida...", "Preparing your match...") }
-	end
-	if not party:IsLeader(player) then
-		return { ok = false, message = text("Apenas o lider inicia a defesa.", "Only the party leader starts the defense.") }
-	end
-	local members = party:Members(player)
-	for _, member in ipairs(members) do
-		local profile = profiles:Snapshot(member)
-		if not profile then
-			return { ok = false, message = text("Aguarde o perfil de " .. member.Name .. ".", "Waiting for the profile of " .. member.Name .. ".") }
-		end
-		local allowed, reason = Rules.CanStart(profile, mapId, modeId)
-		if not allowed then
-			return { ok = false, message = reason or text("Requisito nao cumprido.", "Requirement not met.") }
-		end
-	end
-	if role == "Lobby" then
-		return sendToMatch(player, members, mapId, modeId)
-	end
-	if not match:CanStart() then
-		return { ok = false, message = text("Uma partida ja ocupa este servidor.", "A match is already using this server.") }
-	end
-	local ok, problem = match:Start(members, mapId, modeId)
-	if not ok then return { ok = false, message = problem } end
-	logMatchStart()
-	pushMatch()
-	return { ok = true }
+-- Kept as an explicit rejection for old clients. Only a server-owned
+-- physical queue may launch a match; client map/party fields cannot bypass it.
+local function startMatch(_player, _payload)
+	return {ok=false,message=text("Entre em uma fila do portal para jogar.","Step into a portal queue to play.")}
 end
 
 -- Mode portals are elevators: stepping onto a pad boards it and the match
@@ -548,6 +511,13 @@ elevator = ElevatorService.new({
 	available = function(player) return not match:Has(player) and not travelling[player.UserId] end,
 })
 
+for queueId,zone in pairs(world.portalZones) do
+	zone.pad.Touched:Connect(function(hit)
+		local player=Players:GetPlayerFromCharacter(hit.Parent)
+		if player then elevator:Touch(player,queueId) end
+	end)
+end
+
 local function route(player, action, payload)
 	if action == "Sync" then
 		return { ok = true, data = snapshotFor(player) }
@@ -573,9 +543,14 @@ local function route(player, action, payload)
 			message = ok ~= true and tostring(data) or nil,
 		}
 	end
-	-- Chests are bought at the shop, never from a menu opened elsewhere.
-	if (action == "OpenChest" or action == "BuyGuaranteed") and (inMatch or role == "Match" or not world:NearMarket(player)) then
-		return { ok = false, message = text("Vá até a LOJA do Mercado para comprar baús.", "Walk to the Market SHOP to buy chests.") }
+	-- Verify the specific summon hall, including guaranteed regional offers.
+	if action=="OpenChest" or action=="BuyGuaranteed" then
+		local chest=action=="OpenChest" and type(payload.chestId)=="string" and Catalog.Chests[payload.chestId]
+		local itemId=type(payload.itemId)=="string" and payload.itemId
+		local kind=chest and (chest.kind or "hero") or (itemId and Catalog.Bases[itemId] and "base" or "hero")
+		if inMatch or role=="Match" or not world:NearMarket(player,kind) then
+			return {ok=false,message=kind=="base" and text("Aproxime-se da loja INVOCAR BASES.","Walk to the SUMMON BASES shop.") or text("Aproxime-se da loja INVOCAR HERÓIS.","Walk to the SUMMON HEROES shop.")}
+		end
 	end
 	local flow = ECONOMY_ACTIONS[action]
 	if flow then
@@ -915,6 +890,7 @@ RunService.Heartbeat:Connect(function(dt)
 			elevatorTimer = 0
 			local ok, problem = pcall(elevator.Step, elevator, elapsed, Players:GetPlayers())
 			if not ok then warn("[Doomsday] Elevator step failed: " .. tostring(problem)) end
+			world:UpdatePortalQueues(elevator:PublicSnapshot())
 			local visitors={}
 			for _,player in ipairs(Players:GetPlayers()) do
 				if profiles:Get(player) and not match:Has(player) and not travelling[player.UserId] then table.insert(visitors,player) end

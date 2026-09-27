@@ -394,6 +394,10 @@ local function session(screen)
 	local world
 	step("the world builds", function()
 		world = WorldBuilder.new(Catalog, function() end)
+		-- Roblox omits server-created Camera instances during replication.
+		for _,item in ipairs(workspace.DoomLobby:GetDescendants()) do
+			if item:IsA("Camera") then item:Destroy() end
+		end
 		world:Build("manhattan")
 		for _, tower in ipairs(towers()) do world:MakeTower(tower.id, tower.heroId, tower.position, tower.ownerId) end
 	end)
@@ -462,11 +466,15 @@ local function session(screen)
 		check(string.find(boardText, "1 PRONTA", 1, true) ~= nil, tag .. ": the mission board tells this viewer a reward is waiting, got " .. boardText)
 		-- Each portal's sign names what stepping in starts for this viewer.
 		local nextMap = "random"
-		local campaignSign = lobby.Portal_normal.Sign.Board:FindFirstChildOfClass("TextLabel").Text
-		check(nextMap ~= nil and string.find(campaignSign, "MANHATTAN", 1, true) ~= nil,
+		local campaignSign = localPlayer.PlayerGui.PortalPicture_normal.MapRules.Text
+		check(nextMap ~= nil and string.find(localPlayer.PlayerGui.PortalPicture_normal.MapTitle.Text, "Manhattan", 1, true) ~= nil,
 			tag .. ": the campaign sign names the next unbeaten sector, got " .. campaignSign)
-		check(string.find(campaignSign, "ENTRE PARA JOGAR", 1, true) ~= nil, tag .. ": the campaign sign invites the viewer in")
-		local arenaSign = lobby.Portal_ranked.Sign.Board:FindFirstChildOfClass("TextLabel").Text
+		check(lobby.Portal_normal.QueueSign1.QueueBoard.QueueStatus.Text == "0/4  •  ENTRE", tag .. ": the first queue invites the viewer in")
+		local picture=localPlayer.PlayerGui.PortalPicture_normal.MapPicture
+		check(picture.CurrentCamera==picture.PictureCamera,tag..": map picture camera is bound on this client")
+		check(picture.Parent.Adornee==lobby.Portal_normal.MapBillboard and lobby.Portal_normal.MapBillboard.MapBoard.Enabled==false,tag..": rendered picture is mounted through PlayerGui without duplicate sign")
+		check(picture.Parent.Adornee==lobby.Portal_normal.MapBillboard and lobby.Portal_normal.MapBillboard.MapBoard.Enabled==false,tag..": rendered picture is mounted through PlayerGui without duplicate sign")
+		local arenaSign = localPlayer.PlayerGui.PortalPicture_ranked.MapRules.Text
 		check(string.find(arenaSign, "ONDAS INFINITAS", 1, true) ~= nil, tag .. ": the competitive sign promises endless waves, got " .. arenaSign)
 		check(countNamed(lobby, "StartHere") == 0, tag .. ": a veteran gets no first-visit beacon")
 	end)
@@ -575,10 +583,21 @@ local function session(screen)
 		click("MEUS HERÓIS")
 		check(countNamed(gui,"Collection_thor")==0,tag..": owned filter restores compact gallery")
 		fx({kind="OpenPanel",panel="chests"})
-		check(countNamed(gui,"ChestDisplay_rare")==1 and countNamed(gui,"ChestDisplay_legendary")==0,tag..": rare chest has a dedicated page")
-		click("Baú Lendário")
+		check(countNamed(gui,"SummonSelect_rare")==1 and countNamed(gui,"OpenChest_rare")==1 and countNamed(gui,"SummonSelect_base_rare")==0,tag..": rare chest has a dedicated page")
+		local odds=named(gui,"SummonOdds")
+		local crates=named(gui,"SummonCrates")
+		if SCREEN.w>=1000 then
+			local viewport=screenRect(named(gui,"ContextBody"),gui,SCREEN)
+			local gallery=screenRect(odds,gui,SCREEN)
+			local buy=screenRect(named(gui,"OpenChest_rare"),gui,SCREEN)
+			check(gallery.y+122<=viewport.y+viewport.h and buy.y+buy.h<=viewport.y+viewport.h,tag..": portraits, odds and purchase are visible together before scrolling")
+		end
+		odds.CanvasPosition=Vector2.new(0,128)
+		crates.CanvasPosition=Vector2.new(14,0)
+		clickNamed("SummonSelect_legendary")
 		check(countNamed(gui,"OpenChest_legendary")==1 and countNamed(gui,"OpenChest_rare")==0,tag..": legendary tab switches the purchase intent")
-		click("Baú Raro")
+		clickNamed("SummonSelect_rare")
+		check(named(gui,"SummonOdds").CanvasPosition.Y==128 and named(gui,"SummonCrates").CanvasPosition.X==14,tag..": each summon catalogue retains its scroll when changing crates")
 		fx({kind="OpenPanel",panel="premium"})
 		click("PASSES")
 		check(countNamed(gui,"PremiumTabs_pass")==1,tag..": premium pass tab stays accessible")
@@ -618,8 +637,9 @@ local function session(screen)
 		if equip then equip.Activated:Fire(); flush() end
 		check(asked("EquipBase"),tag..": base equip uses server intent")
 		fx({kind="OpenPanel",panel="chests",chestId="base_supply"})
-		check(countNamed(gui,"ChestDisplay_base_supply")==1,tag..": base chest selected independently of hero chests")
+		check(countNamed(gui,"SummonSelect_base_supply")==1 and countNamed(gui,"OpenChest_base_supply")==1 and countNamed(gui,"SummonSelect_supply")==0,tag..": base chest selected independently of hero chests")
 		check(countNamed(gui,"ChestOdds_workshop")==1 and countNamed(gui,"ChestOdds_ironman")==0,tag..": base chest displays actual base pool")
+		check(named(gui,"ContextTitle").Text=="INVOCAR BASES",tag..": entering the base shop changes its title immediately")
 		push(matchSnapshot(p,"Preparing",{base={id="workshop",level=1,stats=Rules.BaseStats("workshop",1),wall=0},cash=1000}))
 		local open=named(gui,"OpenBaseUpgrade"); if open then open.Activated:Fire(); flush() end
 		check(countNamed(gui,"ConfirmBaseUpgrade")==1,tag..": core bar opens upgrade comparison")
@@ -630,12 +650,12 @@ local function session(screen)
 
 	step("buying and equipping from the panels", function()
 		fx({kind="OpenPanel",panel="chests"})
-		click("ABRIR")
+		clickNamed("OpenChest_rare")
 		check(not asked("OpenChest"),tag..": selecting a chest does not spend before confirmation")
-		check(countNamed(gui,"ChestConfirmation")==1,tag..": the price confirmation appears")
+		check(countNamed(gui,"ConfirmChest_rare")==1,tag..": the price confirmation appears")
 		clickNamed("CancelChest")
 		check(not asked("OpenChest"),tag..": cancelling keeps Gold untouched")
-		click("ABRIR")
+		clickNamed("OpenChest_rare")
 		clickNamed("ConfirmChest_rare")
 		check(asked("OpenChest"),tag .. ": chest sends server recruitment intent")
 		fx({kind="OpenPanel",panel="hero",heroId="spiderman"})
@@ -664,7 +684,7 @@ local function session(screen)
 		check(named(gui, "Nav_chests") == nil, tag .. ": the dock has no chest button; the chest shop is a place")
 		local tip = named(gui, "GuideTip")
 		check(tip ~= nil and string.find(tip.Text, "LOJA", 1, true) ~= nil, tag .. ": 2,500 Gold sends the commander to the SHOP")
-		click("JOGAR")
+		fx({kind="OpenPanel",panel="modes",hud=true})
 		check(named(gui, "FirstMission") == nil, tag .. ": a trained commander goes straight to the modes")
 		click("×")
 	end)
@@ -684,7 +704,7 @@ local function session(screen)
 		local function reveal() return overlays:FindFirstChild("ChestReveal") end
 		local function openRare()
 			fx({ kind = "OpenPanel", panel = "chests" })
-			click("ABRIR")
+			clickNamed("OpenChest_rare")
 			clickNamed("ConfirmChest_rare")
 		end
 		chestResult = { chestId = "rare", heroId = "thor", rarity = "legendary", duplicate = false, refundGold = 0, refundMastery = 0 }
@@ -738,17 +758,20 @@ local function session(screen)
 		click("Ligado")
 		check(asked("Settings"), tag .. ": a settings toggle is sent to the server")
 		click("×")
-		click("JOGAR")
+		fx({kind="OpenPanel",panel="modes",hud=true})
 		check(contextOpen(), tag .. ": Play opens a clear choice of modes")
 		for _,id in ipairs(Catalog.DestinationOrder) do
 			local tile=named(gui,"Destination_"..id)
 			check(tile and named(tile,"RouteSegment"),tag..": destination has route preview "..id)
-			check(named(gui,"PlayDestination_"..id)~=nil,tag..": direct play action "..id)
+			check(named(gui,"FindPortal_"..id)~=nil,tag..": direct play action "..id)
 		end
 		check(named(gui,"OpenMapSelection")==nil,tag..": no arbitrary map-mode selector")
-		clickNamed("PlayDestination_normal")
-		check(actionPayloads.StartMatch.destinationId=="normal",tag..": start sends the authored destination")
-		check(asked("StartMatch"), tag .. ": campaign can be started from its visible HUD action")
+		check(named(gui,"PlayButton")==nil,tag..": no PLAY button remains on the HUD")
+		clickNamed("FindPortal_normal")
+		check(not asked("StartMatch"),tag..": finding a portal never starts a match remotely")
+		check(not contextOpen(),tag..": finding a portal clears the screen to walk there")
+		clickNamed("ActiveBaseButton")
+		check(named(gui,"ActiveBaseSummary")~=nil,tag..": active base has a direct HUD entry")
 		click("×")
 		clickNamed("Nav_inventory")
 		check(contextOpen(), tag .. ": Heroes opens the owned inventory")
@@ -896,7 +919,7 @@ local function session(screen)
 		check(bodyRect ~= nil and bodyRect.w >= 200 and bodyRect.h >= 65,
 			tag .. ": the panel keeps a positive, usable scrolling area")
 		local focused = UILayout.contextLayout(SCREEN.w, SCREEN.h, {}).modal
-		for _, name in ipairs({"LobbyPill", "SquadButton", "SettingsButton", "LobbyNavigation"}) do
+		for _, name in ipairs({"LobbyPill", "ActiveBaseButton", "SettingsButton", "LobbyNavigation"}) do
 			local element = named(gui, name)
 			check(element ~= nil and element.Visible == not focused,
 				tag .. ": " .. name .. " gives compact panels room and remains available on large screens")
@@ -1008,21 +1031,21 @@ local function session(screen)
 		-- Training and all six campaigns are open; the three competitive
 		-- portals and cards wait for a first campaign victory.
 		check(countNamed(lobby, "LockShroud") == 4, tag .. ": a newcomer sees the four locked destination portals")
-		local campaignSign = lobby.Portal_normal.Sign.Board:FindFirstChildOfClass("TextLabel").Text
+		local campaignSign = localPlayer.PlayerGui.PortalPicture_normal.MapRules.Text
 		check(string.find(campaignSign, "40 ONDAS", 1, true) ~= nil, tag .. ": Manhattan's campaign sign shows its 40 waves, got " .. campaignSign)
-		local lockedSign = lobby.Portal_ranked.Sign.Board:FindFirstChildOfClass("TextLabel").Text
+		local lockedSign = localPlayer.PlayerGui.PortalPicture_ranked.MapRules.Text
 		check(string.find(lockedSign, "BLOQUEADO", 1, true) ~= nil, tag .. ": a locked portal's sign says so, got " .. lockedSign)
-		check(countNamed(lobby, "StartHere") == 1, tag .. ": a newcomer sees one START HERE beacon")
+		check(countNamed(lobby.Portal_training, "StartHere") == 1, tag .. ": a newcomer sees one START HERE beacon")
 		local newcomerBoard = lobby.Board_quests.Panel.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(newcomerBoard, "TREINE", 1, true) ~= nil, tag .. ": the mission board points a newcomer to training, got " .. newcomerBoard)
 		check(frameAt(main, lobbyLayout.hint) ~= nil, tag .. ": the first-visit pointer is on screen")
 		local newcomerTip = named(gui, "GuideTip")
 		check(newcomerTip ~= nil and string.find(newcomerTip.Text, "LOJA", 1, true) == nil, tag .. ": no shop nudge without the Gold to open a chest")
-		click("JOGAR")
+		fx({kind="OpenPanel",panel="modes",hud=true})
 		check(named(gui, "FirstMission") ~= nil, tag .. ": a newcomer's play menu leads with the short training")
-		clickNamed("PlayMode_tutorial")
-		check(asked("StartMatch"), tag .. ": the training starts from that card")
-		click("×")
+		clickNamed("FindTrainingPortal")
+		check(not asked("StartMatch"), tag .. ": training also requires physically entering its portal")
+		check(not contextOpen(),tag..": the training guide closes to reveal the route")
 	end)
 
 	--========================================================================
@@ -1610,7 +1633,14 @@ local function session(screen)
 		check(guide:FindFirstChildOfClass("ProximityPrompt").ObjectText=="NICO • GUIDE",
 			tag..": service prompt changes language")
 		local chest=village:FindFirstChild("ChestShopSign").Artwork
-		check(chest.Title.Text=="CHESTS" and chest.Subtitle.Text=="GOLD",tag..": chest shop sign changes language")
+		check(chest.Title.Text=="SUMMON PLAZA" and chest.Subtitle.Text=="HEROES • BASES",tag..": summon plaza sign changes language")
+		check(localPlayer.PlayerGui.PortalPicture_normal.MapTitle.Text==Catalog.Maps.manhattan.name.en,tag..": cloned map picture is localized")
+		local status=village.Portal_normal.QueueSign2.QueueBoard.QueueStatus
+		status:SetAttribute("LobbyTextPT","4/4 • LOTADO"); status:SetAttribute("LobbyTextEN","4/4 • FULL"); status.Text="4/4 • LOTADO"
+		status:GetAttributeChangedSignal("LobbyTextEN"):Fire()
+		status:GetPropertyChangedSignal("Text"):Fire()
+		push(lobbySnapshot(english))
+		check(status.Text=="4/4 • FULL",tag..": changing occupancy preserves the selected language")
 		push(matchSnapshot(english, "Preparing"))
 		check(findButton(gui, "READY") ~= nil, tag .. ": the match HUD speaks English too")
 	end)

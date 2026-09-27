@@ -1,5 +1,6 @@
 ﻿param([ValidateSet('play','stop','command')][string]$Action, [string]$ScriptPath, [long]$WindowHandle = 0)
 # Operates only on the open Doomsday Studio window through UI Automation.
+$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 if ($WindowHandle -ne 0) { $studioHandle = [IntPtr]$WindowHandle } else {
@@ -19,13 +20,17 @@ if ($Action -eq 'command') {
   if (-not $toolbar) { $toolbar = Named $studioElement 'Command' }
   $edit = $toolbar.FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Edit)))
   $code = Get-Content -Raw -Encoding UTF8 -LiteralPath $ScriptPath
+  # If a movement key lands before the command during focus handoff, it only
+  # renames this harmless assignment instead of breaking the first Lua call.
+  $code = "_ = nil`n" + $code
   $edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($code)
   Start-Sleep -Milliseconds 150
   $run = Named $toolbar 'Correr'
   if (-not $run) { $run = Named $toolbar 'Run' }
   $run.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
 } else {
-  $menu = Named $studioElement 'Teste'
+  # The toolbar also contains a combobox named Teste. Select the actual menu.
+  $menu = $studioElement.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) | Where-Object { $_.Current.Name -in @('Teste', 'Test') -and $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::MenuItem } | Select-Object -First 1
   $menu.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
   Start-Sleep -Milliseconds 120
   if ($Action -eq 'play') {
@@ -35,7 +40,13 @@ if ($Action -eq 'command') {
     Start-Sleep -Milliseconds 120
     $items = $studioElement.FindAll([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty,'Teste')))
     $target = $items[$items.Count - 1]
-  } else { $target = Named $studioElement 'Parar' }
+  } else {
+    $target = Named $studioElement 'Parar'
+    if (-not $target) { $target = Named $studioElement ([string]::Concat('Finalizar a sess',[char]0x00e3,'o')) }
+    if (-not $target) { $target = Named $studioElement 'End Session' }
+    if (-not $target) { $target = Named $studioElement 'Stop' }
+    if (-not $target) { throw 'Studio did not expose a Stop/End Session action.' }
+  }
   $target.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
 }
 Write-Output ('Sent Studio action: ' + $Action)

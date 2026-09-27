@@ -329,7 +329,12 @@ function METHODS:FindFirstChildOfClass(className)
 	return nil
 end
 
-function METHODS:SetAttribute(name, value) rawget(self, "__attributes")[name] = value end
+function METHODS:SetAttribute(name, value)
+	local attributes=rawget(self,"__attributes")
+	if attributes[name]==value then return end
+	attributes[name]=value
+	self:GetAttributeChangedSignal(name):Fire()
+end
 function METHODS:GetAttribute(name) return rawget(self, "__attributes")[name] end
 
 function METHODS:Destroy()
@@ -454,6 +459,7 @@ local function instanceSignal(self, key)
 end
 
 function METHODS:GetPropertyChangedSignal(name) return instanceSignal(self, "Changed:" .. tostring(name)) end
+function METHODS:GetAttributeChangedSignal(name) return instanceSignal(self, "AttributeChanged:" .. tostring(name)) end
 
 -- Remote events record what the server sent, per player, so a test can read
 -- back exactly the snapshots and effects a client would have received.

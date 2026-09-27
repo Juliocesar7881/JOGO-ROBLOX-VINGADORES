@@ -120,7 +120,7 @@ do
 	local hull = lobby:FindFirstChild("Helicarrier")
 	check(hull ~= nil and hull.CastShadow == true, "the helicarrier hull still casts a shadow")
 	local lobbyEmitters = countClass(lobby, "ParticleEmitter")
-	check(lobbyEmitters == #Catalog.DestinationOrder * 2 + 2 + #Catalog.AfkOrder, "each destination emits from its glass and pad, plus the two shops and each AFK farm, got " .. tostring(lobbyEmitters))
+	check(lobbyEmitters <= #Catalog.AfkOrder + 2, "boarding pads use static light instead of multiplying emitters, got " .. tostring(lobbyEmitters))
 end
 
 -- Every physical location is its own Model, tagged with a Kind attribute the
@@ -170,10 +170,33 @@ do
 			if item:IsA("ProximityPrompt") then prompts += 1 end
 		end
 		check(prompts == 0, modeId .. ": the portal opens no menu; walking in is the whole interaction")
-		local sign = model:FindFirstChild("Sign")
-		local surface = sign and sign:FindFirstChild("Board")
-		check(surface ~= nil and surface:FindFirstChildOfClass("TextLabel") ~= nil, modeId .. ": the portal has a sign each client rewrites for its viewer")
+		local surface=model.MapBillboard.MapBoard
+		local picture=surface.MapPicture
+		check(picture and picture:IsA("ViewportFrame") and picture.CurrentCamera==picture.PictureCamera,modeId..": map board contains a rendered picture with its own camera")
+		check(picture.MapScene:FindFirstChild("Road")~=nil,modeId..": picture includes the map route")
+		check(surface.MapTitle:GetAttribute("LobbyTextEN")==Catalog.Maps[model:GetAttribute("MapId")].name.en,modeId..": picture identifies the real destination")
+		for slot=1,3 do
+			local id=slot==1 and modeId or modeId..":"..slot
+			local queue=zones[id]
+			local pad=model:FindFirstChild(slot==1 and "Pad" or "Pad"..slot)
+			check(queue and queue.destinationId==modeId and queue.slot==slot,id..": independent queue maps back to its authored destination")
+			check(queue and pad and inside(queue,pad.Position+v3(0,2,0)),id..": pad and server zone agree")
+			for otherId,other in pairs(zones) do if otherId~=id then
+				check(not inside(other,queue.center) and not inside(other,queue.exit),id..": center and exit do not enter "..otherId)
+			end end
+		end
 	end
+end
+
+do
+	local total=0
+	for _ in pairs(world.portalZones) do total+=1 end
+	check(total==#Catalog.DestinationOrder*3,"every destination has exactly three independent queues")
+	world:UpdatePortalQueues({normal={count=4,max=4,remaining=4},["normal:2"]={count=2,max=4,remaining=6}})
+	check(world.portalZones.normal.label.Text=="4/4  •  LOTADO","full queue is visibly closed")
+	check(world.portalZones["normal:2"].label.Text=="2/4  •  6s","second queue has its own countdown")
+	check(world.portalZones["normal:3"].label.Text=="0/4  •  ENTRE","third queue stays available")
+	world:UpdatePortalQueues({})
 end
 
 check(#(byKind.HeroPedestal or {}) == 0,"the lobby no longer displays hero statues")
@@ -185,6 +208,14 @@ check(#(byKind.ChestStand or {}) == 2, "two recruitment chest stands")
 do
 	local root={Position=world.shopZones.rare.center}
 	local visitor={UserId=801,Character={FindFirstChild=function(_,name) return name=="HumanoidRootPart" and root or nil end}}
+	check(world:NearMarket(visitor,"hero") and not world:NearMarket(visitor,"base"),"hero doorway authorizes only hero summons")
+	root.Position=world.shopZones.rare.purchaseCenter
+	check(world:NearMarket(visitor,"hero"),"purchase stays available inside the hero hall")
+	root.Position=world.shopZones.base_rare.purchaseCenter
+	check(world:NearMarket(visitor,"base") and not world:NearMarket(visitor,"hero"),"base hall authorizes only base summons")
+	root.Position=v3(-80,4,370)
+	check(not world:NearMarket(visitor),"the market approach is not a purchase zone")
+	root.Position=world.shopZones.rare.center
 	local start=#panels
 	world:StepShopEntries({visitor})
 	check(#panels==start+1 and panels[#panels].data.chestId=="rare","stepping on green opens the correct chest")

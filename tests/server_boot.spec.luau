@@ -355,7 +355,9 @@ say("--- tutorial ---")
 check(not request(ana,"StartMatch",{destinationId="missing"}).ok,"unknown destination rejected")
 check(not request(ana,"StartMatch",{mapId="asgard",modeId="cards"}).ok,"manual map-mode mismatch rejected")
 check(not request(ana,"StartMatch",{destinationId="ranked",mapId="manhattan",modeId="normal"}).ok,"forged fields cannot bypass destination unlock")
-check(request(ana,"StartMatch",{mapId="manhattan",modeId="tutorial"}).ok,"optional tutorial starts explicitly")
+check(not request(ana,"StartMatch",{mapId="manhattan",modeId="tutorial"}).ok,"even training cannot be started from a remote menu")
+stepInto(ana,"training")
+check(rideUntilDeparture(ana),"training starts after boarding its physical portal")
 check(latest(ana).match and latest(ana).match.modeId=="tutorial","tutorial stays separate from the campaign portal")
 check(not request(ana, "BuyHero", { heroId = "spiderman" }).ok, "lobby actions are refused inside a match")
 check(not request(ana, "PlaceTower", { heroId = "ironman", position = v3(0, 0, -15) }).ok, "building on the route is refused")
@@ -448,6 +450,11 @@ check(lobby.profile.gold >= 600, "training pays its 600 Gold, got " .. tostring(
 check(not request(ana, "OpenChest", { chestId = "rare" }).ok, "chests are not sold away from the shop")
 local shopPad = workspace.DoomLobby.Chest_rare.ShopEntryPad
 ana.Character.HumanoidRootPart.CFrame = CFrame.new(shopPad.Position + v3(0, 3, 0))
+local beforeWrongShop=latest(ana).profile.gold
+check(not request(ana,"OpenChest",{chestId="base_supply"}).ok,"a base summon is refused at the hero hall")
+local forgedShop=request(ana,"BuyGuaranteed",{chestId="rare",itemId="workshop"})
+check(not forgedShop.ok and string.find(forgedShop.message or "","INVOCAR BASES",1,true),"irrelevant chest field cannot reroute a guaranteed base purchase to the hero shop")
+check(latest(ana).profile.gold==beforeWrongShop,"wrong-shop summon spends no Gold")
 local bought = request(ana, "OpenChest", { chestId = "rare" })
 local recruited = bought.data and bought.data.result and bought.data.result.heroId
 check(bought.ok, "the tutorial's gold buys a first hero: " .. tostring(bought.message))
@@ -462,7 +469,8 @@ say("--- campaign ---")
 local goldBefore = latest(ana).profile.gold
 stepOut(ana)
 stepInto(ana, "normal")
-check(request(ana,"StartMatch",{destinationId="normal",mapId="wakanda",modeId="ranked"}).ok,"destination start accepts the catalog ID")
+check(not request(ana,"StartMatch",{destinationId="normal",mapId="wakanda",modeId="ranked"}).ok,"direct start is refused even when standing on a valid portal")
+check(rideUntilDeparture(ana),"the physical queue starts the campaign")
 check(latest(ana).match.mapId=="manhattan" and latest(ana).match.modeId=="normal","server resolves destination rather than forged map/mode fields")
 check(latest(ana).match.modeId == "normal" and Catalog.Maps[latest(ana).match.mapId] ~= nil, "and picks the first unbeaten sector")
 used, towerIds = {}, {}

@@ -1520,155 +1520,175 @@ end
 -- Each map's signature colour on portals and lobby signage.
 local PORTAL_COLORS={manhattan={255,164,112},gamma={135,235,113},asgard={255,206,82},hydra={255,129,134},wakanda={203,170,255},latveria={104,232,190}}
 
--- Every mode is its own portal, and a portal is an elevator: stepping onto
--- its pad boards it and the match starts after a short countdown, with no
--- menu at all (ElevatorService owns the pad). The sign beside it is written
--- by each viewer's client with the map this portal will take *them* to, and
--- a portal they cannot use yet is shrouded locally, per viewer.
-local function buildModePortal(lobby, x, z, portalId, mode, destination, map)
-	local modeId=destination.modeId
-	local tint = rgb(PORTAL_COLORS[destination.mapId])
-	-- Everything is authored facing +Z (the spawn) and turned as one piece, so
-	-- a district can face its portals toward its own entrance.
-	local yaw = destination.facing or 0
-	local base = CFrame.new(x, 0, z) * CFrame.Angles(0, yaw, 0)
-	local function at(dx, y, dz) return base * CFrame.new(dx, y, dz) end
-	local model = Instance.new("Model")
-	model.Name, model.Parent = "Portal_" .. portalId, lobby
-	model:SetAttribute("Kind", "ModePortal")
-	model:SetAttribute("ModeId", modeId)
-	model:SetAttribute("PortalId", portalId)
-	model:SetAttribute("MapId", destination.mapId)
-	model:SetAttribute("District", destination.district or "center")
-	local plinth = part(model, "Plinth", Vector3.new(15, 1, 10), at(0, 0.5, 0), Color3.fromRGB(38, 50, 65), Enum.Material.DiamondPlate)
-	local pad = part(model, "Pad", Vector3.new(12, 0.12, 7), at(0, 1.06, 0.5), tint, Enum.Material.Neon)
-	pad.CanCollide, pad.Transparency = false, 0.35
-	local ringFrame=at(0,7.5,-3.6)
-	-- Eleven portals share the lobby's mobile part budget: segment counts are
-	-- the lowest that still read as smooth rings from the plaza.
-	arc(model,"PortalArmor",ringFrame,6.8,1.5,2.3,ART.pearl,Enum.Material.Metal,20)
-	arc(model,"PortalGasket",ringFrame*CFrame.new(0,0,1.2),6.25,0.52,0.25,ART.ink,Enum.Material.Metal,20)
-	arc(model,"Frame",ringFrame*CFrame.new(0,0,1.4),6.2,0.18,0.18,tint,Enum.Material.Neon,24)
-	for i=0,7 do
-		local a=i*math.pi/4
-		artPart(model,"PortalBrace",Vector3.new(1.5,1.9,2.8),ringFrame*CFrame.Angles(0,0,a)*CFrame.new(0,7.1,0),ART.ink,Enum.Material.DiamondPlate)
-		artPart(model,"PortalIndicator",Vector3.new(0.8,0.3,0.15),ringFrame*CFrame.Angles(0,0,a)*CFrame.new(0,7.1,1.5),tint,Enum.Material.Neon)
-	end
-	local glass = part(model, "Glass", Vector3.new(0.2,11.6,11.6), ringFrame*CFrame.Angles(0,math.pi/2,0), tint, Enum.Material.ForceField)
-	glass.Shape,glass.Transparency=Enum.PartType.Cylinder,0.72
-	for i=1,2 do
-		arc(model,"PortalEcho",ringFrame*CFrame.new(0,0,-i*0.7),5.6-i*1.1,0.065,0.06,tint,Enum.Material.Neon,16)
-	end
-	emitter(glass, tint, 8, 3.5, 1.1, 1.6)
-	emitter(pad, tint, 6, 2, 0.7, 1.2, Vector3.new(0, 5, 0))
-	local glow = Instance.new("PointLight")
-	glow.Color, glow.Range, glow.Brightness, glow.Parent = tint, 18, 0.9, glass
-	wallSign(model,"ModeHeader",at(0,17,-3.6)*CFrame.Angles(0,math.pi,0),Vector3.new(23,4.5,0.5),upper(map.name.pt),upper(mode.name.pt),tint)
-	-- Small landmarks identify the destination even before the sign is read.
-	for _,side in ipairs({-1,1}) do
-		local landmark=at(side*10,0,-4)
-		local function detail(name,size,offset,color,material)
-			return artPart(model,name,size,landmark*offset,color,material)
-		end
-		if map.id=="manhattan" then
-			detail("SkylineTower",Vector3.new(3.5,10,4),CFrame.new(0,5,0),Color3.fromRGB(123,91,72),Enum.Material.Brick)
-			for floor=1,4 do
-				for column=-1,1,2 do detail("SkylineWindow",Vector3.new(0.8,1,0.1),CFrame.new(column,1+floor*1.8,2.06),ART.gold,Enum.Material.Neon) end
-			end
-		elseif map.id=="gamma" then
-			local tank=detail("GammaTank",Vector3.new(3.8,7,3.8),CFrame.new(0,3.5,0),Color3.fromRGB(89,111,81),Enum.Material.Metal)
-			tank.Shape=Enum.PartType.Cylinder; tank.CFrame=landmark*CFrame.new(0,3.5,0)*CFrame.Angles(0,0,math.pi/2); tank.Size=Vector3.new(7,3.8,3.8)
-			detail("GammaWindow",Vector3.new(2.4,4,0.2),CFrame.new(0,3.8,1.9),tint,Enum.Material.Neon)
-		elseif map.id=="wakanda" then
-			detail("VibraniumPlinth",Vector3.new(4,2,4),CFrame.new(0,1,0),ART.gold,Enum.Material.Marble)
-			detail("VibraniumCrystal",Vector3.new(2.6,6,2.6),CFrame.new(0,5,0)*CFrame.Angles(0.16,0,side*0.2),tint,Enum.Material.Neon)
-		elseif map.id=="hydra" then
-			detail("HydraBunker",Vector3.new(4.5,5,4.5),CFrame.new(0,2.5,0),Color3.fromRGB(70,77,70),Enum.Material.DiamondPlate)
-			detail("HydraBand",Vector3.new(4.6,0.7,4.6),CFrame.new(0,4.2,0),tint,Enum.Material.Neon)
-		else
-			local golden=map.id=="asgard"
-			detail("CitadelPillar",Vector3.new(3.5,10,3.5),CFrame.new(0,5,0),golden and ART.pearl or Color3.fromRGB(90,93,99),golden and Enum.Material.Marble or Enum.Material.Cobblestone)
-			detail("CitadelCrown",Vector3.new(4.4,0.9,4.4),CFrame.new(0,10,0),golden and ART.gold or tint,Enum.Material.Metal)
-			for corner=-1,1,2 do detail("CitadelFinial",Vector3.new(0.8,2,0.8),CFrame.new(corner*1.5,11,1.5),golden and ART.gold or tint,Enum.Material.Metal) end
-		end
-	end
-	-- The per-viewer sign: which map, how many waves, or what is still missing.
-	local sign = part(model, "Sign", Vector3.new(11, 2.2, 0.3), at(0, 1.9, 5.6) * CFrame.Angles(0, math.pi, 0), ART.ink, Enum.Material.Metal)
-	local surface = Instance.new("SurfaceGui")
-	surface.Name, surface.Face, surface.Parent = "Board", Enum.NormalId.Front, sign
-	surface.LightInfluence, surface.SizingMode, surface.CanvasSize = 0, Enum.SurfaceGuiSizingMode.FixedSize, Vector2.new(280, 136)
-	local text = Instance.new("TextLabel")
-	text.Size, text.BackgroundTransparency, text.TextScaled, text.TextWrapped = UDim2.fromScale(1, 1), 1, true, true
-	text.Font, text.TextColor3, text.Parent = Enum.Font.GothamBold, tint, surface
-	local waves = (mode.id == "normal" and campaignWaves[destination.mapId]) or mode.waves
-	text.Text = (waves == 0 and "ONDAS INFINITAS" or (tostring(waves) .. " ONDAS")) .. "\nENTRE PARA JOGAR"
-	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= plinth then p.CanCollide = false end end
-	model.PrimaryPart = plinth
-	-- The rider box is axis-aligned; a quarter turn swaps its width and depth.
-	local sideways = math.abs(math.sin(yaw)) > 0.5
-	return model, {
-		center = at(0, 4, 0.5).Position, size = sideways and Vector3.new(7, 9, 12) or Vector3.new(12, 9, 7),
-		-- Toward the district's entrance, clear of the pad and of the sign.
-		exit = at(0, 4, 9).Position,
-	}
+-- A destination is a small station: one illustrated sign and three independent
+-- boarding pads. Each zone retains its catalog destination, never a client map.
+local function stationText(parent, name, pt, en, position, size, tint, fontSize)
+	local text=Instance.new("TextLabel")
+	text.Name,text.BackgroundTransparency,text.Position,text.Size=name,1,position,size
+	text.Font,text.TextColor3,text.TextSize=Enum.Font.FredokaOne,tint,fontSize
+	text.TextWrapped,text.TextStrokeTransparency,text.Text= true,0.35,pt
+	text:SetAttribute("LobbyTextPT",pt); text:SetAttribute("LobbyTextEN",en)
+	text.Parent=parent
+	return text
 end
 
--- The chest shop: heroes are found in chests, paid for with Gold. Two chests sit
--- on lit plinths, the rare one and the legendary one, each with its price on a
--- sign and a beam of light so it can be seen from across the deck.
-local function buildChestStand(lobby, x, z, chestId, chest, openPanel)
-	local model = Instance.new("Model")
-	model.Name, model.Parent = "Chest_" .. chestId, lobby
-	model:SetAttribute("Kind", "ChestStand")
-	model:SetAttribute("ChestId", chestId)
-	local tint = rgb(chest.color)
-	local legendary = chestId == "legendary"
-	local plinth = part(model, "Plinth", Vector3.new(9, 1.2, 9), CFrame.new(x, 0.6, z), ART.pearl, Enum.Material.Metal)
-	artPart(model, "PlinthInset", Vector3.new(8, 0.15, 8), CFrame.new(x, 1.25, z), ART.ink, Enum.Material.DiamondPlate)
-	artPart(model, "GlowRing", Vector3.new(8.4, 0.12, 8.4), CFrame.new(x, 1.3, z), tint, Enum.Material.Neon)
-	local wood = legendary and Color3.fromRGB(78, 48, 22) or Color3.fromRGB(46, 62, 88)
-	local scale = legendary and 1.2 or 1
-	local function sized(v) return Vector3.new(v.X * scale, v.Y * scale, v.Z * scale) end
-	part(model, "ChestBody", sized(Vector3.new(5.6, 2.8, 3.6)), CFrame.new(x, 1.2 + 1.4 * scale, z), wood, Enum.Material.Wood).CanCollide = false
-	part(model, "ChestBand", sized(Vector3.new(5.8, 0.5, 3.8)), CFrame.new(x, 1.2 + 1.2 * scale, z), tint, Enum.Material.Metal).CanCollide = false
-	for _, side in ipairs({ -1, 1 }) do
-		part(model, "ChestStrap", sized(Vector3.new(0.5, 3.0, 3.8)), CFrame.new(x + side * 1.9 * scale, 1.2 + 1.4 * scale, z), tint, Enum.Material.Metal).CanCollide = false
-		part(model, "ChestStud", Vector3.new(0.5, 0.5, 0.5) * scale, CFrame.new(x + side * 2.7 * scale, 1.2 + 0.4 * scale, z - 1.7 * scale), ART.gold, Enum.Material.Metal).CanCollide = false
-	end
-	-- The lid stands open so the light inside spills out.
-	local lidY = 1.2 + 3.6 * scale
-	part(model, "ChestLid", sized(Vector3.new(5.6, 1.1, 3.6)), CFrame.new(x, lidY + 0.6 * scale, z + 1.9 * scale) * CFrame.Angles(-1.0, 0, 0), wood, Enum.Material.Wood).CanCollide = false
-	part(model, "ChestLidBand", sized(Vector3.new(5.8, 0.4, 3.8)), CFrame.new(x, lidY + 0.9 * scale, z + 2.05 * scale) * CFrame.Angles(-1.0, 0, 0), tint, Enum.Material.Metal).CanCollide = false
-	local treasure = part(model, "Treasure", sized(Vector3.new(4.8, 0.3, 2.8)), CFrame.new(x, 1.2 + 2.9 * scale, z), tint, Enum.Material.Neon)
-	treasure.CanCollide = false
-	local beam = part(model, "LightBeam", Vector3.new(3.6, 16, 3.6), CFrame.new(x, 11, z), tint, Enum.Material.Neon)
-	beam.Shape, beam.CanCollide, beam.CanQuery, beam.Transparency = Enum.PartType.Cylinder, false, false, 1
-	beam.CFrame = CFrame.new(x, 11, z) * CFrame.Angles(0, 0, math.pi / 2)
-	beam.Size = Vector3.new(16, 3.6, 3.6)
-	emitter(treasure, tint, legendary and 14 or 8, 5, 0.6, 1.8, Vector3.new(0, 5, 0))
-	local glow = Instance.new("PointLight")
-	glow.Color, glow.Range, glow.Brightness, glow.Parent = tint, legendary and 24 or 16, 1.1, treasure
-	if legendary then
-		-- Gems crown the legendary chest.
-		for i = 0, 5 do
-			local angle = i * math.pi / 3
-			part(model, "Gem", Vector3.new(0.6, 0.9, 0.6), CFrame.new(x + math.sin(angle) * 3.4, lidY + 2.6, z + math.cos(angle) * 2.2) * CFrame.Angles(0, angle, 0.4), tint:Lerp(Color3.new(1, 1, 1), 0.35), Enum.Material.Neon).CanCollide = false
+-- A real 3D vignette with this map's authored roads. Rendering it into the
+-- sign avoids blank thumbnails while an image upload is awaiting moderation.
+-- Its camera is bound again by each client (CurrentCamera does not replicate).
+local function mapVignette(parent,map,tint)
+	local viewport=Instance.new("ViewportFrame")
+	viewport.Name,viewport.Size,viewport.BackgroundColor3="MapPicture",UDim2.fromScale(1,0.75),Color3.fromRGB(116,193,225)
+	viewport.BorderSizePixel=0; viewport.Ambient=Color3.fromRGB(190,190,190)
+	viewport.LightColor,viewport.LightDirection=Color3.fromRGB(255,240,211),Vector3.new(-1,-1,-0.5)
+	viewport.Parent=parent
+	local scene=Instance.new("WorldModel"); scene.Name="MapScene"; scene.Parent=viewport
+	local green=map.id=="wakanda" or map.id=="gamma"
+	local ground=green and Color3.fromRGB(69,126,75) or Color3.fromRGB(86,96,108)
+	if map.id=="asgard" then ground=Color3.fromRGB(172,154,102) end
+	part(scene,"Ground",Vector3.new(210,2,210),CFrame.new(0,-1,0),ground)
+	for _,route in ipairs(map.paths) do
+		for i=2,#route do
+			local a,b=Vector3.new(route[i-1][1],0.3,route[i-1][2]),Vector3.new(route[i][1],0.3,route[i][2])
+			part(scene,"Road",Vector3.new(12,0.4,(a-b).Magnitude+8),CFrame.lookAt((a+b)/2,b),Color3.fromRGB(217,209,185))
 		end
 	end
-	wallSign(model, "ChestNameplate", CFrame.new(x - 4.8, 2.6, z) * CFrame.Angles(0, math.pi / 2, 0), Vector3.new(7.2, 1.9, 0.2),
-		chest.kind=="base" and "BAÚS DE BASES" or "BAÚS DE HERÓIS", "5 TIPOS • A PARTIR DE 400 OURO", tint)
-	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= plinth then p.CanCollide = false end end
-	model.PrimaryPart = plinth
-	interactable(plinth, chest.name.pt, function(player) openPanel(player, "chests", { chestId = chestId }) end, 16)
-	local green = Color3.fromRGB(82, 235, 146)
-	local pad = artPart(model, "ShopEntryPad", Vector3.new(12, 0.18, 12), CFrame.new(x - 15, 0.48, z), green:Lerp(ART.ink, 0.58), Enum.Material.SmoothPlastic)
-	for _,side in ipairs({-1,1}) do
-		artPart(model,"ShopEntryBorder",Vector3.new(12,0.12,0.24),CFrame.new(x-15,0.61,z+side*5.9),green,Enum.Material.Neon)
-		artPart(model,"ShopEntryBorder",Vector3.new(0.24,0.12,12),CFrame.new(x-15+side*5.9,0.61,z),green,Enum.Material.Neon)
+	for i=1,12 do
+		local x=(i%2==0 and -1 or 1)*(82+(i%3)*8)
+		local z=-90+math.floor((i-1)/2)*35
+		local h=20+(i%4)*9
+		local color=map.id=="latveria" and Color3.fromRGB(60,68,91) or Color3.fromRGB(126,153,171)
+		if map.id=="manhattan" or map.id=="hydra" then
+			local block=part(scene,"Building",Vector3.new(15,h,18),CFrame.new(x,h/2,z),color)
+			for floor=1,3 do part(scene,"Windows",Vector3.new(15.2,2,18.2),block.CFrame*CFrame.new(0,-h/2+floor*h/4,0),tint) end
+		elseif map.id=="gamma" then
+			local tank=part(scene,"Reactor",Vector3.new(h,16,16),CFrame.new(x,h/2,z)*CFrame.Angles(0,0,math.pi/2),Color3.fromRGB(88,122,108))
+			tank.Shape=Enum.PartType.Cylinder
+			part(scene,"Energy",Vector3.new(16.5,3,16.5),CFrame.new(x,h*0.7,z),tint)
+		elseif map.id=="wakanda" then
+			part(scene,"Trunk",Vector3.new(4,h,4),CFrame.new(x,h/2,z),Color3.fromRGB(102,77,53))
+			local leaf=part(scene,"Crown",Vector3.new(26,18,24),CFrame.new(x,h,z),Color3.fromRGB(81,159,85)); leaf.Shape=Enum.PartType.Ball
+		else
+			part(scene,"Citadel",Vector3.new(12,h+15,12),CFrame.new(x,(h+15)/2,z),map.id=="asgard" and ART.pearl or color)
+			part(scene,"Crown",Vector3.new(16,4,16),CFrame.new(x,h+15,z),map.id=="asgard" and ART.gold or tint)
+		end
 	end
-	local sign=label(pad,"PISE PARA ABRIR\nSTEP TO OPEN",Vector3.new(0,2.4,0),green,210,48)
-	sign.Parent.Name="ShopEntryHint"
-	return model, {center=Vector3.new(x-15,3,z),size=Vector3.new(12,7,12),chestId=chestId}
+	local camera=Instance.new("Camera"); camera.Name="PictureCamera"
+	camera.CFrame=CFrame.lookAt(Vector3.new(100,120,140),Vector3.new(0,7,0)); camera.FieldOfView=40
+	viewport:SetAttribute("PictureCFrame",camera.CFrame)
+	viewport:SetAttribute("PictureFieldOfView",camera.FieldOfView)
+	camera.Parent=viewport; viewport.CurrentCamera=camera
+	for _,p in ipairs(scene:GetDescendants()) do if p:IsA("BasePart") then
+		p.CanCollide,p.CanTouch,p.CanQuery=false,false,false
+		p:SetAttribute("MapPicturePart",true)
+	end end
+end
+
+local function buildModePortal(lobby,x,z,portalId,mode,destination,map)
+	local tint=rgb(PORTAL_COLORS[destination.mapId])
+	local yaw=destination.facing or 0
+	local base=CFrame.new(x,0,z)*CFrame.Angles(0,yaw,0)
+	local function at(dx,y,dz) return base*CFrame.new(dx,y,dz) end
+	local model=Instance.new("Model"); model.Name,model.Parent="Portal_"..portalId,lobby
+	model:SetAttribute("Kind","ModePortal"); model:SetAttribute("ModeId",destination.modeId)
+	model:SetAttribute("PortalId",portalId); model:SetAttribute("MapId",map.id)
+	model:SetAttribute("District",destination.district or "center")
+	local plinth=part(model,"Plinth",Vector3.new(32,0.5,13),at(0,0.25,0),ART.ink,Enum.Material.Slate)
+	model.PrimaryPart=plinth
+	for _,side in ipairs({-1,1}) do
+		part(model,"SignPillar",Vector3.new(1.2,17,1.4),at(side*14.6,8.5,-4.8),ART.steel,Enum.Material.Metal)
+		artPart(model,"SignLight",Vector3.new(0.25,14,0.2),at(side*14.6,9,-3.98),tint,Enum.Material.Neon)
+	end
+	local board=part(model,"MapBillboard",Vector3.new(32,12.5,0.8),at(0,20,-4.5)*CFrame.Angles(0,math.pi,0),ART.ink,Enum.Material.Metal)
+	local surface=Instance.new("SurfaceGui"); surface.Name="MapBoard"; surface.Face=Enum.NormalId.Front
+	surface.LightInfluence,surface.CanvasSize,surface.SizingMode=0,Vector2.new(880,344),Enum.SurfaceGuiSizingMode.FixedSize
+	surface.Parent=board
+	mapVignette(surface,map,tint)
+	local title=stationText(surface,"MapTitle",map.name.pt,map.name.en,UDim2.fromScale(0.02,0.24),UDim2.fromScale(0.96,0.35),Color3.new(1,1,1),64)
+	title.TextStrokeTransparency=0.1
+	local waves=destination.modeId=="normal" and campaignWaves[map.id] or mode.waves
+	local suffix=waves==0 and "INFINITO" or tostring(waves).." ONDAS"
+	local suffixEN=waves==0 and "ENDLESS" or tostring(waves).." WAVES"
+	stationText(surface,"MapRules",upper(mode.name.pt).."  •  "..suffix,upper(mode.name.en).."  •  "..suffixEN,UDim2.fromScale(0.02,0.75),UDim2.fromScale(0.96,0.13),tint,25)
+	stationText(surface,"MapCapacity","3 FILAS  •  ATÉ 4 JOGADORES CADA","3 QUEUES  •  UP TO 4 PLAYERS EACH",UDim2.fromScale(0.02,0.89),UDim2.fromScale(0.96,0.1),ART.pearl,18)
+	local zones={}
+	for slot=1,3 do
+		local dx=(slot-2)*10.2
+		local pad=part(model,slot==1 and "Pad" or "Pad"..slot,Vector3.new(8.4,0.18,8.4),at(dx,0.58,0.4),tint,Enum.Material.Neon)
+		pad.Transparency=0.3; pad.CanCollide=false
+		local queueId=slot==1 and portalId or portalId..":"..slot
+		pad:SetAttribute("QueueId",queueId)
+		for _,side in ipairs({-1,1}) do
+			artPart(model,"QueueRail",Vector3.new(0.35,2,8.7),at(dx+side*4.45,1.5,0.4),ART.steel,Enum.Material.Metal)
+			artPart(model,"QueueGate",Vector3.new(0.5,7.5,0.8),at(dx+side*3.3,4,-3.8),ART.pearl,Enum.Material.Metal)
+		end
+		artPart(model,"QueueLintel",Vector3.new(7.2,0.6,0.8),at(dx,7.8,-3.8),tint,Enum.Material.Neon)
+		local sign=part(model,"QueueSign"..slot,Vector3.new(8.3,2.5,0.25),at(dx,10,-3.8)*CFrame.Angles(0,math.pi,0),ART.ink)
+		local gui=Instance.new("SurfaceGui"); gui.Name="QueueBoard"; gui.Face=Enum.NormalId.Front; gui.LightInfluence=0
+		gui.CanvasSize=Vector2.new(290,94); gui.SizingMode=Enum.SurfaceGuiSizingMode.FixedSize; gui.Parent=sign
+		stationText(gui,"QueueTitle","FILA "..slot,"QUEUE "..slot,UDim2.fromScale(0,0),UDim2.fromScale(1,0.36),ART.pearl,20)
+		local status=stationText(gui,"QueueStatus","0/4  •  ENTRE","0/4  •  STEP IN",UDim2.fromScale(0,0.36),UDim2.fromScale(1,0.62),tint,26)
+		zones[queueId]={destinationId=portalId,slot=slot,center=at(dx,4,0.4).Position,
+			size=Vector3.new(8.4,8,8.4),exit=at(dx,4,10).Position,pad=pad,label=status,tint=tint}
+	end
+	return model,zones
+end
+
+-- Separate physical summon halls. A player near one doorway can only buy
+-- that collection, even if a forged request names a chest from the other.
+local function buildChestStand(lobby,x,z,chestId,chest,openPanel)
+	local model=Instance.new("Model"); model.Name,model.Parent="Chest_"..chestId,lobby
+	model:SetAttribute("Kind","ChestStand"); model:SetAttribute("ChestId",chestId)
+	local isBase=chest.kind=="base"
+	model:SetAttribute("SummonKind",isBase and "base" or "hero")
+	local tint=isBase and Color3.fromRGB(115,227,165) or Color3.fromRGB(255,180,79)
+	local secondary=isBase and Color3.fromRGB(80,170,239) or Color3.fromRGB(180,131,247)
+	local origin=CFrame.new(x,0,z)*CFrame.Angles(0,math.pi,0)
+	local function at(dx,y,dz) return origin*CFrame.new(dx,y,dz) end
+	local floor=part(model,"Plinth",Vector3.new(28,0.6,22),at(0,0.3,0),ART.ink,Enum.Material.Slate)
+	model.PrimaryPart=floor
+	part(model,"BackWall",Vector3.new(28,16,1.2),at(0,8,-10.5),Color3.fromRGB(37,44,65),Enum.Material.Metal)
+	for _,side in ipairs({-1,1}) do
+		part(model,"HallWall",Vector3.new(1.2,16,22),at(side*13.4,8,0),Color3.fromRGB(47,58,78),Enum.Material.Metal)
+		part(model,"FrontWing",Vector3.new(7.5,15,1.3),at(side*9.6,7.8,10),ART.ink,Enum.Material.Metal)
+		artPart(model,"SummonTrim",Vector3.new(0.28,13,0.3),at(side*6,7.3,10.8),tint,Enum.Material.Neon)
+		artPart(model,"EnergyConduit",Vector3.new(0.24,9,0.3),at(side*12,8,10.8),secondary,Enum.Material.Neon)
+	end
+	part(model,"Roof",Vector3.new(29,1,23),at(0,16.5,0),ART.steel,Enum.Material.Metal)
+	part(model,"EntranceLintel",Vector3.new(13,4,1.4),at(0,14,10),ART.ink,Enum.Material.Metal)
+	wallSign(model,"SummonHeader",at(0,19,9)*CFrame.Angles(0,math.pi,0),Vector3.new(29,5,0.8),
+		isBase and "INVOCAR BASES" or "INVOCAR HERÓIS","SUMMON • OURO",tint)
+	local header=model:FindFirstChild("SummonHeader")
+	if header then
+		for _,node in ipairs(header:GetDescendants()) do if node:IsA("TextLabel") then
+			local line=node.Text
+			node:SetAttribute("LobbyTextPT",line)
+			node:SetAttribute("LobbyTextEN",line=="SUMMON • OURO" and "SUMMON • GOLD" or (isBase and "SUMMON BASES" or "SUMMON HEROES"))
+		end end
+	end
+	local reactor=artPart(model,"SummonCore",Vector3.new(0.8,9,9),at(0,5,-4)*CFrame.Angles(0,0,math.pi/2),secondary,Enum.Material.Neon)
+	reactor.Shape=Enum.PartType.Cylinder; reactor.Transparency=0.35
+	arc(model,"SummonRing",at(0,7,-5),5.3,0.45,0.65,tint,Enum.Material.Metal,16)
+	for i=-1,1 do
+		local column=artPart(model,"SummonColumn",Vector3.new(2.2,2.5+math.abs(i),2.2),at(i*3.4,2.1,-1),ART.pearl,Enum.Material.Metal)
+		artPart(model,"SummonChip",Vector3.new(1.7,0.18,1.7),column.CFrame*CFrame.new(0,1.8,0),tint,Enum.Material.Neon)
+	end
+	local pad=artPart(model,"ShopEntryPad",Vector3.new(11,0.16,12),at(0,0.64,11.5),Color3.fromRGB(81,220,130),Enum.Material.Neon)
+	pad.Transparency=0.45; pad.CanCollide=false
+	for _,side in ipairs({-1,1}) do artPart(model,"ShopEntryBorder",Vector3.new(0.18,0.15,12),at(side*5.5,0.77,11.5),tint,Enum.Material.Neon) end
+	local plaque=wallSign(model,"SummonDoorHint",at(0,11,10.9)*CFrame.Angles(0,math.pi,0),Vector3.new(10.4,1.6,0.15),"APROXIME-SE","ESCOLHA • INVOQUE • EQUIPE",ART.pearl)
+	for _,node in ipairs(plaque:GetDescendants()) do
+		if node:IsA("TextLabel") then
+			node:SetAttribute("LobbyTextPT",node.Text)
+			node:SetAttribute("LobbyTextEN",node.Name=="Title" and "STEP CLOSER" or "CHOOSE • SUMMON • EQUIP")
+		end
+	end
+	interactable(pad,isBase and "Invocar bases" or "Invocar heróis",function(player)
+		local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root and (root.Position-pad.Position).Magnitude<=14 then openPanel(player,"chests",{chestId=chestId}) end
+	end,12)
+	return model,{center=at(0,4,11.5).Position,size=Vector3.new(12,8,14),
+		purchaseCenter=at(0,4,3).Position,purchaseSize=Vector3.new(26,10,31),
+		chestId=chestId,kind=isBase and "base" or "hero"}
 end
 
 -- The store as a physical kiosk row: the drone spins in a display case, the
@@ -1801,7 +1821,8 @@ end
 local function coplanarPairs(root)
 	local faces = {}
 	for _, item in ipairs(root:GetDescendants()) do
-		if item:IsA("BasePart") and not item:IsA("MeshPart") then alignedFaces(item, faces) end
+		-- Pictures have separate coordinate spaces, not coplanar lobby faces.
+		if item:IsA("BasePart") and not item:IsA("MeshPart") and not item:GetAttribute("MapPicturePart") then alignedFaces(item, faces) end
 	end
 	table.sort(faces, function(a, b)
 		if a.axis ~= b.axis then return a.axis < b.axis end
@@ -1886,26 +1907,25 @@ function World:BuildLobby()
 	bridge.CastShadow = true
 	wallSign(lobby,"CommandIdentity",CFrame.new(0,8,276)*CFrame.Angles(0,math.pi,0),Vector3.new(18,4,0.5),"DOOMSDAY","REFÚGIO DA AURORA / AURORA REFUGE",ART.gold)
 
-	-- Four mode portals: color, signage and unlock state are all per mode,
-	-- never a shared tabbed list. Each group's host may choose its map.
+	-- Fixed destinations, each with three independent four-player queues.
 	for _, portalId in ipairs(self.catalog.DestinationOrder) do
 		local destination=self.catalog.Destinations[portalId]
-		local _, zone = buildModePortal(lobby, destination.x, destination.z, portalId, self.catalog.Modes[destination.modeId], destination, self.catalog.Maps[destination.mapId])
-		self.portalZones[portalId] = zone
+		local _, zones = buildModePortal(lobby, destination.x, destination.z, portalId, self.catalog.Modes[destination.modeId], destination, self.catalog.Maps[destination.mapId])
+		for queueId,zone in pairs(zones) do self.portalZones[queueId]=zone end
 	end
 
 	-- The collection lives in the HUD; the plaza stays clear of hero statues.
 
 	-- The market fills the north-west corner: the Gold chests in front, the
 	-- Robux counters along the back, both facing the plaza.
-	local chestX = { rare = -80, base_rare = -50 }
+	local chestX = { rare = -97, base_rare = -63 }
 	-- Two welcoming shop pads; all ten chest tiers live in the shop selector.
 	for _, chestId in ipairs({"rare", "base_rare"}) do
 		local _,zone=buildChestStand(lobby, chestX[chestId], MARKET.chestZ, chestId, self.catalog.Chests[chestId], self.openPanel)
 		self.shopZones[chestId]=zone
 	end
-	wallSign(lobby, "ChestShopSign", CFrame.new(-65, 11, MARKET.chestZ + 7), Vector3.new(16, 3.4, 0.5),
-		"LOJA DE BAÚS", "OURO / GOLD", ART.gold)
+	wallSign(lobby, "ChestShopSign", CFrame.new(-80, 25, MARKET.chestZ - 8), Vector3.new(32, 3.4, 0.5),
+		"CENTRAL DE INVOCAÇÃO", "HERÓIS • BASES", ART.gold)
 
 	-- The premium row: everything sold for Robux.
 	local showcase = self.catalog.Heroes.silversurfer
@@ -2562,7 +2582,7 @@ function World:FinishLobby(lobby)
 	end
 	local signs={
 		CommandIdentity={"DOOMSDAY","DOOMSDAY","REFÚGIO DA AURORA","AURORA REFUGE"},
-		ChestShopSign={"BAÚS","CHESTS","OURO","GOLD"},
+		ChestShopSign={"CENTRAL DE INVOCAÇÃO","SUMMON PLAZA","HERÓIS • BASES","HEROES • BASES"},
 		PremiumShopSign={"LOJA ROBUX","ROBUX SHOP","HERÓIS • PASSES • OURO","HEROES • PASSES • GOLD"},
 		SanctuaryArchSign={"BOSQUE DA AURORA","AURORA WOODS","EXPLORE COM AMIGOS","EXPLORE WITH FRIENDS"},
 		AuroraWelcome={"ÁRVORE DA AURORA","AURORA TREE","UM LUGAR PARA VOLTAR","A PLACE TO RETURN TO"},
@@ -3210,16 +3230,32 @@ end
 
 -- Chests are bought at the shop: standing in the Market, around its pads
 -- and counters, on the island's ground.
-function World:NearMarket(player)
-	local root = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+function World:NearMarket(player,kind)
+	local root=player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not root or not self.lobby then return false end
-	local at = root.Position
-	for _, d in ipairs(DISTRICTS) do
-		if d.id == "market" then
-			return at.X > d.x0 - 8 and at.X < d.x1 + 8 and at.Z > d.z0 - 8 and at.Z < d.z1 + 8 and at.Y < 30
+	for _,zone in pairs(self.shopZones) do
+		if zone.chestId and (not kind or zone.kind==kind) then
+			local offset=root.Position-(zone.purchaseCenter or zone.center)
+			local size=zone.purchaseSize or zone.size
+			if math.abs(offset.X)<=size.X/2 and math.abs(offset.Y)<=size.Y/2 and math.abs(offset.Z)<=size.Z/2 then return true end
 		end
 	end
 	return false
+end
+
+function World:UpdatePortalQueues(snapshot)
+	for queueId,zone in pairs(self.portalZones) do
+		local state=snapshot[queueId] or {count=0,max=4,remaining=0}
+		local suffix=state.departing and "PARTINDO" or state.count>=4 and "LOTADO" or state.count>0 and tostring(state.remaining).."s" or "ENTRE"
+		local suffixEN=state.departing and "DEPARTING" or state.count>=4 and "FULL" or state.count>0 and tostring(state.remaining).."s" or "STEP IN"
+		local prefix=tostring(state.count).."/4  •  "
+		local pt,en=prefix..suffix,prefix..suffixEN
+		if zone.label and zone.label:GetAttribute("LobbyTextPT")~=pt then
+			zone.label:SetAttribute("LobbyTextPT",pt); zone.label:SetAttribute("LobbyTextEN",en); zone.label.Text=pt
+			zone.label.TextColor3=state.count>=4 and Color3.fromRGB(255,119,103) or zone.tint
+			zone.pad.Color=state.count>=4 and Color3.fromRGB(255,119,103) or zone.tint
+		end
+	end
 end
 
 function World:NearTraining(player)

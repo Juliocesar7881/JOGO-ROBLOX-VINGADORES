@@ -201,6 +201,17 @@ function routePreview.goShop(chestId)
 		showToast(T("Os baús ficam na LOJA do Mercado, na praça.", "Chests are sold at the Market SHOP on the plaza."))
 	end
 end
+function routePreview.goPortal(destinationId)
+	local destination=Catalog.Destinations[destinationId or "normal"]
+	if not destination then return end
+	local lobby=workspace:FindFirstChild("DoomLobby")
+	local station=lobby and lobby:FindFirstChild("Portal_"..(destinationId or "normal"))
+	local pad=station and station:FindFirstChild("Pad")
+	closeContext()
+	local position=pad and pad.Position or Vector3.new(destination.x,1,destination.z)
+	routePreview:ShowWay(position,T("PORTAL • ENTRE NA FILA","PORTAL • JOIN A QUEUE"))
+	showToast(T("Siga a luz. Cada fila aceita até 4 pessoas.","Follow the light. Each queue holds up to 4 players."))
+end
 local buildOverlay = BuildOverlay.new(effects.folder, Catalog, Rules, Config, C)
 
 local function smallText(parent, text, y, h)
@@ -415,132 +426,137 @@ local premiumCategory="hero"
 local inventoryFilter="owned"
 local inventoryView={query="",rarity="all",sort="collection",leaderPick=false}
 local function contextChests(body,data)
- if data and Catalog.Chests[data.chestId] then selectedChest=data.chestId; data.chestId=nil; confirmChest=nil end
- local collection=Catalog.Chests[selectedChest].kind or "hero"
- local isBase=collection=="base"
- local itemCatalog=isBase and Catalog.Bases or Catalog.Heroes
- local owned=isBase and (profile().bases or {outpost=true}) or (profile().heroes or {})
- local function itemName(id) return L(itemCatalog[id].name) end
- local function portrait(parent,id,properties)
-  if isBase then return UI.basePortrait(parent,Catalog.Bases[id],properties) end
-  return heroPortrait(parent,id,properties)
- end
- categoryTabs(body,"CollectionTabs",{{id="hero",label=T("HERÓIS","HEROES")},{id="base",label=T("BASES","BASES")}},collection,function(kind) selectedChest=kind=="base" and "base_rare" or "rare"; confirmChest=nil; lastChestResult=nil; renderContext() end)
- local ids=isBase and Catalog.BaseChestOrder or Catalog.HeroChestOrder
- local options={}
- for _,id in ipairs(ids) do table.insert(options,{id=id,label=L(Catalog.Chests[id].name)}) end
- categoryTabs(body,"ChestTabs",{options[1],options[2],options[3]},selectedChest,function(id) selectedChest=id; confirmChest=nil; renderContext() end)
- categoryTabs(body,"ChestTopTabs",{options[4],options[5]},selectedChest,function(id) selectedChest=id; confirmChest=nil; renderContext() end)
- UI.secondary(body,isBase and T("VER MINHAS BASES","MY BASE COLLECTION") or T("VER MEUS HERÓIS","MY HERO COLLECTION"),function() openContext(isBase and "bases" or "inventory") end,{Size=UDim2.new(1,-6,0,44),TextSize=12})
-	UI.label(body,T("SEU OURO: ","YOUR GOLD: ")..number(profile().gold),{Name="ChestBalance",Size=UDim2.new(1,-6,0,30),TextColor3=C.gold,Font=Enum.Font.GothamBold,TextSize=16})
-	smallText(body,T("Escolha um baú. Abrir a loja não gasta Ouro.","Choose a chest. Opening the shop spends no Gold."),0,30)
+	local chest=Catalog.Chests[selectedChest]
+	local collection=chest.kind or "hero"
+	local isBase=collection=="base"
+	local tint=isBase and C.green or C.gold
+	local catalog=isBase and Catalog.Bases or Catalog.Heroes
+	local owned=isBase and (profile().bases or {outpost=true}) or (profile().heroes or {})
+	local ids=isBase and Catalog.BaseChestOrder or Catalog.HeroChestOrder
+	local size=screenSize(); local slot=UI.contextLayout(size.X,size.Y,{wide=true,elevator=state.elevator~=nil})
+	local width=slot.w-34; local wide=width>=620
+	local function portrait(parent,id,properties)
+		if isBase then return UI.basePortrait(parent,catalog[id],properties) end
+		return heroPortrait(parent,id,properties)
+	end
+	local balance=UI.roundFrame(body,{Name="SummonBalance",Size=UDim2.new(1,-6,0,60),BackgroundColor3=C.panel},tint)
+	UI.illustration(balance,"coin",C.gold,{Position=UDim2.fromOffset(8,9),Size=UDim2.fromOffset(40,40)})
+	UI.label(balance,number(profile().gold)..T(" OURO"," GOLD"),{Position=UDim2.fromOffset(54,6),Size=UDim2.new(0.55,-50,0,27),TextColor3=C.gold,Font=UI.Fonts.display,TextSize=20})
+	UI.label(balance,T("Escolha um baú para invocar","Choose a crate to summon"),{Position=UDim2.fromOffset(54,33),Size=UDim2.new(0.58,-52,0,20),TextSize=11})
+	UI.secondary(balance,isBase and T("MINHAS BASES","MY BASES") or T("MEUS HERÓIS","MY HEROES"),function() openContext(isBase and "bases" or "inventory") end,
+		{Name="SummonCollection",AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-8,0.5,0),Size=UDim2.new(0.39,0,0,46),TextSize=12})
+
+	local function resultCard()
 	if lastChestResult and ((lastChestResult.baseId~=nil)==isBase) then
-		local r=lastChestResult
-		local itemId=r.baseId or r.heroId
-		local row=UI.roundFrame(body,{Name="ChestResult",Size=UDim2.new(1,-6,0,154),BackgroundColor3=C.card},UI.color(Catalog.Rarities[r.rarity].color))
-		portrait(row,itemId,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(100,130)})
-		UI.label(row,itemName(itemId),{Position=UDim2.fromOffset(112,10),Size=UDim2.new(1,-126,0,44),TextSize=20,TextWrapped=true,Font=Enum.Font.GothamBlack})
-		UI.label(row,r.duplicate and (T("Repetido: +","Duplicate: +")..r.refundGold..T(" Ouro e +"," Gold and +")..r.refundMastery..T(" maestria"," mastery")) or T("NOVO HERÓI DESBLOQUEADO!","NEW HERO UNLOCKED!"),{Position=UDim2.fromOffset(112,57),Size=UDim2.new(1,-126,0,38),TextWrapped=true,TextSize=12,TextColor3=C.gold})
-		if isBase then
-			for _,label in ipairs(row:GetChildren()) do if label:IsA("TextLabel") and label.TextColor3==C.gold then label.Text=r.duplicate and ("+"..r.refundGold..T(" Ouro por repetida"," Gold for duplicate")) or T("NOVA BASE!","NEW BASE!") end end
-		end
-		UI.button(row,isBase and T("VER BASES","VIEW BASES") or T("VER HERÓI","VIEW HERO"),function() openContext(isBase and "bases" or "hero",{heroId=r.heroId}) end,{Position=UDim2.fromOffset(112,100),Size=UDim2.new(1,-126,0,44),TextSize=12})
+		local r=lastChestResult; local id=r.baseId or r.heroId
+		local card=UI.roundFrame(body,{Name="ChestResult",Size=UDim2.new(1,-6,0,116),BackgroundColor3=C.panel},UI.color(Catalog.Rarities[r.rarity].color))
+		portrait(card,id,{Position=UDim2.fromOffset(6,4),Size=UDim2.fromOffset(86,98)})
+		UI.label(card,L(catalog[id].name),{Position=UDim2.fromOffset(102,7),Size=UDim2.new(1,-114,0,29),TextSize=20,Font=UI.Fonts.display})
+		local message=r.duplicate and (T("Repetido: +","Duplicate: +")..number(r.refundGold)..T(" Ouro"," Gold")) or T("ADICIONADO À COLEÇÃO!","ADDED TO YOUR COLLECTION!")
+		UI.label(card,message,{Position=UDim2.fromOffset(102,38),Size=UDim2.new(1,-114,0,22),TextSize=12,TextColor3=tint})
+		local active=isBase and profile().equippedBase==id
+		local button=UI.button(card,active and T("BASE ATIVA","ACTIVE BASE") or isBase and T("ATIVAR ESTA BASE","ACTIVATE THIS BASE") or T("VER HERÓI","VIEW HERO"),function()
+			if isBase then act("EquipBase",{baseId=id},function() showToast(T("Base ativada para a próxima partida!","Base activated for your next match!")) end)
+			else openContext("hero",{heroId=id}) end
+		end,{Name="SummonEquipResult",Position=UDim2.fromOffset(102,63),Size=UDim2.new(1,-114,0,46),BackgroundColor3=C.green,TextSize=13})
+		if active then UI.disabled(button) end
 	end
-	for _,id in ipairs({selectedChest}) do
-		local chest=Catalog.Chests[id]; local tint=UI.color(chest.color)
-		local display=UI.roundFrame(body,{Name="ChestDisplay_"..id,Size=UDim2.new(1,-6,0,146),BackgroundColor3=tint:Lerp(C.background,0.65)},tint)
-		UI.shade(display,35)
-		UI.printTexture(display,tint)
-		local halo=UI.frame(display,{Position=UDim2.fromOffset(8,16),Size=UDim2.fromOffset(110,110),BackgroundColor3=C.gold,BackgroundTransparency=0.85})
-		UI.corner(halo,100)
-		UI.stroke(halo,C.gold,2).Transparency=0.55
-		local chestArt=UI.frame(display,{Name="ChestIllustration",BackgroundTransparency=1,Position=UDim2.fromOffset(12,20),Size=UDim2.fromOffset(104,100)})
-		UI.roundFrame(chestArt,{Position=UDim2.fromOffset(7,42),Size=UDim2.fromOffset(92,53),BackgroundColor3=tint:Lerp(C.background,0.3)},tint)
-		UI.roundFrame(chestArt,{Position=UDim2.fromOffset(3,18),Size=UDim2.fromOffset(100,35),BackgroundColor3=tint},C.gold)
-		for _,x in ipairs({20,77}) do UI.frame(chestArt,{Position=UDim2.fromOffset(x,20),Size=UDim2.fromOffset(9,71),BackgroundColor3=C.gold}) end
-		UI.roundFrame(chestArt,{Position=UDim2.fromOffset(42,42),Size=UDim2.fromOffset(24,25),BackgroundColor3=C.gold},tint)
-		UI.label(chestArt,"◆",{Position=UDim2.fromOffset(43,40),Size=UDim2.fromOffset(22,25),TextColor3=C.background,TextXAlignment=Enum.TextXAlignment.Center,TextSize=17})
-		UI.label(display,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(128,20),Size=UDim2.new(1,-140,0,49),Font=Enum.Font.GothamBlack,TextColor3=tint,TextSize=21,TextWrapped=true})
-		UI.label(display,number(chest.cost)..T(" OURO"," GOLD"),{Position=UDim2.fromOffset(128,79),Size=UDim2.new(1,-140,0,24),Font=Enum.Font.GothamBold,TextColor3=C.gold})
-		UI.label(display,isBase and T("1 base • chances abaixo","1 base • odds below") or T("1 herói • chances abaixo","1 hero • odds below"),{Position=UDim2.fromOffset(128,110),Size=UDim2.new(1,-140,0,25),TextSize=11,TextColor3=C.muted,TextWrapped=true})
-		local forced=chest.pity and ((profile().pity or {})[id] or 0)+1>=chest.pity.after
-		if chest.pity then smallText(body,T("Garantia ","Guarantee ")..L(Catalog.Rarities[chest.pity.minimum].name).."+: "..tostring((profile().pity or {})[id] or 0).."/"..chest.pity.after..(forced and T(" • ATIVA NESTE BAÚ"," • ACTIVE NOW") or ""),0,44) end
-		local total=0
-		local minimum=forced and table.find(Catalog.RarityOrder,chest.pity.minimum) or 1
-		for index,rarity in ipairs(Catalog.RarityOrder) do if index>=minimum then total+=chest.odds[rarity] or 0 end end
-		local summary={}
-		for index,rarity in ipairs(Catalog.RarityOrder) do
-			local weight=index>=minimum and (chest.odds[rarity] or 0) or 0
-			if weight>0 then table.insert(summary,L(Catalog.Rarities[rarity].name).." "..string.format("%.1f%%",weight/total*100)) end
+	end
+
+	local selector=UI.scroll(body,{Name="SummonCrates",Size=UDim2.new(1,-6,0,90),AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollingDirection=Enum.ScrollingDirection.X,ScrollBarThickness=3,ScrollBarImageColor3=tint})
+	local tileWidth=wide and (width-6)/#ids or 112
+	selector.CanvasSize=UDim2.fromOffset(tileWidth*#ids,0)
+	selector:SetAttribute("SummonChestId",selectedChest)
+	local scrolls=data.summonViews and data.summonViews[selectedChest] or {}
+	selector.CanvasPosition=scrolls.crates or Vector2.new(0,0)
+	for i,id in ipairs(ids) do
+		local def=Catalog.Chests[id]; local chosen=id==selectedChest
+		local tile=UI.button(selector,"",function() selectedChest=id; confirmChest=nil; renderContext() end,
+			{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+2,2),Size=UDim2.fromOffset(tileWidth-6,80),BackgroundColor3=chosen and UI.color(def.color):Lerp(C.panel,0.38) or C.panel})
+		UI.illustration(tile,isBase and "heart" or "chest",UI.color(def.color),{Position=UDim2.fromOffset(7,8),Size=UDim2.fromOffset(24,24)})
+		UI.label(tile,chosen and "✓" or "",{Position=UDim2.new(1,-27,0,7),Size=UDim2.fromOffset(22,24),TextColor3=C.green,TextSize=19})
+		UI.label(tile,L(def.name),{Position=UDim2.fromOffset(34,6),Size=UDim2.new(1,-48,0,42),TextWrapped=true,TextSize=12,Font=UI.Fonts.bold,TextXAlignment=Enum.TextXAlignment.Center})
+		UI.label(tile,number(def.cost),{Position=UDim2.new(0,4,1,-27),Size=UDim2.new(1,-8,0,24),TextColor3=C.gold,TextSize=17,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+	end
+
+	local forced=chest.pity and ((profile().pity or {})[selectedChest] or 0)+1>=chest.pity.after
+	local minimum=forced and table.find(Catalog.RarityOrder,chest.pity.minimum) or 1
+	local total=0; local outcomes={}
+	for index,rarity in ipairs(Catalog.RarityOrder) do if index>=minimum then total+=chest.odds[rarity] or 0 end end
+	for index,rarity in ipairs(Catalog.RarityOrder) do
+		local weight=index>=minimum and (chest.odds[rarity] or 0) or 0
+		if weight>0 then
+			local pool=Rules.ChestPool(rarity,collection); local fresh={}
+			for _,id in ipairs(pool) do if not owned[id] then table.insert(fresh,id) end end
+			local candidates=#fresh>0 and fresh or pool
+			for _,id in ipairs(pool) do table.insert(outcomes,{id=id,rarity=rarity,chance=contains(candidates,id) and weight/total/#candidates*100 or 0}) end
 		end
-		smallText(body,table.concat(summary,"  •  "),0,48)
-		local eligible=(profile().gold or 0)>=chest.cost and not profile().paidRandomRestricted
-		if confirmChest==id then
-			local confirmation=UI.roundFrame(body,{Name="ChestConfirmation",Size=UDim2.new(1,-6,0,138),BackgroundColor3=C.gold:Lerp(C.background,0.9)},C.gold)
-			UI.label(confirmation,T("ABRIR 1 BAÚ POR ","OPEN 1 CHEST FOR ")..number(chest.cost)..T(" OURO?"," GOLD?"),{Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-24,0,42),TextWrapped=true,TextSize=15,Font=Enum.Font.GothamBold,TextColor3=C.gold})
-			UI.label(confirmation,T("Seu saldo depois: ","Balance afterwards: ")..number((profile().gold or 0)-chest.cost)..(isBase and T(" Ouro. Uma base aleatória."," Gold. One random base.") or T(" Ouro. Um herói aleatório."," Gold. One random hero.")),{Position=UDim2.fromOffset(12,51),Size=UDim2.new(1,-24,0,30),TextWrapped=true,TextSize=12})
-			local yes=UI.button(confirmation,T("CONFIRMAR","CONFIRM"),function()
-				if pending.OpenChest then return end
-				pending.OpenChest=true; confirmChest=nil; renderContext()
-				task.spawn(function()
-					local response=request("OpenChest",{chestId=id})
-					pending.OpenChest=nil
-					if response and response.ok then
-						lastChestResult=response.data and response.data.result
-						if lastChestResult then celebrate:Chest(lastChestResult,id) else audio:Cue("chest") end
-					end
-					if contextPanel and contextPanel.kind=="chests" then renderContext() end
-				end)
-			end,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(12,86),Size=UDim2.new(0.6,-18,0,44),TextSize=12,BackgroundColor3=C.gold})
-			if not eligible or pending.OpenChest then UI.disabled(yes) end
-			UI.secondary(confirmation,T("CANCELAR","CANCEL"),function() confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.6,0,0,86),Size=UDim2.new(0.4,-12,0,44),TextSize=12})
-		else
-			local buy=UI.button(body,pending.OpenChest and T("ABRINDO…","OPENING…") or T("ABRIR ","OPEN ")..Catalog.Upper(L(chest.name)).." • "..number(chest.cost)..T(" OURO"," GOLD"),function() confirmChest=id; renderContext() end,{Name="OpenChest_"..id,Size=UDim2.new(1,-6,0,48),BackgroundColor3=tint,TextSize=14})
-			if not eligible or pending.OpenChest then UI.disabled(buy) end
-		end
-		if not profile().paidRandomRestricted and (profile().gold or 0)<chest.cost then
-			smallText(body,T("Faltam ","You need ")..number(chest.cost-(profile().gold or 0))..T(" Ouro. Ganhe nas partidas ou resgate seus prêmios gratuitos."," more Gold. Earn it in matches or claim your free rewards."),0,44)
-		end
-		UI.section(body,T("DENTRO DESTE BAÚ","INSIDE THIS CHEST"),isBase and T("Chances por base. Repetidas devolvem até 40% do custo em Ouro.","Odds per base. Duplicates refund up to 40% of the cost in Gold.") or T("Chances por herói nesta abertura. Repetidos viram Ouro e XP do herói.","Hero odds for this opening. Duplicates become Gold and hero XP."))
-		for index,rarity in ipairs(Catalog.RarityOrder) do
-			local weight=index>=minimum and (chest.odds[rarity] or 0) or 0
-			if weight>0 then
-				local pool=Rules.ChestPool(rarity,collection); local fresh={}
-				for _,heroId in ipairs(pool) do if not owned[heroId] then table.insert(fresh,heroId) end end
-				local candidates=#fresh>0 and fresh or pool
-				local rarityTint=UI.color(Catalog.Rarities[rarity].color)
-				UI.label(body,Catalog.Upper(L(Catalog.Rarities[rarity].name)),{Size=UDim2.new(1,-6,0,24),TextColor3=rarityTint,Font=Enum.Font.GothamBold,TextSize=13})
-				local size=screenSize(); local width=UI.contextLayout(size.X,size.Y).w-34
-				local columns=math.max(1,math.min(3,math.floor((width+8)/140)))
-				local cell=(width-(columns-1)*8)/columns
-				local gallery=UI.frame(body,{Name="ChestContents_"..rarity,Size=UDim2.new(1,-6,0,math.ceil(#pool/columns)*144-8),BackgroundTransparency=1})
-				for heroIndex,heroId in ipairs(pool) do
-					local chance=contains(candidates,heroId) and weight/total/#candidates*100 or 0
-					local card=UI.roundFrame(gallery,{Name="ChestHero_"..heroId,Position=UDim2.fromOffset((heroIndex-1)%columns*(cell+8),math.floor((heroIndex-1)/columns)*144),Size=UDim2.fromOffset(cell,136),BackgroundColor3=rarityTint:Lerp(C.background,0.9)},rarityTint)
-					portrait(card,heroId,{Position=UDim2.fromOffset(4,3),Size=UDim2.new(1,-8,0,65)})
-					UI.label(card,itemName(heroId),{Position=UDim2.fromOffset(6,70),Size=UDim2.new(1,-12,0,34),TextWrapped=true,TextSize=12,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Center})
-					UI.label(card,string.format("%.4f%%",chance),{Name="ChestOdds_"..heroId,Position=UDim2.fromOffset(6,110),Size=UDim2.new(1,-12,0,20),TextColor3=rarityTint,TextSize=12,TextXAlignment=Enum.TextXAlignment.Center})
+	end
+	local purchaseParent, galleryParent=body,body
+	local galleryHeight=254
+	if wide then
+		local stageHeight=math.max(248,math.min(440,slot.h-254))
+		local stage=UI.frame(body,{Name="SummonStage",Size=UDim2.new(1,-6,0,stageHeight),BackgroundTransparency=1})
+		galleryParent=UI.frame(stage,{Name="SummonPreview",Size=UDim2.new(0.58,-8,1,0),BackgroundTransparency=1})
+		purchaseParent=UI.frame(stage,{Name="SummonActions",Position=UDim2.fromScale(0.59,0),Size=UDim2.new(0.41,0,1,0),BackgroundTransparency=1})
+		UI.list(purchaseParent,8)
+		galleryHeight=stageHeight-54
+	end
+	local eligible=(profile().gold or 0)>=chest.cost and not profile().paidRandomRestricted
+	local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirmChest==selectedChest and 158 or 98),BackgroundColor3=C.panel},tint)
+	UI.label(purchase,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-24,0,27),TextSize=19,Font=UI.Fonts.display,TextColor3=tint})
+	local id=selectedChest
+	if confirmChest==id then
+		UI.label(purchase,T("Receba 1 item aleatório. Saldo após a compra: ","Receive 1 random item. Balance after purchase: ")..number((profile().gold or 0)-chest.cost),{Position=UDim2.fromOffset(12,39),Size=UDim2.new(1,-24,0,48),TextSize=13,TextWrapped=true})
+		local confirm=UI.button(purchase,T("CONFIRMAR • ","CONFIRM • ")..number(chest.cost),function()
+			if pending.OpenChest then return end
+			pending.OpenChest=true; confirmChest=nil; renderContext()
+			task.spawn(function()
+				local response=request("OpenChest",{chestId=id}); pending.OpenChest=nil
+				if response and response.ok then
+					lastChestResult=response.data and response.data.result
+					if lastChestResult then celebrate:Chest(lastChestResult,id) end
 				end
-			end
-		end
-		smallText(body,T("Novos itens têm prioridade dentro da raridade sorteada. Veja o conteúdo e as chances antes de confirmar.","Unowned items take priority within the rolled rarity. Review contents and odds before confirming."),0,54)
+				if contextPanel and contextPanel.kind=="chests" then renderContext() end
+			end)
+		end,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(12,98),Size=UDim2.new(0.62,-18,0,48),BackgroundColor3=C.green,TextSize=14})
+		if not eligible then UI.disabled(confirm) end
+		UI.secondary(purchase,T("CANCELAR","CANCEL"),function() confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.62,0,0,98),Size=UDim2.new(0.38,-12,0,48),TextSize=13})
+	else
+		local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR 1 • ","SUMMON 1 • ")..number(chest.cost)..T(" OURO"," GOLD"),function() confirmChest=id; renderContext() end,
+			{Name="OpenChest_"..id,Position=UDim2.fromOffset(12,40),Size=UDim2.new(1,-24,0,48),BackgroundColor3=C.green,TextSize=18})
+		if not eligible or pending.OpenChest then UI.disabled(button) end
 	end
+	if chest.pity then smallText(purchaseParent,T("Garantia ","Guarantee ")..L(Catalog.Rarities[chest.pity.minimum].name).."+: "..tostring((profile().pity or {})[id] or 0).."/"..chest.pity.after..(forced and T(" • ATIVA AGORA"," • ACTIVE NOW") or ""),0,36) end
+	if not eligible and not profile().paidRandomRestricted then smallText(purchaseParent,T("Faltam ","You need ")..number(chest.cost-(profile().gold or 0))..T(" Ouro. Ganhe nas partidas e nos prêmios."," more Gold. Earn it in matches and rewards."),0,44) end
+
+	local caption=UI.frame(galleryParent,{Name="SummonOddsCaption",Size=UDim2.new(1,-6,0,52),BackgroundTransparency=1})
+	UI.label(caption,T("QUEM PODE VIR?","POSSIBLE SUMMONS"),{Size=UDim2.new(1,0,0,24),TextSize=18,Font=UI.Fonts.display})
+	UI.label(caption,T("Chances por personagem • role para ver todos","Individual odds • scroll to see everyone"),{Position=UDim2.fromOffset(0,25),Size=UDim2.new(1,0,0,26),TextSize=11,TextWrapped=true,TextColor3=C.muted})
+	local cols=wide and 3 or math.max(2,math.floor(width/145))
+	local gallery=UI.scroll(galleryParent,{Name="SummonOdds",Position=UDim2.fromOffset(0,54),Size=UDim2.new(1,-6,0,galleryHeight),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,math.ceil(#outcomes/cols)*128),ScrollBarThickness=4,ScrollBarImageColor3=tint})
+	gallery:SetAttribute("SummonChestId",selectedChest)
+	gallery.CanvasPosition=scrolls.odds or Vector2.new(0,0)
+	for i,outcome in ipairs(outcomes) do
+		local color=UI.color(Catalog.Rarities[outcome.rarity].color)
+		local card=UI.roundFrame(gallery,{Name="ChestHero_"..outcome.id,Position=UDim2.new(((i-1)%cols)/cols,2,0,math.floor((i-1)/cols)*128),Size=UDim2.new(1/cols,-6,0,122),BackgroundColor3=color:Lerp(C.panel,0.86)},color)
+		portrait(card,outcome.id,{Position=UDim2.fromOffset(4,3),Size=UDim2.new(0.5,-4,0,76)})
+		UI.label(card,string.format("%.4f%%",outcome.chance),{Name="ChestOdds_"..outcome.id,Position=UDim2.new(0.5,0,0,29),Size=UDim2.new(0.5,-5,0,28),TextSize=wide and 14 or 12,Font=UI.Fonts.bold,TextColor3=color,TextXAlignment=Enum.TextXAlignment.Center})
+		UI.label(card,L(catalog[outcome.id].name),{Position=UDim2.fromOffset(6,81),Size=UDim2.new(1,-12,0,35),TextWrapped=true,TextSize=12,Font=UI.Fonts.bold,TextXAlignment=Enum.TextXAlignment.Center})
+	end
+	smallText(body,T("Novos itens têm prioridade dentro da raridade. As chances acima já consideram sua coleção e a garantia.","Unowned items take priority within their rarity. The odds above include your collection and guarantee."),0,42)
+	smallText(body,isBase and T("Base repetida devolve Ouro. Depois de invocar, ative sua base na coleção.","Duplicate bases refund Gold. After summoning, activate your base in the collection.") or T("Heróis repetidos viram Ouro e maestria. Equipe seus heróis na coleção.","Duplicate heroes become Gold and mastery. Equip your heroes in the collection."),0,46)
+	resultCard()
 	if profile().paidRandomRestricted then
-		smallText(body,T("Abertura de baús indisponível para esta conta. Aqui você compra o herói ou a base que escolher, com Ouro, pelo preço médio de tirar no baú.","Chest openings are unavailable for this account. Here you buy the exact hero or base you choose, with Gold, at the average cost of drawing it."),0,58)
-		UI.section(body,T("COMPRA GARANTIDA","GUARANTEED PURCHASE"),T("Sem sorteio: você escolhe e recebe exatamente este item.","No draw: you choose and get exactly this item."))
-		local owned=profile().heroes or {}
-		local ownedBases=profile().bases or {}
-		local function offer(id,name,rarity,isOwned)
-			local price=Rules.GuaranteedPrice(id)
-			if not price or isOwned then return end
-			local row=UI.roundFrame(body,{Name="Guaranteed_"..id,Size=UDim2.new(1,-6,0,58),BackgroundColor3=C.card})
-			UI.label(row,name,{Position=UDim2.fromOffset(12,4),Size=UDim2.new(1,-170,0,26),Font=UI.Fonts.display,TextSize=15})
-			UI.label(row,Catalog.Upper(L(Catalog.Rarities[rarity].name)),{Position=UDim2.fromOffset(12,30),Size=UDim2.new(1,-170,0,20),TextSize=11,TextColor3=UI.color(Catalog.Rarities[rarity].color)})
-			local button=UI.button(row,number(price)..T(" Ouro"," Gold"),function() act("BuyGuaranteed",{itemId=id}) end,{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-8,0.5,0),Size=UDim2.fromOffset(148,44),BackgroundColor3=C.gold,TextSize=14})
-			if (profile().gold or 0)<price then UI.disabled(button) end
+		UI.section(body,T("ESCOLHA GARANTIDA","GUARANTEED CHOICE"),T("Esta conta usa compras sem sorteio. Escolha exatamente o que receber.","This account uses non-random purchases. Choose exactly what you receive."))
+		for _,itemId in ipairs(isBase and Catalog.BaseOrder or Catalog.HeroOrder) do
+			if owned[itemId] then continue end
+			local price=Rules.GuaranteedPrice(itemId); if not price then continue end
+			local row=UI.roundFrame(body,{Name="Guaranteed_"..itemId,Size=UDim2.new(1,-6,0,64),BackgroundColor3=C.panel})
+			UI.label(row,L(catalog[itemId].name),{Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-168,0,48),TextWrapped=true,TextSize=15})
+			local buy=UI.button(row,number(price)..T(" OURO"," GOLD"),function() act("BuyGuaranteed",{itemId=itemId}) end,{Position=UDim2.new(1,-148,0,8),Size=UDim2.fromOffset(136,48),TextSize=13})
+			if profile().gold<price then UI.disabled(buy) end
 		end
-		for _,id in ipairs(Catalog.HeroOrder) do local def=Catalog.Heroes[id]; offer(id,L(def.name),def.rarity,owned[id]~=nil) end
-		for _,id in ipairs(Catalog.BaseOrder) do local def=Catalog.Bases[id]; offer(id,L(def.name),def.rarity,ownedBases[id]==true) end
 	end
 end
 
@@ -885,7 +901,7 @@ local function contextSquad(body)
 end
 
 local function contextSettings(body)
- UI.button(body,T("APRENDER A JOGAR • 20 ONDAS","LEARN TO PLAY • 20 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,44)})
+ UI.button(body,T("APRENDER A JOGAR • 20 ONDAS","LEARN TO PLAY • 20 WAVES"),function() routePreview.goPortal("training") end,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,44)})
 	UI.section(body, T("Seu jeito de jogar", "Your experience"), T("Acessibilidade e apresentação. As regras de combate são iguais para todos.", "Accessibility and presentation. Combat rules are the same for everyone."))
 	local settings = profile().settings or {}
 	local effectsOn = settings.effects
@@ -1040,7 +1056,7 @@ local function contextModes(body)
 		local first=UI.roundFrame(body,{Name="FirstMission",Size=UDim2.new(1,-6,0,168),BackgroundColor3=C.gold:Lerp(C.panel,0.78)},C.gold)
 		UI.label(first,T("COMECE AQUI!","START HERE!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,36),TextSize=26,Font=Enum.Font.GothamBlack,TextColor3=C.gold})
 		UI.label(first,T("Aprenda em 20 ondas e ganhe 1.000 Ouro na primeira vitória.","Learn in 20 waves and earn 1,000 Gold on your first victory."),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
-		UI.button(first,T("JOGAR O TREINO • 20 ONDAS","PLAY TRAINING • 20 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Name="PlayMode_tutorial",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
+		UI.button(first,T("JOGAR O TREINO • 20 ONDAS","PLAY TRAINING • 20 WAVES"),function() routePreview.goPortal("training") end,{Name="FindTrainingPortal",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
 	end
 	local colors={manhattan=C.coral,gamma=C.green,asgard=C.gold,hydra=C.red,wakanda=C.violet,latveria=C.blue}
 	local lastDistrict
@@ -1068,7 +1084,7 @@ local function contextModes(body)
 		local waves=Rules.WaveCount(destination.modeId,destination.mapId)
 		UI.label(card,L(mode.name).." • "..(waves==0 and T("SEM FIM","ENDLESS") or tostring(waves).." "..T("ONDAS","WAVES")),{Position=UDim2.fromOffset(118,54),Size=UDim2.new(1,-132,0,24),TextSize=12,Font=Enum.Font.GothamBold,TextWrapped=true})
 		UI.label(card,allowed and L(map.description) or L(modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(118,81),Size=UDim2.new(1,-132,0,40),TextSize=11,TextWrapped=true,TextColor3=C.muted})
-		local button=UI.button(card,allowed and T("JOGAR NESTE MAPA","PLAY THIS MAP") or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function() act("StartMatch",{destinationId=id}) end,{Name="PlayDestination_"..id,Position=UDim2.fromOffset(12,126),Size=UDim2.new(1,-24,0,44),BackgroundColor3=allowed and C.green or tint,TextSize=17})
+		local button=UI.button(card,allowed and T("ENCONTRAR PORTAL","FIND PORTAL") or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function() routePreview.goPortal(id) end,{Name="FindPortal_"..id,Position=UDim2.fromOffset(12,126),Size=UDim2.new(1,-24,0,44),BackgroundColor3=allowed and C.green or tint,TextSize=17})
 		if not allowed then
 			UI.disabled(button)
 			-- A lock sticker over the map art, like a locked level card.
@@ -1084,13 +1100,21 @@ local function contextModes(body)
 		end
 	end
 	if profile().tutorialComplete then
-		UI.secondary(body,T("TREINAR DE NOVO • 20 ONDAS","TRAIN AGAIN • 20 WAVES"),function() act("StartMatch",{mapId="manhattan",modeId="tutorial"}) end,{Size=UDim2.new(1,-6,0,44)})
+		UI.secondary(body,T("TREINAR DE NOVO • 20 ONDAS","TRAIN AGAIN • 20 WAVES"),function() routePreview.goPortal("training") end,{Size=UDim2.new(1,-6,0,44)})
 	end
 end
 
 local function contextBases(body)
 	categoryTabs(body,"BaseNavigation",{{id="inventory",label=T("HERÓIS","HEROES")},{id="bases",label=T("BASES","BASES")}},"bases",function(id) openContext(id) end)
-	smallText(body,T("Equipe 1 base. Evolua com o Ouro da partida. O nível reinicia a cada partida; sua coleção fica salva.","Equip 1 base. Upgrade with match Gold in battle. Levels reset each match; your collection is saved."),0,58)
+	local activeId=profile().equippedBase or "outpost"
+	local active=Catalog.Bases[activeId] or Catalog.Bases.outpost
+	local activeStats=Rules.BaseStats(activeId,1)
+	local summary=UI.roundFrame(body,{Name="ActiveBaseSummary",Size=UDim2.new(1,-6,0,146),BackgroundColor3=C.green:Lerp(C.panel,0.87)},C.green)
+	UI.basePortrait(summary,active,{Position=UDim2.fromOffset(8,12),Size=UDim2.fromOffset(94,98)})
+	UI.label(summary,T("BASE ATIVA","ACTIVE BASE").." • "..L(active.name),{Position=UDim2.fromOffset(110,8),Size=UDim2.new(1,-122,0,48),TextWrapped=true,TextSize=18,Font=UI.Fonts.display,TextColor3=C.green})
+	UI.label(summary,T("Entra automaticamente na sua próxima partida.","Deploys automatically in your next match."),{Position=UDim2.fromOffset(110,59),Size=UDim2.new(1,-122,0,43),TextWrapped=true,TextSize=13})
+	UI.label(summary,"+"..activeStats.income..T(" Ouro/onda • Melhore tocando na vida da base durante a partida."," Gold/wave • Upgrade by tapping the base HP during a match."),{Position=UDim2.fromOffset(12,108),Size=UDim2.new(1,-24,0,32),TextWrapped=true,TextSize=12})
+
 	UI.button(body,T("IR À LOJA DE BASES","GO TO THE BASE SHOP"),function() routePreview.goShop("base_rare") end,{Size=UDim2.new(1,-6,0,44),BackgroundColor3=C.gold,TextSize=13})
 	for _,id in ipairs(Catalog.BaseOrder) do
 		local def=Catalog.Bases[id]; local stats=Rules.BaseStats(id,1)
@@ -1102,8 +1126,8 @@ local function contextBases(body)
 		UI.label(row,L(Catalog.Rarities[def.rarity].name),{Position=UDim2.fromOffset(116,76),Size=UDim2.new(1,-126,0,25),TextSize=13,TextColor3=C.background})
 		UI.label(row,L(def.description),{Position=UDim2.fromOffset(12,115),Size=UDim2.new(1,-24,0,48),TextSize=13,TextWrapped=true,TextColor3=C.background})
 		UI.label(row,"+"..stats.income..T(" Ouro/onda  •  +"," Gold/wave  •  +")..stats.hp..T(" vida*"," HP*"),{Position=UDim2.fromOffset(12,164),Size=UDim2.new(1,-24,0,30),TextSize=12,TextColor3=C.background})
-		local button=UI.button(row,equipped and T("EQUIPADA","EQUIPPED") or owned and T("EQUIPAR BASE","EQUIP BASE") or T("ENCONTRAR NOS BAÚS","FIND IN CHESTS"),function()
-			if owned then act("EquipBase",{baseId=id}) else routePreview.goShop("base_rare") end
+		local button=UI.button(row,equipped and T("BASE ATIVA","ACTIVE BASE") or owned and T("ATIVAR BASE","ACTIVATE BASE") or T("ENCONTRAR NOS BAÚS","FIND IN CHESTS"),function()
+			if owned then act("EquipBase",{baseId=id},function() showToast(T("Base ativada! Ela aparecerá na próxima partida.","Base activated! It will deploy in your next match.")) end) else routePreview.goShop("base_rare") end
 		end,{Name="EquipBase_"..id,Position=UDim2.fromOffset(12,204),Size=UDim2.new(1,-24,0,44),BackgroundColor3=equipped and C.green or tint,TextSize=13})
 		if equipped then UI.disabled(button) end
 	end
@@ -1224,7 +1248,7 @@ fetchProducts = function()
 end
 
 local function lobbyChrome(visible)
-	for _,name in ipairs({"LobbyPill","SquadButton","SettingsButton","LobbyNavigation"}) do
+	for _,name in ipairs({"LobbyPill","ActiveBaseButton","SettingsButton","LobbyNavigation"}) do
 		local item=main:FindFirstChild(name)
 		if item then
 			local size=screenSize()
@@ -1272,10 +1296,11 @@ renderContext = function()
 	contextRefreshPending=false
 	if not reuse and panel then panel:Destroy(); panel=nil; body=nil end
 	local size = screenSize()
-	local slot=UI.contextLayout(size.X,size.Y,{wide=contextPanel.kind=="talents",elevator=state.elevator~=nil})
+	local slot=UI.contextLayout(size.X,size.Y,{wide=contextPanel.kind=="talents" or contextPanel.kind=="chests",elevator=state.elevator~=nil})
 	lobbyChrome(not slot.modal)
 	local theme=UI.Themes[contextPanel.kind] or UI.Themes.inventory
 	local tint=theme.color
+	if contextPanel.kind=="chests" and Catalog.Chests[selectedChest].kind=="base" then tint=C.green end
 	if not panel then panel=UI.roundFrame(main,{Name="ContextPanel",BackgroundColor3=C.background,Active=true}) end
 	panel.Position,panel.Size=at(slot),dims(slot)
 	if reuse then
@@ -1299,13 +1324,13 @@ renderContext = function()
 	titles.guide = T("REFÚGIO DA AURORA", "AURORA REFUGE")
 	titles.maps = T("ESCOLHA SEU MAPA", "CHOOSE YOUR MAP")
 	titles.bases=T("MINHA BASE","MY BASE")
-	titles.chests=T("BAÚS • OURO","CHESTS • GOLD"); titles.premium=T("LOJA ROBUX","ROBUX SHOP"); titles.inventory=T("INVENTÁRIO","INVENTORY")
-	titles.inventory=T("MEUS HERÓIS","MY HEROES"); titles.modes=T("VAMOS JOGAR!","LET'S PLAY!"); titles.rewards=T("PRÊMIOS DIÁRIOS","DAILY REWARDS")
+	titles.chests=Catalog.Chests[selectedChest].kind=="base" and T("INVOCAR BASES","SUMMON BASES") or T("INVOCAR HERÓIS","SUMMON HEROES"); titles.premium=T("LOJA ROBUX","ROBUX SHOP"); titles.inventory=T("INVENTÁRIO","INVENTORY")
+	titles.inventory=T("MEUS HERÓIS","MY HEROES"); titles.modes=T("ENCONTRE SEU PORTAL","FIND YOUR PORTAL"); titles.rewards=T("PRÊMIOS DIÁRIOS","DAILY REWARDS")
 	local medal=UI.frame(panel,{Name="TitleMedal",Position=UDim2.fromOffset(8,6),Size=UDim2.fromOffset(48,48),BackgroundColor3=C.ink,Active=false})
 	UI.corner(medal,24)
 	UI.stroke(medal,Color3.new(1,1,1),2)
 	UI.illustration(medal,theme.icon,tint,{Position=UDim2.fromOffset(6,6),Size=UDim2.fromOffset(36,36)})
-	UI.label(panel, titles[contextPanel.kind] or "DOOMSDAY", {Name="ContextTitle",Position = UDim2.fromOffset(62, 8), Size = UDim2.new(1, -124, 0, 42), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = size.X < 560 and 19 or 24, Rotation = -2})
+	UI.label(panel, titles[contextPanel.kind] or "DOOMSDAY", {Name="ContextTitle",Position = UDim2.fromOffset(62, 8), Size = UDim2.new(1, -124, 0, 42), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = size.X < 560 and 19 or 24, Rotation = 0})
 	local close=UI.button(panel, "×", closeContext, {Name="CloseContext",Position = UDim2.new(1, -54, 0, 5), Size = UDim2.fromOffset(46, 46), TextSize = 32,BackgroundColor3=C.red})
 	close:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(0,23)
 	if not body then
@@ -1316,6 +1341,17 @@ renderContext = function()
 	-- A refresh from the server rebuilds the rows, never the reader's place in
 	-- the list: remember the scroll and put it back once the rows exist.
 	local keepScroll=reuse and body.CanvasPosition or nil
+	if reuse and contextPanel.kind=="chests" then
+		contextPanel.summonViews=contextPanel.summonViews or {}
+		for _,item in ipairs({{name="SummonCrates",key="crates"},{name="SummonOdds",key="odds"}}) do
+			local scroll=body:FindFirstChild(item.name,true)
+			local id=scroll and scroll:GetAttribute("SummonChestId")
+			if id then
+				contextPanel.summonViews[id]=contextPanel.summonViews[id] or {}
+				contextPanel.summonViews[id][item.key]=scroll.CanvasPosition
+			end
+		end
+	end
 	body:SetAttribute("UpdatingCanvas",true)
 	UI.clear(body)
 	local builder = contextBuilders[contextPanel.kind]
@@ -1358,6 +1394,7 @@ openContext = function(kind, data)
 	if kind=="hero" then heroDetailTab="power" end
 	if kind~="inventory" and kind~="squad" then inventoryView.leaderPick=false end
 	data = data or {}
+	if kind=="chests" and Catalog.Chests[data.chestId] then selectedChest=data.chestId end
 	confirmChest = nil
 	data.kind = kind
 	data.animate=true
@@ -1386,7 +1423,10 @@ local function setShroud(model, locked, hint)
 	local existing = model:FindFirstChild("LockShroud")
 	if locked then
 		if existing then return end
-		local ok, cf, size = pcall(function() return model:GetBoundingBox() end)
+		local ok, cf, size = pcall(function()
+			if model:GetAttribute("Kind")=="ModePortal" then return model.PrimaryPart.CFrame*CFrame.new(0,12,0),Vector3.new(32,26,13) end
+			return model:GetBoundingBox()
+		end)
 		if not ok then return end
 		local shroud = Instance.new("Part")
 		shroud.Name, shroud.Anchored = "LockShroud", true
@@ -1517,10 +1557,10 @@ end
 -- Each portal's sign says, for this viewer, what stepping in will start:
 -- which sector (the campaign's next unbeaten one, today's daily), how many
 -- waves, or what is still missing to unlock it.
+local portalBoards={}
 local function portalSign(model)
-	local sign = model:FindFirstChild("Sign")
-	local surface = sign and sign:FindFirstChild("Board")
-	return surface and surface:FindFirstChildOfClass("TextLabel")
+	local board=portalBoards[model]
+	return board and board:FindFirstChild("MapRules",true)
 end
 
 local function updatePortal(model, p)
@@ -1528,24 +1568,52 @@ local function updatePortal(model, p)
 	local modeId = Rules.PortalMode(p, portalId)
 	local unlocked = Rules.ModeUnlocked(p, modeId)
 	setShroud(model, not unlocked, L(modeLockHints[modeId]))
+	local sign=model:FindFirstChild("MapBillboard")
+	local source=sign and sign:FindFirstChild("MapBoard")
+	-- Roblox does not render ViewportFrames under Workspace SurfaceGuis.
+	-- Keep the authored template, render its own camera through PlayerGui.
+	if source and not portalBoards[model] then
+		local board=source:Clone()
+		board.Name="PortalPicture_"..portalId
+		board.Adornee,board.MaxDistance=sign,190
+		board.Parent=player:WaitForChild("PlayerGui")
+		portalBoards[model]=board
+		source.Enabled=false
+		local picture=board:FindFirstChild("MapPicture")
+		if picture then
+			-- Cameras do not replicate from the server. Construct the view locally.
+			local camera=picture:FindFirstChild("PictureCamera") or Instance.new("Camera")
+			camera.Name="PictureCamera"
+			camera.CFrame=picture:GetAttribute("PictureCFrame") or CFrame.lookAt(Vector3.new(100,120,140),Vector3.new(0,7,0))
+			camera.FieldOfView=picture:GetAttribute("PictureFieldOfView") or 40
+			camera.Parent=picture
+			picture.CurrentCamera=camera
+		end
+	end
+	local board=portalBoards[model]
+	if board then
+		for _,node in ipairs(board:GetChildren()) do
+			if node:IsA("TextLabel") then node.Text=node:GetAttribute(language=="en" and "LobbyTextEN" or "LobbyTextPT") or node.Text end
+		end
+	end
 	local label = portalSign(model)
 	if label then
 		local mapId = Rules.PortalMap(portalId)
 		local mode = Catalog.Modes[modeId]
 		if not unlocked then
-			label.Text = T("BLOQUEADO", "LOCKED") .. "\n" .. L(modeLockHints[modeId])
+			label.Text = T("BLOQUEADO", "LOCKED") .. " • " .. L(modeLockHints[modeId])
 			label.TextColor3 = C.red
 		elseif mode then
 			local count = Rules.WaveCount(modeId, mapId)
 			local waves = count == 0 and T("ONDAS INFINITAS", "ENDLESS WAVES") or (tostring(count) .. T(" ONDAS", " WAVES"))
-			label.Text = (modeId == "tutorial" and (T("TREINAMENTO", "TRAINING") .. "\n") or "") .. (mapId and Catalog.Upper(mapName(mapId)) or T("MAPA ALEATÓRIO","RANDOM MAP")) .. "\n" .. waves .. "  •  " .. T("ENTRE PARA JOGAR", "STEP IN TO PLAY")
+			label.Text = Catalog.Upper(L(mode.name)) .. " • " .. waves
 			label.TextColor3 = modeTint[portalId] or C.green
 		end
 	end
 	-- A first-time visitor sees one beacon, over the portal that starts
 	-- training, visible from the spawn through the crowd.
 	local beacon = model:FindFirstChild("StartHere")
-	local wantBeacon = portalId == "normal" and p.tutorialComplete ~= true
+	local wantBeacon = portalId == "training" and p.tutorialComplete ~= true
 	if wantBeacon and not beacon and model.PrimaryPart then
 		beacon = Instance.new("BillboardGui")
 		beacon.Name, beacon.Size, beacon.AlwaysOnTop = "StartHere", UDim2.fromOffset(200, 64), true
@@ -1559,6 +1627,9 @@ end
 
 local localizedLobby, localizedLanguage, localizedLabels
 updateWorldCosmetics = function()
+	for model,board in pairs(portalBoards) do
+		if not model.Parent then board:Destroy(); portalBoards[model]=nil end
+	end
 	if not state or state.phase ~= "Lobby" then return end
 	local lobby = workspace:FindFirstChild("DoomLobby")
 	if not lobby then
@@ -1579,15 +1650,24 @@ updateWorldCosmetics = function()
 		localizedLobby,localizedLanguage,localizedLabels=lobby,nil,{}
 		for _,obj in ipairs(lobby:GetDescendants()) do
 			if obj:GetAttribute("LobbyTextPT") then table.insert(localizedLabels,obj) end
+			if obj.Name=="QueueStatus" and obj:IsA("TextLabel") then
+				local function localizeQueue()
+					local value=obj:GetAttribute(language=="en" and "LobbyTextEN" or "LobbyTextPT")
+					if value and obj.Text~=value then obj.Text=value end
+				end
+				obj:GetAttributeChangedSignal("LobbyTextPT"):Connect(localizeQueue)
+				obj:GetAttributeChangedSignal("LobbyTextEN"):Connect(localizeQueue)
+				obj:GetPropertyChangedSignal("Text"):Connect(localizeQueue)
+			end
 		end
 	end
-	if localizedLanguage~=language then
-		localizedLanguage=language
-		for _,obj in ipairs(localizedLabels) do
+	-- Queue attributes change on the server while a player is standing still.
+	-- Localize them with every lobby snapshot, not only on a language change.
+	localizedLanguage=language
+	for _,obj in ipairs(localizedLabels) do
 			local value=obj:GetAttribute(language=="en" and "LobbyTextEN" or "LobbyTextPT")
 			if obj:IsA("TextLabel") then obj.Text=value
 			elseif obj:IsA("ProximityPrompt") then obj.ObjectText=value; obj.ActionText=T("Abrir","Open") end
-		end
 	end
 	updateQuestBoard(lobby, p)
 	for _, model in ipairs(lobby:GetChildren()) do
@@ -1625,7 +1705,7 @@ renderElevator = function()
 	else
 		elevatorDeadline = nil
 	end
-	local signature = e and HttpService:JSONEncode({e.portalId, e.modeId, e.mapId or "random", #(e.riders or {}), e.host, e.carId, language}) or nil
+	local signature = e and HttpService:JSONEncode({e.portalId, e.queueId, e.slot, e.departing, e.modeId, e.mapId or "random", #(e.riders or {}), e.host, e.carId, profile().equippedBase, language}) or nil
 	if signature == elevatorSignature and (refs.elevator ~= nil) == (e ~= nil) then return false end
 	elevatorSignature = signature
 	if refs.elevator then refs.elevator:Destroy(); refs.elevator, refs.elevatorCount = nil, nil end
@@ -1639,7 +1719,7 @@ renderElevator = function()
 	refs.elevator = card
 	-- The plan before anyone is committed: map, mode, length, final boss and
 	-- what a win pays in lobby Gold.
-	local title=mapName(e.mapId).." / "..modeName(e.modeId)
+	local title=mapName(e.mapId).." • "..T("FILA ","QUEUE ")..tostring(e.slot or 1)
 	local waves=Rules.WaveCount(e.modeId,e.mapId)
 	local map=Catalog.Maps[e.mapId]
 	local boss=map and Catalog.Enemies[e.modeId=="tutorial" and "lizard" or map.bossId]
@@ -1652,10 +1732,11 @@ renderElevator = function()
 	local rowH = compact and 34 or 36
 	local rowY = r.h - rowH - 8
 	local leaveW = compact and 76 or 92
-	UI.button(card, T("SAIR", "LEAVE"), function() act("ElevatorLeave", {}) end, {Position = UDim2.new(1, -(leaveW + 12), 0, rowY), Size = UDim2.fromOffset(leaveW, rowH), BackgroundColor3 = C.red, TextColor3 = C.text, TextSize = 13})
+	local leave=UI.button(card, T("SAIR", "LEAVE"), function() act("ElevatorLeave", {}) end, {Name="ElevatorLeave",Position = UDim2.new(1, -(leaveW + 12), 0, rowY), Size = UDim2.fromOffset(leaveW, rowH), BackgroundColor3 = C.red, TextColor3 = C.text, TextSize = 13})
+	if e.departing then UI.disabled(leave) end
 	local statusRight = leaveW + 28
 	-- Whoever stepped on first may skip the rest of the countdown.
-	if e.host then
+	if e.host and not e.departing then
 		local startW = compact and 96 or 120
 		UI.button(card, T("COMEÇAR", "START"), function() act("ElevatorStart", {}) end, {Name = "ElevatorStartNow", Position = UDim2.new(1, -(leaveW + startW + 20), 0, rowY), Size = UDim2.fromOffset(startW, rowH), BackgroundColor3 = C.blue, TextSize = 13})
 		statusRight += startW + 8
@@ -1688,7 +1769,7 @@ renderLobby = function()
 	refs.levelBar = UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.violet})
 	UI.corner(refs.levelBar, 3)
 	UI.button(pill, "", function() openContext("talents", {}) end, {Name = "OpenTalentTree", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1})
-	UI.button(main, T("JOGAR", "PLAY"), function() openContext("modes", {}) end, {Name = "SquadButton", Position = at(hud.squad), Size = dims(hud.squad), BackgroundColor3=C.green,TextSize = compact and 16 or 20})
+	UI.button(main, T("BASE ATIVA", "ACTIVE BASE"), function() openContext("bases", {}) end, {Name = "ActiveBaseButton", Position = at(hud.squad), Size = dims(hud.squad), BackgroundColor3=C.green,TextSize = compact and 15 or 18})
 	UI.secondary(main, T("OPÇÕES", "SETTINGS"), function() openContext("settings", {}) end, {Name = "SettingsButton", Position = at(hud.settings), Size = dims(hud.settings), BackgroundColor3 = C.blue, TextSize = compact and 13 or 15})
 
 	local dock=UI.frame(main,{Name="LobbyNavigation",Position=at(hud.navigation),Size=dims(hud.navigation),BackgroundTransparency=1})

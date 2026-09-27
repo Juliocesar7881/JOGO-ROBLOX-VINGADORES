@@ -318,5 +318,66 @@ do
 	check(h.log.launches[1].mapId=="gamma" and h.log.launches[1].modeId=="cards","card portal always launches Gamma")
 	check(h.service.SelectMap==nil,"the client cannot reroute a fixed portal")
 end
+print("--- three independent queues and touch order ---")
+for slot=2,3 do
+	ZONES["normal:"..slot]={destinationId="normal",slot=slot,center=v3(-slot*20,4,0),size=v3(8.4,8,8.4),exit=v3(-slot*20,4,10)}
+end
+do
+	local h=harness(); local groups={}
+	for slot=1,3 do
+		local id=slot==1 and "normal" or "normal:"..slot
+		groups[slot]={}
+		for _=1,4 do
+			local rider=veteran(); table.insert(groups[slot],rider); h.add(rider); at(rider,id)
+			check(h.service:Touch(rider,id),"touch reserves seat in "..id)
+		end
+		local late=veteran(); h.add(late); at(late,id)
+		check(not h.service:Touch(late,id),"fifth touch cannot replace a rider in "..id)
+		local snap=h.service:Snapshot(groups[slot][1])
+		check(snap.slot==slot and snap.queueId==id and snap.portalId=="normal" and snap.mapId=="manhattan","queue identity and catalog destination are distinct: "..id)
+		check(snap.host and #snap.riders==4,"first arrival keeps its seat and leadership: "..id)
+	end
+	local public=h.service:PublicSnapshot()
+	check(public.normal.count==4 and public["normal:2"].count==4 and public["normal:3"].count==4,"all twelve seats can coexist")
+	check(h.service:Leave(groups[2][1]),"second queue host may leave")
+	check(h.service:Snapshot(groups[2][2]).host,"second queue promotes its next arrival")
+	check(h.service:Snapshot(groups[1][1]).host and h.service:Snapshot(groups[3][1]).host,"other queue leaders remain unchanged")
+	check(h.service:StartNow(groups[1][1]),"first queue can depart early")
+	h.step(1.75)
+	check(#h.log.launches==1 and #h.log.launches[1].riders==4,"only the requested group departs early")
+	check(h.service:Snapshot(groups[2][2]) and h.service:Snapshot(groups[3][1]),"other groups retain their independent countdowns")
+	h.step(7)
+	check(#h.log.launches==3,"all three groups can depart independently")
+	local seen={}
+	for _,run in ipairs(h.log.launches) do for _,rider in ipairs(run.riders) do
+		check(not seen[rider],"no rider appears in two departures"); seen[rider]=true
+	end end
+end
+do
+	local h=harness(); local first,second=veteran(),veteran()
+	h.add(second,first); at(first,"normal"); at(second,"normal")
+	check(h.service:Touch(first,"normal"),"first physical contact boards immediately")
+	h.step(0.25)
+	check(h.service:Snapshot(first).host and not h.service:Snapshot(second).host,"touch order takes precedence over player enumeration")
+	check(not h.service:Touch(first,"normal:2"),"a rider cannot occupy two queues")
+	local outside=veteran()
+	check(not h.service:Touch(outside,"normal"),"a touch without a root in the zone is refused")
+end
+do
+	local h=harness(); local rider=veteran(); h.add(rider); at(rider,"normal"); h.step(0.25)
+	local launches=0
+	h.service.launch=function() launches+=1; coroutine.yield(); return false,"retry" end
+	local transfer=coroutine.create(function() h.service:_depart("normal") end)
+	check(coroutine.resume(transfer),"transfer may yield")
+	check(h.service:Snapshot(rider).departing,"departing state is visible while transfer yields")
+	check(not h.service:Leave(rider) and not h.service:StartNow(rider),"departure cannot be cancelled or restarted in flight")
+	h.step(3)
+	check(launches==1,"concurrent polls cannot launch the same transfer twice")
+	check(coroutine.resume(transfer),"failed transfer returns")
+	check(not h.service:Snapshot(rider).departing and h.service:Snapshot(rider).remaining==8,"failure retains seats and opens a retry countdown")
+	h.service.launch=function() error("transport failure") end
+	check(pcall(function() h.service:_depart("normal") end),"unexpected transport errors do not break the queue loop")
+	check(not h.service:Snapshot(rider).departing,"unexpected error also releases the transfer lock")
+end
 print(string.format("%s elevator: %d checks, %d failures", failures == 0 and "PASS" or "FAIL", checks, failures))
 if failures > 0 then error("elevator failed", 0) end
