@@ -936,12 +936,24 @@ local MARKET = { chestZ = 412, standZ = 436, standX = { -104, -90.5, -77, -63.5,
 local DISTRICTS = {
 	{ id = "market", x0 = -114, x1 = -44, z0 = 394, z1 = 446, color = Color3.fromRGB(207, 180, 231),
 		title = { "MERCADO", "MARKET" }, subtitle = { "BAÚS • LOJA ROBUX", "CHESTS • ROBUX SHOP" } },
-	{ id = "special", x0 = 44, x1 = 114, z0 = 394, z1 = 446, color = Color3.fromRGB(177, 119, 243),
+	-- The three island extensions hold their portals' plazas.
+	{ id = "special", x0 = -38, x1 = 38, z0 = 566, z1 = 612, color = Color3.fromRGB(177, 119, 243),
 		title = { "TREINO E CARTAS", "TRAINING & CARDS" }, subtitle = { "APRENDA • ROGUELIKE DE CARTAS", "LEARN • CARD ROGUELIKE" } },
-	{ id = "expeditionWest", x0 = -122, x1 = -65, z0 = 246, z1 = 284, color = Color3.fromRGB(203, 170, 255),
+	{ id = "expeditionWest", x0 = -246, x1 = -216, z0 = 397, z1 = 455, color = Color3.fromRGB(203, 170, 255),
 		title = { "EXPEDIÇÕES", "EXPEDITIONS" }, subtitle = { "WAKANDA • ASGARD", "WAKANDA • ASGARD" } },
-	{ id = "expeditionEast", x0 = 72, x1 = 112, z0 = 246, z1 = 284, color = Color3.fromRGB(104, 232, 190),
+	{ id = "expeditionEast", x0 = 216, x1 = 250, z0 = 440, z1 = 480, color = Color3.fromRGB(104, 232, 190),
 		title = { "EXPEDIÇÃO FINAL", "FINAL EXPEDITION" }, subtitle = { "LATVÉRIA • 70 ONDAS", "LATVERIA • 70 WAVES" } },
+	-- S.H.I.E.L.D. keeps the refuge: hangar, command post and armory on the
+	-- main island's corners, on a steel deck instead of paving.
+	{ id = "shieldHangar", x0 = -122, x1 = -65, z0 = 246, z1 = 284, color = Color3.fromRGB(84, 156, 232),
+		floor = { Color3.fromRGB(70, 78, 88), Enum.Material.Concrete }, sign = { -71, 10, 281 },
+		title = { "HANGAR DA S.H.I.E.L.D.", "S.H.I.E.L.D. HANGAR" }, subtitle = { "QUINJET PRONTO PARA DECOLAR", "QUINJET READY FOR TAKEOFF" } },
+	{ id = "shieldCommand", x0 = 72, x1 = 112, z0 = 246, z1 = 284, color = Color3.fromRGB(84, 156, 232),
+		floor = { Color3.fromRGB(70, 78, 88), Enum.Material.Concrete }, sign = { 75, 10, 281 },
+		title = { "POSTO DE COMANDO", "COMMAND POST" }, subtitle = { "S.H.I.E.L.D. • VIGILÂNCIA DO REFÚGIO", "S.H.I.E.L.D. • REFUGE WATCH" } },
+	{ id = "shieldArmory", x0 = 44, x1 = 114, z0 = 394, z1 = 446, color = Color3.fromRGB(84, 156, 232),
+		floor = { Color3.fromRGB(70, 78, 88), Enum.Material.Concrete }, sign = { 50, 13, 398 },
+		title = { "ARSENAL DA S.H.I.E.L.D.", "S.H.I.E.L.D. ARMORY" }, subtitle = { "AGENTES DE PLANTÃO", "AGENTS ON DUTY" } },
 	{ id = "arena", x0 = 86, x1 = 140, z0 = 288, z1 = 392, color = Color3.fromRGB(255, 138, 61),
 		title = { "ARENA COMPETITIVA", "COMPETITIVE ARENA" }, subtitle = { "3 MAPAS • PLACAR DA TEMPORADA", "3 MAPS • SEASON LEADERBOARD" } },
 	{ id = "afk", x0 = -140, x1 = -86, z0 = 288, z1 = 392, color = Color3.fromRGB(120, 200, 255),
@@ -949,11 +961,14 @@ local DISTRICTS = {
 }
 World.Districts = DISTRICTS
 
--- Training yard in front of the training portal, between the two portal
--- lanes: a stage, a pad and three dummies. Watching a hero attack here grants
--- nothing; it only shows how far and how fast each one reaches.
-local TRAINING = { stage = Vector3.new(82, 0, 403), pad = Vector3.new(82, 0, 409.5),
-	dummies = { Vector3.new(75.5, 0, 397.5), Vector3.new(82, 0, 395.5), Vector3.new(88.5, 0, 397.5) } }
+-- Training yard in front of the training and cards portals on the north
+-- island, between their two lanes: a stage, a pad and three dummies. Watching
+-- a hero attack here grants nothing; it only shows how far and how fast each
+-- one reaches.
+local TRAINING = { stage = Vector3.new(0, 0, 579), pad = Vector3.new(0, 0, 585.5),
+	-- Narrow enough that, seen from the bridge, the dummies stay between the
+	-- two portals instead of covering their "ENTER" plates.
+	dummies = { Vector3.new(-4, 0, 573.5), Vector3.new(0, 0, 571.5), Vector3.new(4, 0, 573.5) } }
 World.Training = TRAINING
 
 -- Lighting is one global service, shared by the lobby and whichever match map
@@ -1430,6 +1445,7 @@ function World:BuildLobby()
 	self:FinishLobby(lobby)
 	self:ExpandForestVillage(lobby)
 	self:BuildDistricts(lobby)
+	self:BuildShieldOutpost(lobby)
 	self:BuildTrainingYard(lobby)
 	-- Wood and lamp posts read as turned timber, not square beams. The long
 	-- axis becomes the cylinder's X; position and footprint are unchanged.
@@ -1548,16 +1564,22 @@ function World:BuildForestSanctuary(lobby)
 		local trunkWidth=ancient and 7 or 2.1
 		local crown=ancient and 29 or 11
 		local a=V(x,0,z)
+		-- One model per tree: clearing a district removes or keeps a whole
+		-- tree, never a trunk without its crown.
+		local model=Instance.new("Model")
+		model.Name,model.Parent=ancient and "AuroraTree" or "ForestTree",forest
 		local trunk=beam(ancient and "AuroraTrunk" or "ForestTrunk",a,V(x+1,height*0.7,z),trunkWidth,wood,Enum.Material.Wood,true)
 		trunk.CastShadow=ancient==true
+		trunk.Parent=model
 		for i=1,4 do
 			local angle=i*math.pi/2+seed
 			local endpoint=V(x+math.cos(angle)*crown*0.55,height*(0.67+(i%2)*0.16),z+math.sin(angle)*crown*0.55)
-			beam("TreeBranch",V(x,height*0.43,z),endpoint,trunkWidth*0.55,wood,Enum.Material.Wood,false)
+			beam("TreeBranch",V(x,height*0.43,z),endpoint,trunkWidth*0.55,wood,Enum.Material.Wood,false).Parent=model
 			local tint=ancient and Color3.fromRGB(225-i*12,159+i*11,53+i*9) or Color3.fromRGB(48+i*8,116+i*12,61+i*7)
 			local leaf=piece(ancient and "AuroraCanopy" or "ForestCanopy",V(crown,crown*0.77,crown),CFrame.new(endpoint)*CFrame.Angles(0,seed,0),tint,Enum.Material.Grass,false)
 			leaf.Shape=Enum.PartType.Ball
 			leaf.CastShadow=ancient or i==1
+			leaf.Parent=model
 		end
 	end
 	-- Deliberately keep the plaza, portal approach and signed trails clear.
@@ -1754,10 +1776,13 @@ function World:ExpandForestVillage(lobby)
 		end
 	end
 	local function tree(x,z,h,tint)
-		p("OuterTrunk",V(2,h*0.7,2),CFrame.new(x,h*0.35,z),wood,Enum.Material.Wood,true)
+		local model=Instance.new("Model")
+		model.Name,model.Parent="OuterTree",scene
+		p("OuterTrunk",V(2,h*0.7,2),CFrame.new(x,h*0.35,z),wood,Enum.Material.Wood,true).Parent=model
 		for i=0,2 do
 			local crown=p("OuterCanopy",V(14-i*2,10,14-i*2),CFrame.new(x+(i-1)*2,h*0.62+i*3,z),tint,Enum.Material.Grass,false)
 			local mesh=Instance.new("SpecialMesh"); mesh.MeshType=Enum.MeshType.Sphere; mesh.Parent=crown
+			crown.Parent=model
 		end
 	end
 	local function seat(x,y,z,angle)
@@ -1777,14 +1802,15 @@ function World:ExpandForestVillage(lobby)
 	-- Walk around the Aurora tree's trunk and roots to reach the north bridge.
 	trail(V(28,0.18,438),V(28,0.18,478),12)
 	trail(V(28,0.18,478),V(0,0.18,484),12)
-	trail(V(0,0.18,516),V(0,0.18,581),13)
-	trail(V(-165,0.18,419),V(-216,0.18,432),11)
-	trail(V(157,0.18,447),V(222,0.18,461),11)
+	trail(V(0,0.18,516),V(0,0.18,562),13)
+	trail(V(-165,0.18,419),V(-212,0.18,426),11)
+	trail(V(157,0.18,447),V(210,0.18,459),11)
 	trail(V(-43,0.18,535),V(43,0.18,535),11)
 	trail(V(-43,0.18,535),V(-43,0.18,541),10)
 	trail(V(43,0.18,535),V(43,0.18,541),10)
-	-- Small village: open frontages, colored roofs and places to sit together.
-	for i,def in ipairs({{-43,550,Color3.fromRGB(171,86,74)},{43,550,Color3.fromRGB(77,132,139)},{0,598,Color3.fromRGB(128,103,166)}}) do
+	-- Small village: two cottages flank the way to the training and cards
+	-- portals, with open frontages and places to sit together.
+	for i,def in ipairs({{-43,550,Color3.fromRGB(171,86,74)},{43,550,Color3.fromRGB(77,132,139)}}) do
 		local x,z,tint=def[1],def[2],def[3]
 		p("CottageDeck",V(22,1,18),CFrame.new(x,0.5,z),wood,Enum.Material.WoodPlanks,true)
 		p("CottageBack",V(22,9,0.8),CFrame.new(x,5,z+8),cream,Enum.Material.Plaster,true)
@@ -1808,75 +1834,68 @@ function World:ExpandForestVillage(lobby)
 			for f=-1,1 do p("CottageBlossom",V(0.6,0.35,0.6),CFrame.new(x+side*8+f*1.2,2.5,z-10),i==1 and gold or Color3.fromRGB(232,152,174),Enum.Material.SmoothPlastic,false) end
 		end
 	end
-	-- A shared well and picnic corner give the village a lived-in centre.
-	disk("VillageWellBase",V(22,0.4,574),12,0.8,stone,Enum.Material.Cobblestone,true)
-	disk("VillageWellWater",V(22,1,574),7,0.3,Color3.fromRGB(89,161,172),Enum.Material.Glass,false)
+	-- The village well and picnic corner sit beside the portal plaza.
+	local wx,wz=58,596
+	disk("VillageWellBase",V(wx,0.4,wz),12,0.8,stone,Enum.Material.Cobblestone,true)
+	disk("VillageWellWater",V(wx,1,wz),7,0.3,Color3.fromRGB(89,161,172),Enum.Material.Glass,false)
 	for i=0,9 do
 		local a=i*math.pi/5
-		p("VillageWellStone",V(2.7,2.4,1.3),CFrame.new(22+math.sin(a)*4,1.6,574+math.cos(a)*4)*CFrame.Angles(0,a,0),cream,Enum.Material.Cobblestone,true)
+		p("VillageWellStone",V(2.7,2.4,1.3),CFrame.new(wx+math.sin(a)*4,1.6,wz+math.cos(a)*4)*CFrame.Angles(0,a,0),cream,Enum.Material.Cobblestone,true)
 	end
 	for _,side in ipairs({-1,1}) do
-		p("VillageWellPost",V(0.8,9,0.8),CFrame.new(22+side*5,4.5,574),wood,Enum.Material.Wood,true)
-		p("VillageWellRoof",V(7,0.6,12),CFrame.new(22+side*3,10,574)*CFrame.Angles(0,0,-side*0.3),Color3.fromRGB(109,136,123),Enum.Material.WoodPlanks,true)
+		p("VillageWellPost",V(0.8,9,0.8),CFrame.new(wx+side*5,4.5,wz),wood,Enum.Material.Wood,true)
+		p("VillageWellRoof",V(7,0.6,12),CFrame.new(wx+side*3,10,wz)*CFrame.Angles(0,0,-side*0.3),Color3.fromRGB(109,136,123),Enum.Material.WoodPlanks,true)
 	end
-	beam("VillageWellSpindle",V(17,6,574),V(27,6,574),0.6,0.6,wood,Enum.Material.Wood,false)
-	p("VillageWellRope",V(0.14,4,0.14),CFrame.new(22,4,574),cream,Enum.Material.Fabric,false)
-	p("PicnicTable",V(10,0.6,5),CFrame.new(-27,3,577),wood,Enum.Material.WoodPlanks,true)
+	beam("VillageWellSpindle",V(wx-5,6,wz),V(wx+5,6,wz),0.6,0.6,wood,Enum.Material.Wood,false)
+	p("VillageWellRope",V(0.14,4,0.14),CFrame.new(wx,4,wz),cream,Enum.Material.Fabric,false)
+	p("PicnicTable",V(10,0.6,5),CFrame.new(-58,3,596),wood,Enum.Material.WoodPlanks,true)
 	for _,side in ipairs({-1,1}) do
-		p("PicnicLeg",V(0.8,3,4),CFrame.new(-27+side*3.5,1.5,577),wood,Enum.Material.Wood,true)
-		seat(-27,1.7,577+side*4,side==1 and 0 or math.pi)
+		p("PicnicLeg",V(0.8,3,4),CFrame.new(-58+side*3.5,1.5,596),wood,Enum.Material.Wood,true)
+		seat(-58,1.7,596+side*4,side==1 and 0 or math.pi)
 	end
-	-- Explorer tower has real stairs and a safe, fenced viewing deck.
-	p("ExplorerTowerFoot",V(16,2,16),CFrame.new(-218,1,445),stone,Enum.Material.Cobblestone,true)
+	-- Explorer tower has real stairs and a safe, fenced viewing deck; it stands
+	-- beside the expedition portals, looking over them.
+	p("ExplorerTowerFoot",V(16,2,16),CFrame.new(-190,1,450),stone,Enum.Material.Cobblestone,true)
 	for i=1,14 do
-		p("ExplorerStair",V(9,0.75,2.3),CFrame.new(-218,i*0.75,421+i*1.65),wood,Enum.Material.WoodPlanks,true)
+		p("ExplorerStair",V(9,0.75,2.3),CFrame.new(-190,i*0.75,426+i*1.65),wood,Enum.Material.WoodPlanks,true)
 	end
-	p("ExplorerTowerDeck",V(20,1,20),CFrame.new(-218,10.9,454),wood,Enum.Material.WoodPlanks,true)
+	p("ExplorerTowerDeck",V(20,1,20),CFrame.new(-190,10.9,459),wood,Enum.Material.WoodPlanks,true)
 	for _,side in ipairs({-1,1}) do
-		p("TowerSupport",V(1.2,11,1.2),CFrame.new(-218+side*9,5.5,461),wood,Enum.Material.Wood,true)
-		beam("TowerRail",V(-218+side*9,14,445),V(-218+side*9,14,463),0.6,0.6,cream,Enum.Material.Wood,true)
+		p("TowerSupport",V(1.2,11,1.2),CFrame.new(-190+side*9,5.5,466),wood,Enum.Material.Wood,true)
+		beam("TowerRail",V(-190+side*9,14,450),V(-190+side*9,14,468),0.6,0.6,cream,Enum.Material.Wood,true)
 	end
-	beam("TowerRail",V(-227,14,463),V(-209,14,463),0.6,0.6,cream,Enum.Material.Wood,true)
-	seat(-218,12,459,0)
-	for i=1,8 do
-		disk("ExplorerJump",V(-186+math.sin(i)*5,0.4+(i%3)*0.55,391+i*5),4.8,0.8,i%2==0 and gold or stone,Enum.Material.Slate,true)
-	end
-	-- Star garden surrounds a shallow reflecting pool; the telescope is a landmark.
-	disk("StarPoolRim",V(205,0.25,480),27,0.5,cream,Enum.Material.Marble,true)
-	local pool=disk("StarPoolWater",V(205,0.55,480),24,0.2,Color3.fromRGB(96,185,183),Enum.Material.Glass,false)
-	pool.Transparency=0.28
-	disk("ObservatoryDeck",V(215,0.5,442),24,1,wood,Enum.Material.WoodPlanks,true)
+	beam("TowerRail",V(-199,14,468),V(-181,14,468),0.6,0.6,cream,Enum.Material.Wood,true)
+	seat(-190,12,464,0)
+	-- The east island watches Latveria: the observatory stands north of the
+	-- portal plaza, its telescope a landmark.
+	disk("ObservatoryDeck",V(180,0.5,500),24,1,wood,Enum.Material.WoodPlanks,true)
 	for _,side in ipairs({-1,1}) do
-		for _,depth in ipairs({-1,1}) do p("ObservatoryPillar",V(1,11,1),CFrame.new(215+side*8,6,442+depth*8),cream,Enum.Material.Marble,true) end
-		p("ObservatoryRoof",V(12,0.8,23),CFrame.new(215+side*5,12.2,442)*CFrame.Angles(0,0,-side*0.35),Color3.fromRGB(77,100,143),Enum.Material.WoodPlanks,true)
+		for _,depth in ipairs({-1,1}) do p("ObservatoryPillar",V(1,11,1),CFrame.new(180+side*8,6,500+depth*8),cream,Enum.Material.Marble,true) end
+		p("ObservatoryRoof",V(12,0.8,23),CFrame.new(180+side*5,12.2,500)*CFrame.Angles(0,0,-side*0.35),Color3.fromRGB(77,100,143),Enum.Material.WoodPlanks,true)
 	end
-	p("TelescopeStand",V(1.2,4,1.2),CFrame.new(215,3,442),gold,Enum.Material.Metal,true)
-	beam("TelescopeTube",V(215,4.5,444),V(215,7,437),2,2,Color3.fromRGB(65,96,127),Enum.Material.Metal,false)
-	seat(203,1.3,460,math.pi/2); seat(228,1.3,463,-math.pi/2)
-	for i=1,10 do
-		local angle=i*math.pi*2/10
-		local x,z=205+math.cos(angle)*20,480+math.sin(angle)*20
-		p("StarFlowerStem",V(0.18,1.6,0.18),CFrame.new(x,0.8,z),leaf,Enum.Material.SmoothPlastic,false)
-		p("StarFlower",V(1.1,0.25,1.1),CFrame.new(x,1.7,z)*CFrame.Angles(0,angle,0),i%2==0 and gold or cream,Enum.Material.SmoothPlastic,false)
-	end
+	p("TelescopeStand",V(1.2,4,1.2),CFrame.new(180,3,500),gold,Enum.Material.Metal,true)
+	beam("TelescopeTube",V(180,4.5,502),V(180,7,495),2,2,Color3.fromRGB(65,96,127),Enum.Material.Metal,false)
+	seat(172,1.3,500,math.pi/2); seat(188,1.3,500,-math.pi/2)
+	-- Rim trees and rocks, kept clear of each island's portal plaza.
+	local clearTrees={[-204]={[3]=true,[4]=true,[5]=true},[194]={[0]=true},[0]={}}
+	local clearRocks={[-204]={[2]=true},[194]={[1]=true,[2]=true},[0]={}}
 	for _,center in ipairs({{-204,426,52},{194,460,58},{0,556,77}}) do
 		for i=0,7 do
 			local a=i*math.pi/4
 			-- The southern entrance stays open, so the bridge is visible.
-			if i~=6 then tree(center[1]+math.cos(a)*center[3],center[2]+math.sin(a)*center[3],20+(i%3)*4,i%2==0 and leaf or Color3.fromRGB(119,158,82)) end
+			if i~=6 and not clearTrees[center[1]][i] then tree(center[1]+math.cos(a)*center[3],center[2]+math.sin(a)*center[3],20+(i%3)*4,i%2==0 and leaf or Color3.fromRGB(119,158,82)) end
 		end
 		for i=1,3 do
 			local a=i*1.7
-			-- The west edge of the star island is the bridge landing.
-			if not (center[1]==194 and i==2) then
+			if not clearRocks[center[1]][i] then
 				p("IslandOutcrop",V(7+i,3+i,5+i),CFrame.new(center[1]+math.cos(a)*(center[3]-7),1.5,center[2]+math.sin(a)*(center[3]-7))*CFrame.Angles(0,a,0.15),stone,Enum.Material.Rock,true)
 			end
 		end
 	end
-	for _,at in ipairs({{-57,580},{54,583},{-29,611},{30,611},{-226,414},{-181,453},{232,487},{180,490}}) do
+	for _,at in ipairs({{-66,575},{66,575},{-226,470},{-181,406},{232,500},{182,470}}) do
 		tree(at[1],at[2],17,Color3.fromRGB(101,145,79))
 	end
-	for _,at in ipairs({{-157,407},{144,453},{11,519},{-27,526},{27,526},{-12,584},{-200,441},{195,465}}) do
+	for _,at in ipairs({{-157,407},{144,453},{11,519},{-27,526},{27,526},{-41,572},{-208,404},{195,465}}) do
 		local x,z=at[1],at[2]
 		p("VillageLampFoot",V(2.5,0.7,2.5),CFrame.new(x,0.35,z),stone,Enum.Material.Cobblestone,true)
 		p("VillageLampPost",V(0.5,7,0.5),CFrame.new(x,3.5,z),wood,Enum.Material.Wood,true)
@@ -1884,9 +1903,9 @@ function World:ExpandForestVillage(lobby)
 		p("VillageLanternCap",V(1.8,0.35,1.8),CFrame.new(x,8,z),wood,Enum.Material.Wood,false)
 		local light=Instance.new("PointLight"); light.Color=lamp.Color; light.Brightness=0.5; light.Range=10; light.Shadows=false; light.Parent=lamp
 	end
-	sign("ExplorerSign",V(-184,6,410),"ILHA DOS EXPLORADORES","EXPLORER ISLAND","SUBA • PULE • DESCUBRA","CLIMB • JUMP • EXPLORE",gold)
-	sign("StarlightSign",V(177,6,437),"JARDIM DAS ESTRELAS","STARLIGHT GARDEN","UM CANTINHO PARA ENCONTRAR AMIGOS","A PLACE TO MEET FRIENDS",Color3.fromRGB(159,201,235))
-	sign("WoodlandSign",V(0,8,535),"ALDEIA DO BOSQUE","WOODLAND VILLAGE","SUA AVENTURA CONTINUA AQUI","YOUR ADVENTURE CONTINUES HERE",Color3.fromRGB(176,216,134))
+	sign("ExplorerSign",V(-184,6,410),"POSTO DE EXPEDIÇÕES","EXPEDITION OUTPOST","WAKANDA • ASGARD","WAKANDA • ASGARD",gold)
+	sign("StarlightSign",V(177,6,437),"VIGIA DA LATVÉRIA","LATVERIA WATCH","EXPEDIÇÃO FINAL • 70 ONDAS","FINAL EXPEDITION • 70 WAVES",Color3.fromRGB(159,201,235))
+	sign("WoodlandSign",V(0,8,535),"ACADEMIA DO BOSQUE","WOODLAND ACADEMY","TREINO • CARTAS","TRAINING • CARDS",Color3.fromRGB(176,216,134))
 	sign("PlazaDirections",V(17,5,481),"PRAÇA E PORTAIS","PLAZA & PORTALS","VOLTE PELA TRILHA CENTRAL","FOLLOW THE CENTRAL TRAIL BACK",cream)
 end
 
@@ -2227,8 +2246,17 @@ function World:BuildDistricts(lobby)
 	for _,name in ipairs({"AuroraSanctuary","CommandAtrium","VillageDetails","AuroraArchipelago"}) do
 		local scenery=lobby:FindFirstChild(name)
 		for _,obj in ipairs(scenery and scenery:GetDescendants() or {}) do
+			local grove=obj.Parent and obj.Parent:IsA("Model") and (obj.Parent.Name=="ForestTree" or obj.Parent.Name=="OuterTree") and obj.Parent
+			if grove then
+				-- A tree goes as a whole when its trunk stands in a district;
+				-- a crown merely leaning over one stays with its trunk.
+				if obj.Name:find("Trunk") then
+					for _,d in ipairs(DISTRICTS) do
+						if overlaps(obj,d) then grove:Destroy(); break end
+					end
+				end
 			-- The island itself (ground discs, cliffs) is far bigger than any prop.
-			if obj:IsA("BasePart") and obj.Parent and math.max(obj.Size.X,obj.Size.Y,obj.Size.Z)<120 then
+			elseif obj:IsA("BasePart") and obj.Parent and math.max(obj.Size.X,obj.Size.Y,obj.Size.Z)<120 and obj.Position.Y>-3 then
 				for _,d in ipairs(DISTRICTS) do
 					if overlaps(obj,d) then obj:Destroy(); break end
 				end
@@ -2248,7 +2276,7 @@ function World:BuildDistricts(lobby)
 	-- Floors sit a hair above the deck and the grass so neither shows through.
 	for _,d in ipairs(DISTRICTS) do
 		local cx,cz,w,h=(d.x0+d.x1)/2,(d.z0+d.z1)/2,d.x1-d.x0,d.z1-d.z0
-		local floor=part(districts,"DistrictFloor",V(w,0.3,h),CFrame.new(cx,0.1,cz),Color3.fromRGB(196,184,152):Lerp(d.color,0.1),Enum.Material.Cobblestone)
+		local floor=part(districts,"DistrictFloor",V(w,0.3,h),CFrame.new(cx,0.1,cz),d.floor and d.floor[1] or Color3.fromRGB(196,184,152):Lerp(d.color,0.1),d.floor and d.floor[2] or Enum.Material.Cobblestone)
 		floor:SetAttribute("District",d.id)
 		for _,edge in ipairs({{V(w,0.12,0.5),V(cx,0.31,d.z0)},{V(w,0.12,0.5),V(cx,0.31,d.z1)},{V(0.5,0.12,h),V(d.x0,0.31,cz)},{V(0.5,0.12,h),V(d.x1,0.31,cz)}}) do
 			artPart(districts,"DistrictCurb",edge[1]+V(edge[1].X>1 and 0.6 or 1.1,0.2,edge[1].Z>1 and 0.6 or 1.1),CFrame.new(edge[2]-V(0,0.12,0)),Color3.fromRGB(214,204,176),Enum.Material.Slate)
@@ -2289,20 +2317,16 @@ function World:BuildDistricts(lobby)
 		sign(districts,"MarketTitle",CFrame.lookAt(V(-50,15,398),V(0,15,345)),V(17,4,0.5),d.title,d.subtitle,d.color)
 	end
 
-	-- Special modes: the cards and endless portals share one corner.
-	do
-		local d=byId.special
-		sign(districts,"SpecialTitle",CFrame.new(82,13,434),V(11.5,3.4,0.4),d.title,d.subtitle,d.color)
-		sign(districts,"SpecialCorner",CFrame.lookAt(V(50,15,398),V(0,15,345)),V(17,4,0.5),d.title,d.subtitle,d.color)
-	end
-
-	-- Expeditions: the three longer campaigns, signed from the plaza.
-	for _,id in ipairs({"expeditionWest","expeditionEast"}) do
-		local d=byId[id]
-		local x=(d.x0+d.x1)/2
-		sign(districts,id.."Title",CFrame.new(x,14,249)*CFrame.Angles(0,math.pi,0),V(17,4,0.5),d.title,d.subtitle,d.color)
-		for _,side in ipairs({-1,1}) do
-			part(districts,"ExpeditionPost",V(0.8,14,0.8),CFrame.new(x+side*8,7,249.6),Color3.fromRGB(98,64,43),Enum.Material.Wood)
+	-- Districts with a sign on posts facing the plaza (the islands are signed
+	-- at their bridges instead).
+	for _,d in ipairs(DISTRICTS) do
+		if d.sign then
+			local frame=CFrame.lookAt(V(d.sign[1],d.sign[2],d.sign[3]),V(0,d.sign[2],345))
+			sign(districts,d.id.."Title",frame,V(17,4,0.5),d.title,d.subtitle,d.color)
+			for _,side in ipairs({-1,1}) do
+				local foot=frame*V(side*7.6,-d.sign[2],0.4)
+				part(districts,"DistrictSignPost",V(0.8,d.sign[2]-1.6,0.8),CFrame.new(foot.X,(d.sign[2]-1.6)/2,foot.Z),Color3.fromRGB(64,72,84),Enum.Material.Metal)
+			end
 		end
 	end
 
@@ -2417,6 +2441,206 @@ function World:BuildDistricts(lobby)
 	end
 end
 
+-- S.H.I.E.L.D. keeps the refuge: a Quinjet on its pad, a field command post,
+-- an armory with the agents' black SUV, agents on duty and the Helicarrier
+-- holding station in the sky. Scenery only: nothing here opens a menu or
+-- changes a rule.
+function World:BuildShieldOutpost(lobby)
+	local V = Vector3.new
+	local outpost = Instance.new("Model")
+	outpost.Name, outpost.Parent = "ShieldOutpost", lobby
+	local navy, steel, pale = Color3.fromRGB(30, 38, 54), Color3.fromRGB(98, 110, 124), Color3.fromRGB(196, 204, 212)
+	local blue, white, yellow = Color3.fromRGB(84, 156, 232), Color3.fromRGB(236, 240, 244), Color3.fromRGB(242, 192, 64)
+	local jet, suit = Color3.fromRGB(42, 46, 56), Color3.fromRGB(24, 26, 32)
+	local metal, smooth, glass = Enum.Material.Metal, Enum.Material.SmoothPlastic, Enum.Material.Glass
+	local function p(name, size, cf, tint, material) return artPart(outpost, name, size, cf, tint, material or smooth) end
+	local function blob(name, size, cf, tint, material)
+		local made = p(name, size, cf, tint, material)
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType, mesh.Parent = Enum.MeshType.Sphere, made
+		return made
+	end
+	-- A round plate whose face looks along frame's -Z.
+	local function plate(name, frame, diameter, thickness, tint, material)
+		local made = p(name, V(thickness, diameter, diameter), frame * CFrame.Angles(0, math.pi / 2, 0), tint, material)
+		made.Shape = Enum.PartType.Cylinder
+		return made
+	end
+	-- An upright column standing on base (a cylinder's axis runs along X).
+	local function column(name, base, height, diameter, tint, material)
+		local made = p(name, V(height, diameter, diameter), CFrame.new(base + V(0, height / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2), tint, material)
+		made.Shape = Enum.PartType.Cylinder
+		return made
+	end
+	-- A right triangle: the right angle at corner, perpendicular legs span and
+	-- chord, extruded by thickness. Wings, fins and a ship's bow.
+	local function triangle(name, corner, span, chord, thickness, tint, material)
+		local y, z = span.Unit, -chord.Unit
+		local made = Instance.new("WedgePart")
+		made.Name, made.Size = name, V(thickness, span.Magnitude, chord.Magnitude)
+		made.CFrame = CFrame.fromMatrix(corner + span / 2 + chord / 2, y:Cross(z), y, z)
+		made.Color, made.Material, made.Anchored = tint, material or smooth, true
+		made.CanCollide, made.CanQuery, made.CanTouch, made.CastShadow = false, false, false, false
+		made.TopSurface, made.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		made.Parent = outpost
+		return made
+	end
+	local function toWorld(frame, v) return frame * v - frame.Position end
+	local function facingToward(x, z, tx, tz) return math.atan2(-(tx - x), -(tz - z)) end
+	-- The emblem: a silver ring, a navy field and a white eagle with spread
+	-- wings, facing frame's -Z.
+	local function emblem(frame, size)
+		plate("EmblemRing", frame, size, 0.2, pale, metal)
+		plate("EmblemField", frame * CFrame.new(0, 0, -0.08), size * 0.84, 0.2, navy)
+		blob("EmblemEagle", V(size * 0.16, size * 0.36, 0.12), frame * CFrame.new(0, size * 0.04, -0.22), white)
+		for _, side in ipairs({ -1, 1 }) do
+			triangle("EmblemWing", frame * V(side * size * 0.05, size * 0.12, -0.22), toWorld(frame, V(side * size * 0.3, 0, 0)),
+				toWorld(frame, V(0, -size * 0.26, 0)), 0.1, white)
+		end
+	end
+	-- Agents on duty: black suits and dark glasses, in the refuge's rounded style.
+	local SKIN = { Color3.fromRGB(232, 181, 147), Color3.fromRGB(141, 92, 64), Color3.fromRGB(198, 146, 108), Color3.fromRGB(96, 64, 46) }
+	local HAIR = { Color3.fromRGB(38, 30, 28), Color3.fromRGB(96, 64, 40), Color3.fromRGB(20, 20, 24), Color3.fromRGB(150, 110, 60) }
+	local function agent(x, z, facing, index)
+		local frame = CFrame.new(x, 0.25, z) * CFrame.Angles(0, facing, 0)
+		for _, side in ipairs({ -1, 1 }) do
+			blob("AgentLeg", V(0.62, 1.7, 0.66), frame * CFrame.new(side * 0.34, 0.8, 0), suit)
+			blob("AgentArm", V(0.5, 1.55, 0.54), frame * CFrame.new(side * 1.02, 2.35, 0) * CFrame.Angles(0, 0, side * 0.12), suit)
+		end
+		blob("AgentBody", V(1.8, 1.95, 1.1), frame * CFrame.new(0, 2.45, 0), suit)
+		blob("AgentShirt", V(0.62, 0.95, 0.3), frame * CFrame.new(0, 2.95, -0.46), white)
+		blob("AgentTie", V(0.18, 0.75, 0.12), frame * CFrame.new(0, 2.8, -0.6), navy)
+		blob("AgentHead", V(1.26, 1.3, 1.2), frame * CFrame.new(0, 4.05, 0), SKIN[(index - 1) % #SKIN + 1])
+		blob("AgentHair", V(1.32, 0.62, 1.26), frame * CFrame.new(0, 4.5, 0.08), HAIR[(index - 1) % #HAIR + 1])
+		blob("AgentShades", V(1.1, 0.3, 0.26), frame * CFrame.new(0, 4.12, -0.56), Color3.fromRGB(12, 14, 18), glass)
+	end
+
+	-- Hangar: a Quinjet on its pad, facing the plaza, crates and fuel drums.
+	do
+		local cx, cz = -94, 265
+		local up = CFrame.Angles(math.pi / 2, 0, 0)
+		plate("PadRim", CFrame.new(cx, 0.32, cz) * up, 31, 0.2, yellow)
+		plate("LandingPad", CFrame.new(cx, 0.4, cz) * up, 29, 0.2, Color3.fromRGB(52, 58, 66))
+		emblem(CFrame.new(cx, 0.52, cz) * up, 8)
+		for i = 0, 3 do
+			local a = i * math.pi / 2 + math.pi / 4
+			p("PadLight", V(0.8, 0.5, 0.8), CFrame.new(cx + math.cos(a) * 16.5, 0.55, cz + math.sin(a) * 16.5), blue, Enum.Material.Neon)
+		end
+		local J = CFrame.new(cx, 0.5, cz) * CFrame.Angles(0, 0.86, 0)
+		local function at(x, y, z) return J * CFrame.new(x, y, z) end
+		local function pt(x, y, z) return J * V(x, y, z) end
+		local function dir(x, y, z) return toWorld(J, V(x, y, z)) end
+		blob("QuinjetHull", V(5.2, 4, 22), at(0, 4.2, -1), jet, metal).CastShadow = true
+		blob("QuinjetNose", V(3.8, 2.9, 9), at(0, 3.9, 9.5), jet, metal)
+		blob("QuinjetSpine", V(2.2, 1.4, 14), at(0, 6, -3), jet:Lerp(pale, 0.15), metal)
+		blob("QuinjetCanopy", V(3.3, 1.9, 6.4), at(0, 5.6, 6.5), Color3.fromRGB(46, 76, 104), glass).Transparency = 0.15
+		for _, side in ipairs({ -1, 1 }) do
+			triangle("QuinjetWing", pt(side * 2.3, 3.6, -6.5), dir(side * 10.5, 0.9, 0), dir(0, 0, 12.5), 0.5, jet, metal)
+			triangle("QuinjetFin", pt(side * 1.4, 5.8, -11.6), dir(side * 1.3, 4.6, 0), dir(0, 0, 5.2), 0.35, jet, metal)
+			local engine = p("QuinjetEngine", V(6, 2.2, 2.2), at(side * 3.6, 3.4, -8) * CFrame.Angles(0, math.pi / 2, 0), steel, metal)
+			engine.Shape = Enum.PartType.Cylinder
+			plate("QuinjetExhaust", at(side * 3.6, 3.4, -11.05), 1.8, 0.12, blue, Enum.Material.Neon)
+			column("QuinjetGear", pt(side * 2.4, 0, -4), 2.2, 0.4, steel, metal)
+			blob("QuinjetStripe", V(0.12, 0.5, 9), at(side * 2.62, 4.4, 1), white)
+		end
+		column("QuinjetGear", pt(0, 0, 9), 2.2, 0.4, steel, metal)
+		for i, spot in ipairs({ { -114, 252 }, { -114, 258 }, { -109, 252 } }) do
+			p("SupplyCrate", V(4.6, 3.4, 4.6), CFrame.new(spot[1], 1.95, spot[2]) * CFrame.Angles(0, i * 0.2, 0), Color3.fromRGB(70, 82, 64), Enum.Material.WoodPlanks)
+		end
+		p("SupplyCrate", V(4.2, 3, 4.2), CFrame.new(-113.5, 5.15, 254.5) * CFrame.Angles(0, 0.5, 0), Color3.fromRGB(70, 82, 64), Enum.Material.WoodPlanks)
+		for _, spot in ipairs({ { -74, 250 }, { -71.4, 251.6 } }) do column("FuelDrum", V(spot[1], 0.25, spot[2]), 3.2, 2.2, Color3.fromRGB(178, 52, 44), metal) end
+		agent(-78, 257, facingToward(-78, 257, cx, cz), 1)
+		agent(-110, 276, facingToward(-110, 276, 0, 345), 2)
+	end
+
+	-- Command post: a field HQ module, the holo table, radar and signal mast.
+	do
+		p("CommandModule", V(16, 7, 9), CFrame.new(99, 3.75, 256), steel, metal).CastShadow = true
+		p("CommandRoof", V(17, 0.6, 10), CFrame.new(99, 7.55, 256), navy, metal)
+		p("CommandDoor", V(3, 5, 0.2), CFrame.new(94, 2.75, 260.6), navy, metal)
+		p("CommandWindows", V(6, 1.2, 0.2), CFrame.new(104, 4.85, 260.6), blue, Enum.Material.Neon)
+		emblem(CFrame.new(98.5, 5.2, 260.75) * CFrame.Angles(0, math.pi, 0), 2.6)
+		column("CommandMast", V(105, 7.85, 256), 5, 0.3, pale, metal)
+		column("HoloPedestal", V(86, 0.25, 270), 3, 1.6, navy, metal)
+		plate("HoloTable", CFrame.new(86, 3.45, 270) * CFrame.Angles(math.pi / 2, 0, 0), 6.5, 0.4, steel, metal)
+		plate("HoloMap", CFrame.new(86, 3.72, 270) * CFrame.Angles(math.pi / 2, 0, 0), 5.8, 0.08, blue, Enum.Material.Neon).Transparency = 0.35
+		local globe = p("HoloGlobe", V(2.6, 2.6, 2.6), CFrame.new(86, 5.5, 270), blue, Enum.Material.ForceField)
+		globe.Shape = Enum.PartType.Ball
+		local glow = Instance.new("PointLight")
+		glow.Color, glow.Range, glow.Brightness, glow.Parent = blue, 12, 0.8, globe
+		p("RadarBase", V(3.2, 1, 3.2), CFrame.new(108, 0.75, 278), steel, metal)
+		column("RadarMast", V(108, 1.25, 278), 5.5, 0.8, pale, metal)
+		local aim = CFrame.new(108, 7.4, 278) * CFrame.Angles(0.9, 0.6, 0)
+		plate("RadarDish", aim, 7.5, 0.5, white, metal)
+		p("RadarFeed", V(0.25, 0.25, 3), aim * CFrame.new(0, 0, -1.5), pale, metal)
+		column("SignalMast", V(76, 0.25, 252), 18, 1, pale, metal)
+		for _, y in ipairs({ 7, 13 }) do p("SignalBar", V(6, 0.4, 0.4), CFrame.new(76, y, 252), pale, metal) end
+		local beacon = p("SignalBeacon", V(1.2, 1.2, 1.2), CFrame.new(76, 18.9, 252), Color3.fromRGB(255, 70, 60), Enum.Material.Neon)
+		beacon.Shape = Enum.PartType.Ball
+		for i = 0, 2 do p("JerseyBarrier", V(5, 2.2, 1.4), CFrame.new(82 + i * 6, 1.35, 249), pale, Enum.Material.Concrete) end
+		agent(89, 274, facingToward(89, 274, 86, 270), 3)
+		agent(80, 266, facingToward(80, 266, 0, 345), 4)
+	end
+
+	-- Armory: a vaulted depot, weapon lockers and the agents' black SUV.
+	do
+		p("ArmoryDepot", V(20, 8, 12), CFrame.new(96, 4.25, 437), steel, metal).CastShadow = true
+		local vault = p("ArmoryRoof", V(20.4, 12.4, 12.4), CFrame.new(96, 8.25, 437), navy, metal)
+		vault.Shape = Enum.PartType.Cylinder
+		p("ArmoryDoor", V(10, 6.4, 0.2), CFrame.new(96, 3.45, 430.9), Color3.fromRGB(62, 70, 80), Enum.Material.DiamondPlate)
+		p("ArmoryDoorLight", V(10.4, 0.35, 0.3), CFrame.new(96, 6.9, 430.85), blue, Enum.Material.Neon)
+		emblem(CFrame.new(96, 11, 430.7), 3.4)
+		for i = 0, 1 do
+			p("WeaponLocker", V(3, 6, 2), CFrame.new(108.5, 3.25, 412 + i * 4), navy, metal)
+			p("LockerLight", V(0.2, 4.6, 0.3), CFrame.new(106.95, 3.25, 412 + i * 4), blue, Enum.Material.Neon)
+		end
+		local S = CFrame.new(62, 0.25, 424) * CFrame.Angles(0, -math.pi / 2 + 0.25, 0)
+		local function suv(x, y, z) return S * CFrame.new(x, y, z) end
+		local black = Color3.fromRGB(18, 20, 24)
+		p("SuvBody", V(5.2, 2.3, 11), suv(0, 1.85, 0), black, metal).CastShadow = true
+		p("SuvCabin", V(4.8, 2, 6.6), suv(0, 3.95, -1), black, metal)
+		p("SuvGlass", V(4.9, 1.3, 6.7), suv(0, 4.05, -1), Color3.fromRGB(40, 56, 70), glass)
+		for _, sx in ipairs({ -1, 1 }) do
+			for _, sz in ipairs({ -3.6, 3.6 }) do
+				local wheel = p("SuvWheel", V(1.1, 2.4, 2.4), suv(sx * 2.55, 1.2, sz), Color3.fromRGB(26, 26, 28))
+				wheel.Shape = Enum.PartType.Cylinder
+			end
+			p("SuvHeadlight", V(1.1, 0.5, 0.2), suv(sx * 1.8, 2.3, 5.55), Color3.fromRGB(240, 244, 255), Enum.Material.Neon)
+		end
+		p("SuvGrille", V(2.2, 0.8, 0.15), suv(0, 2.1, 5.55), pale, metal)
+		for _, spot in ipairs({ { 50, 440, 1.95 }, { 55, 440, 1.95 }, { 52.5, 440, 5.35 } }) do
+			p("SupplyCrate", V(4.2, 3.4, 4.2), CFrame.new(spot[1], spot[3], spot[2]), Color3.fromRGB(70, 82, 64), Enum.Material.WoodPlanks)
+		end
+		agent(70, 431, facingToward(70, 431, 62, 424), 5)
+		agent(84, 404, facingToward(84, 404, 0, 345), 6)
+	end
+
+	-- The Helicarrier holds station over the north-west sea: hull and bow, a
+	-- flight deck with its island, four rotors in their outriggers.
+	do
+		local H = CFrame.new(-310, 150, 610) * CFrame.Angles(0, 0.35, 0)
+		local function at(x, y, z) return H * CFrame.new(x, y, z) end
+		local hull, deck = Color3.fromRGB(58, 64, 74), Color3.fromRGB(84, 92, 104)
+		p("HelicarrierHull", V(170, 12, 34), at(0, 0, 0), hull, metal)
+		p("HelicarrierDeck", V(176, 1.4, 38), at(4, 6.7, 0), deck, metal)
+		p("HelicarrierIsland", V(18, 16, 9), at(10, 15.4, -13), hull, metal)
+		p("HelicarrierBridge", V(18.3, 1.6, 9.3), at(10, 19.6, -13), blue, Enum.Material.Neon)
+		column("HelicarrierMast", H * V(14, 23.4, -13), 10, 0.8, pale, metal)
+		for _, side in ipairs({ -1, 1 }) do
+			triangle("HelicarrierBow", H * V(85, 0, 0), toWorld(H, V(0, 0, side * 17)), toWorld(H, V(28, 0, 0)), 12, hull, metal)
+			p("HelicarrierStripe", V(160, 0.1, 0.7), at(4, 7.45, side * 7), white)
+			p("HelicarrierLight", V(150, 0.4, 0.8), at(0, -6.2, side * 9), blue, Enum.Material.Neon)
+			for _, x in ipairs({ -50, 50 }) do
+				p("RotorArm", V(8, 3, 16), at(x, -2, side * 25), hull, metal)
+				local housing = p("RotorHousing", V(3, 30, 30), at(x, -2, side * 41) * CFrame.Angles(0, 0, math.pi / 2), hull, metal)
+				housing.Shape = Enum.PartType.Cylinder
+				local rotor = p("RotorGlow", V(3.4, 25, 25), at(x, -2, side * 41) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(150, 210, 255), Enum.Material.Neon)
+				rotor.Shape, rotor.Transparency = Enum.PartType.Cylinder, 0.45
+			end
+		end
+	end
+end
+
 -- Whether a lobby visitor is standing on the last jump stone of the parkour.
 function World:BuildTrainingYard(lobby)
 	local yard = Instance.new("Model")
@@ -2429,14 +2653,14 @@ function World:BuildTrainingYard(lobby)
 	range.Shape, range.Transparency = Enum.PartType.Cylinder, 1
 	local pad = artPart(yard, "TrainingPad", Vector3.new(5, 0.12, 5), CFrame.new(TRAINING.pad.X, 0.2, TRAINING.pad.Z), Color3.fromRGB(88, 214, 141), Enum.Material.Neon)
 	pad.Transparency = 0.3
-	local title = label(pad, "CAMPO DE TREINO\npise aqui • sem recompensas", Vector3.new(0, 4.5, 0), ART.gold, 230, 90)
+	local title = label(pad, "CAMPO DE TREINO\npise aqui • sem recompensas", Vector3.new(0, 8.5, 0), ART.gold, 230, 90)
 	title.Font = Enum.Font.FredokaOne
 	for _, spot in ipairs(TRAINING.dummies) do
 		local dummy = Instance.new("Model")
 		dummy.Name, dummy.Parent = "TrainingDummy", yard
 		artPart(dummy, "Post", Vector3.new(0.5, 3.4, 0.5), CFrame.new(spot.X, 1.7, spot.Z), Color3.fromRGB(122, 86, 58), Enum.Material.Wood)
-		artPart(dummy, "Body", Vector3.new(2, 2.2, 1), CFrame.new(spot.X, 3.6, spot.Z), Color3.fromRGB(214, 190, 140), Enum.Material.Fabric)
-		local head = artPart(dummy, "Head", Vector3.new(1.4, 1.4, 1.4), CFrame.new(spot.X, 5.4, spot.Z), Color3.fromRGB(214, 190, 140), Enum.Material.Fabric)
+		artPart(dummy, "Body", Vector3.new(2, 2.2, 1), CFrame.new(spot.X, 3.6, spot.Z), Color3.fromRGB(238, 214, 160), Enum.Material.Fabric)
+		local head = artPart(dummy, "Head", Vector3.new(1.4, 1.4, 1.4), CFrame.new(spot.X, 5.4, spot.Z), Color3.fromRGB(238, 214, 160), Enum.Material.Fabric)
 		head.Shape = Enum.PartType.Ball
 		-- The target faces the stage, so every shot visibly lands on it.
 		artPart(dummy, "Target", Vector3.new(1.1, 1.1, 0.1), CFrame.new(spot.X, 3.7, spot.Z + 0.52), Color3.fromRGB(233, 72, 72), Enum.Material.Neon)

@@ -1047,9 +1047,9 @@ local function contextModes(body)
 			lastDistrict=district
 			local headings={
 				center={T("CAMPANHA","CAMPAIGN"),T("Os três portais do centro do refúgio. Comece por aqui!","The three portals in the middle of the refuge. Start here!")},
-				expedition={T("EXPEDIÇÕES","EXPEDITIONS"),T("Campanhas mais longas nos cantos do sul: Wakanda, Asgard e a final, Latvéria (70 ondas).","Longer campaigns in the southern corners: Wakanda, Asgard and the finale, Latveria (70 waves).")},
+				expedition={T("EXPEDIÇÕES","EXPEDITIONS"),T("Campanhas mais longas nas ilhas: Wakanda e Asgard na ilha oeste, a final, Latvéria (70 ondas), na ilha leste.","Longer campaigns on the islands: Wakanda and Asgard on the west island, the finale, Latveria (70 waves), on the east island.")},
 				arena={T("ARENA COMPETITIVA","COMPETITIVE ARENA"),T("Três portais vizinhos. Cada mapa tem seu placar e exige uma estratégia diferente.","Three neighboring portals. Each map has its own leaderboard and calls for a different strategy.")},
-				special={T("TREINO E CARTAS","TRAINING & CARDS"),T("Treino de 20 ondas e o roguelike de cartas.","The 20-wave training and the card roguelike.")},
+				special={T("TREINO E CARTAS","TRAINING & CARDS"),T("Na ilha norte: o treino de 20 ondas e o roguelike de cartas.","On the north island: the 20-wave training and the card roguelike.")},
 			}
 			local heading=headings[district]
 			if heading then UI.section(body,heading[1],heading[2]) end
@@ -1146,11 +1146,12 @@ local function contextGuide(body)
 		UI.label(tile,entry[2],{Position=UDim2.fromOffset(57,10),Size=UDim2.new(1,-67,0,40),TextSize=15,Font=Enum.Font.GothamBold,TextWrapped=true,TextColor3=entry[5]})
 		UI.label(tile,entry[3],{Position=UDim2.fromOffset(12,55),Size=UDim2.new(1,-24,0,33),TextSize=12,TextWrapped=true,TextColor3=C.muted})
 	end
-	UI.section(body,T("EXPLORE ALÉM DA PRAÇA","EXPLORE BEYOND THE SQUARE"),T("Siga a trilha da Árvore da Aurora. As pontes levam a três cantinhos para explorar com amigos.","Follow the Aurora Tree trail. The bridges lead to three places to explore with friends."))
+	UI.section(body,T("AS ILHAS DO REFÚGIO","THE REFUGE ISLANDS"),T("Três pontes levam às ilhas dos portais. A S.H.I.E.L.D. guarda os cantos da praça.","Three bridges lead to the portal islands. S.H.I.E.L.D. guards the plaza's corners."))
 	for _,place in ipairs({
-		{T("ALDEIA DO BOSQUE","WOODLAND VILLAGE"),T("Atrás da árvore: cabanas coloridas, um poço e mesas de piquenique.","Beyond the tree: colorful cottages, a well and a picnic corner."),"heart",C.green},
-		{T("ILHA DOS EXPLORADORES","EXPLORER ISLAND"),T("Ponte oeste: pule pelos troncos e suba as escadas do mirante.","West bridge: hop across the stumps and climb the lookout stairs."),"star",C.gold},
-		{T("JARDIM DAS ESTRELAS","STARLIGHT GARDEN"),T("Ponte leste: um laguinho, flores e um observatório para encontrar amigos.","East bridge: a reflecting pool, flowers and an observatory to meet friends."),"star",C.violet},
+		{T("ACADEMIA DO BOSQUE","WOODLAND ACADEMY"),T("Ponte norte, atrás da árvore: TREINO e CARTAS, o campo de treino, cabanas e o poço.","North bridge, beyond the tree: TRAINING and CARDS, the training yard, cottages and the well."),"heart",C.green},
+		{T("POSTO DE EXPEDIÇÕES","EXPEDITION OUTPOST"),T("Ponte oeste: os portais de WAKANDA e ASGARD e o mirante.","West bridge: the WAKANDA and ASGARD portals and the lookout."),"star",C.gold},
+		{T("VIGIA DA LATVÉRIA","LATVERIA WATCH"),T("Ponte leste: o portal da FORTALEZA DA LATVÉRIA e o observatório.","East bridge: the LATVERIAN FORTRESS portal and the observatory."),"star",C.violet},
+		{T("S.H.I.E.L.D.","S.H.I.E.L.D."),T("Nos cantos da praça: o Quinjet no hangar, o posto de comando e o arsenal. Olhe para o céu: o Helicarrier!","In the plaza's corners: the Quinjet's hangar, the command post and the armory. Look up: the Helicarrier!"),"bolt",C.blue},
 	}) do
 		local card=UI.roundFrame(body,{Name="ExplorePlace",Size=UDim2.new(1,-6,0,114),BackgroundColor3=place[4]:Lerp(C.panel,0.9)},place[4])
 		UI.illustration(card,place[3],place[4],{Position=UDim2.fromOffset(12,14),Size=UDim2.fromOffset(32,32)})

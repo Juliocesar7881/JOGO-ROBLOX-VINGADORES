@@ -142,6 +142,10 @@ CFrame = {
 			-cx * sy * cz + sx * sz, cx * sy * sz + sx * cz, cx * cy,
 		})
 	end,
+	fromMatrix = function(position, x, y, z)
+		z = z or x:Cross(y)
+		return cframe(position, { x.X, y.X, z.X, x.Y, y.Y, z.Y, x.Z, y.Z, z.Z })
+	end,
 	lookAt = function(from, target, up)
 		up = up or v3(0, 1, 0)
 		local forward = (target - from)

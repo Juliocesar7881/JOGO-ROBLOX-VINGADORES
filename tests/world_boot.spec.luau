@@ -70,13 +70,32 @@ if sanctuary then
 	check(ground and ground.CanCollide and ground.Size.Y>=300,"Expanded forest has a walkable island surface")
 	local trees,stones,trails=0,0,0
 	for _,piece in ipairs(sanctuary:GetChildren()) do
-		if piece.Name=="ForestTrunk" then trees+=1 end
+		if piece.Name=="ForestTree" and piece:FindFirstChild("ForestTrunk") then trees+=1 end
 		if piece.Name=="JumpStone" and piece.CanCollide then stones+=1 end
 		if piece.Name=="ForestTrail" and piece.CanCollide then trails+=1 end
 		if piece:IsA("BasePart") then check(piece.Position.Z>150,"Forest stays outside all combat terrain bounds") end
 	end
 	-- The districts took over the corners; the forest still rings the island.
 	check(trees>=20,"Forest surrounds the plaza with mature trees, got "..tostring(trees))
+	-- Clearing a district keeps or removes a whole tree: every trunk keeps its
+	-- four branches and crowns, and nothing leafy is left without a trunk.
+	for _,grove in ipairs(lobby:GetDescendants()) do
+		if grove:IsA("Model") and (grove.Name=="ForestTree" or grove.Name=="AuroraTree" or grove.Name=="OuterTree") then
+			local trunks,crowns,branches=0,0,0
+			for _,piece in ipairs(grove:GetChildren()) do
+				if piece.Name:find("Trunk") then trunks+=1 end
+				if piece.Name:find("Canopy") then crowns+=1 end
+				if piece.Name=="TreeBranch" then branches+=1 end
+			end
+			local full=grove.Name=="OuterTree" and crowns==3 or (crowns==4 and branches==4)
+			check(trunks==1 and full,"a whole tree, crown and all: "..grove.Name.." "..trunks.."/"..branches.."/"..crowns)
+		end
+	end
+	for _,piece in ipairs(lobby:GetDescendants()) do
+		if piece:IsA("BasePart") and (piece.Name=="ForestTrunk" or piece.Name=="ForestCanopy" or piece.Name=="TreeBranch" or piece.Name=="OuterTrunk" or piece.Name=="OuterCanopy") then
+			check(piece.Parent and (piece.Parent.Name=="ForestTree" or piece.Parent.Name=="AuroraTree" or piece.Parent.Name=="OuterTree"),"tree pieces live in their tree: "..piece.Name)
+		end
+	end
 	check(stones==7 and trails>=7,"Exploration paths and jumping stones are traversable")
 	check(sanctuary:FindFirstChild("AuroraHeart")~=nil and sanctuary:FindFirstChild("AuroraFalls")~=nil,"Tree landmark and waterfall exist")
 	check(countClass(lobby,"BasePart")<3500,"Expanded lobby remains under its geometry budget, got "..tostring(countClass(lobby,"BasePart")))

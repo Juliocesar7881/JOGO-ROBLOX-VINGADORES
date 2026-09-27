@@ -557,7 +557,7 @@ say("--- training yard ---")
 do
 	local anaRoot = ana.Character:FindFirstChild("HumanoidRootPart")
 	check(not request(ana, "TrainHero", { heroId = "ironman" }).ok, "training needs the player at the yard")
-	anaRoot.CFrame = CFrame.new(82, 3, 409.5)
+	anaRoot.CFrame = CFrame.new(0, 3, 585.5)
 	local goldBeforeTraining = latest(ana).profile.gold
 	local firedBefore = #(rawget(remotes.FX, "__fired") or {})
 	local trained = request(ana, "TrainHero", { heroId = "ironman" })
