@@ -136,7 +136,7 @@ def capture(name: str) -> Path:
 Add-Type -AssemblyName System.Drawing
 $image = [System.Drawing.Bitmap]::FromFile("{full}")
 $left = [int]($image.Width * 0.1435); $top = [int]($image.Height * 0.158)
-$width = [int]($image.Width * 0.6070); $height = [int]($image.Height * 0.770)
+$width = [int]($image.Width * 0.6070); $height = [int]($image.Height * 0.655)
 $rect = New-Object System.Drawing.Rectangle($left, $top, $width, $height)
 $part = $image.Clone($rect, $image.PixelFormat)
 $image.Dispose()

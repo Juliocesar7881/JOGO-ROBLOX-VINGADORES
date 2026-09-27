@@ -10,6 +10,7 @@ public class StudioWindow {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int command);
   [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdc, uint flags);
+  [DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint flags);
 }
 '@
 if ($WindowHandle -ne 0) { $studioWindow = [IntPtr]$WindowHandle } else {
@@ -18,6 +19,9 @@ if ($WindowHandle -ne 0) { $studioWindow = [IntPtr]$WindowHandle } else {
   $studioWindow = $studioProcess.MainWindowHandle
 }
 [StudioWindow]::SetProcessDPIAware() | Out-Null
+# With the display asleep Windows stops presenting Studio's 3D view and
+# PrintWindow returns the last frame; resetting the display timer wakes it.
+if ([StudioWindow]::SetThreadExecutionState(0x3) -ne 0) { Start-Sleep -Milliseconds 1500 }
 $studioRect = New-Object StudioWindow+Rect
 [StudioWindow]::GetWindowRect($studioWindow, [ref]$studioRect) | Out-Null
 $captureWidth = $studioRect.Right - $studioRect.Left
