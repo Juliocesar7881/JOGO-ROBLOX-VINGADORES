@@ -118,10 +118,19 @@ end)
 if RunService:IsStudio() then
 	local hook = Instance.new("BindableFunction")
 	hook.Name = "DoomStudioHook"
-	-- spawn: put enemies on the road of the running match (a list of ids).
+	-- spawn: put enemies on the road of the running match (a list of ids);
+	-- crowd: that many mixed infected spread along the road (a load test).
 	hook.OnInvoke = function(command, ids)
-		if command ~= "spawn" or not match.running or type(ids) ~= "table" then return false end
+		if not match.running then return false end
 		match.phase = "Wave"
+		if command == "crowd" and type(ids) == "number" then
+			local mix = { "zombie", "runner", "brute", "armored", "flyer", "stealth", "support" }
+			for index = 1, math.clamp(ids, 1, 180) do
+				match:_spawn({ enemyId = mix[index % #mix + 1], pathIndex = 1, progress = (index % 60) * 2, hpMultiplier = 20 })
+			end
+			return true
+		end
+		if command ~= "spawn" or type(ids) ~= "table" then return false end
 		for index, id in ipairs(ids) do
 			if Catalog.Enemies[id] then match:_spawn({ enemyId = id, pathIndex = 1, progress = 6 + index * 6 }) end
 		end

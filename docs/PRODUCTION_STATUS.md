@@ -30,6 +30,7 @@ partida real em Manhattan). Os três problemas de maior impacto:
 | Painel de melhoria acima da cabeça do herói, legível | Implementado |
 | Placas do lobby | Verificado no Studio |
 | Arte final por modelo 3D importado | Bloqueado: exige upload na conta (ver `assets/models/README.md`) |
+| Carga: 153 inimigos articulados em Manhattan | Verificado no Studio (PC do proprietário): 59 FPS no limite de 60, 3.904 peças |
 | Desempenho com 180 inimigos articulados no celular | Pendente: aparelho real |
 
 ## Etapa 1 — estrutura e regras (2026-09-26)
