@@ -1325,6 +1325,22 @@ function World:BuildLobby()
 	self:ExpandForestVillage(lobby)
 	self:BuildDistricts(lobby)
 	self:BuildTrainingYard(lobby)
+	-- Wood and lamp posts read as turned timber, not square beams. The long
+	-- axis becomes the cylinder's X; position and footprint are unchanged.
+	local ROUND = { ForestTrunk = true, AuroraTrunk = true, TreeBranch = true, PlazaTreeTrunk = true, FestivalPole = true,
+		VillageLampPost = true, MarketPost = true, BeaconColumn = true, NoticeLeg = true }
+	for _, item in ipairs(lobby:GetDescendants()) do
+		if item:IsA("Part") and ROUND[item.Name] and item.Shape == Enum.PartType.Block then
+			local size = item.Size
+			if size.Z >= size.Y and math.abs(size.X - size.Y) <= 0.05 * size.X then
+				item.Size, item.CFrame = Vector3.new(size.Z, size.Y, size.X), item.CFrame * CFrame.Angles(0, math.pi / 2, 0)
+				item.Shape = Enum.PartType.Cylinder
+			elseif size.Y >= size.X and math.abs(size.X - size.Z) <= 0.05 * size.X then
+				item.Size, item.CFrame = Vector3.new(size.Y, size.X, size.Z), item.CFrame * CFrame.Angles(0, 0, math.pi / 2)
+				item.Shape = Enum.PartType.Cylinder
+			end
+		end
+	end
 end
 
 -- Check root positions on the server, not Touched events from every limb.
@@ -1876,12 +1892,21 @@ function World:ArtDirectLobby(lobby)
 	-- Two strings of cloth flags tie the market together. No large floating
 	-- billboard blocks the forest skyline from the player's normal camera.
 	for _,z in ipairs({330,391}) do
-		for _,x in ipairs({-47,47}) do piece("FestivalPole",V(0.45,15,0.45),CFrame.new(x,7.5,z),timber,Enum.Material.Wood) end
+		for _,x in ipairs({-47,47}) do piece("FestivalPole",V(0.45,19,0.45),CFrame.new(x,9.5,z),timber,Enum.Material.Wood) end
+		local colors={Color3.fromRGB(238,190,88),Color3.fromRGB(226,110,90),Color3.fromRGB(68,160,150),cream}
 		for i=0,15 do
 			local x=-45+i*6
-			local y=14.7-2.6*(1-(x/47)^2)
+			local y=18.6-2.6*(1-(x/47)^2)
 			piece("FestivalCord",V(6.15,0.08,0.08),CFrame.new(x,y,z),timber,Enum.Material.SmoothPlastic)
-			piece("FestivalPennant",V(1.8,2.3,0.09),CFrame.new(x,y-1.2,z)*CFrame.Angles(0,0,i%2==0 and 0.08 or -0.08),i%3==0 and cream or i%3==1 and Color3.fromRGB(201,125,72) or Color3.fromRGB(68,124,114),Enum.Material.Fabric)
+			-- A WedgePart turned upside down and edge-on: a hanging triangle.
+			for _,dx in ipairs({-1.5,1.5}) do
+				local flag=Instance.new("WedgePart")
+				flag.Name,flag.Size="FestivalPennant",V(0.08,1.9,1.5)
+				flag.CFrame=CFrame.new(x+dx,y-0.95,z)*CFrame.Angles(0,math.pi/2,0)*CFrame.Angles(math.pi,0,0)
+				flag.Color,flag.Material=colors[(i*2+(dx>0 and 1 or 0))%4+1],Enum.Material.SmoothPlastic
+				flag.Anchored,flag.CanCollide,flag.CanQuery,flag.CanTouch,flag.CastShadow=true,false,false,false,false
+				flag.Parent=art
+			end
 		end
 	end
 	for _,p in ipairs({{-18,327},{18,327},{-17,375},{16,397}}) do
@@ -1983,17 +2008,24 @@ function World:FinishLobby(lobby)
 	-- Nico is an original little mechanical caretaker, not a hero exhibit.
 	-- Its prompt is the guide desk's prompt; there is only one tap target.
 	local origin=CFrame.new(-7,0,361)*CFrame.Angles(0,-0.2,0)
-	p("GuideBoot",V(0.8,0.6,1.3),origin*CFrame.new(-0.5,0.4,0),wood,Enum.Material.Metal)
-	p("GuideBoot",V(0.8,0.6,1.3),origin*CFrame.new(0.5,0.4,0),wood,Enum.Material.Metal)
-	p("GuideBody",V(1.8,2,1.1),origin*CFrame.new(0,1.7,0),green,Enum.Material.Metal)
-	p("GuideScarf",V(1.9,0.4,1.2),origin*CFrame.new(0,2.65,0),ART.gold,Enum.Material.Fabric)
-	local head=p("GuideHead",V(2.1,1.5,1.5),origin*CFrame.new(0,3.5,0),pale,Enum.Material.Metal)
-	head.Shape=Enum.PartType.Ball
-	p("GuideVisor",V(1.5,0.65,0.15),origin*CFrame.new(0,3.55,-0.73),Color3.fromRGB(29,50,47),Enum.Material.Glass)
-	for _,side in ipairs({-1,1}) do
-		p("GuideEye",V(0.18,0.23,0.08),origin*CFrame.new(side*0.37,3.57,-0.85),Color3.fromRGB(158,237,197),Enum.Material.Neon)
-		p("GuideArm",V(0.6,1.5,0.65),origin*CFrame.new(side*1.2,1.8,0)*CFrame.Angles(0,0,side*0.17),pale,Enum.Material.Metal)
+	local function round(obj)
+		local mesh=Instance.new("SpecialMesh")
+		mesh.MeshType,mesh.Parent=Enum.MeshType.Sphere,obj
+		return obj
 	end
+	local smooth=Enum.Material.SmoothPlastic
+	for _,side in ipairs({-1,1}) do
+		round(p("GuideBoot",V(0.9,0.6,1.3),origin*CFrame.new(side*0.5,0.35,-0.1),wood,smooth))
+		round(p("GuideArm",V(0.55,1.45,0.6),origin*CFrame.new(side*1.15,1.9,0)*CFrame.Angles(0,0,side*0.2),pale,smooth))
+		round(p("GuideHand",V(0.62,0.62,0.62),origin*CFrame.new(side*1.3,1.15,0),green,smooth))
+		round(p("GuideEar",V(0.32,0.66,0.66),origin*CFrame.new(side*1.1,3.55,0),ART.gold,smooth))
+		round(p("GuideEye",V(0.3,0.36,0.1),origin*CFrame.new(side*0.36,3.58,-0.84),Color3.fromRGB(158,237,197),Enum.Material.Neon))
+	end
+	round(p("GuideBody",V(1.9,2.1,1.4),origin*CFrame.new(0,1.75,0),green,smooth))
+	round(p("GuidePanel",V(1.1,0.9,0.3),origin*CFrame.new(0,1.6,-0.62),pale,smooth))
+	round(p("GuideScarf",V(1.95,0.45,1.45),origin*CFrame.new(0,2.72,0),ART.gold,smooth))
+	round(p("GuideHead",V(2.2,1.6,1.7),origin*CFrame.new(0,3.55,0),pale,smooth))
+	round(p("GuideVisor",V(1.6,0.8,0.5),origin*CFrame.new(0,3.58,-0.62),Color3.fromRGB(29,50,47),Enum.Material.Glass))
 	p("GuideAntenna",V(0.13,0.8,0.13),origin*CFrame.new(0.7,4.5,0),wood,Enum.Material.Metal)
 	local tip=p("GuideAntennaTip",V(0.35,0.35,0.35),origin*CFrame.new(0.7,4.95,0),ART.gold,Enum.Material.Neon)
 	tip.Shape=Enum.PartType.Ball
@@ -2108,10 +2140,11 @@ function World:BuildDistricts(lobby)
 	-- Floors sit a hair above the deck and the grass so neither shows through.
 	for _,d in ipairs(DISTRICTS) do
 		local cx,cz,w,h=(d.x0+d.x1)/2,(d.z0+d.z1)/2,d.x1-d.x0,d.z1-d.z0
-		local floor=part(districts,"DistrictFloor",V(w,0.3,h),CFrame.new(cx,0.1,cz),Color3.fromRGB(176,168,146):Lerp(d.color,0.12),Enum.Material.Slate)
+		local floor=part(districts,"DistrictFloor",V(w,0.3,h),CFrame.new(cx,0.1,cz),Color3.fromRGB(196,184,152):Lerp(d.color,0.1),Enum.Material.Cobblestone)
 		floor:SetAttribute("District",d.id)
 		for _,edge in ipairs({{V(w,0.12,0.5),V(cx,0.31,d.z0)},{V(w,0.12,0.5),V(cx,0.31,d.z1)},{V(0.5,0.12,h),V(d.x0,0.31,cz)},{V(0.5,0.12,h),V(d.x1,0.31,cz)}}) do
-			artPart(districts,"DistrictBorder",edge[1],CFrame.new(edge[2]),d.color,Enum.Material.Neon)
+			artPart(districts,"DistrictCurb",edge[1]+V(edge[1].X>1 and 0.6 or 1.1,0.2,edge[1].Z>1 and 0.6 or 1.1),CFrame.new(edge[2]-V(0,0.12,0)),Color3.fromRGB(214,204,176),Enum.Material.Slate)
+			artPart(districts,"DistrictBorder",edge[1],CFrame.new(edge[2]+V(0,0.05,0)),d.color,Enum.Material.Neon)
 		end
 	end
 	local function trail(a,b,width)

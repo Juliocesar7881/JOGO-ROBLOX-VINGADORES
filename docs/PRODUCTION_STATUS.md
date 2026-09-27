@@ -95,6 +95,14 @@ produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
   e permissão; o jogo passa a usar o modelo sozinho (heróis, retratos,
   inimigos, ponto de disparo `Muzzle`, animações opcionais).
 - Só se mexe na barra do lobby o que tem novidade.
+- **Passe de arte procedural (verificado no Studio):** os 36 heróis em estilo
+  "vinil" (corpo arredondado, rosto que segue a curva da cabeça, estrelas de
+  verdade, figurino próprio de cada reforço); todos os inimigos e variantes
+  regionais (camisa rasgada, sobrancelha, equipamento que acompanha o braço,
+  11–19 peças cada); os seis chefes com silhueta própria; lobby com troncos
+  redondos, bandeirolas triangulares acima dos portais, pisos de pedra nos
+  distritos e o Nico no mesmo estilo. `tools/studio_showroom.py` fotografa
+  heróis, inimigos e chefes direto no Studio.
 
 ### Implementado, aguardando teste real (Studio/aplicativo)
 
@@ -108,7 +116,8 @@ produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 ### Depende de arte ou configuração
 
 - Modelos, texturas e animações finais dos 36 heróis, inimigos e chefes
-  (etapas 2 e 5 do plano): hoje são modelos procedurais de desenvolvimento.
+  (etapas 2 e 5 do plano): hoje são modelos procedurais refinados (passe de
+  arte acima); modelos feitos à mão no Studio ainda os substituem.
   O caminho para a arte está pronto: exportar do Studio como `.rbxmx` para
   `assets/models`, registrar autor e permissão no manifesto e o jogo passa a
   usar o modelo sozinho (ver `assets/models/README.md`).
