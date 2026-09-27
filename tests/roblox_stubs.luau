@@ -549,6 +549,7 @@ local SERVICES = {
 	SoundService = newInstance("SoundService"),
 	ReplicatedStorage = newInstance("ReplicatedStorage"),
 	ServerScriptService = newInstance("ServerScriptService"),
+	ServerStorage = newInstance("ServerStorage"),
 	Players = newInstance("Players"),
 	HttpService = {
 		GenerateGUID = function() guid += 1 return "stub-" .. tostring(guid) end,

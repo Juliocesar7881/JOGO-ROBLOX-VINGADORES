@@ -112,6 +112,24 @@ local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, r
 	if pushState then pushState(player) end
 end)
 
+-- Studio playtests only: the server command bar can reach the running match
+-- to look at a boss or a late wave without playing up to it. A published
+-- server never sets this (IsStudio is false there).
+if RunService:IsStudio() then
+	local hook = Instance.new("BindableFunction")
+	hook.Name = "DoomStudioHook"
+	-- spawn: put enemies on the road of the running match (a list of ids).
+	hook.OnInvoke = function(command, ids)
+		if command ~= "spawn" or not match.running or type(ids) ~= "table" then return false end
+		match.phase = "Wave"
+		for index, id in ipairs(ids) do
+			if Catalog.Enemies[id] then match:_spawn({ enemyId = id, pathIndex = 1, progress = 6 + index * 6 }) end
+		end
+		return true
+	end
+	hook.Parent = game:GetService("ServerStorage")
+end
+
 local party = PartyService.new(Config, function(player)
 	if pushState then pushState(player) end
 end)
