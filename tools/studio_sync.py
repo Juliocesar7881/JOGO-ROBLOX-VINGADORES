@@ -73,7 +73,9 @@ def wait_for(marker: str, since: float, timeout: float = 90) -> str:
     deadline = time.time() + timeout
     while time.time() < deadline:
         log = studio_log()
-        if log and log.stat().st_mtime >= since - 1:
+        # Windows updates an open log's modified time lazily, so the time is
+        # not checked; every marker carries its own nonce instead.
+        if log:
             for line in reversed(log.read_text(encoding="utf-8", errors="replace").splitlines()[-4000:]):
                 if marker in line and "CreatorOutput" in line and "> " not in line.split("CreatorOutput]", 1)[-1][:3]:
                     return line.split("CreatorOutput]", 1)[-1].strip()

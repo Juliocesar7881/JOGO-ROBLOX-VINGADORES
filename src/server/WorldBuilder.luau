@@ -116,6 +116,7 @@ local FIGURE_SHAPE = {
 	hulk = { width = 1.55, head = 0.72, hands = 1.45 },
 	groot = { width = 0.88, head = 0.9, hands = 1.05 },
 	rocket = { head = 1.2 },
+	beast = { width = 1.22, hands = 1.2 },
 }
 -- Armoured heroes catch the sky and street lamps; cloth stays matte.
 local SHINY_SUIT = { ironman = true, warmachine = true, panther = true, antman = true, vision = true, nova = true, silversurfer = true }
@@ -187,21 +188,21 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		wanda = { Color3.fromRGB(128, 24, 49), ink, skin, fabric }, strange = { navy, Color3.fromRGB(154, 34, 46), skin, fabric },
 		falcon = { Color3.fromRGB(122, 28, 38), Color3.fromRGB(45, 45, 52), skin, fabric },
 		bucky = { Color3.fromRGB(46, 52, 62), Color3.fromRGB(150, 158, 170), skin, fabric },
-		wasp = { Color3.fromRGB(235, 188, 52), ink, skin, fabric },
+		wasp = { Color3.fromRGB(235, 188, 52), ink, Color3.fromRGB(235, 188, 52), fabric },
 		rocket = { Color3.fromRGB(150, 104, 72), Color3.fromRGB(196, 72, 52), Color3.fromRGB(170, 122, 84), fabric },
-		daredevil = { Color3.fromRGB(148, 26, 34), ink, skin, fabric },
+		daredevil = { Color3.fromRGB(148, 26, 34), ink, Color3.fromRGB(148, 26, 34), fabric },
 		shangchi = { Color3.fromRGB(190, 52, 38), gold, skin, fabric },
 		warmachine = { Color3.fromRGB(102, 110, 122), ink, Color3.fromRGB(150, 158, 170), metal },
 		starlord = { Color3.fromRGB(96, 40, 40), Color3.fromRGB(196, 62, 62), skin, fabric },
-		groot = { Color3.fromRGB(112, 82, 54), Color3.fromRGB(88, 128, 62), Color3.fromRGB(128, 94, 62), Enum.Material.Wood },
+		groot = { Color3.fromRGB(112, 82, 54), Color3.fromRGB(84, 60, 40), Color3.fromRGB(128, 94, 62), Enum.Material.Wood },
 		ghostrider = { ink, Color3.fromRGB(255, 128, 30), Color3.fromRGB(232, 228, 214), fabric },
 		captainmarvel = { Color3.fromRGB(44, 78, 178), red, skin, fabric },
 		silversurfer = { Color3.fromRGB(186, 200, 215), Color3.fromRGB(226, 236, 246), Color3.fromRGB(205, 218, 232), metal },
-		wolverine={gold,navy,skin,fabric},cyclops={navy,gold,skin,fabric},
+		wolverine={gold,navy,gold,fabric},cyclops={navy,gold,navy,fabric},
 		storm={white,gold,Color3.fromRGB(140,91,65),fabric},jean={Color3.fromRGB(61,139,97),gold,skin,fabric},
 		iceman={Color3.fromRGB(139,225,255),white,Color3.fromRGB(172,238,255),Enum.Material.Ice},
 		gambit={Color3.fromRGB(138,80,62),Color3.fromRGB(230,106,184),skin,fabric},
-		nightcrawler={Color3.fromRGB(156,53,65),ink,Color3.fromRGB(89,96,191),fabric},
+		nightcrawler={Color3.fromRGB(44,40,58),Color3.fromRGB(156,53,65),Color3.fromRGB(89,96,191),fabric},
 		beast={Color3.fromRGB(73,123,194),navy,Color3.fromRGB(83,140,205),fabric},
 		psylocke={Color3.fromRGB(96,63,170),Color3.fromRGB(211,95,176),skin,fabric},
 		deadpool={red,ink,red,fabric},moonknight={white,Color3.fromRGB(195,198,202),white,fabric},
@@ -223,8 +224,7 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		Billy=true, BillyTip=true, TenRing=true, Blaster=true, BlasterGlow=true, PhotonFist=true,
 		AdamantiumClaw=true,ChargedCard=true,Staff=true,Blade=true,IceFist=true,FurryFist=true,
 	}
-	local function piece(name, size, position, tint, surface, rotation, shape)
-		local made = part(parent, name, size * scale, origin * CFrame.new(position * scale) * (rotation or CFrame.new()), tint, surface or material)
+	local function tag(made, name, position)
 		made.CanCollide = false
 		made:SetAttribute("HeroGeometry", true)
 		made:SetAttribute("HeroVisual", true)
@@ -235,9 +235,23 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 			made:SetAttribute("PoseGroup", side < 0 and "LeftArm" or "RightArm")
 			made:SetAttribute("PoseJoint", (origin * CFrame.new(V(side * 1.14 * width, 4.22, 0) * scale)).Position)
 		elseif position.Y > 2.45 then made:SetAttribute("PoseGroup", "Body") end
-		made.Shape = shape or Enum.PartType.Block
 		if SHINY_SUIT[heroId] and made.Material ~= Enum.Material.Neon then made.Reflectance = 0.12 end
 		return made
+	end
+	local function piece(name, size, position, tint, surface, rotation, shape)
+		local made = part(parent, name, size * scale, origin * CFrame.new(position * scale) * (rotation or CFrame.new()), tint, surface or material)
+		made.Shape = shape or Enum.PartType.Block
+		return tag(made, name, position)
+	end
+	-- A right-triangle prism; frame is figure-local and already rotated.
+	local function wedge(name, size, frame, tint, surface)
+		local made = Instance.new("WedgePart")
+		made.Name, made.Size = name, size * scale
+		made.CFrame = origin * CFrame.new(frame.Position * scale) * (frame - frame.Position)
+		made.Color, made.Material, made.Anchored, made.CastShadow = tint, surface or material, true, false
+		made.TopSurface, made.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		made.Parent = parent
+		return tag(made, name, frame.Position)
 	end
 	local function oval(name, size, position, tint, surface, rotation)
 		local made=piece(name, size, position, tint, surface, rotation)
@@ -257,19 +271,70 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		return piece(name, V(thickness, diameter, diameter), center, tint, surface,
 			CFrame.Angles(0, math.pi / 2, 0), Enum.PartType.Cylinder)
 	end
-	local torso = piece("Suit", V(2.1 * width, 1.9, 1.25), V(0, 3.48, 0), suit)
-	piece("Abdomen", V(1.72 * width, 1.1, 1.15), V(0, 2.67, 0), suit)
-	piece("Belt", V(1.85 * width, 0.3, 1.28), V(0, 2.35, 0), bulky and trim or ink, metal)
-	piece("Buckle", V(0.38, 0.34, 0.13), V(0, 2.35, -0.7), trim, metal)
-	oval("Collar", V(1.18, 0.5, 1.02), V(0, 4.56, 0), suit)
-	local head = oval("Mask", V(bulky and 1.6 or 1.45, 1.6, 1.38), V(0, 5.38, -0.05), face, Enum.Material.SmoothPlastic)
+	-- A five-point star lying in frame's XY plane (facing its -Z): a pentagon
+	-- core and two right-triangle wedges per point.
+	local function star(name, frame, radius, tint, surface, depth)
+		local inner = radius * 0.4
+		local half, height = inner * math.sin(math.pi / 5), radius - inner * math.cos(math.pi / 5)
+		local thick = depth or 0.06
+		for k = 0, 4 do
+			local spin = frame * CFrame.Angles(0, 0, -k * 2 * math.pi / 5) * CFrame.new(0, inner * math.cos(math.pi / 5), 0)
+			for _, s in ipairs({ -1, 1 }) do
+				wedge(name, V(thick, height, half), spin * CFrame.new(s * half / 2, height / 2, 0) * CFrame.Angles(0, -s * math.pi / 2, 0), tint, surface)
+			end
+		end
+		return piece(name, V(thick, inner * 1.7, inner * 1.7), frame.Position, tint, surface, (frame - frame.Position) * CFrame.Angles(0, math.pi / 2, 0), Enum.PartType.Cylinder)
+	end
+	-- A point on the head's surface: theta turns from the face toward the
+	-- sides, phi rises from the eyes toward the crown. Face details placed
+	-- with it follow the curve instead of floating on a flat plane.
+	local HEAD_CENTER, HEAD_RADII = V(0, 5.38, -0.05), V(0.79, 0.84, 0.69)
+	local function onHead(theta, phi, lift)
+		lift = lift or 0.02
+		return HEAD_CENTER + V((HEAD_RADII.X + lift) * math.sin(theta) * math.cos(phi), (HEAD_RADII.Y + lift) * math.sin(phi),
+			-(HEAD_RADII.Z + lift) * math.cos(theta) * math.cos(phi))
+	end
+	-- The surface's facing at that point, for flat details laid on it.
+	local function headFacing(theta, phi, roll)
+		return CFrame.Angles(0, -theta, 0) * CFrame.Angles(phi * 0.8, 0, 0) * CFrame.Angles(0, 0, roll or 0)
+	end
+	local function headLine(name, points, thickness, tint, surface)
+		for i = 1, #points - 1 do link(name, points[i], points[i + 1], thickness, tint, surface) end
+	end
+	-- Vinyl-toy anatomy: every body volume is a smooth ellipsoid (a Block with
+	-- a sphere mesh keeps its exact proportions) and limbs are capsules that
+	-- overlap at the joints, so a hero reads as one rounded figure instead of
+	-- stacked bricks. Joint positions are the same as before, so every
+	-- accessory and the firing poses still line up.
+	local function limb(name, from, to, thickness, tint, surface)
+		local length = (to - from).Magnitude
+		local made = piece(name, V(thickness, thickness, length + thickness * 0.85), (from + to) / 2, tint, surface, CFrame.lookAt(V(), to - from))
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.Sphere
+		mesh.Parent = made
+		return made
+	end
+	local legColor = (heroId == "spiderman" or bulky) and trim or suit:Lerp(ink, 0.25)
+	local shinColor = bulky and suit or trim
+	local bootColor = bulky and suit or (heroId == "spiderman" and red or trim:Lerp(ink, 0.15))
+	local LOWER = { gambit = { Color3.fromRGB(44, 56, 104), Color3.fromRGB(44, 56, 104), Color3.fromRGB(190, 88, 160) },
+		beast = { navy, face, face }, wolverine = { gold:Lerp(ink, 0.12), navy, navy } }
+	if LOWER[heroId] then legColor, shinColor, bootColor = unpack(LOWER[heroId]) end
+	local torso = oval("Suit", V(2.3 * width, 2.1, 1.38), V(0, 3.66, 0), suit)
+	oval("Abdomen", V(1.86 * width, 1.35, 1.22), V(0, 2.78, 0), suit)
+	oval("Pelvis", V(1.8 * width, 0.95, 1.18), V(0, 2.18, 0), legColor)
+	oval("Belt", V(1.94 * width, 0.34, 1.32), V(0, 2.4, 0), bulky and trim or ink, metal)
+	piece("Buckle", V(0.4, 0.34, 0.14), V(0, 2.4, -0.68), trim, metal)
+	oval("Collar", V(1.2, 0.52, 1.06), V(0, 4.6, 0), suit)
+	-- Toy proportions: a slightly larger, rounder head reads from the far camera.
+	local head = oval("Mask", V(bulky and 1.64 or 1.58, 1.68, 1.38), V(0, 5.38, -0.05), face, Enum.Material.SmoothPlastic)
 	local hands = {}
 	for _, side in ipairs({ -1, 1 }) do
 		local hip, knee, ankle = V(side * 0.57 * width, 2.12, 0), V(side * 0.69 * width, 1.21, -side * 0.07), V(side * 0.78 * width, 0.37, side * 0.13)
-		local legColor = (heroId == "spiderman" or bulky) and trim or suit:Lerp(ink, 0.25)
-		link("Thigh", hip, knee, bulky and 1.1 or 0.8, legColor)
-		link("Shin", knee, ankle, bulky and 0.86 or 0.65, bulky and suit or trim)
-		piece("Boot", V(bulky and 1.15 or 0.83, 0.54, 1.12), ankle + V(0, -0.1, -0.18), bulky and suit or (heroId == "spiderman" and red or trim), Enum.Material.SmoothPlastic)
+		limb("Thigh", hip, knee, bulky and 1.18 or 0.9, legColor)
+		oval("Knee", V(bulky and 0.95 or 0.72, bulky and 0.9 or 0.7, bulky and 0.95 or 0.74), knee, legColor)
+		limb("Shin", knee, ankle, bulky and 0.98 or 0.76, shinColor)
+		oval("Boot", V(bulky and 1.22 or 0.92, 0.66, bulky and 1.36 or 1.22), ankle + V(0, -0.06, -0.2), bootColor, Enum.Material.SmoothPlastic)
 		local shoulder = V(side * 1.14 * width, 4.22, 0)
 		local elbow = V(side * 1.65 * width, 3.53, -0.15)
 		local hand = V(side * 1.58 * width, 2.84, -0.49)
@@ -282,48 +347,91 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		elseif heroId == "captain" and side == -1 then elbow, hand = V(-1.67, 3.69, -0.35), V(-1.7, 3.52, -1.1)
 		end
 		hands[side] = hand
-		oval("Shoulder", V(bulky and 1.7 or 1.05, bulky and 1.48 or 0.94, bulky and 1.47 or 1.08), shoulder, suit)
-		link("UpperArm", shoulder, elbow, bulky and 1.25 or 0.72, suit)
-		oval("Elbow", V(0.6, 0.6, 0.6), elbow, suit)
-		link("Gauntlet", elbow, hand, bulky and 1.12 or 0.76, (heroId == "spiderman" or bulky) and suit or trim)
-		oval("Hand", V(bulky and 1.18 or 0.67, bulky and 1.06 or 0.67, bulky and 1.05 or 0.72), hand, bulky and suit or (heroId == "wanda" or heroId == "strange") and skin or suit)
+		oval("Shoulder", V(bulky and 1.75 or 1.0, bulky and 1.52 or 0.9, bulky and 1.5 or 1.0), shoulder, suit)
+		limb("UpperArm", shoulder, elbow, bulky and 1.3 or 0.7, suit)
+		oval("Elbow", V(bulky and 0.95 or 0.6, bulky and 0.95 or 0.6, bulky and 0.95 or 0.6), elbow, suit)
+		limb("Gauntlet", elbow, hand, bulky and 1.2 or 0.76, (heroId == "spiderman" or bulky) and suit or trim)
+		oval("Hand", V(bulky and 1.28 or 0.78, bulky and 1.12 or 0.74, bulky and 1.15 or 0.82), hand, bulky and suit or (heroId == "wanda" or heroId == "strange") and skin or suit)
 	end
 	-- Facial planes: a mask is a mask, exposed faces have brows and a nose.
 	local exposed = heroId == "hawkeye" or heroId == "widow" or heroId == "thor" or heroId == "wanda" or heroId == "strange" or bulky
 		or heroId == "falcon" or heroId == "bucky" or heroId == "shangchi" or heroId == "captainmarvel" or heroId == "rocket"
-		or heroId=="storm" or heroId=="jean" or heroId=="gambit" or heroId=="psylocke" or heroId=="cyclops"
+		or heroId=="storm" or heroId=="jean" or heroId=="gambit" or heroId=="psylocke" or heroId=="beast"
+	-- Heroes whose own branch draws the eyes (visors, goggles, lenses).
+	local OWN_EYES = { ironman = true, warmachine = true, antman = true, starlord = true, silversurfer = true,
+		falcon = true, cyclops = true, nova = true }
+	-- Masks with eye holes show cartoon eyes; the rest get rimmed lenses:
+	-- { width, height, slant (outer end up), lens colour, rim colour }.
+	local EYE_HOLES = { captain = true, wolverine = true }
+	local LENSES = { spiderman = { 0.58, 0.4, 0.5 }, deadpool = { 0.28, 0.22, 0.2, white, ink },
+		nightcrawler = { 0.3, 0.22, 0.3, Color3.fromRGB(255, 222, 90), ink }, wasp = { 0.5, 0.36, 0.35, Color3.fromRGB(110, 190, 255), ink }, iceman = { 0.34, 0.2, 0.25, white, Color3.fromRGB(70, 150, 210) },
+		panther = { 0.36, 0.2, 0.32 }, daredevil = { 0.34, 0.2, 0.3, Color3.fromRGB(96, 18, 26) }, moonknight = { 0.3, 0.3, 0.1 },
+		ghostrider = { 0.3, 0.34, 0.1, Color3.fromRGB(255, 150, 40), ink }, vision = { 0.34, 0.18, 0.2 } }
 	for _, side in ipairs({ -1, 1 }) do
-		if exposed then
+		if OWN_EYES[heroId] then
+			continue
+		elseif exposed or EYE_HOLES[heroId] then
 			-- Cartoon eyes read at tower distance where a thin slit vanished:
 			-- a white eye, a dark pupil looking slightly inward, a catchlight.
-			piece("Eye", V(0.3, 0.28, 0.1), V(side * 0.31, 5.47, -0.705), white, Enum.Material.SmoothPlastic, CFrame.Angles(0, 0, side * 0.1))
-			piece("Pupil", V(0.15, 0.2, 0.06), V(side * 0.28, 5.45, -0.76), ink, Enum.Material.SmoothPlastic)
-			piece("Catchlight", V(0.05, 0.05, 0.03), V(side * 0.25, 5.5, -0.795), white, Enum.Material.Neon)
-			piece("Brow", V(0.43, 0.1, 0.12), V(side * 0.31, 5.7, -0.7), ink, fabric, CFrame.Angles(0, 0, side * 0.18))
+			local turn = headFacing(side * 0.4, 0.1)
+			local demon = heroId == "gambit"
+			oval("Eye", V(0.32, 0.36, 0.14), onHead(side * 0.4, 0.1, -0.02), demon and ink or white, Enum.Material.SmoothPlastic, turn)
+			oval("Pupil", V(0.17, 0.22, 0.1), onHead(side * 0.37, 0.08, 0.02), demon and red or ink, demon and Enum.Material.Neon or Enum.Material.SmoothPlastic, turn)
+			oval("Catchlight", V(0.06, 0.06, 0.04), onHead(side * 0.34, 0.14, 0.06), white, Enum.Material.Neon, turn)
+			piece("Brow", V(0.4, 0.09, 0.1), onHead(side * 0.4, 0.36, 0.01), exposed and face:Lerp(ink, 0.75) or ink, fabric, headFacing(side * 0.4, 0.36, side * 0.2))
 		else
-			local eyeWidth = heroId == "spiderman" and 0.48 or 0.34
-			piece("Eye", V(eyeWidth, heroId == "spiderman" and 0.34 or 0.16, 0.12), V(side * 0.31, 5.49, -0.716), white,
-				(heroId == "ironman" or heroId == "vision" or heroId == "warmachine" or heroId == "silversurfer" or heroId == "ghostrider") and Enum.Material.Neon or Enum.Material.SmoothPlastic, CFrame.Angles(0, 0, side * 0.13))
+			local lens = LENSES[heroId] or { 0.36, 0.2, 0.25 }
+			local width, height = lens[1], lens[2]
+			local turn = headFacing(side * 0.43, 0.12, side * lens[3])
+			oval("EyeRim", V(width + 0.13, height + 0.13, 0.12), onHead(side * 0.43, 0.12, -0.01), lens[5] or ink, fabric, turn)
+			oval("Eye", V(width, height, 0.14), onHead(side * 0.43, 0.12, 0.0), lens[4] or white,
+				(heroId == "vision" or heroId == "ghostrider" or heroId == "nightcrawler") and Enum.Material.Neon or Enum.Material.SmoothPlastic, turn)
 		end
 	end
 	if exposed then
-		oval("Nose", V(0.23, 0.3, 0.26), V(0, 5.28, -0.76), face)
-		piece("Mouth", V(0.44, 0.08, 0.08), V(0, 5.03, -0.665), bulky and white or ink)
+		oval("Nose", V(0.2, 0.24, 0.2), onHead(0, -0.12, 0.0), face:Lerp(ink, 0.06))
+		local fangs = heroId == "hulk" or heroId == "beast"
+		oval("Mouth", V(0.4, 0.09, 0.08), onHead(0, -0.46, 0.0), fangs and white or face:Lerp(ink, 0.7), Enum.Material.SmoothPlastic, headFacing(0, -0.46))
+		for _, side in ipairs({ -1, 1 }) do
+			if not bulky then oval("Cheek", V(0.2, 0.12, 0.06), onHead(side * 0.62, -0.22, 0.0), face:Lerp(red, 0.22), fabric, headFacing(side * 0.62, -0.22)) end
+		end
 		local hair = heroId == "widow" and Color3.fromRGB(139, 45, 29) or heroId == "wanda" and Color3.fromRGB(100, 39, 31) or heroId == "thor" and gold
 			or heroId == "captainmarvel" and gold or heroId == "rocket" and Color3.fromRGB(60, 46, 40) or Color3.fromRGB(39, 31, 30)
-		if heroId=="storm" then hair=white elseif heroId=="jean" then hair=Color3.fromRGB(175,72,42) elseif heroId=="psylocke" then hair=Color3.fromRGB(73,42,119) end
-		oval("Hair", V(1.52, 0.69, 1.37), V(0, 6.02, 0.02), hair, fabric)
+		if heroId=="storm" then hair=white elseif heroId=="jean" then hair=Color3.fromRGB(175,72,42) elseif heroId=="psylocke" then hair=Color3.fromRGB(73,42,119)
+		elseif heroId=="beast" then hair=Color3.fromRGB(36,52,110) elseif heroId=="hawkeye" then hair=Color3.fromRGB(122,88,54) end
+		local HAIRLESS = { groot = true, gambit = true }
+		local LONG = { widow = true, wanda = true, thor = true, storm = true, jean = true, psylocke = true, captainmarvel = true, bucky = true }
+		if not HAIRLESS[heroId] then
+			local short = heroId == "falcon" or heroId == "shangchi" or heroId == "hulk"
+			oval("Hair", V(1.66, short and 0.98 or 1.18, 1.5), V(0, short and 5.84 or 5.74, 0.08), hair, fabric)
+			if heroId == "hulk" or heroId == "beast" then
+				for i = -2, 2 do oval("HairTuft", V(0.42, 0.5, 0.42), onHead(i * 0.42, 0.95, 0.08), hair, fabric, CFrame.Angles(0, 0, -i * 0.3)) end
+			elseif heroId ~= "rocket" then
+				oval("Fringe", V(0.92, 0.32, 0.4), onHead(0.25, 0.62, 0.03), hair, fabric, headFacing(0.25, 0.62, 0.25))
+			end
+			if heroId == "strange" then
+				for _, side in ipairs({ -1, 1 }) do oval("Temple", V(0.2, 0.34, 0.4), onHead(side * 1.2, 0.3, 0.02), white, fabric) end
+			end
+		end
 		for _, side in ipairs({ -1, 1 }) do
-			if heroId == "widow" or heroId == "wanda" or heroId == "thor" then
-				oval("HairLock", V(0.5, 1.65, 0.75), V(side * 0.64, 5.38, 0.25), hair, fabric, CFrame.Angles(0, 0, side * 0.1))
+			if LONG[heroId] then
+				local length = heroId == "bucky" and 1.2 or 1.7
+				oval("HairLock", V(0.52, length, 0.8), V(side * 0.66, 5.9 - length / 2, 0.28), hair, fabric, CFrame.Angles(0, 0, side * 0.1))
 			end
 		end
 	end
+	-- A mask open at the jaw: skin chin and mouth below the eyes.
+	local function chin(tone)
+		oval("Chin", V(0.96, 0.56, 0.52), V(0, 4.98, -0.5), tone, fabric)
+		oval("Mouth", V(0.34, 0.08, 0.06), V(0, 4.93, -0.76), tone:Lerp(ink, 0.6), fabric)
+	end
 	if heroId == "ironman" then
-		oval("FacePlate", V(1.23, 1.15, 0.3), V(0, 5.34, -0.58), gold, metal)
-		-- Recessed sockets sit in front of the gold plate.
+		oval("FacePlate", V(1.12, 1.2, 0.34), V(0, 5.3, -0.66), gold, metal)
+		oval("HelmetCrest", V(0.46, 0.5, 0.2), onHead(0, 0.62, 0.0), gold, metal, headFacing(0, 0.62))
+		piece("MouthGrille", V(0.4, 0.05, 0.06), V(0, 4.98, -0.84), gold:Lerp(ink, 0.4), metal)
+		-- The eye slits sit on the plate, not behind it.
 		for _, side in ipairs({ -1, 1 }) do
-			piece("Visor", V(0.37, 0.13, 0.1), V(side * 0.29, 5.5, -0.775), energy, Enum.Material.Neon, CFrame.Angles(0, 0, side * 0.12))
+			piece("Visor", V(0.36, 0.12, 0.08), V(side * 0.26, 5.46, -0.85), energy, Enum.Material.Neon, CFrame.Angles(0, -side * 0.25, side * 0.12))
 			oval("ChestPlate", V(1.09, 1.13, 0.46), V(side * 0.58, 3.94, -0.52), red:Lerp(white, 0.08), metal, CFrame.Angles(0, 0, side * 0.14))
 		end
 		disc("ReactorHousing", V(0, 3.95, -0.8), 0.65, 0.16, gold, metal)
@@ -334,11 +442,16 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		for i, layer in ipairs({ { 3.12, red }, { 2.55, white }, { 1.99, red }, { 1.35, navy } }) do
 			disc(i == 1 and "Shield" or "ShieldBand", shield + V(0, 0, -i * 0.07), layer[1], 0.19, layer[2], metal)
 		end
-		for i = 0, 4 do
-			piece("ShieldStar", V(0.2, 0.75, 0.06), shield + V(math.sin(i * math.pi * 0.4) * 0.21, math.cos(i * math.pi * 0.4) * 0.21, -0.42), white, metal, CFrame.Angles(0, 0, -i * math.pi * 0.4))
+		star("ShieldStar", CFrame.new(shield + V(0, 0, -0.36)), 0.62, white, metal, 0.08)
+		star("ChestInsignia", CFrame.new(V(0, 3.98, -0.7)) * CFrame.Angles(0.12, 0, 0), 0.44, white, metal, 0.1)
+		for side = -1, 1 do oval("UniformStripe", V(0.26, 0.82, 0.14), V(side * 0.5, 2.92, -0.58), side == 0 and white or red, fabric) end
+		-- The helmet: an exposed chin, a white letter and two small wings.
+		chin(skin)
+		for _, side in ipairs({ -1, 1 }) do
+			piece("HelmetLetter", V(0.09, 0.4, 0.06), onHead(side * 0.075, 0.5, 0.0), white, fabric, headFacing(0, 0.5, side * 0.36))
+			oval("HelmetWing", V(0.1, 0.3, 0.5), onHead(side * 1.3, 0.2, 0.02), white, fabric, CFrame.Angles(-0.35, 0, side * 0.1))
 		end
-		piece("ChestInsignia", V(0.65, 0.65, 0.13), V(0, 3.95, -0.74), white, metal, CFrame.Angles(0, 0, math.pi / 4))
-		for side = -1, 1 do piece("UniformStripe", V(0.24, 0.77, 0.15), V(side * 0.49, 2.95, -0.6), white, fabric) end
+		piece("HelmetLetter", V(0.2, 0.06, 0.06), onHead(0, 0.45, 0.0), white, fabric, headFacing(0, 0.45))
 	elseif heroId == "hawkeye" then
 		local bow = { V(-2.23, 5.77, -0.5), V(-2.65, 5.07, -0.64), V(-2.45, 4.09, -0.67), V(-2.65, 3.1, -0.64), V(-2.23, 2.4, -0.5) }
 		for i = 1, #bow - 1 do link("Bow", bow[i], bow[i + 1], 0.19, trim:Lerp(suit, 0.6), metal) end
@@ -351,7 +464,24 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		oval("SpiderEmblem", V(0.35, 0.6, 0.14), V(0, 3.9, -0.75), ink)
 		for _, side in ipairs({ -1, 1 }) do
 			for i = 1, 3 do link("SpiderLeg", V(side * 0.1, 3.83 + i * 0.06, -0.77), V(side * (0.48 + i * 0.05), 3.53 + i * 0.22, -0.66), 0.075, ink) end
-			link("WebSeam", V(side * 0.2, 6.07, -0.52), V(side * 0.58, 4.93, -0.48), 0.05, ink)
+			oval("SuitSide", V(0.6, 1.9, 1.16), V(side * 0.96 * width, 3.32, 0.04), trim, fabric)
+		end
+		-- The mask's web radiates from between the eyes: eight spokes and two
+		-- polygon rings, every segment short enough to hug the curve.
+		local function web(t, a) return onHead(math.sin(a) * t * 1.15, 0.02 + math.cos(a) * t, 0.012) end
+		for spoke = 0, 7 do
+			local a = spoke * math.pi / 4 + math.pi / 8
+			local points = {}
+			for step = 0, 4 do table.insert(points, web(step * 0.42, a)) end
+			headLine("WebLine", points, 0.04, ink, fabric)
+			local b = a + math.pi / 4
+			link("WebLine", web(0.55, a), web(0.52, a + math.pi / 8), 0.04, ink, fabric)
+			link("WebLine", web(0.52, a + math.pi / 8), web(0.55, b), 0.04, ink, fabric)
+			link("WebLine", web(1.1, a), web(1.04, a + math.pi / 8), 0.04, ink, fabric)
+			link("WebLine", web(1.04, a + math.pi / 8), web(1.1, b), 0.04, ink, fabric)
+		end
+		for _, angle in ipairs({ -0.65, 0.65 }) do
+			link("WebLine", V(0, 3.9, -0.78), V(math.sin(angle) * 0.95, 3.9 + math.cos(angle) * 0.55, -0.62), 0.045, ink, fabric)
 		end
 	elseif heroId == "widow" then
 		link("SuitZip", V(0, 4.38, -0.64), V(0, 2.7, -0.59), 0.06, silver, metal)
@@ -365,7 +495,7 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		for _, side in ipairs({ -1, 1 }) do
 			oval("Pectoral", V(1.72, 1.07, 0.81), V(side * 0.79, 4.03, -0.5), suit:Lerp(white, 0.09))
 			oval("Trapezius", V(1.25, 0.87, 1.04), V(side * 0.81, 4.51, 0.06), suit)
-			piece("RippedShorts", V(0.99, 0.64, 0.95), V(side * 0.77, 1.81, 0), trim, fabric, CFrame.Angles(0, 0, side * 0.08))
+			if heroId == "hulk" then piece("RippedShorts", V(0.99, 0.64, 0.95), V(side * 0.77, 1.81, 0), trim, fabric, CFrame.Angles(0, 0, side * 0.08)) end
 		end
 		for y = 1, 2 do oval("Muscle", V(1.47, 0.42, 0.35), V(0, 2.73 + y * 0.41, -0.67), suit) end
 	elseif heroId == "panther" then
@@ -412,10 +542,11 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 	local metallic = Color3.fromRGB(150, 158, 170)
 	local flame = Color3.fromRGB(255, 130, 30)
 	if heroId == "falcon" then
+		piece("Jetpack", V(1.3, 1.3, 0.5), V(0, 3.9, 0.82), metallic, metal)
 		for _, side in ipairs({ -1, 1 }) do
-			for feather = 0, 3 do
-				piece("WingFeather", V(0.12, 2.5 - feather * 0.34, 0.72), V(side * (1.75 + feather * 0.46), 4.2 - feather * 0.18, 1.0),
-					red:Lerp(ink, 0.25), metal, CFrame.Angles(0, side * 0.45, side * (0.35 + feather * 0.09)))
+			for feather = 0, 4 do
+				oval("WingFeather", V(0.14, 2.7 - feather * 0.3, 0.62), V(side * (1.35 + feather * 0.4), 4.3 - feather * 0.16, 1.0),
+					feather % 2 == 0 and red:Lerp(ink, 0.2) or metallic, metal, CFrame.Angles(0, side * 0.45, side * (0.4 + feather * 0.1)))
 			end
 			disc("GogglesLens", V(side * 0.3, 5.5, -0.84), 0.36, 0.1, energy, Enum.Material.Neon)
 		end
@@ -426,7 +557,7 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		link("MetalForearm", V(-1.65, 3.53, -0.15), hands[-1], 0.8, metallic, metal)
 		oval("MetalHand", V(0.74, 0.74, 0.8), hands[-1], metallic, metal)
 		piece("StarMark", V(0.36, 0.36, 0.14), V(-1.5, 4.05, -0.62), red, Enum.Material.Neon, CFrame.Angles(0, 0, math.pi / 4))
-		piece("FaceGuard", V(1.3, 0.62, 0.3), V(0, 5.02, -0.7), ink, fabric)
+		oval("FaceGuard", V(1.2, 0.6, 0.56), V(0, 4.98, -0.5), ink, fabric)
 		link("RifleBarrel", hands[1] + V(0, 0.2, 0.2), hands[1] + V(0, 0.25, -1.9), 0.16, ink, metal)
 	elseif heroId == "wasp" then
 		for _, side in ipairs({ -1, 1 }) do
@@ -436,22 +567,32 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 			piece("Stripe", V(0.9, 0.16, 1.3), V(side * 0.0, 3.3 - side * 0.3, -0.05), ink, fabric)
 		end
 	elseif heroId == "rocket" then
-		for _, side in ipairs({ -1, 1 }) do oval("Ear", V(0.5, 0.75, 0.3), V(side * 0.6, 6.15, 0), suit:Lerp(ink, 0.3)) end
+		for _, side in ipairs({ -1, 1 }) do
+			oval("Ear", V(0.5, 0.75, 0.3), V(side * 0.6, 6.15, 0), suit:Lerp(ink, 0.3))
+			oval("MaskPatch", V(0.5, 0.4, 0.1), onHead(side * 0.42, 0.08, -0.03), suit:Lerp(ink, 0.55), fabric, headFacing(side * 0.42, 0.08, -side * 0.3))
+		end
+		oval("Snout", V(0.58, 0.38, 0.46), onHead(0, -0.3, -0.12), face:Lerp(white, 0.4), fabric)
+		oval("NoseTip", V(0.2, 0.14, 0.12), V(0, 5.24, -0.8), ink, fabric)
 		for i = 0, 4 do link("TailBand", V(0.1, 2.3 + i * 0.28, 0.85 + i * 0.35), V(0.1, 2.6 + i * 0.28, 1.15 + i * 0.35), 0.5 - i * 0.05, i % 2 == 0 and ink or suit, fabric) end
 		link("BigGun", hands[1] + V(0, 0.2, 0.9), hands[1] + V(0, 0.35, -1.7), 0.45, metallic, metal)
 		piece("GunMuzzle", V(0.62, 0.62, 0.3), hands[1] + V(0, 0.35, -1.85), energy, Enum.Material.Neon)
 	elseif heroId == "daredevil" then
 		for _, side in ipairs({ -1, 1 }) do
-			piece("Horn", V(0.16, 0.55, 0.18), V(side * 0.56, 6.1, 0), red, metal, CFrame.Angles(0, 0, -side * 0.4))
+			oval("Horn", V(0.2, 0.62, 0.24), onHead(side * 0.5, 0.95, -0.02), suit, fabric, CFrame.Angles(0, 0, -side * 0.4))
 			link("Billy", hands[side] + V(0, 0.5, 0), hands[side] - V(0, 1.0, 0), 0.15, ink, metal)
 			link("BillyTip", hands[side] + V(0, 0.5, 0), hands[side] + V(0, 0.22, 0), 0.19, red, metal)
 		end
-		piece("ChestDD", V(0.42, 0.42, 0.13), V(0, 3.95, -0.74), ink, fabric, CFrame.Angles(0, 0, math.pi / 4))
+		chin(skin)
+		for _, side in ipairs({ -1, 1 }) do
+			piece("ChestDD", V(0.1, 0.5, 0.08), V(side * 0.14, 3.98, -0.7), ink, fabric)
+			oval("ChestDD", V(0.26, 0.5, 0.08), V(side * 0.14 + 0.1, 3.98, -0.69), ink, fabric)
+		end
 	elseif heroId == "shangchi" then
 		for _, side in ipairs({ -1, 1 }) do
 			for i = 0, 2 do disc("TenRing", hands[side] + V(0, 0.5 - i * 0.34, -0.02), 1.0 - i * 0.08, 0.14, gold, metal) end
 		end
-		link("DragonCollar", V(-0.85, 4.5, -0.6), V(0.85, 4.5, -0.6), 0.2, gold, metal)
+		oval("DragonCollar", V(1.46, 0.26, 1.24), V(0, 4.55, -0.03), gold, metal)
+		link("DragonCollar", V(0, 4.45, -0.64), V(0, 3.2, -0.66), 0.12, gold, metal)
 		piece("Sash", V(1.9, 0.34, 1.3), V(0, 2.4, 0), ink, fabric)
 	elseif heroId == "warmachine" then
 		piece("ShoulderCannon", V(0.7, 0.55, 1.5), V(1.35, 4.75, -0.1), metallic, metal)
@@ -459,34 +600,49 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 		disc("CannonMuzzle", V(1.35, 4.75, -1.9), 0.4, 0.1, energy, Enum.Material.Neon)
 		disc("ReactorHousing", V(0, 3.95, -0.8), 0.65, 0.16, metallic, metal)
 		disc("Reactor", V(0, 3.95, -0.9), 0.43, 0.1, energy, Enum.Material.Neon)
-		oval("FacePlate", V(1.3, 1.2, 0.34), V(0, 5.34, -0.6), metallic, metal)
+		oval("FacePlate", V(1.12, 1.2, 0.34), V(0, 5.3, -0.66), metallic, metal)
+		for _, side in ipairs({ -1, 1 }) do
+			piece("Visor", V(0.34, 0.11, 0.08), V(side * 0.26, 5.46, -0.85), white, Enum.Material.Neon, CFrame.Angles(0, -side * 0.25, side * 0.1))
+		end
 		for _, side in ipairs({ -1, 1 }) do piece("MissilePod", V(0.4, 0.4, 1.0), V(side * 0.85, 4.95, 0.7), ink, metal) end
 	elseif heroId == "starlord" then
 		oval("Helmet", V(1.72, 1.72, 1.56), V(0, 5.4, -0.03), red:Lerp(ink, 0.35), metal)
-		piece("HelmetVisor", V(1.1, 0.34, 0.14), V(0, 5.42, -0.74), Color3.fromRGB(255, 92, 92), Enum.Material.Neon)
+		for _, side in ipairs({ -1, 1 }) do
+			oval("HelmetVisor", V(0.5, 0.36, 0.16), V(side * 0.3, 5.46, -0.76), Color3.fromRGB(255, 92, 92), Enum.Material.Neon, CFrame.Angles(0, -side * 0.35, side * 0.2))
+		end
 		for _, side in ipairs({ -1, 1 }) do
 			link("Blaster", hands[side], hands[side] + V(0, 0.12, -1.0), 0.22, metallic, metal)
 			piece("BlasterGlow", V(0.28, 0.28, 0.2), hands[side] + V(0, 0.12, -1.1), Color3.fromRGB(255, 108, 108), Enum.Material.Neon)
 		end
-		piece("Coat", V(2.3, 1.7, 0.16), V(0, 2.35, 0.7), suit:Lerp(ink, 0.2), fabric)
+		oval("Coat", V(2.4, 2.2, 0.3), V(0, 2.3, 0.66), suit:Lerp(ink, 0.2), fabric)
 	elseif heroId == "groot" then
 		for _, side in ipairs({ -1, 1 }) do
-			link("Branch", V(side * 1.2, 4.7, 0), V(side * 1.95, 5.9, -0.2), 0.34, trim, Enum.Material.Wood)
+			limb("Branch", V(side * 1.2, 4.7, 0), V(side * 1.95, 5.9, -0.2), 0.34, trim, Enum.Material.Wood)
 			oval("Leaf", V(0.7, 0.16, 0.42), V(side * 2.0, 6.0, -0.2), Color3.fromRGB(86, 146, 64), fabric, CFrame.Angles(0, 0, side * 0.5))
-			oval("Leaf", V(0.6, 0.14, 0.38), V(side * 0.7, 6.55, 0), Color3.fromRGB(112, 168, 78), fabric, CFrame.Angles(0, 0, -side * 0.6))
-			link("BarkRidge", V(side * 0.5, 4.1, -0.7), V(side * 0.4, 2.5, -0.7), 0.24, trim, Enum.Material.Wood)
+			limb("BarkRidge", V(side * 0.5, 4.1, -0.62), V(side * 0.4, 2.5, -0.56), 0.26, trim, Enum.Material.Wood)
+			oval("Moss", V(0.7, 0.3, 0.6), V(side * 1.14 * width, 4.62, 0.1), Color3.fromRGB(86, 146, 64), fabric)
 		end
+		for i = -2, 2 do
+			local base = onHead(i * 0.45, 1.0, -0.04)
+			link("Sprig", base, base + V(i * 0.14, 0.42, 0), 0.1, trim, Enum.Material.Wood)
+			oval("Leaf", V(0.36, 0.1, 0.24), base + V(i * 0.2, 0.48, 0), i % 2 == 0 and Color3.fromRGB(112, 168, 78) or Color3.fromRGB(86, 146, 64), fabric, CFrame.Angles(0, 0, -i * 0.45))
+		end
+		oval("BarkBrow", V(1.1, 0.16, 0.2), onHead(0, 0.36, 0.03), trim, Enum.Material.Wood, headFacing(0, 0.36))
 	elseif heroId == "ghostrider" then
 		for i = 1, 5 do
 			oval("SkullFlame", V(0.5, 0.95 + (3 - math.abs(i - 3)) * 0.22, 0.5), V((i - 3) * 0.3, 6.25 + (3 - math.abs(i - 3)) * 0.12, 0), flame, Enum.Material.Neon).Transparency = 0.12
 		end
 		link("ChainA", V(-0.95, 4.45, -0.62), V(0.95, 2.85, -0.62), 0.13, silver, metal)
 		link("ChainB", V(0.95, 4.45, -0.62), V(-0.95, 2.85, -0.62), 0.13, silver, metal)
-		piece("JacketFlame", V(2.4, 0.1, 1.5), V(0, 2.05, 0), flame, Enum.Material.Neon).Transparency = 0.4
-	elseif heroId == "captainmarvel" then
-		piece("MarvelStar", V(0.74, 0.74, 0.14), V(0, 3.95, -0.74), gold, Enum.Material.Neon, CFrame.Angles(0, 0, math.pi / 4))
-		link("Sash", V(-0.95, 4.35, -0.6), V(0.95, 2.5, -0.58), 0.36, red, fabric)
 		for _, side in ipairs({ -1, 1 }) do
+			oval("FireFist", V(0.9, 1.1, 0.9), hands[side] + V(0, 0.2, 0), flame, Enum.Material.Neon).Transparency = 0.35
+			oval("Spike", V(0.18, 0.4, 0.18), V(side * 1.14, 4.72, 0), silver, metal)
+		end
+	elseif heroId == "captainmarvel" then
+		star("MarvelStar", CFrame.new(V(0, 3.98, -0.7)) * CFrame.Angles(0.12, 0, 0), 0.5, gold, Enum.Material.Neon, 0.1)
+		oval("Sash", V(1.98, 0.36, 1.36), V(0, 2.4, 0), gold, fabric)
+		for _, side in ipairs({ -1, 1 }) do
+			oval("SuitSide", V(0.56, 1.9, 1.12), V(side * 0.96 * width, 3.32, 0.04), red, fabric)
 			oval("PhotonFist", V(0.95, 0.95, 0.95), hands[side], Color3.fromRGB(255, 225, 110), Enum.Material.Neon).Transparency = 0.15
 		end
 	elseif heroId == "silversurfer" then
@@ -499,45 +655,134 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 	end
 	-- Reinforcements carry recognizable silhouettes and weapons, not recolors.
 	if hero.costume then
-		local style=hero.costume
-		local accent=Color3.fromRGB(unpack(hero.color))
-		if style=="claws" then
-			for _,side in ipairs({-1,1}) do
-				for n=-1,1 do piece("AdamantiumClaw",V(0.08,0.09,1.65),hands[side]+V(n*0.17,0,-0.9),silver,metal) end
-				piece("MaskFin",V(0.28,1.1,0.3),V(side*0.7,5.95,0),ink,metal,CFrame.Angles(0,0,-side*0.3))
+		local style = hero.costume
+		local accent = Color3.fromRGB(unpack(hero.color))
+		-- The X-Men belt badge: a gold roundel with a red X.
+		local function xBadge(center, size)
+			disc("XBadge", center, size, 0.1, gold, metal)
+			for _, tilt in ipairs({ -0.8, 0.8 }) do
+				piece("XBadge", V(size * 0.16, size * 0.8, 0.06), center + V(0, 0, -0.07), red, fabric, CFrame.Angles(0, 0, tilt))
 			end
-		elseif style=="visor" or style=="nova" then
-			piece("Visor",V(1.3,0.24,0.2),V(0,5.48,-0.77),style=="visor" and red or gold,Enum.Material.Neon)
-			disc("ChestStar",V(0,3.9,-0.75),0.7,0.12,gold,Enum.Material.Neon)
-		elseif style=="cape" or style=="phoenix" or style=="moon" then
-			for strip=-1,1 do piece("Cape",V(1.15,3.8,0.18),V(strip*0.9,2.8,0.95),accent,fabric,CFrame.Angles(-0.15,strip*0.2,0)) end
-			disc("Crest",V(0,4,-0.72),0.7,0.15,gold,Enum.Material.Neon)
-			if style=="phoenix" then
-				for _,side in ipairs({-1,1}) do for n=1,3 do piece("PhoenixFeather",V(0.45,2.8-n*0.3,0.22),V(side*(1+n*0.45),4.6,0.5),accent,Enum.Material.Neon,CFrame.Angles(0,0,-side*(0.35+n*0.15))) end end
+		end
+		local function cape(tint)
+			for strip = -1, 1 do oval("Cape", V(1.3, 3.9, 0.26), V(strip * 0.86, 2.8, 0.95), tint, fabric, CFrame.Angles(-0.15, strip * 0.2, 0)) end
+		end
+		if style == "claws" then
+			-- Wolverine: yellow cowl with black patches and fins, blue sides.
+			for _, side in ipairs({ -1, 1 }) do
+				for n = -1, 1 do piece("AdamantiumClaw", V(0.08, 0.09, 1.65), hands[side] + V(n * 0.17, 0, -0.9), silver, metal) end
+				oval("MaskPatch", V(0.52, 0.44, 0.1), onHead(side * 0.42, 0.2, -0.03), ink, fabric, headFacing(side * 0.42, 0.2, side * 0.5))
+				piece("MaskFin", V(0.26, 1.1, 0.3), V(side * 0.7, 5.95, 0), ink, fabric, CFrame.Angles(0, 0, -side * 0.3))
+				oval("Sideburn", V(0.24, 0.6, 0.34), onHead(side * 1.05, -0.3, -0.05), Color3.fromRGB(58, 40, 30), fabric)
+				oval("SuitSide", V(0.56, 1.9, 1.12), V(side * 0.96 * width, 3.32, 0.04), navy, fabric)
+				oval("ShoulderPad", V(1.06, 0.62, 1.06), V(side * 1.14 * width, 4.42, 0), navy, fabric)
 			end
-		elseif style=="ice" then
-			for n=-1,1 do piece("IceCrown",V(0.3,0.8+math.abs(n)*0.3,0.3),V(n*0.4,6.2,0),accent,Enum.Material.Ice) end
-			for _,side in ipairs({-1,1}) do oval("IceFist",V(0.9,0.9,1.1),hands[side],accent,Enum.Material.Ice) end
-		elseif style=="cards" then
-			link("Staff",hands[-1]+V(0,-1.3,0),hands[-1]+V(0,2.7,0),0.14,silver)
-			for n=-1,1 do piece("ChargedCard",V(0.5,0.8,0.08),hands[1]+V(n*0.4,0.4,-0.3),accent,Enum.Material.Neon,CFrame.Angles(0,0,n*0.3)) end
-		elseif style=="tail" then
-			for n=1,4 do oval("Tail",V(0.28,0.3,0.9),V(0,1.9-n*0.2,0.5+n*0.65),accent) end
-		elseif style=="fur" then
-			for _,side in ipairs({-1,1}) do oval("FurryFist",V(1.2,1.1,1.2),hands[side],accent,fabric) end
-			for n=-1,1 do piece("HairTuft",V(0.4,0.65,0.45),V(n*0.5,6.1,0),accent,fabric,CFrame.Angles(0,0,n*0.2)) end
-		elseif style=="blade" or style=="swords" then
-			for _,side in ipairs({-1,1}) do piece("Blade",V(0.13,2.7,0.24),hands[side]+V(0,1.1,-0.5),style=="blade" and accent or silver,style=="blade" and Enum.Material.Neon or metal,CFrame.Angles(-0.3,0,-side*0.2)) end
+			chin(skin)
+			xBadge(V(0, 2.4, -0.72), 0.44)
+		elseif style == "visor" then
+			-- Cyclops: navy cowl, gold band, ruby visor, gold X harness.
+			oval("VisorBand", V(1.66, 0.3, 1.46), V(0, 5.47, -0.05), gold, metal)
+			oval("Visor", V(1.16, 0.24, 0.5), V(0, 5.47, -0.55), red, Enum.Material.Neon)
+			chin(skin)
+			for _, side in ipairs({ -1, 1 }) do
+				headLine("Strap", { V(side * 0.78, 4.4, -0.5), V(0, 3.55, -0.74), V(-side * 0.62, 2.62, -0.6) }, 0.15, gold, fabric)
+			end
+			xBadge(V(0, 2.4, -0.72), 0.44)
+		elseif style == "nova" then
+			-- Nova: gold centurion helmet with a crest fin, a dark eye band and a star.
+			oval("Visor", V(1.2, 0.3, 0.5), V(0, 5.47, -0.55), ink, metal)
+			for _, side in ipairs({ -1, 1 }) do
+				piece("EyeSlit", V(0.3, 0.09, 0.06), V(side * 0.27, 5.48, -0.81), white, Enum.Material.Neon, CFrame.Angles(0, -side * 0.3, side * 0.1))
+				oval("ShoulderPad", V(1.06, 0.62, 1.06), V(side * 1.14 * width, 4.42, 0), gold, metal)
+			end
+			oval("HelmetFin", V(0.18, 0.62, 1.2), V(0, 6.12, 0.02), gold:Lerp(white, 0.2), metal)
+			chin(skin)
+			star("ChestStar", CFrame.new(V(0, 3.98, -0.7)) * CFrame.Angles(0.12, 0, 0), 0.46, gold, metal, 0.1)
+		elseif style == "cape" then
+			-- Storm: white cape, a gold tiara with a red jewel.
+			cape(accent)
+			headLine("Tiara", { onHead(-0.55, 0.44, 0.03), onHead(0, 0.52, 0.03), onHead(0.55, 0.44, 0.03) }, 0.1, gold, metal)
+			piece("TiaraJewel", V(0.16, 0.16, 0.08), onHead(0, 0.52, 0.08), red, Enum.Material.Neon, headFacing(0, 0.52, math.pi / 4))
+		elseif style == "phoenix" then
+			-- Jean Grey: the phoenix emblem, a gold sash and a flicker of fire.
+			oval("PhoenixMark", V(0.22, 0.56, 0.1), V(0, 3.92, -0.72), gold, Enum.Material.Neon)
+			oval("Sash", V(1.98, 0.36, 1.36), V(0, 2.4, 0), gold, fabric)
+			piece("SashTail", V(0.3, 1.2, 0.1), V(0.62, 1.8, -0.58), gold, fabric, CFrame.Angles(0, 0, 0.12))
+			for _, side in ipairs({ -1, 1 }) do
+				oval("PhoenixMark", V(0.62, 0.18, 0.08), V(side * 0.3, 4.08, -0.7), gold, Enum.Material.Neon, CFrame.Angles(0, -side * 0.2, side * 0.55))
+				for n = 1, 2 do
+					oval("PhoenixFeather", V(0.36, 2.2 - n * 0.4, 0.14), V(side * (1.3 + n * 0.4), 4.5, 0.6), accent, Enum.Material.Neon, CFrame.Angles(0, side * 0.3, -side * (0.4 + n * 0.2))).Transparency = 0.3
+				end
+			end
+		elseif style == "moon" then
+			-- Moon Knight: a hooded cape and a silver crescent.
+			cape(accent)
+			oval("Hood", V(1.76, 1.4, 1.6), V(0, 5.66, 0.06), accent, fabric)
+			disc("Crescent", V(0, 3.98, -0.7), 0.7, 0.08, silver, metal)
+			disc("Crescent", V(0.17, 4.04, -0.74), 0.58, 0.08, suit, fabric)
+		elseif style == "ice" then
+			-- Iceman: a crest of ice, frozen fists and shards on the shoulders.
+			for n = -1, 1 do piece("IceCrown", V(0.3, 0.8 + math.abs(n) * 0.3, 0.3), V(n * 0.4, 6.2, 0), accent, Enum.Material.Ice) end
+			for _, side in ipairs({ -1, 1 }) do
+				oval("IceFist", V(0.9, 0.9, 1.1), hands[side], accent, Enum.Material.Ice)
+				piece("IceShard", V(0.22, 0.7, 0.22), V(side * 1.2 * width, 4.75, 0.1), accent, Enum.Material.Ice, CFrame.Angles(0.2, 0, -side * 0.5))
+			end
+		elseif style == "cards" then
+			-- Gambit: trench coat over pink armour, black cowl, bo staff, cards.
+			link("Staff", hands[-1] + V(0, -1.3, 0), hands[-1] + V(0, 2.7, 0), 0.14, silver)
+			for n = -1, 1 do piece("ChargedCard", V(0.5, 0.8, 0.08), hands[1] + V(n * 0.4, 0.4, -0.3), accent, Enum.Material.Neon, CFrame.Angles(0, 0, n * 0.3)) end
+			oval("ChestArmor", V(1.8, 1.25, 0.5), V(0, 3.92, -0.46), accent, fabric)
+			oval("Cowl", V(1.68, 1.4, 1.5), V(0, 5.64, 0.02), ink, fabric)
+			for _, side in ipairs({ -1, 1 }) do
+				oval("HairLock", V(0.46, 1.1, 0.6), V(side * 0.5, 5.2, 0.5), Color3.fromRGB(96, 62, 42), fabric)
+				oval("CoatTail", V(1.1, 2.5, 0.22), V(side * 0.5, 1.55, 0.62), suit, fabric, CFrame.Angles(-0.12, side * 0.15, 0))
+				oval("CoatFront", V(0.5, 2.0, 0.2), V(side * 0.9, 1.8, -0.36), suit, fabric, CFrame.Angles(0.06, side * 0.3, side * 0.1))
+			end
+		elseif style == "tail" then
+			-- Nightcrawler: pointed ears, dark hair, red panels, a spade tail.
+			for n = 1, 4 do oval("Tail", V(0.26, 0.28, 0.9), V(0, 1.9 - n * 0.2, 0.5 + n * 0.65), face) end
+			piece("TailTip", V(0.08, 0.42, 0.42), V(0, 1.0, 3.62), face, fabric, CFrame.Angles(math.pi / 4, 0, 0))
+			oval("Hair", V(1.64, 0.9, 1.46), V(0, 5.92, 0.06), Color3.fromRGB(34, 36, 84), fabric)
+			oval("SuitPanel", V(1.6, 1.3, 0.42), V(0, 3.8, -0.5), trim, fabric)
+			for _, side in ipairs({ -1, 1 }) do
+				oval("Ear", V(0.1, 0.24, 0.55), onHead(side * 1.5, 0.05, -0.02), face, fabric, CFrame.Angles(-0.6, side * 0.3, 0))
+			end
+		elseif style == "fur" then
+			-- Beast: big furry fists and a mane.
+			for _, side in ipairs({ -1, 1 }) do
+				oval("FurryFist", V(1.2, 1.1, 1.2), hands[side], accent, fabric)
+				oval("Sideburn", V(0.3, 0.7, 0.4), onHead(side * 1.0, -0.2, -0.02), Color3.fromRGB(36, 52, 110), fabric)
+			end
+		elseif style == "blade" then
+			-- Psylocke: psychic blades, a red sash and her mark over one eye.
+			for _, side in ipairs({ -1, 1 }) do piece("Blade", V(0.13, 2.7, 0.24), hands[side] + V(0, 1.1, -0.5), accent, Enum.Material.Neon, CFrame.Angles(-0.3, 0, -side * 0.2)) end
+			oval("Sash", V(1.98, 0.36, 1.36), V(0, 2.4, 0), red, fabric)
+			piece("SashTail", V(0.3, 1.3, 0.1), V(0.62, 1.72, -0.58), red, fabric, CFrame.Angles(0, 0, 0.12))
+			piece("SashTail", V(0.3, 1.0, 0.1), V(0.9, 1.9, -0.45), red, fabric, CFrame.Angles(0, -0.3, 0.3))
+			piece("FaceMark", V(0.06, 0.5, 0.04), onHead(0.4, 0.15, 0.06), red, Enum.Material.Neon, headFacing(0.4, 0.15, 0.2))
+		elseif style == "swords" then
+			-- Deadpool: black eye patches, katanas crossed on the back, pouches.
+			for _, side in ipairs({ -1, 1 }) do
+				piece("Blade", V(0.13, 2.7, 0.24), hands[side] + V(0, 1.1, -0.5), silver, metal, CFrame.Angles(-0.3, 0, -side * 0.2))
+				oval("MaskPatch", V(0.58, 0.5, 0.1), onHead(side * 0.43, 0.12, -0.03), ink, fabric, headFacing(side * 0.43, 0.12, side * 0.35))
+				oval("SuitSide", V(0.56, 1.9, 1.12), V(side * 0.96 * width, 3.32, 0.04), ink, fabric)
+				link("Scabbard", V(side * 0.75, 2.6, 0.78), V(-side * 0.6, 5.3, 0.72), 0.16, ink, fabric)
+				link("Hilt", V(-side * 0.6, 5.3, 0.72), V(-side * 0.78, 5.75, 0.7), 0.12, red:Lerp(ink, 0.5), fabric)
+				piece("Pouch", V(0.3, 0.3, 0.22), V(side * 0.72, 2.4, -0.5), ink, fabric)
+			end
+			disc("BeltCircle", V(0, 2.4, -0.72), 0.44, 0.1, ink, fabric)
+			disc("BeltCircle", V(0, 2.4, -0.78), 0.3, 0.06, red, fabric)
+			piece("BeltCircle", V(0.08, 0.34, 0.04), V(0, 2.4, -0.82), ink, fabric)
 		end
 	end
 	-- Cloth is separate from each hero's feature branch: Vision gets his cape.
 	if heroId == "thor" or heroId == "strange" or heroId == "vision" or heroId == "wanda" then
 		local capeColor = heroId == "vision" and gold or red
 		for strip = -1, 1 do
-			piece("Cape", V(1.13, heroId == "wanda" and 2.5 or 3.62, 0.15), V(strip * 0.88, heroId == "wanda" and 1.89 or 2.9, 0.98), capeColor, fabric, CFrame.Angles(-0.17, strip * 0.23, -strip * 0.07))
+			oval("Cape", V(1.3, heroId == "wanda" and 2.6 or 3.8, 0.26), V(strip * 0.86, heroId == "wanda" and 1.95 or 2.85, 0.98), capeColor, fabric, CFrame.Angles(-0.17, strip * 0.23, -strip * 0.07))
 		end
 		if heroId == "strange" then
-			for _, side in ipairs({ -1, 1 }) do piece("CloakCollar", V(0.47, 1.15, 0.37), V(side * 0.79, 4.83, 0.42), red, fabric, CFrame.Angles(0.2, 0, -side * 0.27)) end
+			for _, side in ipairs({ -1, 1 }) do oval("CloakCollar", V(0.5, 1.2, 0.4), V(side * 0.79, 4.83, 0.42), red, fabric, CFrame.Angles(0.2, 0, -side * 0.27)) end
 		end
 	end
 	-- Head and hand proportions are applied to the finished figure, around the

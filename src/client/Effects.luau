@@ -309,6 +309,9 @@ local function buildEnemy(def)
 	}
 end
 
+-- Exposed for tools (the Studio showroom) and tests; gameplay uses Handle.
+Effects.BuildEnemy = buildEnemy
+
 function Effects.new(player, request, getState, audio)
 	local self = setmetatable({}, Effects)
 	self.player, self.request, self.getState, self.audio = player, request, getState, audio
