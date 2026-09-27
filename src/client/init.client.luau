@@ -141,9 +141,11 @@ showToast = function(message, bad)
 	if not message or message == "" then return end
 	local current = overlays:FindFirstChild("Toast")
 	if current then current:Destroy() end
+	local inBattle = activeMatch() and refs.toastTop ~= nil
+	local top = inBattle and ((refs.boss and refs.boss.Parent and refs.boss.Visible) and refs.toastBossTop or refs.toastTop) or nil
 	local toast = UI.roundFrame(overlays, {
-		Name = "Toast", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, activeMatch() and 8 or math.max(8,screenSize().Y-78)),
-		Size = UDim2.new(1, -32, 0, 62), ZIndex = 60,
+		Name = "Toast", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, top or (activeMatch() and 8 or math.max(8,screenSize().Y-78))),
+		Size = UDim2.new(1, -32, 0, inBattle and 48 or 62), ZIndex = 60,
 	}, bad and C.red or C.green)
 	UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 100)}, toast)
 	UI.label(toast, L(message), {Position = UDim2.fromOffset(14, 6), Size = UDim2.new(1, -28, 1, -12), TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextSize = 14, ZIndex = 61})
@@ -2202,6 +2204,10 @@ local function renderMatch()
 		act("VoteEnd", {on = not (state.match and state.match.endVote)})
 	end, {Name = "VoteEndRun", Position = UDim2.fromOffset(layout.skip.x, layout.skip.y + layout.skip.h + 6), Size = UDim2.fromOffset(layout.skip.w, 40), BackgroundColor3 = C.red, TextSize = 14, Visible = false})
 	local bossRect = layout.boss
+	-- In battle a notice slides in under the HUD rows (under the boss bar
+	-- when a boss is on the road), never over the wave and core readouts.
+	refs.toastTop = (layout.waveInfo.y or 0) + (layout.waveInfo.h or 0) + 6
+	refs.toastBossTop = (bossRect.y or 0) + (bossRect.h or 0) + 6
 	refs.boss = UI.roundFrame(main, {Position = at(bossRect), Size = dims(bossRect), BackgroundColor3 = Color3.fromRGB(66,30,44), Visible = false}, C.red)
 	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 3), Size = UDim2.new(1, -24, 0, 22), TextColor3 = C.red, Font = UI.Fonts.display, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Center})
 	refs.bossHP = UI.bar(refs.boss, C.red, UDim2.fromOffset(12, 27), UDim2.new(1, -24, 0, 7))
