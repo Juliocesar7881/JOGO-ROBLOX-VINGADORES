@@ -112,32 +112,6 @@ local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, r
 	if pushState then pushState(player) end
 end)
 
--- Studio playtests only: the server command bar can reach the running match
--- to look at a boss or a late wave without playing up to it. A published
--- server never sets this (IsStudio is false there).
-if RunService:IsStudio() then
-	local hook = Instance.new("BindableFunction")
-	hook.Name = "DoomStudioHook"
-	-- spawn: put enemies on the road of the running match (a list of ids);
-	-- crowd: that many mixed infected spread along the road (a load test).
-	hook.OnInvoke = function(command, ids)
-		if not match.running then return false end
-		match.phase = "Wave"
-		if command == "crowd" and type(ids) == "number" then
-			local mix = { "zombie", "runner", "brute", "armored", "flyer", "stealth", "support" }
-			for index = 1, math.clamp(ids, 1, 180) do
-				match:_spawn({ enemyId = mix[index % #mix + 1], pathIndex = 1, progress = (index % 60) * 2, hpMultiplier = 20 })
-			end
-			return true
-		end
-		if command ~= "spawn" or type(ids) ~= "table" then return false end
-		for index, id in ipairs(ids) do
-			if Catalog.Enemies[id] then match:_spawn({ enemyId = id, pathIndex = 1, progress = 6 + index * 6 }) end
-		end
-		return true
-	end
-	hook.Parent = game:GetService("ServerStorage")
-end
 
 local party = PartyService.new(Config, function(player)
 	if pushState then pushState(player) end
@@ -1006,6 +980,58 @@ if role ~= "Match" then
 			task.wait(30)
 		end
 	end)
+end
+
+-- Studio playtests only: the server command bar can reach the running match
+-- to look at a boss or a late wave without playing up to it. A published
+-- server never sets this (IsStudio is false there).
+if RunService:IsStudio() then
+	local hook = Instance.new("BindableFunction")
+	hook.Name = "DoomStudioHook"
+	-- spawn: put enemies on the road of the running match (a list of ids);
+	-- crowd: that many mixed infected spread along the road (a load test);
+	-- panel: open a lobby panel for every player, as walking up to it would;
+	-- endwave: finish the current wave now (wave number optional), which is
+	-- how a cards run offers its cards and a last wave ends in victory;
+	-- finish: end the match now (true = victory).
+	hook.OnInvoke = function(command, arg, modeId)
+		-- start: begin a match on this map for everyone, skipping the unlocks
+		-- and the portal walk (arg = map id, modeId defaults to campaign).
+		if command == "start" and Catalog.Maps[arg] and match:CanStart() then
+			local ok = match:Start(Players:GetPlayers(), arg, modeId or "normal")
+			if ok then pushMatch() end
+			return ok
+		end
+		if command == "panel" and type(arg) == "string" then
+			for _, player in ipairs(Players:GetPlayers()) do remotes.FX:FireClient(player, { kind = "OpenPanel", panel = arg }) end
+			return true
+		end
+		if not match.running then return false end
+		if command == "finish" then
+			match:Finish(arg == true)
+			return true
+		end
+		if command == "endwave" then
+			if type(arg) == "number" then match.wave = arg; match.completedWaves = math.min(match.completedWaves, arg - 1) end
+			match.phase = "Wave"
+			match:_endWave()
+			return true
+		end
+		match.phase = "Wave"
+		if command == "crowd" and type(arg) == "number" then
+			local mix = { "zombie", "runner", "brute", "armored", "flyer", "stealth", "support" }
+			for index = 1, math.clamp(arg, 1, 180) do
+				match:_spawn({ enemyId = mix[index % #mix + 1], pathIndex = 1, progress = (index % 60) * 2, hpMultiplier = 20 })
+			end
+			return true
+		end
+		if command ~= "spawn" or type(arg) ~= "table" then return false end
+		for index, id in ipairs(arg) do
+			if Catalog.Enemies[id] then match:_spawn({ enemyId = id, pathIndex = 1, progress = 6 + index * 6 }) end
+		end
+		return true
+	end
+	hook.Parent = game:GetService("ServerStorage")
 end
 
 --==============================================================================

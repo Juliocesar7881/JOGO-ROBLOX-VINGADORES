@@ -90,7 +90,38 @@ local function buildArtEnemy(def, template)
 end
 
 -- Beyond this distance from the camera, a walking figure is posed every third frame.
-local FAR_WALK = 120
+local FAR_WALK = 150
+
+-- The roads of each map, built the way the server builds them, so an enemy
+-- can walk its own road between two syncs (EnemySync ri/pg/sp).
+local ROADS = {}
+local function roadsOf(mapId)
+	local map = mapId and Catalog.Maps[mapId]
+	if not map then return nil end
+	if not ROADS[mapId] then
+		local roads = {}
+		for index, route in ipairs(map.paths) do
+			local points, lengths, total = {}, {}, 0
+			for _, p in ipairs(route) do table.insert(points, Vector3.new(p[1], 0, p[2])) end
+			for i = 1, #points - 1 do lengths[i] = (points[i + 1] - points[i]).Magnitude; total += lengths[i] end
+			roads[index] = { points = points, lengths = lengths, total = total }
+		end
+		ROADS[mapId] = roads
+	end
+	return ROADS[mapId]
+end
+-- The point at a distance along a road, and the road's direction there.
+local function alongRoad(road, distance)
+	local remaining = distance
+	for i, length in ipairs(road.lengths) do
+		if remaining <= length or i == #road.lengths then
+			local a, b = road.points[i], road.points[i + 1]
+			return a:Lerp(b, math.clamp(remaining / math.max(length, 1e-3), 0, 1)), (b - a).Unit
+		end
+		remaining -= length
+	end
+	return road.points[#road.points], Vector3.new(0, 0, -1)
+end
 
 -- The jointed figure the server published for this enemy (DoomFigures).
 local function figureTemplate(id)
@@ -249,6 +280,7 @@ function Effects:_poolEnemy(record)
 	record.billboard.Enabled = true
 	record.lastHP, record.target, record.phase, record.animated = nil, nil, nil, nil
 	record.hitAt, record.statusFlags, record.revealed, record.link, record.lastStep = nil, nil, nil, nil, nil
+	record.road, record.progress, record.syncProgress, record.syncAt, record.speed = nil, nil, nil, nil, nil
 	record.model.Parent = nil
 	self.pool[record.def.id] = self.pool[record.def.id] or {}
 	table.insert(self.pool[record.def.id], record)
@@ -922,6 +954,18 @@ function Effects:Handle(event)
 				self.enemies[key] = current
 			end
 			current.target = enemy.position
+			-- Where the server says the enemy is on its road, and how fast it goes.
+			local state = self.getState()
+			local roads = roadsOf(state and state.match and state.match.mapId)
+			local road = roads and tonumber(enemy.ri) and roads[tonumber(enemy.ri)]
+			if road and tonumber(enemy.pg) then
+				current.road, current.syncProgress, current.syncAt = road, tonumber(enemy.pg), self.clock
+				current.speed = tonumber(enemy.sp) or 0
+				-- A pull or portal throws it back: jump there instead of sliding.
+				if not current.progress or math.abs(current.progress - current.syncProgress) > 10 then current.progress = current.syncProgress end
+			else
+				current.road = nil
+			end
 			local hp = enemy.hp or 1
 			if current.lastHP and hp < current.lastHP - 0.5 then
 				current.hitAt = self.clock
@@ -1127,15 +1171,30 @@ function Effects:Step(dt)
 	local eye = workspace.CurrentCamera and workspace.CurrentCamera.CFrame.Position
 	for _, enemy in pairs(self.enemies) do
 		local before = enemy.position
-		local delta = enemy.target - enemy.position
-		if delta.Magnitude > 0.04 then
-			local horizontal = Vector3.new(delta.X, 0, delta.Z)
-			if horizontal.Magnitude > 0.04 then
-				local facing = enemy.direction:Lerp(horizontal.Unit, math.min(1, dt * 14))
+		if enemy.road then
+			-- Walk the road at the server's speed every frame; a gentle pull
+			-- toward where the server says it is now keeps both in step.
+			local expected = enemy.syncProgress + enemy.speed * math.min(self.clock - enemy.syncAt, 0.6)
+			enemy.progress += enemy.speed * dt
+			enemy.progress += (expected - enemy.progress) * math.min(1, dt * 3)
+			enemy.progress = math.clamp(enemy.progress, 0, enemy.road.total)
+			local at, heading = alongRoad(enemy.road, enemy.progress)
+			enemy.position, enemy.target = at, at
+			if enemy.speed > 0 then
+				local facing = enemy.direction:Lerp(heading, math.min(1, dt * 10))
 				if facing.Magnitude > 0.001 then enemy.direction = facing.Unit end
 			end
+		else
+			local delta = enemy.target - enemy.position
+			if delta.Magnitude > 0.04 then
+				local horizontal = Vector3.new(delta.X, 0, delta.Z)
+				if horizontal.Magnitude > 0.04 then
+					local facing = enemy.direction:Lerp(horizontal.Unit, math.min(1, dt * 14))
+					if facing.Magnitude > 0.001 then enemy.direction = facing.Unit end
+				end
+			end
+			enemy.position = enemy.position:Lerp(enemy.target, math.min(1, dt * 12))
 		end
-		enemy.position = enemy.position:Lerp(enemy.target, math.min(1, dt * 12))
 		-- Jointed figures bob with their own steps (Motion); others float a little.
 		local bob = (settings.lowFX or (enemy.rig and not enemy.def.air)) and 0 or math.sin(self.clock * (enemy.def.air and 4 or 8) + enemy.phase) * (enemy.def.air and 0.2 or 0.055)
 		local lift = enemy.airLift or (enemy.def.air and 6 or 0)

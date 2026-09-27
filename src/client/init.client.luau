@@ -1252,7 +1252,8 @@ renderContext = function()
 	refreshNavigation()
 	if not contextPanel or not state or state.phase ~= "Lobby" then
 		contextRefreshPending=false
-		if refs.context then refs.context:Destroy(); refs.context=nil; menuBlur(false) end
+		if refs.context then refs.context:Destroy(); refs.context=nil end
+		menuBlur(false)
 		return
 	end
 	local panel=refs.context
@@ -2434,7 +2435,9 @@ render = function()
 		if child~=retained and not child:IsA("UIComponent") then child:Destroy() end
 	end
 	refs = {context=retained or nil}
-	if not retained then contextPanel = nil end
+	-- A panel closed by leaving the lobby must take its blur with it, or the
+	-- whole battle is played behind frosted glass.
+	if not retained then contextPanel = nil; menuBlur(false) end
 	if not activeMatch() then clearUpgradeBoards() end
 	if not state or not state.profile then
 		local frame = UI.roundFrame(main, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -40, 0, 190)}, C.green)

@@ -673,7 +673,7 @@ function Match:_enemiesStep(dt)
 					self:_fx({kind="Pulse",position=enemy.position,radius=7,color=Color3.fromRGB(190,110,255)})
 				end
 			end
-			if enemy.stunUntil > self.elapsed then continue end
+			if enemy.stunUntil > self.elapsed then enemy.speedNow = 0 continue end
 			local speed=enemy.def.speed
 			if enemy.slowUntil>self.elapsed then speed*=1-enemy.slow else enemy.slow=0 end
 			if enemy.frenzyUntil and enemy.frenzyUntil>self.elapsed then speed*=1.2 end
@@ -682,7 +682,7 @@ function Match:_enemiesStep(dt)
 					speed*=1.12 enemy.boostedBy=support.id enemy.boostUntil=self.elapsed+0.3 break
 				end
 			end
-			enemy.progress+=speed*dt enemy.position=self:_pathPosition(enemy.routeIndex,enemy.progress)
+			enemy.progress+=speed*dt enemy.position=self:_pathPosition(enemy.routeIndex,enemy.progress) enemy.speedNow=speed
 			if enemy.progress>=self.routeCache[enemy.routeIndex].total then
 				self.enemies[enemy.id]=nil self.alive-=1
 				local damage=enemy.def.leak or 1 local absorbed=math.min(self.shield,damage)
@@ -1184,11 +1184,15 @@ function Match:Step(dt)
 		-- Replicate route position, not a second visual flight offset. Client
 		-- torso height and Shot endpoints use the same 8-stud airborne center.
 		-- lk: the support hastening this enemy, for the link the client draws;
-		-- ch: a summoner's summons left.
+		-- ch: a summoner's summons left. ri/pg/sp: road, distance along it and
+		-- speed per real second, so clients walk enemies smoothly between syncs
+		-- instead of hopping to each new position.
+		local timeScale=self.speed or 1
 		for _,e in pairs(self.enemies) do
 			local boosted=e.boostUntil and e.boostUntil>self.elapsed
 			table.insert(enemies,{id=e.id,enemyId=e.enemyId,position=e.position,hp=e.hp,maxHP=e.maxHP,phase=e.phase,st=self:_statusOf(e),final=e.final or nil,
-				lk=boosted and e.boostedBy or nil,ch=e.enemyId=="summoner" and math.max(0,2-(e.summons or 0)) or nil})
+				lk=boosted and e.boostedBy or nil,ch=e.enemyId=="summoner" and math.max(0,2-(e.summons or 0)) or nil,
+				ri=e.routeIndex,pg=math.floor(e.progress*100+0.5)/100,sp=math.floor((e.speedNow or 0)*timeScale*100+0.5)/100})
 		end
 		-- The heaviest few hits since the last sync, one number per enemy.
 		local hits, order = {}, {}

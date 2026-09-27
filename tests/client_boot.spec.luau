@@ -1520,6 +1520,45 @@ local function session(screen)
 		frames(1 / 30, 2)
 	end)
 
+	step("enemies walk their road smoothly between syncs", function()
+		push(matchSnapshot(veteranProfile(), "Wave", { enemies = 1 }))
+		local road = Catalog.Maps.manhattan.paths[1]
+		local start = v3(road[1][1], 0, road[1][2])
+		fx({ kind = "EnemySync", enemies = { { id = 7701, enemyId = "runner", position = start, hp = 40, maxHP = 40, ri = 1, pg = 0, sp = 9 } } })
+		local visuals = workspace:FindFirstChild("DoomClientVisuals")
+		-- Where a figure stands: the middle of its parts, whatever its rig.
+		local function walker()
+			for _, model in ipairs(visuals:GetChildren()) do
+				if model.Name == "EnemyVisual" then
+					local sum, count = v3(0, 0, 0), 0
+					for _, item in ipairs(model:GetDescendants()) do
+						local position = item.Position
+						if typeof(position) == "Vector3" and position.X == position.X then sum += position; count += 1 end
+					end
+					local middle = count > 0 and sum / count
+					if middle and (v3(middle.X, 0, middle.Z) - start).Magnitude < 12 then return { Position = middle } end
+				end
+			end
+			return nil
+		end
+		local steps, last = {}, nil
+		for _ = 1, 6 do
+			frames(1 / 30, 1)
+			local torso = walker()
+			local at = torso and v3(torso.Position.X, 0, torso.Position.Z)
+			if at and last then table.insert(steps, (at - last).Magnitude) end
+			last = at
+		end
+		local even = #steps == 5
+		for _, stepLength in ipairs(steps) do
+			-- 9 studs/s at 30 fps: about 0.3 studs every frame, never a hop or a stall.
+			if stepLength < 0.15 or stepLength > 0.5 then even = false end
+		end
+		check(even, tag .. ": an enemy moves a steady step every frame between syncs, got " .. table.concat(steps, ", "))
+		fx({ kind = "Clear" })
+		frames(1 / 30, 2)
+	end)
+
 	step("reduced effects still runs every path", function()
 		local calm = veteranProfile()
 		calm.settings.lowFX = true

@@ -62,7 +62,9 @@ def studio_log() -> Path | None:
 def run_command(code: str, index: int) -> None:
     SCRATCH.mkdir(parents=True, exist_ok=True)
     script = SCRATCH / f"command-{index:03d}.lua"
-    script.write_text(code, encoding="utf-8")
+    # A key pressed in Studio while the command bar has focus lands in front
+    # of the text ("qprint(...)"); a stray letter then only renames this line.
+    script.write_text("_ = nil" + chr(10) + code, encoding="utf-8")
     result = subprocess.run(
         ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ROOT / "tools" / "studio_action.ps1"),
          "-Action", "command", "-ScriptPath", str(script)],
