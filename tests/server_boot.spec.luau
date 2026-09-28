@@ -195,7 +195,7 @@ local function join(userId, name)
 	local character = Instance.new("Model")
 	character.Name = name
 	local root = Instance.new("Part")
-	root.Name, root.CFrame, root.Parent = "HumanoidRootPart", CFrame.new(0, 3, 345), character
+	root.Name, root.CFrame, root.Parent = "HumanoidRootPart", CFrame.new(0, 5.5, 480), character
 	local humanoid = Instance.new("Humanoid")
 	humanoid.Parent = character
 	character.Parent = workspace
@@ -257,7 +257,7 @@ local function frames(seconds)
 end
 
 -- Starting a match is walking onto a portal pad: no request is involved.
-local SPAWN = CFrame.new(0, 3, 345)
+local SPAWN = CFrame.new(0, 5.5, 480)
 local function stepInto(player, modeId)
 	local pad = workspace:FindFirstChild("DoomLobby"):FindFirstChild("Portal_" .. modeId):FindFirstChild("Pad")
 	player.Character.HumanoidRootPart.CFrame = CFrame.new(pad.Position + v3(0, 2, 0))
@@ -565,7 +565,7 @@ say("--- training yard ---")
 do
 	local anaRoot = ana.Character:FindFirstChild("HumanoidRootPart")
 	check(not request(ana, "TrainHero", { heroId = "ironman" }).ok, "training needs the player at the yard")
-	anaRoot.CFrame = CFrame.new(0, 3, 585.5)
+	anaRoot.CFrame = CFrame.new(workspace.DoomLobby.TrainingYard.TrainingPad.Position + v3(0, 3, 0))
 	local goldBeforeTraining = latest(ana).profile.gold
 	local firedBefore = #(rawget(remotes.FX, "__fired") or {})
 	local trained = request(ana, "TrainHero", { heroId = "ironman" })
@@ -583,7 +583,7 @@ do
 	check(latest(ana).profile.gold == goldBeforeTraining, "training earns nothing")
 	frames(31)
 	check(workspace.DoomLobby.TrainingYard:FindFirstChild("TrainingHero") == nil, "the stage empties after half a minute")
-	anaRoot.CFrame = CFrame.new(0, 3, 345)
+	anaRoot.CFrame = CFrame.new(0, 5.5, 480)
 end
 
 --==============================================================================

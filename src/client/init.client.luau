@@ -1498,9 +1498,11 @@ local function updateQuestBoard(lobby, p)
 	label.TextColor3 = ready > 0 and C.gold or Color3.fromRGB(230, 240, 244)
 end
 
--- The showroom's props move: the collector drone spins and bobs in its case
--- above its turning ring, as the design brief describes the store.
--- Purely local and cheap; reduced effects leaves them still.
+-- The lobby's props move: the collector drone spins and bobs in its case, the
+-- AFK icons turn, and anything the world tags with Spin/Bob (the globe and its
+-- orbits, the Helicarrier's rotors, the patrolling Quinjet, the prize chests)
+-- or Sway (flags, hinged at the pole) comes alive. Purely local and cheap;
+-- reduced effects leaves them still.
 local lobbyProps = nil
 local function animateLobby(dt)
 	if not state or state.phase ~= "Lobby" then return end
@@ -1508,38 +1510,34 @@ local function animateLobby(dt)
 	if not lobbyProps or (lobbyProps[1] and lobbyProps[1].part.Parent == nil) then
 		lobbyProps = {}
 		local lobby = workspace:FindFirstChild("DoomLobby")
-		-- Each prop turns about a pivot: its own centre for the showroom drone,
-		-- the hub for a rotor blade, the mast for the radar dish.
-		local function collect(model, partName, pivotName, spin, bob)
-			local pivotPart = pivotName and model:FindFirstChild(pivotName)
+		-- Each prop turns about a pivot: its own axes for a showroom piece, a
+		-- vertical axis through SpinCenter (or its own centre) for tagged ones.
+		local function add(child, pivot, spin, bob, rate)
+			table.insert(lobbyProps, {part = child, pivot = pivot, offset = pivot:Inverse() * child.CFrame, spin = spin, bob = bob, rate = rate or 2, angle = 0})
+		end
+		local function collect(model, partName, spin, bob)
 			for _, child in ipairs(model:GetChildren()) do
-				if child.Name == partName and child:IsA("BasePart") then
-					local pivot = pivotPart and CFrame.new(pivotPart.Position) or child.CFrame
-					table.insert(lobbyProps, {part = child, pivot = pivot, offset = pivot:Inverse() * child.CFrame, spin = spin, bob = bob, angle = 0})
-				end
+				if child.Name == partName and child:IsA("BasePart") then add(child, child.CFrame, spin, bob) end
 			end
 		end
 		for _, model in ipairs(lobby and lobby:GetChildren() or {}) do
 			if model.Name == "Shop_collector" then
-				collect(model, "Drone", nil, 1.8, 0.25)
-				collect(model, "DroneRing", nil, -1.2, 0.25)
-			elseif model.Name == "Rotor" then
-				collect(model, "Blade", "RotorHub", 2.6, 0)
-			elseif model.Name == "Radar" then
-				collect(model, "RadarDish", "RadarMast", 0.9, 0)
+				collect(model, "Drone", 1.8, 0.25)
+				collect(model, "DroneRing", -1.2, 0.25)
 			elseif model:GetAttribute("Kind") == "AfkZone" then
-				collect(model, "AfkIcon", nil, 1.4, 0.35)
-			elseif model.Name == "CommandAtrium" then
-				collect(model, "AuroraCrystal", nil, 0.25, 0.12)
-				for _,child in ipairs(model:GetChildren()) do
-					if child.Name=="FestivalPennant" then
-						table.insert(lobbyProps,{part=child,pivot=child.CFrame,offset=CFrame.new(),spin=0,bob=0,angle=0,sway=child.Position.X*0.08})
-					end
+				collect(model, "AfkIcon", 1.4, 0.35)
+			end
+		end
+		for _, child in ipairs(lobby and lobby:GetDescendants() or {}) do
+			if child:IsA("BasePart") then
+				local spin, bob, sway = child:GetAttribute("Spin"), child:GetAttribute("Bob"), child:GetAttribute("Sway")
+				if spin or bob then
+					add(child, CFrame.new(child:GetAttribute("SpinCenter") or child.Position), spin or 0, bob or 0, child:GetAttribute("BobRate"))
+				elseif sway then
+					local hinge = child.CFrame * CFrame.new(-child.Size.X / 2, 0, 0)
+					table.insert(lobbyProps, {part = child, pivot = hinge, offset = hinge:Inverse() * child.CFrame, spin = 0, bob = 0, rate = 2, angle = 0,
+						sway = sway, phase = child.Position.X * 0.08 + child.Position.Z * 0.05})
 				end
-			elseif model.Name == "VillageDetails" then
-				collect(model, "BeaconCrystal", nil, 0.3, 0.15)
-			elseif model.Name == "AuroraSanctuary" then
-				collect(model, "ForestMote", nil, 0.3, 0.7)
 			end
 		end
 	end
@@ -1547,9 +1545,9 @@ local function animateLobby(dt)
 	for _, prop in ipairs(lobbyProps) do
 		prop.angle += dt * prop.spin
 		if prop.sway then
-			prop.part.CFrame=prop.pivot*CFrame.Angles(math.sin(now*1.4+prop.sway)*0.08,0,0)
+			prop.part.CFrame = prop.pivot * CFrame.Angles(0, math.sin(now * 1.6 + prop.phase) * prop.sway, 0) * prop.offset
 		else
-			prop.part.CFrame = prop.pivot * CFrame.new(0, math.sin(now * 2) * prop.bob, 0) * CFrame.Angles(0, prop.angle, 0) * prop.offset
+			prop.part.CFrame = prop.pivot * CFrame.new(0, math.sin(now * prop.rate) * prop.bob, 0) * CFrame.Angles(0, prop.angle, 0) * prop.offset
 		end
 	end
 end

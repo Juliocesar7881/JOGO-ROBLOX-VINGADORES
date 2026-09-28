@@ -203,7 +203,7 @@ def build_tree(role: str, root: Path = ROOT, art_root: Path | None = None) -> ET
 
     spawn, spawn_properties = item(workspace, "SpawnLocation", "EditorSpawn")
     vector3(spawn_properties, "size", (24, 1, 24))
-    coordinate_frame(spawn_properties, "CFrame", (0, 0.5, 340))
+    coordinate_frame(spawn_properties, "CFrame", (0, 0.5, 480))
     color3uint8(spawn_properties, "Color3uint8", (111, 247, 167))
     prop(spawn_properties, "bool", "Anchored", True)
     prop(spawn_properties, "bool", "Neutral", True)

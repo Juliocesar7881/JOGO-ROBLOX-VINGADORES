@@ -1,4 +1,56 @@
-# Refúgio da Aurora — revisão visual
+# Lobby — revisão visual
+
+## Base dos Heróis — 27/09/2026
+
+O lobby foi refeito do zero no estilo das capturas do Toilet Tower Defense
+enviadas pelo proprietário (ver `docs/ART_DIRECTION.md`, "Lobby"). O convés
+do Helicarrier, o bosque da Aurora, a vila e os distritos deram lugar a uma
+ilha tropical dos Vingadores/S.H.I.E.L.D. com centro em `(0, 480)` — bem ao
+norte do quadrado das partidas, para que num servidor único a cidade da
+batalha apareça do outro lado do mar, e não colada nos portais.
+
+- **Praça dos heróis** (spawn): plataforma elevada sobre um fosso de água,
+  estrela dourada com anel de luz, cerca de vidro aceso no cais, quatro
+  pontes com portais iluminados (CAMPANHA, ARENA, ZONA AFK, TORRE • LOJA),
+  anel viário em volta. Farol com a Terra holográfica girando entre duas
+  órbitas e o parkour de sete pedras. Estátuas coloridas do Homem de Ferro e
+  do Capitão América em pedestais dourados com placa. Sete balcões (guia com
+  o Nico, mapas, equipe, bases, academia, missões e salão da fama), cada um
+  com um ícone grande flutuando.
+- **Áreas no anel**: terraço da campanha com os três destinos (sul), arena
+  com placar elevado e refletores (leste), zona AFK com palmeiras (oeste),
+  dois salões de invocação com baú flutuante (noroeste), torre dos
+  Vingadores com a Loja Stark e a armadura em vitrine (norte), hangar com
+  Quinjet, posto de comando com radar e arsenal com o SUV nos cantos.
+- **Ilhas**: expedições (Wakanda com cristais, Asgard com arco dourado e
+  caminho arco-íris), Latvéria (muralha, torres, chamas verdes) e a
+  academia (treino e cartas). No céu, o Helicarrier com rotores girando e um
+  Quinjet patrulhando a ilha; ao nordeste, o horizonte de uma cidade.
+- Cada destino é uma estação: deck de aço, três pads com moldura, portões
+  acesos e o mini-diorama do mapa numa placa com moldura neon.
+
+Contratos preservados: 11 destinos com 3 filas cada, dois salões de
+invocação (agora girados para a praça; as zonas de compra são medidas no
+próprio referencial do salão), cinco quiosques Robux, sete quadros, placar da
+arena, duas câmaras AFK, campo de treino e parkour. As posições dos destinos
+e das câmaras AFK no `Catalog` acompanham a ilha nova.
+
+Verificação: `python tools/test.py` completo aprovado — mundo (4.833
+verificações, incluindo cenário fora dos pisos e das pontes, cada estação
+sobre o seu piso e zero faces sobrepostas), cliente (3.954 em 9 telas),
+servidor (1.105) e simulação de partidas. O lobby tem 2.929 peças e 15
+locais interativos. No Studio, o lobby foi montado no modo de edição e
+percorrido num Play solo: jogador nasce na estrela, placas mostram os mapas,
+globo, órbitas, rotores e Quinjet animam, sem erro de script no log. Um
+problema real só apareceu no Play: estátuas ancoradas depois de posicionadas
+ficavam na origem (o corpo liberado segue a raiz só no passo de física);
+agora são montadas ancoradas e posicionadas por último.
+
+Limites: desempenho e toque em celular real não foram medidos; as fotos dos
+mapas em `assets/map-photos` ainda não estão nas placas (precisam virar
+imagens no Roblox); o horizonte e o Helicarrier são silhuetas simples.
+
+## Refúgio da Aurora — revisão visual (substituída)
 
 ## Arquipélago e correção da rolagem — 25/09/2026
 

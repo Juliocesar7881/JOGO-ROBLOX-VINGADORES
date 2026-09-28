@@ -96,11 +96,15 @@ local shared = game:GetService("ReplicatedStorage"):WaitForChild("DoomShared")
 local server = game:GetService("ServerScriptService"):WaitForChild("DoomServer")
 local function fresh(module) local copy = module:Clone(); return require(copy) end
 local catalog = fresh(shared.Catalog)
+-- Every lobby build is terrain plus parts; start from bare terrain so an older
+-- layout's sea or islands never linger in the editor's copy.
+workspace.Terrain:Clear()
 local world = fresh(server.WorldBuilder).new(catalog, function() end)
 local base = workspace:FindFirstChild("EditorBaseplate")
 if base then base.Transparency, base.CanCollide = 1, false end
+local hub = world.lobbySpawn
 local camera = workspace.CurrentCamera
-camera.CFrame = CFrame.lookAt(Vector3.new(0, 230, 150), Vector3.new(0, 0, 350))
+camera.CFrame = CFrame.lookAt(hub + Vector3.new(0, 230, -200), hub)
 local parts = 0
 for _, item in ipairs(workspace.DoomLobby:GetDescendants()) do if item:IsA("BasePart") then parts += 1 end end
 print("DOOM_PREVIEW_OK", parts)

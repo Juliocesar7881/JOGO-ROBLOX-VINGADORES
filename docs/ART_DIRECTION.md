@@ -80,6 +80,37 @@ escuras com olhos verdes luminosos de tamanhos diferentes e mandíbula aberta.
 Nível 2 ombreiras, 3 braceletes luminosos, 4 emblema no peito, 5 mãos e
 auréola na cor do ramo (quente = ramo 1, fria = ramo 2).
 
+## Lobby: Base dos Heróis
+
+Referência do proprietário (27/09/2026): capturas do lobby do Toilet Tower
+Defense — praça elevada cercada de vidro iluminado, placas ilustradas
+enormes, títulos flutuando sobre cada área, filas com pads que brilham, água
+azul e muita vegetação. A tradução para o nosso universo é uma ilha-base
+tropical dos Vingadores/S.H.I.E.L.D., sempre de tarde e ensolarada.
+
+- Paleta: pedra clara `#CED5E0`, aço `#46546E`, marinho `#1C2640`, ciano
+  `#40D4FF`, vidro aceso `#96F0FF`, dourado `#FFC440`, lâmpada `#FFD480`;
+  árvores redondas em dois verdes, areia `#F0DCA8`, mar turquesa.
+- Cada área tem **uma cor-assinatura, uma placa ilustrada gigante e um
+  marco**: campanha (verde-água, horizonte de Manhattan), arena (laranja,
+  placar e refletores), zona AFK (azul, lua), invocação (dourado/rosa, baú),
+  expedições (roxo, cristais de vibranium e arco de Asgard), Latvéria (verde,
+  muralha com chamas), academia (violeta, alvo e cartas gigantes).
+- Um só vocabulário (`Kit` em `WorldBuilder.luau`): cerca de vidro aceso,
+  poste, árvore, palmeira, canteiro, escada com nariz de neon, marcas
+  amarelas de canto, bandeira, estrela, placa ilustrada e título flutuante.
+  Nada novo entra no lobby fora desse kit.
+- Placas são desenhadas com GUI (céu em gradiente, raios de sol, ilustração,
+  título LuckiestGuy com contorno) — nenhuma imagem enviada.
+- Neon com bloom é o que faz o lobby brilhar: em frisos, vidro e anéis, nunca
+  em superfícies grandes de piso.
+- Movimento só no cliente, por atributo (`Spin`, `Bob`, `SpinCenter`,
+  `Sway`): globo holográfico e órbitas, rotores do Helicarrier, Quinjet em
+  patrulha, baús de prêmio, ícones dos balcões, bandeiras. "Menos efeitos"
+  congela tudo.
+- Cenário nunca pisa em piso de área, ponte ou fila (há teste para isso).
+- Sem logotipos oficiais da Marvel: estrela e emblemas estilizados.
+
 ## Interface
 
 Fonte de destaque FredokaOne com contorno escuro; texto de apoio Gotham.

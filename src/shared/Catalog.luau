@@ -396,25 +396,26 @@ Catalog.Enemies = {
 Catalog.PortalOrder = { "tutorial", "normal", "ranked", "cards" }
 Catalog.CampaignWaves = { manhattan = 40, gamma = 50, hydra = 50, wakanda = 50, asgard = 50, latveria = 70 }
 -- Each entrance is an authored destination, with a fixed map and ruleset.
--- The lobby is laid out in districts: three campaign portals in the centre,
--- the competitive arena on the east side, and the three island extensions:
--- Wakanda and Asgard on the west island, the final expedition (Latveria) on
--- the east island, training and cards on the north island. facing turns a
--- portal about Y; 0 faces +Z.
+-- The lobby is the Heroes' HQ island (hub at 0, 480; WorldBuilder LAYOUT):
+-- three campaign stations on the terrace south of the hub, the competitive
+-- arena east of it, and the three island extensions: Wakanda and Asgard on
+-- the west island, the final expedition (Latveria) on the east island,
+-- training and cards on the academy island to the north. facing turns a
+-- station about Y; 0 faces +Z. Every station faces the way players arrive.
 Catalog.DestinationOrder = { "normal", "normal_gamma", "normal_hydra", "normal_wakanda", "normal_asgard", "normal_latveria",
 	"ranked", "ranked_wakanda", "ranked_latveria", "cards", "training" }
 Catalog.Destinations = {
-	normal = {modeId="normal",mapId="manhattan",x=-50,z=300,district="center"},
-	normal_gamma = {modeId="normal",mapId="gamma",x=0,z=292,district="center"},
-	normal_hydra = {modeId="normal",mapId="hydra",x=50,z=300,district="center"},
-	normal_wakanda = {modeId="normal",mapId="wakanda",x=-232,z=408,facing=math.pi/2,district="expedition"},
-	normal_asgard = {modeId="normal",mapId="asgard",x=-232,z=444,facing=math.pi/2,district="expedition"},
-	normal_latveria = {modeId="normal",mapId="latveria",x=234,z=460,facing=-math.pi/2,district="expedition"},
-	ranked = {modeId="ranked",mapId="hydra",x=108,z=306,facing=-math.pi/2,district="arena"},
-	ranked_wakanda = {modeId="ranked",mapId="wakanda",x=108,z=341,facing=-math.pi/2,district="arena"},
-	ranked_latveria = {modeId="ranked",mapId="latveria",x=108,z=376,facing=-math.pi/2,district="arena"},
-	cards = {modeId="cards",mapId="gamma",x=18,z=598,facing=math.pi,district="special"},
-	training = {modeId="tutorial",mapId="manhattan",x=-18,z=598,facing=math.pi,district="special"},
+	normal = {modeId="normal",mapId="manhattan",x=-42,z=369,district="center"},
+	normal_gamma = {modeId="normal",mapId="gamma",x=0,z=363,district="center"},
+	normal_hydra = {modeId="normal",mapId="hydra",x=42,z=369,district="center"},
+	normal_wakanda = {modeId="normal",mapId="wakanda",x=-232,z=543,facing=math.pi/2,district="expedition"},
+	normal_asgard = {modeId="normal",mapId="asgard",x=-232,z=579,facing=math.pi/2,district="expedition"},
+	normal_latveria = {modeId="normal",mapId="latveria",x=234,z=595,facing=-math.pi/2,district="expedition"},
+	ranked = {modeId="ranked",mapId="hydra",x=112,z=447,facing=-math.pi/2,district="arena"},
+	ranked_wakanda = {modeId="ranked",mapId="wakanda",x=112,z=480,facing=-math.pi/2,district="arena"},
+	ranked_latveria = {modeId="ranked",mapId="latveria",x=112,z=513,facing=-math.pi/2,district="arena"},
+	cards = {modeId="cards",mapId="gamma",x=18,z=733,facing=math.pi,district="special"},
+	training = {modeId="tutorial",mapId="manhattan",x=-18,z=733,facing=math.pi,district="special"},
 }
 -- AFK farm: standing in one of these lobby chambers pays a small amount every
 -- minute, measured and paid by the server. Deliberately far below playing:
@@ -422,9 +423,9 @@ Catalog.Destinations = {
 Catalog.AfkOrder = { "gold", "xp" }
 Catalog.Afk = {
 	interval = 60,
-	gold = { id = "gold", gold = 5, xp = 0, x = -112, z = 318, color = { 255, 206, 82 },
+	gold = { id = "gold", gold = 5, xp = 0, x = -112, z = 453, color = { 255, 206, 82 },
 		name = text("Farm de Ouro AFK", "AFK Gold Farm"), rate = text("+5 OURO POR MINUTO", "+5 GOLD PER MINUTE") },
-	xp = { id = "xp", gold = 0, xp = 10, x = -112, z = 368, color = { 120, 200, 255 },
+	xp = { id = "xp", gold = 0, xp = 10, x = -112, z = 503, color = { 120, 200, 255 },
 		name = text("Farm de XP AFK", "AFK XP Farm"), rate = text("+10 XP POR MINUTO", "+10 XP PER MINUTE") },
 }
 Catalog.Maps.asgard = {

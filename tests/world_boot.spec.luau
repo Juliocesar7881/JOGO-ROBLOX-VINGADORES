@@ -63,42 +63,82 @@ do
 	check(moves==1,"absent match participants are never moved by lobby recovery")
 end
 
-local sanctuary=lobby:FindFirstChild("AuroraSanctuary")
-check(sanctuary~=nil,"Forest sanctuary is owned by the lobby model")
-if sanctuary then
-	local ground=sanctuary:FindFirstChild("ForestGround")
-	check(ground and ground.CanCollide and ground.Size.Y>=300,"Expanded forest has a walkable island surface")
-	local trees,stones,trails=0,0,0
-	for _,piece in ipairs(sanctuary:GetChildren()) do
-		if piece.Name=="ForestTree" and piece:FindFirstChild("ForestTrunk") then trees+=1 end
-		if piece.Name=="JumpStone" and piece.CanCollide then stones+=1 end
-		if piece.Name=="ForestTrail" and piece.CanCollide then trails+=1 end
-		if piece:IsA("BasePart") then check(piece.Position.Z>150,"Forest stays outside all combat terrain bounds") end
+-- The Heroes' HQ: a hub island with a raised plaza, landmarks every child
+-- can name, and scenery that never stands in anyone's way.
+local hq = lobby:FindFirstChild("HeroesHQ")
+check(hq ~= nil, "the HQ scenery is owned by the lobby model")
+do
+	local hub = WorldBuilder.HQ.hub
+	check((world.lobbySpawn - hub).Magnitude < 8 and world.lobbySpawn.Y > WorldBuilder.HQ.plazaY, "everyone spawns on the raised hero plaza")
+	check(hub.Z - 176 > 250, "the island lies well away from the battlefield square")
+	for _, name in ipairs({ "HubDeck", "PlazaDeck", "RingRoad" }) do
+		local piece = hq and hq:FindFirstChild(name)
+		check(piece ~= nil and piece.CanCollide, "walkable hub surface: " .. name)
 	end
-	-- The districts took over the corners; the forest still rings the island.
-	check(trees>=20,"Forest surrounds the plaza with mature trees, got "..tostring(trees))
-	-- Clearing a district keeps or removes a whole tree: every trunk keeps its
-	-- four branches and crowns, and nothing leafy is left without a trunk.
-	for _,grove in ipairs(lobby:GetDescendants()) do
-		if grove:IsA("Model") and (grove.Name=="ForestTree" or grove.Name=="AuroraTree" or grove.Name=="OuterTree") then
-			local trunks,crowns,branches=0,0,0
-			for _,piece in ipairs(grove:GetChildren()) do
-				if piece.Name:find("Trunk") then trunks+=1 end
-				if piece.Name:find("Canopy") then crowns+=1 end
-				if piece.Name=="TreeBranch" then branches+=1 end
+	local bridges, islandBridges = 0, 0
+	for _, piece in ipairs(hq and hq:GetChildren() or {}) do
+		if piece:GetAttribute("BridgeId") then
+			check(piece.CanCollide and piece.Size.X >= 10, "a bridge has a solid walkable deck: " .. piece.Name)
+			if piece.Name == "IslandBridge" then islandBridges += 1 else bridges += 1 end
+		end
+	end
+	check(bridges == 4 and islandBridges == 3, "four bridges cross the moat and three reach the islands, got " .. bridges .. "/" .. islandBridges)
+	-- Landmarks.
+	local beacon = lobby:FindFirstChild("HeroBeacon")
+	local stones = 0
+	for _, piece in ipairs(beacon and beacon:GetChildren() or {}) do
+		if piece.Name == "JumpStone" and piece.CanCollide then stones += 1 end
+	end
+	check(stones == 7, "seven jump stones spiral up the hero beacon, got " .. stones)
+	check(lobby:FindFirstChild("HeroTower") and lobby.HeroTower:FindFirstChild("TowerShaft") ~= nil, "the tower rises over the north road")
+	local statues = lobby:FindFirstChild("HeroStatues")
+	check(statues and statues:FindFirstChild("Statue_ironman") and statues:FindFirstChild("Statue_captain"), "two golden statues greet the plaza")
+	local outpost = hq and hq:FindFirstChild("ShieldOutpost")
+	for _, name in ipairs({ "QuinjetHull", "HelicarrierHull", "RadarDish", "CommandModule", "ArmoryDepot" }) do
+		check(outpost and outpost:FindFirstChild(name, true) ~= nil, "S.H.I.E.L.D. set piece: " .. name)
+	end
+	check(hq and hq:FindFirstChild("CitySkyline") ~= nil, "a city skyline stands across the bay")
+	-- Every area has its big illustrated sign, localized.
+	for _, name in ipairs({ "CampaignSign", "AfkSign", "SummonSign", "ExpeditionSign", "LatveriaSign", "AcademySign" }) do
+		local sign = hq and hq:FindFirstChild(name)
+		local title = sign and sign:FindFirstChild("Title", true)
+		check(title ~= nil and title:GetAttribute("LobbyTextPT") ~= nil and title:GetAttribute("LobbyTextEN") ~= nil, "area sign with a localized title: " .. name)
+	end
+	-- Things that move on the client: the globe, orbits, rotors, the patrol.
+	local spinning = 0
+	for _, piece in ipairs(lobby:GetDescendants()) do
+		if piece:IsA("BasePart") and (piece:GetAttribute("Spin") or 0) ~= 0 then spinning += 1 end
+	end
+	check(spinning >= 30, "the lobby has living, moving set pieces, got " .. spinning)
+	-- Scenery stays off every area floor, off the hub and off the bridges.
+	local function onFloor(position, margin)
+		for _, id in ipairs({ "campaign", "arena", "afk", "academy", "expedition", "latveria" }) do
+			local center, width, depth = WorldBuilder.LobbyFloor(id)
+			if math.abs(position.X - center.X) <= width / 2 + margin and math.abs(position.Z - center.Z) <= depth / 2 + margin then return id end
+		end
+		return nil
+	end
+	local misplaced = {}
+	for _, grove in ipairs(hq and hq:GetChildren() or {}) do
+		if grove:IsA("Model") and (grove.Name == "HQTree" or grove.Name == "HQPalm") and not grove:GetAttribute("Planted") then
+			local trunk = grove:FindFirstChild("TreeTrunk") or grove:FindFirstChild("PalmTrunk")
+			local at = trunk and trunk.Position
+			if at then
+				local offset = v3(at.X - hub.X, 0, at.Z - hub.Z)
+				local area = onFloor(at, 1)
+				if area or offset.Magnitude < 100 then table.insert(misplaced, grove.Name .. "@" .. (area or "hub")) end
+				for _, zone in pairs(world.portalZones) do
+					if v3(at.X - zone.center.X, 0, at.Z - zone.center.Z).Magnitude < 12 then table.insert(misplaced, grove.Name .. "@portal") end
+				end
 			end
-			local full=grove.Name=="OuterTree" and crowns==3 or (crowns==4 and branches==4)
-			check(trunks==1 and full,"a whole tree, crown and all: "..grove.Name.." "..trunks.."/"..branches.."/"..crowns)
 		end
 	end
-	for _,piece in ipairs(lobby:GetDescendants()) do
-		if piece:IsA("BasePart") and (piece.Name=="ForestTrunk" or piece.Name=="ForestCanopy" or piece.Name=="TreeBranch" or piece.Name=="OuterTrunk" or piece.Name=="OuterCanopy") then
-			check(piece.Parent and (piece.Parent.Name=="ForestTree" or piece.Parent.Name=="AuroraTree" or piece.Parent.Name=="OuterTree"),"tree pieces live in their tree: "..piece.Name)
-		end
+	check(#misplaced == 0, "trees and palms stand on free grass only: " .. table.concat(misplaced, ", "))
+	-- Every station stands on its area's paved floor.
+	for portalId, destination in pairs(Catalog.Destinations) do
+		check(onFloor(v3(destination.x, 0, destination.z), -2) ~= nil, "station " .. portalId .. " stands on an area floor")
 	end
-	check(stones==7 and trails>=7,"Exploration paths and jumping stones are traversable")
-	check(sanctuary:FindFirstChild("AuroraHeart")~=nil and sanctuary:FindFirstChild("AuroraFalls")~=nil,"Tree landmark and waterfall exist")
-	check(countClass(lobby,"BasePart")<3500,"Expanded lobby remains under its geometry budget, got "..tostring(countClass(lobby,"BasePart")))
+	check(countClass(lobby, "BasePart") < 3600, "the lobby remains under its geometry budget, got " .. tostring(countClass(lobby, "BasePart")))
 end
 -- Coplanar overlapping faces flicker (z-fighting) as the camera moves.
 do
@@ -117,8 +157,9 @@ do
 	end
 	check(shadowless > shadowed * 5, "most lobby parts skip shadow-casting, got "
 		.. tostring(shadowed) .. " shadowed vs " .. tostring(shadowless) .. " not")
-	local hull = lobby:FindFirstChild("Helicarrier")
-	check(hull ~= nil and hull.CastShadow == true, "the helicarrier hull still casts a shadow")
+	local shaft = lobby:FindFirstChild("TowerShaft", true)
+	local wing = lobby:FindFirstChild("PodiumWing", true)
+	check(shaft ~= nil and shaft.CastShadow == true and wing ~= nil and wing.CastShadow == true, "the tower's landmark volumes still cast shadows")
 	local lobbyEmitters = countClass(lobby, "ParticleEmitter")
 	check(lobbyEmitters <= #Catalog.AfkOrder + 2, "boarding pads use static light instead of multiplying emitters, got " .. tostring(lobbyEmitters))
 end
@@ -213,8 +254,10 @@ do
 	check(world:NearMarket(visitor,"hero"),"purchase stays available inside the hero hall")
 	root.Position=world.shopZones.base_rare.purchaseCenter
 	check(world:NearMarket(visitor,"base") and not world:NearMarket(visitor,"hero"),"base hall authorizes only base summons")
-	root.Position=v3(-80,4,370)
-	check(not world:NearMarket(visitor),"the market approach is not a purchase zone")
+	root.Position=world.lobbySpawn
+	check(not world:NearMarket(visitor),"the spawn plaza is not a purchase zone")
+	root.Position=world.shopZones.rare.center+world.shopZones.rare.frame.LookVector*-40
+	check(not world:NearMarket(visitor),"the approach in front of a hall is not a purchase zone")
 	root.Position=world.shopZones.rare.center
 	local start=#panels
 	world:StepShopEntries({visitor})
@@ -258,12 +301,13 @@ for _,id in ipairs({"guide","inventory","talents","bases"}) do
 end
 for _,id in ipairs({"quests","leaderboard"}) do
 	local board=lobby:FindFirstChild("Board_"..id)
-	check(board.PrimaryPart.Position.Z>345,"public notice board is reachable from the forest approach: "..id)
+	local offset=board.PrimaryPart.Position-WorldBuilder.HQ.hub
+	check(v3(offset.X,0,offset.Z).Magnitude<60,"public notice board stands on the hub, facing the plaza: "..id)
 	check(board:FindFirstChild("Post")==nil,"central support no longer obscures notice text: "..id)
 end
-local details=lobby:FindFirstChild("VillageDetails")
+local details=lobby:FindFirstChild("HubServices")
 check(details and details:FindFirstChild("GuideHead")~=nil,"Nico welcomes players at the guide desk")
-check(countClass(details,"Seat")==3,"village benches provide usable seats")
+check(details and countClass(details,"Seat")==3,"hub benches provide usable seats")
 check(world.leaderboardText ~= nil, "the leaderboard totem exposes a text label to update")
 
 -- Lobby districts: AFK chambers are walk-in zones the server reads, and the
@@ -282,7 +326,7 @@ do
 		end
 		check(lobby:FindFirstChild("AfkZone_" .. kind) ~= nil, "AFK chamber model exists: " .. kind)
 	end
-	check(world:AfkZoneOf(visitorAt(v3(0, 4, 345))) == nil, "the spawn plaza is not an AFK farm")
+	check(world:AfkZoneOf(visitorAt(world.lobbySpawn)) == nil, "the spawn plaza is not an AFK farm")
 	check(world:AfkZoneOf({ Character = nil }) == nil, "a player without a character farms nothing")
 	for portalId, zone in pairs(world.portalZones) do
 		for _, kind in ipairs(Catalog.AfkOrder) do
@@ -298,12 +342,9 @@ do
 	check(columns.hydra and columns.hydra:find("Campeão") ~= nil, "the arena shows the top ranked player of each map")
 	check(columns.wakanda == "Seja o primeiro!", "an empty ranked map invites the first player")
 	check(columns.latveria == "Carregando…", "a map without fresh data keeps its previous text")
-	for _, d in ipairs(WorldBuilder.Districts or {}) do
-		local floor
-		for _, obj in ipairs(lobby:GetDescendants()) do
-			if obj.Name == "DistrictFloor" and obj:GetAttribute("District") == d.id then floor = obj end
-		end
-		check(floor ~= nil, "district has its own floor: " .. d.id)
+	for _, name in ipairs({ "CampaignTerrace", "ArenaFloor", "AfkFloor", "AcademyPlaza", "ExpeditionPlaza", "LatveriaPlaza", "TowerPlaza", "MarketFloor", "HangarFloor", "CommandFloor", "ArmoryFloor" }) do
+		local floor = hq and hq:FindFirstChild(name)
+		check(floor ~= nil and floor.CanCollide, "area has its own walkable floor: " .. name)
 	end
 end
 
@@ -385,10 +426,9 @@ do
 	local dummies = 0
 	for _, child in ipairs(yard and yard:GetChildren() or {}) do if child.Name == "TrainingDummy" then dummies += 1 end end
 	check(dummies == #WorldBuilder.Training.dummies and dummies >= 3, "the yard has its dummies, got " .. dummies)
-	local special
-	for _, d in ipairs(WorldBuilder.Districts) do if d.id == "special" then special = d end end
+	local academy, width, depth = WorldBuilder.LobbyFloor("academy")
 	for _, spot in ipairs({ WorldBuilder.Training.stage, WorldBuilder.Training.pad, table.unpack(WorldBuilder.Training.dummies) }) do
-		check(special and spot.X > special.x0 and spot.X < special.x1 and spot.Z > special.z0 and spot.Z < special.z1, "the yard stays inside the training district")
+		check(math.abs(spot.X - academy.X) < width / 2 and math.abs(spot.Z - academy.Z) < depth / 2, "the yard stays on the academy plaza")
 		for portalId, destination in pairs(Catalog.Destinations) do
 			check(math.abs(spot.X - destination.x) > 9 or math.abs(spot.Z - destination.z) > 9, "the yard keeps clear of portal " .. portalId)
 		end
@@ -400,7 +440,7 @@ do
 	world:StepShopEntries({ trainee })
 	check(#panels == before + 1 and panels[#panels].panel == "training", "stepping on the yard pad opens the training panel once")
 	check(world:NearTraining(trainee), "standing on the pad is near the yard")
-	root.Position = v3(0, 4, 345)
+	root.Position = world.lobbySpawn
 	check(not world:NearTraining(trainee), "the spawn plaza is not near the yard")
 	local figure = world:ShowTrainingHero("hulk", 17)
 	check(figure ~= nil and figure.Parent == yard and figure:GetAttribute("HeroId") == "hulk", "a chosen hero stands on the stage")
@@ -470,38 +510,26 @@ do
 end
 
 local totalPrompts = countClass(lobby, "ProximityPrompt")
-local archipelago=lobby:FindFirstChild("AuroraArchipelago")
-check(archipelago~=nil,"exploration archipelago is built")
-if archipelago then
-	local bridges,islands,seats=0,0,0
-	for _,obj in ipairs(archipelago:GetChildren()) do
-		if obj:GetAttribute("ExplorationIsland") then
-			islands+=1
-			check(obj.CanCollide and obj.Size.Y>=120,"exploration island has a broad solid ground")
-		end
-		if obj:GetAttribute("BridgeId") then
-			bridges+=1
-			check(obj.CanCollide and obj.Size.X>=10,"bridge has a solid walkable deck")
-		end
-		if obj:IsA("Seat") then seats+=1 end
-	end
-	check(islands==3 and bridges==3,"all three exploration islands have a bridge")
-	check(seats>=9,"new areas provide real usable seats")
-	check(archipelago:FindFirstChild("ExplorerStair")~=nil,"lookout has walkable stairs")
-	check(archipelago:FindFirstChild("TelescopeTube")~=nil,"star garden has its telescope landmark")
-	-- Keep a player-width corridor free of scenery along every new bridge.
-	for _,route in ipairs({{-120,400,-165,419},{119,431,157,447},{0,484,0,516}}) do
-		local dx,dz=route[3]-route[1],route[4]-route[2]
-		for _,obj in ipairs(archipelago:GetChildren()) do
-			if obj.Name=="IslandOutcrop" or obj.Name=="VillageLampFoot" or obj.Name=="OuterTrunk" then
-				local x,z=obj.Position.X,obj.Position.Z
-				local t=math.clamp(((x-route[1])*dx+(z-route[2])*dz)/(dx*dx+dz*dz),0,1)
-				local distance=math.sqrt((x-route[1]-t*dx)^2+(z-route[2]-t*dz)^2)
-				local radius=math.sqrt(obj.Size.X^2+obj.Size.Z^2)*0.5
-				check(distance>radius+2.5,"bridge corridor is clear of "..obj.Name)
+-- A player-width corridor stays free of scenery along every bridge.
+do
+	local blocked = {}
+	for _, bridge in ipairs(hq and hq:GetChildren() or {}) do
+		if bridge:GetAttribute("BridgeId") then
+			local a = bridge.CFrame * v3(0, 0, bridge.Size.Z / 2)
+			local b = bridge.CFrame * v3(0, 0, -bridge.Size.Z / 2)
+			local ab = v3(b.X - a.X, 0, b.Z - a.Z)
+			for _, piece in ipairs(lobby:GetDescendants()) do
+				if piece:IsA("BasePart") and piece.CanCollide and piece.Parent ~= nil and piece.Position.Y > 0.9 and piece.Position.Y < 8
+					and not piece:GetAttribute("BridgeId") and piece.Name:sub(1, 5) ~= "Fence" and piece.Name:sub(1, 4) ~= "Gate" and piece.Name ~= "BridgeBeam" then
+					local p = piece.Position
+					local t = math.clamp(((p.X - a.X) * ab.X + (p.Z - a.Z) * ab.Z) / (ab.X * ab.X + ab.Z * ab.Z), 0, 1)
+					local gap = v3(p.X - a.X - ab.X * t, 0, p.Z - a.Z - ab.Z * t).Magnitude
+					if gap < 3.5 then table.insert(blocked, piece.Name .. "@" .. tostring(bridge:GetAttribute("BridgeId"))) end
+				end
 			end
 		end
 	end
+	check(#blocked == 0, "every bridge corridor is clear: " .. table.concat(blocked, ", "))
 end
 -- Chests, Robux stands, boards and desks, plus the arena scoreboard kiosk.
 local expectedPrompts = 2 + 5 + 7 + 1
@@ -593,10 +621,12 @@ do
 		Coin = true, VentGlow = true, CoreRing = true, Manhole = true, PlazaMosaic = true, Helipad = true,
 		HelipadRing = true, HelipadInner = true, CourtCircle = true, Needles = true, SnowCap = true, Canopy = true,
 		VibraniumRing = true, GoldCrown = true, TowerRoof = true, CoolingGlow = true,
+		HubDeck = true, PlazaDeck = true, PlazaBase = true, JumpStone = true, StatueBase = true, AfkPlatform = true, LandingDeck = true,
 	}
 	local COLUMNS = {
 		CoreColumn = true, LampPole = true, Trunk = true, CoolingTower = true, WaterTank = true, Chimney = true,
 		Hydrant = true, Bin = true, Barrel = true, FireBarrel = true,
+		TreeTrunk = true, BeaconPillar = true, FloodMast = true, FlagPole = true, SignLeg = true, FortressTower = true, AcademyColumn = true,
 	}
 	local wrong, seen = {}, 0
 	local function inspect(root)
@@ -632,7 +662,7 @@ for _ in pairs(seenClockTimes) do distinctMoods += 1 end
 check(distinctMoods == #Catalog.MapOrder,
 	"every chapter has its own lighting mood, got " .. tostring(distinctMoods) .. "/" .. tostring(#Catalog.MapOrder))
 world:ApplyLobbyLighting()
-check(lighting.FogEnd == 900, "returning to the lobby restores its own fog and mood, not the last chapter's")
+check(lighting.FogEnd == 2600 and lighting.ClockTime == 14.3, "returning to the lobby restores its own fog and mood, not the last chapter's")
 print(string.format("  %d moods distintos", distinctMoods))
 
 --==============================================================================
