@@ -115,7 +115,7 @@ local campaignWaves = {}
 -- Final art made in Studio (tools/build.py embeds assets/models into
 -- ReplicatedStorage.DoomArt): a Model per hero or enemy id. When one exists it
 -- replaces the generated figure everywhere the figure is used — towers,
--- portraits, the training yard — and changes nothing but the look.
+-- portraits — and changes nothing but the look.
 local function artTemplate(kind, id)
 	local art = game:GetService("ReplicatedStorage"):FindFirstChild("DoomArt")
 	local folder = art and art:FindFirstChild(kind)
@@ -1293,7 +1293,7 @@ function Figure.PublishEnemies(catalog)
 	return folder
 end
 
--- A hero's figure wherever it appears: the tower, the portrait, the training
+-- A hero's figure wherever it appears: the tower, the portrait, the
 -- yard. Final art from Studio wins; otherwise the jointed figure is built.
 local function heroFigure(parent, heroId, hero, origin, scale)
 	local template = artTemplate("Heroes", heroId)
@@ -1938,16 +1938,6 @@ local function inZone(position, zone, margin, center, size, frame)
 	return math.abs(offset.X) <= size.X / 2 + margin and math.abs(offset.Y) <= size.Y / 2 + margin and math.abs(offset.Z) <= size.Z / 2 + margin
 end
 
--- Training yard in front of the training and cards portals on the academy
--- island, between their two lanes: a stage, a pad and three dummies. Watching
--- a hero attack here grants nothing; it only shows how far and how fast each
--- one reaches.
-local TRAINING = { stage = hubAt(0, 234), pad = hubAt(0, 240.5),
-	-- Narrow enough that, seen from the bridge, the dummies stay between the
-	-- two portals instead of covering their "ENTER" plates.
-	dummies = { hubAt(-4, 228.5), hubAt(0, 226.5), hubAt(4, 228.5) } }
-World.Training = TRAINING
-
 -- Lighting is one global service, shared by the lobby and whichever match map
 -- is built. Standalone servers keep both areas in the same Workspace, so
 -- whoever finishes a match and walks back must see the lobby's own mood
@@ -2416,7 +2406,7 @@ end
 -- AFK lounge (west), the summon halls (north-west), the tower with the Robux
 -- kiosks (north), S.H.I.E.L.D. on the corners, three island extensions and a
 -- city skyline across the bay. Functional pieces (portals, halls, kiosks,
--- boards, AFK chambers, the scoreboard, the training yard) are direct
+-- boards, AFK chambers, the scoreboard) are direct
 -- children of the lobby; scenery lives in HeroesHQ.
 function World:BuildLobby()
 	local old = workspace:FindFirstChild("DoomLobby")
@@ -2450,7 +2440,6 @@ function World:BuildLobby()
 	self:BuildShieldSites(hq)
 	self:BuildIslands(hq)
 	self:BuildHeroCameos(hq)
-	self:BuildTrainingYard(lobby)
 	self:BuildHorizon(hq)
 	self:DressHeroesHQ(hq)
 	-- Last: no two surfaces of the finished lobby may share a plane.
@@ -3437,6 +3426,11 @@ function World:BuildIslands(hq)
 			Kit.star(hq, "CardStar", card.Position - card.CFrame.RightVector * 0.35, card.CFrame.LookVector, card.CFrame.UpVector, 2, i == 1 and HQ.white or Color3.fromRGB(230, 60, 90), Enum.Material.Neon, 0.1)
 		end
 		Kit.cornerMarks(hq, c, width / 2 - 2, depth / 2 - 2, violet, GROUND_Y + 0.05, 0)
+		-- The academy crest: a violet ring and a gold star inlaid in the plaza.
+		local crest = V(c.X, GROUND_Y, c.Z - 11)
+		Kit.disc(hq, "AcademyCrestRing", crest + V(0, 0.04, 0), 16, 0.08, violet, Enum.Material.Neon)
+		Kit.disc(hq, "AcademyCrest", crest + V(0, 0.07, 0), 14.6, 0.08, HQ.navy, Enum.Material.SmoothPlastic)
+		Kit.star(hq, "AcademyStar", crest + V(0, 0.13, 0), V(1, 0, 0), V(0, 0, 1), 6, HQ.gold, Enum.Material.SmoothPlastic, 0.06)
 		for _, spot in ipairs({ { -60, -30, 1 }, { 60, -30, 0.9 }, { -64, 38, 1.1 }, { 64, 38, 1 } }) do Kit.tree(hq, V(c.X + spot[1], GRASS_Y, c.Z + spot[2]), spot[3]) end
 	end
 end
@@ -3634,79 +3628,9 @@ function World:StepShopEntries(players)
 					break
 				end
 			end
-			if not occupants[player.UserId] and inside(self.shopZones.training,0) then
-				occupants[player.UserId]="training"
-				self.openPanel(player,"training",{})
-			end
 		end
 	end
 	self.shopOccupants=occupants
-end
-
--- The training yard on the academy plaza (see TRAINING).
-function World:BuildTrainingYard(lobby)
-	local yard = Instance.new("Model")
-	yard.Name, yard.Parent = "TrainingYard", lobby
-	local flat = CFrame.Angles(0, 0, math.pi / 2)
-	local stage = TRAINING.stage
-	local platform = artPart(yard, "TrainingStage", Vector3.new(0.5, 6, 6), CFrame.new(stage.X, GROUND_Y + 0.25, stage.Z) * flat, Color3.fromRGB(65, 83, 107), Enum.Material.Metal)
-	platform.Shape = Enum.PartType.Cylinder
-	local range = artPart(yard, "TrainingRange", Vector3.new(0.08, 20, 20), CFrame.new(stage.X, GROUND_Y + 0.16, stage.Z) * flat, ART.gold, Enum.Material.Neon)
-	range.Shape, range.Transparency = Enum.PartType.Cylinder, 1
-	local pad = artPart(yard, "TrainingPad", Vector3.new(5, 0.12, 5), CFrame.new(TRAINING.pad.X, GROUND_Y + 0.2, TRAINING.pad.Z), Color3.fromRGB(88, 214, 141), Enum.Material.Neon)
-	pad.Transparency = 0.3
-	local title = label(pad, "CAMPO DE TREINO\npise aqui • sem recompensas", Vector3.new(0, 8.5, 0), ART.gold, 230, 90)
-	title.Font = Enum.Font.FredokaOne
-	for _, spot in ipairs(TRAINING.dummies) do
-		local dummy = Instance.new("Model")
-		dummy.Name, dummy.Parent = "TrainingDummy", yard
-		artPart(dummy, "Post", Vector3.new(0.5, 3.4, 0.5), CFrame.new(spot.X, GROUND_Y + 1.7, spot.Z), Color3.fromRGB(122, 86, 58), Enum.Material.Wood)
-		artPart(dummy, "Body", Vector3.new(2, 2.2, 1), CFrame.new(spot.X, GROUND_Y + 3.6, spot.Z), Color3.fromRGB(238, 214, 160), Enum.Material.Fabric)
-		local head = artPart(dummy, "Head", Vector3.new(1.4, 1.4, 1.4), CFrame.new(spot.X, GROUND_Y + 5.4, spot.Z), Color3.fromRGB(238, 214, 160), Enum.Material.Fabric)
-		head.Shape = Enum.PartType.Ball
-		-- The target faces the stage, so every shot visibly lands on it.
-		artPart(dummy, "Target", Vector3.new(1.1, 1.1, 0.1), CFrame.new(spot.X, GROUND_Y + 3.7, spot.Z + 0.52), Color3.fromRGB(233, 72, 72), Enum.Material.Neon)
-	end
-	self.trainingYard, self.trainingRange = yard, range
-	self.shopZones.training = { center = Vector3.new(TRAINING.pad.X, GROUND_Y + 3, TRAINING.pad.Z), size = Vector3.new(5, 6, 5) }
-end
-
--- One hero at a time stands on the stage; the ring on the floor is its real
--- reach at level one. Purely visual: nothing here is a tower or earns anything.
-function World:ShowTrainingHero(heroId, range)
-	self:ClearTrainingHero()
-	local hero = self.catalog.Heroes[heroId]
-	if not hero or not self.trainingYard then return nil end
-	local stage = TRAINING.stage
-	local figure = Instance.new("Model")
-	figure.Name = "TrainingHero"
-	figure:SetAttribute("TowerId", "training") figure:SetAttribute("HeroId", heroId)
-	local anchor = artPart(figure, "Platform", Vector3.new(1, 0.2, 1), CFrame.new(stage.X, GROUND_Y + 0.4, stage.Z), Color3.fromRGB(65, 83, 107), Enum.Material.Metal)
-	anchor.Transparency = 1
-	local _, head = heroFigure(figure, heroId, hero, CFrame.new(stage.X, GROUND_Y + 0.5, stage.Z), (FIGURE_SCALE[heroId] or 1) * 1.15)
-	for _, p in ipairs(figure:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide, p.CanQuery, p.CanTouch = false, false, false end end
-	figure.PrimaryPart, figure.Parent = anchor, self.trainingYard
-	if head then
-		local title = label(head, hero.name.pt, Vector3.new(0, 2, 0), rgb(hero.color):Lerp(Color3.new(1, 1, 1), 0.75), 145, 60)
-		title.Font = Enum.Font.FredokaOne
-	end
-	if self.trainingRange then
-		self.trainingRange.Size = Vector3.new(0.08, range * 2, range * 2)
-		self.trainingRange.Color = rgb(hero.color)
-		self.trainingRange.Transparency = 0.72
-	end
-	return figure
-end
-
-function World:ClearTrainingHero()
-	local old = self.trainingYard and self.trainingYard:FindFirstChild("TrainingHero")
-	if old then old:Destroy() end
-	if self.trainingRange then self.trainingRange.Transparency = 1 end
-end
-
-function World:TrainingShot(index)
-	local stage, spot = TRAINING.stage, TRAINING.dummies[(index - 1) % #TRAINING.dummies + 1]
-	return Vector3.new(stage.X, GROUND_Y + 4, stage.Z), Vector3.new(spot.X, GROUND_Y + 3.7, spot.Z + 0.5)
 end
 
 -- Chests are bought at the shop: standing in a summon hall or on its
@@ -3735,11 +3659,6 @@ function World:UpdatePortalQueues(snapshot)
 			zone.pad.Color=state.count>=4 and Color3.fromRGB(255,119,103) or zone.tint
 		end
 	end
-end
-
-function World:NearTraining(player)
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	return root ~= nil and (root.Position - Vector3.new(TRAINING.pad.X, root.Position.Y, TRAINING.pad.Z)).Magnitude <= 28
 end
 
 function World:ParkourReached(player)

@@ -307,12 +307,6 @@ end
 -- so a stale cache just costs one extra folder scan on the next miss.
 function Effects:_towerModel(towerId)
 	if not towerId then return nil end
-	-- The lobby training yard's hero is not a tower, but aims and fires like one.
-	if towerId == "training" then
-		local lobby = workspace:FindFirstChild("DoomLobby")
-		local yard = lobby and lobby:FindFirstChild("TrainingYard")
-		return yard and yard:FindFirstChild("TrainingHero")
-	end
 	local cached = self.towerModels and self.towerModels[towerId]
 	if cached and cached.Parent then return cached end
 	local world = workspace:FindFirstChild("DoomWorld")

@@ -96,9 +96,9 @@ partida real em Manhattan). Os três problemas de maior impacto:
 - **Competitivo além da onda 70:** teste chega à onda 149 sem limite antigo,
   com recorde, Ouro por onda e horda dentro do teto.
 - **Voadores** têm sombra no chão da rota.
-- **Campo de Treino** no canto de treino/cartas: tapete verde abre o painel,
-  o herói escolhido sobe ao palco com o anel do alcance real e ataca três
-  bonecos por 30 s; sem recompensa, sem dano real.
+- **Campo de Treino removido (28/09/2026):** a vitrine de ver um herói
+  atacando bonecos ficou fraca; o proprietário preferiu não ter. O portal de
+  Treinamento (tutorial de 20 ondas) continua.
 
 ### Rodada seguinte (2026-09-26/27), concluído e verificado por testes
 
@@ -139,8 +139,6 @@ partida real em Manhattan). Os três problemas de maior impacto:
 - Distritos novos do lobby (cantos do sul) e colisões com a floresta.
 - Voto de encerrar no competitivo com grupo de 2–4 pessoas.
 - Aviso do AFK (sessão, total recebido, salvando).
-- Campo de Treino: posição entre as duas pistas dos portais e leitura dos
-  disparos no lobby.
 
 ### Depende de arte ou configuração
 

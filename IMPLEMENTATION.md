@@ -521,14 +521,11 @@ sendo o Ouro **do lobby** guardado pela partida.
 encerra com `results.ended = true`), `ElevatorStart {}` (lobby, só o primeiro
 passageiro), `BuyGuaranteed {itemId}` (lobby, só contas com itens aleatórios
 pagos restritos; preço `Rules.GuaranteedPrice`), `LeaveAfk {}` (lobby, tira o
-jogador da sala AFK), `TrainHero {heroId}` (lobby, perto do Campo de Treino,
-herói próprio; põe o herói no palco por 30 s, sem dano real nem recompensa).
+jogador da sala AFK).
 
 **FX novo.** `WaveCash {amount}`: bônus de Ouro da partida ao fim da onda.
 `CoinRemove` passa a trazer `value`. `BossArrive {enemyId, final, position}`:
-entrada de um chefe (faixa com nome e som). O Campo de Treino reaproveita
-`Shot` com `towerId = "training"` e `heroId`; `OpenPanel` ganha o painel
-`training` (tapete verde do campo). `TowerUpgrade {towerId, level, branch}`:
+entrada de um chefe (faixa com nome e som). `TowerUpgrade {towerId, level, branch}`:
 toda melhoria de torre, para a animação (pulo e coluna dourada).
 `TowersStunned {towerIds, duration}`: torres interrompidas por um poder de
 chefe (estrelas e postura caída). Cada torre do snapshot traz `stunned`

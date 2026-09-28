@@ -15,7 +15,8 @@ for _, child in ipairs(starters:GetChildren()) do
 	source = source:gsub("stateRemote%.OnClientEvent:Connect%(applyState%)", [[stateRemote.OnClientEvent:Connect(function(snapshot)
 	if not player:GetAttribute("DoomHudReview") then applyState(snapshot) end
 end)]], 1)
-	child.Source = source .. [==[
+	-- Source assignments stop at 200,000 characters; the editor service does not.
+	local reviewSource = source .. [==[
 
 task.spawn(function()
 	while not state or not state.profile do task.wait(0.2) end
@@ -174,5 +175,6 @@ task.spawn(function()
 	print("DOOM_HUD_REVIEW_READY")
 end)
 ]==]
+	game:GetService("ScriptEditorService"):UpdateSourceAsync(child, function() return reviewSource end)
 	print("DOOM_HUD_REVIEW_INSTALLED", child:GetFullName())
 end

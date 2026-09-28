@@ -561,31 +561,6 @@ check(not request(ana, "StartMatch", { mapId = "manhattan", modeId = "ranked" })
 check(Catalog.Modes.normal.waves == 50, "normal games have 50 waves")
 check(not request(ana, "StartMatch", { mapId = "latveria", modeId = "bossrush" }).ok, "boss rush waits for the whole campaign")
 
-say("--- training yard ---")
-do
-	local anaRoot = ana.Character:FindFirstChild("HumanoidRootPart")
-	check(not request(ana, "TrainHero", { heroId = "ironman" }).ok, "training needs the player at the yard")
-	anaRoot.CFrame = CFrame.new(workspace.DoomLobby.TrainingYard.TrainingPad.Position + v3(0, 3, 0))
-	local goldBeforeTraining = latest(ana).profile.gold
-	local firedBefore = #(rawget(remotes.FX, "__fired") or {})
-	local trained = request(ana, "TrainHero", { heroId = "ironman" })
-	check(trained.ok and trained.data and trained.data.range == Catalog.Heroes.ironman.range, "an owned hero steps onto the training stage")
-	check(not request(ana, "TrainHero", { heroId = "thor" }).ok, "an unowned hero cannot train")
-	check(not request(ana, "TrainHero", { heroId = "notAHero" }).ok, "an unknown hero cannot train")
-	frames(3)
-	local shots = 0
-	local fired = rawget(remotes.FX, "__fired") or {}
-	for index = firedBefore + 1, #fired do
-		local event = fired[index].args and fired[index].args[1]
-		if type(event) == "table" and event.kind == "Shot" and event.towerId == "training" then shots += 1 end
-	end
-	check(shots >= 1, "the stage hero fires at the dummies, got " .. shots)
-	check(latest(ana).profile.gold == goldBeforeTraining, "training earns nothing")
-	frames(31)
-	check(workspace.DoomLobby.TrainingYard:FindFirstChild("TrainingHero") == nil, "the stage empties after half a minute")
-	anaRoot.CFrame = CFrame.new(0, 5.5, 480)
-end
-
 --==============================================================================
 -- A duo: party start, the duo tower cap, a partner reconnecting, and a
 -- server shutdown while the battle is still running.

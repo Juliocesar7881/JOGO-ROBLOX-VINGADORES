@@ -36,7 +36,7 @@ batalha apareça do outro lado do mar, e não colada nos portais.
 Contratos preservados: 11 destinos com 3 filas cada, dois salões de
 invocação (agora girados para a praça; as zonas de compra são medidas no
 próprio referencial do salão), cinco quiosques Robux, sete quadros, placar da
-arena, duas câmaras AFK, campo de treino e parkour. As posições dos destinos
+arena, duas câmaras AFK e parkour. As posições dos destinos
 e das câmaras AFK no `Catalog` acompanham a ilha nova.
 
 Verificação: `python tools/test.py` completo aprovado — mundo (4.833
