@@ -44,9 +44,13 @@ return {
 		-- One ambience loop per map, and a short cue per weapon family.
 		ambManhattan = 0, ambGamma = 0, ambHydra = 0, ambWakanda = 0, ambAsgard = 0, ambLatveria = 0,
 		shotTech = 0, shotArrow = 0, shotMagic = 0, shotMelee = 0, shotBlast = 0, abilityReady = 0 },
-	-- Optional portal-sign photographs of each map (assets/map-photos, imported
-	-- in Studio's Asset Manager). Zero keeps the rendered 3D diorama.
-	MapImages = { manhattan = 0, gamma = 0, hydra = 0, wakanda = 0, asgard = 0, latveria = 0 },
+	-- Real map photographs, uploaded by LoopsDev7881 via Studio's Asset Manager.
+	-- Sources and upload IDs: assets/map-photos/manifest.json. Zero uses the fallback.
+	MapImages = {
+		manhattan = 106232571755279, gamma = 132922675966302,
+		hydra = 77531885765033, wakanda = 83315123182560,
+		asgard = 81125412205211, latveria = 124835578394292,
+	},
 	-- Native Roblox client sounds; uploaded, configured IDs take precedence.
 	-- Remove entries to mute fallbacks. Music still requires owned audio IDs.
 	BuiltinCues = {

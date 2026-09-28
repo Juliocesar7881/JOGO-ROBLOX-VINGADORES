@@ -31,7 +31,7 @@ batalha apareça do outro lado do mar, e não colada nos portais.
   palmeiras da zona AFK, Rocket nas caixas do hangar e Homem-Aranha no teto
   do posto de comando, cada um com o nome em cima.
 - Cada destino é uma estação: deck de aço, três pads com moldura, portões
-  acesos e o mini-diorama do mapa numa placa com moldura neon.
+  acesos e a fotografia real do mapa numa placa com moldura neon.
 
 Contratos preservados: 11 destinos com 3 filas cada, dois salões de
 invocação (agora girados para a praça; as zonas de compra são medidas no
@@ -50,11 +50,19 @@ problema real só apareceu no Play: estátuas ancoradas depois de posicionadas
 ficavam na origem (o corpo liberado segue a raiz só no passo de física);
 agora são montadas ancoradas e posicionadas por último.
 
-Fotos dos mapas: as seis estão em `assets/map-photos/*.jpg` (a de Asgard foi
-tirada nesta rodada). O Roblox ainda não permite criar imagens por script
-(`AssetService:CreateAssetAsync` responde "not available yet"), então elas
-entram pelo Gerenciador de ativos e `Config.MapImages`; até lá cada placa
-mostra o diorama 3D do mapa. Fotografar Asgard revelou que o mapa nem
+Fotos dos mapas — integração em 28/09/2026: as seis imagens de
+`assets/map-photos/*.jpg` foram importadas pelo Gerenciador de ativos na
+conta LoopsDev7881 e vinculadas a `Config.MapImages`. Os 11 destinos usam
+a foto do mapa correspondente, com nome grande sobre a imagem e regras
+abaixo. IDs e hashes dos originais estão em `assets/map-photos/manifest.json`.
+A prévia do editor agora recebe a mesma configuração do servidor; o build
+de release preserva as fotos quando não há substituições configuradas.
+O carregamento das seis imagens foi confirmado no Studio compartilhado
+(place 97132875544830), com `AssetFetchStatus.Success` em todos os 11
+destinos. As seis fotos também foram inspecionadas no cliente em Play,
+incluindo as placas da campanha, arena e treinamento. Capturas locais:
+`test-results/portal-play-*.png`. `python tools/test.py` completo aprovado.
+Fotografar Asgard revelou que o mapa nem
 construía no Roblox (cor nula na trilha da rota) — corrigido, e os dublês de
 teste agora recusam cor, tamanho, CFrame e material nulos.
 

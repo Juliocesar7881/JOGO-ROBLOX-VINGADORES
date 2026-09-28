@@ -15,10 +15,11 @@ separadamente e depois abra o arquivo reconstruído.
 4. Importe os 13 arquivos de `assets/audio` e autorize a experiência. Preencha
    `Audio`. O preço exibido pela loja continua vindo da plataforma; a configuração
    contém IDs, sem substituir preços por valores inventados.
-5. Opcional: importe as seis fotos `assets/map-photos/*.jpg` no Gerenciador de
-   ativos do Studio (botão direito na imagem → copiar ID) e preencha
-   `MapImages`, uma por mapa. Com `0`, a placa do portal mostra o diorama 3D
-   do mapa; não é pendência. Para refazer uma foto, use
+5. As seis fotos dos portais já estão importadas na conta LoopsDev7881 e
+   configuradas em `Config.MapImages`. Originais e IDs ficam em
+   `assets/map-photos/manifest.json`. Em `deployment/local.json`, `MapImages`
+   com `0` ou ausente preserva essas fotos; um ID positivo substitui a foto
+   daquele mapa. Para refazer uma foto, use
    `python tools/studio_map_photos.py <mapa> --window-handle <janela do Studio>`.
 6. Opcional: coloque em `GroupId` o ID do grupo do jogo no Roblox. Com `0`,
    o prêmio "Entre no grupo" simplesmente não aparece; não é pendência.

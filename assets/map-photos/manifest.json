@@ -1,0 +1,38 @@
+{
+  "source": "Photographs of this project rendered in Roblox Studio; camera metadata alongside each image.",
+  "uploadedBy": "LoopsDev7881",
+  "uploadedOn": "2026-09-28",
+  "placeId": 97132875544830,
+  "maps": {
+    "manhattan": {
+      "file": "manhattan.jpg",
+      "imageAssetId": 106232571755279,
+      "sha256": "7ff5cc5cffae5f750eccbf344c8c4c82418efd16540e137efeede2f926eff2e1"
+    },
+    "gamma": {
+      "file": "gamma.jpg",
+      "imageAssetId": 132922675966302,
+      "sha256": "adf0146cd43f27dde8092bbc0028d05a7f8c2b694bd2fa9288d5eb39a6c08937"
+    },
+    "hydra": {
+      "file": "hydra.jpg",
+      "imageAssetId": 77531885765033,
+      "sha256": "e85a7e681eeb2232deb9a766f43d4e1c92f1b8345ce56a7a0ae9a614f85fe920"
+    },
+    "wakanda": {
+      "file": "wakanda.jpg",
+      "imageAssetId": 83315123182560,
+      "sha256": "34ab12d0e86594120b48bd3691cfa0ddafe3128f97fb8aafb1f6a1cab5b0dc43"
+    },
+    "asgard": {
+      "file": "asgard.jpg",
+      "imageAssetId": 81125412205211,
+      "sha256": "3061440c80fc0e3acaa64c164f0a5c819ae83675f0b72d8a592a67a826270248"
+    },
+    "latveria": {
+      "file": "latveria.jpg",
+      "imageAssetId": 124835578394292,
+      "sha256": "08b3ca6ed699a5979d0914f002e43fd7134c8538852b6894044e26c3b0c3d715"
+    }
+  }
+}

@@ -77,8 +77,9 @@ class ReleaseTests(unittest.TestCase):
         data['MapImages']['asgard'] = 4242
         missing, configured = release.validate(data, self.template)
         self.assertIn(('MapImages.asgard', 4242), configured)
-        source = release.config_source((ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8'), data, self.template)
-        harness = 'local c=(function()\n' + source + '\nend)()\nassert(c.MapImages.asgard==4242 and c.MapImages.manhattan==0)\n'
+        original = (ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8')
+        source = release.config_source(original, data, self.template)
+        harness = 'local original=(function()\n' + original + '\nend)()\nlocal c=(function()\n' + source + '\nend)()\nassert(c.MapImages.asgard==4242)\nfor key,id in pairs(original.MapImages) do if key~="asgard" then assert(id>0 and c.MapImages[key]==id, "release must preserve shipped photographs") end end\n'
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'config.luau'
             path.write_text(harness, encoding='utf-8')

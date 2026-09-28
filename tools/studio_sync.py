@@ -96,10 +96,11 @@ local shared = game:GetService("ReplicatedStorage"):WaitForChild("DoomShared")
 local server = game:GetService("ServerScriptService"):WaitForChild("DoomServer")
 local function fresh(module) local copy = module:Clone(); return require(copy) end
 local catalog = fresh(shared.Catalog)
+local config = fresh(shared.Config)
 -- Every lobby build is terrain plus parts; start from bare terrain so an older
 -- layout's sea or islands never linger in the editor's copy.
 workspace.Terrain:Clear()
-local world = fresh(server.WorldBuilder).new(catalog, function() end)
+local world = fresh(server.WorldBuilder).new(catalog, function() end, config)
 local base = workspace:FindFirstChild("EditorBaseplate")
 if base then base.Transparency, base.CanCollide = 1, false end
 local hub = world.lobbySpawn

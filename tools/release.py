@@ -38,7 +38,7 @@ def template():
     products, audio, images = catalog()
     # GroupId is optional: 0 simply hides the join-the-group reward.
     # AfkPlaceId is optional too: 0 keeps AFK farming inside the lobby.
-    # MapImages are optional: 0 keeps the rendered diorama on a portal sign.
+    # MapImages are optional overrides: 0 keeps the shipped map photographs.
     return {'UniverseId': 0, 'LobbyPlaceId': 0, 'MatchPlaceId': 0, 'AfkPlaceId': 0, 'GroupId': 0,
             'Products': {group: {key: {'id': 0} for key in rows} for group, rows in products.items()},
             'Audio': {key: 0 for key in audio}, 'MapImages': {key: 0 for key in images}}
@@ -102,7 +102,9 @@ def config_source(source, data, expected):
     for key in expected['Audio']:
         lines.append(f'configured.Audio[{json.dumps(key)}] = {data.get("Audio", {}).get(key, 0)}')
     for key in expected['MapImages']:
-        lines.append(f'configured.MapImages[{json.dumps(key)}] = {data.get("MapImages", {}).get(key, 0)}')
+        value = data.get('MapImages', {}).get(key, 0)
+        if value:
+            lines.append(f'configured.MapImages[{json.dumps(key)}] = {value}')
     lines.append('return configured')
     return '\n'.join(lines) + '\n'
 
