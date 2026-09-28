@@ -183,6 +183,7 @@ UDim2 = {
 	fromOffset = function(x, y) return UDim2.new(0, x, 0, y) end,
 }
 NumberSequenceKeypoint = { new = function(t, value) return { Time = t, Value = value } end }
+ColorSequenceKeypoint = { new = function(t, value) return { Time = t, Value = value } end }
 NumberSequence = { new = function(a, b) return { keypoints = { a, b } } end }
 ColorSequence = { new = function(a, b) return { keypoints = { a, b } } end }
 NumberRange = { new = function(minimum, maximum) return { Min = minimum, Max = maximum or minimum } end }

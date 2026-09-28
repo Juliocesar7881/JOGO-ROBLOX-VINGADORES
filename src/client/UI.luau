@@ -4,13 +4,13 @@ local UI = {}
 -- Candy palette for a kids' game: saturated accents on deep navy, white
 -- text with a black outline, and thick dark borders around everything.
 UI.Colors = {
-	background = Color3.fromRGB(22, 24, 36),
-	panel = Color3.fromRGB(35, 39, 56),
-	card = Color3.fromRGB(50, 55, 78),
-	stroke = Color3.fromRGB(96, 106, 140),
-	ink = Color3.fromRGB(12, 13, 20),
+	background = Color3.fromRGB(24, 32, 72),
+	panel = Color3.fromRGB(36, 50, 110),
+	card = Color3.fromRGB(52, 72, 146),
+	stroke = Color3.fromRGB(128, 158, 238),
+	ink = Color3.fromRGB(11, 15, 36),
 	text = Color3.fromRGB(255, 255, 255),
-	muted = Color3.fromRGB(190, 198, 222),
+	muted = Color3.fromRGB(206, 218, 255),
 	green = Color3.fromRGB(88, 224, 79),
 	gold = Color3.fromRGB(255, 210, 63),
 	red = Color3.fromRGB(255, 77, 94),
@@ -78,6 +78,14 @@ function UI.shade(parent, rotation, depth)
 	return gradient
 end
 
+function UI.candy(parent)
+	local gradient = parent:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient", {}, parent)
+	local function key(t, v) return ColorSequenceKeypoint.new(t, Color3.new(v, v, v)) end
+	gradient.Color = ColorSequence.new({ key(0, 1), key(0.5, 0.94), key(0.76, 0.86), key(0.79, 0.62), key(1, 0.56) })
+	gradient.Rotation = 90
+	return gradient
+end
+
 function UI.frame(parent, properties)
 	local defaults = {BackgroundColor3 = UI.Colors.panel, BorderSizePixel = 0}
 	for key, value in pairs(properties or {}) do defaults[key] = value end
@@ -88,9 +96,9 @@ end
 -- and a gentle top-lit shade.
 function UI.roundFrame(parent, properties, color)
 	local frame = UI.frame(parent, properties)
-	UI.corner(frame, 16)
-	UI.stroke(frame, color or UI.Colors.ink, color and 2 or 3)
-	UI.shade(frame, 90, 0.1)
+	UI.corner(frame, 18)
+	UI.stroke(frame, color or UI.Colors.ink, color and 2.5 or 3)
+	UI.shade(frame, 90, 0.18)
 	return frame
 end
 
@@ -137,15 +145,15 @@ function UI.button(parent, text, callback, properties)
 		if isDark(defaults.TextColor3) and not isDark(defaults.BackgroundColor3) then defaults.TextColor3 = UI.Colors.text end
 	end
 	local button = UI.create("TextButton", defaults, parent)
-	UI.corner(button, 12)
+	UI.corner(button, 14)
 	if visible then
-		UI.shade(button, 90, 0.26)
+		UI.candy(button)
 		UI.stroke(button, UI.Colors.ink, 3)
 		-- A thin gloss along the top edge: it draws over the button's own text,
 		-- so it must stay above the letters, never across them.
 		local shine = UI.frame(button, {Name = "Shine", Position = UDim2.new(0, 7, 0, 3), Size = UDim2.new(1, -14, 0.18, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.84, Active = false, ZIndex = button.ZIndex})
 		UI.corner(shine, 8)
-		UI.outline(button, (defaults.TextSize or 15) >= 20 and 2.5 or 2)
+		UI.outline(button, (defaults.TextSize or 15) >= 18 and 3 or 2)
 	end
 	if callback then button.Activated:Connect(callback) end
 	-- Every button squashes under the finger and springs back: the smallest
@@ -300,6 +308,30 @@ function UI.illustration(parent, kind, tint, properties)
 		shape(.24,.10,.24,.20,cream,10,-22)
 		shape(.52,.10,.24,.20,cream,10,22)
 		shape(.44,.21,.12,.12,gold,8)
+	elseif kind=="crate" then
+		-- A treasure chest in the tier's own colour, gold bands and a lock.
+		local light=tint:Lerp(Color3.new(1,1,1),0.38)
+		shape(.05,.33,.90,.60,ink,10)
+		shape(.10,.37,.80,.52,tint,7)
+		shape(.10,.37,.80,.14,light,7)
+		shape(.03,.14,.94,.27,ink,12)
+		shape(.07,.17,.86,.21,light,9)
+		shape(.20,.14,.10,.76,gold,2)
+		shape(.70,.14,.10,.76,gold,2)
+		shape(.39,.31,.22,.26,gold,5)
+		shape(.46,.38,.08,.11,ink,3)
+		shape(.14,.03,.09,.09,cream,8,45)
+		shape(.84,.0,.06,.12,cream,3,30)
+	elseif kind=="gear" then
+		for i=0,3 do shape(.42,.06,.16,.88,cream,3,i*45) end
+		shape(.2,.2,.6,.6,cream,40)
+		shape(.34,.34,.32,.32,tint,40)
+	elseif kind=="scroll" then
+		shape(.18,.14,.64,.74,ink,6)
+		shape(.22,.18,.56,.66,cream,4)
+		for i=0,2 do shape(.3,.3+i*.15,.4,.06,tint,2) end
+		shape(.12,.08,.76,.12,Color3.fromRGB(207,133,64),6)
+		shape(.12,.82,.76,.12,Color3.fromRGB(207,133,64),6)
 	elseif kind=="shop" or kind=="coin" then
 		for i=0,(kind=="coin" and 0 or 2) do
 			local x=kind=="coin" and .1 or .1+i*.19
@@ -487,12 +519,53 @@ function UI.scroll(parent, properties)
 end
 
 function UI.section(parent, title, subtitle)
-	local frame = UI.frame(parent, {BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, subtitle and 100 or 48)})
-	UI.label(frame, title, {Font = UI.Fonts.display, TextSize = 21, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Size = UDim2.new(1, 0, 0, 46)})
+	local frame = UI.frame(parent, {BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, subtitle and 82 or 44)})
+	local bar = UI.frame(frame, {Name = "SectionMark", Position = UDim2.fromOffset(0, 10), Size = UDim2.fromOffset(6, 24), BackgroundColor3 = UI.Colors.gold})
+	UI.corner(bar, 3)
+	UI.label(frame, title, {Font = UI.Fonts.display, TextSize = 22, TextColor3 = UI.Colors.cream, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -14, 0, 44)})
 	if subtitle then
-		UI.label(frame, subtitle, {TextColor3 = UI.Colors.muted, TextSize = 12, Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 0, 50), TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
+		UI.label(frame, subtitle, {TextColor3 = UI.Colors.muted, TextSize = 14, Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 36), TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
 	end
 	return frame
+end
+
+-- A small rounded tag: rarity, level, "NEW", a count.
+function UI.chip(parent, text, color, properties)
+	local chip = UI.label(parent, text, {BackgroundTransparency = 0, BackgroundColor3 = color, TextColor3 = UI.Colors.text, Font = UI.Fonts.display, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromOffset(70, 22)})
+	for key, value in pairs(properties or {}) do chip[key] = value end
+	UI.corner(chip, 11)
+	UI.stroke(chip, UI.Colors.ink, 2)
+	return chip
+end
+
+-- The big games' HUD button: a round candy disc with an illustration and an
+-- outlined caption underneath. The whole rect is the tap target.
+function UI.roundIcon(parent, name, caption, color, icon, callback, properties)
+	-- The caption doubles as the button's (invisible) text, so it is found and
+	-- read like any other button.
+	local button = UI.button(parent, caption, callback, {Name = name, BackgroundTransparency = 1, TextTransparency = 1, Size = UDim2.fromOffset(72, 88)})
+	for key, value in pairs(properties or {}) do button[key] = value end
+	local captionH = caption ~= "" and 20 or 0
+	local disc = UI.frame(button, {Name = "Disc", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 2), Size = UDim2.new(1, -captionH, 1, -captionH - 2), BackgroundColor3 = color, Active = false})
+	UI.create("UIAspectRatioConstraint", {AspectRatio = 1}, disc)
+	UI.corner(disc, 100)
+	UI.stroke(disc, UI.Colors.ink, 3)
+	UI.candy(disc)
+	local shine = UI.frame(disc, {Name = "Shine", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.07), Size = UDim2.fromScale(0.62, 0.22), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.72, Active = false})
+	UI.corner(shine, 100)
+	if type(icon) == "function" then icon(disc) elseif icon then UI.illustration(disc, icon, color, {Name = "NavIcon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromScale(0.66, 0.66)}) end
+	if captionH > 0 then
+		UI.label(button, caption, {Name = "Caption", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(1, 24, 0, 22), TextSize = 16, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, TextTruncate = Enum.TextTruncate.None})
+	end
+	return button, disc
+end
+
+-- A red count bubble on a HUD button's corner.
+function UI.badge(parent, name, text, color)
+	local badge = UI.label(parent, text, {Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -10, 0, 8), Size = UDim2.fromOffset(24, 24), BackgroundTransparency = 0, BackgroundColor3 = color or UI.Colors.red, TextSize = 13, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 5})
+	UI.corner(badge, 12)
+	UI.stroke(badge, UI.Colors.ink, 2)
+	return badge
 end
 
 function UI.row(parent, height)
@@ -689,7 +762,7 @@ function UI.matchLayout(width, height, options)
 	layout.wave = rect(top.x + 12, top.y + 4, leftW, class.short and 20 or 26)
 	layout.map = rect(top.x + 12, top.y + (class.short and 26 or 32), leftW, class.narrow and 40 or (class.short and 16 or 20))
 	layout.hpText = rect(rightX, top.y + 4, rightW, class.short and 18 or 22)
-	layout.hpBar = rect(rightX + math.floor(rightW * 0.1), top.y + (class.short and 30 or 36), rightW - math.floor(rightW * 0.1), 7)
+	layout.hpBar = rect(rightX + math.floor(rightW * 0.1), top.y + (class.short and 28 or 34), rightW - math.floor(rightW * 0.1), class.short and 12 or 16)
 
 	local statusY = top.y + topH + gap
 	local statusH
@@ -819,44 +892,53 @@ end
 -- Small counters above and an illustrated dock below leave the arrival view
 -- clear. A boarding card sits above the dock, except on short phones where
 -- it temporarily replaces the dock to preserve room for contextual sheets.
+-- Heroes, evolution, shop, gifts, missions.
+UI.NAV_COUNT = 5
+
 function UI.lobbyLayout(width, height)
 	width, height = clampScreen(width, height)
 	local class = UI.sizeClass(width, height)
 	local pad = class.compact and 10 or 14
 	local rowH = 48
-	local buttonW = class.compact and 78 or 100
-	local settings = rect(width - pad - buttonW, pad, buttonW, rowH)
-	local squad = rect(settings.x - 8 - buttonW, pad, buttonW, rowH)
+	-- Round buttons in the top-right corner: the active base and settings.
+	local round = class.short and 58 or 66
+	local settings = rect(width - pad - round, pad, round, round + 16)
+	local squad = rect(settings.x - 10 - round, pad, round, round + 16)
 	-- The pill never reaches the buttons, however narrow the screen.
-	local pill = rect(pad, pad, math.min(class.compact and 160 or 228, squad.x - 8 - pad), rowH)
-	local navigationW = math.min(class.short and 470 or 510, width - 2 * pad)
-	local navigationH = class.short and 54 or class.compact and 68 or 82
-	local navigation = rect(math.floor((width - navigationW) / 2), height - pad - navigationH, navigationW, navigationH)
+	local pill = rect(pad, pad, math.min(class.compact and 170 or 236, squad.x - 8 - pad), rowH)
+	local count = UI.NAV_COUNT
+	local column = width >= 1000 and not class.short
+	local navigation
+	if column then
+		local cell = 92
+		local navigationH = count * cell
+		local top = pill.y + pill.h + 20
+		navigation = rect(pad, math.max(top, math.floor((height - navigationH) / 2)), 84, navigationH)
+	else
+		local navigationW = math.min(count * (class.short and 84 or 100), width - 2 * pad)
+		local navigationH = class.short and 60 or class.compact and 76 or 88
+		navigation = rect(math.floor((width - navigationW) / 2), height - pad - navigationH, navigationW, navigationH)
+	end
+	local floor = column and height - pad or navigation.y - 8
 	local cardW = math.min(460, width - 2 * pad)
 	local cardH = class.short and 84 or 96
-	local elevator = rect(math.floor((width - cardW) / 2), (class.short and height - pad or navigation.y - 8) - cardH, cardW, cardH)
+	local elevator = rect(math.floor((width - cardW) / 2), (class.short and height - pad or floor) - cardH, cardW, cardH)
 	local hintW = math.min(520, width - 2 * pad)
-	local hint = rect(math.floor((width - hintW) / 2), navigation.y - 48, hintW, 40)
+	local hint = rect(math.floor((width - hintW) / 2), floor - 44, hintW, 44)
 	local contextW = math.min(560, width - 2 * pad)
 	-- The context panel is a sheet on landscape phones. Hiding corner chrome
 	-- there makes enough room for the close control and scrollable content.
-	local contextTop = class.short and pad or pad + rowH + 8
+	local contextTop = class.short and pad or pad + squad.h + 8
 	local function contextAbove(bottom)
 		local h = math.min(class.compact and 330 or 400, bottom - contextTop)
 		return rect(math.floor((width - contextW) / 2), bottom - h, contextW, h)
 	end
-	-- The side quest tracker needs a wide, tall screen; phones keep the view clear.
-	local tracker
-	if not class.compact and not class.short then
-		local trackerW, trackerY = 240, settings.y + rowH + 16
-		local trackerH = math.min(28 + 3 * 56, hint.y - 12 - trackerY)
-		if trackerH >= 84 then tracker = rect(width - pad - trackerW, trackerY, trackerW, trackerH) end
-	end
 	return {
 		class = class, pill = pill, squad = squad, settings = settings, navigation = navigation,
-		elevator = elevator, hint = hint, tracker = tracker,
-		context = contextAbove(navigation.y - 8),
+		column = column, elevator = elevator, hint = hint,
+		context = contextAbove(column and hint.y - 8 or navigation.y - 8),
 		contextRiding = contextAbove(elevator.y - 8),
+		contextTop = contextTop, contextBottom = column and hint.y - 8 or navigation.y - 8,
 	}
 end
 
@@ -869,14 +951,24 @@ function UI.contextLayout(width, height, options)
 	local hud = UI.lobbyLayout(width, height)
 	local pad = hud.class.compact and 10 or 14
 	local modal = hud.class.short
-	local top = modal and pad or hud.pill.y + hud.pill.h + 8
-	local bottom = options.elevator and hud.elevator.y - 8 or modal and height - pad or hud.navigation.y - 8
+	local top = modal and pad or hud.contextTop
+	local bottom = options.elevator and hud.elevator.y - 8 or modal and height - pad or hud.contextBottom
 	local maxWidth = options.wide and 900 or 690
-	local panelWidth = math.min(maxWidth, width - 2 * pad)
+	-- A panel never slides under the left column of big buttons.
+	local margin = hud.column and not modal and hud.navigation.x + hud.navigation.w + 8 or pad
+	local panelWidth = math.min(maxWidth, width - 2 * margin)
 	local slot = rect(math.floor((width - panelWidth) / 2), top, panelWidth, bottom - top)
 	slot.modal = modal
 	slot.class = hud.class
 	return slot
+end
+
+function UI.percent(value, language)
+	value = tonumber(value) or 0
+	local text = value >= 10 and string.format("%.0f%%", value) or value >= 1 and string.format("%.1f%%", value) or string.format("%.2f%%", value)
+	text = text:gsub("%.0%%", "%%")
+	if language ~= "en" then text = text:gsub("%.", ",") end
+	return text
 end
 
 function UI.format(number)
