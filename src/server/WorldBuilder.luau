@@ -1988,10 +1988,10 @@ function World:ApplyLobbyLighting()
 	clouds.Parent = terrain
 end
 
-function World.new(catalog, openPanel)
+function World.new(catalog, openPanel, config)
 	upper = catalog.Upper or string.upper
 	campaignWaves = catalog.CampaignWaves or {}
-	local self = setmetatable({ catalog = catalog, openPanel = openPanel }, World)
+	local self = setmetatable({ catalog = catalog, openPanel = openPanel, mapImages = config and config.MapImages or {} }, World)
 	-- Match places need the same portraits even when their lobby is removed.
 	local storage = game:GetService("ReplicatedStorage")
 	local previous = storage:FindFirstChild("DoomHeroPortraits")
@@ -2081,7 +2081,7 @@ end
 -- (independent four-player queues), each under its own lit gate, and the
 -- map's billboard framed in neon above them. Each zone retains its catalog
 -- destination, never a client map.
-local function buildModePortal(lobby,x,z,portalId,mode,destination,map)
+local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 	local tint=rgb(PORTAL_COLORS[destination.mapId])
 	local yaw=destination.facing or 0
 	local base=CFrame.new(x,GROUND_Y,z)*CFrame.Angles(0,yaw,0)
@@ -2113,6 +2113,15 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map)
 	surface.LightInfluence,surface.CanvasSize,surface.SizingMode=0,Vector2.new(880,344),Enum.SurfaceGuiSizingMode.FixedSize
 	surface.Parent=board
 	mapVignette(surface,map,tint)
+	-- A photograph of the real map, once imported and configured
+	-- (Config.MapImages), covers the rendered diorama.
+	if (tonumber(photo) or 0)>0 then
+		local image=Instance.new("ImageLabel")
+		image.Name,image.Size,image.BackgroundTransparency,image.ZIndex="MapPhoto",UDim2.fromScale(1,0.75),1,0
+		image.Image,image.ScaleType="rbxassetid://"..tostring(math.floor(photo)),Enum.ScaleType.Crop
+		image.Parent=surface
+		surface.MapPicture.Visible=false
+	end
 	local title=stationText(surface,"MapTitle",map.name.pt,map.name.en,UDim2.fromScale(0.02,0.24),UDim2.fromScale(0.96,0.35),Color3.new(1,1,1),64)
 	title.Font,title.TextStrokeTransparency=Enum.Font.LuckiestGuy,0
 	local waves=destination.modeId=="normal" and campaignWaves[map.id] or mode.waves
@@ -2426,7 +2435,7 @@ function World:BuildLobby()
 	-- Fixed destinations, each with three independent four-player queues.
 	for _, portalId in ipairs(self.catalog.DestinationOrder) do
 		local destination = self.catalog.Destinations[portalId]
-		local _, zones = buildModePortal(lobby, destination.x, destination.z, portalId, self.catalog.Modes[destination.modeId], destination, self.catalog.Maps[destination.mapId])
+		local _, zones = buildModePortal(lobby, destination.x, destination.z, portalId, self.catalog.Modes[destination.modeId], destination, self.catalog.Maps[destination.mapId], self.mapImages[destination.mapId])
 		for queueId, zone in pairs(zones) do self.portalZones[queueId] = zone end
 	end
 	self:BuildHeroBeacon(lobby)
@@ -4868,8 +4877,10 @@ function World:Build(mapId)
 	self:DressMap(mapId, map)
 	-- Readable route overlay follows the exact simulation segments, including
 	-- alternate entrances. Streets used only as scenery never get this marking.
-	local routeColors={manhattan=Color3.fromRGB(255,206,93),gamma=Color3.fromRGB(122,255,151),hydra=Color3.fromRGB(255,131,103),wakanda=Color3.fromRGB(207,151,255),latveria=Color3.fromRGB(105,229,255)}
-	local routeTint=routeColors[mapId]
+	local routeColors={manhattan=Color3.fromRGB(255,206,93),gamma=Color3.fromRGB(122,255,151),hydra=Color3.fromRGB(255,131,103),wakanda=Color3.fromRGB(207,151,255),latveria=Color3.fromRGB(105,229,255),asgard=Color3.fromRGB(140,232,255)}
+	-- A map without its own trail colour still gets one: a nil Color3 stops
+	-- the whole map from building in Roblox.
+	local routeTint=routeColors[mapId] or rgb(map.color or {255,255,255})
 	local drawn={}
 	for routeIndex,route in ipairs(map.paths) do
 		for segment=1,#route-1 do

@@ -509,6 +509,7 @@ INSTANCE.__index = function(self, key)
 	return self:FindFirstChild(key)
 end
 
+local NOT_NIL = { Color = true, Size = true, CFrame = true, Material = true }
 INSTANCE.__newindex = function(self, key, value)
 	local props = rawget(self, "__props")
 	if key == "Parent" then
@@ -526,6 +527,9 @@ INSTANCE.__newindex = function(self, key, value)
 		if value then table.insert(rawget(value, "__children"), self) end
 		return
 	end
+	-- Roblox refuses nil for typed properties ("Color3 expected, got nil");
+	-- a stand-in that accepted it hid a map that could not be built.
+	if value == nil and NOT_NIL[key] then error("Unable to assign property " .. key .. ". got nil", 2) end
 	props[key] = value
 	if JOINT_CLASSES[rawget(self, "__class")] then
 		if key == "Part0" and value then registerJoint(self, value) end
