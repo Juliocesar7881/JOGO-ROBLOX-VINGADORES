@@ -46,9 +46,16 @@ problema real só apareceu no Play: estátuas ancoradas depois de posicionadas
 ficavam na origem (o corpo liberado segue a raiz só no passo de física);
 agora são montadas ancoradas e posicionadas por último.
 
-Limites: desempenho e toque em celular real não foram medidos; as fotos dos
-mapas em `assets/map-photos` ainda não estão nas placas (precisam virar
-imagens no Roblox); o horizonte e o Helicarrier são silhuetas simples.
+Fotos dos mapas: as seis estão em `assets/map-photos/*.jpg` (a de Asgard foi
+tirada nesta rodada). O Roblox ainda não permite criar imagens por script
+(`AssetService:CreateAssetAsync` responde "not available yet"), então elas
+entram pelo Gerenciador de ativos e `Config.MapImages`; até lá cada placa
+mostra o diorama 3D do mapa. Fotografar Asgard revelou que o mapa nem
+construía no Roblox (cor nula na trilha da rota) — corrigido, e os dublês de
+teste agora recusam cor, tamanho, CFrame e material nulos.
+
+Limites: desempenho e toque em celular real não foram medidos; o horizonte e
+o Helicarrier são silhuetas simples.
 
 ## Refúgio da Aurora — revisão visual (substituída)
 

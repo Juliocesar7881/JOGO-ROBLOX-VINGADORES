@@ -13,3 +13,7 @@ local sounds = {}
 for key in pairs(Config.Audio) do table.insert(sounds,key) end
 table.sort(sounds)
 for _,key in ipairs(sounds) do print("AUDIO|"..key) end
+local images = {}
+for key in pairs(Config.MapImages) do table.insert(images,key) end
+table.sort(images)
+for _,key in ipairs(images) do print("IMAGE|"..key) end

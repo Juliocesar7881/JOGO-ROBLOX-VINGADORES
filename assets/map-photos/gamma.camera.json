@@ -1,0 +1,15 @@
+{
+  "map": "gamma",
+  "eye": [
+    -50.0,
+    11.0,
+    48.0
+  ],
+  "look": [
+    25.0,
+    9.0,
+    -46.0
+  ],
+  "fov": 65,
+  "source": "WorldBuilder.Build / Roblox Studio renderer"
+}

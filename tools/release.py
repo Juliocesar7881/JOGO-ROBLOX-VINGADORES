@@ -25,21 +25,23 @@ def catalog():
     executable = str(cli) if cli.is_file() else shutil.which('luau')
     if not executable: raise ValueError('Install the official Luau CLI with tools/setup_luau.py.')
     result = subprocess.run([executable, 'tools/release_catalog.luau'], cwd=ROOT, check=True, capture_output=True, text=True, encoding='utf-8')
-    products, audio = {}, []
+    products, audio, images = {}, [], []
     for line in result.stdout.splitlines():
         parts = line.split('|')
         if parts[0] == 'PRODUCT': products.setdefault(parts[1], {})[parts[2]] = int(parts[3])
         elif parts[0] == 'AUDIO': audio.append(parts[1])
-    return products, audio
+        elif parts[0] == 'IMAGE': images.append(parts[1])
+    return products, audio, images
 
 
 def template():
-    products, audio = catalog()
+    products, audio, images = catalog()
     # GroupId is optional: 0 simply hides the join-the-group reward.
     # AfkPlaceId is optional too: 0 keeps AFK farming inside the lobby.
+    # MapImages are optional: 0 keeps the rendered diorama on a portal sign.
     return {'UniverseId': 0, 'LobbyPlaceId': 0, 'MatchPlaceId': 0, 'AfkPlaceId': 0, 'GroupId': 0,
             'Products': {group: {key: {'id': 0} for key in rows} for group, rows in products.items()},
-            'Audio': {key: 0 for key in audio}}
+            'Audio': {key: 0 for key in audio}, 'MapImages': {key: 0 for key in images}}
 
 
 def validate(data, expected):
@@ -63,7 +65,7 @@ def validate(data, expected):
     if group: configured.append(('GroupId', group))
     if data.get('LobbyPlaceId', 0) and data.get('LobbyPlaceId') == data.get('MatchPlaceId'):
         raise ValueError('Lobby and Match must be different places.')
-    for group in ('Products', 'Audio'):
+    for group in ('Products', 'Audio', 'MapImages'):
         entries = data.get(group, {})
         if not isinstance(entries, dict) or set(entries) - set(expected[group]): raise ValueError(f'Invalid {group} keys.')
     product_ids = set()
@@ -80,6 +82,10 @@ def validate(data, expected):
             if value and (namespace, value) in product_ids: raise ValueError(f'Duplicate {namespace} ID: {value}')
             if value: product_ids.add((namespace, value))
     for key in expected['Audio']: asset(data.get('Audio', {}).get(key, 0), f'Audio.{key}')
+    for key in expected['MapImages']:
+        value = data.get('MapImages', {}).get(key, 0)
+        if type(value) is not int or not 0 <= value <= 9007199254740991: raise ValueError(f'MapImages.{key} must be a nonnegative integer Roblox ID.')
+        if value: configured.append((f'MapImages.{key}', value))
     return missing, configured
 
 
@@ -95,6 +101,8 @@ def config_source(source, data, expected):
             lines.append(f'configured.Products.{category}[{json.dumps(key)}] = {{ id = {value} }}')
     for key in expected['Audio']:
         lines.append(f'configured.Audio[{json.dumps(key)}] = {data.get("Audio", {}).get(key, 0)}')
+    for key in expected['MapImages']:
+        lines.append(f'configured.MapImages[{json.dumps(key)}] = {data.get("MapImages", {}).get(key, 0)}')
     lines.append('return configured')
     return '\n'.join(lines) + '\n'
 

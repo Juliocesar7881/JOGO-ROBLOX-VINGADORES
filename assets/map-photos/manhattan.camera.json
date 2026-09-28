@@ -1,0 +1,15 @@
+{
+  "map": "manhattan",
+  "eye": [
+    -38,
+    13,
+    44
+  ],
+  "look": [
+    8,
+    10,
+    -42
+  ],
+  "fov": 65,
+  "source": "WorldBuilder.Build / Roblox Studio renderer"
+}

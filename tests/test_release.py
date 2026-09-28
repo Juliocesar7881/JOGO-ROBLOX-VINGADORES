@@ -69,6 +69,24 @@ class ReleaseTests(unittest.TestCase):
             path.write_text(harness, encoding='utf-8')
             subprocess.run([str(ROOT / '.tools/luau/luau.exe'), str(path)], check=True)
 
+    def test_map_images_are_optional_and_configured(self):
+        data = copy.deepcopy(self.template)
+        self.assertEqual(set(data['MapImages']), {'manhattan', 'gamma', 'hydra', 'wakanda', 'asgard', 'latveria'})
+        missing, _ = release.validate(data, self.template)
+        self.assertFalse([key for key in missing if key.startswith('MapImages')], 'A diorama is a valid sign, never a release blocker')
+        data['MapImages']['asgard'] = 4242
+        missing, configured = release.validate(data, self.template)
+        self.assertIn(('MapImages.asgard', 4242), configured)
+        source = release.config_source((ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8'), data, self.template)
+        harness = 'local c=(function()\n' + source + '\nend)()\nassert(c.MapImages.asgard==4242 and c.MapImages.manhattan==0)\n'
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'config.luau'
+            path.write_text(harness, encoding='utf-8')
+            subprocess.run([str(ROOT / '.tools/luau/luau.exe'), str(path)], check=True)
+        for invalid in (-1, 1.5, '12', True):
+            data['MapImages']['asgard'] = invalid
+            with self.assertRaises(ValueError): release.validate(data, self.template)
+
     def test_group_is_optional_and_validated(self):
         data = copy.deepcopy(self.template)
         missing, _ = release.validate(data, self.template)

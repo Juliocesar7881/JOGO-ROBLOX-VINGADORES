@@ -106,7 +106,7 @@ local world = WorldBuilder.new(Catalog, function(player, panel, data)
 		kind = "OpenPanel", panel = panel, modeId = data.modeId, heroId = data.heroId,
 		chestId = data.chestId, shopKind = data.shopKind, shopKey = data.shopKey,
 	})
-end)
+end, Config)
 
 local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, remotes, function(player)
 	if pushState then pushState(player) end

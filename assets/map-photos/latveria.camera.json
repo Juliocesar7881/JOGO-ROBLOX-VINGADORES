@@ -1,0 +1,15 @@
+{
+  "map": "latveria",
+  "eye": [
+    -52.0,
+    14.0,
+    62.0
+  ],
+  "look": [
+    18.0,
+    13.0,
+    -45.0
+  ],
+  "fov": 65,
+  "source": "WorldBuilder.Build / Roblox Studio renderer"
+}

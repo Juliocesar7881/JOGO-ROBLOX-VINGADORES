@@ -933,6 +933,16 @@ for _,id in ipairs(Catalog.BaseOrder) do
 	end
 end
 
+-- A configured photograph replaces a portal's rendered diorama; a map without
+-- one keeps its diorama. (Last: this rebuilds the lobby.)
+do
+	WorldBuilder.new(Catalog, function() end, { MapImages = { manhattan = 12 } })
+	local board = workspace.DoomLobby.Portal_normal.MapBillboard.MapBoard
+	local photo = board:FindFirstChild("MapPhoto")
+	check(photo ~= nil and photo.Image == "rbxassetid://12" and board.MapPicture.Visible == false, "a configured photograph covers the rendered diorama")
+	check(workspace.DoomLobby.Portal_normal_gamma.MapBillboard.MapBoard:FindFirstChild("MapPhoto") == nil, "a map without a photograph keeps its diorama")
+end
+
 print(string.format("%s world boot: %d checks, %d failures",
 	failures == 0 and "PASS" or "FAIL", checks, failures))
 if failures > 0 then error("world boot failed", 0) end

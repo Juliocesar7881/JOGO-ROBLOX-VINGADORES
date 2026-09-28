@@ -1,0 +1,15 @@
+{
+  "map": "wakanda",
+  "eye": [
+    -25.0,
+    12.0,
+    62.0
+  ],
+  "look": [
+    24.0,
+    12.0,
+    -55.0
+  ],
+  "fov": 65,
+  "source": "WorldBuilder.Build / Roblox Studio renderer"
+}

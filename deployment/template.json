@@ -158,5 +158,13 @@
     "upgrade": 0,
     "victory": 0,
     "wave": 0
+  },
+  "MapImages": {
+    "asgard": 0,
+    "gamma": 0,
+    "hydra": 0,
+    "latveria": 0,
+    "manhattan": 0,
+    "wakanda": 0
   }
 }

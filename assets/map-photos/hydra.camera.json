@@ -1,0 +1,15 @@
+{
+  "map": "hydra",
+  "eye": [
+    38.0,
+    11.0,
+    40.0
+  ],
+  "look": [
+    -25.0,
+    11.0,
+    -62.0
+  ],
+  "fov": 65,
+  "source": "WorldBuilder.Build / Roblox Studio renderer"
+}
