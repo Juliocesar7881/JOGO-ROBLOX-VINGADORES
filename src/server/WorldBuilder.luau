@@ -2449,6 +2449,7 @@ function World:BuildLobby()
 	self:BuildHeroTower(lobby)
 	self:BuildShieldSites(hq)
 	self:BuildIslands(hq)
+	self:BuildHeroCameos(hq)
 	self:BuildTrainingYard(lobby)
 	self:BuildHorizon(hq)
 	self:DressHeroesHQ(hq)
@@ -2611,7 +2612,12 @@ function World:BuildHeroesHub(lobby)
 		local a = (i + 0.5) * math.pi * 2 / segments
 		local center = polar(math.deg(a), (inner + outer) / 2, GROUND_Y - 0.75)
 		local length = 2 * outer * math.sin(math.pi / segments) + 0.4
-		Kit.block(hq, "RingRoad", V(outer - inner, 1.5, length), CFrame.new(center) * CFrame.Angles(0, -a, 0), Color3.fromRGB(132, 142, 164), pave, true)
+		local frame = CFrame.new(center) * CFrame.Angles(0, -a, 0)
+		Kit.block(hq, "RingRoad", V(outer - inner, 1.5, length), frame, Color3.fromRGB(132, 142, 164), pave, true)
+		-- Lit edges, like the big games' glowing streets.
+		for _, side in ipairs({ -1, 1 }) do
+			Kit.block(hq, "RoadGlow", V(0.5, 0.06, length - 0.3), frame * CFrame.new(side * ((outer - inner) / 2 - 0.6), 0.78, 0), HQ.cyan, Enum.Material.Neon)
+		end
 	end
 	return hq
 end
@@ -3220,7 +3226,7 @@ function World:BuildShieldSites(hq)
 		for i = 0, 2 do p("JerseyBarrier", V(5, 2.2, 1.4), S * CFrame.new(-6 + i * 6, 1.1, -16.5), pale, Enum.Material.Concrete) end
 		agent(standing(S, 3, 7, 0.4))
 		agent(standing(S, -7, 5, -0.2))
-		Kit.floatText(outpost, "CommandTitle", (S * CFrame.new(0, 16, -12)).Position, "POSTO DE COMANDO", "COMMAND POST", blue, 32)
+		Kit.floatText(outpost, "CommandTitle", (S * CFrame.new(0, 22, -12)).Position, "POSTO DE COMANDO", "COMMAND POST", blue, 32)
 	end
 
 	-- Armory: a vaulted depot, weapon lockers and the agents' black SUV.
@@ -3433,6 +3439,47 @@ function World:BuildIslands(hq)
 		Kit.cornerMarks(hq, c, width / 2 - 2, depth / 2 - 2, violet, GROUND_Y + 0.05, 0)
 		for _, spot in ipairs({ { -60, -30, 1 }, { 60, -30, 0.9 }, { -64, 38, 1.1 }, { 64, 38, 1 } }) do Kit.tree(hq, V(c.X + spot[1], GRASS_Y, c.Z + spot[2]), spot[3]) end
 	end
+end
+
+--------------------------------------------------------------------------------
+-- Heroes hanging around the HQ, each where they belong: Thor at Asgard's arch,
+-- Black Panther by the vibranium, Strange at the academy, Hulk at the arena,
+-- Groot among the AFK palms, Rocket on the hangar crates, Spider-Man on the
+-- command post roof. Scenery only; the collection lives in the HUD.
+--------------------------------------------------------------------------------
+function World:BuildHeroCameos(hq)
+	local V = Vector3.new
+	local cast = Instance.new("Model")
+	cast.Name, cast.Parent = "HeroCameos", hq
+	local function cameo(heroId, foot, lookAt, scale, pedestal)
+		local hero = self.catalog.Heroes[heroId]
+		if not hero then return end
+		local figure = Instance.new("Model")
+		figure.Name, figure.Parent = "Cameo_" .. heroId, cast
+		local ground = foot
+		if pedestal then
+			Kit.disc(figure, "CameoBase", foot + V(0, 0.3, 0), 5, 0.6, HQ.navy, Enum.Material.Metal, true)
+			Kit.disc(figure, "CameoGlow", foot + V(0, 0.3, 0), 5.4, 0.1, rgb(hero.color), Enum.Material.Neon)
+			ground = foot + V(0, 0.6, 0)
+		end
+		local model = staticFigure(figure, heroId, hero, CFrame.lookAt(ground, V(lookAt.X, ground.Y, lookAt.Z)), scale)
+		local head = model and model:FindFirstChild("Head", true)
+		if head then
+			local name = label(head, upper(hero.name.pt), V(0, 2.4, 0), rgb(hero.color):Lerp(HQ.white, 0.55), 200, 70)
+			name.Font, name.TextSize = Enum.Font.FredokaOne, 20
+			name:SetAttribute("LobbyTextPT", upper(hero.name.pt)); name:SetAttribute("LobbyTextEN", upper(hero.name.en))
+		end
+	end
+	local path = hubAt(-162, 87)
+	cameo("thor", hubAt(-214, 111, GROUND_Y), path, 1.2, true)
+	cameo("panther", hubAt(-228, 48, GRASS_Y), path, 1.2, true)
+	cameo("strange", hubAt(-34, 236, GROUND_Y), hubAt(0, 180), 1.2, true)
+	cameo("hulk", hubAt(134, -50, GROUND_Y), HUB, 1.1, true)
+	cameo("groot", hubAt(-142, -3, GROUND_Y), hubAt(0, 40), 1.1, false)
+	local hangar = CFrame.new(LAYOUT.hangar.X, GROUND_Y, LAYOUT.hangar.Z) * CFrame.Angles(0, yawToward(LAYOUT.hangar, HUB), 0)
+	cameo("rocket", (hangar * CFrame.new(-13.5, 6.4, -13.5)).Position, HUB, 1, false)
+	local command = CFrame.new(LAYOUT.command.X, GROUND_Y, LAYOUT.command.Z) * CFrame.Angles(0, yawToward(LAYOUT.command, HUB), 0)
+	cameo("spiderman", (command * CFrame.new(-4, 7.6, -6.5)).Position, HUB, 1, false)
 end
 
 --------------------------------------------------------------------------------

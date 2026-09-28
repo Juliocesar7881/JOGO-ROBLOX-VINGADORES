@@ -26,6 +26,10 @@ batalha apareça do outro lado do mar, e não colada nos portais.
   caminho arco-íris), Latvéria (muralha, torres, chamas verdes) e a
   academia (treino e cartas). No céu, o Helicarrier com rotores girando e um
   Quinjet patrulhando a ilha; ao nordeste, o horizonte de uma cidade.
+- **Heróis pela base**: Thor no arco de Asgard, Pantera Negra nos cristais de
+  vibranium, Doutor Estranho na academia, Hulk na arena, Groot entre as
+  palmeiras da zona AFK, Rocket nas caixas do hangar e Homem-Aranha no teto
+  do posto de comando, cada um com o nome em cima.
 - Cada destino é uma estação: deck de aço, três pads com moldura, portões
   acesos e o mini-diorama do mapa numa placa com moldura neon.
 
@@ -38,8 +42,8 @@ e das câmaras AFK no `Catalog` acompanham a ilha nova.
 Verificação: `python tools/test.py` completo aprovado — mundo (4.833
 verificações, incluindo cenário fora dos pisos e das pontes, cada estação
 sobre o seu piso e zero faces sobrepostas), cliente (3.954 em 9 telas),
-servidor (1.105) e simulação de partidas. O lobby tem 2.929 peças e 15
-locais interativos. No Studio, o lobby foi montado no modo de edição e
+servidor (1.105) e simulação de partidas. O lobby tem 3.269 peças (orçamento
+de 3.600) e 15 locais interativos. No Studio, o lobby foi montado no modo de edição e
 percorrido num Play solo: jogador nasce na estrela, placas mostram os mapas,
 globo, órbitas, rotores e Quinjet animam, sem erro de script no log. Um
 problema real só apareceu no Play: estátuas ancoradas depois de posicionadas
