@@ -215,23 +215,50 @@ end
 --==============================================================================
 -- The chest reveal
 --==============================================================================
-local function drawChest(UI, parent, tint)
-	local gold = Color3.fromRGB(255, 206, 82)
-	local body = UI.frame(parent, { Name = "ChestBody", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(0.9, 0, 0.55, 0), BackgroundColor3 = tint:Lerp(BLACK, 0.3), ZIndex = 84 })
-	UI.corner(body, 14)
-	UI.stroke(body, gold, 3)
-	for _, x in ipairs({ 0.18, 0.72 }) do
-		UI.frame(body, { Position = UDim2.new(x, 0, 0, 0), Size = UDim2.new(0.1, 0, 1, 0), BackgroundColor3 = gold, ZIndex = 85 })
+-- A real 3D treasure chest in a ViewportFrame: it drops in, shakes harder with
+-- every rarity it climbs, bursts its lid open in a flash of light, and the
+-- prize rises out of it on a card. Parts live only in the viewport.
+local CHEST_GOLD = Color3.fromRGB(255, 200, 70)
+local CHEST_INK = Color3.fromRGB(20, 22, 34)
+
+local function chestModel(UI, world, tint)
+	local rest, lid = {}, {}
+	local function piece(name, size, cf, color, material, shape, onLid)
+		local p = UI.create("Part", {
+			Name = name, Size = size, CFrame = cf, Color = color, Material = material or Enum.Material.SmoothPlastic,
+			Anchored = true, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false,
+		}, world)
+		if shape then p.Shape = shape end
+		rest[p] = cf
+		if onLid then lid[p] = true end
+		return p
 	end
-	local lock = UI.frame(body, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.08, 0), Size = UDim2.new(0.2, 0, 0.42, 0), BackgroundColor3 = gold, ZIndex = 86 })
-	UI.corner(lock, 8)
-	local lid = UI.frame(parent, { Name = "ChestLid", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0.47, 0), Size = UDim2.new(1, 0, 0.36, 0), BackgroundColor3 = tint, ZIndex = 87 })
-	UI.corner(lid, 18)
-	UI.stroke(lid, gold, 3)
-	for _, x in ipairs({ 0.2, 0.7 }) do
-		UI.frame(lid, { Position = UDim2.new(x, 0, 0, 0), Size = UDim2.new(0.09, 0, 1, 0), BackgroundColor3 = gold, ZIndex = 88 })
+	local dark = tint:Lerp(BLACK, 0.35)
+	local cyl = Enum.PartType.Cylinder
+	-- A gold chest gets bronze bands, or the bands would vanish into it.
+	local near = math.abs(tint.R - CHEST_GOLD.R) + math.abs(tint.G - CHEST_GOLD.G) + math.abs(tint.B - CHEST_GOLD.B) < 0.45
+	local CHEST_GOLD = near and Color3.fromRGB(140, 72, 34) or CHEST_GOLD
+	-- Body, feet trim, gold bands and a lock plate on the front (-Z).
+	piece("ChestBody", Vector3.new(4.4, 2.3, 3), CFrame.new(0, 1.35, 0), dark)
+	piece("ChestFront", Vector3.new(4.1, 2.0, 0.1), CFrame.new(0, 1.35, -1.52), tint)
+	piece("ChestFoot", Vector3.new(4.8, 0.4, 3.4), CFrame.new(0, 0.2, 0), CHEST_GOLD, Enum.Material.Metal)
+	for _, x in ipairs({ -1.35, 1.35 }) do
+		piece("ChestBand", Vector3.new(0.5, 2.35, 3.12), CFrame.new(x, 1.35, 0), CHEST_GOLD, Enum.Material.Metal)
 	end
-	return lid
+	piece("ChestLock", Vector3.new(1.1, 1.2, 0.3), CFrame.new(0, 1.85, -1.62), CHEST_GOLD, Enum.Material.Metal)
+	piece("ChestKeyhole", Vector3.new(0.26, 0.5, 0.1), CFrame.new(0, 1.75, -1.8), CHEST_INK)
+	-- The treasure glowing inside, seen once the lid lifts.
+	local glow = piece("ChestTreasure", Vector3.new(3.9, 0.3, 2.6), CFrame.new(0, 2.45, 0), CHEST_GOLD, Enum.Material.Neon)
+	-- The rounded lid: a half cylinder above the rim, hinged at the back.
+	piece("ChestRim", Vector3.new(4.6, 0.3, 3.2), CFrame.new(0, 2.5, 0), CHEST_GOLD, Enum.Material.Metal, nil, true)
+	piece("ChestLid", Vector3.new(4.4, 3, 3), CFrame.new(0, 2.5, 0) * CFrame.Angles(0, 0, 0), tint, nil, cyl, true)
+	for _, x in ipairs({ -1.35, 1.35 }) do
+		piece("ChestLidBand", Vector3.new(0.5, 3.12, 3.12), CFrame.new(x, 2.5, 0), CHEST_GOLD, Enum.Material.Metal, cyl, true)
+	end
+	for _, x in ipairs({ -2.05, 2.05 }) do
+		piece("ChestStud", Vector3.new(0.5, 0.5, 0.5), CFrame.new(x, 2.5, -1.55), CHEST_GOLD, Enum.Material.Metal, Enum.PartType.Ball, true)
+	end
+	return rest, lid, glow
 end
 
 -- result: the server's committed OpenChest result {heroId, rarity, duplicate,
@@ -249,116 +276,184 @@ function Celebrate:Chest(result, chestId, onClosed)
 	local chestTint = UI.color(chest.color)
 	local finalTint = UI.color(rarity.color)
 
-	-- Suspense scales with the prize: a common opens quickly, a mythic makes
+	-- Suspense scales with the prize: a common pops quickly, a mythic makes
 	-- the chest climb through every colour first.
-	local tierTime = lowFX and 0 or 0.5
-	local intro = 0.35
-	local openAt = intro + tierIndex * tierTime + (lowFX and 0.15 or 0.35)
-	local cardAt = openAt + 0.1
-	local finalAt = cardAt + (lowFX and 0.1 or 0.55)
+	local tierTime = lowFX and 0 or 0.55
+	local intro = lowFX and 0.1 or 0.45
+	local openAt = intro + tierIndex * tierTime + (lowFX and 0.1 or 0.3)
+	local cardAt = openAt + (lowFX and 0.05 or 0.35)
+	local finalAt = cardAt + (lowFX and 0.1 or 0.6)
 
-	local root = UI.frame(self.root, { Name = "ChestReveal", Size = UDim2.fromScale(1, 1), BackgroundColor3 = BLACK, BackgroundTransparency = 1, ZIndex = 80, Active = true })
+	local root = UI.frame(self.root, { Name = "ChestReveal", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(8, 10, 30), BackgroundTransparency = 1, ZIndex = 80, Active = true })
 	local skip = UI.button(root, "", function() self:SkipReveal() end, { Name = "RevealSkip", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 81, AutoButtonColor = false })
-	local stage = UI.frame(root, { Name = "RevealStage", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.fromOffset(380, 380), BackgroundTransparency = 1, ZIndex = 82 })
+	local stage = UI.frame(root, { Name = "RevealStage", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.fromOffset(400, 400), BackgroundTransparency = 1, ZIndex = 82 })
 	local screen = self.root.AbsoluteSize
-	UI.create("UIScale", { Scale = math.clamp(math.min(screen.X, screen.Y) / 460, 0.55, 1.35) }, stage)
+	UI.create("UIScale", { Scale = math.clamp(math.min(screen.X, screen.Y) / 470, 0.55, 1.4) }, stage)
 
-	local rays = UI.frame(stage, { Name = "Rays", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(10, 10), BackgroundTransparency = 1, ZIndex = 82, Visible = false })
-	for index = 0, 7 do
-		UI.frame(rays, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(34, 640), Rotation = index * 22.5, BackgroundColor3 = finalTint, BackgroundTransparency = 0.72, ZIndex = 82 })
+	-- Light rays turn behind everything from the first frame, in the colour
+	-- the chest has reached.
+	local rays = UI.frame(stage, { Name = "Rays", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromOffset(10, 10), BackgroundTransparency = 1, ZIndex = 82, Visible = not lowFX })
+	local rayBars = {}
+	for index = 0, 11 do
+		local bar = UI.frame(rays, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(index % 2 == 0 and 46 or 22, 760), Rotation = index * 15, BackgroundColor3 = WHITE, BackgroundTransparency = 0.86, ZIndex = 82 })
+		table.insert(rayBars, bar)
 	end
-	local glow = UI.frame(stage, { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromOffset(200, 200), BackgroundColor3 = UI.color(Catalog.Rarities[tiers[1]].color), BackgroundTransparency = 0.55, ZIndex = 83 })
+	local glow = UI.frame(stage, { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.56), Size = UDim2.fromOffset(220, 220), BackgroundColor3 = UI.color(Catalog.Rarities[tiers[1]].color), BackgroundTransparency = 0.5, ZIndex = 83 })
 	UI.corner(glow, 200)
-	local chestGroup = UI.frame(stage, { Name = "RevealChest", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), Size = UDim2.fromOffset(190, 170), BackgroundTransparency = 1, ZIndex = 84 })
-	local chestScale = UI.create("UIScale", { Scale = 0 }, chestGroup)
-	local lid = drawChest(UI, chestGroup, chestTint)
-	local lidRest = lid.Position
-	local tierLabel = UI.label(stage, "", { Name = "TierLabel", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.86), Size = UDim2.fromOffset(360, 44), Font = Enum.Font.GothamBlack, TextSize = 30, TextXAlignment = Enum.TextXAlignment.Center, TextStrokeTransparency = 0.25, ZIndex = 89 })
+	local halo = UI.frame(stage, { Name = "Halo", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.56), Size = UDim2.fromOffset(300, 300), BackgroundTransparency = 1, ZIndex = 83 })
+	UI.corner(halo, 300)
+	local haloStroke = UI.stroke(halo, WHITE, 6)
+	haloStroke.Transparency = 1
 
-	local card = UI.frame(stage, { Name = "RevealHeroCard", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(270, 350), BackgroundColor3 = finalTint:Lerp(BLACK, 0.7), Visible = false, ZIndex = 90 })
-	UI.corner(card, 22)
-	UI.stroke(card, finalTint, 4)
-	local cardScale = UI.create("UIScale", { Scale = 0 }, card)
-	UI.label(card, Catalog.Upper(self:_t(rarity.name)) .. "!", { Name = "RevealRarity", Position = UDim2.fromOffset(10, 10), Size = UDim2.new(1, -20, 0, 34), Font = Enum.Font.GothamBlack, TextSize = 28, TextColor3 = finalTint:Lerp(WHITE, 0.2), TextXAlignment = Enum.TextXAlignment.Center, TextStrokeTransparency = 0.3, ZIndex = 91 })
-	if result.baseId then
-		UI.basePortrait(card,hero,{Name="RevealBase",AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,48),Size=UDim2.fromOffset(190,196),ZIndex=91})
-	elseif self.portrait then
-		pcall(self.portrait, card, result.heroId, { Name = "RevealPortrait", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 48), Size = UDim2.fromOffset(190, 196), ZIndex = 91 })
+	-- The 3D chest.
+	local chestGroup = UI.frame(stage, { Name = "RevealChest", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.56), Size = UDim2.fromOffset(320, 280), BackgroundTransparency = 1, ZIndex = 84 })
+	local view = UI.create("ViewportFrame", { Name = "ChestView", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 84,
+		Ambient = Color3.fromRGB(170, 170, 190), LightColor = Color3.fromRGB(255, 244, 220), LightDirection = Vector3.new(-0.6, -1, 0.8) }, chestGroup)
+	local world = UI.create("WorldModel", { Name = "ChestWorld" }, view)
+	local camera = UI.create("Camera", { Name = "ChestCamera", FieldOfView = 36 }, view)
+	camera.CFrame = CFrame.lookAt(Vector3.new(2.6, 4.6, -9.2), Vector3.new(0, 1.6, 0))
+	view.CurrentCamera = camera
+	local rest, lidParts, treasure = chestModel(UI, world, chestTint)
+	local hinge = CFrame.new(0, 2.5, 1.5)
+	local function pose(rig, lidAngle)
+		local swing = hinge * CFrame.Angles(lidAngle, 0, 0) * hinge:Inverse()
+		for p, cf in pairs(rest) do
+			p.CFrame = lidParts[p] and rig * swing * cf or rig * cf
+		end
 	end
-	UI.label(card, self:_t(hero.name), { Name = "RevealName", Position = UDim2.fromOffset(10, 250), Size = UDim2.new(1, -20, 0, 34), Font = Enum.Font.GothamBlack, TextSize = 24, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, TextScaled = true, ZIndex = 91 })
+	pose(CFrame.new(0, 8, 0), 0)
+
+	local tierLabel = UI.label(stage, "", { Name = "TierLabel", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.86), Size = UDim2.fromOffset(380, 48), Font = Enum.Font.GothamBlack, TextSize = 34, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 89 })
+	UI.outline(tierLabel, 3)
+
+	-- The prize card.
+	local card = UI.frame(stage, { Name = "RevealHeroCard", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(280, 360), BackgroundColor3 = finalTint, Visible = false, ZIndex = 90 })
+	UI.corner(card, 24)
+	UI.stroke(card, WHITE, 5)
+	UI.create("UIGradient", { Color = ColorSequence.new(finalTint:Lerp(WHITE, 0.15), finalTint:Lerp(BLACK, 0.55)), Rotation = 90 }, card)
+	local cardScale = UI.create("UIScale", { Scale = 0 }, card)
+	local stars = string.rep("★", tierIndex)
+	local rarityLabel = UI.label(card, Catalog.Upper(self:_t(rarity.name)) .. "!", { Name = "RevealRarity", Position = UDim2.fromOffset(10, 8), Size = UDim2.new(1, -20, 0, 36), Font = Enum.Font.GothamBlack, TextSize = 30, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
+	UI.outline(rarityLabel, 3)
+	local starLabel = UI.label(card, stars, { Name = "RevealStars", Position = UDim2.fromOffset(10, 42), Size = UDim2.new(1, -20, 0, 22), TextSize = 20, Font = Enum.Font.GothamBlack, TextColor3 = CHEST_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
+	UI.outline(starLabel, 2)
+	local stageArt = UI.frame(card, { Name = "RevealArtStage", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 68), Size = UDim2.fromOffset(236, 190), BackgroundColor3 = BLACK, BackgroundTransparency = 0.7, ZIndex = 91 })
+	UI.corner(stageArt, 18)
+	if result.baseId then
+		UI.basePortrait(card, hero, { Name = "RevealBase", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 72), Size = UDim2.fromOffset(220, 180), ZIndex = 92 })
+	elseif self.portrait then
+		pcall(self.portrait, card, result.heroId, { Name = "RevealPortrait", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70), Size = UDim2.fromOffset(230, 186), BackgroundTransparency = 1, ZIndex = 92 })
+	end
+	local nameLabel = UI.label(card, self:_t(hero.name), { Name = "RevealName", Position = UDim2.fromOffset(10, 262), Size = UDim2.new(1, -20, 0, 38), Font = Enum.Font.GothamBlack, TextSize = 28, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, TextScaled = true, ZIndex = 91 })
+	UI.outline(nameLabel, 3)
 	local statusText = result.duplicate
 		and self:_t({ pt = "REPETIDO  •  +" .. tostring(result.refundGold or 0) .. " Ouro  •  +" .. tostring(result.refundMastery or 0) .. " XP do herói", en = "DUPLICATE  •  +" .. tostring(result.refundGold or 0) .. " Gold  •  +" .. tostring(result.refundMastery or 0) .. " hero XP" })
 		or self:_t({ pt = "NOVO HERÓI!", en = "NEW HERO!" })
-	local status = UI.label(card, statusText, { Name = "RevealStatus", Position = UDim2.fromOffset(10, 290), Size = UDim2.new(1, -20, 0, 48), Font = Enum.Font.GothamBlack, TextSize = result.duplicate and 13 or 24, TextWrapped = true, TextColor3 = result.duplicate and Color3.fromRGB(255, 206, 82) or Color3.fromRGB(135, 235, 113), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
-	if result.baseId then status.Text=result.duplicate and ("+"..tostring(result.refundGold or 0)..self:_t({pt=" Ouro • base repetida",en=" Gold • duplicate base"})) or self:_t({pt="NOVA BASE!",en="NEW BASE!"}) end
+	local status = UI.label(card, statusText, { Name = "RevealStatus", Position = UDim2.fromOffset(10, 302), Size = UDim2.new(1, -20, 0, 48), Font = Enum.Font.GothamBlack, TextSize = result.duplicate and 14 or 26, TextWrapped = true, TextColor3 = result.duplicate and CHEST_GOLD or Color3.fromRGB(150, 255, 120), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
+	UI.outline(status, 2.5)
+	if result.baseId then status.Text = result.duplicate and ("+" .. tostring(result.refundGold or 0) .. self:_t({ pt = " Ouro • base repetida", en = " Gold • duplicate base" })) or self:_t({ pt = "NOVA BASE!", en = "NEW BASE!" }) end
 	local statusScale = UI.create("UIScale", { Scale = 1 }, status)
 
 	local continueButton = UI.button(root, self:_t({ pt = "INCRÍVEL!", en = "AWESOME!" }), function() self:_closeReveal() end, {
-		Name = "RevealContinue", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18), Size = UDim2.fromOffset(240, 56),
-		BackgroundColor3 = finalTint, TextSize = 20, Visible = false, ZIndex = 95,
+		Name = "RevealContinue", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18), Size = UDim2.fromOffset(260, 60),
+		BackgroundColor3 = Color3.fromRGB(88, 224, 79), TextSize = 24, Visible = false, ZIndex = 95,
 	})
 	local flash = UI.frame(root, { Name = "RevealFlash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE, BackgroundTransparency = 1, ZIndex = 94, Active = false })
+
+	-- Sparkles thrown out of the chest when it opens.
+	local sparkles = {}
+	local function burstSparkles(count, tint)
+		for index = 1, count do
+			local angle = (index / count) * math.pi * 2 + self.random:NextNumber(-0.2, 0.2)
+			local s = UI.label(stage, "✦", { Name = "RevealSparkle", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(34, 34), TextSize = self.random:NextInteger(18, 34), TextColor3 = index % 3 == 0 and WHITE or tint, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 93 })
+			table.insert(sparkles, { label = s, angle = angle, speed = self.random:NextNumber(150, 260) })
+		end
+	end
 
 	local lastTier, opened, carded = 0, false, false
 	self:_cue("chest", 0.05)
 	self.reveal = { root = root, finalAt = finalAt, onClosed = onClosed, result = result }
 	self.reveal.anim = self:_add({ duration = math.huge, update = function(t, dt)
 		if not root.Parent then return end
-		root.BackgroundTransparency = lerp(1, 0.16, clamp01(t / 0.3))
-		-- 1. The chest drops in.
+		root.BackgroundTransparency = lerp(1, 0.12, clamp01(t / 0.3))
+		if not lowFX then rays.Rotation = t * (opened and 40 or 14) end
 		if t < openAt then
-			chestScale.Scale = backOut(t / intro)
-			-- 2. It charges, climbing one rarity colour at a time.
+			-- 1. The chest drops in and lands with a bounce.
+			local drop = backOut(t / math.max(intro, 0.01))
+			local rig = CFrame.new(0, 8 * (1 - drop), 0)
+			-- 2. It charges, climbing one rarity colour at a time; every step
+			-- it hops, and it shakes harder the rarer the prize.
 			local charging = t >= intro
 			local tier = lowFX and tierIndex or (charging and math.min(tierIndex, math.floor((t - intro) / math.max(tierTime, 0.001)) + 1) or 1)
 			if charging and tier ~= lastTier then
 				lastTier = tier
 				local tint = UI.color(Catalog.Rarities[tiers[tier]].color)
 				glow.BackgroundColor3 = tint
-				tierLabel.TextColor3 = tint:Lerp(WHITE, 0.25)
+				treasure.Color = tint
+				for _, bar in ipairs(rayBars) do bar.BackgroundColor3 = tint:Lerp(WHITE, 0.4) end
+				tierLabel.TextColor3 = tint:Lerp(WHITE, 0.2)
 				tierLabel.Text = Catalog.Upper(self:_t(Catalog.Rarities[tiers[tier]].name)) .. string.rep("!", tier - 1)
 				if not lowFX then self:_cue(tier >= 4 and "levelUp" or "collect", 0.05) end
 			end
-			local amplitude = lowFX and 0 or (charging and (2 + lastTier * 2.5) or 0)
-			chestGroup.Rotation = math.sin(t * 46) * amplitude
+			if charging and not lowFX then
+				local since = (t - intro) % math.max(tierTime, 0.001)
+				local hop = math.max(0, math.sin(math.min(since / 0.22, 1) * math.pi)) * (0.35 + lastTier * 0.12)
+				local amplitude = 0.04 + lastTier * 0.035
+				rig = CFrame.new(0, hop, 0) * CFrame.Angles(0, math.sin(t * 38) * amplitude, math.sin(t * 47) * amplitude * 0.6)
+				-- The lid rattles, letting light out.
+				pose(rig, math.max(0, math.sin(t * 29)) * (0.05 + lastTier * 0.03))
+			else
+				pose(rig, 0)
+			end
 			local pulse = lowFX and 0 or math.sin(t * 14) * (8 + lastTier * 5)
-			glow.Size = UDim2.fromOffset(190 + lastTier * 18 + pulse, 190 + lastTier * 18 + pulse)
+			glow.Size = UDim2.fromOffset(200 + lastTier * 22 + pulse, 200 + lastTier * 22 + pulse)
 		else
 			-- 3. It bursts open.
 			if not opened then
 				opened = true
-				chestGroup.Rotation = 0
 				glow.BackgroundColor3 = finalTint
+				treasure.Color = finalTint
+				for _, bar in ipairs(rayBars) do bar.BackgroundColor3 = finalTint:Lerp(WHITE, 0.3); bar.BackgroundTransparency = 0.7 end
 				tierLabel.Text = ""
-				rays.Visible = not lowFX
 				self:_cue("victory", 0.05)
 				self:Confetti(CONFETTI_BY_TIER[tierIndex] or 10, 0.4)
+				if not lowFX then burstSparkles(10 + tierIndex * 4, finalTint:Lerp(WHITE, 0.3)) end
 			end
-			local burst = clamp01((t - openAt) / 0.35)
-			lid.Position = UDim2.new(lidRest.X.Scale, lidRest.X.Offset, lidRest.Y.Scale, lidRest.Y.Offset - 90 * burst)
-			lid.Rotation = -28 * burst
-			lid.BackgroundTransparency = burst
-			chestScale.Scale = 1 - 0.35 * burst
-			chestGroup.Position = UDim2.new(0.5, 0, 0.55 + 0.25 * burst, 0)
+			local since = t - openAt
+			local burst = clamp01(since / 0.4)
+			pose(CFrame.new(0, -0.6 * math.sin(math.min(since / 0.25, 1) * math.pi) * (lowFX and 0 or 1), 0), 1.95 * backOut(burst))
+			chestGroup.Position = UDim2.new(0.5, 0, 0.56 + 0.22 * clamp01((since - 0.25) / 0.4), 0)
 			if not lowFX then
-				flash.BackgroundTransparency = lerp(0.25, 1, clamp01((t - openAt) / 0.4))
-				rays.Rotation = (t - openAt) * 22
+				flash.BackgroundTransparency = lerp(0.15, 1, clamp01(since / 0.45))
+				haloStroke.Transparency = lerp(0.1, 1, clamp01(since / 0.6))
+				halo.Size = UDim2.fromOffset(120 + 520 * clamp01(since / 0.6), 120 + 520 * clamp01(since / 0.6))
 			end
-			glow.Size = UDim2.fromOffset(260 + 90 * burst, 260 + 90 * burst)
-			glow.BackgroundTransparency = lerp(0.45, 0.7, burst)
+			glow.Size = UDim2.fromOffset(280 + 110 * burst, 280 + 110 * burst)
+			glow.BackgroundTransparency = lerp(0.4, 0.65, burst)
+			for _, s in ipairs(sparkles) do
+				if s.label.Parent then
+					local d = s.speed * clamp01(since / 0.9)
+					s.label.Position = UDim2.new(0.5, math.cos(s.angle) * d, 0.52, math.sin(s.angle) * d - 40 * since)
+					s.label.TextTransparency = clamp01((since - 0.5) / 0.5)
+					s.label.Rotation = since * 200
+				end
+			end
 		end
-		-- 4. The hero pops out.
+		-- 4. The prize rises out of the chest.
 		if t >= cardAt then
 			if not carded then
 				carded = true
 				card.Visible = true
 				if tierIndex >= 4 then self:_cue("levelUp", 0.05) end
 			end
-			cardScale.Scale = lowFX and 1 or backOut((t - cardAt) / 0.45)
+			local rise = lowFX and 1 or backOut((t - cardAt) / 0.5)
+			cardScale.Scale = rise
+			card.Position = UDim2.fromScale(0.5, 0.5 + 0.18 * (1 - clamp01((t - cardAt) / 0.35)))
+			card.Rotation = lowFX and 0 or math.sin(t * 2.2) * 2
 		end
 		if t >= finalAt then
 			continueButton.Visible = true
-			if not result.duplicate and not lowFX then statusScale.Scale = 1 + 0.07 * math.sin(t * 6) end
+			if not result.duplicate and not lowFX then statusScale.Scale = 1 + 0.08 * math.sin(t * 6) end
 		end
 	end })
 	return root

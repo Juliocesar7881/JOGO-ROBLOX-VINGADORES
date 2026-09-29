@@ -1649,6 +1649,41 @@ function Kit.cornerMarks(parent, center, halfX, halfZ, color, y, yaw)
 		end
 	end
 end
+-- A treasure chest, front toward the frame's +Z: a painted body with gold
+-- bands and a lock, a rounded lid hinged at the back (opened by `open`
+-- radians) and the treasure glowing inside with coins spilling over the rim.
+function Kit.treasureChest(parent, frame, color, glow, open, scale)
+	local made = {}
+	scale = scale or 1
+	-- Author at size 1; offsets and sizes grow together.
+	local function place(cf) return cf - cf.Position + frame * ((frame:Inverse() * cf.Position) * scale) end
+	local function piece(name, size, cf, tint, material, shape)
+		local p = Kit.block(parent, name, size * scale, place(cf), tint, material)
+		if shape then p.Shape = shape end
+		table.insert(made, p)
+		return p
+	end
+	local dark = color:Lerp(HQ.ink, 0.3)
+	local gold, cyl = HQ.gold, Enum.PartType.Cylinder
+	piece("ChestBody", Vector3.new(4.4, 2.3, 3), frame * CFrame.new(0, 1.35, 0), dark)
+	piece("ChestFront", Vector3.new(4.1, 2, 0.12), frame * CFrame.new(0, 1.35, 1.52), color)
+	piece("ChestFoot", Vector3.new(4.8, 0.4, 3.4), frame * CFrame.new(0, 0.2, 0), gold, Enum.Material.Metal)
+	for _, x in ipairs({ -1.35, 1.35 }) do piece("ChestBand", Vector3.new(0.5, 2.35, 3.12), frame * CFrame.new(x, 1.35, 0), gold, Enum.Material.Metal) end
+	piece("ChestLock", Vector3.new(1.1, 1.2, 0.3), frame * CFrame.new(0, 1.85, 1.62), gold, Enum.Material.Metal)
+	piece("ChestKeyhole", Vector3.new(0.26, 0.5, 0.1), frame * CFrame.new(0, 1.75, 1.8), HQ.ink)
+	piece("ChestTreasure", Vector3.new(3.9, 0.3, 2.6), frame * CFrame.new(0, 2.45, 0), glow, Enum.Material.Neon)
+	for i, spot in ipairs({ { -1.2, 0.8 }, { 0.4, 1.2 }, { 1.4, 0.6 }, { -0.3, 1.45 } }) do
+		piece("ChestCoin", Vector3.new(0.18, 0.9, 0.9), frame * CFrame.new(spot[1], 2.62 + i * 0.03, spot[2]) * CFrame.Angles(0.4 * i, 0, math.pi / 2 + 0.3 * i), gold, Enum.Material.Metal, cyl)
+	end
+	local hinge = frame * CFrame.new(0, 2.5, -1.5)
+	local swing = hinge * CFrame.Angles(open or 0, 0, 0) * hinge:Inverse()
+	piece("ChestRim", Vector3.new(4.6, 0.3, 3.2), swing * frame * CFrame.new(0, 2.5, 0), gold, Enum.Material.Metal)
+	piece("ChestLid", Vector3.new(4.4, 3, 3), swing * frame * CFrame.new(0, 2.5, 0), color, nil, cyl)
+	for _, x in ipairs({ -1.35, 1.35 }) do piece("ChestLidBand", Vector3.new(0.5, 3.12, 3.12), swing * frame * CFrame.new(x, 2.5, 0), gold, Enum.Material.Metal, cyl) end
+	for _, x in ipairs({ -2.05, 2.05 }) do piece("ChestStud", Vector3.new(0.5, 0.5, 0.5), swing * frame * CFrame.new(x, 2.5, 1.55), gold, Enum.Material.Metal, Enum.PartType.Ball) end
+	return made
+end
+
 -- A flag on a pole; the cloth waves on the client, hinged at the pole.
 function Kit.flag(parent, base, height, color, width)
 	width = width or 4
@@ -2181,13 +2216,15 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 		local column=artPart(model,"SummonColumn",Vector3.new(2.2,2.5+math.abs(i),2.2),at(i*4.2,1.85+math.abs(i)/2,-3),HQ.trim,Enum.Material.Metal)
 		artPart(model,"SummonChip",Vector3.new(1.7,0.18,1.7),column.CFrame*CFrame.new(0,column.Size.Y/2+0.05,0),tint,Enum.Material.Neon)
 	end
-	-- The prize: a big treasure chest floating over the middle column.
-	local chestAt=at(0,6.1,-3)*CFrame.Angles(0,0.35,0)
+	-- The prize: a giant treasure chest floating over the roof, lid open
+	-- and treasure glowing, turning slowly: seen from anywhere on the plaza.
+	local chestAt=at(0,28,-1)
 	local turn=chestAt.Position
-	Kit.animate(artPart(model,"PrizeChest",Vector3.new(4.4,2.6,3),chestAt,Color3.fromRGB(150,94,52),Enum.Material.WoodPlanks),0.5,0.35,turn)
-	Kit.animate(Kit.blob(model,"PrizeLid",Vector3.new(4.5,1.8,3.1),chestAt*CFrame.new(0,1.3,0),Color3.fromRGB(170,108,60),Enum.Material.WoodPlanks),0.5,0.35,turn)
-	Kit.animate(artPart(model,"PrizeBand",Vector3.new(4.6,0.4,3.2),chestAt*CFrame.new(0,0.9,0),HQ.gold,Enum.Material.Metal),0.5,0.35,turn)
-	Kit.animate(artPart(model,"PrizeLock",Vector3.new(0.8,1,0.3),chestAt*CFrame.new(0,0.9,1.65),tint,Enum.Material.Neon),0.5,0.35,turn)
+	for _,piece in ipairs(Kit.treasureChest(model,chestAt,isBase and Color3.fromRGB(70,190,120) or Color3.fromRGB(235,110,60),tint,-0.55,1.9)) do
+		Kit.animate(piece,0.45,0.8,turn)
+	end
+	local beam=artPart(model,"PrizeBeam",Vector3.new(11,4.5,4.5),at(0,22.5,-1)*CFrame.Angles(0,0,math.pi/2),tint,Enum.Material.Neon)
+	beam.Shape,beam.Transparency=Enum.PartType.Cylinder,0.55
 	Kit.light(reactor,secondary,26,1.6)
 	artPart(model,"HallGlow",Vector3.new(24,0.4,0.3),at(0,13.5,-9.85),tint,Enum.Material.Neon)
 	artPart(model,"HallFloorRing",Vector3.new(14,0.1,14),at(0,0.62,-3),secondary,Enum.Material.Neon).Transparency=0.6

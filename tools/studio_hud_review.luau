@@ -153,7 +153,14 @@ task.spawn(function()
 					host = true, maps = 5, riders = actors}
 			end
 			render()
-			if stage == "boarding" then
+			if stage == "reveal" or stage == "revealbase" or stage == "revealcommon" then
+				local chestResult = stage == "revealbase" and {baseId = "sanctum", rarity = "epic", duplicate = false, refundGold = 0}
+					or stage == "revealcommon" and {heroId = "falcon", rarity = "common", duplicate = true, refundGold = 150, refundMastery = 60}
+					or {heroId = "thor", rarity = "legendary", duplicate = false, refundGold = 0, refundMastery = 0}
+				-- The full animation: the review fixture otherwise runs reduced effects.
+				fixtureProfile.settings.lowFX = false
+				celebrate:Chest(chestResult, stage == "revealbase" and "base_epic" or "legendary")
+			elseif stage == "boarding" then
 				openContext("quests", {})
 			elseif stage == "basechests" then
 				openContext("chests",{chestId="base_cosmic"})
