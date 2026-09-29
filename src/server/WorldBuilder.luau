@@ -2168,13 +2168,35 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 			artPart(model,"QueueGateLight",Vector3.new(0.18,6,0.2),at(dx+side*3.05,4.4,-3.3),tint,Enum.Material.Neon)
 		end
 		artPart(model,"QueueLintel",Vector3.new(7.4,0.6,0.9),at(dx,8.1,-3.8),tint,Enum.Material.Neon)
+		local door=at(dx,4.35,-3.8)*CFrame.Angles(0,math.pi/2,0)
+		local rim=artPart(model,"PortalRim",Vector3.new(0.3,6.3,6.3),door,tint:Lerp(Color3.new(1,1,1),0.25),Enum.Material.Neon)
+		rim.Shape=Enum.PartType.Cylinder
+		local membrane=artPart(model,"PortalMembrane",Vector3.new(0.34,5.7,5.7),door,tint:Lerp(HQ.ink,0.45),Enum.Material.SmoothPlastic)
+		membrane.Shape=Enum.PartType.Cylinder
+		-- The vortex: a pinwheel of light drawn on a clear pane in front of
+		-- the membrane; the client turns it (PortalSwirl).
+		local pane=artPart(model,"PortalPane",Vector3.new(5.7,5.7,0.05),at(dx,4.35,-3.55),tint,Enum.Material.SmoothPlastic)
+		pane.Transparency=1
+		local gui=Instance.new("SurfaceGui")
+		gui.Name,gui.Face,gui.LightInfluence,gui.CanvasSize=  "PortalSwirl",Enum.NormalId.Back,0,Vector2.new(256,256)
+		gui.SizingMode,gui.Parent=Enum.SurfaceGuiSizingMode.FixedSize,pane
+		local swirl=frame2d(gui,UDim2.fromScale(0.5,0.5),UDim2.fromScale(1,1),tint,UDim.new(0.5,0),0,1)
+		swirl.Name="Swirl"
+		for arm=0,5 do
+			local bar=box(swirl,0.5+math.cos(math.rad(arm*60))*0.2,0.5+math.sin(math.rad(arm*60))*0.2,0.14,0.52,tint:Lerp(HQ.white,arm%2==0 and 0.55 or 0.15),arm*60+40,0.5,0.25)
+			bar.Name="SwirlArm"
+		end
+		local ring=circle(swirl,0.5,0.5,0.72,0.72,tint,1)
+		stroke(ring,tint:Lerp(HQ.white,0.4),6)
+		local core=circle(gui,0.5,0.5,0.3,0.3,HQ.white,0.15)
+		core.Name="SwirlCore"
 		local sign=part(model,"QueueSign"..slot,Vector3.new(8.3,2.5,0.25),at(dx,10,-3.8)*CFrame.Angles(0,math.pi,0),HQ.ink)
 		local gui=Instance.new("SurfaceGui"); gui.Name="QueueBoard"; gui.Face=Enum.NormalId.Front; gui.LightInfluence=0
 		gui.CanvasSize=Vector2.new(290,94); gui.SizingMode=Enum.SurfaceGuiSizingMode.FixedSize; gui.Parent=sign
 		stationText(gui,"QueueTitle","FILA "..slot,"QUEUE "..slot,UDim2.fromScale(0,0),UDim2.fromScale(1,0.36),ART.pearl,20)
 		local status=stationText(gui,"QueueStatus","0/4  •  ENTRE","0/4  •  STEP IN",UDim2.fromScale(0,0.36),UDim2.fromScale(1,0.62),tint,26)
 		zones[queueId]={destinationId=portalId,slot=slot,center=at(dx,4,0.4).Position,
-			size=Vector3.new(8.4,8,8.4),exit=at(dx,4,10).Position,pad=pad,label=status,tint=tint}
+			size=Vector3.new(8.4,8,8.4),exit=at(dx,4,10).Position,pad=pad,label=status,tint=tint,membrane=membrane,core=core}
 	end
 	return model,zones
 end
@@ -3694,6 +3716,9 @@ function World:UpdatePortalQueues(snapshot)
 			zone.label:SetAttribute("LobbyTextPT",pt); zone.label:SetAttribute("LobbyTextEN",en); zone.label.Text=pt
 			zone.label.TextColor3=state.count>=4 and Color3.fromRGB(255,119,103) or zone.tint
 			zone.pad.Color=state.count>=4 and Color3.fromRGB(255,119,103) or zone.tint
+			-- A queue with riders glows white-hot in its door; a full one turns red.
+			if zone.membrane then zone.membrane.Color=state.count>=4 and Color3.fromRGB(255,119,103) or zone.tint end
+			if zone.core then zone.core.BackgroundTransparency=state.departing and 0 or state.count>0 and 0.05 or 0.15 end
 		end
 	end
 end

@@ -1529,9 +1529,17 @@ local function animateLobby(dt)
 			end
 		end
 		for _, child in ipairs(lobby and lobby:GetDescendants() or {}) do
+			-- Portal vortices turn; each one a little differently.
+			if child:IsA("SurfaceGui") and child.Name == "PortalSwirl" and child.Parent then
+				local swirl = child:FindFirstChild("Swirl")
+				if swirl then table.insert(lobbyProps, {part = child.Parent, swirl = swirl, spin = 0, angle = 0, speed = 110 + (child.Parent.Position.X % 7) * 8}) end
+			end
 			if child:IsA("BasePart") then
 				local spin, bob, sway = child:GetAttribute("Spin"), child:GetAttribute("Bob"), child:GetAttribute("Sway")
-				if spin or bob then
+				local pulse = child:GetAttribute("Pulse")
+				if pulse then
+					table.insert(lobbyProps, {part = child, pulse = pulse, size = child.Size, spin = 0, angle = 0, phase = child.Position.X * 0.3})
+				elseif spin or bob then
 					add(child, CFrame.new(child:GetAttribute("SpinCenter") or child.Position), spin or 0, bob or 0, child:GetAttribute("BobRate"))
 				elseif sway then
 					local hinge = child.CFrame * CFrame.new(-child.Size.X / 2, 0, 0)
@@ -1544,7 +1552,12 @@ local function animateLobby(dt)
 	local now = os.clock()
 	for _, prop in ipairs(lobbyProps) do
 		prop.angle += dt * prop.spin
-		if prop.sway then
+		if prop.swirl then
+			prop.swirl.Rotation = (prop.swirl.Rotation + dt * prop.speed) % 360
+		elseif prop.pulse then
+			local k = 1 + math.sin(now * 3 + prop.phase) * prop.pulse * 0.4
+			prop.part.Size = Vector3.new(prop.size.X, prop.size.Y * k, prop.size.Z * k)
+		elseif prop.sway then
 			prop.part.CFrame = prop.pivot * CFrame.Angles(0, math.sin(now * 1.6 + prop.phase) * prop.sway, 0) * prop.offset
 		else
 			prop.part.CFrame = prop.pivot * CFrame.new(0, math.sin(now * prop.rate) * prop.bob, 0) * CFrame.Angles(0, prop.angle, 0) * prop.offset
@@ -1706,6 +1719,41 @@ renderElevator = function()
 	local signature = e and HttpService:JSONEncode({e.portalId, e.queueId, e.slot, e.departing, e.modeId, e.mapId or "random", #(e.riders or {}), e.host, e.carId, profile().equippedBase, language}) or nil
 	if signature == elevatorSignature and (refs.elevator ~= nil) == (e ~= nil) then return false end
 	elevatorSignature = signature
+	-- The pad this player rides lights up: a column of light and rising sparks
+	-- in the portal's colour, flaring white when the queue departs.
+	local glow = effects.rideGlow
+	local rideKey = e and tostring(e.queueId or e.portalId) or nil
+	if glow and glow.key ~= rideKey then glow.part:Destroy(); effects.rideGlow, glow = nil, nil end
+	if e and not glow then
+		local lobby = workspace:FindFirstChild("DoomLobby")
+		local station = lobby and lobby:FindFirstChild("Portal_" .. tostring(e.portalId))
+		local pad = station and station:FindFirstChild((e.slot or 1) == 1 and "Pad" or "Pad" .. tostring(e.slot))
+		if pad then
+			local column = Instance.new("Part")
+			column.Name, column.Shape, column.Material, column.Color = "RideColumn", Enum.PartType.Cylinder, Enum.Material.Neon, pad.Color
+			column.Size, column.CFrame = Vector3.new(14, 7.4, 7.4), CFrame.new(pad.Position + Vector3.new(0, 7.1, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+			column.Transparency, column.Anchored, column.CanCollide, column.CanQuery, column.CanTouch, column.CastShadow = 0.8, true, false, false, false, false
+			column.Parent = effects.folder
+			local sparks
+			if not (profile().settings and profile().settings.lowFX) then
+				sparks = Instance.new("ParticleEmitter")
+				sparks.Color, sparks.LightEmission, sparks.LightInfluence = ColorSequence.new(pad.Color, Color3.new(1, 1, 1)), 1, 0
+				sparks.Size, sparks.Transparency = NumberSequence.new(0.55, 0.05), NumberSequence.new(0.1, 1)
+				sparks.Rate, sparks.Speed, sparks.Lifetime = 26, NumberRange.new(5, 9), NumberRange.new(0.9, 1.5)
+				sparks.EmissionDirection, sparks.SpreadAngle = Enum.NormalId.Right, Vector2.new(8, 8)
+				sparks.Parent = column
+			end
+			effects.rideGlow = { key = rideKey, part = column, sparks = sparks }
+			audio:Cue("place", 0.1)
+		end
+	end
+	glow = effects.rideGlow
+	if glow and e and e.departing and not glow.flared then
+		glow.flared = true
+		glow.part.Transparency, glow.part.Color = 0.35, glow.part.Color:Lerp(Color3.new(1, 1, 1), 0.5)
+		if glow.sparks then glow.sparks.Rate = 140 end
+		audio:Cue("wave", 0.2)
+	end
 	if refs.elevator then refs.elevator:Destroy(); refs.elevator, refs.elevatorCount = nil, nil end
 	if refs.firstVisitHint then refs.firstVisitHint.Visible = e == nil and contextPanel == nil end
 	if not e then return true end
