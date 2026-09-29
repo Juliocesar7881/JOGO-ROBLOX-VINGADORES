@@ -12,7 +12,7 @@ separadamente e depois abra o arquivo reconstruído.
 3. Crie os quatro passes e os produtos repetíveis na experiência proprietária.
    Em `Products.Heroes`, cada personagem pago usa um Developer Product próprio.
    Os nomes das chaves precisam permanecer iguais aos do template.
-4. Importe os 13 arquivos de `assets/audio` e autorize a experiência. Preencha
+4. Importe os 27 arquivos de `assets/audio` e autorize a experiência. Preencha
    `Audio`. O preço exibido pela loja continua vindo da plataforma; a configuração
    contém IDs, sem substituir preços por valores inventados.
 5. As seis fotos dos portais já estão importadas na conta LoopsDev7881 e

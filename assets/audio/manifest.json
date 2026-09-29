@@ -203,6 +203,22 @@
       "peak": 0.3383,
       "sha256": "8e87a80ba45e8b6db378febc0219559ccc55f3017f2948409943ebbcb1fa6999",
       "assetId": 0
+    },
+    "click": {
+      "file": "click.wav",
+      "seconds": 0.16,
+      "loop": false,
+      "peak": 0.2689,
+      "sha256": "10be7a18a3d2a41903b40f824d558c412cfdc7fdb174e8e6507a653424bd2868",
+      "assetId": 0
+    },
+    "open": {
+      "file": "open.wav",
+      "seconds": 0.5,
+      "loop": false,
+      "peak": 0.3627,
+      "sha256": "89a877b7f94451e17fae4a833f94a5a9d5f4fe52bc691c472a2de5ad3aa1d0fa",
+      "assetId": 0
     }
   }
 }

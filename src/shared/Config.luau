@@ -43,7 +43,9 @@ return {
 	Audio = { lobby = 0, battle = 0, collect = 0, victory = 0, defeat = 0, breach = 0, place = 0, upgrade = 0, levelUp = 0, ability = 0, boss = 0, wave = 0, chest = 0,
 		-- One ambience loop per map, and a short cue per weapon family.
 		ambManhattan = 0, ambGamma = 0, ambHydra = 0, ambWakanda = 0, ambAsgard = 0, ambLatveria = 0,
-		shotTech = 0, shotArrow = 0, shotMagic = 0, shotMelee = 0, shotBlast = 0, abilityReady = 0 },
+		shotTech = 0, shotArrow = 0, shotMagic = 0, shotMelee = 0, shotBlast = 0, abilityReady = 0,
+		-- Interface: every button press and every panel opening.
+		click = 0, open = 0 },
 	-- Real map photographs, uploaded by LoopsDev7881 via Studio's Asset Manager.
 	-- Sources and upload IDs: assets/map-photos/manifest.json. Zero uses the fallback.
 	MapImages = {

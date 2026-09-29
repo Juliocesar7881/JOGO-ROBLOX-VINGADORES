@@ -1,6 +1,6 @@
 # Áudio original — Última Defesa
 
-25 arquivos WAV, mono, 32 kHz, 16 bits. Composições e síntese próprias deste
+27 arquivos WAV, mono, 32 kHz, 16 bits. Composições e síntese próprias deste
 projeto, sem samples, gravações, músicas Marvel ou melodias copiadas.
 
 - `lobby.wav`: 48 segundos; tema suave de pátio/floresta, sinos e acordes.

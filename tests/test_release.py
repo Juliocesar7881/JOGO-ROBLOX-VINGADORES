@@ -25,7 +25,7 @@ class ReleaseTests(unittest.TestCase):
         checked = json.loads((ROOT / 'deployment/template.json').read_text(encoding='utf-8'))
         self.assertEqual(checked, self.template)
         missing, configured = release.validate(checked, self.template)
-        self.assertEqual(len(missing), 68)
+        self.assertEqual(len(missing), 70)
         self.assertEqual(configured, [])
 
     def test_invalid_and_duplicate_ids_are_rejected(self):

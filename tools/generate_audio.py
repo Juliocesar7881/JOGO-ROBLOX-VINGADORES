@@ -276,6 +276,13 @@ def cue(name):
             t = i / RATE
             song.samples[i] += smooth * math.exp(-t * 7) * 1.6
         add_blip(song, 0, 0.5, 60, 34, 0.5, decay=7)
+    elif name == 'click':
+        song = Song(0.16)
+        add_blip(song, 0, 0.08, 2300, 1700, 0.32, decay=38)
+    elif name == 'open':
+        song = Song(0.5)
+        add_hiss(song, 0, 0.3, 0.3, 21)
+        add_blip(song, 0.02, 0.3, 420, 980, 0.1, decay=8)
     elif name == 'abilityReady':
         song = Song(0.9)
         song.note(0, 0.5, 79, 0.2)
@@ -286,7 +293,7 @@ def cue(name):
 
 
 AMBIENCES = ('ambManhattan', 'ambGamma', 'ambHydra', 'ambWakanda', 'ambAsgard', 'ambLatveria')
-COMBAT_CUES = ('shotTech', 'shotArrow', 'shotMagic', 'shotMelee', 'shotBlast', 'abilityReady')
+COMBAT_CUES = ('shotTech', 'shotArrow', 'shotMagic', 'shotMelee', 'shotBlast', 'abilityReady', 'click', 'open')
 
 
 def remove_dc(song):
