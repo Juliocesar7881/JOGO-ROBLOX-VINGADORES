@@ -186,6 +186,7 @@ local function act(action, payload, callback, onFail)
 end
 
 local audio = Audio.new(function() return state end)
+UI.onPress = function() audio:Cue("click", 0.04) end
 local nameplates = Nameplates.new(player, function() return language end)
 local effects = Effects.new(player, request, function() return state end, audio)
 local routePreview = RoutePreview.new(effects.folder, Catalog, C)
@@ -1391,6 +1392,7 @@ local function anchorPosition(kind, data)
 end
 
 openContext = function(kind, data)
+	if not contextPanel or contextPanel.kind ~= kind then audio:Cue("open", 0.2) end
 	if kind=="hero" then heroDetailTab="power" end
 	if kind~="inventory" and kind~="squad" then inventoryView.leaderPick=false end
 	data = data or {}

@@ -16,7 +16,7 @@ local AMBIENCE = { manhattan = "ambManhattan", gamma = "ambGamma", hydra = "ambH
 local LOOPED = { lobby = true, battle = true }
 for _, name in pairs(AMBIENCE) do LOOPED[name] = true end
 local VOLUME = { lobby = 0.3, battle = 0.28, victory = 0.4, defeat = 0.3, collect = 0.18, breach = 0.22, place = 0.2, upgrade = 0.3, levelUp = 0.4, ability = 0.25, boss = 0.28, wave = 0.22, chest = 0.3,
-	abilityReady = 0.35, shotTech = 0.13, shotArrow = 0.13, shotMagic = 0.12, shotMelee = 0.15, shotBlast = 0.16 }
+	abilityReady = 0.35, click = 0.22, open = 0.14, shotTech = 0.13, shotArrow = 0.13, shotMagic = 0.12, shotMelee = 0.15, shotBlast = 0.16 }
 for _, name in pairs(AMBIENCE) do VOLUME[name] = 0.2 end
 -- Combat is dense: only a few weapon sounds per quarter second reach the
 -- speakers, quieter with distance, and none from beyond earshot.
@@ -50,7 +50,25 @@ function Audio:_sound(name)
 end
 
 -- Menu and reward sounds have their own switch, separate from the battle's.
-local INTERFACE = { chest = true, levelUp = true, upgrade = true, collect = true }
+local INTERFACE = { chest = true, levelUp = true, upgrade = true, collect = true, click = true, open = true }
+
+-- A built-in jingle: one Sound per note, played at its time and pitch.
+function Audio:_jingle(name, fallback)
+	local pool = self.voices["jingle:" .. name] or {}
+	self.voices["jingle:" .. name] = pool
+	for index, note in ipairs(fallback.notes) do
+		local sound = pool[index]
+		if not sound then
+			sound = Instance.new("Sound")
+			sound.Name, sound.SoundId = name .. "_" .. index, note.path or fallback.path
+			sound.PlaybackSpeed, sound.Volume = note.speed or fallback.speed or 1, (VOLUME[name] or 0.35) * (note.volume or 1)
+			sound.Parent = self.folder
+			pool[index] = sound
+		end
+		local function play() pcall(function() SoundService:PlayLocalSound(sound) end) end
+		if (note.at or 0) <= 0 then play() else task.delay(note.at, play) end
+	end
+end
 
 function Audio:_allowed(effects, name)
 	local state = self.getState()
@@ -112,6 +130,11 @@ function Audio:Cue(name, minimumGap)
 	local now = os.clock()
 	if now - (self.lastCue[name] or -1) < (minimumGap or 0.12) then return end
 	self.lastCue[name] = now
+	local fallback = (Config.BuiltinCues or {})[name]
+	if fallback and fallback.notes and math.floor(tonumber((Config.Audio or {})[name]) or 0) <= 0 then
+		self:_jingle(name, fallback)
+		return
+	end
 	local sound = self:_sound(name)
 	if not sound then return end
 	local ok = pcall(function()

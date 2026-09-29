@@ -80,7 +80,19 @@ assert(nearVolume>farVolume,'Nearer shots are louder')
 settings.effects=false;clock+=1
 assert(not audio:Shot('shotTech',5),'The effects switch silences weapons too')
 settings.effects=true
-print('PASS audio: transitions, mute, legacy settings, result cues, map ambience and weapon voice budget')
+-- A built-in jingle: the first note now, the rest on their beat, once per cue.
+Config.BuiltinCues={levelUp={path='rbxasset://sounds/volume_slider.ogg',speed=1.5,notes={{at=0,speed=1.5},{at=0.1,speed=1.89},{at=0.2,speed=2.25}}}}
+delayed={}
+clock+=1
+count=effectsPlayed
+audio:Cue('levelUp')
+assert(effectsPlayed==count+1 and #delayed==2,'A jingle plays its first note and schedules the others')
+for _,fn in ipairs(delayed) do fn() end
+assert(effectsPlayed==count+3,'Every note of the jingle plays')
+Config.Audio.levelUp=77;clock+=1;count=effectsPlayed;delayed={}
+audio:Cue('levelUp')
+assert(effectsPlayed==count+1 and #delayed==0,'An uploaded sound replaces the jingle')
+print('PASS audio: transitions, mute, legacy settings, result cues, map ambience, weapon voice budget and jingles')
 '''.replace('__AUDIO__', source)
 with tempfile.TemporaryDirectory(prefix='doom-audio-') as temp:
     path = Path(temp) / 'audio.luau'

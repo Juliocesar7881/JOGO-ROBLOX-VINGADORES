@@ -156,6 +156,8 @@ function UI.button(parent, text, callback, properties)
 		UI.outline(button, (defaults.TextSize or 15) >= 18 and 3 or 2)
 	end
 	if callback then button.Activated:Connect(callback) end
+	-- Every press clicks (the controller wires UI.onPress to its audio).
+	button.Activated:Connect(function() if UI.onPress then pcall(UI.onPress, button) end end)
 	-- Every button squashes under the finger and springs back: the smallest
 	-- bit of feel, applied everywhere at once.
 	local press = UI.create("UIScale", {Name = "PressScale", Scale = 1}, button)

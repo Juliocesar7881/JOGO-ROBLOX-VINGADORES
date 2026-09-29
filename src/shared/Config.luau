@@ -53,19 +53,23 @@ return {
 	},
 	-- Native Roblox client sounds; uploaded, configured IDs take precedence.
 	-- Remove entries to mute fallbacks. Music still requires owned audio IDs.
+	-- A cue with notes plays a short jingle: each note is a built-in sample
+	-- at a pitch (speed) and a time (at, seconds), tuned to a major scale.
 	BuiltinCues = {
+		click = {path = "rbxasset://sounds/volume_slider.ogg", speed = 2.2},
+		open = {path = "rbxasset://sounds/action_get_up.mp3", speed = 1.7},
 		collect = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.8},
-		place = {path = "rbxasset://sounds/action_get_up.mp3", speed = 1.4},
-		upgrade = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.35},
-		levelUp = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.05},
-		victory = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.2},
-		defeat = {path = "rbxasset://sounds/volume_slider.ogg", speed = 0.6},
+		place = {path = "rbxasset://sounds/action_jump_land.mp3", speed = 1.2, notes = { { path = "rbxasset://sounds/action_jump_land.mp3", at = 0, speed = 1.2 }, { at = 0.03, speed = 2.247, volume = 0.6 } }},
+		upgrade = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.5, notes = { { at = 0, speed = 1.5 }, { at = 0.06, speed = 2.247 }, { at = 0.12, speed = 3.0, volume = 1.1 } }},
+		levelUp = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.5, notes = { { at = 0, speed = 1.5 }, { at = 0.07, speed = 1.89 }, { at = 0.14, speed = 2.247 }, { at = 0.21, speed = 3.0 }, { at = 0.3, speed = 3.78, volume = 1.2 } }},
+		victory = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.5, notes = { { at = 0, speed = 1.5 }, { at = 0.1, speed = 1.89 }, { at = 0.2, speed = 2.247 }, { at = 0.3, speed = 3.0, volume = 1.1 }, { at = 0.46, speed = 3.78, volume = 1.1 }, { at = 0.46, speed = 4.495, volume = 0.8 }, { path = "rbxasset://sounds/impact_explosion_03.mp3", at = 0.3, speed = 0.9, volume = 0.45 } }},
+		defeat = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.648, notes = { { at = 0, speed = 1.648 }, { at = 0.2, speed = 1.386 }, { at = 0.4, speed = 1.1 }, { at = 0.62, speed = 0.824, volume = 1.1 } }},
 		breach = {path = "rbxasset://sounds/impact_explosion_03.mp3", speed = 0.85},
 		ability = {path = "rbxasset://sounds/action_get_up.mp3", speed = 0.85},
-		boss = {path = "rbxasset://sounds/impact_explosion_03.mp3", speed = 0.65},
-		wave = {path = "rbxasset://sounds/volume_slider.ogg", speed = 0.9},
-		chest = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.15},
-		abilityReady = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.5},
+		boss = {path = "rbxasset://sounds/impact_explosion_03.mp3", speed = 0.5, notes = { { path = "rbxasset://sounds/impact_explosion_03.mp3", at = 0, speed = 0.5 }, { path = "rbxasset://sounds/impact_explosion_03.mp3", at = 0.28, speed = 0.42, volume = 0.8 }, { at = 0.1, speed = 0.6, volume = 0.8 } }},
+		wave = {path = "rbxasset://sounds/action_get_up.mp3", speed = 0.8, notes = { { path = "rbxasset://sounds/action_get_up.mp3", at = 0, speed = 0.8 }, { path = "rbxasset://sounds/impact_explosion_03.mp3", at = 0.05, speed = 0.6, volume = 0.6 } }},
+		chest = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.5, notes = { { at = 0, speed = 1.5 }, { at = 0.07, speed = 1.89 }, { at = 0.14, speed = 2.247 }, { path = "rbxasset://sounds/impact_explosion_03.mp3", at = 0, speed = 1.7, volume = 0.5 } }},
+		abilityReady = {path = "rbxasset://sounds/volume_slider.ogg", speed = 3.0, notes = { { at = 0, speed = 3.0 }, { at = 0.08, speed = 4.495 } }},
 		shotTech = {path = "rbxasset://sounds/volume_slider.ogg", speed = 2.4},
 		shotArrow = {path = "rbxasset://sounds/action_get_up.mp3", speed = 2.2},
 		shotMagic = {path = "rbxasset://sounds/volume_slider.ogg", speed = 1.9},
