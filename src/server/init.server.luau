@@ -460,7 +460,7 @@ end
 local MATCH_ACTIONS = {
 	UpgradeBase = true, PlaceTower = true, UpgradeTower = true, SellTower = true, SetPriority = true,
 	CastSkill = true, CollectCoin = true, SkipWave = true, ChooseCard = true, ReturnLobby = true,
-	SetSpeed = true, SetAutoSkip = true,
+	SetSpeed = true, SetAutoSkip = true, PlayAgain = true,
 }
 -- Coin pickups arrive several times per second and already answer with their
 -- own FX event, so they never trigger a full snapshot broadcast.
@@ -532,6 +532,7 @@ local function route(player, action, payload)
 			rejoin:Forget(player.UserId)
 			sendToLobby(player)
 		end
+		if ok == true and action == "PlayAgain" and match.running then logMatchStart() end
 		if ok == true and action == "PlaceTower" and match.modeId == "tutorial" and not tutorialTower[player.UserId] then
 			tutorialTower[player.UserId] = true
 			analytics:TutorialStep(player, 2, "FirstTower")

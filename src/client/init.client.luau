@@ -2523,7 +2523,17 @@ local function renderResults()
 	UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 590)}, panel)
 	local content = UI.scroll(panel, {Name="ResultBody",Position = UDim2.fromOffset(20, 18), Size = UDim2.new(1, -40, 1, -98)})
 	UI.frame(panel,{Position=UDim2.new(0,18,1,-75),Size=UDim2.new(1,-36,0,1),BackgroundColor3=C.stroke})
-	UI.button(panel,T("VOLTAR À BASE","RETURN TO BASE"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(1,-36,0,48),TextSize=15})
+	-- Like the genre's best: one tap runs the same map again; going back to
+	-- base is the quieter choice. Training always returns to the lobby.
+	if result.modeId=="tutorial" then
+		UI.button(panel,T("VOLTAR À BASE","RETURN TO BASE"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(1,-36,0,48),TextSize=15})
+	else
+		local waiting=result.again==true
+		local again=UI.button(panel,waiting and (T("ESPERANDO ","WAITING ")..tostring(result.againVotes or 1).."/"..tostring(result.againTotal or 1)) or T("▶ JOGAR DE NOVO","▶ PLAY AGAIN"),
+			function() act("PlayAgain",{}) end,{Name="ResultPlayAgain",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(0.62,-24,0,48),BackgroundColor3=C.green,TextSize=16})
+		if waiting then UI.disabled(again) end
+		UI.secondary(panel,T("LOBBY","LOBBY"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0.62,0,1,-64),Size=UDim2.new(0.38,-18,0,48),TextSize=15})
+	end
 	UI.list(content, 12)
 	local short=sizeClass().short
 	local celebration=UI.row(content,short and 44 or 72)

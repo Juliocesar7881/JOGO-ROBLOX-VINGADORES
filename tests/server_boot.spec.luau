@@ -432,6 +432,9 @@ check(#towerIds >= 3 and upgrades >= 2, "towers were built and upgraded through 
 check(casts >= 1, "overload was cast mid-wave through the router, got " .. casts)
 check(sawPriority, "targeting priority can be changed mid-wave")
 
+-- Training never offers a rerun: it ends by sending the newcomer to the lobby.
+check(not request(ana, "PlayAgain", {}).ok and latest(ana).phase == "Results", "training refuses PLAY AGAIN without changing the results screen")
+
 -- Rewards are saved before anyone may leave the results screen.
 local back
 for _ = 1, 40 do
@@ -519,6 +522,27 @@ end
 check(campaignProtocols == 0, "normal mode offers no roguelike cards, got " .. campaignProtocols)
 local defeat = latest(ana)
 check(defeat.phase == "Results" and defeat.results and defeat.results.victory == false, "an undefended core is a defeat")
+
+-- PLAY AGAIN: the same map and mode restart right here, once rewards are saved.
+local again
+for _ = 1, 40 do
+	again = request(ana, "PlayAgain", {})
+	if again.ok then break end
+	frames(1)
+end
+check(again and again.ok, "PLAY AGAIN restarts the run from the results screen")
+local rerun = latest(ana)
+check(rerun.phase == "Preparing" and rerun.match ~= nil and rerun.match.mapId == defeat.results.mapId and rerun.match.modeId == defeat.results.modeId,
+	"the rerun is the same map and mode, starting over, got " .. tostring(rerun.phase))
+check(rerun.match and rerun.match.wave <= 1 and (rerun.match.cash or 0) > 0, "the rerun starts fresh with new match Gold")
+check(not request(ana, "PlayAgain", {}).ok, "PLAY AGAIN is refused while a run is in progress")
+for _ = 1, 400 do
+	local snap = latest(ana)
+	if snap.phase == "Results" then break end
+	if snap.phase == "Preparing" then request(ana, "SkipWave", {}) end
+	frames(3)
+end
+check(latest(ana).phase == "Results", "the rerun ends on its own results screen")
 for _ = 1, 40 do
 	if request(ana, "ReturnLobby", {}).ok then break end
 	frames(1)

@@ -1243,6 +1243,34 @@ function Match:Handle(player,action,payload)
 		if self.rewardBusy or #self.rewardQueue>0 then return false,"Salvando recompensas. Tente novamente em instantes. / Saving rewards; try again shortly." end
 		p.returned=true self.world:MovePlayer(player,false) return true
 	end
+	-- Play again: every commander still on the results screen votes, and the
+	-- same map and mode restart right here for exactly those players.
+	if action=="PlayAgain" then
+		if self.phase~="Results" or self.running then return false,"Termine a partida primeiro. / Finish the match first." end
+		if self.modeId=="tutorial" then return false,"O treino terminou: escolha uma missão no lobby! / Training is over: pick a mission in the lobby!" end
+		if self.rewardBusy or #self.rewardQueue>0 then return false,"Salvando recompensas. Tente novamente em instantes. / Saving rewards; try again shortly." end
+		p.again=true
+		local voters,total={},0
+		for _,q in pairs(self.participants) do
+			if not q.returned and q.player.Parent==Players then
+				total+=1
+				if q.again then table.insert(voters,q) end
+			end
+		end
+		for _,q in pairs(self.participants) do
+			if q.results then q.results.againVotes,q.results.againTotal,q.results.again=#voters,total,q.again==true end
+		end
+		if #voters<total then return true end
+		table.sort(voters,function(a,b) return a.index<b.index end)
+		local members={}
+		for _,q in ipairs(voters) do table.insert(members,q.player); q.returned=true end
+		local ok,problem=self:Start(members,self.mapId,self.modeId)
+		if not ok then
+			for _,q in ipairs(voters) do q.returned,q.again=false,false end
+			return false,problem
+		end
+		return true
+	end
 	if not self.running then return false,"A partida terminou. / The match ended." end
 	if action=="UpgradeBase" then
 		local base=p.base; local stats=base.stats
