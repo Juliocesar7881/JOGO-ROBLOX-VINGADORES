@@ -87,6 +87,7 @@ local Rules = require(shared.Rules)
 local SharedConfig = require(shared.Config)
 local UILayout = __UI__(nil, clockOs)
 local WorldBuilder = __WORLD__(nil, clockOs)
+local CLIENT_MODULES = __CLIENT_MODULES__
 
 --==============================================================================
 -- Fixtures
@@ -408,17 +409,15 @@ local function session(screen)
 	-- Client modules, freshly loaded against this session's services.
 	local clientScript = Instance.new("LocalScript")
 	clientScript.Name = "DoomClient"
-	local uiScript = moduleScript(clientScript, "UI", __UI__)
-	local effectsScript = moduleScript(clientScript, "Effects", __EFFECTS__)
-	local audioScript = moduleScript(clientScript, "Audio", __AUDIO__)
-	local nameplatesScript = moduleScript(clientScript, "Nameplates", __NAMEPLATES__)
-	local celebrateScript = moduleScript(clientScript, "Celebrate", __CELEBRATE__)
-	local routeScript = moduleScript(clientScript, "RoutePreview", __ROUTEPREVIEW__)
-	local overlayScript = moduleScript(clientScript, "BuildOverlay", __BUILDOVERLAY__)
-	local motionScript = moduleScript(clientScript, "Motion", __MOTION__)
-	local reviewScript = moduleScript(clientScript, "Review", __REVIEW__)
-	local panelsScript = moduleScript(clientScript, "Panels", __PANELS__)
-	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript, overlayScript, motionScript, reviewScript, panelsScript }) do loaded[item] = nil end
+	-- test_client_boot.py lists every src/client module, so a newly split
+	-- one is booted here without being named.
+	local clientModules = {}
+	for name, load in pairs(CLIENT_MODULES) do
+		clientModules[name] = moduleScript(clientScript, name, load)
+		loaded[clientModules[name]] = nil
+	end
+	local effectsScript = clientModules.Effects
+	local reviewScript = clientModules.Review
 	loaded[shared.Config] = nil
 
 	if not step("init.client boots and syncs", function() __CLIENT__(clientScript, clockOs); flush() end) then return end

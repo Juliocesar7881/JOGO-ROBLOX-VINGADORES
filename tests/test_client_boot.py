@@ -17,18 +17,25 @@ LOADERS = {
     "__CONFIG__": "src/shared/Config.luau",
     "__RULES__": "src/shared/Rules.luau",
     "__UI__": "src/client/UI.luau",
-    "__EFFECTS__": "src/client/Effects.luau",
-    "__AUDIO__": "src/client/Audio.luau",
-    "__NAMEPLATES__": "src/client/Nameplates.luau",
-    "__CELEBRATE__": "src/client/Celebrate.luau",
-    "__ROUTEPREVIEW__": "src/client/RoutePreview.luau",
-    "__BUILDOVERLAY__": "src/client/BuildOverlay.luau",
-    "__MOTION__": "src/client/Motion.luau",
-    "__REVIEW__": "src/client/Review.luau",
-    "__PANELS__": "src/client/Panels.luau",
     "__WORLD__": "src/server/WorldBuilder.luau",
     "__CLIENT__": "src/client/init.client.luau",
 }
+
+
+def loader(body: str) -> str:
+    return "(function(script, os)\n" + body + "\nend)"
+
+
+def client_modules(root: Path) -> str:
+    """Every ModuleScript under src/client, so a newly split module is booted
+    without anyone remembering to list it here."""
+    entries = []
+    for path in sorted((root / "src" / "client").glob("*.luau")):
+        if path.name.startswith("init."):
+            continue
+        body = path.read_text(encoding="utf-8-sig")
+        entries.append(f'\t["{path.stem}"] = {loader(body)},')
+    return "{\n" + "\n".join(entries) + "\n}"
 
 
 def main() -> None:
@@ -46,11 +53,12 @@ def main() -> None:
         source = source.replace(token, "(function()\n" + body + "\nend)()")
     # Every module becomes a loader taking its own `script`, exactly the way
     # Roblox gives each ModuleScript a script global pointing at itself.
+    # Each module also receives a test-controlled `os`, so throttles built
+    # on os.clock() see simulated frames advance simulated time.
+    source = source.replace("__CLIENT_MODULES__", client_modules(root))
     for token, relative in LOADERS.items():
         body = (root / relative).read_text(encoding="utf-8-sig")
-        # Each module also receives a test-controlled `os`, so throttles built
-        # on os.clock() see simulated frames advance simulated time.
-        source = source.replace(token, "(function(script, os)\n" + body + "\nend)")
+        source = source.replace(token, loader(body))
 
     if args.keep:
         args.keep.write_text(source, encoding="utf-8")

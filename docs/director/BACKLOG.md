@@ -12,7 +12,8 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 - [x] M1.1 `src/client/Review.luau` + ação `StudioReview` só no Studio; `tools/studio_review.py` (Play, cenas, PrintWindow, Stop). Aceite: capturas de lobby/partida/fim sem editar nenhum script do lugar.
 - [x] M1.2 Guardas: `studio_*_review.luau` recusam o place 97132875544830; apagar `tools/studio_hud_review.luau`.
 - [x] M1.3 Dividir `init.client.luau`: `Panels.luau` (painéis do lobby). Aceite: client_boot verde, cliente <150 KB.
-- [ ] M1.4 Dividir: `MatchHud.luau` + `LobbyWorld.luau`; `test_client_boot.py` descobre módulos sozinho; guarda de tamanho no `test_contract.py`.
+- [x] M1.4 Dividir: `LobbyWorld.luau`; `test_client_boot.py` descobre módulos sozinho; guarda de tamanho no `test_contract.py` (init.client 126→114 KB).
+- [ ] M1.4b Dividir `MatchHud.luau` (painel da torre, placas de upgrade, protocolo, renderMatch). Aceite: client_boot verde, init.client <90 KB.
 
 ## M1.5 — Consertos de HUD que todo jogador vê (da AUDIT)
 - [x] M1.5.0 Câmera da partida abre de cima (commit 9a774e9).
@@ -24,7 +25,7 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 - [x] M1.5.6 Painel da torre no celular: não cobre o chefe; texto ≥12 px.
 
 - [!] M1.5.7 (NÃO REPRODUZ: captura seguinte sem a cunha; efeito passageiro) Lobby: a ponta amarela neon da estrela do nascimento enche 1/3 da câmera do computador ao entrar (captura 01-newcomer.png, 01/10 11:00). Aceite: nenhuma peça do chão ocupa >10% da tela na câmera inicial.
-- [ ] M1.5.8 Botão COMEÇAR TREINO maior e pulsando no computador (hoje é a faixa fina da dica).
+- [x] M1.5.8 Botão COMEÇAR TREINO maior e pulsando no computador (hoje é a faixa fina da dica).
 
 ## M2 — Marca original
 - [x] M2.1 `tests/ip_blocklist.json` + `tests/test_ip_safety.py` (começa listando o que falta).
@@ -50,7 +51,7 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 - [!] M4.2 (BLOQUEADO: extensão Claude in Chrome desconectada às 10:00 — reabrir o Chrome logado) Creator Hub: criar passes e produtos, IDs no `Config.luau`, tabela no LOG.
 
 ## M5 — Identidade dos mapas e dificuldades
-- [ ] M5.1 Perigo telegrafado por mapa (dados no Catalog, regra no Rules, passo no MatchService).
+- [x] M5.1 Perigo telegrafado por mapa (dados no Catalog, regra no Rules, passo no MatchService).
 - [ ] M5.2 Normal/Difícil/Pesadelo com desbloqueio em cadeia; escolha no elevador.
 
 ## M6 — Progressão

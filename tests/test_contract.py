@@ -21,8 +21,9 @@ def read(relative: str) -> str:
     return (SRC / relative).read_text(encoding="utf-8-sig")
 
 
-# The controller and the lobby panels it builds (Panels.luau) are one client.
-CLIENT = read("client/init.client.luau") + "\n" + read("client/Panels.luau")
+# The controller and the parts split out of it (lobby panels, lobby world)
+# are one client.
+CLIENT = "\n".join(read(f"client/{name}.luau") for name in ("init.client", "Panels", "LobbyWorld"))
 EFFECTS = read("client/Effects.luau")
 AUDIO = read("client/Audio.luau")
 BOOTSTRAP = read("server/init.server.luau")

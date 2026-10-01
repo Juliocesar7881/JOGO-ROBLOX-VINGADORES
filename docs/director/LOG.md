@@ -20,3 +20,5 @@ Uma linha por passo, a mais nova embaixo.
 - 2026-10-01 08:53 — FEITO M3.2 tiros em lote por quadro (087dbab), conferido no Studio. M3 completo.
 - 2026-10-01 08:59 — FEITO M8.1 (8825e22): treino de 12 ondas (7,5 min na simulação), ação StartTraining (um toque embarca no treino), botão COMEÇAR TREINO no lobby do novato; cena 'newcomer' na revisão. Novos itens M1.5.7 (estrela amarela enche a câmera) e M1.5.8.
 - 2026-10-01 09:00 — M1.5.7 não reproduz (cunha amarela era passageira).
+- 2026-10-01 09:07 — FEITO M5.1 perigo por mapa (ab705a2): surto tóxico, forno, cristais, rajada, selo; conferido no Studio (torre atordoada na Fundição). Varredura de rosters rodando.
+- 2026-10-01 12:38 — FEITO M1.4: mundo do lobby (cosméticos por jogador, portais, animação) em src/client/LobbyWorld.luau; test_client_boot descobre todo módulo de src/client sozinho; init.client 126→114 KB. MatchHud virou M1.4b.

@@ -1,0 +1,330 @@
+-- The lobby as this viewer sees it: per-player cosmetics on the shared
+-- geometry the server built (shrouds over what is still locked, highlights on
+-- equipped heroes, each portal's own sign and picture, the mission board's
+-- status) and the local motion of its props. Nothing here changes a rule or
+-- a server part; split out of init.client to keep that script small.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local LobbyWorld = {}
+
+function LobbyWorld.new(ctx)
+	local Catalog, Rules, UI, C, kit = ctx.Catalog, ctx.Rules, ctx.UI, ctx.C, ctx.kit
+	local T, L, contains, profile, player = ctx.T, ctx.L, ctx.contains, ctx.profile, ctx.player
+	-- Which physical model in the lobby a panel belongs to, so the panel can
+	-- close itself when the player walks away from it. Panels opened from the HUD
+	-- (squad, settings) have no anchor and simply stay until dismissed.
+	kit.CONTEXT_ANCHOR = {
+		chests = {kind="ChestStand",attribute="ChestId",field="chestId"},
+		shop = { kind = "ShopStand", attribute = "ShopKey", field = "shopKey" },
+		quests = { kind = "Board", attribute = "BoardId", value = "quests" },
+		leaderboard = { kind = "Board", attribute = "BoardId", value = "leaderboard" },
+	}
+
+	local function anchorPosition(kind, data)
+		local spec = kit.CONTEXT_ANCHOR[kind]
+		-- The arena's scoreboard kiosk opens the same leaderboard panel.
+		if kind == "leaderboard" and data.board == "arena" then spec = { kind = "Scoreboard", attribute = "BoardId", value = "arena" } end
+		if not spec then return nil end
+		local wanted = spec.value or data[spec.field]
+		if not wanted then return nil end
+		local lobby = workspace:FindFirstChild("DoomLobby")
+		if not lobby then return nil end
+		for _, model in ipairs(lobby:GetChildren()) do
+			if model:GetAttribute("Kind") == spec.kind and model:GetAttribute(spec.attribute) == wanted then
+				local pivot = model.PrimaryPart
+				return pivot and pivot.Position or nil
+			end
+		end
+		return nil
+	end
+
+	-- Per-viewer cosmetics on the shared lobby geometry: locked portals, unowned
+	-- heroes and unlearned skills get a translucent shroud (never a mutation of
+	-- the server's own parts), and equipped gear gets a highlight outline.
+	kit.shroudColor = Color3.fromRGB(8, 10, 14)
+	local function setShroud(model, locked, hint)
+		local existing = model:FindFirstChild("LockShroud")
+		if locked then
+			if existing then return end
+			local ok, cf, size = pcall(function()
+				if model:GetAttribute("Kind")=="ModePortal" then return model.PrimaryPart.CFrame*CFrame.new(0,12,0),Vector3.new(32,26,13) end
+				return model:GetBoundingBox()
+			end)
+			if not ok then return end
+			local shroud = Instance.new("Part")
+			shroud.Name, shroud.Anchored = "LockShroud", true
+			shroud.CanCollide, shroud.CanTouch, shroud.CanQuery, shroud.CastShadow = false, false, false, false
+			-- Lock state is communicated by the sign, not an opaque box over art.
+			shroud.Material, shroud.Color, shroud.Transparency = Enum.Material.SmoothPlastic, kit.shroudColor, 1
+			shroud.Size, shroud.CFrame = size + Vector3.new(0.4, 0.4, 0.4), cf
+			shroud.Parent = model
+			local billboard = Instance.new("BillboardGui")
+			billboard.Name, billboard.Size = "LockHint", UDim2.fromOffset(220, 50)
+			billboard.StudsOffset, billboard.MaxDistance = Vector3.new(0, size.Y / 2 + 2, 0), 36
+			billboard.Adornee, billboard.Parent = model.PrimaryPart, model
+			UI.label(billboard, T("BLOQUEADO: ", "LOCKED: ") .. (hint or ""), {Size = UDim2.fromScale(1, 1), TextColor3 = C.red, TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = true})
+			return
+		end
+		if not existing then return end
+		existing:Destroy()
+		local billboard = model:FindFirstChild("LockHint")
+		if billboard then billboard:Destroy() end
+		local pivot = model.PrimaryPart
+		if not pivot then return end
+		local burst = Instance.new("Part")
+		burst.Anchored, burst.CanCollide, burst.CanQuery, burst.CanTouch, burst.CastShadow = true, false, false, false, false
+		burst.Shape, burst.Material, burst.Color, burst.Transparency = Enum.PartType.Cylinder, Enum.Material.Neon, C.green, 0.2
+		burst.Size, burst.CFrame = Vector3.new(0.2, 1, 1), pivot.CFrame * CFrame.Angles(0, 0, math.pi / 2)
+		burst.Parent = ctx.effects.folder
+		TweenService:Create(burst, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {Size = Vector3.new(0.2, 13, 13), Transparency = 1}):Play()
+		task.delay(0.65, function() if burst.Parent then burst:Destroy() end end)
+		ctx.audio:Cue("place", 0.05)
+	end
+
+	local function setEquippedHighlight(model, on)
+		local highlight = model:FindFirstChildOfClass("Highlight")
+		if on then
+			if highlight then return end
+			highlight = Instance.new("Highlight")
+			highlight.FillTransparency, highlight.OutlineTransparency, highlight.OutlineColor = 1, 0.2, C.green
+			highlight.Parent = model
+		elseif highlight then
+			highlight:Destroy()
+		end
+	end
+
+	-- The mission board is shared scenery, but each viewer's client rewrites its
+	-- face locally with their own status, so it reads from across the deck
+	-- whether there is a reward waiting — the "next goal" the design asks for.
+	local function updateQuestBoard(lobby, p)
+		local board = lobby:FindFirstChild("Board_quests")
+		local panel = board and board:FindFirstChild("Panel")
+		local surface = panel and panel:FindFirstChild("Board")
+		local label = surface and surface:FindFirstChildOfClass("TextLabel")
+		if not label then return end
+		local active, ready = 0, 0
+		for _, quest in pairs(p.quests or {}) do
+			if not quest.claimed then
+				active += 1
+				if (quest.progress or 0) >= (quest.target or 1) then ready += 1 end
+			end
+		end
+		local status
+		if ready > 0 then
+			status = tostring(ready) .. T(" PRONTA(S) PARA RESGATAR", " READY TO CLAIM")
+		elseif active > 0 then
+			status = tostring(active) .. T(" EM ANDAMENTO", " IN PROGRESS")
+		else
+			status = T("TREINE PARA RECEBER MISSÕES", "TRAIN TO RECEIVE MISSIONS")
+		end
+		label.Text = T("MISSÕES", "MISSIONS") .. "\n" .. status
+		label.TextColor3 = ready > 0 and C.gold or Color3.fromRGB(230, 240, 244)
+	end
+
+	-- The lobby's props move: the collector drone spins and bobs in its case, the
+	-- AFK icons turn, and anything the world tags with Spin/Bob (the globe and its
+	-- orbits, the Helicarrier's rotors, the patrolling Quinjet, the prize chests)
+	-- or Sway (flags, hinged at the pole) comes alive. Purely local and cheap;
+	-- reduced effects leaves them still.
+	local lobbyProps = nil
+	local function animateLobby(dt)
+		local state = ctx.state()
+		if not state or state.phase ~= "Lobby" then return end
+		if profile().settings and profile().settings.lowFX then return end
+		if not lobbyProps or (lobbyProps[1] and lobbyProps[1].part.Parent == nil) then
+			lobbyProps = {}
+			local lobby = workspace:FindFirstChild("DoomLobby")
+			-- Each prop turns about a pivot: its own axes for a showroom piece, a
+			-- vertical axis through SpinCenter (or its own centre) for tagged ones.
+			local function add(child, pivot, spin, bob, rate)
+				table.insert(lobbyProps, {part = child, pivot = pivot, offset = pivot:Inverse() * child.CFrame, spin = spin, bob = bob, rate = rate or 2, angle = 0})
+			end
+			local function collect(model, partName, spin, bob)
+				for _, child in ipairs(model:GetChildren()) do
+					if child.Name == partName and child:IsA("BasePart") then add(child, child.CFrame, spin, bob) end
+				end
+			end
+			for _, model in ipairs(lobby and lobby:GetChildren() or {}) do
+				if model.Name == "Shop_collector" then
+					collect(model, "Drone", 1.8, 0.25)
+					collect(model, "DroneRing", -1.2, 0.25)
+				elseif model:GetAttribute("Kind") == "AfkZone" then
+					collect(model, "AfkIcon", 1.4, 0.35)
+				end
+			end
+			for _, child in ipairs(lobby and lobby:GetDescendants() or {}) do
+				-- Portal vortices turn; each one a little differently.
+				if child:IsA("SurfaceGui") and child.Name == "PortalSwirl" and child.Parent then
+					local swirl = child:FindFirstChild("Swirl")
+					if swirl then table.insert(lobbyProps, {part = child.Parent, swirl = swirl, spin = 0, angle = 0, speed = 110 + (child.Parent.Position.X % 7) * 8}) end
+				end
+				if child:IsA("BasePart") then
+					local spin, bob, sway = child:GetAttribute("Spin"), child:GetAttribute("Bob"), child:GetAttribute("Sway")
+					local pulse = child:GetAttribute("Pulse")
+					if pulse then
+						table.insert(lobbyProps, {part = child, pulse = pulse, size = child.Size, spin = 0, angle = 0, phase = child.Position.X * 0.3})
+					elseif spin or bob then
+						add(child, CFrame.new(child:GetAttribute("SpinCenter") or child.Position), spin or 0, bob or 0, child:GetAttribute("BobRate"))
+					elseif sway then
+						local hinge = child.CFrame * CFrame.new(-child.Size.X / 2, 0, 0)
+						table.insert(lobbyProps, {part = child, pivot = hinge, offset = hinge:Inverse() * child.CFrame, spin = 0, bob = 0, rate = 2, angle = 0,
+							sway = sway, phase = child.Position.X * 0.08 + child.Position.Z * 0.05})
+					end
+				end
+			end
+		end
+		local now = os.clock()
+		for _, prop in ipairs(lobbyProps) do
+			prop.angle += dt * prop.spin
+			if prop.swirl then
+				prop.swirl.Rotation = (prop.swirl.Rotation + dt * prop.speed) % 360
+			elseif prop.pulse then
+				local k = 1 + math.sin(now * 3 + prop.phase) * prop.pulse * 0.4
+				prop.part.Size = Vector3.new(prop.size.X, prop.size.Y * k, prop.size.Z * k)
+			elseif prop.sway then
+				prop.part.CFrame = prop.pivot * CFrame.Angles(0, math.sin(now * 1.6 + prop.phase) * prop.sway, 0) * prop.offset
+			else
+				prop.part.CFrame = prop.pivot * CFrame.new(0, math.sin(now * prop.rate) * prop.bob, 0) * CFrame.Angles(0, prop.angle, 0) * prop.offset
+			end
+		end
+	end
+
+	-- Each portal's sign says, for this viewer, what stepping in will start:
+	-- which sector (the campaign's next unbeaten one, today's daily), how many
+	-- waves, or what is still missing to unlock it.
+	local portalBoards={}
+	local function portalSign(model)
+		local board=portalBoards[model]
+		return board and board:FindFirstChild("MapRules",true)
+	end
+
+	local function updatePortal(model, p)
+		local portalId = model:GetAttribute("PortalId") or model:GetAttribute("ModeId")
+		local modeId = Rules.PortalMode(p, portalId)
+		local unlocked = Rules.ModeUnlocked(p, modeId)
+		setShroud(model, not unlocked, L(kit.modeLockHints[modeId]))
+		local sign=model:FindFirstChild("MapBillboard")
+		local source=sign and sign:FindFirstChild("MapBoard")
+		-- Roblox does not render ViewportFrames under Workspace SurfaceGuis.
+		-- Keep the authored template, render its own camera through PlayerGui.
+		if source and not portalBoards[model] then
+			local board=source:Clone()
+			board.Name="PortalPicture_"..portalId
+			board.Adornee,board.MaxDistance=sign,190
+			board.Parent=player:WaitForChild("PlayerGui")
+			portalBoards[model]=board
+			source.Enabled=false
+			local picture=board:FindFirstChild("MapPicture")
+			if picture then
+				-- Cameras do not replicate from the server. Construct the view locally.
+				local camera=picture:FindFirstChild("PictureCamera") or Instance.new("Camera")
+				camera.Name="PictureCamera"
+				camera.CFrame=picture:GetAttribute("PictureCFrame") or CFrame.lookAt(Vector3.new(100,120,140),Vector3.new(0,7,0))
+				camera.FieldOfView=picture:GetAttribute("PictureFieldOfView") or 40
+				camera.Parent=picture
+				picture.CurrentCamera=camera
+			end
+		end
+		local board=portalBoards[model]
+		if board then
+			for _,node in ipairs(board:GetChildren()) do
+				if node:IsA("TextLabel") then node.Text=node:GetAttribute(ctx.language()=="en" and "LobbyTextEN" or "LobbyTextPT") or node.Text end
+			end
+		end
+		local label = portalSign(model)
+		if label then
+			local mapId = Rules.PortalMap(portalId)
+			local mode = Catalog.Modes[modeId]
+			if not unlocked then
+				label.Text = T("BLOQUEADO", "LOCKED") .. " • " .. L(kit.modeLockHints[modeId])
+				label.TextColor3 = C.red
+			elseif mode then
+				local count = Rules.WaveCount(modeId, mapId)
+				local waves = count == 0 and T("ONDAS INFINITAS", "ENDLESS WAVES") or (tostring(count) .. T(" ONDAS", " WAVES"))
+				label.Text = Catalog.Upper(L(mode.name)) .. " • " .. waves
+				label.TextColor3 = kit.modeTint[portalId] or C.green
+			end
+		end
+		-- A first-time visitor sees one beacon, over the portal that starts
+		-- training, visible from the spawn through the crowd.
+		local beacon = model:FindFirstChild("StartHere")
+		local wantBeacon = portalId == "training" and p.tutorialComplete ~= true
+		if wantBeacon and not beacon and model.PrimaryPart then
+			beacon = Instance.new("BillboardGui")
+			beacon.Name, beacon.Size, beacon.AlwaysOnTop = "StartHere", UDim2.fromOffset(200, 64), true
+			beacon.StudsOffset, beacon.MaxDistance = Vector3.new(0, 19, 0), 400
+			beacon.Adornee, beacon.Parent = model.PrimaryPart, model
+			UI.label(beacon, T("COMECE AQUI", "START HERE") .. "\n▼", {Size = UDim2.fromScale(1, 1), TextColor3 = C.gold, TextSize = 20, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = true, TextStrokeTransparency = 0.3})
+		elseif beacon and not wantBeacon then
+			beacon:Destroy()
+		end
+	end
+
+	local localizedLobby, localizedLanguage, localizedLabels
+	local updateWorldCosmetics
+	updateWorldCosmetics = function()
+		local state, language = ctx.state(), ctx.language()
+		for model,board in pairs(portalBoards) do
+			if not model.Parent then board:Destroy(); portalBoards[model]=nil end
+		end
+		if not state or state.phase ~= "Lobby" then return end
+		local lobby = workspace:FindFirstChild("DoomLobby")
+		if not lobby then
+			-- The lobby is built server-side at boot, but a slow client can get its
+			-- first snapshot before that model replicates. Without this retry the
+			-- shrouds would never appear and every portal would look unlocked.
+			if not kit.cosmeticsRetryPending then
+				kit.cosmeticsRetryPending = true
+				task.delay(1, function()
+					kit.cosmeticsRetryPending = false
+					updateWorldCosmetics()
+				end)
+			end
+			return
+		end
+		local p = profile()
+		if localizedLobby~=lobby then
+			localizedLobby,localizedLanguage,localizedLabels=lobby,nil,{}
+			for _,obj in ipairs(lobby:GetDescendants()) do
+				if obj:GetAttribute("LobbyTextPT") then table.insert(localizedLabels,obj) end
+				if obj.Name=="QueueStatus" and obj:IsA("TextLabel") then
+					local function localizeQueue()
+						local value=obj:GetAttribute(ctx.language()=="en" and "LobbyTextEN" or "LobbyTextPT")
+						if value and obj.Text~=value then obj.Text=value end
+					end
+					obj:GetAttributeChangedSignal("LobbyTextPT"):Connect(localizeQueue)
+					obj:GetAttributeChangedSignal("LobbyTextEN"):Connect(localizeQueue)
+					obj:GetPropertyChangedSignal("Text"):Connect(localizeQueue)
+				end
+			end
+		end
+		-- Queue attributes change on the server while a player is standing still.
+		-- Localize them with every lobby snapshot, not only on a language change.
+		localizedLanguage=language
+		for _,obj in ipairs(localizedLabels) do
+				local value=obj:GetAttribute(language=="en" and "LobbyTextEN" or "LobbyTextPT")
+				if obj:IsA("TextLabel") then obj.Text=value
+				elseif obj:IsA("ProximityPrompt") then obj.ObjectText=value; obj.ActionText=T("Abrir","Open") end
+		end
+		updateQuestBoard(lobby, p)
+		for _, model in ipairs(lobby:GetChildren()) do
+			local kind = model:GetAttribute("Kind")
+			if kind == "ModePortal" then
+				updatePortal(model, p)
+			elseif kind == "HeroPedestal" then
+				local heroId = model:GetAttribute("HeroId")
+				local templates = ReplicatedStorage:FindFirstChild("DoomHeroPortraits")
+				UI.rememberHero(heroId, templates and templates:FindFirstChild(heroId) or model)
+				local owned = p.heroes and p.heroes[heroId] ~= nil
+				setShroud(model, not owned, T("Ainda não comprado", "Not purchased yet"))
+				setEquippedHighlight(model, owned and contains(p.loadout, heroId))
+
+			end
+		end
+	end
+
+	return { update = updateWorldCosmetics, animate = animateLobby, anchorPosition = anchorPosition }
+end
+
+return LobbyWorld
