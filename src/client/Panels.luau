@@ -343,7 +343,11 @@ function Panels.new(ctx)
 			if group.kind~=premiumCategory then continue end
 			-- Cheapest first; the starter pack has its own banner above.
 			local keys={}; for key in pairs(group.items) do if key~="starterPack" then table.insert(keys,key) end end
+			-- Things you do not own come first: a shop that opens on "already yours" sells nothing.
+			local function ownedKey(key) return group.kind=="hero" and (profile().heroes or {})[key]~=nil or group.kind=="pass" and (profile().passes or {})[key]==true end
 			table.sort(keys,function(a,b)
+				local oa,ob=ownedKey(a),ownedKey(b)
+				if oa~=ob then return not oa end
 				local pa,pb=group.items[a].price or 0,group.items[b].price or 0
 				if pa~=pb then return pa<pb end
 				return a<b
@@ -358,7 +362,7 @@ function Panels.new(ctx)
 				local art=UI.portraitStage(row,tint,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(100,102)})
 				if group.kind=="hero" then heroPortrait(row,key,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(100,102)})
 				else UI.illustration(art,group.kind=="pass" and "star" or "coin",C.gold,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(64,64)}) end
-				if group.kind=="hero" then UI.chip(row,Catalog.Upper(L(Catalog.Rarities[Catalog.Heroes[key].rarity].name)),tint,{Position=UDim2.fromOffset(left,10),Size=UDim2.fromOffset(96,20),TextSize=11}) end
+				if group.kind=="hero" then UI.chip(row,Catalog.Upper(L(Catalog.Rarities[Catalog.Heroes[key].rarity].name)),tint,{Position=UDim2.fromOffset(left,10),Size=UDim2.fromOffset(96,20),TextSize=12}) end
 				UI.label(row,L(def.name),{Position=UDim2.fromOffset(left,group.kind=="hero" and 32 or 12),Size=UDim2.new(1,-left-12,0,30),TextWrapped=true,Font=UI.Fonts.display,TextSize=20})
 				local cacheKey=group.kind..":"..key
 				local ready=type(info)=="table"
@@ -659,7 +663,7 @@ function Panels.new(ctx)
 			local group = rewards.group or {}
 			local groupCard = UI.roundFrame(body, {Name = "GroupReward", Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
 			UI.label(groupCard, T("Entre no grupo do jogo", "Join the game's group"), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -130, 0, 24), Font = Enum.Font.GothamBold, TextSize = 14})
-			UI.label(groupCard, "+" .. number(group.gold or 0) .. T(" Ouro, uma vez", " Gold, once"), {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -130, 0, 20), TextSize = 11, TextColor3 = C.muted})
+			UI.label(groupCard, "+" .. number(group.gold or 0) .. T(" Ouro, uma vez", " Gold, once"), {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -130, 0, 20), TextSize = 12, TextColor3 = C.muted})
 			local claimGroup = UI.button(groupCard, group.claimed and T("RESGATADO", "CLAIMED") or T("RESGATAR", "CLAIM"), function()
 				act("ClaimGroupReward", {}, function(snapshot) rewardGiven(snapshot and snapshot.result) end)
 			end, {Name = "ClaimGroupReward", Position = UDim2.new(1, -110, 0, 8), Size = UDim2.fromOffset(100, 44), BackgroundColor3 = C.gold, TextSize = 12})
@@ -748,8 +752,8 @@ function Panels.new(ctx)
 			UI.candy(card)
 			UI.portraitStage(card,tint,{Name="HeroArtwork",Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,1,-42)})
 			heroPortrait(card,id,{Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,1,-42)})
-			UI.chip(card,Catalog.Upper(L(rarity.name)),tint,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(math.min(84,cellW-20),20),TextSize=11})
-			if mine then UI.chip(card,T("NV ","LV ")..mine.level,C.violet,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,8),Size=UDim2.fromOffset(46,20),TextSize=11})
+			UI.chip(card,Catalog.Upper(L(rarity.name)),tint,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(math.min(84,cellW-20),20),TextSize=12})
+			if mine then UI.chip(card,T("NV ","LV ")..mine.level,C.violet,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,8),Size=UDim2.fromOffset(46,20),TextSize=12})
 			else
 				local shade=UI.frame(card,{Name="NotOwned",Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,1,-42),BackgroundColor3=C.ink,BackgroundTransparency=0.45})
 				UI.corner(shade,12)
@@ -801,7 +805,7 @@ function Panels.new(ctx)
 		local ranks = p.talents or {}
 		local overview = UI.roundFrame(body, {Name = "TalentOverview", Size = UDim2.new(1, -6, 0, 126), BackgroundColor3 = Color3.fromRGB(68,43,91)}, C.violet)
 		UI.printTexture(overview,C.violet)
-		UI.label(overview,T("CADA AVENTURA TE FAZ CRESCER!", "EVERY ADVENTURE HELPS YOU GROW!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,18),Font=Enum.Font.GothamBlack,TextColor3=C.gold,TextSize=11})
+		UI.label(overview,T("CADA AVENTURA TE FAZ CRESCER!", "EVERY ADVENTURE HELPS YOU GROW!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,18),Font=Enum.Font.GothamBlack,TextColor3=C.gold,TextSize=12})
 		UI.label(overview, tostring(points), {Position = UDim2.fromOffset(14, 29), Size = UDim2.fromOffset(62, 53), TextSize = 46, Font = Enum.Font.GothamBlack, TextColor3 = C.gold})
 		UI.label(overview, T("PONTOS DISPONÍVEIS", "AVAILABLE POINTS"), {Position = UDim2.fromOffset(82, 35), Size = UDim2.new(1, -92, 0, 22), TextSize = 12, Font = Enum.Font.GothamBold})
 		UI.label(overview, T("Subiu de nível? Ganhou 1 ponto! Escolha o que melhorar.", "Level up, earn 1 point! Choose what to improve."), {Position = UDim2.fromOffset(82, 59), Size = UDim2.new(1, -92, 0, 40), TextWrapped = true, TextSize = 12, TextColor3 = C.muted})
@@ -949,7 +953,7 @@ function Panels.new(ctx)
 			UI.label(card,L(map.name),{Position=UDim2.fromOffset(118,10),Size=UDim2.new(1,-132,0,42),TextSize=19,Font=Enum.Font.GothamBlack,TextColor3=tint,TextWrapped=true})
 			local waves=Rules.WaveCount(destination.modeId,destination.mapId)
 			UI.label(card,L(mode.name).." • "..(waves==0 and T("SEM FIM","ENDLESS") or tostring(waves).." "..T("ONDAS","WAVES")),{Position=UDim2.fromOffset(118,54),Size=UDim2.new(1,-132,0,24),TextSize=12,Font=Enum.Font.GothamBold,TextWrapped=true})
-			UI.label(card,allowed and L(map.description) or L(kit.modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(118,81),Size=UDim2.new(1,-132,0,40),TextSize=11,TextWrapped=true,TextColor3=C.muted})
+			UI.label(card,allowed and L(map.description) or L(kit.modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(118,81),Size=UDim2.new(1,-132,0,40),TextSize=12,TextWrapped=true,TextColor3=C.muted})
 			local button=UI.button(card,allowed and T("ENCONTRAR PORTAL","FIND PORTAL") or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function() routePreview.goPortal(id) end,{Name="FindPortal_"..id,Position=UDim2.fromOffset(12,126),Size=UDim2.new(1,-24,0,44),BackgroundColor3=allowed and C.green or tint,TextSize=17})
 			if not allowed then
 				UI.disabled(button)

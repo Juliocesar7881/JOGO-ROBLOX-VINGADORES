@@ -2618,7 +2618,9 @@ function World:BuildHeroesHub(lobby)
 	Kit.disc(hq, "PlazaStarDisc", HUB + V(0, PLAZA_Y + 0.11, 0), 20, 0.1, HQ.navy, Enum.Material.SmoothPlastic, true)
 	-- Everyone arrives standing on the hero star.
 	Kit.disc(hq, "HeroStarHalo", HUB + V(0, PLAZA_Y + 0.12, 0), 21.2, 0.04, HQ.cyan, Enum.Material.Neon)
-	Kit.star(hq, "HeroStar", HUB + V(0, PLAZA_Y + 0.18, 0), V(1, 0, 0), V(0, 0, 1), 8.5, HQ.gold, Enum.Material.SmoothPlastic, 0.1)
+	-- A deeper gold than the HUD's: in the lobby's bright light the plain one burns
+	-- out to flat yellow, and a tip near the camera then fills the screen.
+	Kit.star(hq, "HeroStar", HUB + V(0, PLAZA_Y + 0.18, 0), V(1, 0, 0), V(0, 0, 1), 8.5, Color3.fromRGB(176, 128, 36), Enum.Material.SmoothPlastic, 0.1)
 	for i = 0, 7 do
 		local a = i * math.pi / 4 + math.pi / 8
 		local dir = V(math.cos(a), 0, math.sin(a))
@@ -2710,7 +2712,9 @@ function World:BuildHeroBeacon(lobby)
 	local V = Vector3.new
 	local model = Instance.new("Model")
 	model.Name, model.Parent = "HeroBeacon", lobby
-	local base = HUB + V(0, PLAZA_Y, 27)
+	-- Far enough south that the lobby camera, which starts 23 studs behind the spawn,
+	-- is not inside the spinning orbits: their gold neon swept across the first view.
+	local base = HUB + V(0, PLAZA_Y, 46)
 	Kit.disc(model, "BeaconStep", base + V(0, 0.6, 0), 16, 1.2, HQ.steel, Enum.Material.Metal, true)
 	Kit.disc(model, "BeaconStepGlow", base + V(0, 1.3, 0), 15.4, 0.2, HQ.cyan, Enum.Material.Neon)
 	Kit.disc(model, "BeaconStepTop", base + V(0, 1.6, 0), 16, 0.4, HQ.stoneWarm, Enum.Material.Pavement, true)

@@ -306,11 +306,11 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 		TextSize = height < 62 and 12 or 14, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
 	UI.corner(price, 8)
 	local badge = UI.label(button, index == 1 and "★" or tostring(index), {Name = "SlotNumber", Position = UDim2.fromOffset(3, 3), Size = UDim2.fromOffset(18, 18),
-		BackgroundColor3 = index == 1 and C.gold or C.background, BackgroundTransparency = 0.05, TextSize = 11,
+		BackgroundColor3 = index == 1 and C.gold or C.background, BackgroundTransparency = 0.05, TextSize = 12,
 		TextColor3 = index == 1 and C.ink or C.text, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
 	UI.corner(badge, 9)
 	local count = UI.label(button, "", {Name = "PlacedCount", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3), Size = UDim2.fromOffset(30, 16),
-		BackgroundColor3 = C.background, BackgroundTransparency = 0.2, TextSize = 11, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
+		BackgroundColor3 = C.background, BackgroundTransparency = 0.2, TextSize = 12, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
 	UI.corner(count, 8)
 	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 6, 1, -3), Size = UDim2.new(1, -12, 0, 3), BackgroundColor3 = C.gold, BackgroundTransparency = equipped and 0 or 1})
 	return button, price, line, count
@@ -1033,7 +1033,7 @@ local function renderMatch()
 	refs.boss = UI.roundFrame(main, {Position = at(bossRect), Size = dims(bossRect), BackgroundColor3 = Color3.fromRGB(66,30,44), Visible = false}, C.red)
 	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 2), Size = UDim2.new(1, -24, 0, 24), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Center})
 	refs.bossHP = UI.bar(refs.boss, C.red, UDim2.fromOffset(12, 26), UDim2.new(1, -24, 0, 12))
-	refs.bossHint = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 37), Size = UDim2.new(1, -24, 0, bossRect.h - 41), TextColor3 = C.muted, TextSize = 11, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center})
+	refs.bossHint = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 37), Size = UDim2.new(1, -24, 0, bossRect.h - 41), TextColor3 = C.muted, TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center})
 	refs.hint = UI.label(main, "", {Position = at(layout.hint), Size = dims(layout.hint), TextColor3 = C.green, TextSize = compact and 13 or 15, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
 	surface(refs.hint,C.green)
 	refs.placement = UI.roundFrame(main, {Position = at(layout.placement), Size = dims(layout.placement), Visible = false})
@@ -1062,10 +1062,10 @@ local function renderMatch()
 		UI.secondary(abilities, "✦ " .. T("Saudação", "Salute"), function()
 			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 			if humanoid then pcall(function() humanoid:PlayEmote("wave") end) end
-		end, {LayoutOrder = 3, Size = UDim2.fromOffset(layout.saluteW, layout.buttonH), TextColor3 = C.gold, TextSize = 11})
+		end, {LayoutOrder = 3, Size = UDim2.fromOffset(layout.saluteW, layout.buttonH), TextColor3 = C.gold, TextSize = 12})
 	end
 	refs.speedToggle = UI.secondary(abilities, "1x", toggleSpeed, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 13, Font = Enum.Font.GothamBlack})
-	refs.autoSkipToggle = UI.secondary(abilities, "AUTO", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11, Font = Enum.Font.GothamBlack})
+	refs.autoSkipToggle = UI.secondary(abilities, "AUTO", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 12, Font = Enum.Font.GothamBlack})
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
 	UI.list(cards, 7, true)
