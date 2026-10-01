@@ -137,3 +137,18 @@ chegue ao núcleo, mudando a dificuldade de verdade. A correção que funcionou
 foi deixar os inimigos mais rápidos com menos vida (dano recebido ao
 atravessar a rota é idêntico) — só o tempo parado entre ondas mudou. Está
 registrado aqui porque é o tipo de ajuste que parece inofensivo e não é.
+
+## Passe de temporada: ritmo (01/10/2026)
+
+XP por partida (solo, sem passe de treino): `WaveXP(w) = 18 + 2w` por onda
+concluída + 150 de vitória. Campanha de 50 ondas vencida: 3.450 + 150 = 3.600 XP
+(de 40 ondas: 2.380 + 150; de 70: 6.230 + 150). Missões somam ~190 XP por dia
+e ~700 por semana. Grupo de 4 ganha +30%; passe de treino +25%.
+
+O passe tem 30 níveis; o nível n custa `2000 + 200·(n−1)` XP e o total é 147.000
+(`Catalog.Season`). Quem vence uma campanha por dia (~3.800 XP com missões) chega
+ao nível 30 em ~39 dias de uma temporada de 60; quem joga a metade disso termina
+perto do fim; quem não joga quase nada pega os níveis grátis. Os primeiros níveis
+saem em uma partida (2.000 XP), o último em duas. Se a medição real mostrar
+que a maioria fecha em menos de 25 dias, subir `stepXp`; se quase ninguém passar
+do nível 15, descer `firstXp`.
