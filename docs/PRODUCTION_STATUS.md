@@ -16,8 +16,16 @@ Uma noite e uma manhã de trabalho autônomo (log completo em
   chefe com entrada de câmera e fases, MVP e "jogar de novo", perigo por mapa,
   dificuldades Normal/Difícil/Pesadelo, tiros em lote, qualidade automática.
 - **Progressão**: estrelas por duplicata (+3% de dano, até 5), variante
-  brilhante (1/40), missões rotativas, balanço dos raros medido.
-- **Primeiros minutos**: treino de 12 ondas (~7,5 min) com um toque.
+  brilhante (1/40), missões rotativas (com descrição real, agrupadas por dia e
+  semana), balanço dos raros medido; **passe de temporada** de 30 níveis
+  (147 mil XP, trilha grátis + premium, selo no botão PRÊMIOS, cartão na tela
+  final); **bônus de grupo** (+10% de Ouro e XP por comandante extra).
+- **Primeiros minutos**: treino de 12 ondas (~7,5 min) com um toque; tela de
+  carregamento com a marca e dicas; a primeira vista do lobby estava dentro
+  das órbitas do Farol (paredão amarelo) e foi corrigida; Manhattan mais clara.
+- **Robustez**: teste de payloads hostis (37 ações de lobby × 40 e 11 de
+  partida × 60, com NaN, ±inf, strings enormes e tabelas esparsas) sem erro
+  interno; o limitador de taxa não mascara o teste.
 - **Dinheiro**: passes (3x, drone coletor, treinamento, VIP), Pacote Inicial,
   pacotes de Ouro e produtos de herói **criados no Creator Hub** (parcial, ver
   `docs/director/ROBUX_CATALOG.md`); IDs no `Config.luau`.
