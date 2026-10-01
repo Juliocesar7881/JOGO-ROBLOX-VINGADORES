@@ -1597,7 +1597,10 @@ updateMatch = function()
 		local def = Catalog.Enemies[id]
 		table.insert(threatNames, def and L(def.name) or tostring(id))
 	end
-	refs.waveInfo.Text = state.phase == "Preparing" and (T("VEM AÍ: ", "COMING: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!"))) or ("👾 " .. tostring(match.enemies or 0) .. T(" inimigos     🦸 ", " enemies     🦸 ") .. towerCount .. "/" .. tostring(match.towerLimit or 16))
+	-- A boss within three waves is announced while there is time to prepare.
+	local bossAhead = state.phase == "Preparing" and match.nextBoss and (match.nextBoss - (match.wave or 0)) or nil
+	local bossNote = bossAhead and bossAhead >= 1 and bossAhead <= 3 and ("   ⚠ " .. (bossAhead == 1 and T("CHEFE NA PRÓXIMA ONDA!", "BOSS NEXT WAVE!") or (T("CHEFE EM ", "BOSS IN ") .. bossAhead .. T(" ONDAS", " WAVES")))) or ""
+	refs.waveInfo.Text = state.phase == "Preparing" and (T("VEM AÍ: ", "COMING: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or ("👾 " .. tostring(match.enemies or 0) .. T(" inimigos     🦸 ", " enemies     🦸 ") .. towerCount .. "/" .. tostring(match.towerLimit or 16))
 	local boss = match.boss
 	refs.boss.Visible = boss ~= nil
 	if boss then

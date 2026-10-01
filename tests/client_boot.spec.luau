@@ -1125,6 +1125,12 @@ local function session(screen)
 		frames(1 / 30, 120)
 		check(named(overlays, "CelebrationBanner") == nil, tag .. ": banners clear themselves")
 		push(matchSnapshot(profile, "Preparing"))
+		push(matchSnapshot(profile, "Preparing", { completedWaves = 8, wave = 8, nextBoss = 10 }))
+		local warned = false
+		for _, item in ipairs(gui:GetDescendants()) do
+			if type(item.Text) == "string" and string.find(item.Text, "CHEFE EM 2 ONDAS", 1, true) then warned = true end
+		end
+		check(warned, tag .. ": preparation warns of a boss two waves away")
 	end)
 
 	step("the next wave's roads light up during preparation", function()
