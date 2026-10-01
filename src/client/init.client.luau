@@ -2575,17 +2575,27 @@ end
 
 local function frameCommanderView(inBattle)
 	-- Start above the battlefield instead of at eye level among the zombies.
-	-- Roblox's normal camera retains orbit, wheel zoom and touch pinch control.
-	player.CameraMinZoomDistance = inBattle and 14 or 7
-	player.CameraMaxZoomDistance = inBattle and 100 or 55
+	-- Roblox's camera keeps its own zoom, so setting the CFrame alone never
+	-- pulls it back: pin min and max to the wanted distance for a moment, then
+	-- hand orbit, wheel zoom and touch pinch back to the player.
+	local offset = inBattle and Vector3.new(0, 44, 36) or Vector3.new(0, 6, 23)
+	local distance = offset.Magnitude
+	player.CameraMaxZoomDistance = 400
+	player.CameraMinZoomDistance = distance
+	player.CameraMaxZoomDistance = distance
 	task.delay(0.5, function()
 		if inBattle ~= not not activeMatch() then return end
 		local camera = workspace.CurrentCamera
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if not camera or not root then return end
-		local focus = root.Position + Vector3.new(0, 2, 0)
-		camera.FieldOfView = inBattle and 60 or 70
-		camera.CFrame = CFrame.lookAt(focus + (inBattle and Vector3.new(0, 30, 29) or Vector3.new(0, 6, 23)), focus)
+		if camera and root then
+			local focus = root.Position + Vector3.new(0, 2, 0)
+			camera.FieldOfView = inBattle and 60 or 70
+			camera.CFrame = CFrame.lookAt(focus + offset, focus)
+		end
+		task.delay(0.3, function()
+			player.CameraMinZoomDistance = inBattle and 14 or 7
+			player.CameraMaxZoomDistance = inBattle and 110 or 55
+		end)
 	end)
 end
 

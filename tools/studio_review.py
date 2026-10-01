@@ -86,10 +86,17 @@ def command(code: str, marker: str, timeout: float = 40) -> str:
 
 
 def query(expression: str, timeout: float = 30) -> str:
-    marker = f"DOOM_Q_{int(time.time() * 1000)}"
-    started = time.time()
-    studio_sync.run_command(f'print("{marker}", {expression})', 901)
-    return studio_sync.wait_for(marker, started, timeout).split(marker, 1)[-1].strip()
+    # A command typed while Studio switches between Play and edit can be
+    # dropped; ask again once before giving up.
+    for attempt in range(3):
+        marker = f"DOOM_Q_{int(time.time() * 1000)}"
+        started = time.time()
+        studio_sync.run_command(f'print("{marker}", {expression})', 901)
+        try:
+            return studio_sync.wait_for(marker, started, timeout if attempt == 2 else 12).split(marker, 1)[-1].strip()
+        except SystemExit:
+            time.sleep(3)
+    raise SystemExit(f"Studio did not answer {expression}")
 
 
 def log_offset() -> tuple[Path | None, int]:
