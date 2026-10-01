@@ -203,12 +203,30 @@ def main() -> int:
                         break
                 except SystemExit:
                     pass
+    errors = scan_errors(review_origin)
+    if errors:
+        print("Script errors during the review:")
+        for line in errors[-20:]:
+            print("  " + line)
     overflow = scan_overflow(review_origin)
     if overflow:
         print("Text overflow reported by Review.luau:")
         for line in overflow[-20:]:
             print("  " + line)
     return 0
+
+
+def scan_errors(origin: dict[Path, int]) -> list[str]:
+    """Lua errors from the game's own scripts printed since the review began."""
+    found = []
+    for log in studio_sync.studio_logs():
+        with open(log, "rb") as handle:
+            handle.seek(origin.get(log, 0))
+            lines = handle.read().decode("utf-8", errors="replace").splitlines()
+        for line in lines:
+            if "DOOM_REVIEW_ERROR" in line or ("Error" in line and ("DoomClient" in line or "DoomServer" in line or "DoomShared" in line)):
+                found.append(line.split("]", 3)[-1].strip()[:240])
+    return found
 
 
 def scan_overflow(origin: dict[Path, int]) -> list[str]:
