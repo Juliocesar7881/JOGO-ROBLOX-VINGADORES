@@ -194,6 +194,19 @@ check(third.gold == 8000 - 1000 + Catalog.Rarities.common.duplicate.gold, "A dup
 check(third.result.duplicate and third.result.refundGold == 150 and third.result.refundMastery == 60, "The reply reports the duplicate refund")
 check(third.heroes.falcon.xp + third.heroes.bucky.xp == masteryBefore + Catalog.Rarities.common.duplicate.mastery, "A duplicate becomes mastery on that hero")
 check(#third.loadout == 4, "A duplicate never takes a slot")
+check(third.result.starGained == true and third.result.stars == 1 and (third.heroes.falcon.stars or 0) + (third.heroes.bucky.stars or 0) == 1,
+	"A duplicate adds one star to that hero and the reply says so")
+do
+	-- Past the last star a duplicate only pays Gold and mastery.
+	-- Transactions read the stored value, so the stars are set there.
+	local stored = stores.Tests.values.p_1.heroes
+	stored.falcon.stars, stored.bucky.stars = Catalog.Stars.max, Catalog.Stars.max
+	service.random = scriptedRolls(0, 0)
+	local _, maxOk, maxed = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+	check(maxOk and maxed.result.duplicate and maxed.result.starGained == false and maxed.result.stars == Catalog.Stars.max, "A maxed hero gains no more stars")
+	check((maxed.heroes.falcon.stars or 0) <= Catalog.Stars.max and (maxed.heroes.bucky.stars or 0) <= Catalog.Stars.max, "Stars never pass the maximum")
+	stored.falcon.stars, stored.bucky.stars = 0, 0
+end
 
 -- Slot one is the ability slot: the loadout order is stored exactly as sent.
 local _, reorderOk, reordered = service:Handle(p1, "SetLoadout", { heroes = { "falcon", "ironman", "hawkeye", "bucky" } }, true)

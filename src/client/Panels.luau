@@ -60,7 +60,9 @@ function Panels.new(ctx)
 		UI.label(info,L(def.description),{Position=UDim2.fromOffset(0,96),Size=UDim2.new(1,0,0,52),TextSize=14,TextWrapped=true,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top})
 		UI.chip(info,"💰 "..number(def.cost)..T(" na partida"," in battle"),C.gold:Lerp(C.panel,0.3),{Position=UDim2.fromOffset(0,152),Size=UDim2.fromOffset(150,26),TextSize=13})
 		if owned then
-			UI.label(info,T("MAESTRIA ","MASTERY ")..owned.level.."/20",{Position=UDim2.fromOffset(0,182),Size=UDim2.new(1,0,0,20),TextSize=13,Font=UI.Fonts.display,TextColor3=C.violet})
+			local stars=math.clamp(owned.stars or 0,0,Catalog.Stars.max)
+			UI.label(info,T("MAESTRIA ","MASTERY ")..owned.level.."/20",{Position=UDim2.fromOffset(0,182),Size=UDim2.new(0.55,0,0,20),TextSize=13,Font=UI.Fonts.display,TextColor3=C.violet})
+			UI.label(info,string.rep("★",stars)..string.rep("☆",Catalog.Stars.max-stars),{Name="HeroStars",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,180),Size=UDim2.new(0.45,0,0,24),TextSize=17,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Right})
 		end
 		-- Three numbers anyone can compare: hit, reach, speed.
 		local stats=UI.row(body,78)
@@ -678,6 +680,9 @@ function Panels.new(ctx)
 				UI.label(shade,"🔒",{Size=UDim2.fromScale(1,1),TextSize=30,TextXAlignment=Enum.TextXAlignment.Center})
 			end
 			if slot then UI.chip(card,slot==1 and "★" or tostring(slot),slot==1 and C.gold or C.green,{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-8,1,-42),Size=UDim2.fromOffset(28,24),TextSize=15}) end
+			-- Earned stars (one per duplicate) along the bottom of the artwork.
+			local stars=mine and math.clamp(mine.stars or 0,0,Catalog.Stars.max) or 0
+			if stars>0 then UI.label(card,string.rep("★",stars),{Name="CollectionStars",Position=UDim2.new(0,8,1,-64),Size=UDim2.new(0.6,0,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.gold}) end
 			UI.label(card,heroName(id),{Name="HeroName",Position=UDim2.new(0,6,1,-36),Size=UDim2.new(1,-12,0,32),Font=UI.Fonts.display,TextSize=cellW<150 and 13 or 16,TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Center})
 			UI.button(card,"",function()
 				if kit.inventoryView.leaderPick and mine then makeLeader(id,function() kit.inventoryView.leaderPick=false; renderContext() end) else openContext("hero",{heroId=id}) end

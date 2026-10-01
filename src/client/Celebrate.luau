@@ -347,7 +347,8 @@ function Celebrate:Chest(result, chestId, onClosed)
 	local nameLabel = UI.label(card, self:_t(hero.name), { Name = "RevealName", Position = UDim2.fromOffset(10, 262), Size = UDim2.new(1, -20, 0, 38), Font = Enum.Font.GothamBlack, TextSize = 28, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, TextScaled = true, ZIndex = 91 })
 	UI.outline(nameLabel, 3)
 	local statusText = result.duplicate
-		and self:_t({ pt = "REPETIDO  •  +" .. tostring(result.refundGold or 0) .. " Ouro  •  +" .. tostring(result.refundMastery or 0) .. " XP do herói", en = "DUPLICATE  •  +" .. tostring(result.refundGold or 0) .. " Gold  •  +" .. tostring(result.refundMastery or 0) .. " hero XP" })
+		and self:_t({ pt = (result.starGained and ("+1 ★ (" .. tostring(result.stars or 1) .. "/5)  •  ") or "") .. "+" .. tostring(result.refundGold or 0) .. " Ouro  •  +" .. tostring(result.refundMastery or 0) .. " XP",
+			en = (result.starGained and ("+1 ★ (" .. tostring(result.stars or 1) .. "/5)  •  ") or "") .. "+" .. tostring(result.refundGold or 0) .. " Gold  •  +" .. tostring(result.refundMastery or 0) .. " XP" })
 		or self:_t({ pt = "NOVO HERÓI!", en = "NEW HERO!" })
 	local status = UI.label(card, statusText, { Name = "RevealStatus", Position = UDim2.fromOffset(10, 302), Size = UDim2.new(1, -20, 0, 48), Font = Enum.Font.GothamBlack, TextSize = result.duplicate and 14 or 26, TextWrapped = true, TextColor3 = result.duplicate and CHEST_GOLD or Color3.fromRGB(150, 255, 120), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
 	UI.outline(status, 2.5)

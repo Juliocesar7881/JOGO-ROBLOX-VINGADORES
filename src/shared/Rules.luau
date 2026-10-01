@@ -375,8 +375,9 @@ function Rules.PermanentModifiers(profile, heroId)
 	local mastery = profile and profile.heroes and profile.heroes[heroId]
 	local masteryLevel = Rules.MasteryLevel(if type(mastery) == "table" then mastery.xp else 0)
 	local talents = profile and profile.talents or {}
+	local stars = type(mastery) == "table" and math.clamp(math.floor(number(mastery.stars, 0)), 0, Catalog.Stars.max) or 0
 	return {
-		damageBonus = math.min(0.15, math.floor(masteryLevel / 2) * 0.01 + (talents.towerPower or 0) * 0.01),
+		damageBonus = math.min(0.15, math.floor(masteryLevel / 2) * 0.01 + (talents.towerPower or 0) * 0.01) + stars * Catalog.Stars.damage,
 		rangeBonus = math.min(0.10, (masteryLevel - 1) * 0.002 + (talents.reach or 0) * 0.01),
 		attackSpeedBonus = math.min(0.10, (masteryLevel - 1) * 0.003),
 	}

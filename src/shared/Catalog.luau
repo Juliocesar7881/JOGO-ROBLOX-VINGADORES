@@ -39,6 +39,10 @@ end
 -- duplicate: what a chest turns a hero you already own into.
 -- placeLimit: how many towers of one hero of this rarity a commander may field.
 Catalog.RarityOrder = { "common", "rare", "epic", "legendary", "mythic" }
+-- Stars: every duplicate of a hero you own adds one (up to max), and each
+-- star adds `damage` to that hero's towers on top of mastery and talents.
+-- After the last star a duplicate only pays its Gold and mastery.
+Catalog.Stars = { max = 5, damage = 0.03 }
 Catalog.Rarities = {
 	common = { id = "common", name = text("Comum", "Common"), color = { 190, 200, 212 }, robux = 79, placeLimit = 8, abilityCost = 1, duplicate = { gold = 150, mastery = 60 } },
 	rare = { id = "rare", name = text("Raro", "Rare"), color = { 84, 170, 255 }, robux = 199, placeLimit = 6, abilityCost = 1.4, duplicate = { gold = 300, mastery = 120 } },

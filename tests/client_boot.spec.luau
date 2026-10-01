@@ -120,7 +120,7 @@ end
 local function veteranProfile(overrides)
 	local profile = {
 		gold = 2500, xp = 1200, level = 7,
-		heroes = { ironman = { xp = 300, level = 3 }, hawkeye = { xp = 50, level = 1 }, spiderman = { xp = 0, level = 1 } },
+		heroes = { ironman = { xp = 300, level = 3, stars = 2 }, hawkeye = { xp = 50, level = 1 }, spiderman = { xp = 0, level = 1 } },
 		loadout = { "ironman", "hawkeye" },
 		abilities = { ironman = 1, hawkeye = 1, spiderman = 1 }, talents = {}, pity = {},
 		activeSkills = { "overload", "scan" }, passives = { "magnet" },
@@ -582,6 +582,8 @@ local function session(screen)
 		fx({kind="OpenPanel",panel="inventory"})
 		for slot=1,5 do check(countNamed(gui,"SquadSlot_"..slot)==1,tag..": squad has visible slot "..slot) end
 		check(countNamed(gui,"Collection_ironman")==1 and countNamed(gui,"Collection_thor")==0,tag..": inventory defaults to owned heroes")
+		local starMark = named(gui, "CollectionStars")
+		check(starMark ~= nil and starMark.Text == "★★", tag .. ": a hero with two stars shows them on its collection card")
 		click("TODOS")
 		for _,id in ipairs(Catalog.HeroOrder) do check(countNamed(gui,"Collection_"..id)==1,tag..": collection exposes "..id) end
 		click("MEUS HERÓIS")
@@ -737,6 +739,12 @@ local function session(screen)
 		stage = reveal()
 		check(stage ~= nil and named(stage, "RevealContinue").Visible, tag .. ": left alone, the reveal finishes by itself")
 		check(stage and string.find(named(stage, "RevealStatus").Text, "150", 1, true) ~= nil, tag .. ": a duplicate shows the Gold it became")
+		clickNamed("RevealContinue")
+		chestResult = { chestId = "rare", heroId = "falcon", rarity = "common", duplicate = true, refundGold = 150, refundMastery = 60, starGained = true, stars = 2 }
+		openRare()
+		frames(1 / 30, 90)
+		stage = reveal()
+		check(stage and string.find(named(stage, "RevealStatus").Text, "+1 ★ (2/5)", 1, true) ~= nil, tag .. ": a duplicate that gains a star says so")
 		clickNamed("RevealContinue")
 
 		-- Reduced effects: same result, no charging build-up.

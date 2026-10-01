@@ -48,7 +48,7 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 
 ## M4 — Robux
 - [x] M4.1 Código: starter pack (uma vez), 6º espaço de equipe, VIP (+10% ouro, título), 3x; chaves no template e testes.
-- [!] M4.2 (BLOQUEADO: extensão Claude in Chrome desconectada às 10:00 — reabrir o Chrome logado) Creator Hub: criar passes e produtos, IDs no `Config.luau`, tabela no LOG.
+- [~] M4.2 (4 passes, 5 produtos, 15/34 heróis criados; PARADO no aviso de termos do Roblox — ver docs/director/ROBUX_CATALOG.md) Creator Hub: criar passes e produtos, IDs no `Config.luau`, tabela no LOG.
 
 ## M5 — Identidade dos mapas e dificuldades
 - [x] M5.1 Perigo telegrafado por mapa (dados no Catalog, regra no Rules, passo no MatchService).
@@ -57,7 +57,7 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 - [x] M5.2c Cliente: seletor de 3 dificuldades no cartão do elevador (cadeado + motivo), cor da dificuldade no HUD e na tela final.
 
 ## M6 — Progressão
-- [ ] M6.1 (dados 01/10 duel sweep: Juba 83–94% e Geada 74–95% fortes demais p/ raros; Sombra 32–56%, Guaxo 27–64% fracos; mítico só 1 torre a 5000) Curva de raridade medida e ajustada (`--sweep heroes`).
+- [x] M6.1 (dados 01/10 duel sweep: Juba 83–94% e Geada 74–95% fortes demais p/ raros; Sombra 32–56%, Guaxo 27–64% fracos; mítico só 1 torre a 5000) Curva de raridade medida e ajustada (`--sweep heroes`).
 - [ ] M6.2 Estrelas por duplicata e variante brilhante.
 - [ ] M6.3 Missões rotativas e marcos de coleção.
 - [ ] M6.4 Passe de temporada grátis/premium.
