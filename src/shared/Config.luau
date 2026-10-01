@@ -41,6 +41,15 @@ return {
 			gold1000 = { id = 3715833438 }, gold5000 = { id = 3715833690 }, gold12000 = { id = 3715833842 }, gold30000 = { id = 3715833975 },
 			starterPack = { id = 3715833256 },
 		},
+		-- One developer product per purchasable hero (Creator Hub, 2026-10-01).
+		-- Heroes without an id here are not on sale yet.
+		Heroes = {
+			falcon = { id = 3715834320 }, bucky = { id = 3715834397 },
+			spiderman = { id = 3715834470 }, widow = { id = 3715834541 }, antman = { id = 3715834624 },
+			wasp = { id = 3715834861 }, rocket = { id = 3715834932 }, daredevil = { id = 3715835002 }, shangchi = { id = 3715835053 },
+			captain = { id = 3715835121 }, panther = { id = 3715835190 }, hulk = { id = 3715835244 },
+			vision = { id = 3715835303 }, warmachine = { id = 3715835379 }, starlord = { id = 3715835477 },
+		},
 	},
 	-- Optional owned/licensed audio IDs. Zero keeps the experience silent.
 	Audio = { lobby = 0, battle = 0, collect = 0, victory = 0, defeat = 0, breach = 0, place = 0, upgrade = 0, levelUp = 0, ability = 0, boss = 0, wave = 0, chest = 0,
