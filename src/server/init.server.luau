@@ -838,12 +838,14 @@ RunService.Heartbeat:Connect(function(dt)
 	-- six-tick cap still bounds the work done in any one frame.
 	accumulator += math.min(dt, 0.5) * match:Speed()
 	local ticks = 0
+	match:BeginShots()
 	while accumulator >= step and ticks < 6 do
 		accumulator -= step
 		ticks += 1
 		local ok, problem = pcall(match.Step, match, step)
 		if not ok then warn("[Doomsday] Match step failed: " .. tostring(problem)) end
 	end
+	match:FlushShots()
 	if ticks >= 6 then accumulator = 0 end
 
 	if role ~= "Match" then

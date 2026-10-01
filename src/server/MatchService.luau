@@ -105,6 +105,18 @@ function Match:_fx(event, player)
 	end
 end
 
+-- One server frame's shots travel together: at 3x with a full squad that is
+-- one event per frame instead of hundreds per second.
+function Match:BeginShots()
+	self.shotBuffer = self.shotBuffer or {}
+end
+
+function Match:FlushShots()
+	local shots = self.shotBuffer
+	self.shotBuffer = nil
+	if shots and #shots > 0 then self:_fx({kind="Shots",shots=shots}) end
+end
+
 function Match:_notice(pt, en, tone)
 	self:_fx({kind="Notice", text={pt=pt,en=en},tone=tone or "info"})
 end
@@ -576,8 +588,11 @@ function Match:_attack(tower, stats)
 	local c=self.catalog.Heroes[tower.heroId].color
 	-- The figure's own chest when the world knows it; otherwise the old heights.
 	local visualHeight = (self.world.AimHeight and self.world:AimHeight(target.enemyId)) or (target.def.air and 8 or target.def.boss and 4.2 or target.enemyId=="brute" and 2.9 or 2)
-	self:_fx({kind="Shot",from=tower.position+Vector3.new(0,4,0),to=target.position+Vector3.new(0,visualHeight,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp,
-		armored=(target.def.armor or 0)>=0.25 or nil})
+	local shot={kind="Shot",from=tower.position+Vector3.new(0,4,0),to=target.position+Vector3.new(0,visualHeight,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp,
+		armored=(target.def.armor or 0)>=0.25 or nil}
+	-- Inside a frame's batch every shot rides in one Shots event; alone (tests,
+	-- a stray call) it goes out at once.
+	if self.shotBuffer then shot.kind=nil table.insert(self.shotBuffer,shot) else self:_fx(shot) end
 	if attack=="splash" or attack=="dot" then self:_fx({kind="Pulse",position=target.position,radius=stats.splash or 8,color=Color3.fromRGB(c[1],c[2],c[3])}) end
 	return true
 end

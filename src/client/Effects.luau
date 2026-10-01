@@ -812,6 +812,16 @@ end
 
 function Effects:Handle(event)
 	if type(event)~="table" then return end
+	-- A frame's shots arrive together; each is drawn like a lone Shot.
+	if event.kind == "Shots" then
+		for _, shot in ipairs(event.shots or {}) do
+			if type(shot) == "table" then
+				shot.kind = "Shot"
+				self:Handle(shot)
+			end
+		end
+		return
+	end
 	if event.kind=="BaseShot" then
 		self:_line(event.from,event.to,event.color,0.3,0.18); self:_impact(event.to,event.color,2)
 		return

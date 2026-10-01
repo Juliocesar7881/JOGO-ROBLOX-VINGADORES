@@ -1673,6 +1673,14 @@ local function session(screen)
 		check(#bad == 0, tag .. ": after a resize everything is still on screen: " .. table.concat(bad, ", "))
 	end)
 
+	-- A server frame's shots arrive as one Shots event and draw like lone ones.
+	step("a batch of shots draws", function()
+		push(matchSnapshot(profile, "Wave", { enemies = 4 }))
+		fx({ kind = "Shots", shots = { { from = v3(10, 4, 10), to = v3(-30, 2, -50), color = Color3.fromRGB(220, 48, 51), towerId = "t1" },
+			{ from = v3(-20, 4, 5), to = v3(-25, 2, -40), color = Color3.fromRGB(70, 160, 96), towerId = "t2", heroId = "hawkeye" } } })
+		frames(1 / 30, 20)
+	end)
+
 	-- Studio's screen review (the stand-in RunService says IsStudio) draws every
 	-- fixture screen; none may raise a Lua error or send anything to the server.
 	step("the Studio review shows every screen", function()
