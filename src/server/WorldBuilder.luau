@@ -1378,7 +1378,7 @@ end
 -- more than atmosphere.
 local MAP_LIGHTING = {
 	asgard = {
-		sun=2.6,clockTime=15.5,ambient={128,115,99},outdoor={174,153,120},
+		sun=2.6,clockTime=15.5,exposure=0.15,ambient={128,115,99},outdoor={174,153,120},
 		atmosphereColor={242,215,174},atmosphereDensity=0.2,glare=0.12,
 		tint={255,239,205},contrast=0.04,saturation=0.06,brightness=0.02,
 		bloom=0.25,fogColor={178,157,137},fogEnd=720,
@@ -1408,7 +1408,7 @@ local MAP_LIGHTING = {
 		bloom = 0.48, fogColor = { 45, 35, 55 }, fogEnd = 650,
 	},
 	latveria = {
-		sun = 1.8, clockTime = 18.5, ambient = { 100, 102, 137 }, outdoor = { 117, 129, 167 },
+		sun = 1.8, clockTime = 18.5, exposure = 0.05, ambient = { 100, 102, 137 }, outdoor = { 117, 129, 167 },
 		atmosphereColor = { 140, 150, 220 }, atmosphereDensity = 0.4, glare = 0.26,
 		tint = { 219, 225, 255 }, contrast = 0.07, saturation = 0.05, brightness = 0.02,
 		bloom = 0.56, fogColor = { 30, 32, 50 }, fogEnd = 460,
