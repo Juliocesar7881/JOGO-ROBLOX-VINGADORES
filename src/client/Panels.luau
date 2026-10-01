@@ -56,7 +56,7 @@ function Panels.new(ctx)
 		heroPortrait(showcase,id,{Position=UDim2.fromOffset(4,4),Size=UDim2.new(0.42,-8,1,-8)})
 		local info=UI.frame(showcase,{Position=UDim2.new(0.42,12,0,0),Size=UDim2.new(0.58,-12,1,0),BackgroundTransparency=1})
 		UI.chip(info,Catalog.Upper(L(rarity.name)),tint,{Size=UDim2.fromOffset(110,24),TextSize=13})
-		UI.label(info,L(def.name),{Position=UDim2.fromOffset(0,28),Size=UDim2.new(1,0,0,66),TextSize=28,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
+		UI.label(info,((owned and owned.shiny) and "✨ " or "")..L(def.name),{Name="HeroTitle",Position=UDim2.fromOffset(0,28),Size=UDim2.new(1,0,0,66),TextSize=28,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
 		UI.label(info,L(def.description),{Position=UDim2.fromOffset(0,96),Size=UDim2.new(1,0,0,52),TextSize=14,TextWrapped=true,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top})
 		UI.chip(info,"💰 "..number(def.cost)..T(" na partida"," in battle"),C.gold:Lerp(C.panel,0.3),{Position=UDim2.fromOffset(0,152),Size=UDim2.fromOffset(150,26),TextSize=13})
 		if owned then
@@ -682,6 +682,7 @@ function Panels.new(ctx)
 			if slot then UI.chip(card,slot==1 and "★" or tostring(slot),slot==1 and C.gold or C.green,{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-8,1,-42),Size=UDim2.fromOffset(28,24),TextSize=15}) end
 			-- Earned stars (one per duplicate) along the bottom of the artwork.
 			local stars=mine and math.clamp(mine.stars or 0,0,Catalog.Stars.max) or 0
+			if mine and mine.shiny then UI.label(card,"✨",{Name="CollectionShiny",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,30),Size=UDim2.fromOffset(28,24),TextSize=18,TextXAlignment=Enum.TextXAlignment.Right}) end
 			if stars>0 then UI.label(card,string.rep("★",stars),{Name="CollectionStars",Position=UDim2.new(0,8,1,-64),Size=UDim2.new(0.6,0,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.gold}) end
 			UI.label(card,heroName(id),{Name="HeroName",Position=UDim2.new(0,6,1,-36),Size=UDim2.new(1,-12,0,32),Font=UI.Fonts.display,TextSize=cellW<150 and 13 or 16,TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Center})
 			UI.button(card,"",function()

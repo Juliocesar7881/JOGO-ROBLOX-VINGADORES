@@ -120,7 +120,7 @@ end
 local function veteranProfile(overrides)
 	local profile = {
 		gold = 2500, xp = 1200, level = 7,
-		heroes = { ironman = { xp = 300, level = 3, stars = 2 }, hawkeye = { xp = 50, level = 1 }, spiderman = { xp = 0, level = 1 } },
+		heroes = { ironman = { xp = 300, level = 3, stars = 2, shiny = true }, hawkeye = { xp = 50, level = 1 }, spiderman = { xp = 0, level = 1 } },
 		loadout = { "ironman", "hawkeye" },
 		abilities = { ironman = 1, hawkeye = 1, spiderman = 1 }, talents = {}, pity = {},
 		activeSkills = { "overload", "scan" }, passives = { "magnet" },
@@ -584,6 +584,7 @@ local function session(screen)
 		check(countNamed(gui,"Collection_ironman")==1 and countNamed(gui,"Collection_thor")==0,tag..": inventory defaults to owned heroes")
 		local starMark = named(gui, "CollectionStars")
 		check(starMark ~= nil and starMark.Text == "★★", tag .. ": a hero with two stars shows them on its collection card")
+		check(named(gui, "CollectionShiny") ~= nil, tag .. ": a shiny hero sparkles on its collection card")
 		click("TODOS")
 		for _,id in ipairs(Catalog.HeroOrder) do check(countNamed(gui,"Collection_"..id)==1,tag..": collection exposes "..id) end
 		click("MEUS HERÓIS")
@@ -745,6 +746,12 @@ local function session(screen)
 		frames(1 / 30, 90)
 		stage = reveal()
 		check(stage and string.find(named(stage, "RevealStatus").Text, "+1 ★ (2/5)", 1, true) ~= nil, tag .. ": a duplicate that gains a star says so")
+		clickNamed("RevealContinue")
+		chestResult = { chestId = "rare", heroId = "falcon", rarity = "common", duplicate = false, refundGold = 0, refundMastery = 0, shiny = true }
+		openRare()
+		frames(1 / 30, 90)
+		stage = reveal()
+		check(stage and string.find(named(stage, "RevealStatus").Text, "BRILHANTE", 1, true) ~= nil, tag .. ": a shiny pull is announced")
 		clickNamed("RevealContinue")
 
 		-- Reduced effects: same result, no charging build-up.

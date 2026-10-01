@@ -145,6 +145,7 @@ local function normalize(raw, now, catalog)
 		if type(hero) ~= "table" or not integer(hero.xp, 0, 9007199254740991) then error("INVALID_MASTERY_DATA") end
 		hero.level = levelFor(hero.xp, 20, masteryThreshold)
 		hero.stars = math.clamp(math.floor(tonumber(hero.stars) or 0), 0, catalog.Stars.max)
+		hero.shiny = hero.shiny == true or nil
 		local rank = profile.abilities[id]
 		if not integer(rank, 1, max) then profile.abilities[id] = 1 end
 	end
@@ -484,10 +485,16 @@ function PlayerService:_openChest(profile, chestId, rolls, now)
 			profile.gold+=refund.gold
 		else profile.bases[outcome.baseId]=true end
 	else duplicate, refund = self:_grantHero(profile, outcome.heroId, now) end
+	-- The third roll decides the shine; a missing roll (older callers) never does.
+	local shiny = false
+	if chest.kind ~= "base" and rolls[3] and rolls[3] >= 1 - self.catalog.ShinyChance then
+		local ownedHero = profile.heroes[outcome.heroId]
+		if ownedHero and not ownedHero.shiny then ownedHero.shiny = true; shiny = true end
+	end
 	profile.stats.chests += 1
 	if profile.stats.chests == 1 then achievement(profile, "firstChest", "Primeiro baú", "First chest", now) end
 	return { chestId = chestId, heroId = outcome.heroId, baseId = outcome.baseId, rarity = outcome.rarity, duplicate = duplicate,
-		refundGold = refund.gold, refundMastery = refund.mastery, stars = refund.stars, starGained = refund.starGained, pity = outcome.pity, cost = chest.cost }
+		refundGold = refund.gold, refundMastery = refund.mastery, stars = refund.stars, starGained = refund.starGained, shiny = shiny, pity = outcome.pity, cost = chest.cost }
 end
 
 -- Pays a reward table ({ gold, xp, chest, title }) into the profile.
@@ -614,7 +621,7 @@ function PlayerService:Handle(player, action, payload, inLobby)
 	end
 	-- A chest's two random numbers are drawn once, here. UpdateAsync may run the
 	-- callback below several times, and every run must reach the same hero.
-	local rolls = CHEST_ACTIONS[action] and { self.random:NextNumber(), self.random:NextNumber() } or nil
+	local rolls = CHEST_ACTIONS[action] and { self.random:NextNumber(), self.random:NextNumber(), self.random:NextNumber() } or nil
 	local ok, result = self:_transaction(player, function(profile, now, current)
 		if action == "UpgradeTalent" then
 			local node = type(payload.talentId) == "string" and self.catalog.Talents[payload.talentId]

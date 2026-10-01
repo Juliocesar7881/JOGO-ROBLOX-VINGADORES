@@ -206,6 +206,18 @@ do
 	check(maxOk and maxed.result.duplicate and maxed.result.starGained == false and maxed.result.stars == Catalog.Stars.max, "A maxed hero gains no more stars")
 	check((maxed.heroes.falcon.stars or 0) <= Catalog.Stars.max and (maxed.heroes.bucky.stars or 0) <= Catalog.Stars.max, "Stars never pass the maximum")
 	stored.falcon.stars, stored.bucky.stars = 0, 0
+	-- Shiny: the chest's third roll decides it, once per hero, and it is cosmetic.
+	service.random = scriptedRolls(0, 0, 0.99)
+	local _, shinyOk, shiny = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+	check(shinyOk and shiny.result.shiny == true, "A third roll in the top 1/40 makes the pulled hero shiny")
+	check(shiny.heroes[shiny.result.heroId].shiny == true, "The hero keeps its shine")
+	local statsBefore = Rules.PermanentModifiers(service.records[p1.UserId].profile, shiny.result.heroId).damageBonus
+	service.random = scriptedRolls(0, 0, 0.99)
+	local _, againOk, again = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+	check(againOk and again.result.shiny == false, "An already shiny hero is not announced shiny twice")
+	service.random = scriptedRolls(0, 0, 0.5)
+	local _, plainOk, plain = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+	check(plainOk and plain.result.shiny == false, "An ordinary third roll gives no shine")
 end
 
 -- Slot one is the ability slot: the loadout order is stored exactly as sent.
