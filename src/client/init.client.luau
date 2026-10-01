@@ -1011,6 +1011,11 @@ renderLobby = function()
 		UI.label(hint,tip,{Name="GuideTip",Position=UDim2.fromOffset(58,0),Size=UDim2.new(1,-66,1,0),TextSize=compact and 14 or 16,Font=UI.Fonts.display,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None})
 	end
 	refs.firstVisitHint.Visible=not state.elevator and contextPanel==nil
+	-- A newcomer's START TRAINING breathes, so the eye finds it first.
+	if newcomer and not (profile().settings or {}).lowFX then
+		local pulse=UI.create("UIScale",{Name="Pulse",Scale=1},refs.firstVisitHint)
+		TweenService:Create(pulse,TweenInfo.new(0.7,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),{Scale=1.07}):Play()
+	end
 
 	kit.elevatorSignature = nil
 	renderElevator()
