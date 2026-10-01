@@ -186,7 +186,7 @@ def main() -> int:
                 continue
             if scene.startswith("server:"):
                 line = scene[7:].replace('"', "")
-                command(f'{player}:SetAttribute("DoomReviewServer", "") task.wait() {player}:SetAttribute("DoomReviewServer", "{line}") task.wait(3)',
+                command(f'{player}:SetAttribute("DoomReviewServer", "") task.wait() {player}:SetAttribute("DoomReviewServer", "{line}") task.wait(0.4)',
                         f"DOOM_SERVER_{int(time.time())}_{index}", 60)
                 continue
             sizes = [""] + ([PHONE] if args.phone and scene != "live" else [])

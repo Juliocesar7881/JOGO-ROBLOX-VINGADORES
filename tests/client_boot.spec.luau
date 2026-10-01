@@ -1107,6 +1107,14 @@ local function session(screen)
 		push(matchSnapshot(profile, "Preparing", { completedWaves = 10, wave = 10 }))
 		check(string.find(bannerTitle(), "ONDA 10", 1, true) == nil, tag .. ": a boss wave waits for the boss banner instead")
 		push(matchSnapshot(profile, "Wave", { completedWaves = 10, wave = 11 }))
+		local camera = workspace.CurrentCamera
+		camera.CameraType = Enum.CameraType.Custom
+		-- Fired without flushing: the test scheduler runs every delay at once.
+		fxRemote.OnClientEvent:Fire({ kind = "BossArrive", enemyId = "lizard", final = false, position = v3(20, 0, 0) })
+		check(string.find(bannerTitle(), Catalog.Enemies.lizard.name.pt, 1, true) ~= nil, tag .. ": an arriving boss is named in a banner, got " .. bannerTitle())
+		check(camera.CameraType == Enum.CameraType.Scriptable, tag .. ": the camera flies to the arriving boss")
+		flush()
+		check(camera.CameraType == Enum.CameraType.Custom, tag .. ": and hands the camera back to the player")
 		fx({ kind = "EnemyDown", id = 44, enemyId = "lizard", position = v3(0, 0, 0), boss = true })
 		check(string.find(bannerTitle(), "CHEFE DERROTADO", 1, true) ~= nil, tag .. ": a fallen boss gets a big banner, got " .. bannerTitle())
 		fx({ kind = "Ability", heroId = "captainmarvel", abilityId = "photonNova", abilityKind = "blast", ultimate = true, ownerId = LOCAL_ID,

@@ -1598,6 +1598,14 @@ updateMatch = function()
 		refs.bossName.TextSize=mobile() and 15 or 20
 		refs.bossHP.Size = UDim2.fromScale(math.clamp((boss.hp or 0) / math.max(boss.maxHP or 1, 1), 0, 1), 1)
 		refs.bossHint.Text = L(boss.hint)
+		-- Each new phase is announced: a boss that changes should feel like it.
+		local key = tostring(boss.id) .. ":" .. tostring(boss.phase or 1)
+		if kit.bossPhase and kit.bossPhase ~= key and string.match(kit.bossPhase, "^[^:]+") == tostring(boss.id) and (boss.phase or 1) > 1 then
+			celebrate:Banner({pt = "FASE " .. tostring(boss.phase) .. "!", en = "PHASE " .. tostring(boss.phase) .. "!"}, boss.name, C.red, {cue = "boss", duration = 1.6})
+		end
+		kit.bossPhase = key
+	else
+		kit.bossPhase = nil
 	end
 	for id, record in pairs(refs.abilityButtons or {}) do
 		local remaining = match.ability and match.ability.cooldown or 0
@@ -1858,7 +1866,22 @@ fxRemote.OnClientEvent:Connect(function(event)
 	else
 		if event.kind == "BossArrive" and activeMatch() then
 			local def = Catalog.Enemies[event.enemyId]
-			celebrate:Banner(def and def.name or {pt = "CHEFE", en = "BOSS"}, event.final and {pt = "⚠ CHEFE FINAL", en = "⚠ FINAL BOSS"} or {pt = "⚠ CHEFE", en = "⚠ BOSS"}, C.red, {big = event.final == true, cue = "boss", duration = 2.2})
+			celebrate:Banner(def and def.name or {pt = "CHEFE", en = "BOSS"}, event.final and {pt = "⚠ CHEFE FINAL", en = "⚠ FINAL BOSS"} or {pt = "⚠ CHEFE", en = "⚠ BOSS"}, C.red, {big = true, cue = "boss", duration = 2.4})
+			-- A short entrance: the camera flies to the boss and back, unless
+			-- the player turned camera motion off or is placing a hero.
+			local camera = workspace.CurrentCamera
+			local settings = profile().settings or {}
+			if camera and typeof(event.position) == "Vector3" and settings.shake ~= false and not selectedHero and camera.CameraType == Enum.CameraType.Custom then
+				local home = camera.CFrame
+				local target = event.position + Vector3.new(0, 4, 0)
+				camera.CameraType = Enum.CameraType.Scriptable
+				TweenService:Create(camera, TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = CFrame.lookAt(target + Vector3.new(0, 16, 24), target)}):Play()
+				task.delay(1.8, function()
+					if camera.CameraType ~= Enum.CameraType.Scriptable then return end
+					TweenService:Create(camera, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {CFrame = home}):Play()
+					task.delay(0.47, function() if camera.CameraType == Enum.CameraType.Scriptable then camera.CameraType = Enum.CameraType.Custom end end)
+				end)
+			end
 		elseif event.kind == "EnemyDown" and event.boss and activeMatch() then
 			local def = Catalog.Enemies[event.enemyId]
 			celebrate:Banner({pt = "CHEFE DERROTADO!", en = "BOSS DEFEATED!"}, def and def.name or nil, C.gold, {big = true, cue = "victory", confetti = 50})
