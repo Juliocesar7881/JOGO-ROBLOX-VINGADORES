@@ -17,7 +17,7 @@
 local Review = {}
 
 Review.STAGES = {
-	"lobby", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium",
+	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium",
 	"quests", "leaderboard", "settings", "rewards", "guide", "boarding",
 	"preparing", "wave", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat",
 	"reveal", "revealbase", "revealcommon",
@@ -182,6 +182,12 @@ function Review.start(api)
 					team = { { userId = player.UserId, name = player.DisplayName, damage = 48250, kills = 312, gold = 2140 }, { userId = 0, name = "Aliado", damage = 31900, kills = 205, gold = 1610 } } } })
 			api.render()
 		else
+			if stage == "newcomer" then
+				-- A first visit: the two starters, no Gold, training not done.
+				p.gold, p.level, p.xp, p.tutorialComplete, p.campaign = 0, 1, 0, false, {}
+				p.loadout = { Catalog.HeroOrder[1], Catalog.HeroOrder[2] }
+				p.heroes = { [Catalog.HeroOrder[1]] = { level = 1, xp = 0 }, [Catalog.HeroOrder[2]] = { level = 1, xp = 0 } }
+			end
 			local snapshot = { phase = "Lobby", role = "Standalone", profile = p, players = actors() }
 			if stage == "boarding" then
 				snapshot.elevator = { portalId = "normal", modeId = "normal", mapId = firstBoss(), max = 4, remaining = 99, host = true, maps = 5, riders = actors() }
@@ -201,7 +207,7 @@ function Review.start(api)
 				api.celebrate:Chest(result, stage == "revealbase" and "base_epic" or "legendary")
 			elseif stage == "basechests" then
 				api.openContext("chests", { chestId = "base_cosmic" })
-			elseif stage ~= "lobby" and stage ~= "boarding" then
+			elseif stage ~= "lobby" and stage ~= "boarding" and stage ~= "newcomer" then
 				api.openContext(stage, stage == "hero" and { heroId = p.loadout[1] } or {})
 			end
 		end

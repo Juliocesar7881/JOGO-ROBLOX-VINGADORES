@@ -11,7 +11,9 @@ function Panels.new(ctx)
 	local C, Catalog, Config, L, MarketplaceService, Rules, T, UI, act, at, audio, board = ctx.C, ctx.Catalog, ctx.Config, ctx.L, ctx.MarketplaceService, ctx.Rules, ctx.T, ctx.UI, ctx.act, ctx.at, ctx.audio, ctx.board
 	local celebrate, contains, copy, heading, heroName, heroPortrait, kit, levelProgress, mapName, number, pending, player = ctx.celebrate, ctx.contains, ctx.copy, ctx.heading, ctx.heroName, ctx.heroPortrait, ctx.kit, ctx.levelProgress, ctx.mapName, ctx.number, ctx.pending, ctx.player
 	local productInfo, profile, request, routePreview, screenSize, showToast, smallText = ctx.productInfo, ctx.profile, ctx.request, ctx.routePreview, ctx.screenSize, ctx.showToast, ctx.smallText
-	local openContext, renderContext, fetchProducts = ctx.openContext, ctx.renderContext, ctx.fetchProducts
+	local openContext, renderContext, fetchProducts, closeContext = ctx.openContext, ctx.renderContext, ctx.fetchProducts, ctx.closeContext
+	-- Training starts at once (the server boards the commander); the panel steps aside.
+	local function startTraining() closeContext(); act("StartTraining", {}) end
 
 	-- Lobby locations and the HUD share these panels. The HUD offers a quick
 	-- route to playing, forming a team and spending earned progression points.
@@ -684,7 +686,7 @@ function Panels.new(ctx)
 	end
 
 	local function contextSettings(body)
-	 UI.button(body,T("APRENDER A JOGAR • 20 ONDAS","LEARN TO PLAY • 20 WAVES"),function() routePreview.goPortal("training") end,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,44)})
+	 UI.button(body,T("APRENDER A JOGAR • 12 ONDAS","LEARN TO PLAY • 12 WAVES"),startTraining,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,44)})
 		UI.section(body, T("Seu jeito de jogar", "Your experience"), T("Acessibilidade e apresentação. As regras de combate são iguais para todos.", "Accessibility and presentation. Combat rules are the same for everyone."))
 		local settings = profile().settings or {}
 		local effectsOn = settings.effects
@@ -837,8 +839,8 @@ function Panels.new(ctx)
 		if not profile().tutorialComplete then
 			local first=UI.roundFrame(body,{Name="FirstMission",Size=UDim2.new(1,-6,0,168),BackgroundColor3=C.gold:Lerp(C.panel,0.78)},C.gold)
 			UI.label(first,T("COMECE AQUI!","START HERE!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,36),TextSize=26,Font=Enum.Font.GothamBlack,TextColor3=C.gold})
-			UI.label(first,T("Aprenda em 20 ondas e ganhe 1.000 Ouro na primeira vitória.","Learn in 20 waves and earn 1,000 Gold on your first victory."),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
-			UI.button(first,T("JOGAR O TREINO • 20 ONDAS","PLAY TRAINING • 20 WAVES"),function() routePreview.goPortal("training") end,{Name="FindTrainingPortal",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
+			UI.label(first,T("Aprenda em 12 ondas e ganhe 1.000 Ouro na primeira vitória.","Learn in 12 waves and earn 1,000 Gold on your first victory."),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
+			UI.button(first,T("JOGAR O TREINO • 12 ONDAS","PLAY TRAINING • 12 WAVES"),startTraining,{Name="FindTrainingPortal",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
 		end
 		local colors={manhattan=C.coral,gamma=C.green,asgard=C.gold,hydra=C.red,wakanda=C.violet,latveria=C.blue}
 		local lastDistrict
@@ -854,7 +856,7 @@ function Panels.new(ctx)
 					center={T("CAMPANHA","CAMPAIGN"),T("Os três portais do centro do refúgio. Comece por aqui!","The three portals in the middle of the refuge. Start here!")},
 					expedition={T("EXPEDIÇÕES","EXPEDITIONS"),T("Campanhas mais longas nas ilhas: Selva de Cristal e Ponte Celeste na ilha oeste, a final, Cidadela do Tirano (70 ondas), na ilha leste.","Longer campaigns on the islands: Crystal Jungle and Sky Bridge on the west island, the finale, Tyrant's Citadel (70 waves), on the east island.")},
 					arena={T("ARENA COMPETITIVA","COMPETITIVE ARENA"),T("Três portais vizinhos. Cada mapa tem seu placar e exige uma estratégia diferente.","Three neighboring portals. Each map has its own leaderboard and calls for a different strategy.")},
-					special={T("TREINO E CARTAS","TRAINING & CARDS"),T("Na ilha norte: o treino de 20 ondas e o roguelike de cartas.","On the north island: the 20-wave training and the card roguelike.")},
+					special={T("TREINO E CARTAS","TRAINING & CARDS"),T("Na ilha norte: o treino de 12 ondas e o roguelike de cartas.","On the north island: the 12-wave training and the card roguelike.")},
 				}
 				local heading=headings[district]
 				if heading then UI.section(body,heading[1],heading[2]) end
@@ -882,7 +884,7 @@ function Panels.new(ctx)
 			end
 		end
 		if profile().tutorialComplete then
-			UI.secondary(body,T("TREINAR DE NOVO • 20 ONDAS","TRAIN AGAIN • 20 WAVES"),function() routePreview.goPortal("training") end,{Size=UDim2.new(1,-6,0,44)})
+			UI.secondary(body,T("TREINAR DE NOVO • 12 ONDAS","TRAIN AGAIN • 12 WAVES"),startTraining,{Size=UDim2.new(1,-6,0,44)})
 		end
 	end
 

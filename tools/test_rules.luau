@@ -39,7 +39,7 @@ equal(#Catalog.AbilityOrder, 36, "One ability per hero")
 check(Catalog.Modes.daily == nil and Catalog.Modes.bossrush == nil, "Daily challenge and boss rush are gone")
 check(Catalog.Modes.infinite == nil and Catalog.Modes.hard == nil, "The casual endless and hard modes are gone")
 check(Catalog.Skills == nil and Catalog.Protocols == nil, "The old skill and protocol systems are gone")
-equal(Catalog.Modes.tutorial.waves, 20, "Training runs 20 waves")
+equal(Catalog.Modes.tutorial.waves, 12, "Training runs 12 waves")
 equal(Catalog.Modes.cards.waves, 50, "Cards run 50 waves")
 equal(Catalog.Modes.ranked.waves, 0, "Competitive is endless")
 for mapId, waves in { manhattan = 40, gamma = 50, hydra = 50, wakanda = 50, asgard = 50, latveria = 70 } do
@@ -295,7 +295,7 @@ end
 for wave = 1, 80 do
 	equal(Rules.IsBossWave("normal", wave, "latveria"), wave % 10 == 0, "Boss on every tenth wave: " .. wave)
 	equal(Rules.IsBossWave("ranked", wave, "hydra"), wave % 10 == 0, "Competitive boss on every tenth wave: " .. wave)
-	equal(Rules.IsBossWave("tutorial", wave, "manhattan"), wave == 20, "Training has one simplified boss, at the end")
+	equal(Rules.IsBossWave("tutorial", wave, "manhattan"), wave == 12, "Training has one simplified boss, at the end")
 end
 for _, mapId in Catalog.MapOrder do
 	local total = Rules.WaveCount("normal", mapId)
@@ -308,7 +308,7 @@ end
 check(not Rules.IsFinalWave("ranked", 50, "hydra"), "Competitive has no final wave")
 equal(Rules.BossId(10, "hydra", "ranked"), "lizard", "Competitive cycles the whole cast in order")
 equal(Rules.BossId(70, "hydra", "ranked"), "lizard", "Competitive keeps cycling the bosses")
-equal(Rules.BossId(20, "manhattan", "tutorial"), "lizard", "Training's boss is the Lizard")
+equal(Rules.BossId(12, "manhattan", "tutorial"), "lizard", "Training's boss is the Lizard")
 
 -- Match Gold is what enemies drop; lobby Gold is paid for the run.
 for _, id in Catalog.EnemyOrder do check(Rules.KillCash(id) >= 2, "Every enemy drops match Gold: " .. id) end
@@ -401,7 +401,7 @@ equal(#Waves.Generate("manhattan", "normal", 41, 1), 0, "Manhattan's campaign en
 equal(#Waves.Generate("gamma", "normal", 51, 1), 0, "A 50-wave campaign ends after 50")
 check(#Waves.Generate("latveria", "normal", 70, 1) > 0 and #Waves.Generate("latveria", "normal", 71, 1) == 0, "Latveria runs exactly 70")
 equal(#Waves.Generate("gamma", "cards", 51, 1), 0, "Card mode terminates after 50")
-equal(#Waves.Generate("manhattan", "tutorial", 21, 1), 0, "Training terminates after 20")
+equal(#Waves.Generate("manhattan", "tutorial", 13, 1), 0, "Training terminates after 12")
 check(#Waves.Generate("hydra", "ranked", 120, 1) > 0, "Competitive keeps going")
 check(#Waves.Generate("hydra", "ranked", 120, 4) <= 101, "Competitive grows tougher, not more crowded (100 plus its boss)")
 check(Waves.Generate("hydra", "ranked", 120, 1)[1].hpMultiplier > Waves.Generate("hydra", "ranked", 60, 1)[1].hpMultiplier, "Competitive health keeps climbing")

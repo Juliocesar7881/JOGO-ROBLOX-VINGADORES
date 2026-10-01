@@ -421,7 +421,7 @@ if tutorial then
 	check(tutorial.match.phase == "Results", "tutorial reaches the results screen")
 	check(tutorial.results ~= nil, "tutorial produces a result")
 	check(tutorial.results.victory == true, "a defended tutorial is a win")
-	check(tutorial.results.waves == 20, "tutorial clears all 20 waves, got " .. tostring(tutorial.results.waves))
+	check(tutorial.results.waves == 12, "tutorial clears all 12 waves, got " .. tostring(tutorial.results.waves))
 	check(tutorial.seconds >= 180 and tutorial.seconds <= 1500,
 		"tutorial lasts 3-25 min, got " .. string.format("%.1f min", tutorial.seconds / 60))
 	check(tutorial.bossSeen, "the tutorial boss shows up")

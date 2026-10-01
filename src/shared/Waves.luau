@@ -24,7 +24,7 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed)
 	end
 	local result = {}
 	local partyScale = ({ 1, 1.65, 2.25, 2.85 })[partySize]
-	-- Training climbs at half speed, so its 20 waves stay gentle.
+	-- Training climbs at half speed, so its 12 waves stay gentle.
 	local progress = if modeId == "tutorial" then math.floor((math.min(wave, 20) + 1) / 2) else wave
 	-- Health climbs steadily, then a little faster once the late waves begin.
 	local growth = 1 + (progress - 1) * 0.045 + math.max(0, progress - 30) * 0.012

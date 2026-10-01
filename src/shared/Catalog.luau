@@ -392,7 +392,7 @@ Catalog.Enemies = {
 -- Each campaign map has its own length (Catalog.CampaignWaves); cards run 50
 -- waves on the Gamma Complex; the competitive arena never ends. A boss walks in
 -- every tenth wave, and a campaign's last wave is that map's own final boss.
--- Training is 20 waves with a simplified boss. The old casual endless mode is
+-- Training is 12 waves (about seven minutes) with a simplified boss. The old casual endless mode is
 -- gone: competitive is the one endless mode.
 Catalog.PortalOrder = { "tutorial", "normal", "ranked", "cards" }
 Catalog.CampaignWaves = { manhattan = 40, gamma = 50, hydra = 50, wakanda = 50, asgard = 50, latveria = 70 }
@@ -437,8 +437,8 @@ Catalog.Maps.asgard = {
 table.insert(Catalog.MapOrder,"asgard")
 Catalog.ModeOrder = { "tutorial", "normal", "ranked", "cards" }
 Catalog.Modes = {
-	tutorial = { id = "tutorial", name = text("Treinamento", "Training"), waves = 20, hpMultiplier = 0.6, rewardMultiplier = 1,
-		description = text("Aprenda o básico em 20 ondas, com um chefe simplificado no fim.", "Learn the basics in 20 waves, with a simplified boss at the end.") },
+	tutorial = { id = "tutorial", name = text("Treinamento", "Training"), waves = 12, hpMultiplier = 0.6, rewardMultiplier = 1,
+		description = text("Aprenda o básico em 12 ondas, com um chefe simplificado no fim.", "Learn the basics in 12 waves, with a simplified boss at the end.") },
 	normal = { id = "normal", name = text("Campanha", "Campaign"), waves = 50, hpMultiplier = 1.2, rewardMultiplier = 1,
 		description = text("Cada mapa tem sua duração: 40 a 70 ondas. Chefe a cada 10; o último é o chefe do mapa.", "Each map has its own length: 40 to 70 waves. A boss every 10; the last one is the map's own boss.") },
 	ranked = { id = "ranked", name = text("Competitivo", "Competitive"), waves = 0, hpMultiplier = 1.45, rewardMultiplier = 1.5,

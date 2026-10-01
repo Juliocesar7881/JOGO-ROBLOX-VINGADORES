@@ -1033,8 +1033,8 @@ local function session(screen)
 		fx({kind="OpenPanel",panel="modes",hud=true})
 		check(named(gui, "FirstMission") ~= nil, tag .. ": a newcomer's play menu leads with the short training")
 		clickNamed("FindTrainingPortal")
-		check(not asked("StartMatch"), tag .. ": training also requires physically entering its portal")
-		check(not contextOpen(),tag..": the training guide closes to reveal the route")
+		check(asked("StartTraining") and not asked("StartMatch"), tag .. ": the training button asks the server to board the training queue")
+		check(not contextOpen(),tag..": the play menu steps aside once training starts")
 	end)
 
 	--========================================================================

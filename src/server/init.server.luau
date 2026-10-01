@@ -623,6 +623,27 @@ local function route(player, action, payload)
 		sendToLobby(player)
 		return { ok = true }
 	end
+	-- One tap to play the training: the server walks the commander onto a
+	-- free training queue and starts its countdown at once.
+	if action == "StartTraining" then
+		if role == "Match" or match:Has(player) then return { ok = false, message = text("Termine a partida primeiro.", "Finish the match first.") } end
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not root then return { ok = false, message = text("Aguarde seu personagem.", "Wait for your character.") } end
+		local queues = {}
+		for queueId, zone in pairs(world.portalZones) do
+			if zone.destinationId == "training" then table.insert(queues, queueId) end
+		end
+		table.sort(queues)
+		for _, queueId in ipairs(queues) do
+			local zone = world.portalZones[queueId]
+			player.Character:PivotTo(CFrame.new(zone.center))
+			if elevator:Touch(player, queueId) then
+				elevator:StartNow(player)
+				return { ok = true }
+			end
+		end
+		return { ok = false, message = text("O treino está cheio agora. Tente em instantes.", "Training is full right now. Try again shortly.") }
+	end
 	if MATCH_ACTIONS[action] then
 		return { ok = false, message = text("Esta acao so funciona durante uma partida.", "This action only works during a match.") }
 	end

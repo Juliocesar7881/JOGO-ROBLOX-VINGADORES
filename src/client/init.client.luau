@@ -350,6 +350,7 @@ local panels = Panels.new({
 	openContext = function(...) return openContext(...) end,
 	renderContext = function(...) return renderContext(...) end,
 	fetchProducts = function(...) return fetchProducts(...) end,
+	closeContext = function(...) return closeContext(...) end,
 })
 local contextBuilders, loadBoard = panels.contextBuilders, panels.loadBoard
 
@@ -992,8 +993,11 @@ renderLobby = function()
 	end
 
 	-- Nico, the HQ's little robot, gives the next step in a speech strip.
-	refs.firstVisitHint=UI.button(main,"",function() openContext("guide",{}) end,{
-		Name="FirstVisitHint",Position=at(hud.hint),Size=dims(hud.hint),BackgroundColor3=C.ink,BackgroundTransparency=0.2,
+	local newcomer=not profile().tutorialComplete
+	refs.firstVisitHint=UI.button(main,"",function()
+		if newcomer then act("StartTraining",{}) else openContext("guide",{}) end
+	end,{
+		Name="FirstVisitHint",Position=at(hud.hint),Size=dims(hud.hint),BackgroundColor3=newcomer and C.green or C.ink,BackgroundTransparency=newcomer and 0 or 0.2,
 	})
 	do
 		local hint=refs.firstVisitHint
@@ -1001,7 +1005,7 @@ renderLobby = function()
 		hint:FindFirstChild("Border").Color=C.gold
 		UI.illustration(hint,"guide",C.gold,{Position=UDim2.fromOffset(4,-12),Size=UDim2.fromOffset(50,50)})
 		local p=profile()
-		local tip=not p.tutorialComplete and T("Entre no portal de CAMPANHA para jogar!","Step into a CAMPAIGN portal to play!")
+		local tip=not p.tutorialComplete and T("▶ COMEÇAR TREINO  •  ganhe um baú!","▶ START TRAINING  •  win a chest!")
 			or (canOpenChest() and T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."))
 			or T("Toque aqui: o Nico mostra o caminho.","Tap here: Nico shows the way.")
 		UI.label(hint,tip,{Name="GuideTip",Position=UDim2.fromOffset(58,0),Size=UDim2.new(1,-66,1,0),TextSize=compact and 14 or 16,Font=UI.Fonts.display,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None})

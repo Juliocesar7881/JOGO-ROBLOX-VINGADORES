@@ -356,8 +356,11 @@ check(not request(ana,"StartMatch",{destinationId="missing"}).ok,"unknown destin
 check(not request(ana,"StartMatch",{mapId="asgard",modeId="cards"}).ok,"manual map-mode mismatch rejected")
 check(not request(ana,"StartMatch",{destinationId="ranked",mapId="manhattan",modeId="normal"}).ok,"forged fields cannot bypass destination unlock")
 check(not request(ana,"StartMatch",{mapId="manhattan",modeId="tutorial"}).ok,"even training cannot be started from a remote menu")
-stepInto(ana,"training")
-check(rideUntilDeparture(ana),"training starts after boarding its physical portal")
+-- One tap: the server walks the newcomer onto a training queue and starts it.
+check(request(ana,"StartTraining",{}).ok,"START TRAINING boards a training queue from anywhere in the lobby")
+check(latest(ana).elevator ~= nil,"the newcomer is aboard the training car")
+check(rideUntilDeparture(ana),"training starts right after boarding")
+check(not request(ana,"StartTraining",{}).ok,"training cannot be started again from inside a match")
 check(latest(ana).match and latest(ana).match.modeId=="tutorial","tutorial stays separate from the campaign portal")
 check(not request(ana, "BuyHero", { heroId = "spiderman" }).ok, "lobby actions are refused inside a match")
 check(not request(ana, "PlaceTower", { heroId = "ironman", position = v3(0, 0, -15) }).ok, "building on the route is refused")
@@ -406,7 +409,7 @@ end
 
 local sawWave, sawPriority, sold = false, false, false
 local sawPreview = false
--- Training is 20 waves: enough loop for all of them plus the results screen.
+-- Training is 12 waves: the loop has room for all of them plus the results screen.
 for _ = 1, 900 do
 	local snap = latest(ana)
 	if snap.phase == "Results" then break end

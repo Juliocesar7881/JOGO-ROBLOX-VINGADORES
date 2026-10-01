@@ -36,23 +36,23 @@ local TUTORIAL_LESSONS = {
 		"Cada inimigo derrotado derruba Ouro no chão. Ande perto das moedas para pegar: é com esse Ouro que você compra e melhora heróis.",
 		"Every defeated enemy drops Gold on the ground. Walk near the coins to pick them up: that Gold buys and upgrades your heroes.",
 	},
-	[4] = {
+	[3] = {
 		"Toque em uma torre para melhorar, vender ou mudar a prioridade.",
 		"Select a tower to upgrade, sell or change targeting.",
 	},
-	[7] = {
+	[5] = {
 		"Sua habilidade ativa vem do herói no PRIMEIRO slot da equipe. Use o botão grande durante a onda: ela recarrega sozinha.",
 		"Your active ability comes from the hero in the FIRST slot of your squad. Use the big button during a wave; it recharges on its own.",
 	},
-	[11] = {
+	[7] = {
 		"Antes de cada onda o aviso mostra as ameaças. Tocar em PRONTO começa a onda mais cedo.",
 		"Before each wave the banner lists the threats. Pressing READY starts the wave early.",
 	},
-	[15] = {
+	[9] = {
 		"Na árvore de Evolução do lobby, Magnetismo aumenta o raio do ímã que puxa o Ouro do chão.",
 		"In the lobby's Talent tree, Magnetism widens the magnet that pulls Gold off the ground.",
 	},
-	[20] = {
+	[12] = {
 		"Última onda: derrote o chefe para concluir o treino e ganhar 1.000 de Ouro para abrir baús no lobby.",
 		"Final wave: beat the boss to finish training and earn 1,000 Gold to open chests in the lobby.",
 	},
