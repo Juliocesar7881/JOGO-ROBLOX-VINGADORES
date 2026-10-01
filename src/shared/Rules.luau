@@ -48,6 +48,14 @@ function Rules.TowerLimit(size)
 	return ({ 16, 12, 10, 8 })[math.clamp(math.floor(number(size, 1)), 1, 4)]
 end
 
+-- How many towers of one hero a commander may field: rarer heroes are
+-- stronger, so fewer copies (and a squad has to mix).
+function Rules.HeroLimit(heroId)
+	local hero = Catalog.Heroes[heroId]
+	local rarity = hero and Catalog.Rarities[hero.rarity]
+	return rarity and rarity.placeLimit or 8
+end
+
 --==============================================================================
 -- Modes, unlocks and the random map
 --==============================================================================
@@ -141,6 +149,7 @@ Rules.BuildReasons = {
 	occupied = { pt = "Espaço ocupado", en = "Space taken" },
 	cash = { pt = "Ouro insuficiente", en = "Not enough Gold" },
 	limit = { pt = "Limite de heróis", en = "Hero limit reached" },
+	unitLimit = { pt = "Limite deste herói", en = "Limit for this hero" },
 }
 
 local function segmentDistanceXZ(px, pz, ax, az, bx, bz)

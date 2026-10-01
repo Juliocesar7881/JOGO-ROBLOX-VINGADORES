@@ -1514,7 +1514,17 @@ print("--- performance guard ---")
 do
 	local match, player = stage({ wave = 45 })
 	match.participants[player.UserId].cash = 1e6
-	for _ = 1, 12 do place(match, player, "ironman") end
+	for _ = 1, 8 do place(match, player, "ironman") end
+	-- A common hero is capped at eight towers per commander.
+	local refused = 0
+	for _, spot in ipairs(buildSpots(match.mapId)) do
+		local ok, reason = match:Handle(player, "PlaceTower", { heroId = "ironman", position = spot.point })
+		check(not ok, "a ninth tower of a common hero is refused")
+		if not ok and string.find(tostring(reason), Rules.BuildReasons.unitLimit.pt, 1, true) then refused += 1 end
+		break
+	end
+	check(refused == 1, "the refusal names the per-hero limit")
+	for _ = 1, 4 do place(match, player, "hawkeye") end
 	local calls = 0
 	local original = Rules.TowerStats
 	Rules.TowerStats = function(...) calls += 1 return original(...) end

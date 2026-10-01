@@ -37,13 +37,14 @@ end
 -- the hero, the more it costs, exactly like its odds in a chest.
 -- abilityCost: multiplies the gold price of every ability upgrade.
 -- duplicate: what a chest turns a hero you already own into.
+-- placeLimit: how many towers of one hero of this rarity a commander may field.
 Catalog.RarityOrder = { "common", "rare", "epic", "legendary", "mythic" }
 Catalog.Rarities = {
-	common = { id = "common", name = text("Comum", "Common"), color = { 190, 200, 212 }, robux = 79, abilityCost = 1, duplicate = { gold = 150, mastery = 60 } },
-	rare = { id = "rare", name = text("Raro", "Rare"), color = { 84, 170, 255 }, robux = 199, abilityCost = 1.4, duplicate = { gold = 300, mastery = 120 } },
-	epic = { id = "epic", name = text("Épico", "Epic"), color = { 176, 108, 255 }, robux = 449, abilityCost = 2, duplicate = { gold = 600, mastery = 250 } },
-	legendary = { id = "legendary", name = text("Lendário", "Legendary"), color = { 255, 188, 62 }, robux = 999, abilityCost = 3, duplicate = { gold = 1200, mastery = 500 } },
-	mythic = { id = "mythic", name = text("Mítico", "Mythic"), color = { 255, 84, 112 }, robux = 1999, abilityCost = 4.5, duplicate = { gold = 2500, mastery = 1000 } },
+	common = { id = "common", name = text("Comum", "Common"), color = { 190, 200, 212 }, robux = 79, placeLimit = 8, abilityCost = 1, duplicate = { gold = 150, mastery = 60 } },
+	rare = { id = "rare", name = text("Raro", "Rare"), color = { 84, 170, 255 }, robux = 199, placeLimit = 6, abilityCost = 1.4, duplicate = { gold = 300, mastery = 120 } },
+	epic = { id = "epic", name = text("Épico", "Epic"), color = { 176, 108, 255 }, robux = 449, placeLimit = 5, abilityCost = 2, duplicate = { gold = 600, mastery = 250 } },
+	legendary = { id = "legendary", name = text("Lendário", "Legendary"), color = { 255, 188, 62 }, robux = 999, placeLimit = 4, abilityCost = 3, duplicate = { gold = 1200, mastery = 500 } },
+	mythic = { id = "mythic", name = text("Mítico", "Mythic"), color = { 255, 84, 112 }, robux = 1999, placeLimit = 3, abilityCost = 4.5, duplicate = { gold = 2500, mastery = 1000 } },
 }
 
 --==============================================================================

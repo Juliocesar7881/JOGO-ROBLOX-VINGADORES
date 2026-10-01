@@ -1325,6 +1325,9 @@ function Match:Handle(player,action,payload)
 		local reasons=self.rules.BuildReasons
 		local function refuse(key) return false,reasons[key].pt..". / "..reasons[key].en.."." end
 		if p.towerCount>=self.rules.TowerLimit(self.size) then return refuse("limit") end
+		local same=0
+		for _,t in pairs(self.towers) do if t.ownerId==player.UserId and t.heroId==id then same+=1 end end
+		if same>=self.rules.HeroLimit(id) then return refuse("unitLimit") end
 		local cost=math.floor(hero.cost*(1-math.clamp(cardStat(p,"discount"),0,0.5)))
 		if p.cash<cost then return refuse("cash") end
 		local valid,reason=self:_validBuild(payload.position)

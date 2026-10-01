@@ -304,8 +304,11 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 		BackgroundColor3 = index == 1 and C.gold or C.background, BackgroundTransparency = 0.05, TextSize = 11,
 		TextColor3 = index == 1 and C.ink or C.text, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
 	UI.corner(badge, 9)
+	local count = UI.label(button, "", {Name = "PlacedCount", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3), Size = UDim2.fromOffset(30, 16),
+		BackgroundColor3 = C.background, BackgroundTransparency = 0.2, TextSize = 11, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
+	UI.corner(count, 8)
 	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 6, 1, -3), Size = UDim2.new(1, -12, 0, 3), BackgroundColor3 = C.gold, BackgroundTransparency = equipped and 0 or 1})
-	return button, price, line
+	return button, price, line, count
 end
 
 -- The lobby panels live in Panels.luau (see its header).
@@ -1052,14 +1055,18 @@ kit.placementReason = nil
 local function positionValid(position)
 	if not state or not state.match or not selectedHero then return false, "bounds" end
 	local match = state.match
-	local towers, mine = {}, 0
+	local towers, mine, same = {}, 0, 0
 	for _, tower in ipairs(match.towers or {}) do
 		if typeof(tower.position) == "Vector3" then table.insert(towers, tower.position) end
-		if tower.ownerId == player.UserId then mine += 1 end
+		if tower.ownerId == player.UserId then
+			mine += 1
+			if tower.heroId == selectedHero then same += 1 end
+		end
 	end
 	local ok, reason = Rules.BuildCheck(match.mapId, position, towers, Config, match.blockers)
 	if not ok then return false, reason end
 	if mine >= (match.towerLimit or 16) then return false, "limit" end
+	if same >= Rules.HeroLimit(selectedHero) then return false, "unitLimit" end
 	local hero = Catalog.Heroes[selectedHero]
 	local discount = math.clamp(Rules.CardTotals(match.cards).discount or 0, 0, 0.5)
 	if hero and (match.cash or 0) < math.floor(hero.cost * (1 - discount)) then return false, "cash" end
@@ -1529,8 +1536,8 @@ local function renderMatch()
 	for index = 1, 5 do
 		local id = (profile().loadout or {})[index]
 		if id and Catalog.Heroes[id] then
-			local button, price, line = heroCard(cards, id, index, layout.cardW, layout.heroCards.h - 14, function() chooseHero(id) end)
-			refs.heroCards[id] = {button = button, price = price, line = line}
+			local button, price, line, count = heroCard(cards, id, index, layout.cardW, layout.heroCards.h - 14, function() chooseHero(id) end)
+			refs.heroCards[id] = {button = button, price = price, line = line, count = count}
 		else
 			-- An empty slot is a quiet tile with a plus: heroes are equipped in
 			-- the lobby, and a phone tile has no room to say so.
@@ -1627,6 +1634,12 @@ updateMatch = function()
 		card.button.BackgroundColor3 = tint:Lerp(C.background, selected and 0.1 or 0.45)
 		card.line.BackgroundTransparency = selected and 0 or 1
 		card.price.TextColor3 = (match.cash or 0) >= Catalog.Heroes[id].cost and C.gold or C.red
+		local placed = 0
+		for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId and tower.heroId == id then placed += 1 end end
+		local cap = Rules.HeroLimit(id)
+		card.count.Visible = placed > 0
+		card.count.Text = tostring(placed) .. "/" .. tostring(cap)
+		card.count.TextColor3 = placed >= cap and C.red or C.text
 	end
 	updateUpgradeBoards(match)
 	if routePreview:Update(state.phase, match, profile().settings and profile().settings.lowFX) then
