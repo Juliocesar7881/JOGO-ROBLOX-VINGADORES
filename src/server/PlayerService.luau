@@ -108,6 +108,12 @@ end
 
 -- Unknown future versions and damaged economic fields fail closed. A failed read
 -- must never turn an existing player into a new profile.
+-- The season's total XP (every level paid): where the stored count stops.
+local function seasonMaxXp(catalog)
+	local season = catalog.Season
+	return season.levels * season.firstXp + season.stepXp * season.levels * (season.levels - 1) / 2
+end
+
 local function normalize(raw, now, catalog)
 	if raw == nil then return newProfile(now) end
 	if type(raw) ~= "table" or not integer(raw.schemaVersion or 1, 1, SCHEMA_VERSION) then error("UNSUPPORTED_PROFILE_VERSION") end
@@ -182,7 +188,7 @@ local function normalize(raw, now, catalog)
 		if type(season[key]) ~= "number" or season[key] ~= season[key] or season[key] < 0 then season[key] = 0 end
 		season[key] = math.floor(season[key])
 	end
-	season.xp = math.min(season.xp, seasonMax * catalog.Season.xpPerLevel)
+	season.xp = math.min(season.xp, seasonMaxXp(catalog))
 	for _, key in ipairs({ "freeClaimed", "premiumClaimed" }) do
 		season[key] = math.clamp(math.floor(tonumber(season[key]) or 0), 0, seasonMax)
 	end
@@ -588,7 +594,7 @@ end
 function PlayerService:_seasonXp(profile, amount)
 	if amount > 0 then
 		local season = self:_seasonOf(profile)
-		season.xp = math.min(self.catalog.Season.levels * self.catalog.Season.xpPerLevel, season.xp + math.floor(amount))
+		season.xp = math.min(seasonMaxXp(self.catalog), season.xp + math.floor(amount))
 	end
 end
 

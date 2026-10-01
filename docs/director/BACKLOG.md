@@ -60,7 +60,7 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 - [x] M6.1 (dados 01/10 duel sweep: Juba 83–94% e Geada 74–95% fortes demais p/ raros; Sombra 32–56%, Guaxo 27–64% fracos; mítico só 1 torre a 5000) Curva de raridade medida e ajustada (`--sweep heroes`).
 - [x] M6.2 Estrelas por duplicata e variante brilhante.
 - [x] M6.3 Missões rotativas e marcos de coleção.
-- [x] M6.4 Passe de temporada grátis/premium (30 níveis, 600 XP cada; passe `season` 399 com ID 0 até o dono criar no Creator Hub).
+- [x] M6.4 Passe de temporada grátis/premium (30 níveis, 2.000 → 7.800 XP por nível, 147 mil no total; passe `season` 399 com ID 0 até o dono criar no Creator Hub).
 
 ## M7 — Áudio
 - [ ] M7.1 Enviar WAVs no Creator Hub em ordem de importância; IDs no `Config.Audio`.

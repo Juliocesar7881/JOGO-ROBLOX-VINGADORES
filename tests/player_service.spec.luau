@@ -942,9 +942,16 @@ end
 -- Season pass: XP climbs levels, the free track pays everyone, the premium
 -- track only the owner, and every claim is idempotent.
 do
+	check(Rules.SeasonLevelXp(1) == Catalog.Season.firstXp and Rules.SeasonLevelXp(30) == Catalog.Season.firstXp + 29 * Catalog.Season.stepXp, "The first level is the cheapest, the last the dearest")
+	local summed = 0
+	for level = 1, Catalog.Season.levels do
+		summed += Rules.SeasonLevelXp(level)
+		check(Rules.SeasonThreshold(level) == summed, "The threshold of level " .. level .. " is the sum of the levels before it")
+	end
+	check(Rules.SeasonThreshold(0) == 0, "Level 0 needs nothing")
 	local status0 = Rules.SeasonStatus({ id = 1, xp = 0, freeClaimed = 0, premiumClaimed = 0 }, false)
 	check(status0.level == 0 and status0.claimable == 0 and #status0.upcoming == 6, "A fresh season has no level and no claim")
-	local mid = Rules.SeasonStatus({ id = 1, xp = Catalog.Season.xpPerLevel * 3 + 10, freeClaimed = 1, premiumClaimed = 0 }, true)
+	local mid = Rules.SeasonStatus({ id = 1, xp = Rules.SeasonThreshold(3) + 10, freeClaimed = 1, premiumClaimed = 0 }, true)
 	check(mid.level == 3 and mid.claimableFree == 2 and mid.claimablePremium == 3 and mid.claimable == 5, "Levels reached minus levels claimed, per track")
 	check(Rules.SeasonStatus({ xp = 1e9 }, false).level == Catalog.Season.levels, "Level is capped")
 	local free10, premium30 = Rules.SeasonReward(10, "free"), Rules.SeasonReward(30, "premium")
@@ -965,11 +972,11 @@ do
 	local handled, ok = service:Handle(climber, "ClaimSeason", {}, true)
 	check(handled and not ok, "Nothing to claim at level 0")
 	-- XP from a match feeds the season (and a replayed award does not feed it twice).
-	check(service:Award(climber, "season:xp1", { xp = 1500 }), "an award with XP is accepted")
-	check(not service:Award(climber, "season:xp1", { xp = 1500 }) or service:Get(climber).seasonStatus.xp == 1500, "A repeated award id adds no second XP")
+	check(service:Award(climber, "season:xp1", { xp = 4500 }), "an award with XP is accepted")
+	check(not service:Award(climber, "season:xp1", { xp = 4500 }) or service:Get(climber).seasonStatus.xp == 4500, "A repeated award id adds no second XP")
 	local afterXp = service:Get(climber).seasonStatus
 	local badgeBefore = service:Get(climber).rewards.claimable
-	check(afterXp.xp == 1500 and afterXp.level == 2 and afterXp.claimableFree == 2 and afterXp.claimablePremium == 0, "XP became season levels, premium locked: " .. afterXp.xp)
+	check(afterXp.xp == 4500 and afterXp.level == 2 and afterXp.claimableFree == 2 and afterXp.claimablePremium == 0, "XP became season levels, premium locked: " .. afterXp.xp)
 	check(badgeBefore >= 1, "A claimable season level lights the gift badge")
 	local goldBefore = service:Get(climber).gold
 	local handled2, ok2, snap2 = service:Handle(climber, "ClaimSeason", {}, true)
@@ -987,7 +994,7 @@ do
 	check(ok4 and paid4.gold == Rules.SeasonReward(1, "premium").gold + Rules.SeasonReward(2, "premium").gold, "The premium claim pays the premium levels: ")
 	-- The top: every chest of both tracks, a title, nothing claimable afterwards.
 	local record = stores.Tests.values.p_81
-	record.season.xp = Catalog.Season.xpPerLevel * Catalog.Season.levels
+	record.season.xp = Rules.SeasonThreshold(Catalog.Season.levels)
 	local _, ok5, snap5 = service:Handle(climber, "ClaimSeason", {}, true)
 	local top = snap5.result
 	check(ok5 and top.level == Catalog.Season.levels and #top.chests == 9, "Levels 3-30 open three free and six premium chests: " .. tostring(top and #top.chests))
@@ -996,9 +1003,9 @@ do
 	-- A new season starts from zero.
 	local newSeasonId = service:_season()
 	stores.Tests.values.p_81.season.id = newSeasonId - 1
-	local awarded = service:Award(climber, "season:xp2", { xp = 700 })
+	local awarded = service:Award(climber, "season:xp2", { xp = 2100 })
 	local fresh = service:Get(climber).seasonStatus
-	check(awarded and fresh.xp == 700 and fresh.level == 1 and fresh.freeClaimed == 0 and fresh.premiumClaimed == 0, "A previous season's XP does not carry into the new one, which counts from zero: " .. tostring(fresh.xp) .. "/" .. tostring(fresh.level))
+	check(awarded and fresh.xp == 2100 and fresh.level == 1 and fresh.freeClaimed == 0 and fresh.premiumClaimed == 0, "A previous season's XP does not carry into the new one, which counts from zero: " .. tostring(fresh.xp) .. "/" .. tostring(fresh.level))
 	-- Damaged records are repaired when a profile loads.
 	stores.Tests.values.p_81.season = { id = "x", xp = -5, freeClaimed = 999, premiumClaimed = 1 / 0 }
 	service:Release(climber)

@@ -564,8 +564,8 @@ function Panels.new(ctx)
 			UI.section(body, T("TEMPORADA • NÍVEL ", "SEASON • LEVEL ") .. season.level .. "/" .. season.maxLevel)
 			local seasonCard = UI.roundFrame(body, {Name = "SeasonCard", Size = UDim2.new(1, -6, 0, season.owned and 196 or 252), BackgroundColor3 = C.card}, season.claimable > 0 and C.gold or C.stroke)
 			local xpFill = UI.bar(seasonCard, C.violet, UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, 16))
-			xpFill.Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpPerLevel, 0, 1), 1)
-			UI.label(seasonCard, season.level >= season.maxLevel and T("Temporada completa!", "Season complete!") or (number(season.xpInto) .. " / " .. number(season.xpPerLevel) .. T(" XP para o próximo nível", " XP to the next level")),
+			xpFill.Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpNeed, 0, 1), 1)
+			UI.label(seasonCard, season.level >= season.maxLevel and T("Temporada completa!", "Season complete!") or (number(season.xpInto) .. " / " .. number(season.xpNeed) .. T(" XP para o próximo nível", " XP to the next level")),
 				{Name = "SeasonXp", Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -24, 0, 20), TextSize = 13, TextColor3 = C.muted})
 			local shown = math.min(#season.upcoming, 5)
 			for index = 1, shown do

@@ -178,7 +178,8 @@ victory Gold and the XP of everyone in the match (`MatchService:_endWave`,
 `_checkpoint`, `Finish`); the multiplier travels in `results.party` and the
 elevator card and end screen name it.
 
-**Season pass.** `Catalog.Season = { levels = 30, xpPerLevel = 600 }`; every
+**Season pass.** `Catalog.Season = { levels = 30, firstXp = 2000, stepXp = 200 }`
+(level n costs `firstXp + stepXp * (n - 1)`, 147,000 XP in all); every
 XP the account earns (match rewards, mission claims, reward-claim XP) also
 feeds `profile.season = { id, xp, freeClaimed, premiumClaimed }`, which
 resets when `PlayerService:_season()` changes (60-day seasons). The

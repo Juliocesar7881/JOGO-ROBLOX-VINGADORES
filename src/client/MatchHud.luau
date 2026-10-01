@@ -338,9 +338,9 @@ function MatchHud.new(ctx)
 			UI.label(seasonCard, T("TEMPORADA • NÍVEL ", "SEASON • LEVEL ") .. tostring(season.level) .. "/" .. tostring(season.maxLevel), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 22), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.violet})
 			local seasonTrack = UI.frame(seasonCard, {Position = UDim2.fromOffset(12, 36), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
 			UI.corner(seasonTrack, 4)
-			local seasonFill = UI.frame(seasonTrack, {Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpPerLevel, 0, 1), 1), BackgroundColor3 = C.violet})
+			local seasonFill = UI.frame(seasonTrack, {Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpNeed, 0, 1), 1), BackgroundColor3 = C.violet})
 			UI.corner(seasonFill, 4)
-			UI.label(seasonCard, season.claimable > 0 and (tostring(season.claimable) .. T(" prêmio(s) esperando em PRÊMIOS!", " reward(s) waiting in GIFTS!")) or (number(season.xpInto) .. " / " .. number(season.xpPerLevel) .. " XP"),
+			UI.label(seasonCard, season.claimable > 0 and (tostring(season.claimable) .. T(" prêmio(s) esperando em PRÊMIOS!", " reward(s) waiting in GIFTS!")) or (number(season.xpInto) .. " / " .. number(season.xpNeed) .. " XP"),
 				{Name = "ResultSeasonHint", Position = UDim2.fromOffset(12, 50), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = season.claimable > 0 and C.gold or C.muted})
 		end
 		local gains = {}

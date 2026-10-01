@@ -612,6 +612,17 @@ function Rules.SeasonReward(level, track)
 	return reward
 end
 
+-- The XP that level `level` costs, and the total needed to reach it.
+function Rules.SeasonLevelXp(level)
+	level = math.clamp(math.floor(number(level, 1)), 1, Catalog.Season.levels)
+	return Catalog.Season.firstXp + Catalog.Season.stepXp * (level - 1)
+end
+
+function Rules.SeasonThreshold(level)
+	level = math.clamp(math.floor(number(level, 0)), 0, Catalog.Season.levels)
+	return level * Catalog.Season.firstXp + Catalog.Season.stepXp * level * (level - 1) / 2
+end
+
 -- The player's season at a glance. `season` is the stored record
 -- ({ id, xp, freeClaimed, premiumClaimed }); `owned` whether the premium
 -- pass is held. Levels are claimed in order, so a claimed count is enough.
@@ -619,12 +630,15 @@ function Rules.SeasonStatus(season, owned)
 	season = type(season) == "table" and season or {}
 	local config = Catalog.Season
 	local xp = math.max(0, math.floor(number(season.xp, 0)))
-	local level = math.min(config.levels, math.floor(xp / config.xpPerLevel))
+	local level = 0
+	while level < config.levels and xp >= Rules.SeasonThreshold(level + 1) do level += 1 end
 	local freeClaimed = math.clamp(math.floor(number(season.freeClaimed, 0)), 0, config.levels)
 	local premiumClaimed = math.clamp(math.floor(number(season.premiumClaimed, 0)), 0, config.levels)
 	local status = {
-		id = season.id, level = level, xp = xp, maxLevel = config.levels, xpPerLevel = config.xpPerLevel,
-		xpInto = level >= config.levels and config.xpPerLevel or xp - level * config.xpPerLevel,
+		id = season.id, level = level, xp = xp, maxLevel = config.levels,
+		-- The bar of the level being climbed (the last one stays full).
+		xpNeed = Rules.SeasonLevelXp(math.min(config.levels, level + 1)),
+		xpInto = level >= config.levels and Rules.SeasonLevelXp(config.levels) or xp - Rules.SeasonThreshold(level),
 		owned = owned == true, freeClaimed = freeClaimed, premiumClaimed = premiumClaimed,
 		claimableFree = math.max(0, level - freeClaimed),
 		claimablePremium = owned and math.max(0, level - premiumClaimed) or 0,

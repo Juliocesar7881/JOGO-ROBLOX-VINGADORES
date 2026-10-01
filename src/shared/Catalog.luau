@@ -47,7 +47,10 @@ Catalog.Stars = { max = 5, damage = 0.03 }
 -- (Config.SeasonDays, 60 by default). The free track pays Gold and a few
 -- chests; the premium track (the "season" pass) pays more of both and a title.
 -- Rewards are pure functions of the level: see Rules.SeasonReward.
-Catalog.Season = { levels = 30, xpPerLevel = 600 }
+-- Level n costs firstXp + stepXp * (n - 1): the first level is about one match,
+-- the last about three, and the whole pass 147,000 XP (about two months for
+-- someone who plays a match a day).
+Catalog.Season = { levels = 30, firstXp = 2000, stepXp = 200 }
 -- Playing together pays: every extra commander in the match adds this much to
 -- the Gold and XP each of them earns (a party of four: +30%).
 Catalog.PartyBonus = { perPlayer = 0.1 }
