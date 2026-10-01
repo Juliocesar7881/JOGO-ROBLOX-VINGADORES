@@ -581,7 +581,15 @@ function Panels.new(ctx)
 				if marks ~= "" then line(68, marks, C.pink) end
 			end
 			local claimSeason = UI.button(seasonCard, season.claimable > 0 and (T("RESGATAR ", "CLAIM ") .. season.claimable .. T(" PRÊMIO(S)", " REWARD(S)")) or T("Jogue para subir de nível", "Play to level up"), function()
-				act("ClaimSeason", {}, function(snapshot) rewardGiven(snapshot and snapshot.result) end)
+				act("ClaimSeason", {}, function(snapshot)
+					local paid = snapshot and snapshot.result
+					rewardGiven(paid)
+					-- With chests, the reveal is the celebration; without, a banner is.
+					if type(paid) == "table" and not (paid.chests and #paid.chests > 0) then
+						celebrate:Banner({pt = "TEMPORADA • NÍVEL " .. tostring(paid.level or ""), en = "SEASON • LEVEL " .. tostring(paid.level or "")},
+							{pt = "+" .. number(paid.gold or 0) .. " Ouro", en = "+" .. number(paid.gold or 0) .. " Gold"}, C.violet, {cue = "upgrade", duration = 1.8})
+					end
+				end)
 			end, {Name = "ClaimSeason", Position = UDim2.fromOffset(12, 158), Size = UDim2.new(1, -24, 0, 48), BackgroundColor3 = season.claimable > 0 and C.green or C.card, TextSize = 16})
 			if season.claimable == 0 then UI.disabled(claimSeason) end
 			if not season.owned then

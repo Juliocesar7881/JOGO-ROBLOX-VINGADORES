@@ -1,57 +1,54 @@
-# Relatório da manhã — 01/10/2026 (atualizado 13:00)
+# Relatório da manhã — 01/10/2026 (atualizado 17:30)
 
-Tudo está no GitHub `main` e sincronizado no lugar da equipe
-(place 97132875544830). **Nada foi publicado ao vivo.**
+Tudo está no GitHub `main` (55 commits desde 23:56) e sincronizado no lugar da
+equipe (place 97132875544830). **Nada foi publicado ao vivo.** A suíte
+(`python tools/test.py`) está verde em todo commit.
 
-## O que aconteceu
+## Precisa de você (nesta ordem)
 
-- 23:56–01:15 trabalho contínuo; 01:15–07:30 parado pelo limite de uso.
-- 07:30–09:07 sessão principal: marca original, combate, Robux (código),
-  treino do novato, perigos por mapa.
-- 12:34 em diante: **as rodadas agendadas agora abrem sessão sozinhas**
-  (esta é uma delas, `run-20261001-1234`; pegou a trava velha da sessão
-  principal).
+1. **Aceitar os "Updated Agreements" do Roblox no Creator Hub.** O Creator Hub
+   parou nesse aviso (aceitar termos é decisão do dono, o Claude não aceita).
+   Depois disso faltam: **19 produtos de herói** (tabela em
+   `docs/director/ROBUX_CATALOG.md`), o **passe "Passe de Temporada" (399)**,
+   o **preço do Pacote VIP (299)** — ligar "Item for sale" — e o **upload dos
+   WAVs** de `assets/audio`. O Chrome com a extensão Claude também precisa
+   estar conectado para o Claude fazer isso; sem ele só o código avança.
+2. **Marca:** confira os nomes originais em `docs/HEROES.md`.
+3. Itens do dono em `docs/RELEASE_CHECKLIST.md` (renomear a experiência, ícones,
+   teste de compra com conta alternativa, publicar).
 
-## Entregue (33 commits desde 23:56)
+## O que foi entregue (por área)
 
-| Commit | O quê |
-|---|---|
-| 7a0dc3d, ac954b9, a79ec4d, e013a39, 53a47b9 | Infra do diretor: trava, skill, revisão de telas no Studio **sem editar scripts do lugar**. |
-| 9a774e9 | Câmera da partida abre de cima do mapa. |
-| 56d19ff | Barra de heróis estilo TTD (retrato, número, preço; 5 espaços no celular). |
-| 3f2fdfc, a401530, bae208f | Chat à direita; "ONDA 20 / 50" cabe; INVOCAR visível no celular. |
-| 2dc8b53 | **JOGAR DE NOVO** no fim da partida (voto no servidor). |
-| f4d446d, 8f1c068 | Painel da torre com **antes → depois** de cada atributo, vindo do servidor. |
-| 57d46fa, 35d803d | Cliente dividido: `Panels.luau` e `LobbyWorld.luau` (init.client 200 → 114 KB); o teste de boot descobre módulos novos sozinho. |
-| e0618cc, e41a60e, 1286501 | **Marca original**: heróis, vilões, mapas, conquistas, código MULTIVERSO; 36 uniformes com visual próprio; `test_ip_safety` na suíte. |
-| 3cc9b47 | Números de dano por golpe. |
-| 2c232ef | Robux (código): passe 3x, pacote inicial, pacote de 30k Ouro. |
-| 371f7bd | Chegada do chefe com câmera + banner de fase. |
-| 474f01a | Tela final com MVP e placar do grupo. |
-| 770ba42 | Limite por herói por raridade (8/6/5/4/3), contador no ladrilho. |
-| 9747feb, 80c42c8, 087dbab | Ímã de moedas igual ao servidor; aviso de chefe a 3/2/1 ondas; tiros em lote (menos rede no 3x). |
-| 8825e22, f61c957 | **Novato**: um toque em COMEÇAR TREINO, treino de 12 ondas (~7,5 min), botão pulsando. |
-| ab705a2, e3325f9 | **Perigo telegrafado por mapa** (surto tóxico, forno, cristais, rajada, selo). |
+**Marca e segurança de IP.** Todos os heróis, vilões, mapas, bases, conquistas e
+códigos originais (`tests/test_ip_safety.py` na suíte), 36 uniformes próprios.
 
-Notas da régua (antes → depois): barra de heróis 2 → 4; câmera 2 → 4;
-baús no celular 3 → 4; fim de partida 3 → 5; painel da torre 2 → 4.
-Capturas em `test-results/review/` (lobby, newcomer, match, boss, finish,
-versões `-phone`). Auditoria em `docs/director/AUDIT.md`.
+**Sensação de combate.** Números de dano por golpe, tiros em lote, upgrade
+com antes → depois, limite por herói, 3x (passe), prévia de onda, chegada de
+chefe com câmera, tela final com MVP + JOGAR DE NOVO, bônus de grupo.
 
-## Precisa de você
+**Identidade dos mapas.** Perigo telegrafado por mapa; dificuldades Normal /
+Difícil / Pesadelo escolhidas no elevador; Manhattan mais clara e alegre.
 
-1. **Robux (M4.2, BLOQUEADO):** criar passes/produtos no Creator Hub exige o
-   Chrome com a extensão Claude conectada e logado. O código já está pronto;
-   faltam só os IDs em `deployment/local.json`.
-2. **Áudio (M7.1):** enviar os WAVs de `assets/audio` no Creator Hub (mesmo
-   motivo).
-3. **Marca:** confirme os nomes originais dos heróis em `docs/HEROES.md`.
+**Progressão e retenção.** Estrelas por herói repetido (+3% de dano cada),
+variante brilhante (1/40 por baú), missões que rotacionam (9 tipos de objetivo),
+**passe de temporada de 30 níveis** (trilha grátis + premium, resgate de tudo de
+uma vez, selo no botão PRÊMIOS, cartão na tela final), **bônus de grupo**
+(+10% de Ouro e XP por comandante extra), qualidade automática por FPS.
 
-## Próximos itens da fila
+**Primeiros minutos.** Um toque em COMEÇAR TREINO (12 ondas, ~7,5 min); guia
+atualizado; a primeira vista do lobby estava dentro das órbitas do Farol
+(causava o "paredão amarelo") — corrigido.
 
-M1.4b dividir `MatchHud.luau` → M5.2 Normal/Difícil/Pesadelo → M6.1 curva de
-raridade (Juba e Geada fortes demais; Sombra e Guaxo fracos) → M6.2–M6.4
-progressão → M9.1 desempenho.
+**Robux (código + Creator Hub).** Passes 3x, coletor, treino, VIP; pacote
+inicial; Ouro 1k/5k/12k/30k; 15 de 34 produtos de herói com ID. Tabela e
+estado em `docs/director/ROBUX_CATALOG.md`.
+
+## Notas da régua (antes → depois)
+
+barra de heróis 2 → 4 · câmera 2 → 4 · baús no celular 3 → 4 · fim de partida 3 → 5
+· painel da torre 2 → 4 · primeira vista do lobby 2 → 4 · missões (clareza) 2 → 4
+· mapa de Manhattan (alegria) 2 → 3 · temporada (visibilidade) 0 → 4.
+Capturas em `test-results/review/`; auditoria em `docs/director/AUDIT.md`.
 
 ## Como reverter
 
