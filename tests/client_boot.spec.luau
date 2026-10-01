@@ -1699,6 +1699,33 @@ local function session(screen)
 		check(#bad == 0, tag .. ": after a resize everything is still on screen: " .. table.concat(bad, ", "))
 	end)
 
+	-- Automatic quality: two slow five-second windows in a row during a wave
+	-- reduce the effects once; hitches and a recovered frame rate do not.
+	step("automatic quality", function()
+		local AutoQuality = require(clientModules.AutoQuality)
+		local wave, reduced, reductions = true, false, 0
+		local quality = AutoQuality.new({ active = function() return wave end, reduced = function() return reduced end, reduce = function() reductions += 1 end })
+		local function run(seconds, fps) for _ = 1, math.floor(seconds * fps) do quality:Step(1 / fps) end end
+		run(30, 60)
+		check(reductions == 0, tag .. ": 60 fps never triggers it")
+		run(7, 20)
+		check(reductions == 0, tag .. ": one slow window is not enough")
+		run(5, 60)
+		run(10, 20)
+		check(reductions == 0, tag .. ": a window back at speed resets the count")
+		run(10, 20)
+		check(reductions == 1, tag .. ": two slow windows in a row reduce the effects once, got " .. reductions)
+		run(60, 15)
+		check(reductions == 1, tag .. ": it never fires twice in a session")
+		local hitchy = AutoQuality.new({ active = function() return true end, reduced = function() return false end, reduce = function() reductions += 100 end })
+		for _ = 1, 400 do hitchy:Step(0.6) end
+		check(reductions == 1, tag .. ": frames over half a second are hitches, not speed")
+		wave = false
+		local lobby = AutoQuality.new({ active = function() return wave end, reduced = function() return false end, reduce = function() reductions += 100 end })
+		for _ = 1, 400 do lobby:Step(1 / 10) end
+		check(reductions == 1, tag .. ": nothing counts outside a wave")
+	end)
+
 	-- A server frame's shots arrive as one Shots event and draw like lone ones.
 	step("a batch of shots draws", function()
 		push(matchSnapshot(profile, "Wave", { enemies = 4 }))

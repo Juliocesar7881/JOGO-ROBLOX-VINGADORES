@@ -1481,7 +1481,18 @@ pcall(function()
 end)
 
 kit.nameplateAt, kit.anchorCheckAt = 0, 0
+-- A device that cannot hold the frame rate in a battle drops to reduced
+-- effects by itself (never in Studio, where the window may simply be hidden).
+kit.autoQuality = require(script:WaitForChild("AutoQuality")).new({
+	active = function() return state ~= nil and state.phase == "Wave" and not RunService:IsStudio() end,
+	reduced = function() local settings = profile().settings return settings ~= nil and settings.lowFX == true end,
+	reduce = function()
+		act("Settings", {lowFX = true})
+		showToast(T("Reduzimos os efeitos para o jogo ficar fluido. Mude em Opções.", "Effects reduced so the game runs smoothly. Change it in Options."))
+	end,
+})
 RunService.RenderStepped:Connect(function(dt)
+	kit.autoQuality:Step(dt)
 	if os.clock() >= kit.afkBannerAt then
 		kit.afkBannerAt = os.clock() + 0.25
 		updateAfkBanner()

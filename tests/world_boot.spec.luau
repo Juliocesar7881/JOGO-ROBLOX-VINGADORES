@@ -139,6 +139,7 @@ do
 		check(onFloor(v3(destination.x, 0, destination.z), -2) ~= nil, "station " .. portalId .. " stands on an area floor")
 	end
 	check(countClass(lobby, "BasePart") < 3600, "the lobby remains under its geometry budget, got " .. tostring(countClass(lobby, "BasePart")))
+	print("  lobby: " .. tostring(countClass(lobby, "BasePart")) .. " parts")
 end
 -- Coplanar overlapping faces flicker (z-fighting) as the camera moves.
 do
@@ -721,6 +722,7 @@ do
 		check(fires <= 4, mapId .. " stays inside the fire budget, got " .. fires)
 		local parts = countClass(root, "BasePart")
 		check(parts <= 3200, mapId .. " stays inside the mobile part budget, got " .. parts)
+		print(string.format("  %s: %d parts, %d lights", mapId, parts, lights))
 		for _, item in ipairs(root.Scenery:GetDescendants()) do
 			if item:IsA("BasePart") and item.Name ~= "CityLimit" and not LANDMARKS[item.Name] and item.CanQuery ~= false then
 				check(false, mapId .. " scenery never catches the placement cursor: " .. item.Name)
