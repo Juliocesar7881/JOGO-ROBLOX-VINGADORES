@@ -19,7 +19,7 @@ local totals = {}
 for _, roster in ipairs(ROSTERS) do
 	print("== elenco: " .. roster.name .. " ==")
 	for _, modeId in ipairs({ "normal", "ranked", "cards" }) do
-		for _, mapId in ipairs(Catalog.MapOrder) do
+		for _, mapId in ipairs(Rules.MapsForMode(modeId)) do
 			local run = simulate({ mapId = mapId, modeId = modeId, profile = unlocked, loadout = roster.loadout })
 			print(string.format("%-7s %-9s onda %2d  %5.1f min  nucleo %3d/%d  pico %3d  %s",
 				modeId, mapId, run.results.waves, run.seconds / 60, run.match.baseHP, run.match.maxBaseHP, run.peakEnemies,
