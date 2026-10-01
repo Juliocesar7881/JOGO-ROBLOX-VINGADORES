@@ -1001,6 +1001,12 @@ if RunService:IsStudio() then
 			return true
 		end
 		match.phase = "Wave"
+		-- hazard: the map's own danger, announced now and striking shortly.
+		if command == "hazard" then
+			local hazard = Catalog.Maps[match.mapId] and Catalog.Maps[match.mapId].hazard
+			if hazard then match.hazardTimer = hazard.every - hazard.warn - 0.1 end
+			return hazard ~= nil
+		end
 		if command == "crowd" and type(arg) == "number" then
 			local mix = { "zombie", "runner", "brute", "armored", "flyer", "stealth", "support" }
 			for index = 1, math.clamp(arg, 1, 180) do
