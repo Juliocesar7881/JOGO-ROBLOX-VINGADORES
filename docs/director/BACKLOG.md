@@ -64,6 +64,7 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 
 ## M7 — Áudio
 - [ ] M7.1 Enviar WAVs no Creator Hub em ordem de importância; IDs no `Config.Audio`.
+  - Notas 01/10: Chrome desconectado e Creator Hub parado nos termos; `CreateAssetAsync` indisponível no Studio 0.741 (ver LOG 18:20). Ferramenta pronta: `tools/studio_file_dialog.ps1` (responde ao diálogo Import File). Ordem de importância: click, place, upgrade, wave, chest, collect, victory, defeat, boss, ability, levelUp, open, breach, shot*, depois música (lobby, battle) e ambientes.
 
 ## M8 — Primeiros 5 minutos
 - [x] M8.1 Novato: um botão "COMEÇAR TREINO", treino 12 ondas, baú grátis guiado.
