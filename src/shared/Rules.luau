@@ -115,6 +115,39 @@ function Rules.CanStart(profile, mapId, modeId)
 	return true
 end
 
+-- Campaign difficulty, in a chain per map: Normal is always open, and each
+-- harder one opens once the one it requires was beaten on that same map.
+-- Only the campaign has difficulties; every other mode plays at Normal.
+function Rules.DifficultyUnlocked(profile, mapId, difficultyId)
+	local def = Catalog.Difficulties[difficultyId]
+	if type(profile) ~= "table" or not def or not Catalog.Maps[mapId] then return false end
+	if not def.requires then return true end
+	local required = Catalog.Difficulties[def.requires]
+	local entry = type(profile.campaign) == "table" and profile.campaign[mapId]
+	return type(entry) == "table" and entry[required.winKey] == true
+end
+
+-- The difficulty a run really plays at: a refusal, never a silent downgrade.
+function Rules.CanUseDifficulty(profile, mapId, modeId, difficultyId)
+	if difficultyId == nil or difficultyId == "normal" then return true end
+	if not Catalog.Difficulties[difficultyId] then return false, "Dificuldade inválida / Invalid difficulty" end
+	if modeId ~= "normal" then return false, "Só a campanha tem dificuldades / Only the campaign has difficulties" end
+	if not Rules.DifficultyUnlocked(profile, mapId, difficultyId) then
+		local required = Catalog.Difficulties[Catalog.Difficulties[difficultyId].requires]
+		return false, "Vença este mapa no " .. required.name.pt .. " / Beat this map on " .. required.name.en
+	end
+	return true
+end
+
+-- The hardest difficulty a commander has opened on a map.
+function Rules.HighestDifficulty(profile, mapId)
+	local best = "normal"
+	for _, id in ipairs(Catalog.DifficultyOrder) do
+		if Rules.DifficultyUnlocked(profile, mapId, id) then best = id end
+	end
+	return best
+end
+
 -- Training is a separate opt-in choice; portals retain their named mode.
 function Rules.PortalMode(profile, portalId)
 	local def=Catalog.Destinations[portalId]

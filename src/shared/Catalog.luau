@@ -445,6 +445,20 @@ Catalog.Maps.asgard = {
 		name = text("Rajada celeste", "Sky gust"), hint = text("o vento empurra os inimigos para trás!", "the wind pushes enemies back!") },
 }
 table.insert(Catalog.MapOrder,"asgard")
+
+-- Campaign difficulties, unlocked in a chain per map: beating a map on one
+-- opens the next on that same map (Rules.DifficultyUnlocked). A win is kept
+-- in profile.campaign[mapId][winKey]; Normal's key is the campaign's own.
+Catalog.DifficultyOrder = { "normal", "hard", "nightmare" }
+Catalog.Difficulties = {
+	normal = { id = "normal", winKey = "normal", name = text("Normal", "Normal"), hpMultiplier = 1, speedMultiplier = 1, rewardMultiplier = 1, color = { 92, 214, 120 },
+		description = text("A campanha como ela é.", "The campaign as it is.") },
+	hard = { id = "hard", winKey = "hard", requires = "normal", name = text("Difícil", "Hard"), hpMultiplier = 1.5, speedMultiplier = 1, rewardMultiplier = 1.5, color = { 255, 166, 64 },
+		description = text("Inimigos com 50% mais vida. +50% de Ouro e XP.", "Enemies with 50% more health. +50% Gold and XP.") },
+	nightmare = { id = "nightmare", winKey = "nightmare", requires = "hard", name = text("Pesadelo", "Nightmare"), hpMultiplier = 2.2, speedMultiplier = 1.1, rewardMultiplier = 2, color = { 214, 64, 96 },
+		description = text("Inimigos com mais que o dobro de vida e mais rápidos. Ouro e XP em dobro.", "Enemies with over twice the health, and faster. Double Gold and XP.") },
+}
+
 Catalog.ModeOrder = { "tutorial", "normal", "ranked", "cards" }
 Catalog.Modes = {
 	tutorial = { id = "tutorial", name = text("Treinamento", "Training"), waves = 12, hpMultiplier = 0.6, rewardMultiplier = 1,

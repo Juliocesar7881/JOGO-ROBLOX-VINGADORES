@@ -9,9 +9,13 @@ local Waves = {}
 -- in the competitive arena). A boss walks in on every tenth wave and the last
 -- wave of a fixed run brings that map's own boss at full strength. Enemies
 -- carry no lobby Gold: they drop match Gold (Rules.KillCash) when they die.
-function Waves.Generate(mapId, modeId, wave, partySize, seed)
+function Waves.Generate(mapId, modeId, wave, partySize, seed, difficultyId)
 	local map, mode = Catalog.Maps[mapId], Catalog.Modes[modeId]
 	assert(map and mode, "Unknown map or mode")
+	-- A campaign difficulty (Catalog.Difficulties) scales health and pace;
+	-- the server has already refused one the party may not use.
+	local difficulty = Catalog.Difficulties[difficultyId or "normal"]
+	assert(difficulty, "Unknown difficulty")
 	assert(Rules.IsFinite(wave) and wave >= 1 and wave == math.floor(wave), "Invalid wave")
 	assert(Rules.IsFinite(partySize) and partySize >= 1 and partySize <= 4 and partySize == math.floor(partySize), "Invalid party size")
 	local total = Rules.WaveCount(modeId, mapId)
@@ -28,7 +32,7 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed)
 	local progress = if modeId == "tutorial" then math.floor((math.min(wave, 20) + 1) / 2) else wave
 	-- Health climbs steadily, then a little faster once the late waves begin.
 	local growth = 1 + (progress - 1) * 0.045 + math.max(0, progress - 30) * 0.012
-	local hpMultiplier = mode.hpMultiplier * partyScale * growth * (map.difficulty or 1)
+	local hpMultiplier = mode.hpMultiplier * partyScale * growth * (map.difficulty or 1) * difficulty.hpMultiplier
 	-- Competitive never ends: past wave 50 health keeps climbing while the
 	-- head count stays capped, so the arena gets harder, not more crowded.
 	if modeId == "ranked" and wave > 50 then hpMultiplier *= 1.045 ^ math.min(250, wave - 50) end
@@ -48,7 +52,7 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed)
 			enemyId = enemyId,
 			delay = if index == 1 then 0 else (if modeId == "tutorial" then 1.25 else math.max(0.35, 0.85 - wave * 0.011)),
 			pathIndex = pathFor(index), hpMultiplier = hpMultiplier * (override or 1),
-			speedMultiplier = 1, rewardless = false,
+			speedMultiplier = difficulty.speedMultiplier, rewardless = false,
 			cash = Rules.KillCash(enemyId),
 		})
 	end

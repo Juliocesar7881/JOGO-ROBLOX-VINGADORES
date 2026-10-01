@@ -268,6 +268,28 @@ do
 	check(Rules.ModeUnlocked(gate, "ranked") and Rules.ModeUnlocked(gate, "cards"), "Portal gate: ranked and cards open after any clear")
 	check(not Rules.ModeUnlocked(gate, "infinite"), "Portal gate: no endless mode to unlock")
 	check(not Rules.ModeUnlocked(gate, "invalid"), "Portal gate: unknown modes stay locked")
+	-- Difficulty chain, per map: Normal → Hard → Nightmare.
+	check(Rules.DifficultyUnlocked(gate, "gamma", "normal"), "Difficulty: Normal is always open")
+	check(Rules.DifficultyUnlocked(gate, "manhattan", "hard") and not Rules.DifficultyUnlocked(gate, "gamma", "hard"), "Difficulty: a Normal win opens Hard on that map only")
+	check(not Rules.DifficultyUnlocked(gate, "manhattan", "nightmare"), "Difficulty: Nightmare needs a Hard win")
+	check(Rules.HighestDifficulty(gate, "manhattan") == "hard" and Rules.HighestDifficulty(gate, "gamma") == "normal", "Difficulty: highest opened per map")
+	check(not Rules.CanUseDifficulty(gate, "gamma", "normal", "hard"), "Difficulty: a locked difficulty is refused, not downgraded")
+	check(not Rules.CanUseDifficulty(gate, "manhattan", "ranked", "hard"), "Difficulty: only the campaign has difficulties")
+	check(not Rules.CanUseDifficulty(gate, "manhattan", "normal", "insane"), "Difficulty: unknown ids are refused")
+	check(Rules.CanUseDifficulty(gate, "manhattan", "normal", "hard") and Rules.CanUseDifficulty(gate, "gamma", "ranked", nil), "Difficulty: an opened one and the default are accepted")
+	gate.campaign.manhattan.hard = true
+	check(Rules.DifficultyUnlocked(gate, "manhattan", "nightmare") and Rules.HighestDifficulty(gate, "manhattan") == "nightmare", "Difficulty: a Hard win opens Nightmare")
+	check(not Rules.DifficultyUnlocked(gate, "nowhere", "normal") and not Rules.DifficultyUnlocked(nil, "manhattan", "normal"), "Difficulty: bad map or profile stays locked")
+	local previous = 0
+	for _, id in ipairs(Catalog.DifficultyOrder) do
+		local def = Catalog.Difficulties[id]
+		check(def and def.hpMultiplier > previous and def.rewardMultiplier >= 1 and def.name.pt ~= "" and def.name.en ~= "", "Difficulty: " .. id .. " is harder than the one before and fully named")
+		previous = def and def.hpMultiplier or previous
+		local base = Waves.Generate("gamma", "normal", 25, 2, 99)
+		local scaled = Waves.Generate("gamma", "normal", 25, 2, 99, id)
+		check(#base == #scaled and math.abs(scaled[1].hpMultiplier - base[1].hpMultiplier * def.hpMultiplier) < 1e-6 and scaled[1].speedMultiplier == def.speedMultiplier,
+			"Difficulty: " .. id .. " scales the same wave's health and pace")
+	end
 	check(not Rules.ModeUnlocked(nil, "normal"), "Portal gate: missing profile stays locked")
 	check(not Rules.ModeUnlocked({ tutorialComplete = true, campaign = "corrupt" }, "ranked"), "A damaged campaign record locks instead of crashing")
 end
