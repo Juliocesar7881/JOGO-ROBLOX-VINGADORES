@@ -658,7 +658,10 @@ renderElevator = function()
 	end
 	local names = {}
 	for _, rider in ipairs(e.riders or {}) do table.insert(names, rider.name) end
-	local status = tostring(#names) .. "/" .. tostring(e.max or 4) .. "  " .. T("jogadores", "players") .. "  •  " .. table.concat(names, ", ")
+	local status = tostring(#names) .. "/" .. tostring(e.max or 4) .. "  " .. T("jogadores", "players")
+	-- Playing together pays: the server applies this to everyone's Gold and XP.
+	if #names >= 2 then status ..= "  •  " .. T("GRUPO +", "PARTY +") .. math.floor((Rules.PartyBonus(#names) - 1) * 100 + 0.5) .. "%" end
+	status ..= "  •  " .. table.concat(names, ", ")
 	if inline then return true end
 	UI.label(card, status, {Position = UDim2.fromOffset(14, rowY), Size = UDim2.new(1, -(14 + statusRight), 0, rowH), TextSize = compact and 11 or 12, TextColor3 = C.muted})
 	return true

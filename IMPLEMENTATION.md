@@ -172,6 +172,12 @@ same shape `OpenChest`'s result does). The client reaches this panel through
 physical pedestal — a claimable count shows as a badge on that nav button,
 computed client-side from `profile.rewards.claimable`).
 
+**Party bonus.** `Catalog.PartyBonus.perPlayer = 0.1`; `Rules.PartyBonus(size)`
+(1.0 solo … 1.3 for four) multiplies the lobby Gold banked per wave, the
+victory Gold and the XP of everyone in the match (`MatchService:_endWave`,
+`_checkpoint`, `Finish`); the multiplier travels in `results.party` and the
+elevator card and end screen name it.
+
 **Season pass.** `Catalog.Season = { levels = 30, xpPerLevel = 600 }`; every
 XP the account earns (match rewards, mission claims, reward-claim XP) also
 feeds `profile.season = { id, xp, freeClaimed, premiumClaimed }`, which

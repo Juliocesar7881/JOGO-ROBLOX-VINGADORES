@@ -329,6 +329,12 @@ function Rules.WaveGold(modeId, wave)
 	return if rate then math.floor(rate * DEFEAT_SHARE) else 0
 end
 
+-- The multiplier on lobby Gold and XP for playing in a party of `size`.
+function Rules.PartyBonus(size)
+	size = math.clamp(math.floor(number(size, 1)), 1, 4)
+	return 1 + Catalog.PartyBonus.perPlayer * (size - 1)
+end
+
 -- What a victory adds on top of the banked waves.
 function Rules.VictoryGold(modeId, mapId)
 	local rate = RUN_GOLD_PER_WAVE[modeId]

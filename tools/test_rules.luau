@@ -155,6 +155,13 @@ approx(hostile.rangeBonus, 0.10, "Range cap holds against hostile input")
 check(hostile.attackSpeedBonus <= 0.10, "Attack speed cap holds against hostile input")
 local rookie = Rules.PermanentModifiers({ heroes = { ironman = { xp = 0 } }, talents = {} }, "ironman")
 approx(rookie.damageBonus, 0, "A fresh hero has no permanent bonus")
+-- Party bonus: each extra commander adds the same share, from 1 to 4, no more.
+approx(Rules.PartyBonus(1), 1, "Playing alone has no party bonus")
+approx(Rules.PartyBonus(3), 1 + 2 * Catalog.PartyBonus.perPlayer, "A party of three earns two shares")
+approx(Rules.PartyBonus(4), 1 + 3 * Catalog.PartyBonus.perPlayer, "A party of four earns three shares")
+approx(Rules.PartyBonus(40), Rules.PartyBonus(4), "The bonus stops at four players")
+approx(Rules.PartyBonus(0 / 0), 1, "A bad size is no bonus")
+
 -- Stars: each adds damage on top of the mastery/talent cap, and they cap too.
 local starred = Rules.PermanentModifiers({ heroes = { ironman = { xp = 0, stars = 3 } }, talents = {} }, "ironman")
 approx(starred.damageBonus, 3 * Catalog.Stars.damage, "Three stars are +9% damage")

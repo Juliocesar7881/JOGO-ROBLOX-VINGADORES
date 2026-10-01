@@ -417,6 +417,7 @@ end
 print("--- tutorial ---")
 local tutorial = simulate({ mapId = "manhattan", modeId = "tutorial" })
 check(tutorial ~= nil, "tutorial ran")
+check(tutorial ~= nil and tutorial.results ~= nil and tutorial.results.party == 1, "playing alone has no party bonus on the results")
 if tutorial then
 	check(tutorial.match.phase == "Results", "tutorial reaches the results screen")
 	check(tutorial.results ~= nil, "tutorial produces a result")
@@ -439,6 +440,11 @@ if tutorial then
 	print(string.format("  %d waves, %.1f min, base %d/100, peak %d enemies, gold %d",
 		tutorial.results.waves, tutorial.seconds / 60, tutorial.match.baseHP, tutorial.peakEnemies, tutorial.results.gold))
 end
+
+print("--- party bonus ---")
+local duo = simulate({ mapId = "manhattan", modeId = "tutorial", size = 2 })
+check(duo ~= nil and duo.results ~= nil and math.abs(duo.results.party - Rules.PartyBonus(2)) < 1e-9, "a party of two earns the party bonus, shown on the results")
+check(duo ~= nil and duo.results.xp >= tutorial.results.xp, "the party's XP is at least the solo run's")
 
 print("--- campaign difficulty ---")
 do

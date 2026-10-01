@@ -48,6 +48,9 @@ Catalog.Stars = { max = 5, damage = 0.03 }
 -- chests; the premium track (the "season" pass) pays more of both and a title.
 -- Rewards are pure functions of the level: see Rules.SeasonReward.
 Catalog.Season = { levels = 30, xpPerLevel = 600 }
+-- Playing together pays: every extra commander in the match adds this much to
+-- the Gold and XP each of them earns (a party of four: +30%).
+Catalog.PartyBonus = { perPlayer = 0.1 }
 -- Shiny: one hero chest in forty also makes its hero shiny, a collectible
 -- shine (cosmetic only: no stat changes). Drawn with the chest's rolls.
 Catalog.ShinyChance = 1 / 40
