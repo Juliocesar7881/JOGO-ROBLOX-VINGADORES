@@ -126,7 +126,7 @@ def status() -> int:
 def log(text: str) -> int:
     LOG.parent.mkdir(parents=True, exist_ok=True)
     if not LOG.exists():
-        LOG.write_text("# Diário do diretor\n\nUma linha por passo, a mais nova embaixo.\n\n", encoding="utf-8")
+        LOG.write_text("# Diário do diretor\n\nUma linha por passo, a mais nova embaixo.\n\n", encoding="utf-8", newline="\n")
     with open(LOG, "a", encoding="utf-8", newline="\n") as handle:
         handle.write(f"- {now().strftime('%Y-%m-%d %H:%M')} — {text.strip()}\n")
     print("LOGGED")

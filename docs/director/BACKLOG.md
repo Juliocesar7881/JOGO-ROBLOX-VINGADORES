@@ -5,14 +5,23 @@ Cada item cabe em 30–60 min e tem um critério de aceite verificável. Itens
 novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 
 ## M0 — Referência e auditoria
-- [ ] M0.1 Assistir o vídeo do TTD → `docs/director/REFERENCE_TTD.md` com ≥25 observações com minuto.
-- [ ] M0.2 Jogar o jogo atual no Studio → `docs/director/AUDIT.md` com nota TTD × nós por área.
+- [x] M0.1 Assistir o vídeo do TTD → `docs/director/REFERENCE_TTD.md` com ≥25 observações com minuto.
+- [x] M0.2 Jogar o jogo atual no Studio → `docs/director/AUDIT.md` com nota TTD × nós por área.
 
 ## M1 — Base segura para trabalhar a noite toda
-- [ ] M1.1 `src/client/Review.luau` + ação `StudioReview` só no Studio; `tools/studio_review.py` (Play, cenas, PrintWindow, Stop). Aceite: capturas de lobby/partida/fim sem editar nenhum script do lugar.
-- [ ] M1.2 Guardas: `studio_*_review.luau` recusam o place 97132875544830; apagar `tools/studio_hud_review.luau`.
+- [x] M1.1 `src/client/Review.luau` + ação `StudioReview` só no Studio; `tools/studio_review.py` (Play, cenas, PrintWindow, Stop). Aceite: capturas de lobby/partida/fim sem editar nenhum script do lugar.
+- [x] M1.2 Guardas: `studio_*_review.luau` recusam o place 97132875544830; apagar `tools/studio_hud_review.luau`.
 - [ ] M1.3 Dividir `init.client.luau`: `Panels.luau` (painéis do lobby). Aceite: client_boot verde, cliente <150 KB.
 - [ ] M1.4 Dividir: `MatchHud.luau` + `LobbyWorld.luau`; `test_client_boot.py` descobre módulos sozinho; guarda de tamanho no `test_contract.py`.
+
+## M1.5 — Consertos de HUD que todo jogador vê (da AUDIT)
+- [x] M1.5.0 Câmera da partida abre de cima (commit 9a774e9).
+- [ ] M1.5.1 Barra de heróis estilo TTD: quadrado com retrato, número e preço; nome só no selecionado. Aceite: 5 espaços inteiros em 667×375, nenhum nome quebrado.
+- [ ] M1.5.2 Baús no celular: botão INVOCAR sempre visível sem rolar.
+- [ ] M1.5.3 Chat do Roblox fora do menu esquerdo e da barra do celular.
+- [ ] M1.5.4 "ONDA 20 / 50" sem estourar; rótulo da base só no idioma do jogador.
+- [ ] M1.5.5 Fim de partida: botão "JOGAR DE NOVO" (mesmo mapa/modo) + texto sem corte.
+- [ ] M1.5.6 Painel da torre no celular: não cobre o chefe; texto ≥12 px.
 
 ## M2 — Marca original
 - [ ] M2.1 `tests/ip_blocklist.json` + `tests/test_ip_safety.py` (começa listando o que falta).

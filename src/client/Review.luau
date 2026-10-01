@@ -136,7 +136,8 @@ function Review.start(api)
 
 	local function applySize()
 		local size = player:GetAttribute("DoomReviewSize")
-		local w, h = type(size) == "string" and size:match("^(%d+)x(%d+)$")
+		local w, h
+		if type(size) == "string" then w, h = size:match("^(%d+)x(%d+)$") end
 		local dimension = w and UDim2.fromOffset(tonumber(w), tonumber(h)) or UDim2.fromScale(1, 1)
 		api.main.Size, api.overlays.Size = dimension, dimension
 	end

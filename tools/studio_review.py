@@ -80,9 +80,15 @@ def prepare(handle: int) -> None:
 
 
 def command(code: str, marker: str, timeout: float = 40) -> str:
-    started = time.time()
-    studio_sync.run_command(f'{code}\nprint("{marker}")', 900)
-    return studio_sync.wait_for(marker, started, timeout)
+    for attempt in range(3):
+        started = time.time()
+        tag = f"{marker}_{attempt}"
+        studio_sync.run_command(f'{code}\nprint("{tag}")', 900)
+        try:
+            return studio_sync.wait_for(tag, started, timeout if attempt == 2 else 20)
+        except SystemExit:
+            time.sleep(2)
+    raise SystemExit(f"Studio did not run {marker}")
 
 
 def query(expression: str, timeout: float = 30) -> str:
@@ -99,20 +105,17 @@ def query(expression: str, timeout: float = 30) -> str:
     raise SystemExit(f"Studio did not answer {expression}")
 
 
-def log_offset() -> tuple[Path | None, int]:
-    log = studio_sync.studio_log()
-    return log, (log.stat().st_size if log else 0)
+def log_offset() -> dict[Path, int]:
+    return {log: log.stat().st_size for log in studio_sync.studio_logs()}
 
 
-def wait_in_log(origin: tuple[Path | None, int], needle: str, timeout: float) -> bool:
-    """True once needle is printed after origin (a log file and its size then)."""
+def wait_in_log(origin: dict[Path, int], needle: str, timeout: float) -> bool:
+    """True once needle is printed in any Studio log after origin (sizes then)."""
     deadline = time.time() + timeout
     while time.time() < deadline:
-        log = studio_sync.studio_log()
-        if log:
+        for log in studio_sync.studio_logs():
             with open(log, "rb") as handle:
-                if log == origin[0]:
-                    handle.seek(origin[1])
+                handle.seek(origin.get(log, 0))
                 fresh = handle.read().decode("utf-8", errors="replace")
             if any(needle in line and "print(" not in line for line in fresh.splitlines()):
                 return True
@@ -154,6 +157,7 @@ def main() -> int:
     parser.add_argument("--place-id", type=int, default=TEAM_PLACE)
     args = parser.parse_args()
     handle = args.window_handle or find_window()
+    review_origin = log_offset()
     studio_sync.STUDIO_WINDOW = handle
     prepare(handle)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -199,7 +203,7 @@ def main() -> int:
                         break
                 except SystemExit:
                     pass
-    overflow = scan_overflow()
+    overflow = scan_overflow(review_origin)
     if overflow:
         print("Text overflow reported by Review.luau:")
         for line in overflow[-20:]:
@@ -207,12 +211,14 @@ def main() -> int:
     return 0
 
 
-def scan_overflow() -> list[str]:
-    log = studio_sync.studio_log()
-    if not log:
-        return []
-    lines = log.read_text(encoding="utf-8", errors="replace").splitlines()[-4000:]
-    return [line.split("DOOM_REVIEW_OVERFLOW", 1)[1].strip() for line in lines if "DOOM_REVIEW_OVERFLOW" in line and "print(" not in line]
+def scan_overflow(origin: dict[Path, int]) -> list[str]:
+    found = []
+    for log in studio_sync.studio_logs():
+        with open(log, "rb") as handle:
+            handle.seek(origin.get(log, 0))
+            lines = handle.read().decode("utf-8", errors="replace").splitlines()
+        found += [line.split("DOOM_REVIEW_OVERFLOW", 1)[1].strip() for line in lines if "DOOM_REVIEW_OVERFLOW" in line and "print(" not in line]
+    return found
 
 
 if __name__ == "__main__":

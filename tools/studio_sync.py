@@ -54,9 +54,17 @@ def target(path: Path) -> tuple[str, str | None, str]:
     return CONTAINERS[area], name.removesuffix(".luau"), "ModuleScript"
 
 
-def studio_log() -> Path | None:
+def studio_logs() -> list[Path]:
+    """Every Studio log written in the last few hours, newest first. Each
+    Studio process (the start page and every open place) writes its own."""
     logs = Path(os.environ["LOCALAPPDATA"]) / "Roblox" / "logs"
-    candidates = sorted(logs.glob("*_Studio_*_last.log"), key=lambda p: p.stat().st_mtime, reverse=True)
+    recent = time.time() - 6 * 3600
+    candidates = [p for p in logs.glob("*_Studio_*_last.log") if p.stat().st_mtime >= recent]
+    return sorted(candidates, key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def studio_log() -> Path | None:
+    candidates = studio_logs()
     return candidates[0] if candidates else None
 
 
@@ -78,10 +86,10 @@ def run_command(code: str, index: int) -> None:
 def wait_for(marker: str, since: float, timeout: float = 90) -> str:
     deadline = time.time() + timeout
     while time.time() < deadline:
-        log = studio_log()
-        # Windows updates an open log's modified time lazily, so the time is
-        # not checked; every marker carries its own nonce instead.
-        if log:
+        # Windows updates an open log's modified time lazily, so the newest
+        # log is not always the place's: every marker carries its own nonce,
+        # so search them all.
+        for log in studio_logs():
             for line in reversed(log.read_text(encoding="utf-8", errors="replace").splitlines()[-4000:]):
                 if marker in line and "CreatorOutput" in line and "> " not in line.split("CreatorOutput]", 1)[-1][:3]:
                     return line.split("CreatorOutput]", 1)[-1].strip()
@@ -169,7 +177,9 @@ print("DOOM_SYNC_FILE", key, #source, instance.Source == source)
     run_command(f'_G.__doomSync = nil; print("DOOM_SYNC_OK_{nonce}", {len(files)})', count)
     print(wait_for(f"DOOM_SYNC_OK_{nonce}", started))
     # Every file reports whether Studio now holds exactly the repository text.
-    lines = studio_log().read_text(encoding="utf-8", errors="replace").splitlines()[-6000:]
+    ok_marker = f"DOOM_SYNC_OK_{nonce}"
+    log = next((p for p in studio_logs() if ok_marker in p.read_text(encoding="utf-8", errors="replace")[-2_000_000:]), studio_log())
+    lines = log.read_text(encoding="utf-8", errors="replace").splitlines()[-6000:]
     marker = next(i for i in range(len(lines) - 1, -1, -1) if f"DOOM_SYNC_OK_{nonce}" in lines[i] and "] > " not in lines[i])
     reports = [line.split("DOOM_SYNC_FILE", 1)[1].strip() for line in lines[:marker] if "DOOM_SYNC_FILE" in line and "] > " not in line and "print(" not in line]
     written = [r for r in reports[-len(files):] if r.endswith("true")]
