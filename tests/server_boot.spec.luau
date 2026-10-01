@@ -295,6 +295,47 @@ check(first and first.profile and first.profile.gold == 0, "a new commander star
 local sync = request(ana, "Sync", {})
 check(sync.ok and sync.data and sync.data.phase == "Lobby", "Sync answers with the lobby snapshot")
 
+
+--==============================================================================
+-- Hostile payloads: every action with garbage in every slot
+--==============================================================================
+-- The router answers {ok = true|false} and never raises: an internal error is a
+-- "Request ... failed" warning, which routerWarnings() (and the final tally)
+-- treats as a failure.
+local fuzzRandom = Random.new(20261001)
+local FUZZ_VALUES = {
+	function() return true end, function() return false end, function() return 0 end, function() return -1 end,
+	function() return 1e308 end, function() return -1e308 end, function() return 0 / 0 end, function() return math.huge end,
+	function() return -math.huge end, function() return 2 ^ 53 end, function() return 0.5 end, function() return "" end,
+	function() return "x" end, function() return string.rep("a", 300) end, function() return "ironman" end,
+	function() return "manhattan" end, function() return {} end, function() return { 1, 2, 3 } end, function() return { a = 1 } end,
+	function() return { {}, { {} } } end, function() return { [1] = "ironman", [3] = "hawkeye" } end,
+	function() return v3(0 / 0, 0, 0) end, function() return v3(1e9, 0, -1e9) end, function() return v3(0, 0, 0) end,
+}
+local FUZZ_KEYS = { "heroId", "heroes", "position", "towerId", "branch", "priority", "skillId", "cardId", "mapId", "modeId", "destinationId",
+	"difficultyId", "chestId", "itemId", "index", "questId", "titleId", "talentId", "expectedRank", "expectedLevel", "code", "step", "speed",
+	"on", "language", "lowFX", "shake", "music", "effects", "interface", "autoSkip", "fastForward", "coinId", "kind", "key", "size", "period",
+	"baseId", "amount", "count", "level", "expectedCost" }
+local function fuzz(actions, perAction)
+	local sent, limited = 0, 0
+	for _, action in ipairs(actions) do
+		for _ = 1, perAction do
+			local payload = {}
+			for _ = 1, fuzzRandom:NextInteger(0, 4) do
+				payload[FUZZ_KEYS[fuzzRandom:NextInteger(1, #FUZZ_KEYS)]] = FUZZ_VALUES[fuzzRandom:NextInteger(1, #FUZZ_VALUES)]()
+			end
+			local answer = router(ana, action, payload)
+			check(type(answer) == "table" and type(answer.ok) == "boolean", "fuzz: " .. action .. " always answers {ok, ...}")
+			if type(answer) == "table" and type(answer.message) == "table" and answer.message.pt == "Muitas acoes em pouco tempo." then limited += 1 end
+			sent += 1
+			advance(0.06)
+		end
+	end
+	-- The probe only means something if the router looked at the payloads.
+	check(limited * 10 < sent, "the fuzz was not just answered by the rate limiter: " .. limited .. " of " .. sent)
+	return sent
+end
+
 -- The router's input validation, as a hostile client would probe it.
 check(not router(ana, 42, {}).ok, "a non-string action is refused")
 check(not router(ana, string.rep("x", 60), {}).ok, "an absurdly long action is refused")
@@ -303,6 +344,16 @@ check(not request(ana, "Teleport", {}).ok, "an unknown action is refused")
 check(not request(ana, "PlaceTower", { heroId = "ironman", position = v3(0, 0, 0) }).ok, "match actions are refused in the lobby")
 check(Catalog.Modes.normal.waves==50,"campaign is a 50 wave run")
 check(not request(ana, "StartMatch", { mapId = "atlantis", modeId = "normal" }).ok, "an unknown map is refused")
+
+local LOBBY_FUZZ = { "BuyGuaranteed", "EquipBase", "UpgradeTalent", "ResetTalents", "OpenChest", "UpgradeAbility", "SetLoadout", "Settings", "ClaimQuest",
+	"ProductInfo", "Leaderboard", "SetTitle", "ClaimFreeChest", "ClaimLogin", "ClaimPlaytime", "ClaimMilestone", "ClaimSeason", "RedeemCode",
+	"ClaimGroupReward", "CreateParty", "JoinParty", "LeaveParty", "SetDifficulty", "ElevatorLeave", "ElevatorStart", "ElevatorMap", "StartMatch",
+	"EnterAfkServer", "LeaveAfk", "PlaceTower", "UpgradeTower", "SellTower", "CastSkill", "ChooseCard", "SetSpeed", "ReturnLobby", "PlayAgain" }
+local fuzzedInLobby = fuzz(LOBBY_FUZZ, 40)
+local afterFuzz = latest(ana)
+check(afterFuzz ~= nil and afterFuzz.profile ~= nil and afterFuzz.profile.gold == afterFuzz.profile.gold and afterFuzz.profile.gold >= 0 and afterFuzz.profile.xp >= 0,
+	"after " .. fuzzedInLobby .. " hostile lobby requests the account's numbers are still sound")
+check(#routerWarnings() == 0, "no hostile lobby request raised an internal error: " .. table.concat(routerWarnings(), " | "))
 check(not request(ana, "BuyHero", { heroId = "thor" }).ok, "a hero cannot be bought without gold")
 
 check(request(ana, "Settings", { language = "pt", lowFX = true, shake = false, music = false }).ok, "settings are saved")
@@ -368,6 +419,13 @@ check(latest(ana).match and latest(ana).match.modeId=="tutorial","tutorial stays
 check(not request(ana, "BuyHero", { heroId = "spiderman" }).ok, "lobby actions are refused inside a match")
 check(not request(ana, "PlaceTower", { heroId = "ironman", position = v3(0, 0, -15) }).ok, "building on the route is refused")
 check(not request(ana, "PlaceTower", { heroId = "thor", position = v3(-28, 0, -40) }).ok, "a hero not in the squad cannot be placed")
+
+local MATCH_FUZZ = { "UpgradeBase", "PlaceTower", "UpgradeTower", "SellTower", "SetPriority", "CastSkill", "CollectCoin", "SkipWave", "ChooseCard", "SetSpeed", "SetAutoSkip" }
+local fuzzedInMatch = fuzz(MATCH_FUZZ, 60)
+local afterMatchFuzz = latest(ana)
+check(afterMatchFuzz ~= nil and afterMatchFuzz.match ~= nil and afterMatchFuzz.match.baseHP == afterMatchFuzz.match.baseHP and afterMatchFuzz.match.cash == afterMatchFuzz.match.cash,
+	"after " .. fuzzedInMatch .. " hostile match requests the battle's numbers are still sound")
+check(#routerWarnings() == 0, "no hostile match request raised an internal error: " .. table.concat(routerWarnings(), " | "))
 
 -- Spots twelve studs off the Manhattan route, cheapest-first.
 local SPOTS = {
