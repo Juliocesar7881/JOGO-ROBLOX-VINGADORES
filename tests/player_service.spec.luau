@@ -498,6 +498,38 @@ local _, claimed = service:Handle(p1, "ClaimQuest", { questId = questId }, true)
 local _, reclaimed = service:Handle(p1, "ClaimQuest", { questId = questId }, true)
 check(claimed and not reclaimed and service:Get(p1).gold == goldBefore + 150, "Quest reward claimed exactly once")
 check(not service:Award(p1, "nan", { gold = 0 / 0 }), "NaN rewards rejected")
+
+-- Missions rotate: the wave mission every day plus two drawn from the pool.
+do
+	local seen = {}
+	for day = 20000, 20020 do
+		local keys = PlayerService.QuestKeys("daily", day)
+		check(#keys == 3 and keys[1] == "waves", "Every day brings three missions, the wave mission first")
+		local distinct = {}
+		for _, key in ipairs(keys) do distinct[key] = true; seen[key] = true end
+		check(next(distinct) ~= nil and (function() local n = 0 for _ in pairs(distinct) do n += 1 end return n end)() == 3, "A day's missions are all different")
+		check(table.concat(keys, ",") == table.concat(PlayerService.QuestKeys("daily", day), ","), "The same day always draws the same missions")
+	end
+	local kinds = 0
+	for _ in pairs(seen) do kinds += 1 end
+	check(kinds >= 6, "Three weeks of days use at least six mission kinds, got " .. kinds)
+	local week = PlayerService.QuestKeys("weekly", 2857)
+	check(#week == 3 and week[1] == "waves" and week[2] == "bosses", "A week brings the wave and boss missions plus one more")
+	-- Progress for the new kinds, from verified reward deltas only.
+	local record = stores.Tests.values.p_1
+	local function mission(key, target) record.quests["test:" .. key] = { id = "test:" .. key, kind = key, period = "daily", name = { pt = key, en = key }, progress = 0, target = target, gold = 1, xp = 1, claimed = false, expiresAt = os.time() + 86400, heroIds = {} } end
+	for key, target in pairs({ gold = 1500, campaign = 2, noDamage = 2, cards = 1, chests = 2 }) do mission(key, target) end
+	service:Award(p1, "mission-run", { gold = 700, victory = true, finished = true, modeId = "normal", mapId = "manhattan", noDamage = true, waves = 3 })
+	local quests = service:Get(p1).quests
+	check(quests["test:gold"].progress == 700, "The gold mission counts the gold earned")
+	check(quests["test:campaign"].progress == 1 and quests["test:noDamage"].progress == 1, "A finished flawless campaign win counts for both")
+	check(quests["test:cards"].progress == 0, "A campaign win is no card win")
+	service:Award(p1, "mission-cards", { gold = 100, victory = true, finished = true, modeId = "cards", mapId = "hydra" })
+	check(service:Get(p1).quests["test:cards"].progress == 1, "A card-mode win counts for the card mission")
+	local goldMissionBefore = service:Get(p1).quests["test:gold"].progress
+	service:Award(p1, "mission-training", { gold = 900, victory = true, finished = true, modeId = "tutorial", mapId = "manhattan", tutorial = true })
+	check(service:Get(p1).quests["test:gold"].progress == goldMissionBefore, "Training counts for none of the new missions")
+end
 check(not service:Award(p1, "negative", { gold = -1 }), "Negative rewards rejected")
 
 -- Persistent leaderboard outbox, monotonic max, separated sizes, and tied ranks.

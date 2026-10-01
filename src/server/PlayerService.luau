@@ -192,16 +192,59 @@ local function normalize(raw, now, catalog)
 	return profile
 end
 
-local QUEST_TYPES = {
+-- Missions rotate: every day brings the wave mission plus two drawn from the
+-- rest of the pool, every week the wave and boss missions plus one more. The
+-- draw only depends on the day (or week) number, so every server and every
+-- session agrees without storing anything.
+local DAILY_FIXED = {
 	{ key = "waves", name = { pt = "Resista à invasão", en = "Withstand the invasion" }, target = 15, gold = 150, xp = 70 },
+}
+local DAILY_POOL = {
 	{ key = "wins", name = { pt = "Defesa concluída", en = "Successful defense" }, target = 1, gold = 100, xp = 60 },
 	{ key = "heroes", name = { pt = "Equipe versátil", en = "Versatile team" }, target = 3, gold = 100, xp = 60 },
+	{ key = "gold", name = { pt = "Rendimento de guerra", en = "War income" }, target = 1500, gold = 120, xp = 60 },
+	{ key = "campaign", name = { pt = "Frente de batalha", en = "Front line" }, target = 2, gold = 130, xp = 70 },
+	{ key = "chests", name = { pt = "Dia de sorte", en = "Lucky day" }, target = 2, gold = 150, xp = 60 },
+	{ key = "bosses", name = { pt = "Caça-chefes", en = "Boss chase" }, target = 1, gold = 140, xp = 70 },
+	{ key = "cards", name = { pt = "Mestre das cartas", en = "Card master" }, target = 1, gold = 200, xp = 90 },
 }
-local WEEKLY_TYPES = {
+local WEEKLY_FIXED = {
 	{ key = "waves", name = { pt = "Veterano da defesa", en = "Defense veteran" }, target = 100, gold = 750, xp = 250 },
 	{ key = "bosses", name = { pt = "Caçador de chefes", en = "Boss hunter" }, target = 15, gold = 600, xp = 200 },
-	{ key = "heroes", name = { pt = "Aliança de heróis", en = "Hero alliance" }, target = 8, gold = 750, xp = 250 },
 }
+local WEEKLY_POOL = {
+	{ key = "heroes", name = { pt = "Aliança de heróis", en = "Hero alliance" }, target = 8, gold = 750, xp = 250 },
+	{ key = "wins", name = { pt = "Semana vitoriosa", en = "Winning week" }, target = 5, gold = 700, xp = 240 },
+	{ key = "noDamage", name = { pt = "Defesa impecável", en = "Flawless defense" }, target = 2, gold = 800, xp = 260 },
+	{ key = "cards", name = { pt = "Cartas na mesa", en = "Cards on the table" }, target = 2, gold = 750, xp = 250 },
+	{ key = "gold", name = { pt = "Tesouro de guerra", en = "War treasure" }, target = 8000, gold = 700, xp = 240 },
+}
+
+-- `count` definitions of the pool for a seed (a day or a week number).
+local function drawQuests(pool, count, seed)
+	local order = {}
+	for index, definition in ipairs(pool) do
+		table.insert(order, { definition = definition, weight = (seed * 2654435761 + index * 40503) % 4093 })
+	end
+	table.sort(order, function(a, b)
+		if a.weight ~= b.weight then return a.weight < b.weight end
+		return a.definition.key < b.definition.key
+	end)
+	local picked = {}
+	for index = 1, math.min(count, #order) do table.insert(picked, order[index].definition) end
+	return picked
+end
+
+
+-- The mission keys a given day (or week) brings: fixed ones first, then the draw.
+function PlayerService.QuestKeys(period, number)
+	local fixed, pool, count = DAILY_FIXED, DAILY_POOL, 2
+	if period == "weekly" then fixed, pool, count = WEEKLY_FIXED, WEEKLY_POOL, 1 end
+	local keys = {}
+	for _, definition in ipairs(fixed) do table.insert(keys, definition.key) end
+	for _, definition in ipairs(drawQuests(pool, count, number)) do table.insert(keys, definition.key) end
+	return keys
+end
 
 local function refreshQuests(profile, now)
 	for id, quest in pairs(profile.quests) do
@@ -215,10 +258,12 @@ local function refreshQuests(profile, now)
 		end
 	end
 	for day = today - 2, today do
-		for _, definition in ipairs(QUEST_TYPES) do add(definition, "daily", day, (day + 3) * DAY) end
+		for _, definition in ipairs(DAILY_FIXED) do add(definition, "daily", day, (day + 3) * DAY) end
+		for _, definition in ipairs(drawQuests(DAILY_POOL, 2, day)) do add(definition, "daily", day, (day + 3) * DAY) end
 	end
 	local week = math.floor((today + 3) / 7) -- Monday-based UTC week.
-	for _, definition in ipairs(WEEKLY_TYPES) do add(definition, "weekly", week, (week * 7 + 4) * DAY) end
+	for _, definition in ipairs(WEEKLY_FIXED) do add(definition, "weekly", week, (week * 7 + 4) * DAY) end
+	for _, definition in ipairs(drawQuests(WEEKLY_POOL, 1, week)) do add(definition, "weekly", week, (week * 7 + 4) * DAY) end
 	for day in pairs(profile._dailyWins) do if tonumber(day) and tonumber(day) < today - 7 then profile._dailyWins[day] = nil end end
 end
 
@@ -492,6 +537,9 @@ function PlayerService:_openChest(profile, chestId, rolls, now)
 		if ownedHero and not ownedHero.shiny then ownedHero.shiny = true; shiny = true end
 	end
 	profile.stats.chests += 1
+	for _, quest in pairs(profile.quests) do
+		if quest.kind == "chests" and not quest.claimed then quest.progress = math.min(quest.target, quest.progress + 1) end
+	end
 	if profile.stats.chests == 1 then achievement(profile, "firstChest", "Primeiro baú", "First chest", now) end
 	return { chestId = chestId, heroId = outcome.heroId, baseId = outcome.baseId, rarity = outcome.rarity, duplicate = duplicate,
 		refundGold = refund.gold, refundMastery = refund.mastery, stars = refund.stars, starGained = refund.starGained, shiny = shiny, pity = outcome.pity, cost = chest.cost }
@@ -861,7 +909,15 @@ function PlayerService:Award(player, awardId, reward)
 		end
 		for _, quest in pairs(profile.quests) do
 			if not quest.claimed then
-				local delta = quest.kind == "waves" and waves or (quest.kind == "bosses" and bosses or (quest.kind == "wins" and won and reward.tutorial ~= true and 1 or 0))
+				local real = reward.tutorial ~= true
+				local delta = 0
+				if quest.kind == "waves" then delta = waves
+				elseif quest.kind == "bosses" then delta = bosses
+				elseif quest.kind == "wins" then delta = (won and real) and 1 or 0
+				elseif quest.kind == "gold" then delta = real and gold or 0
+				elseif quest.kind == "campaign" then delta = (reward.finished and real and reward.modeId == "normal") and 1 or 0
+				elseif quest.kind == "noDamage" then delta = (won and real and reward.noDamage) and 1 or 0
+				elseif quest.kind == "cards" then delta = (won and real and reward.modeId == "cards") and 1 or 0 end
 				if quest.kind == "heroes" then
 					for heroId in pairs(contributing) do quest.heroIds[heroId] = true end
 					quest.progress = math.min(quest.target, tableCount(quest.heroIds))
