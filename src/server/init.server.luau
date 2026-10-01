@@ -576,6 +576,9 @@ local function route(player, action, payload)
 				analytics:Custom(player, "AbilityUpgraded", result.rank, result.heroId, result.cost)
 			elseif action == "SetLoadout" then
 				analytics:Composition(player, data.loadout)
+			elseif action == "ClaimSeason" and type(result) == "table" then
+				-- How far players climb the season, and whether they hold the premium track.
+				analytics:Custom(player, "SeasonClaimed", result.level, result.claimed, data.passes and data.passes.season and "premium" or "free")
 			end
 		end
 		return { ok = true, data = data }
