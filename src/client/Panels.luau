@@ -51,19 +51,39 @@ function Panels.new(ctx)
 		local rarity = Catalog.Rarities[def.rarity]
 		local tint = UI.color(rarity.color)
 		UI.secondary(body,T("‹ VOLTAR","‹ BACK"),function() openContext("inventory",{hud=true}) end,{Name="BackToInventory",Size=UDim2.fromOffset(120,40),TextSize=15})
-		local showcase = UI.row(body, 210)
+		-- On a short screen the actions come right under a smaller showcase: the
+		-- panel opens on what you can do, and the numbers wait below.
+		local short = UI.sizeClass(screenSize().X, screenSize().Y).short
+		local showcase = UI.row(body, short and 132 or 210)
 		UI.portraitStage(showcase,tint,{Name="HeroStage",Size=UDim2.new(0.42,0,1,0)})
 		heroPortrait(showcase,id,{Position=UDim2.fromOffset(4,4),Size=UDim2.new(0.42,-8,1,-8)})
 		local info=UI.frame(showcase,{Position=UDim2.new(0.42,12,0,0),Size=UDim2.new(0.58,-12,1,0),BackgroundTransparency=1})
 		UI.chip(info,Catalog.Upper(L(rarity.name)),tint,{Size=UDim2.fromOffset(110,24),TextSize=13})
-		UI.label(info,((owned and owned.shiny) and "✨ " or "")..L(def.name),{Name="HeroTitle",Position=UDim2.fromOffset(0,28),Size=UDim2.new(1,0,0,66),TextSize=28,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
-		UI.label(info,L(def.description),{Position=UDim2.fromOffset(0,96),Size=UDim2.new(1,0,0,52),TextSize=14,TextWrapped=true,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top})
-		UI.chip(info,"💰 "..number(def.cost)..T(" na partida"," in battle"),C.gold:Lerp(C.panel,0.3),{Position=UDim2.fromOffset(0,152),Size=UDim2.fromOffset(150,26),TextSize=13})
+		UI.label(info,((owned and owned.shiny) and "✨ " or "")..L(def.name),{Name="HeroTitle",Position=UDim2.fromOffset(0,28),Size=UDim2.new(1,0,0,short and 36 or 66),TextSize=short and 24 or 28,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
+		if not short then UI.label(info,L(def.description),{Position=UDim2.fromOffset(0,96),Size=UDim2.new(1,0,0,52),TextSize=14,TextWrapped=true,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top}) end
+		UI.chip(info,"💰 "..number(def.cost)..T(" na partida"," in battle"),C.gold:Lerp(C.panel,0.3),{Position=UDim2.fromOffset(0,short and 68 or 152),Size=UDim2.fromOffset(150,26),TextSize=13})
 		if owned then
 			local stars=math.clamp(owned.stars or 0,0,Catalog.Stars.max)
-			UI.label(info,T("MAESTRIA ","MASTERY ")..owned.level.."/20",{Position=UDim2.fromOffset(0,182),Size=UDim2.new(0.55,0,0,20),TextSize=13,Font=UI.Fonts.display,TextColor3=C.violet})
-			UI.label(info,string.rep("★",stars)..string.rep("☆",Catalog.Stars.max-stars),{Name="HeroStars",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,180),Size=UDim2.new(0.45,0,0,24),TextSize=17,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Right})
+			local rowY=short and 98 or 182
+			UI.label(info,T("MAESTRIA ","MASTERY ")..owned.level.."/20",{Position=UDim2.fromOffset(0,rowY),Size=UDim2.new(0.55,0,0,20),TextSize=13,Font=UI.Fonts.display,TextColor3=C.violet})
+			UI.label(info,string.rep("★",stars)..string.rep("☆",Catalog.Stars.max-stars),{Name="HeroStars",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,rowY-2),Size=UDim2.new(0.45,0,0,24),TextSize=17,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Right})
 		end
+		local function drawActions()
+			if owned then
+				UI.button(body,(p.loadout or {})[1]==id and T("★ É O SEU LÍDER","★ YOUR LEADER") or T("★ USAR COMO LÍDER","★ MAKE LEADER"),function()
+					makeLeader(id)
+				end,{Name="MakeLeader_"..id,Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=18})
+				UI.secondary(body,contains(p.loadout,id) and T("TIRAR DA EQUIPE","REMOVE FROM TEAM") or T("+ COLOCAR NA EQUIPE","+ ADD TO TEAM"),function()
+					local list=copy(p.loadout); local old=table.find(list,id)
+					if old then table.remove(list,old) elseif #list<5 then table.insert(list,id) else showToast(T("A equipe tem 5 heróis. Tire um primeiro.","Team full. Remove a hero first."),true); return end
+					act("SetLoadout",{heroes=list})
+				end,{Size=UDim2.new(1,-6,0,46),TextSize=16,BackgroundColor3=contains(p.loadout,id) and C.card or C.green})
+			else
+				UI.button(body,T("GANHE NA INVOCAÇÃO","GET IT AT THE SUMMON HALLS"),function() routePreview.goShop() end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=17})
+				UI.secondary(body,T("COMPRAR COM ROBUX","BUY WITH ROBUX"),function() openContext("premium",{hud=true}) end,{Size=UDim2.new(1,-6,0,44),TextSize=15})
+			end
+		end
+		if short then drawActions() end
 		-- Three numbers anyone can compare: hit, reach, speed.
 		local stats=UI.row(body,78)
 		local perSecond=def.interval>0 and 1/def.interval or 0
@@ -74,19 +94,7 @@ function Panels.new(ctx)
 		end
 		UI.label(body,def.air and T("✈ ACERTA INIMIGOS NO CHÃO E VOANDO","✈ HITS GROUND AND FLYING ENEMIES") or T("🦶 ACERTA SÓ INIMIGOS NO CHÃO","🦶 HITS GROUND ENEMIES ONLY"),{Name="HeroTargets",Size=UDim2.new(1,-6,0,26),TextColor3=def.air and C.green or C.coral,Font=UI.Fonts.display,TextSize=15,TextWrapped=true})
 		if def.pickup then UI.label(body,"🧲 "..T("Puxa o Ouro que cai perto dela","Pulls in Gold that lands nearby"),{Size=UDim2.new(1,-6,0,24),TextColor3=C.gold,Font=UI.Fonts.display,TextSize=14}) end
-		if owned then
-			UI.button(body,(p.loadout or {})[1]==id and T("★ É O SEU LÍDER","★ YOUR LEADER") or T("★ USAR COMO LÍDER","★ MAKE LEADER"),function()
-				makeLeader(id)
-			end,{Name="MakeLeader_"..id,Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=18})
-			UI.secondary(body,contains(p.loadout,id) and T("TIRAR DA EQUIPE","REMOVE FROM TEAM") or T("+ COLOCAR NA EQUIPE","+ ADD TO TEAM"),function()
-				local list=copy(p.loadout); local old=table.find(list,id)
-				if old then table.remove(list,old) elseif #list<5 then table.insert(list,id) else showToast(T("A equipe tem 5 heróis. Tire um primeiro.","Team full. Remove a hero first."),true); return end
-				act("SetLoadout",{heroes=list})
-			end,{Size=UDim2.new(1,-6,0,46),TextSize=16,BackgroundColor3=contains(p.loadout,id) and C.card or C.green})
-		else
-			UI.button(body,T("GANHE NA INVOCAÇÃO","GET IT AT THE SUMMON HALLS"),function() routePreview.goShop() end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=17})
-			UI.secondary(body,T("COMPRAR COM ROBUX","BUY WITH ROBUX"),function() openContext("premium",{hud=true}) end,{Size=UDim2.new(1,-6,0,44),TextSize=15})
-		end
+		if not short then drawActions() end
 		local tabs=UI.row(body,44)
 		for index,tab in ipairs({{id="power",label=T("PODER","POWER")},{id="defense",label=T("CAMINHOS","PATHS")}}) do
 			UI.button(tabs,tab.label,function() kit.heroDetailTab=tab.id; renderContext() end,{Name="HeroDetail_"..tab.id,Position=UDim2.new((index-1)/2,0,0,0),Size=UDim2.new(0.5,-6,0,44),TextSize=16,BackgroundColor3=kit.heroDetailTab==tab.id and tint or C.card})
