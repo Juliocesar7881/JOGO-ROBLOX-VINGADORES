@@ -345,21 +345,29 @@ Catalog.Maps = {
 	gamma = {
 		id = "gamma", difficulty = 1.0, name = text("Complexo Gama", "Gamma Complex"), chapter = 2, bossId = "abomination", color = { 57, 100, 64 },
 		description = text("Duas entradas contaminadas convergem para o reator.", "Two contaminated entrances converge at the reactor."),
+		hazard = { kind = "frenzy", every = 40, warn = 3, duration = 6, color = { 120, 230, 90 },
+			name = text("Surto tóxico", "Toxic surge"), hint = text("os infectados correm mais por 6 s", "the infected run faster for 6 s") },
 		paths = { { { -92, -72 }, { -60, -72 }, { -60, -20 }, { 0, -20 }, { 0, 25 }, { -55, 25 }, { -55, 70 }, { 0, 70 }, { 0, 90 } }, { { 92, -72 }, { 60, -72 }, { 60, -20 }, { 0, -20 }, { 0, 25 }, { 55, 25 }, { 55, 70 }, { 0, 70 }, { 0, 90 } } },
 	},
 	hydra = {
 		id = "hydra", difficulty = 1.0, name = text("Fundição Sombria", "Shadow Foundry"), chapter = 3, bossId = "redskull", color = { 72, 87, 74 },
 		description = text("Rotas alternadas exigem reposicionar sua estratégia.", "Alternating routes demand a flexible strategy."),
+		hazard = { kind = "stun", every = 45, warn = 3, duration = 3, radius = 16, color = { 255, 140, 50 },
+			name = text("Forno superaquecido", "Overheated furnace"), hint = text("torres no círculo ficam atordoadas", "towers in the circle get stunned"), warning = text("FORNO!", "FURNACE!") },
 		paths = { { { -92, -76 }, { -65, -76 }, { -65, 50 }, { -25, 50 }, { -25, -42 }, { 18, -42 }, { 18, 76 }, { 88, 76 } }, { { 92, -76 }, { 60, -76 }, { 60, 12 }, { 18, 12 }, { 18, 76 }, { 88, 76 } } },
 	},
 	wakanda = {
 		id = "wakanda", difficulty = 1.0, name = text("Selva de Cristal", "Crystal Jungle"), chapter = 4, bossId = "killmonger", color = { 87, 67, 118 },
 		description = text("Enfrente escudos de cristal em posições espaçadas.", "Face crystal shields between widely spaced defenses."),
+		hazard = { kind = "shield", every = 40, warn = 3, power = 0.15, color = { 170, 120, 255 },
+			name = text("Cristais protetores", "Guardian crystals"), hint = text("os inimigos ganham escudo", "enemies gain a shield") },
 		paths = { { { -92, 72 }, { -65, 72 }, { -65, -66 }, { 65, -66 }, { 65, 44 }, { -15, 44 }, { -15, -8 }, { 20, -8 } } },
 	},
 	latveria = {
 		id = "latveria", difficulty = 1.0, name = text("Cidadela do Tirano", "Tyrant's Citadel"), chapter = 5, bossId = "doom", color = { 64, 92, 85 },
 		description = text("Feche os portais e derrote o exército de Tirano de Ferro.", "Close the portals and defeat Iron Tyrant's army."),
+		hazard = { kind = "stun", every = 50, warn = 3, duration = 3, radius = 22, color = { 110, 255, 170 },
+			name = text("Selo do Tirano", "Tyrant's seal"), hint = text("torres no círculo param por 3 s", "towers in the circle stop for 3 s"), warning = text("SELO!", "SEAL!") },
 		paths = { { { -92, -72 }, { -42, -72 }, { -42, -30 }, { 0, -30 }, { 0, 28 }, { 65, 28 }, { 65, 78 }, { 88, 78 } }, { { 92, -72 }, { 42, -72 }, { 42, -30 }, { 0, -30 }, { 0, 28 }, { 65, 28 }, { 65, 78 }, { 88, 78 } }, { { -92, 72 }, { -42, 72 }, { -42, 28 }, { 0, 28 }, { 65, 28 }, { 65, 78 }, { 88, 78 } } },
 	},
 }
@@ -433,6 +441,8 @@ Catalog.Maps.asgard = {
 	id="asgard",difficulty=1,name=text("Ponte Celeste","Sky Bridge"),chapter=6,bossId="loki",color={220,184,96},
 	description=text("Defenda a ponte dourada contra uma invasão sem fim. As curvas recompensam alcance e controle.","Defend the golden bridge against an endless invasion. Its bends reward range and control."),
 	paths={{{-92,-80},{-60,-80},{-60,-40},{50,-40},{50,0},{-50,0},{-50,40},{60,40},{60,80},{88,80}}},
+	hazard = { kind = "push", every = 35, warn = 2, power = 10, color = { 150, 220, 255 },
+		name = text("Rajada celeste", "Sky gust"), hint = text("o vento empurra os inimigos para trás!", "the wind pushes enemies back!") },
 }
 table.insert(Catalog.MapOrder,"asgard")
 Catalog.ModeOrder = { "tutorial", "normal", "ranked", "cards" }

@@ -154,6 +154,7 @@ function Match:Start(members, mapId, modeId, runId)
 	end
 	self.baseHP = self.maxBaseHP
 	self.elapsed, self.phase, self.running, self.shieldUntil = 0, "Preparing", true, 0
+	self.hazardTimer, self.hazardState, self.hazardCount = 0, {}, 0
 	self.speed = 1
 	self.hitBuffer = {}
 	-- One seed for the whole run keeps every wave and every card offer stable.
@@ -605,6 +606,54 @@ end
 
 -- Boss powers interrupt nearby towers for a moment. Every client is told which
 -- ones, so an interrupted hero is shown as interrupted, not as a bug.
+-- Each map's own danger (Catalog.Maps[id].hazard), on its own clock during
+-- waves and announced a few seconds ahead: frenzy (the infected run faster),
+-- shield (enemies gain a shield), stun (a circle stops towers) and push (a
+-- gust drives enemies back down the road). Training has none.
+function Match:_hazardCenter(hazard)
+	if hazard.kind ~= "stun" then return nil end
+	local towers = {}
+	for _, t in pairs(self.towers) do table.insert(towers, t) end
+	if #towers == 0 then return nil end
+	table.sort(towers, function(a, b) return a.id < b.id end)
+	return towers[Random.new(self.seed + self.wave * 13 + self.hazardCount):NextInteger(1, #towers)].position
+end
+
+function Match:_hazardStep(dt)
+	local map = self.catalog.Maps[self.mapId]
+	local hazard = map and map.hazard
+	if not hazard or self.modeId == "tutorial" or self.phase ~= "Wave" then return end
+	self.hazardTimer += dt
+	local state = self.hazardState
+	local color = Color3.fromRGB(hazard.color[1], hazard.color[2], hazard.color[3])
+	if not state.warned and self.hazardTimer >= hazard.every - hazard.warn then
+		state.warned, state.center = true, self:_hazardCenter(hazard)
+		self:_notice("⚠ " .. hazard.name.pt .. ": " .. hazard.hint.pt, "⚠ " .. hazard.name.en .. ": " .. hazard.hint.en)
+		if state.center then
+			self:_fx({kind="Pulse",position=state.center,radius=hazard.radius or 12,color=color,duration=hazard.warn,warningText=hazard.warning})
+		end
+	end
+	if self.hazardTimer < hazard.every then return end
+	self.hazardTimer, state.warned = 0, false
+	self.hazardCount += 1
+	if hazard.kind == "frenzy" then
+		for _, e in pairs(self.enemies) do e.frenzyUntil = self.elapsed + hazard.duration end
+	elseif hazard.kind == "shield" then
+		for _, e in pairs(self.enemies) do if not e.def.boss then e.shield = math.max(e.shield, e.maxHP * hazard.power) end end
+	elseif hazard.kind == "push" then
+		for _, e in pairs(self.enemies) do
+			if not e.def.boss then
+				e.progress = math.max(0, e.progress - hazard.power)
+				e.position = self:_pathPosition(e.routeIndex, e.progress)
+			end
+		end
+	elseif hazard.kind == "stun" and state.center then
+		self:_stunTowers(state.center, hazard.radius, hazard.duration)
+	end
+	self:_fx({kind="Pulse",position=state.center or self.corePosition,radius=(hazard.radius or 14)*1.2,color=color,duration=0.6})
+	state.center = nil
+end
+
 function Match:_stunTowers(center, radius, seconds)
 	local ids={}
 	for _,t in pairs(self.towers) do
@@ -1224,6 +1273,7 @@ function Match:Step(dt)
 			end
 		end
 		self:_enemiesStep(dt)
+		self:_hazardStep(dt)
 		if self.running and self.alive==0 and self.spawnIndex>#self.pendingSpawns then self:_endWave() end
 	end
 	self.syncTimer+=realDt

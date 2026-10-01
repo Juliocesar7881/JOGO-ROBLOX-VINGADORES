@@ -1510,6 +1510,46 @@ do
 	end
 end
 
+print("--- map hazards ---")
+do
+	-- Gama: a toxic surge, announced first, makes the infected run faster.
+	local match = stage({ mapId = "gamma", wave = 5 })
+	local hazard = Catalog.Maps.gamma.hazard
+	local enemy = spawn(match, "zombie", 10)
+	match.hazardTimer = hazard.every - hazard.warn - 0.05
+	match:_hazardStep(0.1)
+	check(match.hazardState.warned == true, "a map hazard is announced before it strikes")
+	check((enemy.frenzyUntil or 0) <= match.elapsed, "and does nothing yet")
+	match:_hazardStep(hazard.warn)
+	check((enemy.frenzyUntil or 0) > match.elapsed, "the toxic surge speeds the infected up")
+	-- Fundição: the furnace stuns the towers in its circle.
+	local foundry, builder = stage({ mapId = "hydra", wave = 5 })
+	local tower = place(foundry, builder, "ironman")
+	local furnace = Catalog.Maps.hydra.hazard
+	foundry.hazardTimer = furnace.every - furnace.warn
+	foundry:_hazardStep(0.01)
+	check(foundry.hazardState.center ~= nil, "the furnace marks a circle on a tower first")
+	foundry:_hazardStep(furnace.warn)
+	check((tower.stunnedUntil or 0) > foundry.elapsed, "the furnace stuns the tower in its circle")
+	-- Selva de Cristal: guardian crystals shield the enemies.
+	local jungle = stage({ mapId = "wakanda", wave = 5 })
+	local brute = spawn(jungle, "brute", 20)
+	jungle.hazardTimer = Catalog.Maps.wakanda.hazard.every
+	jungle:_hazardStep(0.01)
+	check(brute.shield > 0, "guardian crystals shield the enemies")
+	-- Ponte Celeste: a gust drives enemies back down the road.
+	local bridge = stage({ mapId = "asgard", wave = 5 })
+	local runner = spawn(bridge, "runner", 40)
+	bridge.hazardTimer = Catalog.Maps.asgard.hazard.every
+	bridge:_hazardStep(0.01)
+	check(math.abs(runner.progress - (40 - Catalog.Maps.asgard.hazard.power)) < 1e-6, "the sky gust drives enemies back")
+	-- Preparation and Manhattan stay calm.
+	local calm = stage({ mapId = "manhattan", wave = 5 })
+	calm.hazardTimer = 999
+	calm:_hazardStep(1)
+	check(calm.hazardCount == 0, "Manhattan has no hazard")
+end
+
 print("--- performance guard ---")
 do
 	local match, player = stage({ wave = 45 })
