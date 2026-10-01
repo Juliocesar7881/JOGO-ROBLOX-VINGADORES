@@ -2654,7 +2654,12 @@ local function applyState(nextState)
 	if state.notice then showToast(state.notice) end
 end
 
-stateRemote.OnClientEvent:Connect(applyState)
+-- In Studio the screen review (Review.luau) may hold real snapshots while a
+-- fixture screen is shown; everywhere else this is applyState directly.
+local reviewHold = nil
+stateRemote.OnClientEvent:Connect(function(snapshot)
+	if reviewHold then reviewHold(snapshot) else applyState(snapshot) end
+end)
 fxRemote.OnClientEvent:Connect(function(event)
 	if type(event) ~= "table" then return end
 	if event.kind == "Notice" then
@@ -2879,3 +2884,23 @@ task.spawn(function()
 		if not state or not state.profile then task.wait(2) end
 	end
 end)
+
+-- Studio-only screen review: fixture screens and server scenes driven from
+-- the command bar by tools/studio_review.py. A live server never loads it.
+if RunService:IsStudio() and script:FindFirstChild("Review") then
+	local liveRequest = request
+	require(script.Review).start({
+		player = player, Catalog = Catalog, Rules = Rules, gui = gui, main = main, overlays = overlays, celebrate = celebrate,
+		getState = function() return state end,
+		setState = function(snapshot) state = snapshot end,
+		setLanguage = function(value) language = value end,
+		setRequest = function(fn) request = fn or liveRequest end,
+		serverRequest = liveRequest,
+		applyState = applyState,
+		render = function() render() end,
+		selectTower = selectTower,
+		openBaseUpgrade = openBaseUpgrade,
+		openContext = function(kind, data) openContext(kind, data) end,
+		hold = function(fn) reviewHold = fn end,
+	})
+end

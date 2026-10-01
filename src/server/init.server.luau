@@ -519,6 +519,12 @@ local function route(player, action, payload)
 	if action == "Sync" then
 		return { ok = true, data = snapshotFor(player) }
 	end
+	-- Studio-only review scenes (src/client/Review.luau); a live server
+	-- answers this like any unknown action.
+	if action == "StudioReview" and RunService:IsStudio() then
+		local hook = game:GetService("ServerStorage"):FindFirstChild("DoomStudioHook")
+		return { ok = hook ~= nil and hook:Invoke(payload.command, payload.arg, payload.modeId) == true }
+	end
 	local inMatch = match:Has(player)
 	if inMatch and MATCH_ACTIONS[action] then
 		local ok, data = match:Handle(player, action, payload)

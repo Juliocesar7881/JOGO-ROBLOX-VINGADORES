@@ -100,8 +100,8 @@ o que está abaixo é contexto histórico, não instrução para o estado do jog
   **VOLTAR À BASE** fixo, fora da rolagem, e agrupam ondas, Ouro e XP no início.
 - Validação automatizada: suíte completa aprovada; 6.313 verificações de
   layout e 1.494 de execução/navegação do cliente. Revisão visual no renderer
-  do Studio com `tools/studio_hud_review.luau`, que usa estados simulados e
-  bloqueia intenções de compra/progresso na cópia descartável de teste.
+  do Studio com `tools/studio_review.py` (modo `Review.luau`, só no Studio), que
+  usa estados simulados e bloqueia intenções de compra/progresso.
   Isso não substitui testes de toque e desempenho em aparelhos reais.
 
 Reabra **dist/Doomsday-Studio.rbxlx** no Studio para carregar o HUD atualizado.

@@ -413,7 +413,8 @@ local function session(screen)
 	local routeScript = moduleScript(clientScript, "RoutePreview", __ROUTEPREVIEW__)
 	local overlayScript = moduleScript(clientScript, "BuildOverlay", __BUILDOVERLAY__)
 	local motionScript = moduleScript(clientScript, "Motion", __MOTION__)
-	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript, overlayScript, motionScript }) do loaded[item] = nil end
+	local reviewScript = moduleScript(clientScript, "Review", __REVIEW__)
+	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript, overlayScript, motionScript, reviewScript }) do loaded[item] = nil end
 	loaded[shared.Config] = nil
 
 	if not step("init.client boots and syncs", function() __CLIENT__(clientScript, clockOs); flush() end) then return end
@@ -1640,6 +1641,34 @@ local function session(screen)
 		check(frameAt(main, fresh.top) ~= nil, tag .. ": after a resize the top bar follows the new layout")
 		local bad = offscreen(main, SCREEN)
 		check(#bad == 0, tag .. ": after a resize everything is still on screen: " .. table.concat(bad, ", "))
+	end)
+
+	-- Studio's screen review (the stand-in RunService says IsStudio) draws every
+	-- fixture screen; none may raise a Lua error or send anything to the server.
+	step("the Studio review shows every screen", function()
+		local Review = require(reviewScript)
+		local problems, before = {}, #actions
+		local realWarn, realPrint = warn, print
+		warn = function(first, stage, problem)
+			if first == "DOOM_REVIEW_ERROR" then table.insert(problems, tostring(stage) .. ": " .. tostring(problem)) end
+		end
+		print = function() end
+		local ok, problem = xpcall(function()
+			for _, stage in ipairs(Review.STAGES) do
+				localPlayer:SetAttribute("DoomReview", stage)
+				flush(); advance(1); flush()
+			end
+			localPlayer:SetAttribute("DoomReviewSize", "667x375")
+			localPlayer:SetAttribute("DoomReview", "wave")
+			flush()
+			localPlayer:SetAttribute("DoomReviewSize", "")
+			localPlayer:SetAttribute("DoomReview", "live")
+			flush()
+		end, debug.traceback)
+		warn, print = realWarn, realPrint
+		check(ok, tag .. ": the review tour runs: " .. tostring(problem))
+		check(#problems == 0, tag .. ": every review stage draws without an error: " .. table.concat(problems, " | "))
+		check(#actions == before, tag .. ": fixture screens send nothing to the server")
 	end)
 
 	check(#prompts <= 1, tag .. ": purchases are only prompted when a button is actually pressed")

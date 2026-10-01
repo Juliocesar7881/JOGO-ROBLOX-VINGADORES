@@ -183,8 +183,10 @@ Animações de abertura respeitam `settings.lowFX`; transições não alteram re
 O botão JOGAR utiliza `StartMatch`, com os mesmos bloqueios de perfil e grupo.
 O servidor sorteia o mapa em `startMatch`, incluindo chamadas pelo HUD;
 o treinamento continua em Manhattan. Nenhuma decisão de custo, recompensa
-ou combate passou ao cliente. `tools/studio_hud_review.luau` instala estados
-visuais só em uma cópia descartável e intercepta as intenções de rede.
+ou combate passou ao cliente. `src/client/Review.luau` (só existe com `RunService:IsStudio()`) mostra
+estados visuais simulados e intercepta as intenções de rede; a ação
+`StudioReview` só é atendida no Studio. `tools/studio_review.py` dirige tudo
+pela barra de comando sem editar nenhum script do lugar.
 
 ## Atualização de rotas e competição
 

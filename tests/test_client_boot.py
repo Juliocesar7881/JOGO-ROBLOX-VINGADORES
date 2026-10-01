@@ -24,6 +24,7 @@ LOADERS = {
     "__ROUTEPREVIEW__": "src/client/RoutePreview.luau",
     "__BUILDOVERLAY__": "src/client/BuildOverlay.luau",
     "__MOTION__": "src/client/Motion.luau",
+    "__REVIEW__": "src/client/Review.luau",
     "__WORLD__": "src/server/WorldBuilder.luau",
     "__CLIENT__": "src/client/init.client.luau",
 }

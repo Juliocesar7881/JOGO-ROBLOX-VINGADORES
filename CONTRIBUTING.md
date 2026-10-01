@@ -36,7 +36,7 @@ nunca descarte trabalho alheio sem entender o que era.
   ```
   `tools/test.py` falha se esse arquivo ficar desatualizado.
 - **Evite abrir o Studio ao mesmo tempo que a outra pessoa está rodando
-  `tools/studio_hud_review.luau`** ou qualquer automação — os dois processos
+  `tools/studio_review.py`** ou qualquer automação — os dois processos
   usando a mesma instância do Studio para coisas diferentes é como nasce um
   bug impossível de reproduzir. Combine quem está com o Studio aberto.
 - Mudanças de regra do jogo (custo, dano, recarga, raridade, economia) vão em
