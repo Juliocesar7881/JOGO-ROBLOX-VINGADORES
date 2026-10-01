@@ -132,7 +132,7 @@ function Match:CanStart()
 	return true
 end
 
-function Match:Start(members, mapId, modeId, runId)
+function Match:Start(members, mapId, modeId, runId, difficultyId)
 	if not self:CanStart() then return false, "Já existe uma partida neste servidor. / A match is already active." end
 	if not self.catalog.Maps[mapId] or not self.catalog.Modes[modeId] then return false, "Mapa ou modo inválido." end
 	if #members < 1 or #members > 4 then return false, "Grupo inválido." end
@@ -140,9 +140,11 @@ function Match:Start(members, mapId, modeId, runId)
 		local profile = self.profiles:Snapshot(player)
 		if not profile then return false, "Perfil indisponível." end
 		local ok, reason = self.rules.CanStart(profile, mapId, modeId)
+		if ok then ok, reason = self.rules.CanUseDifficulty(profile, mapId, modeId, difficultyId) end
 		if not ok then return false, reason end
 	end
 	self.runId, self.mapId, self.modeId = runId or HttpService:GenerateGUID(false), mapId, modeId
+	self.difficultyId = difficultyId or "normal"
 	self.size, self.wave, self.completedWaves, self.baseHP, self.shield = #members, 0, 0, self.config.BaseHP, 0
 	self.maxBaseHP, self.recovery, self.baseWasDamaged = self.config.BaseHP, 0, false
 	self.lastStandHeal, self.lastStandUsed = 0, false
@@ -249,7 +251,7 @@ end
 function Match:_previewThreats()
 	self.nextThreats = {}
 	if not self.running and self.phase ~= "Preparing" then return end
-	local ok, specs = pcall(self.waves.Generate, self.mapId, self.modeId, self.wave + 1, self.size, self.seed)
+	local ok, specs = pcall(self.waves.Generate, self.mapId, self.modeId, self.wave + 1, self.size, self.seed, self.difficultyId)
 	if not ok or type(specs) ~= "table" then return end
 	-- Which roads the next wave walks, and whether that changed: the client
 	-- animates them during preparation and warns about a new entrance.
@@ -344,7 +346,7 @@ function Match:_beginWave()
 		-- run never stalls on someone who stepped away.
 		if #p.cardOffers > 0 then self:_chooseCard(p, p.cardOffers[1]) end
 	end
-	self.pendingSpawns = self.waves.Generate(self.mapId,self.modeId,self.wave,self.size,self.seed)
+	self.pendingSpawns = self.waves.Generate(self.mapId,self.modeId,self.wave,self.size,self.seed,self.difficultyId)
 	self.spawnIndex, self.spawnTimer = 1, 0
 	local threats = {}
 	for _, spec in ipairs(self.pendingSpawns) do
@@ -879,13 +881,15 @@ function Match:Finish(victory, ended)
 	self.world:ApplyLobbyLighting()
 	for _,p in pairs(self.participants) do
 		if not p.returned then
+			-- A harder campaign difficulty pays its victory Gold and XP over.
+			local paid=(self.catalog.Difficulties[self.difficultyId] or {rewardMultiplier=1}).rewardMultiplier
 			local bonus=0
 			if victory and p.contributed and not p.disconnectedAt then
-				bonus=math.floor(self.rules.VictoryGold(self.modeId,self.mapId) * (1+talent(p,"victoryGold")*0.02))
+				bonus=math.floor(self.rules.VictoryGold(self.modeId,self.mapId) * (1+talent(p,"victoryGold")*0.02) * paid)
 			end
 			self:_checkpoint(p,"remaining",false)
 			if not p.disconnectedAt then
-				table.insert(self.rewardQueue,{player=p.player,id=self.runId..":final",reward={gold=bonus,xp=victory and 150 or 0,
+				table.insert(self.rewardQueue,{player=p.player,id=self.runId..":final",reward={gold=bonus,xp=victory and math.floor(150*paid) or 0,difficultyId=self.difficultyId,
 					mapId=self.mapId,modeId=self.modeId,victory=victory and p.contributed,tutorial=self.modeId=="tutorial",finished=true,
 					noDamage=not self.baseWasDamaged,mastery={},waves=0}})
 			end
@@ -894,9 +898,9 @@ function Match:Finish(victory, ended)
 				if self.modeId=="tutorial" and not p.profile.tutorialComplete then p.goldEarned+=self.catalog.Chests.rare.cost
 				elseif self.modeId=="normal" and not ((p.profile.campaign[self.mapId] or {}).normal) then p.goldEarned+=500 end
 			end
-			p.xpEarned+=victory and 150*(p.profile.passes and p.profile.passes.training and 1.25 or 1) or 0
+			p.xpEarned+=victory and 150*paid*(p.profile.passes and p.profile.passes.training and 1.25 or 1) or 0
 			p.results={victory=victory,ended=ended==true,waves=self.completedWaves,gold=math.floor(p.goldEarned),xp=math.floor(p.xpEarned),
-				mapId=self.mapId,modeId=self.modeId,mastery=p.masteryEarned,startLevel=p.startLevel,cards=table.clone(p.cards)}
+				mapId=self.mapId,modeId=self.modeId,difficultyId=self.difficultyId,mastery=p.masteryEarned,startLevel=p.startLevel,cards=table.clone(p.cards)}
 			p.coins={}
 			self:_fx({kind="Clear"},p.player)
 		end
@@ -1362,7 +1366,7 @@ function Match:Handle(player,action,payload)
 		table.sort(voters,function(a,b) return a.index<b.index end)
 		local members={}
 		for _,q in ipairs(voters) do table.insert(members,q.player); q.returned=true end
-		local ok,problem=self:Start(members,self.mapId,self.modeId)
+		local ok,problem=self:Start(members,self.mapId,self.modeId,nil,self.difficultyId)
 		if not ok then
 			for _,q in ipairs(voters) do q.returned,q.again=false,false end
 			return false,problem
@@ -1497,7 +1501,7 @@ function Match:Snapshot(player)
 	local waiting,endVotes=0,0
 	for _,coin in pairs(p.coins) do waiting+=coin.value end
 	for _,other in pairs(self.participants) do if not other.returned and other.endVote then endVotes+=1 end end
-	return {runId=self.runId,mapId=self.mapId,modeId=self.modeId,wave=self.wave,totalWaves=total,
+	return {runId=self.runId,mapId=self.mapId,modeId=self.modeId,difficultyId=self.difficultyId,wave=self.wave,totalWaves=total,
 		base={id=p.base.id,level=p.base.level,stats=table.clone(p.base.stats),wall=math.floor(p.base.wall)},
 		completedWaves=self.completedWaves,baseHP=self.baseHP,maxBaseHP=self.maxBaseHP,shield=self.shield,cash=math.floor(p.cash),coinsWaiting=waiting,magnet=self:_magnet(p),blockers=self:_blockers(),towerLimit=self.rules.TowerLimit(self.size),
 		prepRemaining=math.max(0,math.ceil(self.prepRemaining)),enemies=self.alive,elapsed=self.elapsed,ability=ability,

@@ -320,7 +320,7 @@ local function sendToAfk(player, kind)
 	return true
 end
 
-local function sendToMatch(leader, members, mapId, modeId)
+local function sendToMatch(leader, members, mapId, modeId, difficultyId)
 	if travelling[leader.UserId] then
 		return { ok = false, message = text("Sua partida ja esta sendo preparada.", "Your match is already being prepared.") }
 	end
@@ -339,7 +339,7 @@ local function sendToMatch(leader, members, mapId, modeId)
 	-- The access code itself stays out of the teleport data, which the
 	-- travelling player can read.
 	options:SetTeleportData({
-		mapId = mapId, modeId = modeId, runId = runId,
+		mapId = mapId, modeId = modeId, runId = runId, difficultyId = difficultyId,
 		size = #members, leaderId = leader.UserId, members = userIds,
 		balanceVersion = tostring(Config.BalanceVersion),
 	})
@@ -400,6 +400,7 @@ local function teleportPayload(player)
 	if type(data) ~= "table" then return nil end
 	if type(data.mapId) ~= "string" or type(data.modeId) ~= "string" then return nil end
 	if not Catalog.Maps[data.mapId] or not Catalog.Modes[data.modeId] then return nil end
+	if data.difficultyId ~= nil and not Catalog.Difficulties[data.difficultyId] then return nil end
 	return data
 end
 
@@ -418,7 +419,7 @@ local function registerArrival(player)
 	end
 	if not arrivals or arrivals.runId ~= data.runId then
 		arrivals = {
-			runId = data.runId, mapId = data.mapId, modeId = data.modeId,
+			runId = data.runId, mapId = data.mapId, modeId = data.modeId, difficultyId = data.difficultyId,
 			expected = math.clamp(math.floor(tonumber(data.size) or 1), 1, 4),
 			waiting = {}, deadline = os.clock() + 25,
 		}
@@ -438,11 +439,11 @@ local function beginReservedMatch()
 		if os.clock() >= arrivals.deadline and #present == 0 then arrivals = nil end
 		return
 	end
-	local mapId, modeId, runId = arrivals.mapId, arrivals.modeId, arrivals.runId
+	local mapId, modeId, runId, difficultyId = arrivals.mapId, arrivals.modeId, arrivals.runId, arrivals.difficultyId
 	arrivals = nil
 	-- Difficulty follows the party that actually arrived, never the size the
 	-- lobby server announced.
-	local ok, problem = match:Start(present, mapId, modeId, runId)
+	local ok, problem = match:Start(present, mapId, modeId, runId, difficultyId)
 	if ok then logMatchStart() end
 	if not ok then
 		for _, member in ipairs(present) do
@@ -479,15 +480,15 @@ end
 -- Mode portals are elevators: stepping onto a pad boards it and the match
 -- starts when its countdown ends. In a Lobby server that means travel to a
 -- reserved match server; anywhere else the match starts right here.
-local function launchFromPortal(members, mapId, modeId)
+local function launchFromPortal(members, mapId, modeId, difficultyId)
 	if role == "Lobby" then
-		local result = sendToMatch(members[1], members, mapId, modeId)
+		local result = sendToMatch(members[1], members, mapId, modeId, difficultyId)
 		return result.ok == true, result.message
 	end
 	if not match:CanStart() then
 		return false, text("Uma batalha ja ocupa este servidor. Aguarde ela terminar.", "A battle is already using this server. Wait for it to end.")
 	end
-	local ok, problem = match:Start(members, mapId, modeId)
+	local ok, problem = match:Start(members, mapId, modeId, nil, difficultyId)
 	if not ok then return false, problem end
 	logMatchStart()
 	pushMatch()
@@ -580,6 +581,11 @@ local function route(player, action, payload)
 		return { ok = true, data = data }
 	end
 	if action == "StartMatch" then return startMatch(player, payload) end
+	if action == "SetDifficulty" then
+		if type(payload) ~= "table" or type(payload.difficultyId) ~= "string" then return { ok = false, message = text("Dificuldade inválida.", "Invalid difficulty.") } end
+		local ok, reason = elevator:SetDifficulty(player, payload.difficultyId)
+		return { ok = ok, message = reason }
+	end
 	if action == "ElevatorLeave" then
 		return { ok = elevator:Leave(player) }
 	end

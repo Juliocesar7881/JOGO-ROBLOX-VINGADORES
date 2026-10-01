@@ -375,8 +375,13 @@ Starting a match has no menu. `WorldBuilder:BuildLobby` publishes
   keeps the car and restarts the countdown.
 
 Actions: `ElevatorLeave` `{}` → `{ok}` (also ejects to `exit`), and
-`ElevatorMap` `{step = 1|-1}` → `{ok, message}` (host only; cycles the sector).
-Snapshots carry `elevator = {portalId, modeId, mapId, riders = {{userId, name}},
+`ElevatorMap` `{step = 1|-1}` → `{ok, message}` (host only; cycles the sector),
+and `SetDifficulty` `{difficultyId}` → `{ok, message}` (host only; refused
+unless every rider has opened it on that map, `Rules.CanUseDifficulty`). The
+car's difficulty travels in the teleport data and into `match:Start`; it
+scales the waves (`Waves.Generate`) and the victory Gold/XP, and a win records
+`campaign[mapId][winKey]`, which opens the next one.
+Snapshots carry `elevator = {portalId, modeId, mapId, difficultyId, riders = {{userId, name}},
 max, remaining, host, maps}` while the player rides, `nil` otherwise. The
 legacy `StartMatch`/party actions are still routed but no client UI sends them.
 Covered by `tests/elevator.spec.luau` (unit) and `tests/server_boot.spec.luau`

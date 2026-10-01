@@ -82,6 +82,9 @@ function Elevator:_board(player, portalId)
 			-- Whether someone may play a mode never depends on which map is
 			-- drawn, so any map stands in for the check.
 			local allowed, reason = self.rules.CanStart(profile, self.rules.PortalMap(destinationId), planned)
+			if allowed then
+				allowed, reason = self.rules.CanUseDifficulty(profile, self.rules.PortalMap(destinationId), planned, car.difficulty)
+			end
 			if not allowed then
 				self:_refuse(player, portalId, reason or self.rules.ModeLockReason(planned, profile))
 				return
@@ -93,7 +96,7 @@ function Elevator:_board(player, portalId)
 	end
 	if not car then
 		self.serial += 1
-		car = { portalId = portalId, riders = {}, remaining = COUNTDOWN, id=tostring(self.serial) }
+		car = { portalId = portalId, riders = {}, remaining = COUNTDOWN, id=tostring(self.serial), difficulty = "normal" }
 		self.cars[portalId] = car
 	end
 	table.insert(car.riders, player)
@@ -151,6 +154,24 @@ function Elevator:StartNow(player)
 	return true
 end
 
+-- The host (first rider) picks the campaign difficulty. Refused, never
+-- clamped, when anyone aboard has not opened it on this map yet.
+function Elevator:SetDifficulty(player, difficultyId)
+	local portalId = self.riding[player]
+	local car = portalId and self.cars[portalId]
+	if not car or car.departing then return false, "Entre em um portal primeiro. / Step into a portal first." end
+	if car.riders[1] ~= player then return false, "Só quem entrou primeiro escolhe. / Only the first rider chooses." end
+	local mapId, modeId = self.rules.PortalMap(self:Destination(portalId)), self:Plan(portalId)
+	for _, rider in ipairs(car.riders) do
+		local allowed, reason = self.rules.CanUseDifficulty(self.profileOf(rider), mapId, modeId, difficultyId)
+		if not allowed then return false, reason end
+	end
+	car.difficulty = difficultyId
+	car.remaining = math.max(car.remaining, JOIN_GRACE)
+	self:_announce(car)
+	return true
+end
+
 function Elevator:_depart(portalId)
 	local car = self.cars[portalId]
 	if not car or car.departing then return end
@@ -165,6 +186,7 @@ function Elevator:_depart(portalId)
 	for _, player in ipairs(table.clone(car.riders)) do
 		local profile = self.profileOf(player)
 		local allowed, reason = self.rules.CanStart(profile, mapId, modeId)
+		if allowed then allowed, reason = self.rules.CanUseDifficulty(profile, mapId, modeId, car.difficulty) end
 		if allowed then
 			table.insert(going, player)
 		else
@@ -180,7 +202,7 @@ function Elevator:_depart(portalId)
 	-- from launching this same group while the first transfer is pending.
 	car.departing = true
 	self:_announce(car)
-	local called, ok, message = pcall(self.launch, going, mapId, modeId)
+	local called, ok, message = pcall(self.launch, going, mapId, modeId, car.difficulty)
 	if not called then ok, message = false, "Falha ao preparar partida. Tentando novamente. / Match transfer failed. Retrying." end
 	if not ok then
 		car.departing = false
@@ -241,7 +263,7 @@ function Elevator:Snapshot(player)
 		carId=car.id, mapId=self.rules.PortalMap(self:Destination(portalId)),
 		portalId = self:Destination(portalId), queueId = portalId,
 		slot = (self.zones[portalId] or {}).slot or 1, departing = car.departing == true,
-		modeId = modeId, riders = riders, max = MAX_RIDERS,
+		modeId = modeId, difficultyId = car.difficulty, riders = riders, max = MAX_RIDERS,
 		remaining = math.max(0, math.ceil(car.remaining)), host = car.riders[1] == player,
 	}
 end

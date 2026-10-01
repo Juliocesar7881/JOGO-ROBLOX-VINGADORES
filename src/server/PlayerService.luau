@@ -802,6 +802,7 @@ function PlayerService:Award(player, awardId, reward)
 		if reward[key] ~= nil and not integer(reward[key], 0, 100000000) then return false, "Quantidade inválida: " .. key end
 	end
 	if reward.mapId and not self.catalog.Maps[reward.mapId] then return false, "Mapa inválido." end
+	if reward.difficultyId ~= nil and not self.catalog.Difficulties[reward.difficultyId] then return false, "Dificuldade inválida." end
 	if reward.modeId and not self.catalog.Modes[reward.modeId] then return false, "Modo inválido." end
 	if reward.mastery ~= nil and type(reward.mastery) ~= "table" then return false, "Maestria inválida." end
 	for heroId, xp in pairs(reward.mastery or {}) do if not self.catalog.Heroes[heroId] or not integer(xp, 0, 100000000) then return false, "Maestria inválida." end end
@@ -820,6 +821,9 @@ function PlayerService:Award(player, awardId, reward)
 			profile.campaign[reward.mapId] = profile.campaign[reward.mapId] or {}
 			if not profile.campaign[reward.mapId].normal then gold += 500 end
 			profile.campaign[reward.mapId].normal = true
+			-- A Hard or Nightmare win opens the next difficulty on this map.
+			local difficulty = self.catalog.Difficulties[reward.difficultyId or "normal"]
+			profile.campaign[reward.mapId][difficulty.winKey] = true
 		elseif won and reward.modeId == "ranked" and reward.mapId then
 			profile.campaign[reward.mapId] = profile.campaign[reward.mapId] or {}
 			profile.campaign[reward.mapId].ranked = true

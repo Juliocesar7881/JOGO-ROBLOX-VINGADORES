@@ -352,7 +352,7 @@ local function simulate(options)
 	local player = members[1]
 	local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, newRemotes(log), function() end)
 
-	local started, problem = match:Start(members, options.mapId, options.modeId)
+	local started, problem = match:Start(members, options.mapId, options.modeId, nil, options.difficultyId)
 	check(started, "match starts on " .. options.mapId .. "/" .. options.modeId .. ": " .. tostring(problem))
 	if not started then return nil end
 
@@ -438,6 +438,23 @@ if tutorial then
 	check(taught >= 4, "the tutorial paces its lessons across the run, got " .. tostring(taught) .. " of 4")
 	print(string.format("  %d waves, %.1f min, base %d/100, peak %d enemies, gold %d",
 		tutorial.results.waves, tutorial.seconds / 60, tutorial.match.baseHP, tutorial.peakEnemies, tutorial.results.gold))
+end
+
+print("--- campaign difficulty ---")
+do
+	-- Refused before anything starts when the map's Normal is not beaten yet.
+	local locked = MatchService.new(Config, Catalog, Rules, Waves, newProfiles(newProfile()), newWorld(), newRemotes({}), function() end)
+	local started = locked:Start({ newPlayer(1) }, "manhattan", "normal", nil, "hard")
+	check(not started and not locked.running, "Hard is refused on a map whose Normal was never beaten")
+	local hard = simulate({ mapId = "manhattan", modeId = "normal", difficultyId = "hard", profile = { campaign = { manhattan = { normal = true } } } })
+	check(hard ~= nil and hard.match.difficultyId == "hard", "a Hard run starts on Hard")
+	if hard then
+		local final
+		for id, reward in pairs(hard.profiles.awards) do if string.find(id, ":final", 1, true) then final = reward end end
+		check(final ~= nil and final.difficultyId == "hard", "the final award names the difficulty, so a win opens Nightmare")
+		check(hard.results.difficultyId == "hard", "the results screen knows the difficulty")
+		print(string.format("Hard Manhattan: the bot reached wave %d (victory %s)", hard.results.waves or 0, tostring(hard.results.victory)))
+	end
 end
 
 print("--- campaign, Manhattan ---")

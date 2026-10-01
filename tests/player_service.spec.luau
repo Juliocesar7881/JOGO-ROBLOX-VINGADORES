@@ -869,4 +869,16 @@ do
 	check(not handled, "no client action grants a feat")
 end
 
+-- Campaign difficulty: a win on one opens the next on that map only.
+do
+	local climber = player(77)
+	localOnly:Load(climber)
+	check(not localOnly:Award(climber, "diff:bad", { finished = true, victory = true, modeId = "normal", mapId = "gamma", difficultyId = "insane" }), "an unknown difficulty is refused")
+	check(localOnly:Award(climber, "diff:normal", { finished = true, victory = true, modeId = "normal", mapId = "gamma" }), "a Normal win is awarded")
+	check(Rules.DifficultyUnlocked(localOnly:Get(climber), "gamma", "hard") and not Rules.DifficultyUnlocked(localOnly:Get(climber), "gamma", "nightmare"), "a Normal win opens Hard")
+	check(localOnly:Award(climber, "diff:hard", { finished = true, victory = true, modeId = "normal", mapId = "gamma", difficultyId = "hard" }), "a Hard win is awarded")
+	check(Rules.DifficultyUnlocked(localOnly:Get(climber), "gamma", "nightmare"), "a Hard win opens Nightmare")
+	check(not Rules.DifficultyUnlocked(localOnly:Get(climber), "manhattan", "hard"), "other maps stay on Normal")
+end
+
 print("PASS PlayerService: " .. checks .. " assertions (real module, mocked Roblox persistence and purchases)")

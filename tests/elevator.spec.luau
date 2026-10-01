@@ -379,5 +379,42 @@ do
 	check(pcall(function() h.service:_depart("normal") end),"unexpected transport errors do not break the queue loop")
 	check(not h.service:Snapshot(rider).departing,"unexpected error also releases the transfer lock")
 end
+--==============================================================================
+-- Campaign difficulty: chosen by the host, checked for everyone aboard
+--==============================================================================
+print("--- difficulty ---")
+do
+	local h = harness()
+	local launched
+	h.service.launch = function(riders, mapId, modeId, difficultyId) launched = { mapId = mapId, modeId = modeId, difficultyId = difficultyId }; return true end
+	local host, guest, rookie = veteran(), veteran(), trained()
+	h.add(host, guest, rookie)
+	at(host, "normal"); h.step(0.25)
+	check(h.service:Snapshot(host).difficultyId == "normal", "a car starts on Normal")
+	check(not h.service:SetDifficulty(rookie, "hard"), "someone not aboard cannot pick a difficulty")
+	at(guest, "normal"); h.step(0.25)
+	check(not h.service:SetDifficulty(guest, "hard"), "only the first rider picks")
+	check(not h.service:SetDifficulty(host, "nightmare"), "a difficulty nobody opened is refused")
+	check(not h.service:SetDifficulty(host, "insane"), "an unknown difficulty is refused")
+	check(h.service:SetDifficulty(host, "hard") and h.service:Snapshot(guest).difficultyId == "hard", "the host's Hard is announced to the car")
+	at(rookie, "normal"); h.step(0.25)
+	check(h.service:Snapshot(rookie) == nil and #h.noticesFor(rookie) > 0, "a rider who has not opened Hard here is refused with a reason")
+	at(rookie, nil); h.step(0.25)
+	check(h.service:SetDifficulty(host, "normal"), "the host can go back to Normal")
+	at(rookie, "normal"); h.step(0.25)
+	check(h.service:Snapshot(rookie) ~= nil, "on Normal the newcomer rides along")
+	check(not h.service:SetDifficulty(host, "hard"), "Hard is refused while a rider aboard has not opened it")
+	h.step(10)
+	check(launched and launched.difficultyId == "normal" and launched.mapId == "manhattan", "the launch carries the car's difficulty")
+	local h2 = harness()
+	local sent
+	h2.service.launch = function(riders, mapId, modeId, difficultyId) sent = difficultyId; return true end
+	local solo = veteran()
+	h2.add(solo)
+	at(solo, "normal"); h2.step(0.25)
+	h2.service:SetDifficulty(solo, "hard")
+	h2.step(10)
+	check(sent == "hard", "a Hard car launches on Hard")
+end
 print(string.format("%s elevator: %d checks, %d failures", failures == 0 and "PASS" or "FAIL", checks, failures))
 if failures > 0 then error("elevator failed", 0) end
