@@ -144,7 +144,7 @@ Catalog.Heroes = {
 		id = "widow", rarity = "rare", ability = "widowBite",
 		name = text("Sombra", "Shade"), role = text("Revela camuflados e marca alvos", "Reveals hidden enemies, marks targets"), cost = 260,
 		description = text("Revela camuflados e marca inimigos para a equipe.", "Reveals hidden enemies and marks targets for the team."),
-		damage = 14, range = 25, interval = 0.75, color = { 120, 100, 220 }, attack = "single", damageType = "tech", air = true, reveal = true, support = true, mark = 0.08,
+		damage = 18, range = 25, interval = 0.75, color = { 120, 100, 220 }, attack = "single", damageType = "tech", air = true, reveal = true, support = true, mark = 0.08,
 		branches = {
 			{ name = text("Reconhecimento", "Reconnaissance"), description = text("Revela inimigos em um alcance maior.", "Reveals enemies in a wider range."), mods = { add("range", 14), set("mark", 0.12) } },
 			{ name = text("Alvo marcado", "Marked Target"), description = text("Alvos marcados recebem mais dano de toda a equipe.", "Marked targets take more damage from the entire team."), mods = { set("mark", 0.25), mul("damage", 1.2) } },
@@ -174,7 +174,7 @@ Catalog.Heroes = {
 		id = "rocket", rarity = "rare", ability = "salvage",
 		name = text("Guaxo", "Rascal"), role = text("Explosivos em área", "Area explosives"), cost = 330,
 		description = text("Um arsenal improvisado que explode em pequenas áreas.", "An improvised arsenal that bursts in small areas."),
-		pickup = 14, damage = 15, range = 26, interval = 1.3, color = { 80, 170, 110 }, attack = "splash", damageType = "tech", air = true, splash = 4.5,
+		pickup = 14, damage = 19, range = 26, interval = 1.3, color = { 80, 170, 110 }, attack = "splash", damageType = "tech", air = true, splash = 5.5,
 		branches = {
 			{ name = text("Arsenal explosivo", "Explosive Arsenal"), description = text("Explosões enormes e mais dano.", "Huge blasts and more damage."), mods = { set("splash", 10), mul("damage", 1.3) } },
 			{ name = text("Metralhadora grande", "Big Gun"), description = text("Dispara quase o dobro de vezes.", "Fires almost twice as often."), mods = { mul("interval", 0.6) } },
@@ -666,13 +666,13 @@ Catalog.Cards = {
 -- Reinforcements: authored combat stats, two branches and a leader skill each.
 local reinforcements = {
 	{"wolverine","Presa","Fang","epic",{235,130,40},420,36,16,0.65,"single","physical",false,"claws","execute",0.28,55},
-	{"cyclops","Farol","Beacon","rare",{232,80,64},320,38,32,1.35,"beam","tech",true,"visor","blast",0.28,60},
+	{"cyclops","Farol","Beacon","rare",{232,80,64},320,28,32,1.35,"beam","tech",true,"visor","blast",0.28,60},
 	{"storm","Monção","Monsoon","legendary",{50,180,180},600,40,34,1.4,"chain","magic",true,"cape","chain",0.26,75},
 	{"jean","Aurora","Aurora","mythic",{190,110,240},760,44,30,1.3,"splash","magic",true,"phoenix","burn",0.08,80},
-	{"iceman","Geada","Frost","rare",{150,200,245},300,17,25,1.05,"splash","magic",false,"ice","slow",0.5,65},
+	{"iceman","Geada","Frost","rare",{150,200,245},300,11,25,1.05,"splash","magic",false,"ice","slow",0.5,65},
 	{"gambit","Ás","Ace","epic",{220,50,70},390,35,29,1.15,"splash","magic",true,"cards","blast",0.32,60},
 	{"nightcrawler","Pisca","Blink","rare",{245,205,80},290,24,22,0.8,"single","magic",false,"tail","pull",22,65},
-	{"beast","Juba","Mane","rare",{226,170,80},240,26,18,0.95,"splash","physical",false,"fur","stun",0,65},
+	{"beast","Juba","Mane","rare",{226,170,80},270,15,18,0.95,"splash","physical",false,"fur","stun",0,65},
 	{"psylocke","Kunai","Kunai","epic",{200,40,64},400,32,23,0.7,"single","magic",false,"blade","weaken",0.4,65},
 	{"deadpool","Confete","Confetti","epic",{240,90,170},380,24,28,0.6,"single","physical",true,"swords","rally",0.2,65},
 	{"moonknight","Eclipse","Eclipse","rare",{255,200,90},310,34,25,1.05,"single","physical",true,"moon","reveal",0.18,65},

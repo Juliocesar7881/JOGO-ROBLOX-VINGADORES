@@ -37,6 +37,24 @@ o próximo herói da rotação que a Energia alcança — não é um jogador ót
 mas é determinístico e nunca some do teclado, o que já é o suficiente para
 comparar heróis entre si.
 
+## Ajuste dos raros (01/10/2026, `--sweep duel`)
+
+O duelo (mesmo orçamento de Ouro de partida, sem habilidade) mostrou raros
+fora da faixa depois da renomeação dos heróis:
+
+| Herói | Antes (3000/5000/7000) | Depois |
+| --- | --- | --- |
+| Juba (beast) | 83 / 94 / 94 % | 55 / 77 / 83 % (custo 240→270, dano 26→15) |
+| Geada (iceman) | 74 / 94 / 95 % | 54 / 76 / 82 % (dano 17→11) |
+| Farol (cyclops) | 54 / 91 / 98 % | 44 / 78 / 92 % (dano 38→28) |
+| Sombra (widow) | 32 / 49 / 56 % | 39 / 60 / 69 % (dano 14→18) |
+| Guaxo (rocket) | 27 / 47 / 64 % | 38 / 65 / 82 % (dano 15→19, área 4,5→5,5) |
+
+Médias por raridade no duelo depois do ajuste: comum 40 / 62 / 74, raro
+43 / 67 / 78, épico 50 / 72 / 90, lendário 45 / 76 / 92 — raro um pouco acima
+de comum, abaixo de épico, como pretendido. O mítico só tem 1 torre até
+5000 de Ouro: o custo (760–800) é a barreira, não o dano.
+
 ## A curva de raridade pretendida
 
 Raridade mais alta deve significar poder claramente maior — é um pedido

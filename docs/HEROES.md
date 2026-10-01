@@ -24,16 +24,16 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Laçadora** — Desaceleração e controle | 280 | área | 14 | 24 | 1.10s | Rede Gigante |
-| **Sombra** — Revela camuflados e marca alvos | 260 | único (ar) | 14 | 25 | 0.75s | Marca da Sombra |
+| **Sombra** — Revela camuflados e marca alvos | 260 | único (ar) | 18 | 25 | 0.75s | Marca da Sombra |
 | **Titã de Bolso** — Ataques rápidos e pisões | 380 | único | 22 | 26 | 0.70s | Partículas Quânticas |
 | **Pirilampo** — Ferrão rápido que desacelera | 240 | único (ar) | 10 | 22 | 0.40s | Enxame Elétrico |
-| **Guaxo** — Explosivos em área | 330 | área (ar) | 15 | 26 | 1.30s | Sucata Valiosa |
+| **Guaxo** — Explosivos em área | 330 | área (ar) | 19 | 26 | 1.30s | Sucata Valiosa |
 | **Eco** — Enxerga camuflados | 270 | único | 17 | 20 | 0.60s | Sentido Radar |
 | **Rin** — Combate corpo a corpo veloz | 340 | único | 14 | 18 | 0.40s | Anéis Celestes |
-| **Farol** — Feixe que atravessa a horda | 320 | feixe (ar) | 38 | 32 | 1.35s | Explosão óptica |
-| **Geada** — Congela o avanço de grupos | 300 | área | 17 | 25 | 1.05s | Era do gelo |
+| **Farol** — Feixe que atravessa a horda | 320 | feixe (ar) | 28 | 32 | 1.35s | Explosão óptica |
+| **Geada** — Congela o avanço de grupos | 300 | área | 11 | 25 | 1.05s | Era do gelo |
 | **Pisca** — Ataques rápidos e recuo tático | 290 | único | 24 | 22 | 0.80s | Puf! |
-| **Juba** — Impactos curtos contra hordas | 240 | área | 26 | 18 | 0.95s | Salto selvagem |
+| **Juba** — Impactos curtos contra hordas | 270 | área | 15 | 18 | 0.95s | Salto selvagem |
 | **Eclipse** — Revela camuflados na rota | 310 | único (ar) | 34 | 25 | 1.05s | Luz da Lua |
 
 ## Épico — 449 Robux (compra direta)
