@@ -474,7 +474,10 @@ local function contextChests(body,data)
 	end
 
 	-- The tiers: big chests you can see from across the room.
-	local selector=UI.scroll(body,{Name="SummonCrates",Size=UDim2.new(1,-6,0,128),AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollingDirection=Enum.ScrollingDirection.X,ScrollBarThickness=3,ScrollBarImageColor3=tint})
+	-- A phone panel has room for the tiers and one buy row above the fold:
+	-- shorter tiles and a single-row purchase card keep SUMMON visible.
+	local tileH=wide and 112 or 92
+	local selector=UI.scroll(body,{Name="SummonCrates",Size=UDim2.new(1,-6,0,tileH+16),AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollingDirection=Enum.ScrollingDirection.X,ScrollBarThickness=3,ScrollBarImageColor3=tint})
 	local tileWidth=wide and (width-6)/#ids or 118
 	selector.CanvasSize=UDim2.fromOffset(tileWidth*#ids,0)
 	selector:SetAttribute("SummonChestId",selectedChest)
@@ -484,10 +487,10 @@ local function contextChests(body,data)
 		local def=Catalog.Chests[id]; local chosen=id==selectedChest
 		local color=UI.color(def.color)
 		local tile=UI.button(selector,"",function() selectedChest=id; confirmChest=nil; renderContext() end,
-			{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+3,chosen and 2 or 8),Size=UDim2.fromOffset(tileWidth-8,112),BackgroundColor3=chosen and color:Lerp(C.panel,0.25) or color:Lerp(C.panel,0.72)})
+			{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+3,chosen and 2 or 8),Size=UDim2.fromOffset(tileWidth-8,tileH),BackgroundColor3=chosen and color:Lerp(C.panel,0.25) or color:Lerp(C.panel,0.72)})
 		if chosen then UI.stroke(tile,Color3.new(1,1,1),3) end
-		UI.illustration(tile,"crate",color,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=UDim2.fromOffset(58,52)})
-		UI.label(tile,L(def.name),{Position=UDim2.fromOffset(4,56),Size=UDim2.new(1,-8,0,30),TextWrapped=true,TextSize=13,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+		UI.illustration(tile,"crate",color,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=wide and UDim2.fromOffset(58,52) or UDim2.fromOffset(46,40)})
+		UI.label(tile,L(def.name),{Position=UDim2.fromOffset(4,wide and 56 or 44),Size=UDim2.new(1,-8,0,wide and 30 or 24),TextWrapped=true,TextSize=wide and 13 or 12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 		UI.label(tile,"💰 "..number(def.cost),{Position=UDim2.new(0,4,1,-26),Size=UDim2.new(1,-8,0,22),TextColor3=C.gold,TextSize=16,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 	end
 
@@ -518,37 +521,60 @@ local function contextChests(body,data)
 	local color=UI.color(chest.color)
 	local id=selectedChest
 	local confirming=confirmChest==id
-	local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirming and 196 or 176),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
-	UI.illustration(purchase,"crate",color,{Position=UDim2.fromOffset(10,8),Size=UDim2.fromOffset(92,82)})
-	UI.label(purchase,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(110,10),Size=UDim2.new(1,-120,0,32),TextSize=22,Font=UI.Fonts.display,TextWrapped=true})
-	UI.label(purchase,T("Você tem 💰 ","You have 💰 ")..number(p.gold),{Name="SummonBalance",Position=UDim2.fromOffset(110,44),Size=UDim2.new(1,-120,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold})
-	if chest.pity then
-		-- The guarantee as a bar that fills.
-		local count=(p.pity or {})[id] or 0
-		UI.label(purchase,forced and T("★ GARANTIA ATIVA!","★ GUARANTEE ACTIVE!") or (T("Garantia ","Guarantee ")..L(Catalog.Rarities[chest.pity.minimum].name).."+ "..count.."/"..chest.pity.after),{Position=UDim2.fromOffset(110,68),Size=UDim2.new(1,-120,0,18),TextSize=12,Font=UI.Fonts.display,TextColor3=forced and C.gold or C.muted})
-		local fill=UI.bar(purchase,C.gold,UDim2.fromOffset(110,88),UDim2.new(1,-122,0,8))
-		fill.Size=UDim2.fromScale(math.clamp(count/chest.pity.after,0,1),1)
+	local function openChest()
+		if pending.OpenChest then return end
+		pending.OpenChest=true; confirmChest=nil; renderContext()
+		task.spawn(function()
+			local response=request("OpenChest",{chestId=id}); pending.OpenChest=nil
+			if response and response.ok then
+				lastChestResult=response.data and response.data.result
+				if lastChestResult then celebrate:Chest(lastChestResult,id) end
+			end
+			if contextPanel and contextPanel.kind=="chests" then renderContext() end
+		end)
 	end
-	if confirming then
-		UI.label(purchase,T("Sobra: 💰 ","Left: 💰 ")..number((p.gold or 0)-chest.cost),{Position=UDim2.fromOffset(12,100),Size=UDim2.new(1,-24,0,26),TextSize=15,Font=UI.Fonts.display})
-		local confirm=UI.button(purchase,T("CONFIRMAR!","CONFIRM!"),function()
-			if pending.OpenChest then return end
-			pending.OpenChest=true; confirmChest=nil; renderContext()
-			task.spawn(function()
-				local response=request("OpenChest",{chestId=id}); pending.OpenChest=nil
-				if response and response.ok then
-					lastChestResult=response.data and response.data.result
-					if lastChestResult then celebrate:Chest(lastChestResult,id) end
-				end
-				if contextPanel and contextPanel.kind=="chests" then renderContext() end
-			end)
-		end,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(10,132),Size=UDim2.new(0.6,-14,0,54),BackgroundColor3=C.green,TextSize=19})
-		if not eligible then UI.disabled(confirm) end
-		UI.secondary(purchase,T("VOLTAR","BACK"),function() confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.6,0,0,132),Size=UDim2.new(0.4,-10,0,54),TextSize=16})
+	if not wide then
+		-- One row: chest, name and balance, then the action on the right.
+		local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,74),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
+		UI.illustration(purchase,"crate",color,{Position=UDim2.fromOffset(6,8),Size=UDim2.fromOffset(62,56)})
+		UI.label(purchase,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(74,8),Size=UDim2.new(0.5,-78,0,24),TextSize=16,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
+		UI.label(purchase,"💰 "..number(p.gold),{Name="SummonBalance",Position=UDim2.fromOffset(74,32),Size=UDim2.new(0.5,-78,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.gold})
+		if chest.pity then
+			local count=(p.pity or {})[id] or 0
+			local fill=UI.bar(purchase,C.gold,UDim2.fromOffset(74,56),UDim2.new(0.5,-80,0,7))
+			fill.Size=UDim2.fromScale(math.clamp(count/chest.pity.after,0,1),1)
+		end
+		if confirming then
+			local confirm=UI.button(purchase,T("CONFIRMAR!","CONFIRM!"),openChest,{Name="ConfirmChest_"..id,Position=UDim2.new(0.5,0,0,8),Size=UDim2.new(0.3,-6,0,58),BackgroundColor3=C.green,TextSize=16})
+			if not eligible then UI.disabled(confirm) end
+			UI.secondary(purchase,T("VOLTAR","BACK"),function() confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.8,0,0,8),Size=UDim2.new(0.2,-8,0,58),TextSize=13})
+		else
+			local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR\n💰 ","SUMMON\n💰 ")..number(chest.cost),function() confirmChest=id; renderContext() end,
+				{Name="OpenChest_"..id,Position=UDim2.new(0.5,0,0,8),Size=UDim2.new(0.5,-8,0,58),BackgroundColor3=C.green,TextSize=17})
+			if not eligible or pending.OpenChest then UI.disabled(button) end
+		end
 	else
-		local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR • 💰 ","SUMMON • 💰 ")..number(chest.cost),function() confirmChest=id; renderContext() end,
-			{Name="OpenChest_"..id,Position=UDim2.fromOffset(10,108),Size=UDim2.new(1,-20,0,58),BackgroundColor3=C.green,TextSize=21})
-		if not eligible or pending.OpenChest then UI.disabled(button) end
+		local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirming and 196 or 176),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
+		UI.illustration(purchase,"crate",color,{Position=UDim2.fromOffset(10,8),Size=UDim2.fromOffset(92,82)})
+		UI.label(purchase,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(110,10),Size=UDim2.new(1,-120,0,32),TextSize=22,Font=UI.Fonts.display,TextWrapped=true})
+		UI.label(purchase,T("Você tem 💰 ","You have 💰 ")..number(p.gold),{Name="SummonBalance",Position=UDim2.fromOffset(110,44),Size=UDim2.new(1,-120,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold})
+		if chest.pity then
+			-- The guarantee as a bar that fills.
+			local count=(p.pity or {})[id] or 0
+			UI.label(purchase,forced and T("★ GARANTIA ATIVA!","★ GUARANTEE ACTIVE!") or (T("Garantia ","Guarantee ")..L(Catalog.Rarities[chest.pity.minimum].name).."+ "..count.."/"..chest.pity.after),{Position=UDim2.fromOffset(110,68),Size=UDim2.new(1,-120,0,18),TextSize=12,Font=UI.Fonts.display,TextColor3=forced and C.gold or C.muted})
+			local fill=UI.bar(purchase,C.gold,UDim2.fromOffset(110,88),UDim2.new(1,-122,0,8))
+			fill.Size=UDim2.fromScale(math.clamp(count/chest.pity.after,0,1),1)
+		end
+		if confirming then
+			UI.label(purchase,T("Sobra: 💰 ","Left: 💰 ")..number((p.gold or 0)-chest.cost),{Position=UDim2.fromOffset(12,100),Size=UDim2.new(1,-24,0,26),TextSize=15,Font=UI.Fonts.display})
+			local confirm=UI.button(purchase,T("CONFIRMAR!","CONFIRM!"),openChest,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(10,132),Size=UDim2.new(0.6,-14,0,54),BackgroundColor3=C.green,TextSize=19})
+			if not eligible then UI.disabled(confirm) end
+			UI.secondary(purchase,T("VOLTAR","BACK"),function() confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.6,0,0,132),Size=UDim2.new(0.4,-10,0,54),TextSize=16})
+		else
+			local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR • 💰 ","SUMMON • 💰 ")..number(chest.cost),function() confirmChest=id; renderContext() end,
+				{Name="OpenChest_"..id,Position=UDim2.fromOffset(10,108),Size=UDim2.new(1,-20,0,58),BackgroundColor3=C.green,TextSize=21})
+			if not eligible or pending.OpenChest then UI.disabled(button) end
+		end
 	end
 	if not eligible and not p.paidRandomRestricted then smallText(purchaseParent,T("Faltam 💰 ","You need 💰 ")..number(chest.cost-(p.gold or 0))..T(": jogue partidas e pegue os prêmios.",": play matches and claim gifts."),0,36) end
 
