@@ -418,43 +418,43 @@ local HERO_POSE = {
 -- one recognizable without its name: shield, hammer, web, bow, claws, cape.
 local HERO_LOOK = {
 	ironman = { colors = { chest = Color3.fromRGB(36, 110, 220), pelvis = HC.white, upperArm = Color3.fromRGB(36, 110, 220), lowerArm = HC.white, hand = Color3.fromRGB(36, 110, 220), upperLeg = Color3.fromRGB(36, 110, 220), lowerLeg = HC.white, foot = Color3.fromRGB(36, 110, 220), head = HC.white }, shiny = true },
-	hawkeye = { colors = { chest = Color3.fromRGB(75, 42, 106), pelvis = HC.ink, upperArm = HC.skin, lowerArm = HC.ink, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.leather }, face = "fierce", hair = { Color3.fromRGB(122, 88, 54), "fringe" } },
-	falcon = { colors = { skin = HC.brown, chest = Color3.fromRGB(122, 28, 38), pelvis = HC.ink, upperArm = Color3.fromRGB(122, 28, 38), lowerArm = HC.ink, hand = HC.ink, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "smile", hair = { HC.ink } },
-	bucky = { colors = { chest = Color3.fromRGB(46, 52, 62), pelvis = HC.ink, upperArm = HC.silver, lowerArm = HC.silver, hand = HC.silver, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { Color3.fromRGB(58, 42, 34), "long" } },
+	hawkeye = { colors = { chest = Color3.fromRGB(52, 128, 80), pelvis = HC.ink, upperArm = HC.skin, lowerArm = HC.ink, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.leather }, face = "fierce", hair = { Color3.fromRGB(122, 88, 54), "fringe" } },
+	falcon = { colors = { skin = HC.brown, chest = Color3.fromRGB(60, 150, 230), pelvis = HC.ink, upperArm = Color3.fromRGB(60, 150, 230), lowerArm = HC.ink, hand = HC.ink, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "smile", hair = { HC.ink } },
+	bucky = { colors = { chest = Color3.fromRGB(78, 96, 58), pelvis = HC.ink, upperArm = HC.silver, lowerArm = HC.silver, hand = HC.silver, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { Color3.fromRGB(58, 42, 34), "long" } },
 	spiderman = { body = { width = 0.9, arm = 0.9, leg = 0.92 }, colors = { chest = Color3.fromRGB(128, 70, 210), pelvis = Color3.fromRGB(250, 140, 40), upperArm = Color3.fromRGB(128, 70, 210), lowerArm = Color3.fromRGB(250, 140, 40), hand = Color3.fromRGB(250, 140, 40), upperLeg = Color3.fromRGB(128, 70, 210), lowerLeg = Color3.fromRGB(250, 140, 40), foot = Color3.fromRGB(128, 70, 210) }, face = "smile", hair = { Color3.fromRGB(92, 52, 34), "long" } },
-	widow = { body = { width = 0.88, arm = 0.88, leg = 0.9, chest = 0.94 }, colors = { chest = HC.ink, pelvis = HC.ink, upperArm = HC.ink, lowerArm = HC.ink, hand = HC.ink, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { Color3.fromRGB(160, 50, 30), "long" } },
-	antman = { colors = { head = HC.red, chest = HC.red, pelvis = HC.ink, upperArm = HC.red, lowerArm = HC.ink, hand = HC.ink, upperLeg = HC.red, lowerLeg = HC.ink, foot = HC.ink }, shiny = true },
-	wasp = { body = { scale = 0.9, width = 0.86, arm = 0.86, leg = 0.88 }, colors = { head = HC.yellow, chest = HC.yellow, pelvis = HC.ink, upperArm = HC.ink, lowerArm = HC.yellow, hand = HC.ink, upperLeg = HC.ink, lowerLeg = HC.yellow, foot = HC.ink } },
-	rocket = { body = { scale = 0.62, head = 1.36, legLength = 0.78, armLength = 0.9, width = 1.02 }, colors = { skin = Color3.fromRGB(150, 104, 72), head = Color3.fromRGB(150, 104, 72), chest = Color3.fromRGB(196, 92, 46), pelvis = HC.ink, upperArm = Color3.fromRGB(196, 92, 46), lowerArm = Color3.fromRGB(150, 104, 72), hand = Color3.fromRGB(150, 104, 72), upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "grin" },
-	daredevil = { colors = { head = Color3.fromRGB(148, 26, 34), chest = Color3.fromRGB(148, 26, 34), pelvis = HC.darkRed, upperArm = Color3.fromRGB(148, 26, 34), lowerArm = Color3.fromRGB(148, 26, 34), hand = HC.darkRed, upperLeg = Color3.fromRGB(148, 26, 34), lowerLeg = Color3.fromRGB(148, 26, 34), foot = HC.darkRed } },
-	shangchi = { colors = { chest = Color3.fromRGB(190, 52, 38), pelvis = HC.ink, upperArm = Color3.fromRGB(190, 52, 38), lowerArm = HC.skin, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { HC.ink, "fringe" } },
+	widow = { body = { width = 0.88, arm = 0.88, leg = 0.9, chest = 0.94 }, colors = { chest = Color3.fromRGB(34, 36, 80), pelvis = Color3.fromRGB(34, 36, 80), upperArm = Color3.fromRGB(34, 36, 80), lowerArm = Color3.fromRGB(34, 36, 80), hand = Color3.fromRGB(34, 36, 80), upperLeg = Color3.fromRGB(34, 36, 80), lowerLeg = Color3.fromRGB(34, 36, 80), foot = Color3.fromRGB(34, 36, 80) }, face = "fierce", hair = { Color3.fromRGB(220, 224, 236), "long" } },
+	antman = { colors = { head = Color3.fromRGB(110, 200, 70), chest = Color3.fromRGB(110, 200, 70), pelvis = HC.ink, upperArm = Color3.fromRGB(110, 200, 70), lowerArm = HC.ink, hand = HC.ink, upperLeg = Color3.fromRGB(110, 200, 70), lowerLeg = HC.ink, foot = HC.ink }, shiny = true },
+	wasp = { body = { scale = 0.9, width = 0.86, arm = 0.86, leg = 0.88 }, colors = { head = Color3.fromRGB(150, 230, 90), chest = Color3.fromRGB(150, 230, 90), pelvis = Color3.fromRGB(30, 70, 60), upperArm = Color3.fromRGB(30, 70, 60), lowerArm = Color3.fromRGB(150, 230, 90), hand = Color3.fromRGB(30, 70, 60), upperLeg = Color3.fromRGB(30, 70, 60), lowerLeg = Color3.fromRGB(150, 230, 90), foot = Color3.fromRGB(30, 70, 60) } },
+	rocket = { body = { scale = 0.62, head = 1.36, legLength = 0.78, armLength = 0.9, width = 1.02 }, colors = { skin = Color3.fromRGB(150, 104, 72), head = Color3.fromRGB(150, 104, 72), chest = Color3.fromRGB(64, 150, 96), pelvis = HC.ink, upperArm = Color3.fromRGB(64, 150, 96), lowerArm = Color3.fromRGB(150, 104, 72), hand = Color3.fromRGB(150, 104, 72), upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "grin" },
+	daredevil = { colors = { head = Color3.fromRGB(70, 82, 110), chest = Color3.fromRGB(70, 82, 110), pelvis = Color3.fromRGB(44, 52, 74), upperArm = Color3.fromRGB(70, 82, 110), lowerArm = Color3.fromRGB(70, 82, 110), hand = Color3.fromRGB(44, 52, 74), upperLeg = Color3.fromRGB(70, 82, 110), lowerLeg = Color3.fromRGB(70, 82, 110), foot = Color3.fromRGB(44, 52, 74) } },
+	shangchi = { colors = { chest = Color3.fromRGB(40, 150, 110), pelvis = HC.ink, upperArm = Color3.fromRGB(40, 150, 110), lowerArm = HC.skin, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { HC.ink, "fringe" } },
 	captain = { colors = { chest = Color3.fromRGB(22, 150, 140), pelvis = Color3.fromRGB(196, 140, 72), upperArm = Color3.fromRGB(22, 150, 140), lowerArm = HC.white, hand = Color3.fromRGB(196, 140, 72), upperLeg = Color3.fromRGB(22, 150, 140), lowerLeg = HC.white, foot = Color3.fromRGB(196, 140, 72), head = Color3.fromRGB(22, 150, 140) } },
 	panther = { colors = { head = Color3.fromRGB(58, 36, 96), chest = Color3.fromRGB(58, 36, 96), pelvis = Color3.fromRGB(44, 28, 74), upperArm = Color3.fromRGB(58, 36, 96), lowerArm = Color3.fromRGB(58, 36, 96), hand = Color3.fromRGB(44, 28, 74), upperLeg = Color3.fromRGB(58, 36, 96), lowerLeg = Color3.fromRGB(58, 36, 96), foot = Color3.fromRGB(44, 28, 74) }, shiny = true },
 	hulk = { body = { scale = 1.72, width = 1.1, depth = 1.12, chest = 1.14, head = 0.8, arm = 1.55, hand = 1.3, leg = 1.36, legLength = 0.88, torsoLength = 1.1, foot = 1.1 },
 		colors = { skin = Color3.fromRGB(152, 138, 120), head = Color3.fromRGB(152, 138, 120), chest = Color3.fromRGB(152, 138, 120), pelvis = Color3.fromRGB(86, 76, 66), upperArm = Color3.fromRGB(152, 138, 120), lowerArm = Color3.fromRGB(140, 126, 110), hand = Color3.fromRGB(152, 138, 120), upperLeg = Color3.fromRGB(86, 76, 66), lowerLeg = Color3.fromRGB(140, 126, 110), foot = Color3.fromRGB(120, 108, 96) }, face = "angry" },
-	vision = { colors = { skin = Color3.fromRGB(176, 58, 74), head = Color3.fromRGB(176, 58, 74), chest = Color3.fromRGB(45, 117, 100), pelvis = Color3.fromRGB(45, 117, 100), upperArm = Color3.fromRGB(45, 117, 100), lowerArm = Color3.fromRGB(176, 58, 74), hand = Color3.fromRGB(176, 58, 74), upperLeg = Color3.fromRGB(45, 117, 100), lowerLeg = Color3.fromRGB(176, 58, 74), foot = HC.gold }, face = "smile", shiny = true },
-	warmachine = { body = { width = 1.08, arm = 1.08, leg = 1.06 }, colors = { head = HC.steel, chest = HC.steel, pelvis = HC.ink, upperArm = HC.steel, lowerArm = HC.ink, hand = HC.steel, upperLeg = HC.steel, lowerLeg = HC.ink, foot = HC.steel }, shiny = true },
-	starlord = { colors = { chest = Color3.fromRGB(96, 40, 40), pelvis = HC.ink, upperArm = Color3.fromRGB(110, 44, 42), lowerArm = Color3.fromRGB(110, 44, 42), hand = HC.ink, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.leather, head = HC.darkRed } },
+	vision = { colors = { skin = Color3.fromRGB(220, 236, 248), head = Color3.fromRGB(220, 236, 248), chest = Color3.fromRGB(110, 150, 230), pelvis = Color3.fromRGB(110, 150, 230), upperArm = Color3.fromRGB(110, 150, 230), lowerArm = Color3.fromRGB(220, 236, 248), hand = Color3.fromRGB(220, 236, 248), upperLeg = Color3.fromRGB(110, 150, 230), lowerLeg = Color3.fromRGB(220, 236, 248), foot = HC.gold }, face = "smile", shiny = true },
+	warmachine = { body = { width = 1.08, arm = 1.08, leg = 1.06 }, colors = { head = Color3.fromRGB(176, 108, 52), chest = Color3.fromRGB(176, 108, 52), pelvis = HC.ink, upperArm = Color3.fromRGB(176, 108, 52), lowerArm = HC.ink, hand = Color3.fromRGB(176, 108, 52), upperLeg = Color3.fromRGB(176, 108, 52), lowerLeg = HC.ink, foot = Color3.fromRGB(176, 108, 52) }, shiny = true },
+	starlord = { colors = { chest = Color3.fromRGB(30, 110, 130), pelvis = HC.ink, upperArm = Color3.fromRGB(36, 126, 146), lowerArm = Color3.fromRGB(36, 126, 146), hand = HC.ink, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.leather, head = Color3.fromRGB(40, 60, 80) } },
 	groot = { body = { scale = 1.52, width = 0.74, depth = 0.8, head = 0.92, arm = 0.8, leg = 0.86, legLength = 1.18, armLength = 1.24, torsoLength = 1.08, hand = 1.1 },
 		colors = { skin = Color3.fromRGB(112, 82, 54), head = Color3.fromRGB(128, 94, 62), chest = Color3.fromRGB(112, 82, 54), pelvis = Color3.fromRGB(96, 70, 46), upperArm = Color3.fromRGB(112, 82, 54), lowerArm = Color3.fromRGB(104, 76, 50), hand = Color3.fromRGB(96, 70, 46), upperLeg = Color3.fromRGB(104, 76, 50), lowerLeg = Color3.fromRGB(96, 70, 46), foot = Color3.fromRGB(84, 60, 40) }, material = Enum.Material.Wood, face = "smile" },
 	thor = { body = { width = 1.1, arm = 1.12, leg = 1.04 }, colors = { chest = Color3.fromRGB(54, 74, 120), pelvis = HC.ink, upperArm = Color3.fromRGB(54, 74, 120), lowerArm = HC.silver, hand = HC.silver, upperLeg = HC.ink, lowerLeg = Color3.fromRGB(54, 74, 120), foot = HC.ink }, face = "fierce", hair = { Color3.fromRGB(226, 234, 246), "spiky" } },
-	wanda = { body = { width = 0.88, arm = 0.86, leg = 0.9 }, colors = { chest = Color3.fromRGB(128, 24, 49), pelvis = HC.ink, upperArm = Color3.fromRGB(128, 24, 49), lowerArm = Color3.fromRGB(128, 24, 49), hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = Color3.fromRGB(128, 24, 49) }, face = "smile", hair = { Color3.fromRGB(110, 36, 30), "long" } },
-	strange = { colors = { chest = HC.navy, pelvis = Color3.fromRGB(90, 62, 44), upperArm = HC.navy, lowerArm = HC.navy, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { HC.ink, "fringe" } },
+	wanda = { body = { width = 0.88, arm = 0.86, leg = 0.9 }, colors = { chest = Color3.fromRGB(196, 50, 140), pelvis = HC.ink, upperArm = Color3.fromRGB(196, 50, 140), lowerArm = Color3.fromRGB(196, 50, 140), hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = Color3.fromRGB(196, 50, 140) }, face = "smile", hair = { Color3.fromRGB(40, 30, 50), "long" } },
+	strange = { colors = { chest = Color3.fromRGB(88, 48, 140), pelvis = Color3.fromRGB(90, 62, 44), upperArm = Color3.fromRGB(88, 48, 140), lowerArm = Color3.fromRGB(88, 48, 140), hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { HC.ink, "fringe" } },
 	ghostrider = { colors = { head = Color3.fromRGB(200, 80, 30), chest = Color3.fromRGB(40, 36, 44), pelvis = HC.ink, upperArm = Color3.fromRGB(40, 36, 44), lowerArm = Color3.fromRGB(40, 36, 44), hand = HC.ink, upperLeg = HC.ink, lowerLeg = Color3.fromRGB(40, 36, 44), foot = HC.ink } },
 	captainmarvel = { body = { width = 0.9, arm = 0.88, leg = 0.92 }, colors = { chest = HC.white, pelvis = Color3.fromRGB(236, 176, 60), upperArm = HC.white, lowerArm = Color3.fromRGB(236, 176, 60), hand = Color3.fromRGB(236, 176, 60), upperLeg = HC.white, lowerLeg = Color3.fromRGB(236, 176, 60), foot = Color3.fromRGB(236, 176, 60) }, face = "fierce", hair = { Color3.fromRGB(255, 132, 56), "long" } },
 	silversurfer = { body = { width = 0.9, arm = 0.9 }, colors = { skin = Color3.fromRGB(172, 150, 240), head = Color3.fromRGB(172, 150, 240), chest = Color3.fromRGB(150, 128, 226), pelvis = Color3.fromRGB(122, 100, 206), upperArm = Color3.fromRGB(150, 128, 226), lowerArm = Color3.fromRGB(150, 128, 226), hand = Color3.fromRGB(172, 150, 240), upperLeg = Color3.fromRGB(122, 100, 206), lowerLeg = Color3.fromRGB(122, 100, 206), foot = Color3.fromRGB(172, 150, 240) }, face = "smile", shiny = true },
 	wolverine = { body = { scale = 0.94, width = 1.12, arm = 1.08, leg = 1.02 }, colors = { chest = Color3.fromRGB(235, 130, 40), pelvis = HC.ink, upperArm = HC.ink, lowerArm = Color3.fromRGB(235, 130, 40), hand = HC.ink, upperLeg = Color3.fromRGB(235, 130, 40), lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { Color3.fromRGB(46, 32, 24), "spiky" } },
-	cyclops = { colors = { head = HC.navy, chest = HC.navy, pelvis = HC.yellow, upperArm = HC.navy, lowerArm = HC.yellow, hand = HC.yellow, upperLeg = HC.navy, lowerLeg = HC.navy, foot = HC.yellow } },
-	storm = { body = { width = 0.9, arm = 0.88, leg = 0.92 }, colors = { skin = HC.deep, chest = HC.white, pelvis = HC.ink, upperArm = HC.white, lowerArm = HC.white, hand = HC.deep, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "smile", hair = { HC.white, "long" } },
-	jean = { body = { width = 0.88, arm = 0.86, leg = 0.9 }, colors = { chest = Color3.fromRGB(61, 139, 97), pelvis = HC.gold, upperArm = Color3.fromRGB(61, 139, 97), lowerArm = Color3.fromRGB(61, 139, 97), hand = HC.gold, upperLeg = Color3.fromRGB(61, 139, 97), lowerLeg = Color3.fromRGB(61, 139, 97), foot = HC.gold }, face = "smile", hair = { Color3.fromRGB(190, 72, 40), "long" } },
-	iceman = { colors = { skin = Color3.fromRGB(172, 238, 255), head = Color3.fromRGB(172, 238, 255), chest = Color3.fromRGB(139, 225, 255), pelvis = Color3.fromRGB(120, 205, 240), upperArm = Color3.fromRGB(139, 225, 255), lowerArm = Color3.fromRGB(139, 225, 255), hand = Color3.fromRGB(172, 238, 255), upperLeg = Color3.fromRGB(120, 205, 240), lowerLeg = Color3.fromRGB(139, 225, 255), foot = Color3.fromRGB(172, 238, 255) }, material = Enum.Material.Ice, face = "smile" },
-	gambit = { colors = { chest = Color3.fromRGB(190, 88, 160), pelvis = Color3.fromRGB(44, 56, 104), upperArm = Color3.fromRGB(138, 80, 62), lowerArm = Color3.fromRGB(138, 80, 62), hand = HC.ink, upperLeg = Color3.fromRGB(44, 56, 104), lowerLeg = Color3.fromRGB(44, 56, 104), foot = Color3.fromRGB(190, 88, 160) }, face = "fierce", hair = { Color3.fromRGB(94, 56, 38), "long" } },
-	nightcrawler = { colors = { skin = Color3.fromRGB(58, 62, 142), head = Color3.fromRGB(58, 62, 142), chest = Color3.fromRGB(44, 40, 58), pelvis = Color3.fromRGB(156, 53, 65), upperArm = Color3.fromRGB(44, 40, 58), lowerArm = Color3.fromRGB(44, 40, 58), hand = Color3.fromRGB(58, 62, 142), upperLeg = Color3.fromRGB(44, 40, 58), lowerLeg = Color3.fromRGB(44, 40, 58), foot = Color3.fromRGB(58, 62, 142) }, face = "lens", faceOptions = { lens = Color3.fromRGB(255, 222, 90), glow = true, width = 0.3, height = 0.24 }, hair = { Color3.fromRGB(30, 34, 90), "spiky" } },
-	beast = { body = { scale = 1.12, width = 1.24, chest = 1.1, arm = 1.3, hand = 1.3, leg = 1.12, legLength = 0.88, head = 0.92 }, colors = { skin = Color3.fromRGB(73, 123, 194), head = Color3.fromRGB(83, 140, 205), chest = Color3.fromRGB(73, 123, 194), pelvis = HC.navy, upperArm = Color3.fromRGB(73, 123, 194), lowerArm = Color3.fromRGB(73, 123, 194), hand = Color3.fromRGB(83, 140, 205), upperLeg = HC.navy, lowerLeg = Color3.fromRGB(73, 123, 194), foot = Color3.fromRGB(83, 140, 205) }, face = "grin", hair = { Color3.fromRGB(36, 52, 110), "spiky" } },
-	psylocke = { body = { width = 0.88, arm = 0.86, leg = 0.9 }, colors = { chest = Color3.fromRGB(96, 63, 170), pelvis = Color3.fromRGB(96, 63, 170), upperArm = HC.skin, lowerArm = Color3.fromRGB(96, 63, 170), hand = Color3.fromRGB(211, 95, 176), upperLeg = HC.skin, lowerLeg = Color3.fromRGB(96, 63, 170), foot = Color3.fromRGB(96, 63, 170) }, face = "fierce", hair = { Color3.fromRGB(73, 42, 119), "long" } },
+	cyclops = { colors = { head = Color3.fromRGB(232, 236, 242), chest = Color3.fromRGB(232, 236, 242), pelvis = Color3.fromRGB(214, 60, 52), upperArm = Color3.fromRGB(232, 236, 242), lowerArm = Color3.fromRGB(214, 60, 52), hand = Color3.fromRGB(214, 60, 52), upperLeg = Color3.fromRGB(232, 236, 242), lowerLeg = Color3.fromRGB(232, 236, 242), foot = Color3.fromRGB(214, 60, 52) } },
+	storm = { body = { width = 0.9, arm = 0.88, leg = 0.92 }, colors = { skin = HC.deep, chest = Color3.fromRGB(40, 170, 170), pelvis = Color3.fromRGB(24, 60, 70), upperArm = Color3.fromRGB(40, 170, 170), lowerArm = Color3.fromRGB(40, 170, 170), hand = HC.deep, upperLeg = Color3.fromRGB(24, 60, 70), lowerLeg = Color3.fromRGB(24, 60, 70), foot = Color3.fromRGB(24, 60, 70) }, face = "smile", hair = { Color3.fromRGB(40, 170, 170), "long" } },
+	jean = { body = { width = 0.88, arm = 0.86, leg = 0.9 }, colors = { chest = Color3.fromRGB(150, 80, 220), pelvis = Color3.fromRGB(255, 150, 210), upperArm = Color3.fromRGB(150, 80, 220), lowerArm = Color3.fromRGB(150, 80, 220), hand = Color3.fromRGB(255, 150, 210), upperLeg = Color3.fromRGB(150, 80, 220), lowerLeg = Color3.fromRGB(150, 80, 220), foot = Color3.fromRGB(255, 150, 210) }, face = "smile", hair = { Color3.fromRGB(250, 230, 240), "long" } },
+	iceman = { colors = { skin = Color3.fromRGB(172, 238, 255), head = Color3.fromRGB(172, 238, 255), chest = Color3.fromRGB(236, 246, 255), pelvis = Color3.fromRGB(110, 170, 230), upperArm = Color3.fromRGB(236, 246, 255), lowerArm = Color3.fromRGB(236, 246, 255), hand = Color3.fromRGB(172, 238, 255), upperLeg = Color3.fromRGB(110, 170, 230), lowerLeg = Color3.fromRGB(236, 246, 255), foot = Color3.fromRGB(172, 238, 255) }, material = Enum.Material.Ice, face = "smile" },
+	gambit = { colors = { chest = Color3.fromRGB(200, 40, 60), pelvis = Color3.fromRGB(28, 28, 36), upperArm = Color3.fromRGB(60, 60, 72), lowerArm = Color3.fromRGB(60, 60, 72), hand = HC.ink, upperLeg = Color3.fromRGB(28, 28, 36), lowerLeg = Color3.fromRGB(28, 28, 36), foot = Color3.fromRGB(200, 40, 60) }, face = "fierce", hair = { Color3.fromRGB(94, 56, 38), "long" } },
+	nightcrawler = { colors = { skin = Color3.fromRGB(236, 200, 72), head = Color3.fromRGB(236, 200, 72), chest = Color3.fromRGB(32, 32, 40), pelvis = Color3.fromRGB(255, 150, 40), upperArm = Color3.fromRGB(32, 32, 40), lowerArm = Color3.fromRGB(32, 32, 40), hand = Color3.fromRGB(236, 200, 72), upperLeg = Color3.fromRGB(32, 32, 40), lowerLeg = Color3.fromRGB(32, 32, 40), foot = Color3.fromRGB(236, 200, 72) }, face = "lens", faceOptions = { lens = Color3.fromRGB(255, 222, 90), glow = true, width = 0.3, height = 0.24 }, hair = { Color3.fromRGB(30, 34, 90), "spiky" } },
+	beast = { body = { scale = 1.12, width = 1.24, chest = 1.1, arm = 1.3, hand = 1.3, leg = 1.12, legLength = 0.88, head = 0.92 }, colors = { skin = Color3.fromRGB(214, 160, 70), head = Color3.fromRGB(232, 180, 90), chest = Color3.fromRGB(214, 160, 70), pelvis = Color3.fromRGB(110, 60, 30), upperArm = Color3.fromRGB(214, 160, 70), lowerArm = Color3.fromRGB(214, 160, 70), hand = Color3.fromRGB(232, 180, 90), upperLeg = Color3.fromRGB(110, 60, 30), lowerLeg = Color3.fromRGB(214, 160, 70), foot = Color3.fromRGB(232, 180, 90) }, face = "grin", hair = { Color3.fromRGB(120, 70, 30), "spiky" } },
+	psylocke = { body = { width = 0.88, arm = 0.86, leg = 0.9 }, colors = { chest = Color3.fromRGB(170, 30, 50), pelvis = Color3.fromRGB(170, 30, 50), upperArm = HC.skin, lowerArm = Color3.fromRGB(170, 30, 50), hand = Color3.fromRGB(240, 220, 200), upperLeg = HC.skin, lowerLeg = Color3.fromRGB(170, 30, 50), foot = Color3.fromRGB(170, 30, 50) }, face = "fierce", hair = { Color3.fromRGB(110, 20, 34), "long" } },
 	deadpool = { colors = { head = Color3.fromRGB(40, 200, 190), chest = Color3.fromRGB(240, 90, 170), pelvis = Color3.fromRGB(40, 200, 190), upperArm = Color3.fromRGB(240, 90, 170), lowerArm = Color3.fromRGB(40, 200, 190), hand = HC.white, upperLeg = Color3.fromRGB(40, 200, 190), lowerLeg = Color3.fromRGB(240, 90, 170), foot = HC.white } },
-	moonknight = { colors = { head = HC.white, chest = HC.white, pelvis = Color3.fromRGB(195, 198, 202), upperArm = HC.white, lowerArm = HC.white, hand = Color3.fromRGB(195, 198, 202), upperLeg = HC.white, lowerLeg = HC.white, foot = Color3.fromRGB(195, 198, 202) } },
-	nova = { colors = { head = HC.gold, chest = HC.navy, pelvis = HC.navy, upperArm = HC.navy, lowerArm = HC.gold, hand = HC.gold, upperLeg = HC.navy, lowerLeg = HC.gold, foot = HC.gold }, shiny = true },
+	moonknight = { colors = { head = Color3.fromRGB(36, 38, 52), chest = Color3.fromRGB(36, 38, 52), pelvis = Color3.fromRGB(170, 176, 196), upperArm = Color3.fromRGB(36, 38, 52), lowerArm = Color3.fromRGB(36, 38, 52), hand = Color3.fromRGB(170, 176, 196), upperLeg = Color3.fromRGB(36, 38, 52), lowerLeg = Color3.fromRGB(36, 38, 52), foot = Color3.fromRGB(170, 176, 196) } },
+	nova = { colors = { head = Color3.fromRGB(236, 244, 250), chest = Color3.fromRGB(40, 150, 200), pelvis = Color3.fromRGB(40, 150, 200), upperArm = Color3.fromRGB(40, 150, 200), lowerArm = Color3.fromRGB(236, 244, 250), hand = Color3.fromRGB(236, 244, 250), upperLeg = Color3.fromRGB(40, 150, 200), lowerLeg = Color3.fromRGB(236, 244, 250), foot = Color3.fromRGB(236, 244, 250) }, shiny = true },
 }
 Figure.HeroLook = HERO_LOOK
 
@@ -560,7 +560,7 @@ HERO_EXTRAS.hawkeye = function(f)
 	local hand = f.sizes.hand
 	-- The bow in the left hand, an arrow nocked; a quiver on the back.
 	local limbs = { Vector3.new(0, 1.4, -0.3), Vector3.new(0, 0.7, -0.62), Vector3.new(0, 0, -0.7), Vector3.new(0, -0.7, -0.62), Vector3.new(0, -1.4, -0.3) }
-	for i = 1, #limbs - 1 do f.rod("LeftHand", "Bow", limbs[i] * s, limbs[i + 1] * s, 0.14 * s, Color3.fromRGB(96, 52, 120), METAL) end
+	for i = 1, #limbs - 1 do f.rod("LeftHand", "Bow", limbs[i] * s, limbs[i + 1] * s, 0.14 * s, Color3.fromRGB(70, 150, 96), METAL) end
 	f.rod("LeftHand", "Bowstring", limbs[1] * s, limbs[#limbs] * s, 0.03 * s, HC.silver, METAL)
 	f.add("UpperTorso", "Quiver", Vector3.new(0.5, 1.7, 0.5) * s, CFrame.new(0.4 * s, 0.2 * s, f.sizes.chest.Z / 2 + 0.25 * s) * CFrame.Angles(0, 0, -0.35), HC.leather, FABRIC)
 	for i = 1, 3 do f.add("UpperTorso", "QuiverArrow", Vector3.new(0.06, 0.6, 0.06) * s, CFrame.new((0.62 + i * 0.1) * s, 1.1 * s, f.sizes.chest.Z / 2 + 0.25 * s) * CFrame.Angles(0, 0, -0.35), HC.silver, METAL) end
@@ -584,18 +584,18 @@ HERO_EXTRAS.thor = function(f)
 end
 HERO_EXTRAS.widow = function(f)
 	local s = f.scale
-	belt(f, HC.steel, Color3.fromRGB(200, 40, 40))
+	belt(f, HC.steel, Color3.fromRGB(150, 110, 255))
 	for _, side in ipairs({ -1, 1 }) do
 		local hand = side < 0 and "LeftHand" or "RightHand"
 		f.add(hand, "Pistol", Vector3.new(0.16, 0.7, 0.34) * s, CFrame.new(0, -0.35 * s, -0.08 * s), HC.ink, METAL)
 		f.add(side < 0 and "LeftLowerArm" or "RightLowerArm", "Bracelet", f.sizes.lowerArm * Vector3.new(1.08, 0.2, 1.08), CFrame.new(0, -f.sizes.lowerArm.Y * 0.36, 0), HC.gold, METAL)
 	end
-	f.add("UpperTorso", "WidowInsignia", Vector3.new(0.3, 0.3, 0.05) * s, CFrame.new(0, -0.3 * s, -f.sizes.chest.Z / 2 - 0.03 * s) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(210, 40, 40), NEON)
+	f.add("UpperTorso", "WidowInsignia", Vector3.new(0.3, 0.3, 0.05) * s, CFrame.new(0, -0.3 * s, -f.sizes.chest.Z / 2 - 0.03 * s) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(150, 110, 255), NEON)
 	muzzle(f, "RightHand", Vector3.new(0, -0.75 * s, -0.08 * s))
 end
 HERO_EXTRAS.falcon = function(f)
 	local s, c = f.scale, f.sizes.chest
-	f.add("Head", "Goggles", Vector3.new(f.parts.Head.Size.X * 0.84, 0.24 * s, 0.1 * s), f.face(0, 0.14, 0.03), Color3.fromRGB(210, 40, 44), NEON)
+	f.add("Head", "Goggles", Vector3.new(f.parts.Head.Size.X * 0.84, 0.24 * s, 0.1 * s), f.face(0, 0.14, 0.03), Color3.fromRGB(255, 200, 60), NEON)
 	f.add("UpperTorso", "Jetpack", Vector3.new(c.X * 0.66, c.Y * 0.8, 0.46 * s), CFrame.new(0, 0.05 * s, c.Z / 2 + 0.22 * s), HC.steel, METAL)
 	for _, side in ipairs({ -1, 1 }) do
 		f.add("UpperTorso", "Wing", Vector3.new(2.6 * s, 0.1 * s, 0.9 * s), CFrame.new(side * (c.X * 0.33 + 1.1 * s), 0.3 * s, c.Z / 2 + 0.3 * s) * CFrame.Angles(0, side * 0.4, side * 0.5), HC.silver, METAL, "wedge")
@@ -605,9 +605,9 @@ end
 HERO_EXTRAS.bucky = function(f)
 	local s = f.scale
 	-- Only the left arm is metal.
-	f.parts.RightUpperArm.Color, f.parts.RightLowerArm.Color, f.parts.RightHand.Color = Color3.fromRGB(46, 52, 62), Color3.fromRGB(46, 52, 62), HC.skin
+	f.parts.RightUpperArm.Color, f.parts.RightLowerArm.Color, f.parts.RightHand.Color = Color3.fromRGB(78, 96, 58), Color3.fromRGB(78, 96, 58), HC.skin
 	for i = 1, 3 do f.add("LeftUpperArm", "ArmPlate", f.sizes.upperArm * Vector3.new(1.04, 0.06, 1.04), CFrame.new(0, f.sizes.upperArm.Y * (0.3 - i * 0.18), 0), HC.steel, METAL) end
-	f.add("LeftUpperArm", "RedStar", Vector3.new(0.06, 0.26, 0.26) * s, CFrame.new(-f.sizes.upperArm.X / 2 - 0.02 * s, 0.1 * s, 0), Color3.fromRGB(200, 40, 40), METAL)
+	f.add("LeftUpperArm", "RedStar", Vector3.new(0.06, 0.26, 0.26) * s, CFrame.new(-f.sizes.upperArm.X / 2 - 0.02 * s, 0.1 * s, 0), Color3.fromRGB(240, 200, 70), METAL)
 	f.add("RightHand", "Rifle", Vector3.new(0.22, 1.6, 0.34) * s, CFrame.new(0, -0.7 * s, -0.12 * s), HC.ink, METAL)
 	f.add("RightHand", "RifleBarrel", Vector3.new(0.1, 0.8, 0.1) * s, CFrame.new(0, -1.8 * s, -0.12 * s), HC.steel, METAL)
 	belt(f, HC.leather, HC.silver)
@@ -617,7 +617,7 @@ HERO_EXTRAS.antman = function(f)
 	local s, h = f.scale, f.parts.Head.Size
 	f.add("Head", "HelmetJaw", Vector3.new(h.X * 0.8, h.Y * 0.4, 0.12 * s), f.face(0, -0.5, -0.03), HC.ink, METAL)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "RedLens", Vector3.new(0.4, 0.3, 0.06) * s, f.face(side * 0.26, 0.14, 0.02), Color3.fromRGB(230, 40, 40), NEON, "ball")
+		f.add("Head", "RedLens", Vector3.new(0.4, 0.3, 0.06) * s, f.face(side * 0.26, 0.14, 0.02), Color3.fromRGB(120, 230, 255), NEON, "ball")
 		f.rod("Head", "Antenna", Vector3.new(side * h.X * 0.4, h.Y * 0.3, 0), Vector3.new(side * h.X * 0.62, h.Y * 0.95, 0.1 * s), 0.08 * s, HC.silver, METAL)
 		f.disc("Head", "Respirator", 0.26 * s, 0.1 * s, f.face(side * 0.3, -0.42, 0.04), HC.silver, METAL)
 	end
@@ -650,12 +650,12 @@ HERO_EXTRAS.rocket = function(f)
 	muzzle(f, "RightHand", Vector3.new(-0.2 * s, -2.2 * s, -0.2 * s))
 end
 HERO_EXTRAS.daredevil = function(f)
+	f.add("Head", "SonarVisor", Vector3.new(f.parts.Head.Size.X * 0.8, 0.2 * f.scale, 0.08 * f.scale), f.face(0, 0.12, 0.03), Color3.fromRGB(120, 230, 255), NEON)
 	local s, h = f.scale, f.parts.Head.Size
 	f.add("Head", "Chin", Vector3.new(h.X * 0.6, h.Y * 0.36, 0.1 * s), f.face(0, -0.52, -0.03), HC.skin, FABRIC)
 	f.add("Head", "Mouth", Vector3.new(0.24, 0.06, 0.05) * s, f.face(0, -0.52, 0.04), HC.ink, FABRIC)
-	Figure.Face(f, "lens", { lens = Color3.fromRGB(96, 18, 26), rim = Color3.fromRGB(96, 18, 26), width = 0.34, height = 0.22, slant = 0.3 })
-	for _, side in ipairs({ -1, 1 }) do f.add("Head", "Horn", Vector3.new(0.14, 0.34, 0.14) * s, CFrame.new(side * h.X * 0.3, h.Y * 0.55, -h.Z * 0.1) * CFrame.Angles(0, 0, -side * 0.3), Color3.fromRGB(148, 26, 34), FABRIC, "wedge") end
-	f.rod("RightHand", "Billy", Vector3.new(0, 0.2 * s, 0), Vector3.new(0, -1.3 * s, -0.1 * s), 0.14 * s, Color3.fromRGB(120, 20, 28), METAL)
+	Figure.Face(f, "lens", { lens = Color3.fromRGB(40, 48, 70), rim = Color3.fromRGB(40, 48, 70), width = 0.34, height = 0.22, slant = 0.3 })
+	f.rod("RightHand", "Billy", Vector3.new(0, 0.2 * s, 0), Vector3.new(0, -1.3 * s, -0.1 * s), 0.14 * s, Color3.fromRGB(56, 66, 92), METAL)
 	muzzle(f, "RightHand", Vector3.new(0, -1.3 * s, -0.1 * s))
 end
 HERO_EXTRAS.shangchi = function(f)
@@ -682,8 +682,8 @@ HERO_EXTRAS.panther = function(f)
 end
 HERO_EXTRAS.vision = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	f.add("Head", "MindGem", Vector3.new(0.24, 0.3, 0.08) * s, f.face(0, 0.5, 0.03) * CFrame.Angles(0, 0, math.pi / 4), HC.yellow, NEON)
-	cape(f, HC.gold, 3.4)
+	f.add("Head", "MindGem", Vector3.new(0.24, 0.3, 0.08) * s, f.face(0, 0.5, 0.03) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(120, 240, 255), NEON)
+	cape(f, Color3.fromRGB(150, 220, 255), 3.4)
 	f.add("UpperTorso", "ChestDiamond", Vector3.new(0.6, 0.6, 0.06) * s, CFrame.new(0, 0.1 * s, -c.Z / 2 - 0.03 * s) * CFrame.Angles(0, 0, math.pi / 4), HC.gold, METAL)
 	muzzle(f, "Head", Vector3.new(0, h.Y * 0.25, -h.Z / 2 - 0.1 * s))
 end
@@ -698,14 +698,14 @@ HERO_EXTRAS.warmachine = function(f)
 end
 HERO_EXTRAS.starlord = function(f)
 	local s, h = f.scale, f.parts.Head.Size
-	Figure.Face(f, "lens", { lens = Color3.fromRGB(230, 60, 50), rim = HC.steel, glow = true, width = 0.42, height = 0.3, slant = 0.2 })
+	Figure.Face(f, "lens", { lens = Color3.fromRGB(120, 230, 255), rim = HC.steel, glow = true, width = 0.42, height = 0.3, slant = 0.2 })
 	for _, side in ipairs({ -1, 1 }) do
 		f.add("Head", "EarPiece", Vector3.new(0.12, 0.44, 0.44) * s, CFrame.new(side * h.X * 0.52, 0, 0), HC.steel, METAL)
 		local hand = side < 0 and "LeftHand" or "RightHand"
 		f.add(hand, "Blaster", Vector3.new(0.2, 0.72, 0.34) * s, CFrame.new(0, -0.36 * s, -0.08 * s), HC.steel, METAL)
-		f.add(hand, "BlasterGlow", Vector3.new(0.12, 0.12, 0.12) * s, CFrame.new(0, -0.74 * s, -0.08 * s), Color3.fromRGB(255, 120, 60), NEON)
+		f.add(hand, "BlasterGlow", Vector3.new(0.12, 0.12, 0.12) * s, CFrame.new(0, -0.74 * s, -0.08 * s), Color3.fromRGB(160, 240, 255), NEON)
 	end
-	f.add("UpperTorso", "Coat", Vector3.new(f.sizes.chest.X * 1.06, f.sizes.chest.Y * 1.5, f.sizes.chest.Z * 1.08), CFrame.new(0, -f.sizes.chest.Y * 0.28, 0.02 * s), Color3.fromRGB(110, 44, 42), FABRIC)
+	f.add("UpperTorso", "Coat", Vector3.new(f.sizes.chest.X * 1.06, f.sizes.chest.Y * 1.5, f.sizes.chest.Z * 1.08), CFrame.new(0, -f.sizes.chest.Y * 0.28, 0.02 * s), Color3.fromRGB(36, 126, 146), FABRIC)
 	muzzle(f, "RightHand", Vector3.new(0, -0.8 * s, -0.08 * s))
 end
 HERO_EXTRAS.groot = function(f)
@@ -724,21 +724,20 @@ end
 HERO_EXTRAS.wanda = function(f)
 	local s, h = f.scale, f.parts.Head.Size
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "Crown", Vector3.new(0.1, 0.5, 0.08) * s, f.face(side * 0.2, 0.62, 0.03) * CFrame.Angles(0, 0, side * 0.45), Color3.fromRGB(196, 30, 60), METAL)
-		local glow = f.add(side < 0 and "LeftHand" or "RightHand", "ChaosSpell", Vector3.new(0.62, 0.62, 0.62) * s, CFrame.new(0, -0.5 * s, -0.1 * s), Color3.fromRGB(248, 64, 104), NEON, "ball")
+		f.add("Head", "Crown", Vector3.new(0.1, 0.5, 0.08) * s, f.face(side * 0.2, 0.62, 0.03) * CFrame.Angles(0, 0, side * 0.45), Color3.fromRGB(220, 170, 70), METAL)
+		local glow = f.add(side < 0 and "LeftHand" or "RightHand", "ChaosSpell", Vector3.new(0.62, 0.62, 0.62) * s, CFrame.new(0, -0.5 * s, -0.1 * s), Color3.fromRGB(240, 200, 90), NEON, "ball")
 		glow.Transparency = 0.2
 	end
-	cape(f, Color3.fromRGB(150, 28, 56), 3.0)
+	cape(f, Color3.fromRGB(120, 40, 160), 3.0)
 	muzzle(f, "RightHand", Vector3.new(0, -0.5 * s, -0.1 * s))
 end
 HERO_EXTRAS.strange = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	f.add("Head", "Goatee", Vector3.new(0.3, 0.2, 0.06) * s, f.face(0, -0.58, 0.02), HC.ink, FABRIC)
 	for _, side in ipairs({ -1, 1 }) do f.add("Head", "Temple", Vector3.new(0.08, 0.3, 0.3) * s, CFrame.new(side * h.X * 0.5, h.Y * 0.1, 0), HC.white, FABRIC) end
-	cape(f, Color3.fromRGB(176, 34, 46), 3.4, Color3.fromRGB(176, 34, 46))
+	cape(f, Color3.fromRGB(30, 150, 140), 3.4, Color3.fromRGB(30, 150, 140))
 	belt(f, HC.leather, HC.gold)
 	f.disc("UpperTorso", "Amulet", 0.44 * s, 0.08 * s, CFrame.new(0, c.Y * 0.3, -c.Z / 2 - 0.05 * s), HC.gold, METAL)
-	f.disc("UpperTorso", "AmuletEye", 0.18 * s, 0.05 * s, CFrame.new(0, c.Y * 0.3, -c.Z / 2 - 0.1 * s), Color3.fromRGB(91, 230, 161), NEON)
+	f.disc("UpperTorso", "AmuletEye", 0.18 * s, 0.05 * s, CFrame.new(0, c.Y * 0.3, -c.Z / 2 - 0.1 * s), Color3.fromRGB(255, 200, 90), NEON)
 	-- A glowing sigil in front of the left hand.
 	for i = 0, 7 do
 		local angle = i * math.pi / 4
@@ -809,21 +808,21 @@ end
 HERO_EXTRAS.cyclops = function(f)
 	local s, h = f.scale, f.parts.Head.Size
 	f.add("Head", "Chin", Vector3.new(h.X * 0.6, h.Y * 0.36, 0.1 * s), f.face(0, -0.52, -0.03), HC.skin, FABRIC)
-	f.add("Head", "Visor", Vector3.new(h.X * 0.9, 0.24 * s, 0.14 * s), f.face(0, 0.14, 0.04), Color3.fromRGB(240, 40, 50), NEON)
-	belt(f, HC.yellow, HC.navy)
+	f.add("Head", "Visor", Vector3.new(h.X * 0.9, 0.24 * s, 0.14 * s), f.face(0, 0.14, 0.04), Color3.fromRGB(255, 190, 60), NEON)
+	belt(f, Color3.fromRGB(214, 60, 52), Color3.fromRGB(232, 236, 242))
 	muzzle(f, "Head", Vector3.new(0, h.Y * 0.07, -h.Z / 2 - 0.2 * s))
 end
 HERO_EXTRAS.storm = function(f)
-	cape(f, HC.white, 3.4)
+	cape(f, Color3.fromRGB(30, 120, 140), 3.4)
 	f.add("Head", "Tiara", Vector3.new(0.5, 0.14, 0.06) * f.scale, f.face(0, 0.46, 0.03), HC.gold, METAL)
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * f.scale, 0))
 end
 HERO_EXTRAS.jean = function(f)
 	local s, c = f.scale, f.sizes.chest
-	f.add("UpperTorso", "PhoenixEmblem", Vector3.new(0.5, 0.36, 0.06) * s, CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.03 * s), HC.gold, METAL, "wedge")
-	belt(f, HC.gold)
+	f.add("UpperTorso", "PhoenixEmblem", Vector3.new(0.5, 0.36, 0.06) * s, CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.03 * s), Color3.fromRGB(255, 150, 210), METAL, "wedge")
+	belt(f, Color3.fromRGB(255, 150, 210))
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftHand" or "RightHand", "Flame", Vector3.new(0.5, 0.7, 0.5) * s, CFrame.new(0, -0.45 * s, 0), Color3.fromRGB(255, 150, 60), NEON, "ball").Transparency = 0.3
+		f.add(side < 0 and "LeftHand" or "RightHand", "Flame", Vector3.new(0.5, 0.7, 0.5) * s, CFrame.new(0, -0.45 * s, 0), Color3.fromRGB(200, 140, 255), NEON, "ball").Transparency = 0.3
 	end
 	muzzle(f, "RightHand", Vector3.new(0, -0.5 * s, 0))
 end
@@ -835,28 +834,28 @@ HERO_EXTRAS.iceman = function(f)
 end
 HERO_EXTRAS.gambit = function(f)
 	local s, c = f.scale, f.sizes.chest
-	f.add("Head", "Cowl", Vector3.new(f.parts.Head.Size.X * 1.08, f.parts.Head.Size.Y * 0.56, f.parts.Head.Size.Z * 1.08), CFrame.new(0, f.parts.Head.Size.Y * 0.32, 0.03 * s), Color3.fromRGB(190, 88, 160), FABRIC, "ball")
-	f.add("UpperTorso", "TrenchCoat", Vector3.new(c.X * 1.08, c.Y * 1.9, c.Z * 1.12), CFrame.new(0, -c.Y * 0.44, 0.02 * s), Color3.fromRGB(122, 74, 52), FABRIC)
-	f.add("RightHand", "ChargedCard", Vector3.new(0.36, 0.5, 0.04) * s, CFrame.new(0, -0.4 * s, -0.15 * s), Color3.fromRGB(240, 90, 200), NEON)
+	f.add("Head", "Cowl", Vector3.new(f.parts.Head.Size.X * 1.08, f.parts.Head.Size.Y * 0.56, f.parts.Head.Size.Z * 1.08), CFrame.new(0, f.parts.Head.Size.Y * 0.32, 0.03 * s), Color3.fromRGB(200, 40, 60), FABRIC, "ball")
+	f.add("UpperTorso", "TrenchCoat", Vector3.new(c.X * 1.08, c.Y * 1.9, c.Z * 1.12), CFrame.new(0, -c.Y * 0.44, 0.02 * s), Color3.fromRGB(36, 36, 46), FABRIC)
+	f.add("RightHand", "ChargedCard", Vector3.new(0.36, 0.5, 0.04) * s, CFrame.new(0, -0.4 * s, -0.15 * s), Color3.fromRGB(255, 210, 80), NEON)
 	muzzle(f, "RightHand", Vector3.new(0, -0.5 * s, -0.15 * s))
 end
 HERO_EXTRAS.nightcrawler = function(f)
 	local s = f.scale
-	f.add("LowerTorso", "Tail", Vector3.new(0.14, 0.14, 2.2) * s, CFrame.new(0, -0.1 * s, f.sizes.pelvis.Z / 2 + 1 * s) * CFrame.Angles(-0.8, 0, 0), Color3.fromRGB(58, 62, 142), FABRIC)
-	f.add("LowerTorso", "TailTip", Vector3.new(0.3, 0.3, 0.1) * s, CFrame.new(0, 0.7 * s, f.sizes.pelvis.Z / 2 + 1.75 * s) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(58, 62, 142), FABRIC)
+	f.add("LowerTorso", "Tail", Vector3.new(0.14, 0.14, 2.2) * s, CFrame.new(0, -0.1 * s, f.sizes.pelvis.Z / 2 + 1 * s) * CFrame.Angles(-0.8, 0, 0), Color3.fromRGB(255, 214, 90), FABRIC)
+	f.add("LowerTorso", "TailTip", Vector3.new(0.3, 0.3, 0.1) * s, CFrame.new(0, 0.7 * s, f.sizes.pelvis.Z / 2 + 1.75 * s) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(255, 214, 90), FABRIC)
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.beast = function(f)
 	local s = f.scale
-	for _, side in ipairs({ -1, 1 }) do f.add(side < 0 and "LeftHand" or "RightHand", "FurryFist", f.sizes.hand * 1.12, CFrame.new(), Color3.fromRGB(83, 140, 205), FABRIC, "ball") end
+	for _, side in ipairs({ -1, 1 }) do f.add(side < 0 and "LeftHand" or "RightHand", "FurryFist", f.sizes.hand * 1.12, CFrame.new(), Color3.fromRGB(232, 180, 90), FABRIC, "ball") end
 	f.add("Head", "Fang", Vector3.new(0.4, 0.1, 0.05) * s, f.face(0, -0.52, 0.04), HC.white, FABRIC)
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.psylocke = function(f)
 	local s = f.scale
-	f.add("Head", "MaskBand", Vector3.new(f.parts.Head.Size.X * 0.9, 0.2 * s, 0.06 * s), f.face(0, 0.14, 0.03), Color3.fromRGB(211, 95, 176), FABRIC)
-	f.add("RightHand", "Blade", Vector3.new(0.12, 1.4, 0.3) * s, CFrame.new(0, -0.8 * s, -0.1 * s), Color3.fromRGB(240, 110, 220), NEON)
-	f.add("UpperTorso", "Sash", Vector3.new(f.sizes.chest.X * 1.03, 0.22 * s, f.sizes.chest.Z * 1.04), CFrame.new(0, -f.sizes.chest.Y * 0.38, 0), Color3.fromRGB(211, 95, 176), FABRIC)
+	f.add("Head", "MaskBand", Vector3.new(f.parts.Head.Size.X * 0.9, 0.2 * s, 0.06 * s), f.face(0, 0.14, 0.03), Color3.fromRGB(40, 40, 48), FABRIC)
+	f.add("RightHand", "Blade", Vector3.new(0.12, 1.4, 0.3) * s, CFrame.new(0, -0.8 * s, -0.1 * s), Color3.fromRGB(255, 120, 90), NEON)
+	f.add("UpperTorso", "Sash", Vector3.new(f.sizes.chest.X * 1.03, 0.22 * s, f.sizes.chest.Z * 1.04), CFrame.new(0, -f.sizes.chest.Y * 0.38, 0), Color3.fromRGB(40, 40, 48), FABRIC)
 	muzzle(f, "RightHand", Vector3.new(0, -1.4 * s, -0.1 * s))
 end
 HERO_EXTRAS.deadpool = function(f)
@@ -878,18 +877,18 @@ HERO_EXTRAS.deadpool = function(f)
 end
 HERO_EXTRAS.moonknight = function(f)
 	local s = f.scale
-	Figure.Face(f, "lens", { width = 0.3, height = 0.3, slant = 0.1, lens = HC.white, rim = HC.ink })
+	Figure.Face(f, "lens", { width = 0.3, height = 0.3, slant = 0.1, lens = Color3.fromRGB(255, 200, 80), rim = HC.ink })
 	f.add("Head", "Hood", f.parts.Head.Size * Vector3.new(1.12, 1.1, 1.0), CFrame.new(0, 0.04 * s, f.parts.Head.Size.Z * 0.24), HC.white, FABRIC, "ball")
-	cape(f, HC.white, 3.6)
-	f.add("UpperTorso", "Crescent", Vector3.new(0.5, 0.5, 0.06) * s, CFrame.new(0, f.sizes.chest.Y * 0.16, -f.sizes.chest.Z / 2 - 0.03 * s), Color3.fromRGB(195, 198, 202), METAL, "ball")
+	cape(f, Color3.fromRGB(28, 30, 42), 3.6)
+	f.add("UpperTorso", "Crescent", Vector3.new(0.5, 0.5, 0.06) * s, CFrame.new(0, f.sizes.chest.Y * 0.16, -f.sizes.chest.Z / 2 - 0.03 * s), Color3.fromRGB(255, 200, 80), METAL, "ball")
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.nova = function(f)
 	local s, h = f.scale, f.parts.Head.Size
-	f.add("Head", "Helmet", h * Vector3.new(1.06, 0.62, 1.06), CFrame.new(0, h.Y * 0.28, 0), HC.gold, METAL, "ball")
-	f.add("Head", "Crest", Vector3.new(0.14, 0.5, 0.9) * s, CFrame.new(0, h.Y * 0.62, 0), HC.gold, METAL, "wedge")
+	f.add("Head", "Helmet", h * Vector3.new(1.06, 0.62, 1.06), CFrame.new(0, h.Y * 0.28, 0), Color3.fromRGB(80, 210, 240), METAL, "ball")
+	f.add("Head", "Crest", Vector3.new(0.14, 0.5, 0.9) * s, CFrame.new(0, h.Y * 0.62, 0), Color3.fromRGB(80, 210, 240), METAL, "wedge")
 	f.add("Head", "Visor", Vector3.new(h.X * 0.84, 0.2 * s, 0.1 * s), f.face(0, 0.12, 0.03), Color3.fromRGB(120, 220, 255), NEON)
-	star(f, "UpperTorso", CFrame.new(0, f.sizes.chest.Y * 0.16, -f.sizes.chest.Z / 2 - 0.04 * s), 0.36 * s, HC.gold)
+	star(f, "UpperTorso", CFrame.new(0, f.sizes.chest.Y * 0.16, -f.sizes.chest.Z / 2 - 0.04 * s), 0.36 * s, Color3.fromRGB(80, 210, 240))
 	muzzle(f, "Head", Vector3.new(0, h.Y * 0.1, -h.Z / 2 - 0.2 * s))
 end
 

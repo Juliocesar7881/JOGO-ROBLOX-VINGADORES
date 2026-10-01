@@ -102,7 +102,7 @@ Catalog.Heroes = {
 		id = "hawkeye", rarity = "common", starter = true, ability = "deadeye",
 		name = text("Lince", "Lynx"), role = text("Longo alcance e alvos prioritários", "Long range, priority targets"), cost = 180,
 		description = text("Arqueiro de longo alcance, excelente contra alvos prioritários.", "A long-range archer, excellent against priority targets."),
-		damage = 27, range = 33, interval = 1.6, color = { 147, 80, 202 }, attack = "single", damageType = "physical", air = true,
+		damage = 27, range = 33, interval = 1.6, color = { 70, 160, 96 }, attack = "single", damageType = "physical", air = true,
 		branches = {
 			{ name = text("Flechas explosivas", "Explosive Arrows"), description = text("Flechas causam dano em área.", "Arrows deal area damage."), mods = { set("attack", "splash"), set("splash", 7) } },
 			{ name = text("Precisão absoluta", "Perfect Aim"), description = text("Dano extra contra chefes e elites.", "Extra damage against bosses and elites."), mods = { set("bossDamage", 0.8), add("range", 8) } },
@@ -112,7 +112,7 @@ Catalog.Heroes = {
 		id = "falcon", rarity = "common", ability = "airCommand",
 		name = text("Cotovia", "Skylark"), role = text("Ataque rápido contra voadores", "Fast strikes against flyers"), cost = 220,
 		description = text("Rasantes rápidos: ótimo contra voadores e alvos ágeis.", "Fast dives: great against flyers and agile targets."),
-		pickup = 14, damage = 16, range = 30, interval = 0.68, color = { 196, 52, 60 }, attack = "single", damageType = "physical", air = true,
+		pickup = 14, damage = 16, range = 30, interval = 0.68, color = { 72, 160, 240 }, attack = "single", damageType = "physical", air = true,
 		branches = {
 			{ name = text("Rasante", "Dive Bomb"), description = text("Mais dano e mais alcance.", "More damage and more range."), mods = { mul("damage", 1.3), add("range", 6) } },
 			{ name = text("Drone Pluma", "Plume Drone"), description = text("Ataca quase o dobro de vezes.", "Attacks almost twice as often."), mods = { mul("interval", 0.6) } },
@@ -122,7 +122,7 @@ Catalog.Heroes = {
 		id = "bucky", rarity = "common", ability = "ambush",
 		name = text("Sargento Prata", "Silver Sergeant"), role = text("Perfuração de armadura", "Armor piercing"), cost = 300,
 		description = text("Tiros secos que atravessam a armadura inimiga.", "Dry shots that pierce enemy armor."),
-		damage = 28, range = 28, interval = 1.0, color = { 128, 142, 156 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.15,
+		damage = 28, range = 28, interval = 1.0, color = { 120, 140, 84 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.15,
 		branches = {
 			{ name = text("Braço de titânio", "Titanium Arm"), description = text("Perfura quase toda a armadura.", "Pierces almost all armor."), mods = { set("armorPierce", 0.5), mul("damage", 1.2) } },
 			{ name = text("Atirador de elite", "Sharpshooter"), description = text("Alcance enorme e dano contra chefes.", "Huge range and boss damage."), mods = { add("range", 10), set("bossDamage", 0.5) } },
@@ -143,7 +143,7 @@ Catalog.Heroes = {
 		id = "widow", rarity = "rare", ability = "widowBite",
 		name = text("Sombra", "Shade"), role = text("Revela camuflados e marca alvos", "Reveals hidden enemies, marks targets"), cost = 260,
 		description = text("Revela camuflados e marca inimigos para a equipe.", "Reveals hidden enemies and marks targets for the team."),
-		damage = 14, range = 25, interval = 0.75, color = { 199, 49, 63 }, attack = "single", damageType = "tech", air = true, reveal = true, support = true, mark = 0.08,
+		damage = 14, range = 25, interval = 0.75, color = { 120, 100, 220 }, attack = "single", damageType = "tech", air = true, reveal = true, support = true, mark = 0.08,
 		branches = {
 			{ name = text("Reconhecimento", "Reconnaissance"), description = text("Revela inimigos em um alcance maior.", "Reveals enemies in a wider range."), mods = { add("range", 14), set("mark", 0.12) } },
 			{ name = text("Alvo marcado", "Marked Target"), description = text("Alvos marcados recebem mais dano de toda a equipe.", "Marked targets take more damage from the entire team."), mods = { set("mark", 0.25), mul("damage", 1.2) } },
@@ -153,7 +153,7 @@ Catalog.Heroes = {
 		id = "antman", rarity = "rare", ability = "growth",
 		name = text("Titã de Bolso", "Pocket Titan"), role = text("Ataques rápidos e pisões", "Fast attacks and stomps"), cost = 380,
 		description = text("Ataques rápidos alternam com pisões gigantes.", "Quick attacks alternate with giant stomps."),
-		pickup = 14, damage = 22, range = 26, interval = 0.7, color = { 205, 72, 72 }, attack = "single", damageType = "tech", air = false, splash = 8, stompEvery = 5,
+		pickup = 14, damage = 22, range = 26, interval = 0.7, color = { 120, 210, 80 }, attack = "single", damageType = "tech", air = false, splash = 8, stompEvery = 5,
 		branches = {
 			{ name = text("Gigante", "Giant"), description = text("Pisões gigantes acontecem com mais frequência.", "Giant stomps happen more frequently."), mods = { set("periodicSplash", 2) } },
 			{ name = text("Impacto Quântico", "Quantum Impact"), description = text("Pisões alcançam uma área enorme.", "Stomps reach an enormous area."), mods = { set("splash", 16), set("periodicSplash", 4) } },
@@ -163,7 +163,7 @@ Catalog.Heroes = {
 		id = "wasp", rarity = "rare", ability = "swarmSting",
 		name = text("Pirilampo", "Firefly"), role = text("Ferrão rápido que desacelera", "Fast slowing stings"), cost = 240,
 		description = text("Ferroadas elétricas rápidas que atrasam o alvo.", "Fast electric stings that slow the target."),
-		damage = 10, range = 22, interval = 0.4, color = { 240, 196, 52 }, attack = "single", damageType = "tech", air = true, slow = 0.15,
+		damage = 10, range = 22, interval = 0.4, color = { 160, 235, 100 }, attack = "single", damageType = "tech", air = true, slow = 0.15,
 		branches = {
 			{ name = text("Enxame", "Swarm"), description = text("Cada ferroada salta entre vários inimigos.", "Each sting jumps between several enemies."), mods = { set("attack", "chain"), set("chain", 4) } },
 			{ name = text("Ferrão bioelétrico", "Bio-electric Sting"), description = text("Muito mais dano e muito mais lentidão.", "Far more damage and far more slow."), mods = { mul("damage", 1.6), set("slow", 0.35) } },
@@ -173,7 +173,7 @@ Catalog.Heroes = {
 		id = "rocket", rarity = "rare", ability = "salvage",
 		name = text("Guaxo", "Rascal"), role = text("Explosivos em área", "Area explosives"), cost = 330,
 		description = text("Um arsenal improvisado que explode em pequenas áreas.", "An improvised arsenal that bursts in small areas."),
-		pickup = 14, damage = 15, range = 26, interval = 1.3, color = { 168, 112, 78 }, attack = "splash", damageType = "tech", air = true, splash = 4.5,
+		pickup = 14, damage = 15, range = 26, interval = 1.3, color = { 80, 170, 110 }, attack = "splash", damageType = "tech", air = true, splash = 4.5,
 		branches = {
 			{ name = text("Arsenal explosivo", "Explosive Arsenal"), description = text("Explosões enormes e mais dano.", "Huge blasts and more damage."), mods = { set("splash", 10), mul("damage", 1.3) } },
 			{ name = text("Metralhadora grande", "Big Gun"), description = text("Dispara quase o dobro de vezes.", "Fires almost twice as often."), mods = { mul("interval", 0.6) } },
@@ -183,7 +183,7 @@ Catalog.Heroes = {
 		id = "daredevil", rarity = "rare", ability = "radarSense",
 		name = text("Eco", "Echo"), role = text("Enxerga camuflados", "Sees hidden enemies"), cost = 270,
 		description = text("Sente inimigos camuflados e ataca em sequência.", "Senses cloaked enemies and strikes in sequence."),
-		damage = 17, range = 20, interval = 0.6, color = { 176, 32, 44 }, attack = "single", damageType = "physical", air = false, reveal = true,
+		damage = 17, range = 20, interval = 0.6, color = { 110, 130, 170 }, attack = "single", damageType = "physical", air = false, reveal = true,
 		branches = {
 			{ name = text("Sentido radar", "Radar Sense"), description = text("Revela e marca inimigos em alcance maior.", "Reveals and marks enemies farther out."), mods = { add("range", 12), set("mark", 0.1) } },
 			{ name = text("Bastão duplo", "Twin Batons"), description = text("Mais dano e ritmo acelerado.", "More damage and a faster pace."), mods = { mul("damage", 1.5), mul("interval", 0.8) } },
@@ -193,7 +193,7 @@ Catalog.Heroes = {
 		id = "shangchi", rarity = "rare", ability = "tenRings",
 		name = text("Rin", "Rin"), role = text("Combate corpo a corpo veloz", "Fast close combat"), cost = 340,
 		description = text("Golpes velozes que rompem a proteção dos inimigos.", "Rapid strikes that break enemy protection."),
-		damage = 14, range = 18, interval = 0.4, color = { 202, 64, 44 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.1,
+		damage = 14, range = 18, interval = 0.4, color = { 50, 170, 125 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.1,
 		branches = {
 			{ name = text("Anéis Celestes", "Sky Rings"), description = text("Os anéis saltam entre vários inimigos.", "The rings jump between several enemies."), mods = { set("attack", "chain"), set("chain", 4), mul("damage", 1.2) } },
 			{ name = text("Punho de jade", "Jade Fist"), description = text("Perfura e enfraquece a armadura.", "Pierces and weakens armor."), mods = { set("armorPierce", 0.6), set("armorShred", 0.15) } },
@@ -234,7 +234,7 @@ Catalog.Heroes = {
 		id = "vision", rarity = "epic", ability = "phaseShift",
 		name = text("Prisma", "Prism"), role = text("Feixe que atravessa alinhados", "Beam through lined-up enemies"), cost = 480,
 		description = text("Um feixe solar atravessa inimigos alinhados.", "A solar beam pierces enemies standing in a line."),
-		damage = 44, range = 30, interval = 1.3, color = { 229, 187, 89 }, attack = "beam", damageType = "tech", air = true, beamWidth = 3,
+		damage = 44, range = 30, interval = 1.3, color = { 150, 200, 255 }, attack = "beam", damageType = "tech", air = true, beamWidth = 3,
 		branches = {
 			{ name = text("Feixe penetrante", "Piercing Beam"), description = text("Feixe mais largo ignora parte da armadura.", "A wider beam ignores part of enemy armor."), mods = { set("beamWidth", 6), set("armorPierce", 0.6) } },
 			{ name = text("Concentração solar", "Solar Focus"), description = text("Disparos mais frequentes e concentrados.", "More frequent, concentrated beams."), mods = { mul("interval", 0.55) } },
@@ -244,7 +244,7 @@ Catalog.Heroes = {
 		id = "warmachine", rarity = "epic", ability = "bombardment",
 		name = text("Bigorna", "Anvil"), role = text("Artilharia pesada em área", "Heavy area artillery"), cost = 520,
 		description = text("Artilharia pesada: mísseis e canhões que atingem grandes áreas.", "Heavy artillery: missiles and cannons that strike wide areas."),
-		damage = 27, range = 28, interval = 1.4, color = { 96, 108, 122 }, attack = "splash", damageType = "tech", air = true, splash = 10,
+		damage = 27, range = 28, interval = 1.4, color = { 200, 130, 70 }, attack = "splash", damageType = "tech", air = true, splash = 10,
 		branches = {
 			{ name = text("Salva de mísseis", "Missile Salvo"), description = text("Explosões enormes e mais dano.", "Huge blasts and more damage."), mods = { set("splash", 13), mul("damage", 1.2) } },
 			{ name = text("Canhão de ombro", "Shoulder Cannon"), description = text("Tiro devastador que perfura armadura.", "A devastating shot that pierces armor."), mods = { mul("damage", 2), set("armorPierce", 0.5) } },
@@ -254,7 +254,7 @@ Catalog.Heroes = {
 		id = "starlord", rarity = "epic", ability = "awesomeMix",
 		name = text("Cometa", "Comet"), role = text("Rajadas rápidas de blasters", "Rapid blaster fire"), cost = 430,
 		description = text("Blasters gêmeos disparam em rajadas muito rápidas.", "Twin blasters fire in very rapid bursts."),
-		pickup = 14, damage = 16, range = 25, interval = 0.32, color = { 186, 56, 68 }, attack = "single", damageType = "tech", air = true,
+		pickup = 14, damage = 16, range = 25, interval = 0.32, color = { 40, 150, 170 }, attack = "single", damageType = "tech", air = true,
 		branches = {
 			{ name = text("Blasters gêmeos", "Twin Blasters"), description = text("Cadência ainda maior.", "An even higher fire rate."), mods = { mul("interval", 0.7) } },
 			{ name = text("Granada de gravidade", "Gravity Grenade"), description = text("Explosões em área que desaceleram.", "Area blasts that slow."), mods = { set("attack", "splash"), set("splash", 9), set("slow", 0.3) } },
@@ -285,7 +285,7 @@ Catalog.Heroes = {
 		id = "wanda", rarity = "legendary", ability = "hexBind",
 		name = text("Rubi", "Ruby"), role = text("Dano mágico persistente em área", "Persistent magic area damage"), cost = 650,
 		description = text("Magia do caos deixa uma zona de dano persistente.", "Chaos magic leaves a persistent damage zone."),
-		damage = 34, range = 26, interval = 1.8, color = { 252, 63, 119 }, attack = "dot", damageType = "magic", air = true, splash = 8, dotDuration = 3,
+		damage = 34, range = 26, interval = 1.8, color = { 210, 70, 160 }, attack = "dot", damageType = "magic", air = true, splash = 8, dotDuration = 3,
 		branches = {
 			{ name = text("Domínio do caos", "Chaos Domain"), description = text("Expande a zona de magia persistente.", "Expands the persistent magic zone."), mods = { set("splash", 13) } },
 			{ name = text("Ruína rubi", "Ruby Ruin"), description = text("Inimigos expostos sofrem mais dano.", "Exposed enemies suffer more damage."), mods = { mul("damage", 1.5), set("dotDuration", 5) } },
@@ -295,7 +295,7 @@ Catalog.Heroes = {
 		id = "strange", rarity = "legendary", ability = "dimensionalSlow",
 		name = text("Arcano", "Arcanus"), role = text("Controle espacial e suporte mágico", "Spatial control, magic support"), cost = 560,
 		description = text("Portais atrasam inimigos e fortalecem aliados mágicos.", "Portals delay enemies and strengthen magic allies."),
-		damage = 36, range = 28, interval = 1.5, color = { 246, 172, 70 }, attack = "splash", damageType = "magic", air = true, splash = 9, slow = 0.2, support = true, supportBoost = 0.06,
+		damage = 36, range = 28, interval = 1.5, color = { 120, 80, 200 }, attack = "splash", damageType = "magic", air = true, splash = 9, slow = 0.2, support = true, supportBoost = 0.06,
 		branches = {
 			{ name = text("Laço dimensional", "Dimensional Loop"), description = text("Portais reposicionam inimigos comuns, com recarga própria.", "Portals reposition ordinary enemies with a separate cooldown."), mods = { set("portal", true), set("slow", 0.35) } },
 			{ name = text("Artes místicas", "Mystic Arts"), description = text("Amplifica torres mágicas próximas.", "Amplifies nearby magic towers."), mods = { set("supportBoost", 0.22), add("range", 4) } },
@@ -641,17 +641,17 @@ Catalog.Cards = {
 -- Reinforcements: authored combat stats, two branches and a leader skill each.
 local reinforcements = {
 	{"wolverine","Presa","Fang","epic",{235,130,40},420,36,16,0.65,"single","physical",false,"claws","execute",0.28,55},
-	{"cyclops","Farol","Beacon","rare",{77,121,221},320,38,32,1.35,"beam","tech",true,"visor","blast",0.28,60},
-	{"storm","Monção","Monsoon","legendary",{228,234,249},600,40,34,1.4,"chain","magic",true,"cape","chain",0.26,75},
-	{"jean","Aurora","Aurora","mythic",{244,131,61},760,44,30,1.3,"splash","magic",true,"phoenix","burn",0.08,80},
-	{"iceman","Geada","Frost","rare",{141,230,255},300,17,25,1.05,"splash","magic",false,"ice","slow",0.5,65},
-	{"gambit","Ás","Ace","epic",{218,114,218},390,35,29,1.15,"splash","magic",true,"cards","blast",0.32,60},
-	{"nightcrawler","Pisca","Blink","rare",{107,101,223},290,24,22,0.8,"single","magic",false,"tail","pull",22,65},
-	{"beast","Juba","Mane","rare",{84,142,217},240,26,18,0.95,"splash","physical",false,"fur","stun",0,65},
-	{"psylocke","Kunai","Kunai","epic",{171,92,238},400,32,23,0.7,"single","magic",false,"blade","weaken",0.4,65},
+	{"cyclops","Farol","Beacon","rare",{232,80,64},320,38,32,1.35,"beam","tech",true,"visor","blast",0.28,60},
+	{"storm","Monção","Monsoon","legendary",{50,180,180},600,40,34,1.4,"chain","magic",true,"cape","chain",0.26,75},
+	{"jean","Aurora","Aurora","mythic",{190,110,240},760,44,30,1.3,"splash","magic",true,"phoenix","burn",0.08,80},
+	{"iceman","Geada","Frost","rare",{150,200,245},300,17,25,1.05,"splash","magic",false,"ice","slow",0.5,65},
+	{"gambit","Ás","Ace","epic",{220,50,70},390,35,29,1.15,"splash","magic",true,"cards","blast",0.32,60},
+	{"nightcrawler","Pisca","Blink","rare",{245,205,80},290,24,22,0.8,"single","magic",false,"tail","pull",22,65},
+	{"beast","Juba","Mane","rare",{226,170,80},240,26,18,0.95,"splash","physical",false,"fur","stun",0,65},
+	{"psylocke","Kunai","Kunai","epic",{200,40,64},400,32,23,0.7,"single","magic",false,"blade","weaken",0.4,65},
 	{"deadpool","Confete","Confetti","epic",{240,90,170},380,24,28,0.6,"single","physical",true,"swords","rally",0.2,65},
-	{"moonknight","Eclipse","Eclipse","rare",{224,223,204},310,34,25,1.05,"single","physical",true,"moon","reveal",0.18,65},
-	{"nova","Pulsar","Pulsar","legendary",{255,199,80},590,48,32,1.05,"beam","tech",true,"nova","blast",0.38,75},
+	{"moonknight","Eclipse","Eclipse","rare",{255,200,90},310,34,25,1.05,"single","physical",true,"moon","reveal",0.18,65},
+	{"nova","Pulsar","Pulsar","legendary",{90,200,240},590,48,32,1.05,"beam","tech",true,"nova","blast",0.38,75},
 }
 for _, row in ipairs(reinforcements) do
 	local id, pt, en, rarity, color, cost, damage, range, interval, attack, damageType, air, costume, kind, power, cooldown = unpack(row)
