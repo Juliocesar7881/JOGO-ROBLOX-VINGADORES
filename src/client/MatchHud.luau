@@ -242,7 +242,7 @@ function MatchHud.new(ctx)
 		local victory = result.victory == true or result.ended == true
 		local veil = UI.frame(main, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.12})
 		local panel = UI.roundFrame(veil, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -32, 1, -50), BackgroundColor3 = C.panel}, victory and C.green or C.red)
-		UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 590)}, panel)
+		UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 720)}, panel)
 		local content = UI.scroll(panel, {Name="ResultBody",Position = UDim2.fromOffset(20, 18), Size = UDim2.new(1, -40, 1, -98)})
 		UI.frame(panel,{Position=UDim2.new(0,18,1,-75),Size=UDim2.new(1,-36,0,1),BackgroundColor3=C.stroke})
 		-- Like the genre's best: one tap runs the same map again; going back to
@@ -313,6 +313,18 @@ function MatchHud.new(ctx)
 		UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. T(" ponto(s) para sua árvore!", " point(s) for your talent tree!")) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 36), TextWrapped = true, TextSize = 13})
 		local xpTrack = UI.frame(evolution, {Position = UDim2.fromOffset(12, 82), Size = UDim2.new(1, -24, 0, 5), BackgroundColor3 = C.stroke})
 		UI.frame(xpTrack, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.gold})
+		-- The season pass: where this match's XP took it, and whether a claim waits.
+		local season = profile().seasonStatus
+		if season then
+			local seasonCard = UI.roundFrame(content, {Name = "ResultSeason", Size = UDim2.new(1, -6, 0, 78), BackgroundColor3 = C.violet:Lerp(C.background, 0.86)}, C.violet)
+			UI.label(seasonCard, T("TEMPORADA • NÍVEL ", "SEASON • LEVEL ") .. tostring(season.level) .. "/" .. tostring(season.maxLevel), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 22), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.violet})
+			local seasonTrack = UI.frame(seasonCard, {Position = UDim2.fromOffset(12, 36), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
+			UI.corner(seasonTrack, 4)
+			local seasonFill = UI.frame(seasonTrack, {Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpPerLevel, 0, 1), 1), BackgroundColor3 = C.violet})
+			UI.corner(seasonFill, 4)
+			UI.label(seasonCard, season.claimable > 0 and (tostring(season.claimable) .. T(" prêmio(s) esperando em PRÊMIOS!", " reward(s) waiting in GIFTS!")) or (number(season.xpInto) .. " / " .. number(season.xpPerLevel) .. " XP"),
+				{Name = "ResultSeasonHint", Position = UDim2.fromOffset(12, 50), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = season.claimable > 0 and C.gold or C.muted})
+		end
 		local gains = {}
 		for heroId, earned in pairs(result.mastery or {}) do
 			if Catalog.Heroes[heroId] and earned > 0 then table.insert(gains, {id = heroId, xp = earned}) end

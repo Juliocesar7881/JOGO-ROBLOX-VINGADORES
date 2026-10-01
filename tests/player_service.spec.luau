@@ -968,7 +968,9 @@ do
 	check(service:Award(climber, "season:xp1", { xp = 1500 }), "an award with XP is accepted")
 	check(not service:Award(climber, "season:xp1", { xp = 1500 }) or service:Get(climber).seasonStatus.xp == 1500, "A repeated award id adds no second XP")
 	local afterXp = service:Get(climber).seasonStatus
+	local badgeBefore = service:Get(climber).rewards.claimable
 	check(afterXp.xp == 1500 and afterXp.level == 2 and afterXp.claimableFree == 2 and afterXp.claimablePremium == 0, "XP became season levels, premium locked: " .. afterXp.xp)
+	check(badgeBefore >= 1, "A claimable season level lights the gift badge")
 	local goldBefore = service:Get(climber).gold
 	local handled2, ok2, snap2 = service:Handle(climber, "ClaimSeason", {}, true)
 	local paid = snap2.result

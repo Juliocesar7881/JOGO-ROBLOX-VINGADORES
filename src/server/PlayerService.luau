@@ -659,6 +659,8 @@ function PlayerService:Snapshot(player)
 	result.seasonStatus = self.rules.SeasonStatus(
 		(record.profile.season and record.profile.season.id == result.season) and record.profile.season or { id = result.season, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		record.passes.season == true)
+	-- The gift tab's badge counts the season's claim as one thing waiting.
+	if result.seasonStatus.claimable > 0 and result.rewards then result.rewards.claimable += 1 end
 	result.persistence = self.memory and "studio-memory" or "cloud"
 	for _, hero in pairs(result.heroes) do
 		hero.xpNext = hero.level < 20 and masteryThreshold(hero.level + 1) or hero.xp
