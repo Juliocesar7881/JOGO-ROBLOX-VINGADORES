@@ -976,6 +976,9 @@ do
 	check(not service:Award(climber, "season:xp1", { xp = 4500 }) or service:Get(climber).seasonStatus.xp == 4500, "A repeated award id adds no second XP")
 	local afterXp = service:Get(climber).seasonStatus
 	local badgeBefore = service:Get(climber).rewards.claimable
+	check(afterXp.theme ~= nil and #afterXp.theme.name.pt > 3 and #afterXp.theme.name.en > 3, "the season has a name in both languages")
+	check(afterXp.endsAt ~= nil and afterXp.endsAt > os.time() and afterXp.endsAt - os.time() <= 60 * 86400, "the season says when it ends, within its length")
+	check(Rules.SeasonTheme(1) ~= Rules.SeasonTheme(2) and Rules.SeasonTheme(1) == Rules.SeasonTheme(1 + #Catalog.SeasonThemes), "the names cycle")
 	check(afterXp.xp == 4500 and afterXp.level == 2 and afterXp.claimableFree == 2 and afterXp.claimablePremium == 0, "XP became season levels, premium locked: " .. afterXp.xp)
 	check(badgeBefore >= 1, "A claimable season level lights the gift badge")
 	local goldBefore = service:Get(climber).gold

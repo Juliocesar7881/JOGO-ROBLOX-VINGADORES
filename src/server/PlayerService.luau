@@ -665,6 +665,8 @@ function PlayerService:Snapshot(player)
 	result.seasonStatus = self.rules.SeasonStatus(
 		(record.profile.season and record.profile.season.id == result.season) and record.profile.season or { id = result.season, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		record.passes.season == true)
+	result.seasonStatus.theme = copy(self.rules.SeasonTheme(result.season))
+	result.seasonStatus.endsAt = (self.config.SeasonEpoch or 1789862400) + result.season * (self.config.SeasonDays or 60) * DAY
 	-- The gift tab's badge counts the season's claim as one thing waiting.
 	if result.seasonStatus.claimable > 0 and result.rewards then result.rewards.claimable += 1 end
 	result.persistence = self.memory and "studio-memory" or "cloud"

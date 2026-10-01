@@ -612,6 +612,12 @@ function Rules.SeasonReward(level, track)
 	return reward
 end
 
+-- The season's name: the list cycles, season 1 is the first entry.
+function Rules.SeasonTheme(id)
+	local themes = Catalog.SeasonThemes
+	return themes[(math.max(1, math.floor(number(id, 1))) - 1) % #themes + 1]
+end
+
 -- The XP that level `level` costs, and the total needed to reach it.
 function Rules.SeasonLevelXp(level)
 	level = math.clamp(math.floor(number(level, 1)), 1, Catalog.Season.levels)

@@ -569,7 +569,9 @@ function Panels.new(ctx)
 		-- track pays everyone; the premium track pays the owner of the season pass.
 		local season = profile().seasonStatus
 		if season then
-			UI.section(body, T("TEMPORADA • NÍVEL ", "SEASON • LEVEL ") .. season.level .. "/" .. season.maxLevel)
+			local theme = season.theme and (" • " .. L(season.theme.name)) or ""
+			UI.section(body, T("TEMPORADA ", "SEASON ") .. tostring(season.id or "") .. theme, T("Nível ", "Level ") .. season.level .. "/" .. season.maxLevel
+				.. (season.endsAt and (T("  •  termina em ", "  •  ends in ") .. math.max(0, math.ceil((season.endsAt - os.time()) / 86400)) .. T(" dias", " days")) or ""))
 			local seasonCard = UI.roundFrame(body, {Name = "SeasonCard", Size = UDim2.new(1, -6, 0, season.owned and 196 or 252), BackgroundColor3 = C.card}, season.claimable > 0 and C.gold or C.stroke)
 			local xpFill = UI.bar(seasonCard, C.violet, UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, 16))
 			xpFill.Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpNeed, 0, 1), 1)

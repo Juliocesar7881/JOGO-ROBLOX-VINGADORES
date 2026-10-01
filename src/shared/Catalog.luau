@@ -51,6 +51,15 @@ Catalog.Stars = { max = 5, damage = 0.03 }
 -- the last about three, and the whole pass 147,000 XP (about two months for
 -- someone who plays a match a day).
 Catalog.Season = { levels = 30, firstXp = 2000, stepXp = 200 }
+-- Each season has a name, cycling through this list (season 1 is the first).
+Catalog.SeasonThemes = {
+	{ name = text("Ilhas do Alvorecer", "Dawn Islands") },
+	{ name = text("Maré dos Cristais", "Crystal Tide") },
+	{ name = text("Noite das Estrelas", "Night of Stars") },
+	{ name = text("Tempestade Dourada", "Golden Storm") },
+	{ name = text("Cidadela de Gelo", "Frost Citadel") },
+	{ name = text("Fundição Viva", "Living Foundry") },
+}
 -- Playing together pays: every extra commander in the match adds this much to
 -- the Gold and XP each of them earns (a party of four: +30%).
 Catalog.PartyBonus = { perPlayer = 0.1 }

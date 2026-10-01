@@ -62,6 +62,7 @@ function Review.start(api)
 		p.paidRandomRestricted = false
 		-- Mid-season: five levels reached, two of them claimed, no premium pass.
 		p.seasonStatus = Rules.SeasonStatus({ id = 1, xp = Rules.SeasonThreshold(5) + 700, freeClaimed = 2, premiumClaimed = 0 }, false)
+		p.seasonStatus.theme, p.seasonStatus.endsAt = Rules.SeasonTheme(1), os.time() + 23 * 86400
 		return p
 	end
 
