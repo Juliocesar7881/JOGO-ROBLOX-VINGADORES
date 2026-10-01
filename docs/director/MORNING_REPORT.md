@@ -1,52 +1,57 @@
-# Relatório da manhã — 01/10/2026
+# Relatório da manhã — 01/10/2026 (atualizado 13:00)
 
 Tudo está no GitHub `main` e sincronizado no lugar da equipe
 (place 97132875544830). **Nada foi publicado ao vivo.**
 
-## O que aconteceu na noite
+## O que aconteceu
 
-- 23:56–01:15 trabalho contínuo; **01:15–07:30 parado** pelo limite de uso
-  da conta. A tarefa agendada `roblox-td-director` disparou de hora em hora,
-  mas **não abriu nenhuma sessão** (0 execuções registradas) — ver "Precisa
-  de você".
-- 07:30 em diante: retomado nesta sessão.
+- 23:56–01:15 trabalho contínuo; 01:15–07:30 parado pelo limite de uso.
+- 07:30–09:07 sessão principal: marca original, combate, Robux (código),
+  treino do novato, perigos por mapa.
+- 12:34 em diante: **as rodadas agendadas agora abrem sessão sozinhas**
+  (esta é uma delas, `run-20261001-1234`; pegou a trava velha da sessão
+  principal).
 
-## Entregue (9 commits)
+## Entregue (33 commits desde 23:56)
 
 | Commit | O quê |
 |---|---|
-| 7a0dc3d | Infra do diretor: trava de uma sessão por vez (`tools/director.py`), skill `roblox-td-director` (ciclo, régua, Studio, marca), referência do TTD (29 observações do vídeo) e fila. |
-| ac954b9 | `Review.luau` + `tools/studio_review.py`: revisão de telas no Studio **sem editar nenhum script do lugar** (substitui o gancho antigo que reescrevia o cliente). |
-| 9a774e9 | Câmera da partida abre **de cima do mapa** (antes ficava colada no chão). |
-| a79ec4d | Ferramentas: leitura dos logs dos dois processos do Studio, nova tentativa de comandos, modo celular real. |
-| 56d19ff | **Barra de heróis estilo TTD**: retrato, número e preço; 5 espaços sempre cabem no celular (antes nomes quebravam e os espaços 4–5 sumiam). |
-| 3f2fdfc | Chat do Roblox compacto à direita (saiu de cima do menu e da barra). |
-| a401530 | "ONDA 20 / 50" cabe; placa da base diz "BASE" nos dois idiomas. |
-| bae208f | Baús no celular: botão **INVOCAR visível sem rolar**. |
-| 2dc8b53 | **"▶ JOGAR DE NOVO"** no fim da partida (voto no servidor, mesmo mapa e modo; treino continua indo ao lobby). |
+| 7a0dc3d, ac954b9, a79ec4d, e013a39, 53a47b9 | Infra do diretor: trava, skill, revisão de telas no Studio **sem editar scripts do lugar**. |
+| 9a774e9 | Câmera da partida abre de cima do mapa. |
+| 56d19ff | Barra de heróis estilo TTD (retrato, número, preço; 5 espaços no celular). |
+| 3f2fdfc, a401530, bae208f | Chat à direita; "ONDA 20 / 50" cabe; INVOCAR visível no celular. |
+| 2dc8b53 | **JOGAR DE NOVO** no fim da partida (voto no servidor). |
+| f4d446d, 8f1c068 | Painel da torre com **antes → depois** de cada atributo, vindo do servidor. |
+| 57d46fa, 35d803d | Cliente dividido: `Panels.luau` e `LobbyWorld.luau` (init.client 200 → 114 KB); o teste de boot descobre módulos novos sozinho. |
+| e0618cc, e41a60e, 1286501 | **Marca original**: heróis, vilões, mapas, conquistas, código MULTIVERSO; 36 uniformes com visual próprio; `test_ip_safety` na suíte. |
+| 3cc9b47 | Números de dano por golpe. |
+| 2c232ef | Robux (código): passe 3x, pacote inicial, pacote de 30k Ouro. |
+| 371f7bd | Chegada do chefe com câmera + banner de fase. |
+| 474f01a | Tela final com MVP e placar do grupo. |
+| 770ba42 | Limite por herói por raridade (8/6/5/4/3), contador no ladrilho. |
+| 9747feb, 80c42c8, 087dbab | Ímã de moedas igual ao servidor; aviso de chefe a 3/2/1 ondas; tiros em lote (menos rede no 3x). |
+| 8825e22, f61c957 | **Novato**: um toque em COMEÇAR TREINO, treino de 12 ondas (~7,5 min), botão pulsando. |
+| ab705a2, e3325f9 | **Perigo telegrafado por mapa** (surto tóxico, forno, cristais, rajada, selo). |
 
 Notas da régua (antes → depois): barra de heróis 2 → 4; câmera 2 → 4;
-baús no celular 3 → 4; fim de partida 3 → 5. Auditoria completa em
-`docs/director/AUDIT.md`.
+baús no celular 3 → 4; fim de partida 3 → 5; painel da torre 2 → 4.
+Capturas em `test-results/review/` (lobby, newcomer, match, boss, finish,
+versões `-phone`). Auditoria em `docs/director/AUDIT.md`.
 
 ## Precisa de você
 
-1. **Tarefa agendada:** abra "Agendado" na barra lateral do app, entre em
-   "Diretor do jogo (noite)" e clique **Executar agora** uma vez com você
-   olhando — se aparecer pedido de permissão ou de confiança na pasta, aprove.
-   Sem isso as rodadas noturnas não começam.
-2. **Marca:** confirme o título no jogo **"Multiverse Doomsday"** (o nome que
-   você deu à experiência) e se os nomes propostos para os heróis originais
-   (Volt, Arqueiro Vento, Comandante Égide, Pedregulho, Brontus…) servem — a
-   troca da Marvel é o próximo bloco grande (M2).
-3. **Robux (M4):** os preços propostos estão no plano; os passes/produtos
-   ainda não foram criados no Creator Hub.
+1. **Robux (M4.2, BLOQUEADO):** criar passes/produtos no Creator Hub exige o
+   Chrome com a extensão Claude conectada e logado. O código já está pronto;
+   faltam só os IDs em `deployment/local.json`.
+2. **Áudio (M7.1):** enviar os WAVs de `assets/audio` no Creator Hub (mesmo
+   motivo).
+3. **Marca:** confirme os nomes originais dos heróis em `docs/HEROES.md`.
 
 ## Próximos itens da fila
 
-M1.5.6 painel da torre no celular → M2 marca original (nomes, chefes, mapas,
-placas, uniformes) → M3 combate (números de dano, antes→depois no upgrade,
-limite por herói, 3x, prévia de onda, entrada do chefe, MVP) → M4 Robux.
+M1.4b dividir `MatchHud.luau` → M5.2 Normal/Difícil/Pesadelo → M6.1 curva de
+raridade (Juba e Geada fortes demais; Sombra e Guaxo fracos) → M6.2–M6.4
+progressão → M9.1 desempenho.
 
 ## Como reverter
 
