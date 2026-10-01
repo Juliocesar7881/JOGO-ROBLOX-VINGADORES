@@ -22,6 +22,10 @@ faz e como conferir.
   `docs/director/BACKLOG.md` (M7.1).
 - [ ] **Título e ícone da experiência**: nome "Multiverse Doomsday" (ou o que
   o dono escolher), ícone e miniaturas próprios, descrição em português.
+  Imagens de divulgação 1920×1080 do próprio jogo (sem interface do Studio)
+  já geradas em `assets/store/` por `python tools/store_media.py` (lobby, equipe,
+  revelação de herói, baús, vitória): é só escolher e enviar na aba Mídia da
+  experiência; refaça com o Studio aberto se algo mudar.
   Nenhuma imagem de terceiros.
 - [ ] **Faixa etária / questionário de conteúdo** da experiência.
 

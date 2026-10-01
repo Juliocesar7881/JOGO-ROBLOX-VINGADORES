@@ -8,6 +8,8 @@
 --   DoomReviewSize = "667x375"    draw the HUD in a phone-sized area ("" = full)
 --   DoomReviewLanguage = "en"     fixture language (default pt)
 --   DoomReviewFocus = "tower"     camera on the first tower ("" = normal camera)
+--   DoomReviewHideUI = true       hide the game's own interface (marketing shots)
+--   DoomReviewHideChrome = true   hide only Roblox's own buttons and chat
 --   DoomReviewServer = "start manhattan normal" | "spawn lizard,zombie" |
 --                      "crowd 120" | "endwave 10" | "finish true" | "panel chests"
 --                                 a Studio-only server scene (real match)
@@ -236,6 +238,20 @@ function Review.start(api)
 		if not ok then warn("DOOM_REVIEW_ERROR", stage, problem) end
 	end)
 	player:GetAttributeChangedSignal("DoomReviewSize"):Connect(applySize)
+	-- DoomReviewHideUI = true: the game's own interface is hidden, for clean shots.
+	local function setChrome(hidden)
+		pcall(function() game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.All, not hidden) end)
+		pcall(function() game:GetService("TextChatService").ChatWindowConfiguration.Enabled = not hidden end)
+	end
+	player:GetAttributeChangedSignal("DoomReviewHideUI"):Connect(function()
+		local hidden = player:GetAttribute("DoomReviewHideUI") == true
+		api.gui.Enabled = not hidden
+		setChrome(hidden) -- Roblox's own buttons and chat too, and back again afterwards
+	end)
+	-- DoomReviewHideChrome = true: only Roblox's buttons and chat go (our modals stay).
+	player:GetAttributeChangedSignal("DoomReviewHideChrome"):Connect(function()
+		setChrome(player:GetAttribute("DoomReviewHideChrome") == true)
+	end)
 	-- DoomReviewFocus = "tower": frame the first tower from above, so a capture
 	-- shows the fight; "" hands the camera back.
 	player:GetAttributeChangedSignal("DoomReviewFocus"):Connect(function()

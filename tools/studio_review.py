@@ -15,6 +15,8 @@ captures the window with PrintWindow and presses Stop. Scenes:
                        crowd <n> | endwave [wave] | finish true|false | panel <name>
     wait:<seconds>     let the real game run before the next capture
     focus:tower        camera on the first tower (focus: alone resets it)
+    hideui:on|off      hide (or show) the game's own interface, for clean marketing shots
+    hidechrome:on|off  hide only Roblox's own buttons and chat
 
 Captures land in test-results/review/<index>-<scene>.png (and -phone.png with
 --phone, drawn in a 667x375 area). A capture that is almost all one colour
@@ -183,6 +185,12 @@ def main() -> int:
                 continue
             if scene.startswith("wait:"):
                 time.sleep(float(scene[5:]))
+                continue
+            if scene.startswith("hidechrome:"):
+                command(f'{player}:SetAttribute("DoomReviewHideChrome", {"true" if scene[11:] == "on" else "false"})', f"DOOM_HIDECHROME_{int(time.time())}_{index}")
+                continue
+            if scene.startswith("hideui:"):
+                command(f'{player}:SetAttribute("DoomReviewHideUI", {"true" if scene[7:] == "on" else "false"})', f"DOOM_HIDEUI_{int(time.time())}_{index}")
                 continue
             if scene.startswith("server:"):
                 line = scene[7:].replace('"', "")
