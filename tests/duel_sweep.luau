@@ -14,15 +14,15 @@ local function bout(heroId, budget, mapId)
 	local profile = newProfile(unlocked)
 	profile.loadout = { heroId, "ironman" }
 	local match = MatchService.new(Config, Catalog, Rules, Waves, newProfiles(profile), newWorld(), newRemotes({}), function() end)
-	assert(match:Start({ player }, mapId, "ranked", "duel"))
+	assert(match:Start({ player }, mapId, "normal", "duel"))
 	local p = match.participants[player.UserId]
-	p.energy = budget
+	p.cash = budget
 	local hero = Catalog.Heroes[heroId]
 	local placed = 0
 	while placed < 16 do
 		local snapshot = match:Snapshot(player)
 		local need = hero.cost + math.floor(hero.cost * 0.9) + math.floor(hero.cost * 1.4)
-		if p.energy < need then break end
+		if p.cash < need then break end
 		local done = false
 		for _, spot in ipairs(buildSpots(mapId)) do
 			local crowded = false

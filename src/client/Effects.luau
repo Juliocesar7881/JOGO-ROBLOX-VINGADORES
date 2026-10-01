@@ -1353,9 +1353,9 @@ function Effects:Step(dt)
 			coin.part.Size = Vector3.new(0.22, 1.15, 1.15) * (1 - life * 0.65)
 		end
 	end
-	local radius = 6
-	local profile = state and state.profile
-	if profile then radius *= 1+((profile.talents or {}).magnet or 0)*0.08 end
+	-- The magnet's reach is the server's (talents included): the same circle it
+	-- accepts a CollectCoin from, so the client never under- or over-reaches.
+	local radius = state and state.match and tonumber(state.match.magnet) or 8
 	for _, coin in pairs(self.coins) do
 		local age = self.clock - coin.born
 		local pop = math.max(0, 1 - age / 0.35)
