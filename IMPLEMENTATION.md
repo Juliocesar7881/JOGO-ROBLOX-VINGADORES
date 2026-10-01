@@ -100,7 +100,7 @@ Roblox). The rewards panel has the code box, the group card (only when
 
 ## Match speed and auto-skip — 22/09/2026
 
-Match actions `SetSpeed {speed = 1|2}` → `{speed}` and `SetAutoSkip {on}`.
+Match actions `SetSpeed {speed = 1|2|3}` → `{speed}` (3 needs the `speed3` pass; the match runs at the slowest speed anyone present chose) and `SetAutoSkip {on}`.
 `Match:Speed()` is 2 only while every participant still playing (not
 returned, not disconnected) voted 2; a solo player decides alone; a finished
 match is always 1. The bootstrap multiplies its frame time by `match:Speed()`
@@ -267,7 +267,7 @@ Public profile: `{gold,xp,level,heroes = {[id]:{xp,level}},loadout={heroId},skil
 
 ## Action names
 
-Lobby: StartMatch `{mapId,modeId}`; CreateParty `{}`; JoinParty `{code}`; LeaveParty `{}`; BuyHero `{heroId}`; SetLoadout `{heroes={id}}`; BuySkill `{skillId}`; SetSkills `{active={id},passive={id}}`; Settings `{language,lowFX,shake,music}`; SetTitle `{titleId}`; ClaimQuest `{questId}`; Leaderboard `{mapId,size}`; ReturnLobby `{}`; Sync `{}`. Shop: ProductInfo `{kind="pass"|"product",key}` returns `{id,price,name}` or disabled error. Client prompts purchase with returned ID. Match: PlaceTower `{heroId,position=Vector3}`; UpgradeTower `{towerId,branch?}`; SellTower `{towerId}`; SetPriority `{towerId,priority="First"|"Last"|"Strongest"|"Nearest"}` (exactly these capitalized values, which are also what tower snapshots carry; `tests/test_contract.py` fails if the client cycles anything else); CastSkill `{skillId,towerId?,position?}`; CollectCoin `{coinId}`; SkipWave `{}`; ChooseProtocol `{protocolId}`. Results: PlayAgain `{}` — a vote from everyone still on the results screen; when all voted, the same map and mode restart in this server for exactly them (refused in training and while rewards are still saving).
+Lobby: StartMatch `{mapId,modeId}`; CreateParty `{}`; JoinParty `{code}`; LeaveParty `{}`; BuyHero `{heroId}`; SetLoadout `{heroes={id}}`; BuySkill `{skillId}`; SetSkills `{active={id},passive={id}}`; Settings `{language,lowFX,shake,music}`; SetTitle `{titleId}`; ClaimQuest `{questId}`; Leaderboard `{mapId,size}`; ReturnLobby `{}`; Sync `{}`. Shop: ProductInfo `{kind="pass"|"product",key}` returns `{id,price,name}` or disabled error. Client prompts purchase with returned ID. Match: PlaceTower `{heroId,position=Vector3}`; UpgradeTower `{towerId,branch?}`; SellTower `{towerId}`; SetPriority `{towerId,priority="First"|"Last"|"Strongest"|"Nearest"}` (exactly these capitalized values, which are also what tower snapshots carry; `tests/test_contract.py` fails if the client cycles anything else); CastSkill `{skillId,towerId?,position?}`; CollectCoin `{coinId}`; SkipWave `{}`; ChooseProtocol `{protocolId}`. Training: StartTraining `{}` boards the commander on a free training queue and starts it at once (lobby only; refused inside a match). Results: PlayAgain `{}` — a vote from everyone still on the results screen; when all voted, the same map and mode restart in this server for exactly them (refused in training and while rewards are still saving).
 
 ## Shared Catalog contract
 
