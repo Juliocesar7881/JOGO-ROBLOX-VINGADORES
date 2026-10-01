@@ -14,6 +14,7 @@ captures the window with PrintWindow and presses Stop. Scenes:
     server:<command>   a Studio-only server scene: start <map> [mode] | spawn a,b |
                        crowd <n> | endwave [wave] | finish true|false | panel <name>
     wait:<seconds>     let the real game run before the next capture
+    focus:tower        camera on the first tower (focus: alone resets it)
 
 Captures land in test-results/review/<index>-<scene>.png (and -phone.png with
 --phone, drawn in a 667x375 area). A capture that is almost all one colour
@@ -177,6 +178,9 @@ def main() -> int:
     try:
         for index, scene in enumerate(args.scenes, 1):
             label = re.sub(r"[^a-z0-9]+", "-", scene.lower()).strip("-")
+            if scene.startswith("focus:"):
+                command(f'{player}:SetAttribute("DoomReviewFocus", "{scene[6:]}")', f"DOOM_FOCUS_{int(time.time())}_{index}")
+                continue
             if scene.startswith("wait:"):
                 time.sleep(float(scene[5:]))
                 continue

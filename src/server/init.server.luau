@@ -946,6 +946,27 @@ if RunService:IsStudio() then
 			return true
 		end
 		if not match.running then return false end
+		-- towers: each player's squad placed along the road (Gold provided), to
+		-- review combat without walking and clicking.
+		if command == "towers" then
+			for _, player in ipairs(Players:GetPlayers()) do
+				local p = match.participants[player.UserId]
+				local loadout = p and p.profile.loadout or {}
+				local route = match.routeCache[1].points
+				local placed = 0
+				-- Closest to the base first: that is where the commander stands.
+				for step = #route * 4 - 4, 2, -1 do
+					if placed >= math.min(#loadout, 5) then break end
+					local a, b = route[math.max(1, math.floor(step / 4))], route[math.min(#route, math.floor(step / 4) + 1)]
+					local along = (b - a).Magnitude > 0 and (b - a).Unit or Vector3.new(1, 0, 0)
+					local position = a:Lerp(b, (step % 4) / 4) + Vector3.new(-along.Z, 0, along.X) * (step % 2 == 0 and 12 or -12)
+					p.cash = math.max(p.cash, 5000)
+					if match:Handle(player, "PlaceTower", { heroId = loadout[placed + 1], position = position }) then placed += 1 end
+				end
+			end
+			pushMatch()
+			return true
+		end
 		if command == "finish" then
 			match:Finish(arg == true)
 			return true

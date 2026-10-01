@@ -7,6 +7,7 @@
 --   DoomReview = "live"           back to the real server state
 --   DoomReviewSize = "667x375"    draw the HUD in a phone-sized area ("" = full)
 --   DoomReviewLanguage = "en"     fixture language (default pt)
+--   DoomReviewFocus = "tower"     camera on the first tower ("" = normal camera)
 --   DoomReviewServer = "start manhattan normal" | "spawn lizard,zombie" |
 --                      "crowd 120" | "endwave 10" | "finish true" | "panel chests"
 --                                 a Studio-only server scene (real match)
@@ -220,6 +221,20 @@ function Review.start(api)
 		if not ok then warn("DOOM_REVIEW_ERROR", stage, problem) end
 	end)
 	player:GetAttributeChangedSignal("DoomReviewSize"):Connect(applySize)
+	-- DoomReviewFocus = "tower": frame the first tower from above, so a capture
+	-- shows the fight; "" hands the camera back.
+	player:GetAttributeChangedSignal("DoomReviewFocus"):Connect(function()
+		local camera = workspace.CurrentCamera
+		local focus = player:GetAttribute("DoomReviewFocus")
+		local state = api.getState()
+		local tower = state and state.match and state.match.towers and state.match.towers[1]
+		if focus == "tower" and tower and typeof(tower.position) == "Vector3" then
+			camera.CameraType = Enum.CameraType.Scriptable
+			camera.CFrame = CFrame.lookAt(tower.position + Vector3.new(0, 30, 26), tower.position)
+		else
+			camera.CameraType = Enum.CameraType.Custom
+		end
+	end)
 	player:GetAttributeChangedSignal("DoomReviewServer"):Connect(function()
 		local line = player:GetAttribute("DoomReviewServer")
 		if type(line) ~= "string" or line == "" then return end

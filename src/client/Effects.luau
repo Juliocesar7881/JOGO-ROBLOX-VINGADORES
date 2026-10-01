@@ -557,7 +557,8 @@ end
 -- snapshot already carries, so no new network event is needed per hit. A
 -- BillboardGui with no BasePart parent has no adornee and never renders, so
 -- each popup gets its own tiny invisible anchor part, exactly like coins.
-function Effects:_popup(position, amount, color, prefix)
+-- size: the text size the number settles at; it pops in half again bigger.
+function Effects:_popup(position, amount, color, prefix, size)
 	if #self.popups >= 40 then return end
 	local pooled = table.remove(self.popupPool)
 	local anchor, label
@@ -568,13 +569,15 @@ function Effects:_popup(position, amount, color, prefix)
 		anchor = part(self.folder, Vector3.new(0.2, 0.2, 0.2), Color3.new(), Enum.Material.SmoothPlastic)
 		anchor.Transparency = 1
 		local billboard = Instance.new("BillboardGui")
-		billboard.Size, billboard.AlwaysOnTop, billboard.MaxDistance = UDim2.fromOffset(90, 30), true, 140
+		billboard.Size, billboard.AlwaysOnTop, billboard.MaxDistance = UDim2.fromOffset(140, 48), true, 160
 		billboard.Parent = anchor
-		label = UI.label(billboard, "", {Size = UDim2.fromScale(1, 1), Font = Enum.Font.GothamBold, TextSize = 16, TextStrokeTransparency = 0.3, TextXAlignment = Enum.TextXAlignment.Center})
+		label = UI.label(billboard, "", {Size = UDim2.fromScale(1, 1), Font = UI.Fonts.display, TextSize = 18, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(24, 18, 30), TextXAlignment = Enum.TextXAlignment.Center})
 	end
-	label.Text, label.TextColor3, label.TextTransparency, label.TextStrokeTransparency = (prefix or "-") .. tostring(math.max(1, math.floor(amount))), color, 0, 0.3
-	anchor.CFrame = CFrame.new(position + Vector3.new(math.random(-8, 8) * 0.08, 1, 0))
-	table.insert(self.popups, {anchor = anchor, label = label, expires = self.clock + 0.7})
+	size = size or 18
+	label.Text, label.TextColor3, label.TextTransparency, label.TextStrokeTransparency = (prefix or "-") .. UI.format(math.max(1, math.floor(amount))), color, 0, 0
+	label.TextSize = math.floor(size * 1.5)
+	anchor.CFrame = CFrame.new(position + Vector3.new(math.random(-8, 8) * 0.1, 1, 0))
+	table.insert(self.popups, {anchor = anchor, label = label, born = self.clock, size = size, drift = math.random(-10, 10) * 0.12, expires = self.clock + 0.85})
 end
 
 -- Shared, capped pool for every short-lived attack primitive. Each acquisition
@@ -974,9 +977,13 @@ function Effects:Handle(event)
 					end
 				end
 				current.flashUntil = self.clock + 0.1
-				if not lowFX then
-					self:_popup(enemy.position + Vector3.new(0, 2.6 * current.scale, 0), current.lastHP - hp, current.def.boss and UI.Colors.gold or UI.Colors.red)
-				end
+				-- The number is information, not a flash: it stays under reduced
+				-- effects. A heavier hit (a bigger share of the enemy's health)
+				-- reads bigger and whiter; a boss's damage is gold.
+				local dealt = current.lastHP - hp
+				local weight = math.clamp(dealt / math.max(enemy.maxHP or hp, 1) * 3, 0, 1)
+				local tint = current.def.boss and UI.Colors.gold or Color3.fromRGB(255, 92, 76):Lerp(Color3.fromRGB(255, 236, 120), weight)
+				self:_popup(enemy.position + Vector3.new(0, 2.6 * current.scale, 0), dealt, tint, "-", math.floor(21 + weight * 15 + (current.def.boss and 5 or 0)))
 			end
 			current.lastHP = hp
 			current.maxHP = enemy.maxHP or hp
@@ -1320,9 +1327,14 @@ function Effects:Step(dt)
 			table.insert(self.popupPool, popup)
 			table.remove(self.popups, i)
 		else
-			popup.anchor.CFrame += Vector3.new(0, dt * 1.6, 0)
+			popup.anchor.CFrame += Vector3.new((popup.drift or 0) * dt, dt * 2.2, 0)
+			-- Pop: it appears half again bigger and settles within 0.12 s.
+			local age = self.clock - (popup.born or self.clock)
+			local size = popup.size or 18
+			popup.label.TextSize = math.floor(size * (1 + 0.5 * math.max(0, 1 - age / 0.12)))
 			local remaining = popup.expires - self.clock
-			popup.label.TextTransparency = remaining < 0.2 and (1 - remaining / 0.2) or 0
+			popup.label.TextTransparency = remaining < 0.25 and (1 - remaining / 0.25) or 0
+			popup.label.TextStrokeTransparency = popup.label.TextTransparency
 		end
 	end
 	local character = self.player.Character
