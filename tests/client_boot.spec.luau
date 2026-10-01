@@ -155,8 +155,10 @@ end
 
 local function towers()
 	return {
-		{ id = "t1", heroId = "ironman", ownerId = LOCAL_ID, level = 2, position = v3(10, 0, 10), priority = "First", damage = 26, range = 28.8, rate = 1.2, upgradeCost = 350, invested = 475 },
-		{ id = "t2", heroId = "hawkeye", ownerId = LOCAL_ID, level = 4, position = v3(-20, 0, 5), priority = "Strongest", damage = 60, range = 40, rate = 0.7, upgradeCost = 630, invested = 1000 },
+		{ id = "t1", heroId = "ironman", ownerId = LOCAL_ID, level = 2, position = v3(10, 0, 10), priority = "First", damage = 26, range = 28.8, rate = 1.2, upgradeCost = 350, invested = 475,
+			base = { damage = 26, range = 28.8, rate = 1.2 }, next = { damage = 37.7, range = 30.6, rate = 1.25 } },
+		{ id = "t2", heroId = "hawkeye", ownerId = LOCAL_ID, level = 4, position = v3(-20, 0, 5), priority = "Strongest", damage = 60, range = 40, rate = 0.7, upgradeCost = 630, invested = 1000,
+			base = { damage = 60, range = 40, rate = 0.7 }, branches = { { damage = 96, range = 42, rate = 0.75 }, { damage = 81, range = 50, rate = 0.9 } } },
 		{ id = "t3", heroId = "ironman", ownerId = LOCAL_ID, level = 5, branch = 2, position = v3(30, 0, -10), priority = "Last", damage = 120, range = 33, rate = 1.3, upgradeCost = 0, invested = 2000 },
 		{ id = "t4", heroId = "spiderman", ownerId = ALLY_ID, level = 1, position = v3(0, 0, 40), priority = "First", damage = 10, range = 24, rate = 0.9, upgradeCost = 252, invested = 280 },
 	}
@@ -1212,12 +1214,17 @@ local function session(screen)
 			if type(item.Text) == "string" and string.find(item.Text, "Melhoria 2/5", 1, true) then upgradeLine = true end
 		end
 		check(upgradeLine, tag .. ": a tower's in-match upgrade reads as Melhoria, not a level")
+		local stats = named(gui, "TowerStats")
+		check(stats ~= nil and string.find(stats.Text, "→ 38", 1, true) ~= nil and string.find(stats.Text, "→ 30.6", 1, true) ~= nil,
+			tag .. ": the panel shows damage and range as before -> after, got " .. tostring(stats and stats.Text))
 		click("MELHORAR")
 		check(asked("UpgradeTower"), tag .. ": the upgrade button reaches the server")
 		click("Alvo:")
 		check(asked("SetPriority"), tag .. ": targeting cycles")
 		check(selectTower("t2") ~= nil, tag .. ": a level 4 tower offers both specializations")
 		check(findButton(gui, "Precisão absoluta") ~= nil and findButton(gui, "Flechas explosivas") ~= nil, tag .. ": both branch buttons are shown")
+		local branchOne = named(gui, "TowerBranch1")
+		check(branchOne ~= nil and string.find(branchOne.Text, "⚔ 96", 1, true) ~= nil, tag .. ": each specialization shows the damage it gives, got " .. tostring(branchOne and branchOne.Text))
 		check(selectTower("t3") ~= nil, tag .. ": a maxed tower shows its specialization")
 		check(selectTower("t4") ~= nil, tag .. ": an ally's tower opens read-only")
 		check(findButton(gui, "Vender") == nil, tag .. ": an ally's tower cannot be sold from here")

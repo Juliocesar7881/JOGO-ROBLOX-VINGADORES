@@ -405,6 +405,7 @@ local function collect(player)
 end
 
 local sawWave, sawPriority, sold = false, false, false
+local sawPreview = false
 -- Training is 20 waves: enough loop for all of them plus the results screen.
 for _ = 1, 900 do
 	local snap = latest(ana)
@@ -420,6 +421,7 @@ for _ = 1, 900 do
 			if request(ana, "CastSkill", { skillId = snap.match.ability.id, position = mine.position }).ok then casts += 1 end
 		end
 		if mine and not sawPriority then sawPriority = request(ana, "SetPriority", { towerId = mine.id, priority = "Strongest" }).ok end
+		if mine and mine.level < 4 and mine.next and mine.base then sawPreview = sawPreview or mine.next.damage > mine.base.damage end
 	end
 	collect(ana)
 	frames(2)
@@ -431,6 +433,7 @@ check(results.results and results.results.victory == true, "a defended tutorial 
 check(#towerIds >= 3 and upgrades >= 2, "towers were built and upgraded through the router: " .. #towerIds .. " built, " .. upgrades .. " upgrades")
 check(casts >= 1, "overload was cast mid-wave through the router, got " .. casts)
 check(sawPriority, "targeting priority can be changed mid-wave")
+check(sawPreview, "an owner's tower carries the next upgrade's stronger stats for the panel")
 
 -- Training never offers a rerun: it ends by sending the newcomer to the lobby.
 check(not request(ana, "PlayAgain", {}).ok and latest(ana).phase == "Results", "training refuses PLAY AGAIN without changing the results screen")

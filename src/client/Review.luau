@@ -74,9 +74,11 @@ function Review.start(api)
 		local loadout = p.loadout
 		local towers = {
 			{ id = "review1", heroId = loadout[1], ownerId = player.UserId, level = 2, position = Vector3.new(10, 0, 10),
-				priority = "First", damage = 26, range = 28.8, rate = 1.2, upgradeCost = 350, invested = 475 },
+				priority = "First", damage = 26, range = 28.8, rate = 1.2, upgradeCost = 350, invested = 475,
+				base = { damage = 26, range = 28.8, rate = 1.2 }, next = { damage = 37.7, range = 30.6, rate = 1.25 } },
 			{ id = "review2", heroId = loadout[2], ownerId = player.UserId, level = 4, position = Vector3.new(-20, 0, 5),
-				priority = "Strongest", damage = 60, range = 40, rate = 0.7, upgradeCost = 630, invested = 1000 },
+				priority = "Strongest", damage = 60, range = 40, rate = 0.7, upgradeCost = 630, invested = 1000,
+				base = { damage = 60, range = 40, rate = 0.7 }, branches = { { damage = 96, range = 42, rate = 0.75 }, { damage = 81, range = 50, rate = 0.9 } } },
 		}
 		local heroAbility = Catalog.Heroes[loadout[1]] and Catalog.Heroes[loadout[1]].ability
 		local match = {
