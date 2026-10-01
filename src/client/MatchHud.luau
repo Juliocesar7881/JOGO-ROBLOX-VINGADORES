@@ -192,8 +192,23 @@ function MatchHud.new(ctx)
 			UI.shade(card,30)
 			UI.frame(card,{Position=UDim2.fromOffset(0,6),Size=UDim2.new(0,3,1,-12),BackgroundColor3=tint,ZIndex=54})
 			UI.label(card, L(def.name), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 24), Font = Enum.Font.GothamBold, TextSize = P.class.compact and 13 or 15, TextWrapped = true, ZIndex = 54})
-			UI.label(card, L(def.description), {Position = at(P.descriptions[index], cardRect), Size = dims(P.descriptions[index]), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 54})
-			UI.button(card, T("ESCOLHER", "CHOOSE").." • "..Catalog.Upper(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(P.buttons[index], cardRect), Size = dims(P.buttons[index]), BackgroundColor3=tint, TextSize = 12, ZIndex = 54})
+			-- Side by side, a card has room for a big glyph of what it does and a
+			-- readable description; stacked on a phone it keeps the compact rows.
+			local desc = P.descriptions[index]
+			local descSize = 12
+			if not P.stacked then
+				local effects, instant = def.effects or {}, def.instant or {}
+				local glyph = (instant.energy or effects.killGold or effects.energyIncome) and "💰"
+					or (instant.heal or instant.maxHealth) and "❤️" or instant.gamble and "🎲"
+					or (effects.damage or effects.bossDamage or effects.airDamage or effects.stealthDamage or effects.pierce) and "💥"
+					or effects.speed and "⚡" or (effects.range or effects.supportRange or effects.area) and "🎯"
+					or (effects.cooldown or effects.abilityPower) and "✨" or effects.discount and "🏷️" or "🃏"
+				UI.label(card, glyph, {Name = "CardGlyph", Position = at(desc, cardRect), Size = UDim2.fromOffset(desc.w, 52), TextSize = 40, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
+				desc = { x = desc.x, y = desc.y + 54, w = desc.w, h = desc.h - 54 }
+				descSize = 16
+			end
+			UI.label(card, L(def.description), {Position = at(desc, cardRect), Size = dims(desc), TextSize = descSize, TextColor3 = P.stacked and C.muted or C.text, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, TextXAlignment = P.stacked and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center, ZIndex = 54})
+			UI.button(card, T("ESCOLHER", "CHOOSE").." • "..Catalog.Upper(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(P.buttons[index], cardRect), Size = dims(P.buttons[index]), BackgroundColor3=tint, TextSize = P.stacked and 12 or 14, ZIndex = 54})
 		end
 	end
 
