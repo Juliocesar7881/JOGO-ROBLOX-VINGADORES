@@ -19,7 +19,7 @@ local Review = {}
 Review.STAGES = {
 	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium",
 	"quests", "leaderboard", "settings", "rewards", "guide", "boarding",
-	"preparing", "wave", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat",
+	"preparing", "wave", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
 	"reveal", "revealbase", "revealcommon",
 }
 
@@ -170,7 +170,11 @@ function Review.start(api)
 		intercept(true)
 		local p = fixtureProfile()
 		api.setLanguage(p.settings.language)
-		if MATCH_STAGES[stage] then
+		if stage == "loading" then
+			-- Before the first snapshot: no profile yet, so the splash shows.
+			api.setState({ phase = "Lobby", role = "Standalone" })
+			api.render()
+		elseif MATCH_STAGES[stage] then
 			api.setState(matchFixture(p, stage))
 			api.render()
 			if stage == "tower" then api.selectTower("review2") end

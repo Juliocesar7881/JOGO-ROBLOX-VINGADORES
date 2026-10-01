@@ -1219,10 +1219,31 @@ render = function()
 	if not retained then contextPanel = nil; menuBlur(false) end
 	if not activeMatch() then matchHud.clearUpgradeBoards() end
 	if not state or not state.profile then
-		local frame = UI.roundFrame(main, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -40, 0, 190)}, C.green)
-		UI.create("UISizeConstraint", {MaxSize = Vector2.new(480, 220)}, frame)
-		UI.label(frame, "DOOMSDAY", {Position = UDim2.fromOffset(20, 20), Size = UDim2.new(1, -40, 0, 52), Font = Enum.Font.GothamBlack, TextSize = 38, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center})
-		UI.label(frame, T("Conectando à resistência…", "Connecting to the resistance…"), {Position = UDim2.fromOffset(20, 86), Size = UDim2.new(1, -40, 0, 55), TextColor3 = C.muted, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center})
+		-- The splash between joining and the first snapshot (and again after a
+		-- teleport): the game's name, a bar that moves, and one tip to read.
+		local splash = UI.frame(main, {Name = "LoadingSplash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, ZIndex = 80})
+		UI.create("UIGradient", {Color = ColorSequence.new(C.background:Lerp(C.violet, 0.5), C.background), Rotation = 90}, splash)
+		local card = UI.frame(splash, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.new(1, -40, 0, 260), BackgroundTransparency = 1, ZIndex = 81})
+		UI.create("UISizeConstraint", {MaxSize = Vector2.new(560, 280)}, card)
+		UI.label(card, T("MULTIVERSO", "MULTIVERSE"), {Name = "SplashKicker", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 24, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
+		UI.label(card, "DOOMSDAY", {Name = "SplashTitle", Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 78), Font = UI.Fonts.display, TextSize = 66, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
+		UI.label(card, T("ÚLTIMA DEFESA", "LAST STAND"), {Position = UDim2.fromOffset(0, 108), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 22, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
+		local track = UI.frame(card, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 158), Size = UDim2.new(0.7, 0, 0, 10), BackgroundColor3 = C.ink, ClipsDescendants = true, ZIndex = 82})
+		UI.corner(track, 5)
+		local slider = UI.frame(track, {Name = "SplashBar", Position = UDim2.fromScale(-0.4, 0), Size = UDim2.fromScale(0.4, 1), BackgroundColor3 = C.green, ZIndex = 83})
+		UI.corner(slider, 5)
+		TweenService:Create(slider, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, false), {Position = UDim2.fromScale(1, 0)}):Play()
+		local tips = {
+			{ "Heróis repetidos viram estrelas: +3% de dano por estrela.", "Duplicate heroes become stars: +3% damage per star." },
+			{ "Jogue em grupo: +10% de Ouro e XP por comandante extra.", "Play together: +10% Gold and XP per extra commander." },
+			{ "No nível 5 de uma torre, escolha um dos dois caminhos.", "At tower level 5, pick one of its two paths." },
+			{ "Use o poder do líder (Q) para virar uma onda difícil.", "Use your leader's power (Q) to turn a hard wave." },
+			{ "Missões e partidas enchem a barra da temporada.", "Missions and matches fill the season bar." },
+			{ "Ouro do chão some: ande até ele ou compre o Drone coletor.", "Gold on the ground fades: walk to it or get the Collector drone." },
+		}
+		local tip = tips[math.random(1, #tips)]
+		UI.label(card, T(tip[1], tip[2]), {Name = "SplashTip", Position = UDim2.fromOffset(0, 190), Size = UDim2.new(1, 0, 0, 56), TextSize = 16, TextWrapped = true, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
+		UI.label(splash, T("Conectando à resistência…", "Connecting to the resistance…"), {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -24), Size = UDim2.new(1, -40, 0, 24), TextSize = 14, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
 		return
 	end
 	if state.phase == "Lobby" then renderLobby() elseif state.phase == "Results" then matchHud.renderResults() else renderMatch() end
