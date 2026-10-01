@@ -48,5 +48,9 @@ if ($Action -eq 'command') {
     if (-not $target) { throw 'Studio did not expose a Stop/End Session action.' }
   }
   $target.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+  # Invoking a submenu item can leave the Test menu open as a popup window,
+  # which then answers as Studio's main window; close it again.
+  Start-Sleep -Milliseconds 300
+  try { $menu.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse() } catch { }
 }
 Write-Output ('Sent Studio action: ' + $Action)

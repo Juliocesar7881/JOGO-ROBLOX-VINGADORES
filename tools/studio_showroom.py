@@ -129,7 +129,7 @@ def capture(name: str) -> Path:
     OUT.mkdir(parents=True, exist_ok=True)
     full = OUT / f"{name}-full.png"
     subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ROOT / "tools" / "capture_studio.ps1"),
-                    "-OutputPath", str(full.relative_to(ROOT))], cwd=ROOT, check=True, capture_output=True, text=True)
+                    "-OutputPath", str(full.relative_to(ROOT)), "-WindowHandle", str(studio_sync.STUDIO_WINDOW)], cwd=ROOT, check=True, capture_output=True, text=True)
     # Keep only the 3D viewport: Studio's panels are noise for an art review.
     cropped = OUT / f"{name}.png"
     script = f'''
@@ -156,7 +156,9 @@ def main() -> None:
     parser.add_argument("--name", default=None)
     parser.add_argument("--keep", action="store_true", help="Leave the showroom in the place after the capture")
     parser.add_argument("--zoom", type=float, default=1.0, help="Camera distance factor; smaller is closer")
+    parser.add_argument("--window-handle", type=int, default=0, help="Target a specific Studio window")
     args = parser.parse_args()
+    studio_sync.STUDIO_WINDOW = args.window_handle
     started = time.time()
     marker = f"DOOM_SHOWROOM_{int(started)}"
     if args.kind == "clean":
