@@ -1384,9 +1384,9 @@ local MAP_LIGHTING = {
 		bloom=0.25,fogColor={178,157,137},fogEnd=720,
 	},
 	manhattan = {
-		sun = 2.3, clockTime = 16.4, ambient = { 104, 107, 128 }, outdoor = { 128, 137, 151 },
-		atmosphereColor = { 190, 208, 235 }, atmosphereDensity = 0.22, glare = 0.08,
-		tint = { 244, 240, 255 }, contrast = 0.04, saturation = 0.08, brightness = 0.02,
+		sun = 2.3, clockTime = 15.2, exposure = 0.6, ambient = { 128, 124, 128 }, outdoor = { 150, 148, 150 },
+		atmosphereColor = { 205, 214, 232 }, atmosphereDensity = 0.22, glare = 0.08,
+		tint = { 255, 248, 238 }, contrast = 0.04, saturation = 0.08, brightness = 0.02,
 		bloom = 0.25, fogColor = { 123, 148, 176 }, fogEnd = 680,
 	},
 	gamma = {
@@ -1430,9 +1430,9 @@ local function applyMapLighting(mapId)
 	lighting.GlobalShadows, lighting.ShadowSoftness = true, 0.3
 	-- Night palettes need fill light: dark materials plus a saturated multiply
 	-- grade made towers almost black in the actual Future renderer.
-	lighting.Ambient = rgb(preset.ambient):Lerp(Color3.fromRGB(168, 176, 193), 0.7)
-	lighting.OutdoorAmbient = rgb(preset.outdoor):Lerp(Color3.fromRGB(155, 165, 184), 0.65)
-	lighting.ExposureCompensation = 0.25
+	lighting.Ambient = rgb(preset.ambient):Lerp(Color3.fromRGB(176, 184, 200), 0.84)
+	lighting.OutdoorAmbient = rgb(preset.outdoor):Lerp(Color3.fromRGB(168, 178, 196), 0.8)
+	lighting.ExposureCompensation = preset.exposure or 0.35
 	lighting.FogColor = rgb(preset.fogColor)
 	lighting.FogEnd = preset.fogEnd
 	lighting.FogStart = preset.fogEnd * 0.3
@@ -3834,10 +3834,10 @@ World.StreetRules = { BUILD_LIMIT = BUILD_LIMIT, CLEARANCE = CLEARANCE, EDGE = E
 
 local STREET_THEME = {
 	manhattan = {
-		ground = { Enum.Material.Pavement, Color3.fromRGB(84, 88, 94) },
-		patches = { { Enum.Material.LeafyGrass, Color3.fromRGB(58, 86, 50) }, { Enum.Material.Concrete, Color3.fromRGB(98, 100, 104) } },
+		ground = { Enum.Material.Pavement, Color3.fromRGB(128, 134, 142) },
+		patches = { { Enum.Material.LeafyGrass, Color3.fromRGB(86, 138, 62) }, { Enum.Material.Concrete, Color3.fromRGB(146, 148, 152) } },
 		road = { Enum.Material.Asphalt, Color3.fromRGB(38, 40, 45) },
-		walk = { Enum.Material.Pavement, Color3.fromRGB(116, 118, 122) },
+		walk = { Enum.Material.Pavement, Color3.fromRGB(168, 170, 174) },
 		curb = { Enum.Material.Concrete, Color3.fromRGB(150, 150, 146) },
 		marking = Color3.fromRGB(232, 196, 76),
 		lamp = "street", lampColor = Color3.fromRGB(255, 196, 132), poleColor = Color3.fromRGB(36, 42, 48),
