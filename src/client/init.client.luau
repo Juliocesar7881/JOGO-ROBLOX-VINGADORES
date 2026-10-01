@@ -933,6 +933,7 @@ local function confirmPlacement()
 		local hero, position = selectedHero, selectedPosition
 		act("PlaceTower", {heroId = hero, position = position}, function(reply)
 			audio:Cue("place", 0.05); clearPlacement()
+			effects:PlaceBurst(position, colorFor(hero))
 			-- The price the server actually charged, floating off the wallet.
 			if reply and tonumber(reply.cost) and refs.energy and refs.energy.Parent then
 				celebrate:Float("-" .. number(reply.cost) .. " 💰", refs.energy, C.red)

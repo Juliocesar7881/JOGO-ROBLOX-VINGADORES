@@ -77,7 +77,7 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 
 ## M11 — Próximas melhorias (abertas pelo diretor em 01/10, noite)
 Escolha pela régua: o pior eixo primeiro. Cada item cabe numa sessão.
-- [ ] M11.1 **Uau** (nota 3): ao colocar uma torre, subir de nível e abater chefe, mostrar movimento + som + número em ≤0,3 s (anel que expande, pulso na barra de heróis, "+N" no ouro). Aceite: cena no Studio com 3 quadros seguidos; `Effects.luau` dentro do orçamento de partes.
+- [~] M11.1 (colocar: feito 01/10 — anel + coluna de luz na cor do herói; falta chefe abatido e nível da torre: já tem salto/anel; checar no Studio) **Uau** (nota 3): ao colocar uma torre, subir de nível e abater chefe, mostrar movimento + som + número em ≤0,3 s (anel que expande, pulso na barra de heróis, "+N" no ouro). Aceite: cena no Studio com 3 quadros seguidos; `Effects.luau` dentro do orçamento de partes.
 - [ ] M11.2 **Tela final enxuta**: hoje tem 6 blocos (ondas/ouro/XP, MVP, rank, comandante, temporada, equipe) e rola no computador. Aceite: tudo importante visível sem rolar em 1280×720; o resto atrás de "ver detalhes".
 - [ ] M11.3 **Toque no celular**: colocar torre arrastando do ladrilho (o jogo hoje coloca por toque no chão?). Aceite: teste de contrato de que a colocação aceita toque; revisão em 667×375. Precisa de aparelho real para validar.
 - [ ] M11.4 **Mapa de Gama e Fundição**: ainda os mais escuros da folha de mapas; testar `exposure` 0,45 e luz mais quente. Aceite: folha de mapas com nenhum mapa mais escuro que Manhattan.

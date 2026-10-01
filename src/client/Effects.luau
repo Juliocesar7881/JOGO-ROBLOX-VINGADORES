@@ -612,6 +612,16 @@ function Effects:_groundImpact(position, color, radius)
 	if effect then effect.growFrom, effect.growTo = radius, radius * 2 end
 end
 
+-- A tower just placed: a ring spreads from its pedestal and a short column of
+-- light rises, in the hero's colour. Reduced effects keeps the ring only.
+function Effects:PlaceBurst(position, color)
+	if typeof(position) ~= "Vector3" then return end
+	self:_groundImpact(position, color, 5)
+	local state = self.getState()
+	if state and state.profile and state.profile.settings and state.profile.settings.lowFX then return end
+	self:_effect(Vector3.new(11, 1.5, 1.5), CFrame.new(position + Vector3.new(0, 5.5, 0)) * CFrame.Angles(0, 0, math.pi / 2), color, 0.4, Enum.PartType.Cylinder, 0.6)
+end
+
 -- The signature of an ultimate: a pillar of light and three shockwaves rolling
 -- out from the cast point, then one ring per extra effect in that effect's own
 -- color so a player can read what the ultimate just did. Reduced effects keeps a
