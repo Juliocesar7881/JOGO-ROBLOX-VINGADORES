@@ -7,3 +7,16 @@ Uma linha por passo, a mais nova embaixo.
 - 2026-10-01 00:28 — FEITO M0.2: docs/director/AUDIT.md (TTD × nós por área). Achados: barra de heróis quebra nomes e corta espaços 4–5 no celular; INVOCAR escondido no celular; painel da torre cobre o chefe; sem JOGAR DE NOVO; chat do Roblox sobre o menu. Corrigido: câmera da partida (9a774e9), modo celular da revisão (altura 0) e leitura de logs dos dois processos do Studio. Nova seção M1.5 no BACKLOG.
 - 2026-10-01 00:34 — FEITO M1.5.1 barra de heróis em ladrilhos (56d19ff), M1.5.3 chat à direita (3f2fdfc), M1.5.4 onda cabe + placa BASE. Notas barra: leitura 4, acabamento 4 (antes 2).
 - 2026-10-01 07:37 — Pausa por limite de uso ~01:15–07:30 (nenhuma rodada agendada abriu sessão: 0 execuções registradas). FEITO M1.5.2 baús no celular (bae208f) e M1.5.5 JOGAR DE NOVO (2dc8b53: voto no servidor, mesmo mapa/modo, treino recusa). Notas fim de partida: clareza 5, perto do TTD 5.
+- 2026-10-01 07:46 — FEITO M1.5.6 + M3.3: painel da torre com antes→depois vindo do servidor (f4d446d, 8f1c068); texto 13–18 px, especializações lado a lado. Cliente bateu 200 registradores: constantes agrupadas em 'kit'. Próximo: M1.3 dividir o cliente.
+- 2026-10-01 07:53 — FEITO M1.3: painéis do lobby em src/client/Panels.luau (57d46fa); init.client 199→121 KB, limite de registradores resolvido; guarda <150 KB por script. Revisão no Studio: 14 painéis abrem sem erro.
+- 2026-10-01 08:09 — FEITO M2.1–M2.3 (e0618cc): todos os nomes/textos originais, test_ip_safety na suíte, conquistas antigas renomeadas no load, código MULTIVERSO. FEITO M2.5 (e41a60e): 11 uniformes originais (Volt, Égide, Laçadora, Pedregulho, Brontus, Presa, Confete, Ônix, Cavaleiro Brasa, Órbita, Solaria), conferidos na vitrine do Studio. M2.4 parcial: placas do lobby trocadas; o lobby estático do editor só muda quando o servidor reconstrói (Play/publicação).
+- 2026-10-01 08:13 — FEITO M2.6 (1286501): paletas originais para os outros 24 heróis; Eco sem chifres, Arcano sem cavanhaque; vitrine com os 36 no Studio sem erro. M2 completo.
+- 2026-10-01 08:28 — FEITO M3.1 números de dano (3cc9b47); M3.5+M4.1 passe 3x, pacote inicial, ouro 30k (2c232ef). M4.2 BLOQUEADO: Chrome desconectado. Próximo: M3.7 chegada do chefe.
+- 2026-10-01 08:37 — FEITO M3.7 chegada do chefe com câmera + banner de fase (teste no client_boot). Captura do Studio é lenta (~2,5 s por quadro) para pegar o voo.
+- 2026-10-01 08:41 — FEITO M3.8 MVP e placar do grupo (474f01a), revisado no Studio (computador e celular).
+- 2026-10-01 08:44 — FEITO M3.4 limite por herói por raridade (8/6/5/4/3) com contador no ladrilho.
+- 2026-10-01 08:47 — FEITO M3.9 ímã do cliente = servidor; duel sweep corrigido. Outliers anotados no M6.1.
+- 2026-10-01 08:49 — FEITO M3.6 aviso de chefe a 3/2/1 ondas na preparação. M3 concluído exceto M3.2 (lotes de Shot).
+- 2026-10-01 08:53 — FEITO M3.2 tiros em lote por quadro (087dbab), conferido no Studio. M3 completo.
+- 2026-10-01 08:59 — FEITO M8.1 (8825e22): treino de 12 ondas (7,5 min na simulação), ação StartTraining (um toque embarca no treino), botão COMEÇAR TREINO no lobby do novato; cena 'newcomer' na revisão. Novos itens M1.5.7 (estrela amarela enche a câmera) e M1.5.8.
+- 2026-10-01 09:00 — M1.5.7 não reproduz (cunha amarela era passageira).
