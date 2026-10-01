@@ -381,26 +381,65 @@ function Panels.new(ctx)
 		contextPremium(body)
 	end
 
-	local function contextQuests(body)
+	-- Today's missions, the week's mission, and any older ones still unclaimed
+	-- (a mission lives three days after it was drawn). The newest set of each
+	-- period is the current one; a ready mission always comes first.
+	local function timeLeft(seconds)
+		seconds = math.max(0, seconds)
+		if seconds >= 86400 then return math.floor(seconds / 86400) .. "d " .. math.floor((seconds % 86400) / 3600) .. "h" end
+		return math.floor(seconds / 3600) .. "h " .. string.format("%02d", math.floor((seconds % 3600) / 60)) .. "m"
+	end
 
-		local quests = {}
-		for id, quest in pairs(profile().quests or {}) do table.insert(quests, {id = id, quest = quest}) end
-		table.sort(quests, function(a, b) return a.id < b.id end)
-		for _, item in ipairs(quests) do
-			local quest, id = item.quest, item.id
-			local progress = math.min(quest.progress or 0, quest.target or 1)
-			local ready = not quest.claimed and progress >= (quest.target or 1)
-			local card = UI.roundFrame(body, {Name = "Quest_" .. id, Size = UDim2.new(1, -6, 0, 122), BackgroundColor3 = ready and C.green:Lerp(C.panel, 0.6) or C.card}, ready and C.green or nil)
-			UI.label(card, L(quest.name), {Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -160, 0, 28), Font = UI.Fonts.display, TextSize = 19})
-			UI.label(card, L(quest.description), {Position = UDim2.fromOffset(14, 36), Size = UDim2.new(1, -160, 0, 36), TextSize = 13, TextWrapped = true, TextColor3 = C.muted})
-			local fill = UI.bar(card, ready and C.green or C.gold, UDim2.fromOffset(14, 84), UDim2.new(1, -170, 0, 18))
-			fill.Size = UDim2.fromScale(progress / math.max(quest.target or 1, 1), 1)
-			UI.label(fill.Parent, progress .. " / " .. (quest.target or 1), {Size = UDim2.fromScale(1, 1), TextSize = 13, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
-			UI.label(card, "💰" .. number(quest.gold or 0) .. "  ⭐" .. number(quest.xp or 0), {Position = UDim2.new(1, -146, 0, 10), Size = UDim2.fromOffset(134, 26), TextSize = 15, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
-			local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or T("Resgatar recompensa", "Claim reward"), function() act("ClaimQuest", {questId = id}) end, {Position = UDim2.new(1, -146, 0, 50), Size = UDim2.fromOffset(134, 58), BackgroundColor3 = ready and C.green or C.card, TextSize = 14})
-			if quest.claimed or progress < (quest.target or 1) then UI.disabled(claim) end
+	local function contextQuests(body)
+		local newest, groups, total = {}, { daily = {}, weekly = {}, old = {} }, 0
+		for _, quest in pairs(profile().quests or {}) do
+			local period = quest.period or "daily"
+			newest[period] = math.max(newest[period] or 0, quest.expiresAt or 0)
 		end
-		if #quests == 0 then UI.label(body, T("Conclua o treinamento para iniciar suas missões.", "Complete training to begin your missions."), {Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.muted}) end
+		for id, quest in pairs(profile().quests or {}) do
+			local period = quest.period or "daily"
+			local current = (quest.expiresAt or 0) == newest[period]
+			if current or not quest.claimed then
+				table.insert(groups[current and period or "old"], {id = id, quest = quest})
+				total += 1
+			end
+		end
+		local function state(item)
+			local quest = item.quest
+			if quest.claimed then return 2 end
+			return (quest.progress or 0) >= (quest.target or 1) and 0 or 1
+		end
+		local function drawGroup(list, title, subtitle)
+			if #list == 0 then return end
+			table.sort(list, function(a, b)
+				local sa, sb = state(a), state(b)
+				if sa ~= sb then return sa < sb end
+				return a.id < b.id
+			end)
+			UI.section(body, title, subtitle)
+			for _, item in ipairs(list) do
+				local quest, id = item.quest, item.id
+				local progress = math.min(quest.progress or 0, quest.target or 1)
+				local ready = not quest.claimed and progress >= (quest.target or 1)
+				local card = UI.roundFrame(body, {Name = "Quest_" .. id, Size = UDim2.new(1, -6, 0, 122), BackgroundColor3 = ready and C.green:Lerp(C.panel, 0.6) or C.card}, ready and C.green or nil)
+				UI.label(card, L(quest.name), {Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -160, 0, 28), Font = UI.Fonts.display, TextSize = 19})
+				UI.label(card, L(quest.description), {Position = UDim2.fromOffset(14, 36), Size = UDim2.new(1, -160, 0, 36), TextSize = 13, TextWrapped = true, TextColor3 = C.muted})
+				local fill = UI.bar(card, ready and C.green or C.gold, UDim2.fromOffset(14, 84), UDim2.new(1, -170, 0, 18))
+				fill.Size = UDim2.fromScale(progress / math.max(quest.target or 1, 1), 1)
+				UI.label(fill.Parent, progress .. " / " .. (quest.target or 1), {Size = UDim2.fromScale(1, 1), TextSize = 13, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
+				UI.label(card, "💰" .. number(quest.gold or 0) .. "  ⭐" .. number(quest.xp or 0), {Position = UDim2.new(1, -146, 0, 10), Size = UDim2.fromOffset(134, 26), TextSize = 15, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
+				local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or T("Resgatar recompensa", "Claim reward"), function() act("ClaimQuest", {questId = id}) end, {Position = UDim2.new(1, -146, 0, 50), Size = UDim2.fromOffset(134, 58), BackgroundColor3 = ready and C.green or C.card, TextSize = 14})
+				if quest.claimed or progress < (quest.target or 1) then UI.disabled(claim) end
+			end
+		end
+		local now = os.time()
+		-- The day's set is replaced at the next UTC midnight, two days before it expires.
+		local dailyAt = (newest.daily or 0) - 2 * 86400
+		if newest.daily then UI.label(body, T("Novas missões em ", "New missions in ") .. timeLeft(dailyAt - now) .. T("  •  semanais em ", "  •  weekly ones in ") .. timeLeft((newest.weekly or now) - now), {Name = "QuestReset", Size = UDim2.new(1, -6, 0, 24), TextSize = 13, TextColor3 = C.muted}) end
+		drawGroup(groups.daily, T("MISSÕES DE HOJE", "TODAY'S MISSIONS"), nil)
+		drawGroup(groups.weekly, T("MISSÕES DA SEMANA", "THIS WEEK'S MISSIONS"), nil)
+		drawGroup(groups.old, T("AINDA PARA RESGATAR", "STILL TO CLAIM"), nil)
+		if total == 0 then UI.label(body, T("Conclua o treinamento para iniciar suas missões.", "Complete training to begin your missions."), {Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.muted}) end
 		UI.section(body, T("Títulos", "Titles"))
 		local titles = {}
 		for id, name in pairs(profile().titles or {}) do table.insert(titles, {id = id, name = name}) end

@@ -515,6 +515,19 @@ do
 	check(kinds >= 6, "Three weeks of days use at least six mission kinds, got " .. kinds)
 	local week = PlayerService.QuestKeys("weekly", 2857)
 	check(#week == 3 and week[1] == "waves" and week[2] == "bosses", "A week brings the wave and boss missions plus one more")
+	-- Every mission says what it asks for, in both languages, apart from its name.
+	for id, quest in pairs(service:Get(p1).quests) do
+		check(#quest.description.pt > 10 and #quest.description.en > 10 and quest.description.pt ~= quest.name.pt and quest.description.en ~= quest.name.en, "The mission " .. id .. " has its own description")
+	end
+	-- A new account gets today's three missions and the week's three, not a catch-up of earlier days.
+	local newbie = player(82)
+	service:Load(newbie)
+	check(service:Award(newbie, "q:first", { waves = 1 }), "a first award is accepted")
+	local daily, weekly = 0, 0
+	for _, quest in pairs(service:Get(newbie).quests) do
+		if quest.period == "daily" then daily += 1 else weekly += 1 end
+	end
+	check(daily == 3 and weekly == 3, "A new account has 3 daily and 3 weekly missions, got " .. daily .. "/" .. weekly)
 	-- Progress for the new kinds, from verified reward deltas only.
 	local record = stores.Tests.values.p_1
 	local function mission(key, target) record.quests["test:" .. key] = { id = "test:" .. key, kind = key, period = "daily", name = { pt = key, en = key }, progress = 0, target = target, gold = 1, xp = 1, claimed = false, expiresAt = os.time() + 86400, heroIds = {} } end

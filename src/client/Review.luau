@@ -211,7 +211,8 @@ function Review.start(api)
 			elseif stage == "basechests" then
 				api.openContext("chests", { chestId = "base_cosmic" })
 			elseif stage ~= "lobby" and stage ~= "boarding" and stage ~= "newcomer" then
-				api.openContext(stage, stage == "hero" and { heroId = p.loadout[1] } or {})
+				-- hud = true: the panel opens centered, as from the nav dock, not beside a 3D desk that may be off screen.
+				api.openContext(stage, stage == "hero" and { heroId = p.loadout[1], hud = true } or { hud = true })
 			end
 		end
 		task.delay(0.8, function()

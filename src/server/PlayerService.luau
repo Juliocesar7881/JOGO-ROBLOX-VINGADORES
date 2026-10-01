@@ -256,21 +256,38 @@ function PlayerService.QuestKeys(period, number)
 	return keys
 end
 
+-- What a mission asks for, in words: the card shows it under the name.
+local function questDescription(key, target)
+	local n = tostring(target)
+	if key == "waves" then return { pt = "Sobreviva a " .. n .. " ondas, somando todas as partidas.", en = "Survive " .. n .. " waves, counted across all matches." }
+	elseif key == "bosses" then return { pt = "Derrote " .. n .. (target == 1 and " chefe" or " chefes") .. " em partidas.", en = "Defeat " .. n .. (target == 1 and " boss" or " bosses") .. " in matches." }
+	elseif key == "wins" then return { pt = "Vença " .. n .. (target == 1 and " defesa" or " defesas") .. " (o treino não conta).", en = "Win " .. n .. (target == 1 and " defense" or " defenses") .. " (training does not count)." }
+	elseif key == "heroes" then return { pt = "Use " .. n .. " heróis diferentes em partidas.", en = "Fight with " .. n .. " different heroes in matches." }
+	elseif key == "gold" then return { pt = "Ganhe " .. n .. " de Ouro em partidas.", en = "Earn " .. n .. " Gold in matches." }
+	elseif key == "campaign" then return { pt = "Termine " .. n .. (target == 1 and " partida" or " partidas") .. " da campanha.", en = "Finish " .. n .. " campaign " .. (target == 1 and "match." or "matches.") }
+	elseif key == "noDamage" then return { pt = "Vença " .. n .. (target == 1 and " partida" or " partidas") .. " sem a base sofrer dano.", en = "Win " .. n .. (target == 1 and " match" or " matches") .. " without the base taking damage." }
+	elseif key == "cards" then return { pt = "Vença " .. n .. (target == 1 and " partida" or " partidas") .. " no modo Cartas.", en = "Win " .. n .. " Cards-mode " .. (target == 1 and "match." or "matches.") }
+	elseif key == "chests" then return { pt = "Abra " .. n .. (target == 1 and " baú" or " baús") .. " de heróis.", en = "Open " .. n .. " hero " .. (target == 1 and "chest." or "chests.") } end
+	return { pt = "", en = "" }
+end
+
 local function refreshQuests(profile, now)
 	for id, quest in pairs(profile.quests) do
-		if type(quest) ~= "table" or (quest.expiresAt or 0) <= now then profile.quests[id] = nil end
+		if type(quest) ~= "table" or (quest.expiresAt or 0) <= now then profile.quests[id] = nil
+		else quest.description = questDescription(quest.kind, quest.target) end
 	end
 	local today = math.floor(now / DAY)
 	local function add(definition, period, index, expires)
 		local id = period .. ":" .. tostring(index) .. ":" .. definition.key
 		if not profile.quests[id] then
-			profile.quests[id] = { id = id, kind = definition.key, period = period, name = copy(definition.name), description = copy(definition.name), progress = 0, target = definition.target, gold = definition.gold, xp = definition.xp, claimed = false, expiresAt = expires, heroIds = {} }
+			profile.quests[id] = { id = id, kind = definition.key, period = period, name = copy(definition.name), description = questDescription(definition.key, definition.target), progress = 0, target = definition.target, gold = definition.gold, xp = definition.xp, claimed = false, expiresAt = expires, heroIds = {} }
 		end
 	end
-	for day = today - 2, today do
-		for _, definition in ipairs(DAILY_FIXED) do add(definition, "daily", day, (day + 3) * DAY) end
-		for _, definition in ipairs(drawQuests(DAILY_POOL, 2, day)) do add(definition, "daily", day, (day + 3) * DAY) end
-	end
+	-- Only today's set is drawn. An earlier day's set, if the account was here that
+	-- day, lives on (unclaimed missions stay claimable for two more days); a day the
+	-- account missed is not made up with free missions.
+	for _, definition in ipairs(DAILY_FIXED) do add(definition, "daily", today, (today + 3) * DAY) end
+	for _, definition in ipairs(drawQuests(DAILY_POOL, 2, today)) do add(definition, "daily", today, (today + 3) * DAY) end
 	local week = math.floor((today + 3) / 7) -- Monday-based UTC week.
 	for _, definition in ipairs(WEEKLY_FIXED) do add(definition, "weekly", week, (week * 7 + 4) * DAY) end
 	for _, definition in ipairs(drawQuests(WEEKLY_POOL, 1, week)) do add(definition, "weekly", week, (week * 7 + 4) * DAY) end
