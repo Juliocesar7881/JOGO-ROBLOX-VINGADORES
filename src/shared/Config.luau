@@ -32,12 +32,14 @@ return {
 	CollectRadius = 8,
 	Products = {
 		Passes = {
-			collector = { id = 0 }, training = { id = 0 },
-			vip = { id = 0 }, speed3 = { id = 0 },
+			-- Created in the Creator Hub by the director (2026-10-01). The VIP
+			-- pass exists but its price still has to be switched on there.
+			collector = { id = 2004326420 }, training = { id = 2001722936 },
+			vip = { id = 2003954466 }, speed3 = { id = 2001776936 },
 		},
 		Consumables = {
-			gold1000 = { id = 0 }, gold5000 = { id = 0 }, gold12000 = { id = 0 }, gold30000 = { id = 0 },
-			starterPack = { id = 0 },
+			gold1000 = { id = 3715833438 }, gold5000 = { id = 3715833690 }, gold12000 = { id = 3715833842 }, gold30000 = { id = 3715833975 },
+			starterPack = { id = 3715833256 },
 		},
 	},
 	-- Optional owned/licensed audio IDs. Zero keeps the experience silent.
