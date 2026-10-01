@@ -44,8 +44,9 @@ function Review.start(api)
 		p.loadout = {}
 		for index = 1, 5 do p.loadout[index] = Catalog.HeroOrder[index] end
 		p.heroes, p.abilities, p.bases = {}, {}, {}
-		for _, id in ipairs(Catalog.HeroOrder) do
-			p.heroes[id] = { level = 10, xp = 1200 }
+		for index, id in ipairs(Catalog.HeroOrder) do
+			-- A spread of stars and one shiny hero, to look at the collection.
+			p.heroes[id] = { level = 10, xp = 1200, stars = index % 6, shiny = index == 1 or nil }
 			p.abilities[id] = 2
 		end
 		for _, id in ipairs(Catalog.BaseOrder) do p.bases[id] = true end
