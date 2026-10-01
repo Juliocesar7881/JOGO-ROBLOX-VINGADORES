@@ -789,12 +789,18 @@ Catalog.Products = {
 	Passes = {
 		collector = { id = 0, price = 149, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold.") },
 		training = { id = 0, price = 199, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP.") },
+		speed3 = { id = 0, price = 149, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. A partida acelera quando todo o grupo escolhe 3x.", "Unlocks 3x in matches. The match speeds up when the whole squad picks 3x.") },
 		vip = { id = 0, price = 299, name = text("Pacote VIP visual", "VIP Style Pack"), description = text("Título, emote, trilha e aparência especial do drone.", "Title, emote, trail and special drone appearance.") },
 	},
 	Consumables = {
 		gold1000 = { id = 0, price = 79, gold = 1000, name = text("1.000 de Ouro", "1,000 Gold") },
 		gold5000 = { id = 0, price = 299, gold = 5000, name = text("5.000 de Ouro", "5,000 Gold") },
 		gold12000 = { id = 0, price = 599, gold = 12000, name = text("12.000 de Ouro", "12,000 Gold") },
+		gold30000 = { id = 0, price = 1299, gold = 30000, name = text("30.000 de Ouro", "30,000 Gold") },
+		-- Once per account: an epic hero and Gold. Bought again (a second
+		-- prompt racing the first), it is paid in Gold instead of the hero.
+		starterPack = { id = 0, price = 99, gold = 5000, heroId = "hulk", repeatGold = 2500, name = text("Pacote Inicial", "Starter Pack"),
+			description = text("Uma vez por conta: Pedregulho (épico) + 5.000 de Ouro.", "Once per account: Boulder (epic) + 5,000 Gold.") },
 	},
 	-- One product per purchasable hero, priced by rarity. The two starter
 	-- heroes are free and never sold.

@@ -18,7 +18,7 @@ end
 
 local DAY = 86400
 local SCHEMA_VERSION = 1
-local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents" }
+local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
 local ACTIONS = { BuyGuaranteed = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
@@ -95,7 +95,7 @@ local function newProfile(now)
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
 		pity = { legendary = 0 },
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
-		codes = {},
+		codes = {}, starterPack = false,
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
 		quests = {}, achievements = {}, best = {},
@@ -781,7 +781,14 @@ function PlayerService:_receipt(receipt)
 			-- A hero the account already owns is never wasted: it becomes gold.
 			self:_grantHero(profile, heroId, now, { refundGold = price * GOLD_PER_ROBUX, mastery = 0 })
 		else
-			profile.gold += product.gold
+			profile.gold += product.gold or 0
+			-- The starter pack's hero comes once per account.
+			if product.heroId and not profile.starterPack then
+				self:_grantHero(profile, product.heroId, now, { refundGold = product.repeatGold or 0, mastery = 0 })
+				profile.starterPack = true
+			elseif product.heroId then
+				profile.gold += product.repeatGold or 0
+			end
 		end
 		profile._receipts[purchaseId] = { productId = receipt.ProductId, at = now }
 		return true

@@ -312,11 +312,38 @@ function Panels.new(ctx)
 		end
 	end
 
+	-- The starter pack, featured above every tab until the account owns it.
+	local function starterOffer(body)
+		local pack=Catalog.Products.Consumables.starterPack
+		if not pack or profile().starterPack then return end
+		local info=productInfo["product:starterPack"]
+		local ready=type(info)=="table"
+		local row=UI.roundFrame(body,{Name="StarterPack",Size=UDim2.new(1,-6,0,132),BackgroundColor3=C.gold:Lerp(C.panel,0.45)},C.gold)
+		UI.candy(row)
+		heroPortrait(row,pack.heroId,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(104,116)})
+		UI.chip(row,T("SÓ UMA VEZ","ONE TIME ONLY"),C.red,{Position=UDim2.fromOffset(120,10),Size=UDim2.fromOffset(120,22),TextSize=12})
+		UI.label(row,Catalog.Upper(L(pack.name)),{Position=UDim2.fromOffset(120,34),Size=UDim2.new(1,-130,0,28),Font=UI.Fonts.display,TextSize=22,TextColor3=C.gold})
+		UI.label(row,L(Catalog.Heroes[pack.heroId].name).." + 💰 "..UI.format(pack.gold),{Position=UDim2.fromOffset(120,60),Size=UDim2.new(1,-130,0,22),Font=UI.Fonts.display,TextSize=16})
+		local buy=UI.button(row,ready and ("R$ "..tostring(info.price)) or T("Carregando preço…","Loading price…"),function()
+			if not ready then return end
+			local ok=pcall(function() MarketplaceService:PromptProductPurchase(player,info.id) end)
+			if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
+		end,{Name="Buy_product:starterPack",Position=UDim2.new(0,120,1,-46),Size=UDim2.new(1,-132,0,40),BackgroundColor3=C.green,TextSize=17})
+		if not ready then UI.disabled(buy) end
+	end
+
 	local function contextPremium(body)
+	 starterOffer(body)
 	 categoryTabs(body,"PremiumTabs",{{id="hero",label=T("HERÓIS","HEROES")},{id="pass",label=T("PASSES","PASSES")},{id="product",label=T("OURO","GOLD")}},premiumCategory,function(id) premiumCategory=id; renderContext() end)
 		for _,group in ipairs({{kind="hero",items=Catalog.Products.Heroes},{kind="pass",items=Catalog.Products.Passes},{kind="product",items=Catalog.Products.Consumables}}) do
 			if group.kind~=premiumCategory then continue end
-			local keys={}; for key in pairs(group.items) do table.insert(keys,key) end; table.sort(keys)
+			-- Cheapest first; the starter pack has its own banner above.
+			local keys={}; for key in pairs(group.items) do if key~="starterPack" then table.insert(keys,key) end end
+			table.sort(keys,function(a,b)
+				local pa,pb=group.items[a].price or 0,group.items[b].price or 0
+				if pa~=pb then return pa<pb end
+				return a<b
+			end)
 			for _,key in ipairs(keys) do
 				local def=group.items[key]; local info=productInfo[group.kind..":"..key]
 				local owned=group.kind=="hero" and (profile().heroes or {})[key] or group.kind=="pass" and (profile().passes or {})[key]

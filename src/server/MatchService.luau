@@ -72,15 +72,16 @@ function Match:Speed()
 	return self.running and self.speed or 1
 end
 
+-- The match runs at the slowest speed anyone present chose: 2x when all
+-- chose 2x or more, 3x (a pass) only when all chose 3x.
 function Match:_refreshSpeed()
-	local anyone, allFast = false, true
+	local slowest = nil
 	for _, p in pairs(self.participants) do
 		if not p.returned and not p.disconnectedAt then
-			anyone = true
-			if p.speedVote ~= 2 then allFast = false end
+			slowest = math.min(slowest or 3, p.speedVote or 1)
 		end
 	end
-	self.speed = (anyone and allFast) and 2 or 1
+	self.speed = slowest or 1
 end
 
 -- Preparation ends early once everyone either pressed READY or has
@@ -1357,7 +1358,8 @@ function Match:Handle(player,action,payload)
 		self:Finish(false,true)
 		return true,{ended=true}
 	elseif action=="SetSpeed" then
-		if payload.speed~=1 and payload.speed~=2 then return false,"Velocidade inválida. / Invalid speed." end
+		if payload.speed~=1 and payload.speed~=2 and payload.speed~=3 then return false,"Velocidade inválida. / Invalid speed." end
+		if payload.speed==3 and not (p.profile.passes and p.profile.passes.speed3) then return false,"A velocidade 3x é do passe 3x na loja. / 3x speed comes with the 3x pass in the shop." end
 		p.speedVote=payload.speed
 		self:_refreshSpeed()
 		return true,{speed=self.speed}
@@ -1404,7 +1406,7 @@ function Match:Snapshot(player)
 		if e.def.boss and not e.rewardless then boss={id=e.id,name=e.def.name,hp=e.hp,maxHP=e.maxHP,phase=e.phase,hint=e.hint,final=e.final or nil} break end
 	end
 	local votes=0 for _ in pairs(self.skipVotes or {}) do votes+=1 end
-	local speedVotes=0 for _,other in pairs(self.participants) do if not other.returned and other.speedVote==2 then speedVotes+=1 end end
+	local speedVotes=0 for _,other in pairs(self.participants) do if not other.returned and (other.speedVote or 1)>=(p.speedVote or 1) and (p.speedVote or 1)>1 then speedVotes+=1 end end
 	-- The next boss wave, so the wave bar can count down to it.
 	local nextBoss
 	local total=self.rules.WaveCount(self.modeId,self.mapId)

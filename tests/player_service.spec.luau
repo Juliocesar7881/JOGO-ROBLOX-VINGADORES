@@ -91,7 +91,7 @@ local config = {
 	Codes = { TESTE = { gold = 200 }, VELHO = { gold = 1, expires = 1 }, BAU = { gold = 0, chest = "rare" } },
 	Products = {
 		Passes = { collector = { id = 201 }, training = { id = 202 } },
-		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 } },
+		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 }, starterPack = { id = 103 } },
 		Heroes = { falcon = { id = 301 }, thor = { id = 302 }, ironman = { id = 999 } },
 	},
 }
@@ -345,6 +345,23 @@ check(service:Get(p1).gold == goldBeforeThor + Catalog.Products.Heroes.thor.pric
 check(service:_receipt({ PlayerId = 1, ProductId = 302, PurchaseId = "thor-1" }) == "granted" and service:Get(p1).gold == goldBeforeThor + Catalog.Products.Heroes.thor.price * 10, "The receipt ledger stays exact")
 failBefore = 3
 check(service:_receipt({ PlayerId = 1, ProductId = 301, PurchaseId = "falcon-x" }) == "pending", "A storage failure leaves a hero receipt pending")
+failBefore = 0
+
+-- The starter pack: an epic hero and Gold, once per account.
+do
+	local pack = Catalog.Products.Consumables.starterPack
+	local before = service:Get(p1)
+	check(before.starterPack == false and not before.heroes[pack.heroId], "A new account has not bought the starter pack")
+	local goldBefore = before.gold
+	check(service:_receipt({ PlayerId = 1, ProductId = 103, PurchaseId = "starter-1" }) == "granted", "The starter pack is granted")
+	local after = service:Get(p1)
+	check(after.starterPack == true and after.heroes[pack.heroId] ~= nil and after.gold == goldBefore + pack.gold,
+		"It brings its hero, its Gold and marks the account")
+	check(service:_receipt({ PlayerId = 1, ProductId = 103, PurchaseId = "starter-1" }) == "granted" and service:Get(p1).gold == goldBefore + pack.gold,
+		"A replayed starter receipt is inert")
+	check(service:_receipt({ PlayerId = 1, ProductId = 103, PurchaseId = "starter-2" }) == "granted"
+		and service:Get(p1).gold == goldBefore + pack.gold * 2 + pack.repeatGold, "Bought again, the pack pays Gold instead of a second hero")
+end
 
 -- Some regions restrict paid random items, so Gold packs are withheld there.
 do

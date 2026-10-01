@@ -867,7 +867,8 @@ do
 	local match, player = stage({ wave = 3 })
 	local p = match.participants[player.UserId]
 	check(match:Speed() == 1, "a match starts at normal speed")
-	check(not match:Handle(player, "SetSpeed", { speed = 3 }), "only 1x and 2x exist")
+	check(not match:Handle(player, "SetSpeed", { speed = 3 }), "3x needs the 3x pass")
+	check(not match:Handle(player, "SetSpeed", { speed = 4 }), "only 1x, 2x and 3x exist")
 	check(not match:Handle(player, "SetSpeed", { speed = "2" }), "a speed must be a number")
 	local ok, reply = match:Handle(player, "SetSpeed", { speed = 2 })
 	check(ok and reply.speed == 2 and match:Speed() == 2, "a solo commander switches to 2x at once")
@@ -882,6 +883,10 @@ do
 	local elapsedBefore = match.elapsed
 	match:Step(Config.SimulationStep * 2)
 	check(math.abs(match.elapsed - elapsedBefore - Config.SimulationStep * 2) < 1e-6, "match time itself runs at 2x")
+	p.profile.passes = p.profile.passes or {}
+	p.profile.passes.speed3 = true
+	check(match:Handle(player, "SetSpeed", { speed = 3 }) and match:Speed() == 3, "with the pass, a solo commander plays at 3x")
+	p.profile.passes.speed3 = nil
 	check(match:Handle(player, "SetSpeed", { speed = 1 }) and match:Speed() == 1, "back to 1x")
 
 	-- Auto-skip ends preparation as if READY had been pressed every time.

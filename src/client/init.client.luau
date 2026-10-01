@@ -1159,7 +1159,9 @@ end
 -- remembers the choice for the next match. Neither ever changes a rule here.
 local function toggleSpeed()
 	if not activeMatch() then return end
-	local wanted = (state.match.speedVote or 1) == 2 and 1 or 2
+	-- 1x -> 2x -> 3x (with the pass) -> 1x.
+	local current = state.match.speedVote or 1
+	local wanted = current == 1 and 2 or (current == 2 and profile().passes and profile().passes.speed3) and 3 or 1
 	act("SetSpeed", {speed = wanted}, function() audio:Cue("wave", 0.1) end)
 	act("Settings", {fastForward = wanted == 2})
 end
@@ -1559,12 +1561,15 @@ updateMatch = function()
 	refs.energy.Text = "💰 " .. number(match.cash) .. (waiting > 0 and ("  +" .. number(waiting)) or "")
 	refs.energy.TextSize=mobile() and 16 or 22
 	if refs.speedToggle then
-		local fast, voted = (match.speed or 1) == 2, (match.speedVote or 1) == 2
+		local speed, vote = match.speed or 1, match.speedVote or 1
 		local party = match.partySize or 1
-		-- In a group, 2x starts only when everyone asked; show who is waiting.
-		refs.speedToggle.Text = fast and "▶▶ 2x" or (voted and party > 1 and ("2x " .. tostring(match.speedVotes or 1) .. "/" .. tostring(party)) or "▶ 1x")
-		refs.speedToggle.BackgroundColor3 = fast and C.gold or (voted and C.gold:Lerp(C.card, 0.6) or C.card)
-		refs.speedToggle.TextColor3 = fast and C.background or C.text
+		-- In a group, a faster speed starts only when everyone asked for it;
+		-- show who is waiting.
+		local label = speed >= 3 and "▶▶▶ 3x" or speed == 2 and "▶▶ 2x" or "▶ 1x"
+		if vote > speed and party > 1 then label = tostring(vote) .. "x " .. tostring(match.speedVotes or 1) .. "/" .. tostring(party) end
+		refs.speedToggle.Text = label
+		refs.speedToggle.BackgroundColor3 = speed > 1 and C.gold or (vote > 1 and C.gold:Lerp(C.card, 0.6) or C.card)
+		refs.speedToggle.TextColor3 = speed > 1 and C.background or C.text
 	end
 	if refs.autoSkipToggle then
 		refs.autoSkipToggle.Text = match.autoSkip and "AUTO ✓" or "AUTO"
