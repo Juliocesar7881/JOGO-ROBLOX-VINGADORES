@@ -58,9 +58,9 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 
 ## M6 — Progressão
 - [x] M6.1 (dados 01/10 duel sweep: Juba 83–94% e Geada 74–95% fortes demais p/ raros; Sombra 32–56%, Guaxo 27–64% fracos; mítico só 1 torre a 5000) Curva de raridade medida e ajustada (`--sweep heroes`).
-- [ ] M6.2 Estrelas por duplicata e variante brilhante.
-- [ ] M6.3 Missões rotativas e marcos de coleção.
-- [ ] M6.4 Passe de temporada grátis/premium.
+- [x] M6.2 Estrelas por duplicata e variante brilhante.
+- [x] M6.3 Missões rotativas e marcos de coleção.
+- [x] M6.4 Passe de temporada grátis/premium (30 níveis, 600 XP cada; passe `season` 399 com ID 0 até o dono criar no Creator Hub).
 
 ## M7 — Áudio
 - [ ] M7.1 Enviar WAVs no Creator Hub em ordem de importância; IDs no `Config.Audio`.
@@ -69,7 +69,7 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 - [x] M8.1 Novato: um botão "COMEÇAR TREINO", treino 12 ondas, baú grátis guiado.
 
 ## M9 — Desempenho
-- [ ] M9.1 Orçamento de peças por mapa nos testes; qualidade automática quando o FPS cai.
+- [x] M9.1 Orçamento de peças por mapa nos testes; qualidade automática quando o FPS cai.
 
 ## M10 — Entrega
-- [ ] M10.1 `docs/RELEASE_CHECKLIST.md`, `PRODUCTION_STATUS.md`, `MORNING_REPORT.md`.
+- [x] M10.1 `docs/RELEASE_CHECKLIST.md`, `PRODUCTION_STATUS.md`, `MORNING_REPORT.md`.

@@ -58,6 +58,8 @@ function Review.start(api)
 		p.settings = { language = player:GetAttribute("DoomReviewLanguage") == "en" and "en" or "pt", lowFX = false, shake = false, music = false }
 		p.passes = p.passes or {}
 		p.paidRandomRestricted = false
+		-- Mid-season: five levels reached, two of them claimed, no premium pass.
+		p.seasonStatus = Rules.SeasonStatus({ id = 1, xp = Catalog.Season.xpPerLevel * 5 + 220, freeClaimed = 2, premiumClaimed = 0 }, false)
 		return p
 	end
 

@@ -172,6 +172,20 @@ same shape `OpenChest`'s result does). The client reaches this panel through
 physical pedestal — a claimable count shows as a badge on that nav button,
 computed client-side from `profile.rewards.claimable`).
 
+**Season pass.** `Catalog.Season = { levels = 30, xpPerLevel = 600 }`; every
+XP the account earns (match rewards, mission claims, reward-claim XP) also
+feeds `profile.season = { id, xp, freeClaimed, premiumClaimed }`, which
+resets when `PlayerService:_season()` changes (60-day seasons). The
+snapshot carries `seasonStatus = Rules.SeasonStatus(season, owned)`
+(`level`, `xpInto`, `claimable`, `upcoming` strip) — `profile.season` stays
+the leaderboard season number. `ClaimSeason {}` (lobby only, in
+`CHEST_ACTIONS`) pays every claimable level at once: the free track for
+everyone, the premium track only with the `season` pass (a pass bought later
+back-pays the levels already reached). Its `.result` is
+`{gold, chests = {...}, titles = {...}, level, claimed}`; each chest is
+opened from rolls derived from the three pre-drawn ones, so a replayed
+transaction opens the same chests.
+
 ## Revisão de interface — 22/09/2026
 
 `UI.contextLayout` calcula a área de todos os menus do lobby. Em telas baixas,

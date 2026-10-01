@@ -22,10 +22,10 @@ local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase"
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
 local ACTIONS = { BuyGuaranteed = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
-	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true,
+	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true, ClaimSeason = true,
 	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
-local CHEST_ACTIONS = { OpenChest = true, ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, RedeemCode = true }
+local CHEST_ACTIONS = { OpenChest = true, ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, RedeemCode = true, ClaimSeason = true }
 -- Wrong promo codes are refused before any DataStore call; past this many
 -- misses in a minute, the player is asked to wait instead of guessing.
 local CODE_MISSES_PER_MINUTE = 6
@@ -95,7 +95,7 @@ local function newProfile(now)
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
 		pity = { legendary = 0 },
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
-		codes = {}, starterPack = false,
+		codes = {}, starterPack = false, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
 		quests = {}, achievements = {}, best = {},
@@ -176,6 +176,16 @@ local function normalize(raw, now, catalog)
 		if type(rewards[key]) ~= "table" then rewards[key] = {} end
 	end
 	if type(rewards.groupClaimed) ~= "boolean" then rewards.groupClaimed = false end
+	-- The season record is repaired the same way: counts inside their range.
+	local season, seasonMax = profile.season, catalog.Season.levels
+	for _, key in ipairs({ "id", "xp" }) do
+		if type(season[key]) ~= "number" or season[key] ~= season[key] or season[key] < 0 then season[key] = 0 end
+		season[key] = math.floor(season[key])
+	end
+	season.xp = math.min(season.xp, seasonMax * catalog.Season.xpPerLevel)
+	for _, key in ipairs({ "freeClaimed", "premiumClaimed" }) do
+		season[key] = math.clamp(math.floor(tonumber(season[key]) or 0), 0, seasonMax)
+	end
 	-- Achievements keep the names they were unlocked with, except the ones
 	-- named after a hero, a map or an old name: those follow today's names.
 	local renamed = { allHeroes = { pt = "Coleção completa", en = "Full collection" }, firstVictory = { pt = "Vitória da Resistência", en = "Resistance victory" } }
@@ -546,12 +556,32 @@ function PlayerService:_openChest(profile, chestId, rolls, now)
 end
 
 -- Pays a reward table ({ gold, xp, chest, title }) into the profile.
+-- The profile's season record for the current season: a new season starts
+-- from zero, with nothing claimed.
+function PlayerService:_seasonOf(profile)
+	local id = self:_season()
+	local season = profile.season
+	if type(season) ~= "table" or season.id ~= id then
+		season = { id = id, xp = 0, freeClaimed = 0, premiumClaimed = 0 }
+		profile.season = season
+	end
+	return season
+end
+
+function PlayerService:_seasonXp(profile, amount)
+	if amount > 0 then
+		local season = self:_seasonOf(profile)
+		season.xp = math.min(self.catalog.Season.levels * self.catalog.Season.xpPerLevel, season.xp + math.floor(amount))
+	end
+end
+
 function PlayerService:_payReward(profile, reward, rolls, now, current)
 	local paid = { gold = reward.gold or 0, xp = 0 }
 	profile.gold += paid.gold
 	if reward.xp then
 		paid.xp = math.floor(reward.xp * (current.passes.training and 1.25 or 1))
 		profile.xp += paid.xp
+		self:_seasonXp(profile, paid.xp)
 	end
 	if reward.title then achievement(profile, reward.title.id, reward.title.pt, reward.title.en, now, "title") end
 	if reward.chest then paid.chest = self:_openChest(profile, reward.chest, rolls, now) end
@@ -609,6 +639,9 @@ function PlayerService:Snapshot(player)
 	result.xpNext = result.level < 50 and xpThreshold(result.level + 1) or result.xp
 	result.xpFloor = xpThreshold(result.level)
 	result.season = self:_season()
+	result.seasonStatus = self.rules.SeasonStatus(
+		(record.profile.season and record.profile.season.id == result.season) and record.profile.season or { id = result.season, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
+		record.passes.season == true)
 	result.persistence = self.memory and "studio-memory" or "cloud"
 	for _, hero in pairs(result.heroes) do
 		hero.xpNext = hero.level < 20 and masteryThreshold(hero.level + 1) or hero.xp
@@ -732,6 +765,36 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			local paid = self:_payReward(profile, codeEntry, rolls, now, current)
 			paid.code = code
 			return true, paid
+		elseif action == "ClaimSeason" then
+			local season = self:_seasonOf(profile)
+			local status = self.rules.SeasonStatus(season, current.passes.season == true)
+			if status.claimable == 0 then return false, "Nada para resgatar na temporada. / Nothing to claim in the season." end
+			local total = { gold = 0, chests = {}, titles = {} }
+			local salt = 0
+			local function pay(level, track)
+				local reward = self.rules.SeasonReward(level, track)
+				profile.gold += reward.gold
+				total.gold += reward.gold
+				if reward.title then
+					achievement(profile, reward.title.id, reward.title.pt, reward.title.en, now, "title")
+					table.insert(total.titles, copy(reward.title))
+				end
+				if reward.chest then
+					-- One roll set per chest, all derived from the pre-drawn rolls so that a
+					-- replayed transaction opens the same chests.
+					salt += 1
+					local derived = { (rolls[1] + salt * 0.61803398875) % 1, (rolls[2] + salt * 0.41421356237) % 1, (rolls[3] + salt * 0.73205080757) % 1 }
+					table.insert(total.chests, self:_openChest(profile, reward.chest, derived, now))
+				end
+			end
+			for level = season.freeClaimed + 1, status.level do pay(level, "free") end
+			season.freeClaimed = status.level
+			if status.owned then
+				for level = season.premiumClaimed + 1, status.level do pay(level, "premium") end
+				season.premiumClaimed = status.level
+			end
+			total.level, total.claimed = status.level, status.claimable
+			return true, total
 		elseif action == "ClaimGroupReward" then
 			if profile.rewards.groupClaimed then return false, "Recompensa do grupo já resgatada. / Group reward already claimed." end
 			profile.rewards.groupClaimed = true
@@ -790,7 +853,9 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			if not quest or quest.expiresAt <= now or quest.claimed or quest.progress < quest.target then return false, "Missão incompleta, resgatada ou expirada." end
 			quest.claimed = true
 			profile.gold += quest.gold
-			profile.xp += math.floor(quest.xp * (current.passes.training and 1.25 or 1))
+			local questXp = math.floor(quest.xp * (current.passes.training and 1.25 or 1))
+			profile.xp += questXp
+			self:_seasonXp(profile, questXp)
 		end
 		return true
 	end)
@@ -894,6 +959,7 @@ function PlayerService:Award(player, awardId, reward)
 		end
 		profile.gold += gold
 		profile.xp += xp
+		self:_seasonXp(profile, xp)
 		local contributing = {}
 		for heroId, earned in pairs(reward.mastery or {}) do
 			local hero = profile.heroes[heroId]

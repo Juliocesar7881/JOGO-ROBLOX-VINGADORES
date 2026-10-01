@@ -589,6 +589,51 @@ function Rules.RewardsStatus(profile, now, pendingSeconds)
 end
 
 --==============================================================================
+-- Season pass
+--==============================================================================
+-- What a level pays on a track ("free" or "premium"): Gold, plus a chest on
+-- the milestone levels and, at the top of the premium track, a title.
+function Rules.SeasonReward(level, track)
+	level = math.clamp(math.floor(number(level, 1)), 1, Catalog.Season.levels)
+	if track == "premium" then
+		local reward = { gold = 200 + level * 40 }
+		if level % 5 == 0 then reward.chest = (level % 10 == 0) and (level == Catalog.Season.levels and "legendary" or "epic") or "rare" end
+		if level == Catalog.Season.levels then reward.title = { id = "seasonPremium", pt = "Campeão da temporada", en = "Season champion" } end
+		return reward
+	end
+	local reward = { gold = 80 + level * 20 }
+	if level % 10 == 0 then reward.chest = "rare" end
+	return reward
+end
+
+-- The player's season at a glance. `season` is the stored record
+-- ({ id, xp, freeClaimed, premiumClaimed }); `owned` whether the premium
+-- pass is held. Levels are claimed in order, so a claimed count is enough.
+function Rules.SeasonStatus(season, owned)
+	season = type(season) == "table" and season or {}
+	local config = Catalog.Season
+	local xp = math.max(0, math.floor(number(season.xp, 0)))
+	local level = math.min(config.levels, math.floor(xp / config.xpPerLevel))
+	local freeClaimed = math.clamp(math.floor(number(season.freeClaimed, 0)), 0, config.levels)
+	local premiumClaimed = math.clamp(math.floor(number(season.premiumClaimed, 0)), 0, config.levels)
+	local status = {
+		id = season.id, level = level, xp = xp, maxLevel = config.levels, xpPerLevel = config.xpPerLevel,
+		xpInto = level >= config.levels and config.xpPerLevel or xp - level * config.xpPerLevel,
+		owned = owned == true, freeClaimed = freeClaimed, premiumClaimed = premiumClaimed,
+		claimableFree = math.max(0, level - freeClaimed),
+		claimablePremium = owned and math.max(0, level - premiumClaimed) or 0,
+		upcoming = {},
+	}
+	status.claimable = status.claimableFree + status.claimablePremium
+	-- The next few levels, whatever their state, for the panel's strip.
+	for next = math.min(freeClaimed, premiumClaimed) + 1, math.min(config.levels, math.min(freeClaimed, premiumClaimed) + 6) do
+		table.insert(status.upcoming, { level = next, reached = level >= next, free = Rules.SeasonReward(next, "free"), premium = Rules.SeasonReward(next, "premium"),
+			freeClaimed = next <= freeClaimed, premiumClaimed = next <= premiumClaimed })
+	end
+	return status
+end
+
+--==============================================================================
 -- Chests
 --==============================================================================
 -- Starters are never in a chest: a chest exists to bring you something new.

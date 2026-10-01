@@ -6,7 +6,7 @@ Conta: LoopsDev7881. IDs já gravados em `src/shared/Config.luau`
 **Managed Pricing ficou desligado em tudo** (ligar exige aceitar termos do
 Roblox: decisão do dono).
 
-## Passes (4 de 4 criados)
+## Passes (4 de 5 criados)
 
 | Chave | Nome | Preço | ID | Estado |
 |---|---|---|---|---|
@@ -14,6 +14,7 @@ Roblox: decisão do dono).
 | collector | Drone coletor | 149 | 2004326420 | à venda |
 | training | Treinamento acelerado | 199 | 2001722936 | à venda |
 | vip | Pacote VIP visual | 299 | 2003954466 | **criado, preço NÃO ligado** |
+| season | Passe de Temporada | 399 | 0 | **falta criar** (no código desde 01/10; a loja mostra "Indisponível" até lá) |
 
 Falta (dono): Creator Hub → Monetização → Passes → Pacote VIP visual →
 Vendas → ligar "Item for sale" e pôr 299 → Save Changes. Até lá a loja do

@@ -35,7 +35,7 @@ return {
 			-- Created in the Creator Hub by the director (2026-10-01). The VIP
 			-- pass exists but its price still has to be switched on there.
 			collector = { id = 2004326420 }, training = { id = 2001722936 },
-			vip = { id = 2003954466 }, speed3 = { id = 2001776936 },
+			vip = { id = 2003954466 }, speed3 = { id = 2001776936 }, season = { id = 0 },
 		},
 		Consumables = {
 			gold1000 = { id = 3715833438 }, gold5000 = { id = 3715833690 }, gold12000 = { id = 3715833842 }, gold30000 = { id = 3715833975 },

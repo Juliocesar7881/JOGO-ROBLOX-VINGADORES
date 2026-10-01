@@ -43,6 +43,11 @@ Catalog.RarityOrder = { "common", "rare", "epic", "legendary", "mythic" }
 -- star adds `damage` to that hero's towers on top of mastery and talents.
 -- After the last star a duplicate only pays its Gold and mastery.
 Catalog.Stars = { max = 5, damage = 0.03 }
+-- The season pass: XP from matches and missions climbs 30 levels in a season
+-- (Config.SeasonDays, 60 by default). The free track pays Gold and a few
+-- chests; the premium track (the "season" pass) pays more of both and a title.
+-- Rewards are pure functions of the level: see Rules.SeasonReward.
+Catalog.Season = { levels = 30, xpPerLevel = 600 }
 -- Shiny: one hero chest in forty also makes its hero shiny, a collectible
 -- shine (cosmetic only: no stat changes). Drawn with the chest's rolls.
 Catalog.ShinyChance = 1 / 40
@@ -822,6 +827,7 @@ Catalog.Products = {
 		collector = { id = 0, price = 149, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold.") },
 		training = { id = 0, price = 199, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP.") },
 		speed3 = { id = 0, price = 149, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. A partida acelera quando todo o grupo escolhe 3x.", "Unlocks 3x in matches. The match speeds up when the whole squad picks 3x.") },
+		season = { id = 0, price = 399, name = text("Passe de Temporada", "Season Pass"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title.") },
 		vip = { id = 0, price = 299, name = text("Pacote VIP visual", "VIP Style Pack"), description = text("Título, emote, trilha e aparência especial do drone.", "Title, emote, trail and special drone appearance.") },
 	},
 	Consumables = {

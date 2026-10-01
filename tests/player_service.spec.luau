@@ -90,7 +90,7 @@ local config = {
 	DataStoreName = "Tests", StudioMemory = true, ProfileRetries = 3, GroupId = 777,
 	Codes = { TESTE = { gold = 200 }, VELHO = { gold = 1, expires = 1 }, BAU = { gold = 0, chest = "rare" } },
 	Products = {
-		Passes = { collector = { id = 201 }, training = { id = 202 } },
+		Passes = { collector = { id = 201 }, training = { id = 202 }, season = { id = 203 } },
 		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 }, starterPack = { id = 103 } },
 		Heroes = { falcon = { id = 301 }, thor = { id = 302 }, ironman = { id = 999 } },
 	},
@@ -924,6 +924,72 @@ do
 	check(not service:GrantCosmetic(climber, "infiniteGold"), "unknown feats are refused")
 	local handled = service:Handle(climber, "GrantCosmetic", { featId = "parkour" }, true)
 	check(not handled, "no client action grants a feat")
+end
+
+-- Season pass: XP climbs levels, the free track pays everyone, the premium
+-- track only the owner, and every claim is idempotent.
+do
+	local status0 = Rules.SeasonStatus({ id = 1, xp = 0, freeClaimed = 0, premiumClaimed = 0 }, false)
+	check(status0.level == 0 and status0.claimable == 0 and #status0.upcoming == 6, "A fresh season has no level and no claim")
+	local mid = Rules.SeasonStatus({ id = 1, xp = Catalog.Season.xpPerLevel * 3 + 10, freeClaimed = 1, premiumClaimed = 0 }, true)
+	check(mid.level == 3 and mid.claimableFree == 2 and mid.claimablePremium == 3 and mid.claimable == 5, "Levels reached minus levels claimed, per track")
+	check(Rules.SeasonStatus({ xp = 1e9 }, false).level == Catalog.Season.levels, "Level is capped")
+	local free10, premium30 = Rules.SeasonReward(10, "free"), Rules.SeasonReward(30, "premium")
+	check(free10.chest == "rare" and Rules.SeasonReward(9, "free").chest == nil, "The free track gives a chest every ten levels")
+	check(premium30.chest == "legendary" and premium30.title ~= nil, "The last premium level gives a legendary chest and a title")
+	check(Rules.SeasonReward(5, "premium").gold > Rules.SeasonReward(5, "free").gold, "Premium always pays more Gold")
+	local totalFree, totalPremium = 0, 0
+	for level = 1, Catalog.Season.levels do
+		totalFree += Rules.SeasonReward(level, "free").gold
+		totalPremium += Rules.SeasonReward(level, "premium").gold
+	end
+	check(totalFree > 0 and totalPremium > totalFree * 1.5, "The premium track is clearly worth buying: " .. totalFree .. " vs " .. totalPremium)
+
+	local climber = player(81)
+	service:Load(climber)
+	local before = service:Get(climber)
+	check(before.seasonStatus.level == 0 and before.seasonStatus.claimable == 0, "A new player starts the season at level 0")
+	local handled, ok = service:Handle(climber, "ClaimSeason", {}, true)
+	check(handled and not ok, "Nothing to claim at level 0")
+	-- XP from a match feeds the season (and a replayed award does not feed it twice).
+	check(service:Award(climber, "season:xp1", { xp = 1500 }), "an award with XP is accepted")
+	check(not service:Award(climber, "season:xp1", { xp = 1500 }) or service:Get(climber).seasonStatus.xp == 1500, "A repeated award id adds no second XP")
+	local afterXp = service:Get(climber).seasonStatus
+	check(afterXp.xp == 1500 and afterXp.level == 2 and afterXp.claimableFree == 2 and afterXp.claimablePremium == 0, "XP became season levels, premium locked: " .. afterXp.xp)
+	local goldBefore = service:Get(climber).gold
+	local handled2, ok2, snap2 = service:Handle(climber, "ClaimSeason", {}, true)
+	local paid = snap2.result
+	check(handled2 and ok2 and paid.gold == Rules.SeasonReward(1, "free").gold + Rules.SeasonReward(2, "free").gold, "A claim pays every claimable free level")
+	check(service:Get(climber).gold == goldBefore + paid.gold, "The Gold arrives in the profile")
+	local handled3, ok3 = service:Handle(climber, "ClaimSeason", {}, true)
+	check(handled3 and not ok3, "The same levels cannot be claimed twice")
+	-- Buying the premium pass back-pays every level reached.
+	passOwners["81:203"] = true
+	service:_refreshPasses(climber)
+	check(service:Get(climber).passes.season and service:Get(climber).seasonStatus.claimablePremium == 2, "Owning the pass unlocks the premium levels already reached")
+	local _, ok4, snap4 = service:Handle(climber, "ClaimSeason", {}, true)
+	local paid4 = snap4.result
+	check(ok4 and paid4.gold == Rules.SeasonReward(1, "premium").gold + Rules.SeasonReward(2, "premium").gold, "The premium claim pays the premium levels: ")
+	-- The top: every chest of both tracks, a title, nothing claimable afterwards.
+	local record = stores.Tests.values.p_81
+	record.season.xp = Catalog.Season.xpPerLevel * Catalog.Season.levels
+	local _, ok5, snap5 = service:Handle(climber, "ClaimSeason", {}, true)
+	local top = snap5.result
+	check(ok5 and top.level == Catalog.Season.levels and #top.chests == 9, "Levels 3-30 open three free and six premium chests: " .. tostring(top and #top.chests))
+	check(#top.titles == 1 and service:Get(climber).titles.seasonPremium ~= nil, "The season champion title is unlocked")
+	check(service:Get(climber).seasonStatus.claimable == 0, "The finished season has nothing left to claim")
+	-- A new season starts from zero.
+	local newSeasonId = service:_season()
+	stores.Tests.values.p_81.season.id = newSeasonId - 1
+	local awarded = service:Award(climber, "season:xp2", { xp = 700 })
+	local fresh = service:Get(climber).seasonStatus
+	check(awarded and fresh.xp == 700 and fresh.level == 1 and fresh.freeClaimed == 0 and fresh.premiumClaimed == 0, "A previous season's XP does not carry into the new one, which counts from zero: " .. tostring(fresh.xp) .. "/" .. tostring(fresh.level))
+	-- Damaged records are repaired when a profile loads.
+	stores.Tests.values.p_81.season = { id = "x", xp = -5, freeClaimed = 999, premiumClaimed = 1 / 0 }
+	service:Release(climber)
+	service:Load(climber)
+	local repaired = stores.Tests.values.p_81.season
+	check(repaired.xp == 0 and repaired.freeClaimed == Catalog.Season.levels and repaired.premiumClaimed == Catalog.Season.levels, "A damaged season record is repaired into range")
 end
 
 -- Campaign difficulty: a win on one opens the next on that map only.

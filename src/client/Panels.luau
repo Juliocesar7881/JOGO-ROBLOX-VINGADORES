@@ -473,6 +473,9 @@ function Panels.new(ctx)
 	local lastRewardResult
 	local function rewardGiven(paid)
 		if type(paid) ~= "table" then return end
+		-- A season claim can open several chests: the last (the best) is the one shown.
+		local opened = type(paid.chests) == "table" and #paid.chests or 0
+		if opened > 0 then paid.chest = paid.chests[opened] end
 		local parts = {}
 		if paid.gold and paid.gold > 0 then table.insert(parts, "+" .. number(paid.gold) .. T(" Ouro", " Gold")) end
 		if paid.xp and paid.xp > 0 then table.insert(parts, "+" .. number(paid.xp) .. " XP") end
@@ -480,6 +483,7 @@ function Panels.new(ctx)
 			local hero = Catalog.Heroes[paid.chest.heroId]
 			table.insert(parts, paid.chest.duplicate and T("herói repetido → recompensa", "duplicate hero → reward") or (T("novo herói: ", "new hero: ") .. (hero and L(hero.name) or paid.chest.heroId)))
 		end
+		if opened > 1 then table.insert(parts, "+" .. (opened - 1) .. T(" baús abertos", " more chests opened")) end
 		lastRewardResult = paid
 		showToast(#parts > 0 and table.concat(parts, "  •  ") or T("Recompensa resgatada!", "Reward claimed!"), false)
 		if paid.chest then celebrate:Chest(paid.chest, paid.chest.chestId) else audio:Cue("upgrade") end
@@ -509,6 +513,39 @@ function Panels.new(ctx)
 			act("ClaimFreeChest", {}, function(snapshot) rewardGiven(snapshot.result) end)
 		end, {Name = "ClaimFreeChest", Position = UDim2.new(1, -130, 0.5, -28), Size = UDim2.fromOffset(118, 56), BackgroundColor3 = C.green, TextSize = 20})
 		if not chest.ready then UI.disabled(claimFree) end
+
+		-- Season pass: thirty levels from the XP of matches and missions. The free
+		-- track pays everyone; the premium track pays the owner of the season pass.
+		local season = profile().seasonStatus
+		if season then
+			UI.section(body, T("TEMPORADA • NÍVEL ", "SEASON • LEVEL ") .. season.level .. "/" .. season.maxLevel)
+			local seasonCard = UI.roundFrame(body, {Name = "SeasonCard", Size = UDim2.new(1, -6, 0, season.owned and 196 or 252), BackgroundColor3 = C.card}, season.claimable > 0 and C.gold or C.stroke)
+			local xpFill = UI.bar(seasonCard, C.violet, UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, 16))
+			xpFill.Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpPerLevel, 0, 1), 1)
+			UI.label(seasonCard, season.level >= season.maxLevel and T("Temporada completa!", "Season complete!") or (number(season.xpInto) .. " / " .. number(season.xpPerLevel) .. T(" XP para o próximo nível", " XP to the next level")),
+				{Name = "SeasonXp", Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -24, 0, 20), TextSize = 13, TextColor3 = C.muted})
+			local shown = math.min(#season.upcoming, 5)
+			for index = 1, shown do
+				local entry = season.upcoming[index]
+				local cell = UI.roundFrame(seasonCard, {Name = "SeasonLevel_" .. entry.level, Position = UDim2.new((index - 1) / shown, 6, 0, 58), Size = UDim2.new(1 / shown, -3, 0, 92),
+					BackgroundColor3 = entry.reached and C.gold:Lerp(C.card, 0.8) or C.background}, entry.reached and C.gold or C.stroke)
+				local function line(y, text, tint) UI.label(cell, text, {Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 20), TextSize = 13, Font = UI.Fonts.display, TextColor3 = tint, TextXAlignment = Enum.TextXAlignment.Center}) end
+				line(4, entry.level, entry.reached and C.gold or C.muted)
+				line(26, (entry.freeClaimed and "✓" or "💰") .. (entry.freeClaimed and "" or number(entry.free.gold)), entry.freeClaimed and C.green or C.text)
+				local premiumText = (entry.premiumClaimed and "✓") or ((season.owned and "💎" or "🔒") .. number(entry.premium.gold))
+				line(48, premiumText, entry.premiumClaimed and C.green or (season.owned and C.cream or C.muted))
+				local marks = (entry.free.chest and "🎁" or "") .. (entry.premium.chest and "🎁" or "") .. (entry.premium.title and "🏆" or "")
+				if marks ~= "" then line(68, marks, C.pink) end
+			end
+			local claimSeason = UI.button(seasonCard, season.claimable > 0 and (T("RESGATAR ", "CLAIM ") .. season.claimable .. T(" PRÊMIO(S)", " REWARD(S)")) or T("Jogue para subir de nível", "Play to level up"), function()
+				act("ClaimSeason", {}, function(snapshot) rewardGiven(snapshot and snapshot.result) end)
+			end, {Name = "ClaimSeason", Position = UDim2.fromOffset(12, 158), Size = UDim2.new(1, -24, 0, 48), BackgroundColor3 = season.claimable > 0 and C.green or C.card, TextSize = 16})
+			if season.claimable == 0 then UI.disabled(claimSeason) end
+			if not season.owned then
+				UI.button(seasonCard, T("LIBERAR TRILHA PREMIUM 💎", "UNLOCK THE PREMIUM TRACK 💎"), function() openContext("shop", {shopKind = "pass"}) end,
+					{Name = "SeasonUnlock", Position = UDim2.fromOffset(12, 210), Size = UDim2.new(1, -24, 0, 34), BackgroundColor3 = C.violet, TextSize = 13})
+			end
+		end
 
 		-- Login streak: a seven-day strip, the ready day highlighted.
 		UI.section(body, T("PRÊMIO DE CADA DIA", "EVERY DAY'S PRIZE"))
