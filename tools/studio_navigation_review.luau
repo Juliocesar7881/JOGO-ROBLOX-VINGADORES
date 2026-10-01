@@ -1,3 +1,4 @@
+assert(game.PlaceId ~= 97132875544830, "Disposable copies only: never run this in the team place (use tools/studio_review.py).")
 -- Run only in a disposable local place. Exercises real font/layout measurement.
 for _,child in ipairs(game:GetService("StarterPlayer").StarterPlayerScripts:GetChildren()) do
 	if child:IsA("LocalScript") then

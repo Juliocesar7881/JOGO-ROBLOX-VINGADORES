@@ -1,3 +1,4 @@
+assert(game.PlaceId ~= 97132875544830, "Disposable copies only: never run this in the team place (use tools/studio_review.py).")
 -- Disposable Studio place only: real renderer, full hero roster and 180
 -- client enemies. No profile, reward, matchmaking or purchase requests.
 local servers=game:GetService("ServerScriptService"):WaitForChild("DoomServer")

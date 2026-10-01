@@ -1,3 +1,4 @@
+assert(game.PlaceId ~= 97132875544830, "Disposable copies only: never run this in the team place (use tools/studio_review.py).")
 -- Disposable review place only. The release contains no preview overrides.
 local starter=game:GetService("StarterPlayer").StarterPlayerScripts
 for _,child in ipairs(starter:GetChildren()) do

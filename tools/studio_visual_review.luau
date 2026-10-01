@@ -1,3 +1,4 @@
+assert(game.PlaceId ~= 97132875544830, "Disposable copies only: never run this in the team place (use tools/studio_review.py).")
 -- Run through Studio --task RunScript on a disposable generated place copy.
 -- This exercises the real renderer and world API, without publishing anything.
 local shared = game:GetService("ReplicatedStorage"):WaitForChild("DoomShared")

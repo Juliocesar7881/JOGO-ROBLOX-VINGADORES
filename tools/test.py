@@ -51,6 +51,7 @@ def main() -> None:
     # Ordered cheapest-first, so a broken module reports before a full
     # campaign simulation spends a minute finding out the same thing.
     for suite in (
+        "test_director.py",
         "test_ui_layout.py",
         "test_audio.py",
         "test_release.py",

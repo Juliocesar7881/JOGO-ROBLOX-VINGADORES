@@ -1,3 +1,4 @@
+assert(game.PlaceId ~= 97132875544830, "Disposable copies only: never run this in the team place (use tools/studio_review.py).")
 -- Run only against a disposable review copy, never a release artifact.
 local starter = game:GetService("StarterPlayer").StarterPlayerScripts
 for _, child in ipairs(starter:GetChildren()) do

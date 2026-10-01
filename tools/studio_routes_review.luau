@@ -1,3 +1,4 @@
+assert(game.PlaceId ~= 97132875544830, "Disposable copies only: never run this in the team place (use tools/studio_review.py).")
 -- Disposable edit-mode inspection using the real world builder and renderer.
 local shared=game:GetService("ReplicatedStorage"):WaitForChild("DoomShared")
 local server=game:GetService("ServerScriptService"):WaitForChild("DoomServer")

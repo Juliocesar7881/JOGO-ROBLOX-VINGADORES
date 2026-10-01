@@ -1,3 +1,4 @@
+assert(game.PlaceId ~= 97132875544830, "Disposable copies only: never run this in the team place (use tools/studio_review.py).")
 -- RunScript on a disposable place copy. Walks a temporary Studio player onto
 -- the real shop pad; does not grant currency or submit any purchase.
 local server=Instance.new("Script")
