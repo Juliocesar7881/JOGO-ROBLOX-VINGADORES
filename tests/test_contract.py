@@ -21,7 +21,8 @@ def read(relative: str) -> str:
     return (SRC / relative).read_text(encoding="utf-8-sig")
 
 
-CLIENT = read("client/init.client.luau")
+# The controller and the lobby panels it builds (Panels.luau) are one client.
+CLIENT = read("client/init.client.luau") + "\n" + read("client/Panels.luau")
 EFFECTS = read("client/Effects.luau")
 AUDIO = read("client/Audio.luau")
 BOOTSTRAP = read("server/init.server.luau")
@@ -176,6 +177,13 @@ class ContractTests(unittest.TestCase):
         for module in SERVER_MODULES:
             self.assertIn(f'require(script:WaitForChild("{module}"))', BOOTSTRAP)
             self.assertTrue((SRC / "server" / f"{module}.luau").is_file(), f"{module} is required but missing")
+
+    def test_client_scripts_stay_well_under_roblox_limits(self):
+        # The controller once reached 200 KB and Luau's 200-register limit;
+        # past ~150 KB a script is due to be split (see Panels.luau).
+        for path in sorted((SRC / "client").glob("*.luau")):
+            size = len(path.read_text(encoding="utf-8-sig"))
+            self.assertLess(size, 150_000, f"{path.name} has {size:,} characters: move a self-contained part into its own module")
 
     def test_client_requires_only_modules_that_exist(self):
         required = set(re.findall(r'require\(script:WaitForChild\("(\w+)"\)\)', CLIENT))

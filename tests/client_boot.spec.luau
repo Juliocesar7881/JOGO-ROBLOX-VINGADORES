@@ -416,7 +416,8 @@ local function session(screen)
 	local overlayScript = moduleScript(clientScript, "BuildOverlay", __BUILDOVERLAY__)
 	local motionScript = moduleScript(clientScript, "Motion", __MOTION__)
 	local reviewScript = moduleScript(clientScript, "Review", __REVIEW__)
-	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript, overlayScript, motionScript, reviewScript }) do loaded[item] = nil end
+	local panelsScript = moduleScript(clientScript, "Panels", __PANELS__)
+	for _, item in ipairs({ uiScript, effectsScript, audioScript, nameplatesScript, celebrateScript, routeScript, overlayScript, motionScript, reviewScript, panelsScript }) do loaded[item] = nil end
 	loaded[shared.Config] = nil
 
 	if not step("init.client boots and syncs", function() __CLIENT__(clientScript, clockOs); flush() end) then return end
