@@ -430,6 +430,9 @@ local results = latest(ana)
 check(sawWave, "the tutorial reaches its waves")
 check(results.phase == "Results", "the tutorial reaches the results screen, ended in " .. tostring(results.phase))
 check(results.results and results.results.victory == true, "a defended tutorial is a victory")
+local team = results.results and results.results.team
+check(team and #team == 1 and team[1].userId == ana.UserId and team[1].damage > 0 and team[1].kills > 0,
+	"the results carry the squad scoreboard with real damage and kills")
 check(#towerIds >= 3 and upgrades >= 2, "towers were built and upgraded through the router: " .. #towerIds .. " built, " .. upgrades .. " upgrades")
 check(casts >= 1, "overload was cast mid-wave through the router, got " .. casts)
 check(sawPriority, "targeting priority can be changed mid-wave")

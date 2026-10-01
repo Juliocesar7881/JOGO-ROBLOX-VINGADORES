@@ -178,7 +178,8 @@ function Review.start(api)
 			for index, id in ipairs(p.loadout) do mastery[id] = 200 - index * 30 end
 			api.setState({ phase = "Results", role = "Standalone", profile = p, players = actors(),
 				results = { victory = stage == "results", waves = stage == "results" and 50 or 37, gold = 1825, xp = 840, startLevel = 10,
-					mapId = mapId, modeId = "ranked", mastery = mastery } })
+					mapId = mapId, modeId = "ranked", mastery = mastery,
+					team = { { userId = player.UserId, name = player.DisplayName, damage = 48250, kills = 312, gold = 2140 }, { userId = 0, name = "Aliado", damage = 31900, kills = 205, gold = 1610 } } } })
 			api.render()
 		else
 			local snapshot = { phase = "Lobby", role = "Standalone", profile = p, players = actors() }

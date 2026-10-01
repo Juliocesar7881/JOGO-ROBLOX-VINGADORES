@@ -181,7 +181,8 @@ end
 local function resultsSnapshot(profile)
 	return {
 		phase = "Results", role = "Standalone", profile = profile,
-		results = { victory = true, waves = 50, gold = 1500, xp = 300, mapId = "manhattan", modeId = "normal", mastery = { ironman = 120, hawkeye = 40 } },
+		results = { victory = true, waves = 50, gold = 1500, xp = 300, mapId = "manhattan", modeId = "normal", mastery = { ironman = 120, hawkeye = 40 },
+			team = { { userId = ALLY_ID, name = "Ally", damage = 52000, kills = 340, gold = 2100 }, { userId = LOCAL_ID, name = "Tester", damage = 31000, kills = 210, gold = 1800 } } },
 		players = { { userId = LOCAL_ID, name = "Tester", level = profile.level } },
 	}
 end
@@ -1617,6 +1618,8 @@ local function session(screen)
 			tag .. ": returning to the lobby is reachable without scrolling the results")
 		check(backRect ~= nil and bodyRect ~= nil and bodyRect.y + bodyRect.h <= backRect.y,
 			tag .. ": the pinned return button has its own space below the reward scroll")
+		local mvp = named(gui, "MvpName")
+		check(mvp ~= nil and mvp.Text == "Ally" and named(gui, "ResultTeam_2") ~= nil, tag .. ": the end screen names the MVP and lists the squad")
 		local again = named(gui, "ResultPlayAgain")
 		local againRect = again and screenRect(again, gui, SCREEN)
 		check(againRect ~= nil and againRect.y + againRect.h <= SCREEN.h and againRect.h >= 44, tag .. ": PLAY AGAIN sits beside the return button without scrolling")

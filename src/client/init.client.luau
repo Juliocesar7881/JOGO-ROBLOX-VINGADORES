@@ -1695,6 +1695,24 @@ local function renderResults()
 			celebrate:Banner({pt="QUASE LÁ!",en="SO CLOSE!"},{pt="Você chegou à onda "..tostring(result.waves or 0)..". Da próxima vez vai!",en="You reached wave "..tostring(result.waves or 0)..". Next time!"},C.blue,{duration=2.2})
 		end
 	end
+	-- The squad's scoreboard: the MVP on top in gold, everyone's damage and
+	-- kills under it (a solo commander sees their own numbers).
+	local team=result.team or {}
+	if #team>0 then
+		local mvp=team[1]
+		local mine=mvp.userId==player.UserId
+		local card=UI.roundFrame(content,{Name="ResultMvp",Size=UDim2.new(1,-6,0,short and 54 or 66),BackgroundColor3=C.gold:Lerp(C.panel,0.72)},C.gold)
+		UI.label(card,"⭐ MVP",{Position=UDim2.fromOffset(12,4),Size=UDim2.new(0,90,1,-8),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextColor3=C.gold})
+		UI.label(card,mine and T("VOCÊ!","YOU!") or tostring(mvp.name),{Name="MvpName",Position=UDim2.fromOffset(102,4),Size=UDim2.new(1,-112,0.5,-2),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
+		UI.label(card,"⚔ "..number(mvp.damage).."   💀 "..number(mvp.kills).."   💰 "..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,102,0.5,0),Size=UDim2.new(1,-112,0.5,-4),TextSize=short and 13 or 15,Font=UI.Fonts.display,TextColor3=C.cream})
+		for index=2,#team do
+			local entry=team[index]
+			local row=UI.row(content,short and 26 or 30)
+			row.Name="ResultTeam_"..index
+			UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Size=UDim2.new(0.5,0,1,0),TextSize=14,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
+			UI.label(row,"⚔ "..number(entry.damage).."   💀 "..number(entry.kills),{Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,0,1,0),TextSize=14,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right})
+		end
+	end
 	if result.modeId=="ranked" then
 		local tier=Rules.RankForWaves(result.waves)
 		UI.section(content,"RANK: "..(language=="en" and tier.en or tier.pt),T("Seu melhor resultado fica no placar da temporada.","Your best result stays on the seasonal leaderboard."))

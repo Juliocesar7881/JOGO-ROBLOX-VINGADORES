@@ -169,6 +169,7 @@ function Match:Start(members, mapId, modeId, runId)
 			killGoldRemainder=0,startLevel=profile.level or 1,
 			goldEarned=0,xpEarned=0,waveGold=0,coins={},cooldowns={},cards={},cardOffers={},mods={},modsVersion=0,
 			perm={},waveHeroes={},contributed=false,towerCount=0,bossKills=0,disconnectedAt=nil,returned=false,collected=0,endVote=false,
+			damageDealt=0,kills=0,
 			masteryEarned={},rallyUntil=0,rallyStat=nil,rallyValue=0,
 			-- Remembered between matches: a commander who plays on 2x and
 			-- auto-skip does not have to switch them on every single run.
@@ -412,6 +413,8 @@ function Match:_damage(enemy, amount, tower, stats)
 	if enemy.markUntil>self.elapsed then damage*=1+enemy.mark end
 	if enemy.vulnerableUntil and enemy.vulnerableUntil>self.elapsed then damage*=1+VULNERABLE_BONUS end
 	if enemy.shield>0 then local absorbed=math.min(damage,enemy.shield) enemy.shield-=absorbed damage-=absorbed end
+	local owner = tower and self.participants[tower.ownerId]
+	if owner then owner.damageDealt = (owner.damageDealt or 0) + math.max(0, math.min(damage, enemy.hp)) end
 	enemy.hp-=damage enemy.lastHit=self.elapsed
 	self:_recordHit(enemy, damage)
 	if enemy.regenUntil and enemy.regenUntil>self.elapsed then
@@ -420,6 +423,7 @@ function Match:_damage(enemy, amount, tower, stats)
 	end
 	if tower then self:_contribute(tower) end
 	if enemy.hp<=0 then
+		if owner then owner.kills = (owner.kills or 0) + 1 end
 		self.enemies[enemy.id]=nil self.alive-=1
 		self:_fx({kind="EnemyDown",id=enemy.id,enemyId=enemy.enemyId,position=enemy.position,boss=enemy.def.boss==true})
 		for _, p in pairs(self.participants) do
@@ -833,6 +837,15 @@ function Match:Finish(victory, ended)
 			self:_fx({kind="Clear"},p.player)
 		end
 	end
+	-- The squad's scoreboard, most damage first: the end screen's MVP.
+	local team = {}
+	for _,p in pairs(self.participants) do
+		if not p.returned then
+			table.insert(team,{userId=p.player.UserId,name=p.player.DisplayName,damage=math.floor(p.damageDealt or 0),kills=p.kills or 0,gold=math.floor(p.collected or 0)})
+		end
+	end
+	table.sort(team,function(a,b) if a.damage~=b.damage then return a.damage>b.damage end return a.userId<b.userId end)
+	for _,p in pairs(self.participants) do if p.results then p.results.team=team end end
 	self:_processRewards()
 	if ended then
 		self:_notice("PARTIDA ENCERRADA • Recorde de "..self.completedWaves.." ondas guardado.", "RUN ENDED • Record of "..self.completedWaves.." waves saved.")
