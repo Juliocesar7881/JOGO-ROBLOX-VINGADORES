@@ -279,26 +279,29 @@ local celebrate = Celebrate.new({
 })
 local resultsCelebrated = false
 
--- Quickbar and formation cards share a real 3D portrait, a clear price and
--- a small slot number. The compact version keeps its tested touch geometry.
+-- A quickbar slot: the hero's 3D portrait on a tile in its rarity colour,
+-- the slot number in a corner and the price on the bottom edge. No name: a
+-- name never fits a phone tile, and the portrait and colour already say who.
 local function heroCard(parent, id, index, width, height, callback, equipped)
-	local def, tint = Catalog.Heroes[id], colorFor(id)
-	local tight = height < 62
-	local portraitW = tight and 40 or math.floor(width * 0.43)
+	local def = Catalog.Heroes[id]
+	local rarity = Catalog.Rarities[def.rarity]
+	local tint = rarity and UI.color(rarity.color) or colorFor(id)
 	local button = UI.secondary(parent, "", callback, {
 		Name = "HeroCard_" .. id, LayoutOrder = index,
-		Size = UDim2.fromOffset(width, height), BackgroundColor3 = equipped and tint:Lerp(C.background, 0.48) or C.card,
+		Size = UDim2.fromOffset(width, height), BackgroundColor3 = tint:Lerp(C.background, equipped and 0.25 or 0.45),
 	})
-	local portraitBack=UI.frame(button,{Position=UDim2.fromOffset(3,3),Size=UDim2.fromOffset(portraitW,height-6),BackgroundColor3=tint,BackgroundTransparency=0.75})
-	UI.corner(portraitBack,11)
-	heroPortrait(button, id, {Position = UDim2.fromOffset(3, 3), Size = UDim2.fromOffset(portraitW, height - 6)})
-	local textX = portraitW + 9
-	UI.label(button, L(def.name), {Name = "HeroName", Position = UDim2.fromOffset(textX, tight and 3 or 7), Size = UDim2.new(1, -textX - 5, 0, tight and 26 or 32), TextSize = tight and 12 or 14, Font = UI.Fonts.display, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
-	if index==1 then UI.stroke(button,C.gold,3.5) end
-	local price = UI.label(button, "💰 " .. tostring(def.cost), {Name = "EnergyCost", Position = UDim2.new(0, textX, 1, tight and -21 or -26), Size = UDim2.new(1, -textX - 4, 0, 20), TextColor3 = C.gold, TextSize = tight and 12 or 15, Font = UI.Fonts.display})
-	local badge = UI.label(button, index==1 and "★1" or tostring(index), {Name = "SlotNumber", Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(tight and 22 or 26, tight and 15 or 18), BackgroundColor3 = C.background, BackgroundTransparency = 0.08, TextSize = 10, TextColor3 = tint, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
-	UI.corner(badge, 5)
-	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 8, 1, -3), Size = UDim2.new(1, -16, 0, 2), BackgroundColor3 = tint, BackgroundTransparency = equipped and 0 or 0.65})
+	UI.stroke(button, index == 1 and C.gold or tint, index == 1 and 3.5 or 2.5)
+	heroPortrait(button, id, {Position = UDim2.fromOffset(2, 1), Size = UDim2.new(1, -4, 1, -14)})
+	local priceH = height < 62 and 17 or 20
+	local price = UI.label(button, "💰" .. tostring(def.cost), {Name = "EnergyCost", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2),
+		Size = UDim2.new(1, -6, 0, priceH), BackgroundTransparency = 0.15, BackgroundColor3 = C.background, TextColor3 = C.gold,
+		TextSize = height < 62 and 12 or 14, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
+	UI.corner(price, 8)
+	local badge = UI.label(button, index == 1 and "★" or tostring(index), {Name = "SlotNumber", Position = UDim2.fromOffset(3, 3), Size = UDim2.fromOffset(18, 18),
+		BackgroundColor3 = index == 1 and C.gold or C.background, BackgroundTransparency = 0.05, TextSize = 11,
+		TextColor3 = index == 1 and C.ink or C.text, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
+	UI.corner(badge, 9)
+	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 6, 1, -3), Size = UDim2.new(1, -12, 0, 3), BackgroundColor3 = C.gold, BackgroundTransparency = equipped and 0 or 1})
 	return button, price, line
 end
 
@@ -2376,9 +2379,10 @@ local function renderMatch()
 			local button, price, line = heroCard(cards, id, index, layout.cardW, layout.heroCards.h - 14, function() chooseHero(id) end)
 			refs.heroCards[id] = {button = button, price = price, line = line}
 		else
-			local empty = UI.roundFrame(cards, {Name = "EmptyHeroSlot", LayoutOrder = index, Size = UDim2.fromOffset(layout.cardW, layout.heroCards.h - 14), BackgroundColor3 = C.background, BackgroundTransparency = 0.25})
-			UI.label(empty, "+", {Position = UDim2.fromOffset(8, 0), Size = UDim2.new(0, 24, 1, 0), TextSize = 25, TextColor3 = C.stroke, TextXAlignment = Enum.TextXAlignment.Center})
-			UI.label(empty, T("ESPAÇO ", "SLOT ") .. index .. "\n" .. T("Equipe no lobby", "Equip in lobby"), {Position = UDim2.fromOffset(38, 0), Size = UDim2.new(1, -44, 1, 0), TextSize = compact and 10 or 11, TextColor3 = C.muted, TextWrapped = true})
+			-- An empty slot is a quiet tile with a plus: heroes are equipped in
+			-- the lobby, and a phone tile has no room to say so.
+			local empty = UI.roundFrame(cards, {Name = "EmptyHeroSlot", LayoutOrder = index, Size = UDim2.fromOffset(layout.cardW, layout.heroCards.h - 14), BackgroundColor3 = C.background, BackgroundTransparency = 0.35}, C.stroke)
+			UI.label(empty, "+", {Size = UDim2.fromScale(1, 1), TextSize = 26, TextColor3 = C.stroke, TextXAlignment = Enum.TextXAlignment.Center})
 		end
 	end
 	updateMatch()
@@ -2454,8 +2458,10 @@ updateMatch = function()
 	end
 	for id, card in pairs(refs.heroCards or {}) do
 		local selected = selectedHero == id
-		card.button.BackgroundColor3 = selected and colorFor(id):Lerp(C.background, 0.7) or C.card
-		card.line.BackgroundTransparency = selected and 0 or 0.65
+		local rarity = Catalog.Rarities[Catalog.Heroes[id].rarity]
+		local tint = rarity and UI.color(rarity.color) or colorFor(id)
+		card.button.BackgroundColor3 = tint:Lerp(C.background, selected and 0.1 or 0.45)
+		card.line.BackgroundTransparency = selected and 0 or 1
 		card.price.TextColor3 = (match.cash or 0) >= Catalog.Heroes[id].cost and C.gold or C.red
 	end
 	updateUpgradeBoards(match)

@@ -162,6 +162,12 @@ for _, screen in ipairs(SCREENS) do
 		check(L.skip.h >= 48 and L.buttonH >= 48, tag .. ": ready and ability buttons are thumb-sized")
 		check(L.heroCards.h - 14 >= 48, tag .. ": hero cards stay tall enough to tap")
 		check(L.heroCards.w >= L.cardW, tag .. ": at least one hero card is fully visible, band " .. L.heroCards.w)
+		check(L.cardW >= 48, tag .. ": a hero slot is at least a thumb wide, got " .. L.cardW)
+		-- All five slots side by side, so none hides behind the ability buttons
+		-- (VIP's salute button may push the narrowest phone into scrolling).
+		if not loadout.vip or screen.w >= 700 then
+			check(5 * L.cardW + 4 * 7 + 14 <= L.heroCards.w, tag .. ": all five hero slots fit without scrolling, band " .. L.heroCards.w .. " slot " .. L.cardW)
+		end
 		check(L.placement.h - 12 >= 48, tag .. ": confirm and cancel are thumb-sized")
 		check(L.waveInfo.w >= 120, tag .. ": the threat banner keeps room to be read, got " .. L.waveInfo.w)
 	end

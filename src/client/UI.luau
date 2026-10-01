@@ -815,9 +815,16 @@ function UI.matchLayout(width, height, options)
 		layout.actionTop = bandY - 8 - buttonH
 		layout.abilities = rect(pad, layout.actionTop, abilitiesW, buttonH)
 	end
-	-- Use spare quickbar width for readable names and portraits. Only scroll
-	-- when five comfortable cards cannot fit, as on a landscape phone.
-	layout.cardW = math.max(layout.cardW, math.min(160, math.floor((layout.heroCards.w - 42) / 5)))
+	-- Slots are portrait tiles with a number and a price, like the genre's
+	-- best quickbars: five always sit side by side, so no slot hides behind
+	-- the ability buttons on a phone, and on wide screens the band shrinks
+	-- around them instead of stretching the tiles.
+	local tileH = layout.heroCards.h - 14
+	layout.cardW = math.max(48, math.min(tileH + 22, math.floor((layout.heroCards.w - 14 - 4 * 7) / 5)))
+	if not class.short then
+		local bandW = 5 * layout.cardW + 4 * 7 + 14
+		layout.heroCards = rect(math.floor((width - bandW) / 2), layout.heroCards.y, bandW, layout.heroCards.h)
+	end
 
 	-- Every control a thumb must hit on a phone is at least 48 x 48 pixels.
 	local placementH, hintH = 60, 40
