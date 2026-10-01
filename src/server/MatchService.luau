@@ -447,14 +447,18 @@ end
 
 -- A tower's stats without any timed buff. Cached until its level, branch or the
 -- owner's cards change: attack loops read this for every tower every tick.
-function Match:_baseStats(tower)
+-- preview {level, branch}: what an upgrade would make this tower, with the
+-- same bonuses, so the HUD can show before -> after without computing it.
+function Match:_baseStats(tower, preview)
 	local p = self.participants[tower.ownerId]
 	local cache = tower.cache
-	if cache and cache.version == p.modsVersion and cache.level == tower.level and cache.branch == tower.branch then return cache.stats end
+	if not preview and cache and cache.version == p.modsVersion and cache.level == tower.level and cache.branch == tower.branch then return cache.stats end
 	local hero = self.catalog.Heroes[tower.heroId]
 	local perm = self:_permanent(p, tower.heroId)
 	local mods = p.mods
-	local stats = self.rules.TowerStats(hero, tower.level, tower.branch, {
+	local level, branch = tower.level, tower.branch
+	if preview then level, branch = preview.level, preview.branch end
+	local stats = self.rules.TowerStats(hero, level, branch, {
 		damageBonus = perm.damageBonus + (mods.damage or 0),
 		rangeBonus = perm.rangeBonus + (mods.range or 0),
 		attackSpeedBonus = perm.attackSpeedBonus + (mods.speed or 0),
@@ -462,8 +466,23 @@ function Match:_baseStats(tower)
 		airDamage = mods.airDamage, stealthDamage = mods.stealthDamage,
 	})
 	if hero.support then stats.range *= 1 + (mods.supportRange or 0) end
+	if preview then return stats end
 	tower.cache = { version = p.modsVersion, level = tower.level, branch = tower.branch, stats = stats }
 	return stats
+end
+
+local function statLine(stats)
+	return { damage = stats.damage, range = stats.range, rate = stats.rate }
+end
+
+-- The upgrade the tower's owner would buy next: one line below level 4, the
+-- two specializations at level 4, nothing once maxed.
+function Match:_upgradePreview(tower)
+	if tower.level < 4 then return { next = statLine(self:_baseStats(tower, { level = tower.level + 1 })) } end
+	if tower.level == 4 then
+		return { branches = { statLine(self:_baseStats(tower, { level = 5, branch = 1 })), statLine(self:_baseStats(tower, { level = 5, branch = 2 })) } }
+	end
+	return nil
 end
 
 -- The stats the tower fights with right now: its base plus any ability buff.
@@ -1366,8 +1385,10 @@ function Match:Snapshot(player)
 	local towers={}
 	for _,t in pairs(self.towers) do
 		local stats=self:_towerStats(t)
+		local preview=t.ownerId==player.UserId and self:_upgradePreview(t) or nil
 		table.insert(towers,{id=t.id,heroId=t.heroId,ownerId=t.ownerId,position=t.position,level=t.level,branch=t.branch,
 			priority=t.priority,invested=t.invested,damage=stats.damage,range=stats.range,rate=stats.rate,upgradeCost=stats.upgradeCost,
+			base=preview and statLine(self:_baseStats(t)) or nil,next=preview and preview.next or nil,branches=preview and preview.branches or nil,
 			stunned=(t.stunnedUntil or 0)>self.elapsed and math.ceil((t.stunnedUntil-self.elapsed)*10)/10 or nil})
 	end
 	-- The ability the commander fights with: always the first slot's hero.

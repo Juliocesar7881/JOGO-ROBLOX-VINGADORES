@@ -55,9 +55,10 @@ local refs, productInfo, productFetching = {}, {}, false
 local placementRing, ghost, towerRing
 local ghostParts, ghostLift
 local contextPanel = nil
-local cosmeticsRetryPending = false
-local contextRefreshPending = false
 local pending = {}
+-- Small HUD state and constants, one table to spare the main chunk's
+-- registers (Luau allows 200 and this script is close to it).
+local kit = { cosmeticsRetryPending = false, contextRefreshPending = false }
 local render, renderLobby, renderContext, renderElevator, openContext, closeContext, updateWorldCosmetics, fetchProducts, updateMatch, showToast
 
 local function T(pt, en) return language == "en" and en or pt end
@@ -308,14 +309,14 @@ end
 
 -- Lobby locations and the HUD share these panels. The HUD offers a quick
 -- route to playing, forming a team and spending earned progression points.
-local modeTint = {
+kit.modeTint = {
 	normal = C.green, ranked = Color3.fromRGB(255, 138, 61), tutorial = C.gold,
 	cards = Color3.fromRGB(177,119,243),
 }
 for id, destination in pairs(Catalog.Destinations) do
-	if not modeTint[id] then modeTint[id] = modeTint[destination.modeId] end
+	if not kit.modeTint[id] then kit.modeTint[id] = kit.modeTint[destination.modeId] end
 end
-local modeLockHints = {
+kit.modeLockHints = {
 	normal = {pt = "Conclua o treinamento.", en = "Complete training."},
 	ranked = {pt = "Vença qualquer mapa da campanha.", en = "Win any campaign map."},
 	cards = {pt = "Vença qualquer mapa da campanha.", en = "Win any campaign map."},
@@ -977,7 +978,6 @@ local function contextSettings(body)
 	UI.label(body, T("1–5: escolher herói  •  Q: poder do líder\nClique ou toque: selecionar posição / torre\nConfirmar: posicionar  •  Esc / Cancelar: cancelar seleção", "1–5: choose hero  •  Q: leader power\nClick or tap: select position / tower\nConfirm: place tower  •  Esc / Cancel: cancel selection"), {Size = UDim2.new(1, -6, 0, 90), TextColor3 = C.muted, TextSize = 13, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
 end
 
-local talentBranch = 1
 local talentSelected, talentZoom = nil, 1
 local function contextTalents(body)
 	local p = profile()
@@ -1133,7 +1133,7 @@ local function contextModes(body)
 		UI.label(card,L(map.name),{Position=UDim2.fromOffset(118,10),Size=UDim2.new(1,-132,0,42),TextSize=19,Font=Enum.Font.GothamBlack,TextColor3=tint,TextWrapped=true})
 		local waves=Rules.WaveCount(destination.modeId,destination.mapId)
 		UI.label(card,L(mode.name).." • "..(waves==0 and T("SEM FIM","ENDLESS") or tostring(waves).." "..T("ONDAS","WAVES")),{Position=UDim2.fromOffset(118,54),Size=UDim2.new(1,-132,0,24),TextSize=12,Font=Enum.Font.GothamBold,TextWrapped=true})
-		UI.label(card,allowed and L(map.description) or L(modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(118,81),Size=UDim2.new(1,-132,0,40),TextSize=11,TextWrapped=true,TextColor3=C.muted})
+		UI.label(card,allowed and L(map.description) or L(kit.modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(118,81),Size=UDim2.new(1,-132,0,40),TextSize=11,TextWrapped=true,TextColor3=C.muted})
 		local button=UI.button(card,allowed and T("ENCONTRAR PORTAL","FIND PORTAL") or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function() routePreview.goPortal(id) end,{Name="FindPortal_"..id,Position=UDim2.fromOffset(12,126),Size=UDim2.new(1,-24,0,44),BackgroundColor3=allowed and C.green or tint,TextSize=17})
 		if not allowed then
 			UI.disabled(button)
@@ -1309,7 +1309,7 @@ renderContext = function()
 	lobbyChrome(true)
 	refreshNavigation()
 	if not contextPanel or not state or state.phase ~= "Lobby" then
-		contextRefreshPending=false
+		kit.contextRefreshPending=false
 		if refs.context then refs.context:Destroy(); refs.context=nil end
 		menuBlur(false)
 		return
@@ -1320,9 +1320,9 @@ renderContext = function()
 	if reuse then
 		local focused=UserInputService:GetFocusedTextBox()
 		while focused and focused~=panel do focused=focused.Parent end
-		if focused==panel then contextRefreshPending=true; return end
+		if focused==panel then kit.contextRefreshPending=true; return end
 	end
-	contextRefreshPending=false
+	kit.contextRefreshPending=false
 	if not reuse and panel then panel:Destroy(); panel=nil; body=nil end
 	local size = screenSize()
 	local slot=UI.contextLayout(size.X,size.Y,{wide=contextPanel.kind=="talents" or contextPanel.kind=="chests",elevator=state.elevator~=nil})
@@ -1396,7 +1396,7 @@ end
 -- Which physical model in the lobby a panel belongs to, so the panel can
 -- close itself when the player walks away from it. Panels opened from the HUD
 -- (squad, settings) have no anchor and simply stay until dismissed.
-local CONTEXT_ANCHOR = {
+kit.CONTEXT_ANCHOR = {
 	chests = {kind="ChestStand",attribute="ChestId",field="chestId"},
 	shop = { kind = "ShopStand", attribute = "ShopKey", field = "shopKey" },
 	quests = { kind = "Board", attribute = "BoardId", value = "quests" },
@@ -1404,7 +1404,7 @@ local CONTEXT_ANCHOR = {
 }
 
 local function anchorPosition(kind, data)
-	local spec = CONTEXT_ANCHOR[kind]
+	local spec = kit.CONTEXT_ANCHOR[kind]
 	-- The arena's scoreboard kiosk opens the same leaderboard panel.
 	if kind == "leaderboard" and data.board == "arena" then spec = { kind = "Scoreboard", attribute = "BoardId", value = "arena" } end
 	if not spec then return nil end
@@ -1450,7 +1450,7 @@ end
 -- Per-viewer cosmetics on the shared lobby geometry: locked portals, unowned
 -- heroes and unlearned skills get a translucent shroud (never a mutation of
 -- the server's own parts), and equipped gear gets a highlight outline.
-local shroudColor = Color3.fromRGB(8, 10, 14)
+kit.shroudColor = Color3.fromRGB(8, 10, 14)
 local function setShroud(model, locked, hint)
 	local existing = model:FindFirstChild("LockShroud")
 	if locked then
@@ -1464,7 +1464,7 @@ local function setShroud(model, locked, hint)
 		shroud.Name, shroud.Anchored = "LockShroud", true
 		shroud.CanCollide, shroud.CanTouch, shroud.CanQuery, shroud.CastShadow = false, false, false, false
 		-- Lock state is communicated by the sign, not an opaque box over art.
-		shroud.Material, shroud.Color, shroud.Transparency = Enum.Material.SmoothPlastic, shroudColor, 1
+		shroud.Material, shroud.Color, shroud.Transparency = Enum.Material.SmoothPlastic, kit.shroudColor, 1
 		shroud.Size, shroud.CFrame = size + Vector3.new(0.4, 0.4, 0.4), cf
 		shroud.Parent = model
 		local billboard = Instance.new("BillboardGui")
@@ -1610,7 +1610,7 @@ local function updatePortal(model, p)
 	local portalId = model:GetAttribute("PortalId") or model:GetAttribute("ModeId")
 	local modeId = Rules.PortalMode(p, portalId)
 	local unlocked = Rules.ModeUnlocked(p, modeId)
-	setShroud(model, not unlocked, L(modeLockHints[modeId]))
+	setShroud(model, not unlocked, L(kit.modeLockHints[modeId]))
 	local sign=model:FindFirstChild("MapBillboard")
 	local source=sign and sign:FindFirstChild("MapBoard")
 	-- Roblox does not render ViewportFrames under Workspace SurfaceGuis.
@@ -1644,13 +1644,13 @@ local function updatePortal(model, p)
 		local mapId = Rules.PortalMap(portalId)
 		local mode = Catalog.Modes[modeId]
 		if not unlocked then
-			label.Text = T("BLOQUEADO", "LOCKED") .. " • " .. L(modeLockHints[modeId])
+			label.Text = T("BLOQUEADO", "LOCKED") .. " • " .. L(kit.modeLockHints[modeId])
 			label.TextColor3 = C.red
 		elseif mode then
 			local count = Rules.WaveCount(modeId, mapId)
 			local waves = count == 0 and T("ONDAS INFINITAS", "ENDLESS WAVES") or (tostring(count) .. T(" ONDAS", " WAVES"))
 			label.Text = Catalog.Upper(L(mode.name)) .. " • " .. waves
-			label.TextColor3 = modeTint[portalId] or C.green
+			label.TextColor3 = kit.modeTint[portalId] or C.green
 		end
 	end
 	-- A first-time visitor sees one beacon, over the portal that starts
@@ -1679,10 +1679,10 @@ updateWorldCosmetics = function()
 		-- The lobby is built server-side at boot, but a slow client can get its
 		-- first snapshot before that model replicates. Without this retry the
 		-- shrouds would never appear and every portal would look unlocked.
-		if not cosmeticsRetryPending then
-			cosmeticsRetryPending = true
+		if not kit.cosmeticsRetryPending then
+			kit.cosmeticsRetryPending = true
 			task.delay(1, function()
-				cosmeticsRetryPending = false
+				kit.cosmeticsRetryPending = false
 				updateWorldCosmetics()
 			end)
 		end
@@ -1732,11 +1732,11 @@ end
 -- The elevator card, shown only while this player stands in a portal. The
 -- countdown ticks locally from the server's last word and re-syncs on every
 -- snapshot; Leave and the first rider's sector switch are plain intents.
-local elevatorDeadline, elevatorSignature = nil, nil
+kit.elevatorDeadline, kit.elevatorSignature = nil, nil
 
 local function elevatorCountText()
-	if not elevatorDeadline then return "" end
-	local left = math.max(0, math.ceil(elevatorDeadline - os.clock()))
+	if not kit.elevatorDeadline then return "" end
+	local left = math.max(0, math.ceil(kit.elevatorDeadline - os.clock()))
 	return left > 0 and tostring(left) or "…"
 end
 
@@ -1744,13 +1744,13 @@ renderElevator = function()
 	local e = state and state.phase == "Lobby" and state.elevator or nil
 	if e then
 		local deadline = os.clock() + (tonumber(e.remaining) or 0)
-		if not elevatorDeadline or math.abs(deadline - elevatorDeadline) > 1.2 then elevatorDeadline = deadline end
+		if not kit.elevatorDeadline or math.abs(deadline - kit.elevatorDeadline) > 1.2 then kit.elevatorDeadline = deadline end
 	else
-		elevatorDeadline = nil
+		kit.elevatorDeadline = nil
 	end
 	local signature = e and HttpService:JSONEncode({e.portalId, e.queueId, e.slot, e.departing, e.modeId, e.mapId or "random", #(e.riders or {}), e.host, e.carId, profile().equippedBase, language}) or nil
-	if signature == elevatorSignature and (refs.elevator ~= nil) == (e ~= nil) then return false end
-	elevatorSignature = signature
+	if signature == kit.elevatorSignature and (refs.elevator ~= nil) == (e ~= nil) then return false end
+	kit.elevatorSignature = signature
 	-- The pad this player rides lights up: a column of light and rising sparks
 	-- in the portal's colour, flaring white when the queue departs.
 	local glow = effects.rideGlow
@@ -1792,7 +1792,7 @@ renderElevator = function()
 	local size = screenSize()
 	local hud = UI.lobbyLayout(size.X, size.Y)
 	local compact, r = hud.class.compact, hud.elevator
-	local tint = modeTint[e.portalId] or C.green
+	local tint = kit.modeTint[e.portalId] or C.green
 	local card = UI.roundFrame(main, {Name = "ElevatorCard", Position = at(r), Size = dims(r), BackgroundColor3 = C.background}, tint)
 	refs.elevator = card
 	-- The plan before anyone is committed: map, mode, length, final boss and
@@ -1907,7 +1907,7 @@ renderLobby = function()
 	end
 	refs.firstVisitHint.Visible=not state.elevator and contextPanel==nil
 
-	elevatorSignature = nil
+	kit.elevatorSignature = nil
 	renderElevator()
 	renderContext()
 	updateWorldCosmetics()
@@ -1950,7 +1950,7 @@ end
 -- The same placement rule the server applies (Rules.BuildCheck), plus the
 -- wallet and the hero limit, so the preview never promises what the server
 -- refuses. Returns true, or false and the reason key.
-local placementReason = nil
+kit.placementReason = nil
 local function positionValid(position)
 	if not state or not state.match or not selectedHero then return false, "bounds" end
 	local match = state.match
@@ -1995,7 +1995,7 @@ end
 local function updatePreview(position)
 	selectedPosition = Vector3.new(position.X, 0, position.Z)
 	local radius = selectedHero and effectiveRange(selectedHero) or (state.match and state.match.ability and state.match.ability.radius or 20)
-	if selectedHero then placementValid, placementReason = positionValid(selectedPosition) else placementValid, placementReason = true, nil end
+	if selectedHero then placementValid, kit.placementReason = positionValid(selectedPosition) else placementValid, kit.placementReason = true, nil end
 	local tint = placementValid and C.green or C.red
 	placementRing = rangeRing(placementRing, selectedPosition, radius, tint)
 	-- While a hero is being placed, the ground that refuses a tower is tinted.
@@ -2021,7 +2021,7 @@ local function updatePreview(position)
 	end
 	if refs.confirm then
 		refs.confirm.BackgroundColor3 = placementValid and C.green or C.red
-		local reason = placementReason and Rules.BuildReasons[placementReason]
+		local reason = kit.placementReason and Rules.BuildReasons[kit.placementReason]
 		refs.confirm.Text = placementValid and T("CONFIRMAR", "CONFIRM") or Catalog.Upper(reason and L(reason) or T("POSIÇÃO INVÁLIDA", "INVALID POSITION"))
 	end
 	if refs.placement then refs.placement.Visible = true end
@@ -2111,8 +2111,8 @@ end
 -- These must be the server's own values: MatchService accepts exactly
 -- First/Last/Strongest/Nearest. The lowercase spelling this used to send was
 -- refused on every press, so targeting could never be changed from the HUD.
-local priorityNames = {First = {pt = "Primeiro", en = "First"}, Last = {pt = "Último", en = "Last"}, Strongest = {pt = "Mais forte", en = "Strongest"}, Nearest = {pt = "Mais próximo", en = "Nearest"}}
-local priorityOrder = {"First", "Last", "Strongest", "Nearest"}
+kit.priorityNames = {First = {pt = "Primeiro", en = "First"}, Last = {pt = "Último", en = "Last"}, Strongest = {pt = "Mais forte", en = "Strongest"}, Nearest = {pt = "Mais próximo", en = "Nearest"}}
+kit.priorityOrder = {"First", "Last", "Strongest", "Nearest"}
 
 local function currentMatchLayout()
 	local size = screenSize()
@@ -2129,6 +2129,29 @@ end
 -- tall column where the screen has height to spare, and a short two-row
 -- panel for a phone on its side, where the old 306px column started above
 -- the top of the screen and took the upgrade button with it.
+local function towerStatsText(tower, wide)
+	-- One stat as "now -> next": the next value in green, as the server sent it.
+	local function statChange(icon, now, after, format)
+		local text = icon .. " " .. format(now or 0)
+		if after and math.abs((after or 0) - (now or 0)) > 0.001 then
+			text ..= ' <font color="#6BE38A">→ ' .. format(after) .. "</font>"
+		end
+		return text
+	end
+	local now, nextStats = tower.base or tower, tower.next
+	local function whole(v) return number(math.floor(v + 0.5)) end
+	local function tenth(v) return string.format("%.1f", v) end
+	local function rate(v) return string.format("%.2f", v) end
+	local lines = {
+		statChange("⚔", tower.damage, nextStats and nextStats.damage * ((tower.damage or 0) / math.max(0.001, now.damage or 1)), whole),
+		statChange("◎", tower.range, nextStats and nextStats.range, tenth),
+		statChange("⚡", tower.rate, nextStats and nextStats.rate * ((tower.rate or 0) / math.max(0.001, now.rate or 1)), rate),
+	}
+	local hero = Catalog.Heroes[tower.heroId]
+	if hero and hero.pickup then table.insert(lines, "🧲 " .. hero.pickup) end
+	return table.concat(lines, wide and "    " or "\n")
+end
+
 local function towerPanel(tower)
 	if refs.towerPanel then refs.towerPanel:Destroy() end
 	local layout = refs.layout or currentMatchLayout()
@@ -2139,20 +2162,22 @@ local function towerPanel(tower)
 	local def = Catalog.Heroes[tower.heroId]
 	local own = tower.ownerId == player.UserId
 	local half = math.floor((w - 30) / 2)
-	local levelText = T("Melhoria ", "Upgrade ") .. tostring(tower.level) .. "/5" .. (tower.branch and "  •  " .. L(def.branches[tower.branch].name) or T("  •  só nesta partida", "  •  this match only"))
+	local levelText = T("Melhoria ", "Upgrade ") .. tostring(tower.level) .. "/5" .. (tower.branch and "  •  " .. L(def.branches[tower.branch].name) or "")
 	UI.secondary(panel, "×", closeTowerPanel, {Name="CloseTower",Position = UDim2.fromOffset(w - 46, 4), Size = UDim2.fromOffset(40, 40), TextSize = 24})
 	local actionY, actionH, rowY, rowH
+	-- Every stat reads as now -> after (the server's preview of the next
+	-- upgrade), in text a thumb-length away can still read.
 	if wide then
-		local nameW = math.floor((w - 66) * 0.5)
-		UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 6), Size = UDim2.fromOffset(nameW, 22), TextSize = 15, Font = Enum.Font.GothamBold, TextColor3 = colorFor(tower.heroId)})
-		UI.label(panel, levelText, {Position = UDim2.fromOffset(12 + nameW + 6, 8), Size = UDim2.fromOffset(w - 66 - nameW - 6, 18), TextSize = 11, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Right})
-		refs.towerStats = UI.label(panel, "", {Position = UDim2.fromOffset(12, 30), Size = UDim2.fromOffset(w - 64, 18), TextSize = 10, TextColor3 = C.muted})
-		actionY, actionH, rowY, rowH = 52, 36, 92, 34
+		local nameW = math.floor((w - 66) * 0.55)
+		UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 6), Size = UDim2.fromOffset(nameW, 22), TextSize = 16, Font = UI.Fonts.display, TextColor3 = colorFor(tower.heroId), TextTruncate = Enum.TextTruncate.AtEnd})
+		UI.label(panel, levelText, {Position = UDim2.fromOffset(12 + nameW + 4, 8), Size = UDim2.fromOffset(w - 66 - nameW - 4, 18), TextSize = 12, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd})
+		refs.towerStats = UI.label(panel, "", {Name = "TowerStats", Position = UDim2.fromOffset(12, 29), Size = UDim2.fromOffset(w - 24, 18), TextSize = 13, Font = UI.Fonts.display, RichText = true, TextTruncate = Enum.TextTruncate.AtEnd})
+		actionY, actionH, rowY, rowH = 50, 40, 94, 34
 	else
-		UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 8), Size = UDim2.fromOffset(w - 54, 24), TextSize = 17, Font = Enum.Font.GothamBold, TextColor3 = colorFor(tower.heroId)})
-		UI.label(panel, levelText, {Position = UDim2.fromOffset(12, 34), Size = UDim2.fromOffset(w - 24, 18), TextSize = 12, TextColor3 = C.muted})
-		refs.towerStats = UI.label(panel, "", {Position = UDim2.fromOffset(12, 54), Size = UDim2.fromOffset(w - 24, 32), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
-		actionY, actionH, rowY, rowH = 88, 40, 178, 40
+		UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 8), Size = UDim2.fromOffset(w - 54, 24), TextSize = 18, Font = UI.Fonts.display, TextColor3 = colorFor(tower.heroId), TextTruncate = Enum.TextTruncate.AtEnd})
+		UI.label(panel, levelText, {Position = UDim2.fromOffset(12, 32), Size = UDim2.fromOffset(w - 54, 18), TextSize = 13, TextColor3 = C.muted, TextTruncate = Enum.TextTruncate.AtEnd})
+		refs.towerStats = UI.label(panel, "", {Name = "TowerStats", Position = UDim2.fromOffset(12, 54), Size = UDim2.fromOffset(w - 24, 62), TextSize = 15, Font = UI.Fonts.display, RichText = true, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.05})
+		actionY, actionH, rowY, rowH = 122, 46, 176, 40
 	end
 	local function note(text)
 		UI.label(panel, text, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, (own and rowY - 6 or slot.h - 6) - actionY), TextSize = 11, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextYAlignment = Enum.TextYAlignment.Top})
@@ -2162,20 +2187,21 @@ local function towerPanel(tower)
 		return
 	end
 	if tower.level < 4 then
-		UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. "💰 " .. number(tower.upgradeCost), function() act("UpgradeTower", {towerId = tower.id}) end, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = 13})
+		local upgrade = UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. "💰 " .. number(tower.upgradeCost), function() act("UpgradeTower", {towerId = tower.id}) end, {Name = "TowerUpgrade", Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = wide and 15 or 18, BackgroundColor3 = C.green})
+		if (state.match and state.match.cash or 0) < (tower.upgradeCost or 0) then upgrade.BackgroundColor3 = C.card end
 	elseif tower.level == 4 then
+		-- Two specializations side by side, each with its new damage.
 		for branch = 1, 2 do
-			local label = L(def.branches[branch].name) .. " • 💰 " .. number(tower.upgradeCost)
-			local position = wide and UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY) or UDim2.fromOffset(12, actionY + (branch - 1) * 42)
-			local size = wide and UDim2.fromOffset(half, actionH) or UDim2.fromOffset(w - 24, 40)
-			UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Position = position, Size = size, TextSize = wide and 10 or 11, BackgroundColor3 = branch == 1 and C.green or C.blue})
+			local after = tower.branches and tower.branches[branch]
+			local label = L(def.branches[branch].name) .. "\n" .. (after and ("⚔ " .. number(math.floor(after.damage + 0.5)) .. "  •  ") or "") .. "💰 " .. number(tower.upgradeCost)
+			UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Name = "TowerBranch" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY), Size = UDim2.fromOffset(half, actionH), TextSize = wide and 11 or 12, TextWrapped = true, BackgroundColor3 = branch == 1 and C.green or C.blue})
 		end
 	else
 		note(L(def.branches[tower.branch or 1].description))
 	end
-	UI.secondary(panel, T("Alvo: ", "Target: ") .. L(priorityNames[tower.priority] or tower.priority), function()
-		local index = table.find(priorityOrder, tower.priority) or 1
-		act("SetPriority", {towerId = tower.id, priority = priorityOrder[index % #priorityOrder + 1]})
+	UI.secondary(panel, T("Alvo: ", "Target: ") .. L(kit.priorityNames[tower.priority] or tower.priority), function()
+		local index = table.find(kit.priorityOrder, tower.priority) or 1
+		act("SetPriority", {towerId = tower.id, priority = kit.priorityOrder[index % #kit.priorityOrder + 1]})
 	end, {Position = UDim2.fromOffset(12, rowY), Size = UDim2.fromOffset(half, rowH), TextSize = 11})
 	UI.secondary(panel, T("Vender • ", "Sell • ") .. "💰 " .. number(math.floor((tower.invested or 0) * 0.7)), function()
 		act("SellTower", {towerId = tower.id}, closeTowerPanel)
@@ -2501,12 +2527,7 @@ updateMatch = function()
 		else
 			local key = tostring(tower.id) .. ":" .. tostring(tower.level) .. ":" .. tostring(tower.priority)
 			if refs.towerKey ~= key then refs.towerKey = key; towerPanel(tower) end
-			if refs.towerStats then
-				-- The wide panel has a single line for stats; the tall one has two.
-				refs.towerStats.Text = T("Dano ", "Damage ") .. number(tower.damage) .. "  •  " .. string.format("%.1f", tower.rate or 0) .. T("/s", "/s")
-					.. (refs.towerWide and "  •  " or "\n") .. T("Alcance ", "Range ") .. string.format("%.1f", tower.range or 0)
-					.. (Catalog.Heroes[tower.heroId] and Catalog.Heroes[tower.heroId].pickup and ("  •  🧲 " .. Catalog.Heroes[tower.heroId].pickup) or "")
-			end
+			if refs.towerStats then refs.towerStats.Text = towerStatsText(tower, refs.towerWide) end
 			if typeof(tower.position) == "Vector3" then towerRing = rangeRing(towerRing, tower.position, tower.range or 20, colorFor(tower.heroId)) end
 		end
 	end
@@ -2790,7 +2811,7 @@ end)
 -- AFK farm banner. The server marks the commander standing in a farm chamber
 -- (attributes AfkZone / AfkNext) and pays each minute itself; this only shows
 -- it, and keeps Roblox's idle kick from ending a farm the player chose.
-local afkBanner, afkTitle, afkDetail, afkBannerAt = nil, nil, nil, 0
+kit.afkBanner, kit.afkTitle, kit.afkDetail, kit.afkBannerAt = nil, nil, nil, 0
 -- Power saving while farming: the 3D world stops rendering and a quiet
 -- screen shows the session. It always switches back when the farm ends.
 local afk = { eco = false, screen = nil, text = nil, travel = nil, autoEco = false }
@@ -2811,28 +2832,28 @@ local function updateAfkBanner()
 	local kind = player:GetAttribute("AfkZone")
 	local farm = kind and Catalog.Afk[kind]
 	if not farm then
-		if afkBanner then afkBanner.Visible = false end
+		if kit.afkBanner then kit.afkBanner.Visible = false end
 		if afk.eco then setAfkEco(false) end
 		return
 	end
-	if not afkBanner then
-		afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(math.min(460, screenSize().X - 24), 58), BackgroundColor3 = C.background}, C.gold)
-		afkTitle = UI.label(afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 28), TextSize = 18, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center})
+	if not kit.afkBanner then
+		kit.afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(math.min(460, screenSize().X - 24), 58), BackgroundColor3 = C.background}, C.gold)
+		kit.afkTitle = UI.label(kit.afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 28), TextSize = 18, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center})
 		-- The dedicated AFK place, when the game has one configured.
-		afk.travel = UI.button(afkBanner, T("SERVIDOR AFK", "AFK SERVER"), function() act("EnterAfkServer", {}) end, {Name = "AfkServerGo", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -104, 0.5, 0), Size = UDim2.fromOffset(120, 44), BackgroundColor3 = C.violet, TextSize = 12, Visible = false})
-		UI.button(afkBanner, T("ECONOMIA", "SAVER"), function() setAfkEco(true) end, {Name = "AfkEcoOn", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(92, 44), BackgroundColor3 = C.blue, TextSize = 13})
-		afkDetail = UI.label(afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
+		afk.travel = UI.button(kit.afkBanner, T("SERVIDOR AFK", "AFK SERVER"), function() act("EnterAfkServer", {}) end, {Name = "AfkServerGo", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -104, 0.5, 0), Size = UDim2.fromOffset(120, 44), BackgroundColor3 = C.violet, TextSize = 12, Visible = false})
+		UI.button(kit.afkBanner, T("ECONOMIA", "SAVER"), function() setAfkEco(true) end, {Name = "AfkEcoOn", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(92, 44), BackgroundColor3 = C.blue, TextSize = 13})
+		kit.afkDetail = UI.label(kit.afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
 	end
 	local tint = UI.color(farm.color)
-	afkBanner.Visible = true
-	afkTitle.Text = "💤 " .. Catalog.Upper(L(farm.name))
-	afkTitle.TextColor3 = tint
+	kit.afkBanner.Visible = true
+	kit.afkTitle.Text = "💤 " .. Catalog.Upper(L(farm.name))
+	kit.afkTitle.TextColor3 = tint
 	-- Session clock, what has really been paid, and whether the last minute is
 	-- still being saved: the server sets all of it, the banner only reads it.
 	local session = math.floor(tonumber(player:GetAttribute("AfkSession")) or 0)
 	local earned = tonumber(player:GetAttribute("AfkEarned")) or 0
 	local saving = player:GetAttribute("AfkSaving") == true
-	afkDetail.Text = L(farm.rate) .. "  •  " .. T("próximo em ", "next in ") .. tostring(player:GetAttribute("AfkNext") or 60) .. "s"
+	kit.afkDetail.Text = L(farm.rate) .. "  •  " .. T("próximo em ", "next in ") .. tostring(player:GetAttribute("AfkNext") or 60) .. "s"
 		.. "  •  " .. string.format("%d:%02d", math.floor(session / 60), session % 60)
 		.. "  •  +" .. number(earned) .. (kind == "gold" and T(" Ouro", " Gold") or " XP")
 		.. "  " .. (saving and T("salvando…", "saving…") or "✓")
@@ -2856,10 +2877,10 @@ pcall(function()
 	end)
 end)
 
-local nameplateAt, anchorCheckAt = 0, 0
+kit.nameplateAt, kit.anchorCheckAt = 0, 0
 RunService.RenderStepped:Connect(function(dt)
-	if os.clock() >= afkBannerAt then
-		afkBannerAt = os.clock() + 0.25
+	if os.clock() >= kit.afkBannerAt then
+		kit.afkBannerAt = os.clock() + 0.25
 		updateAfkBanner()
 	end
 	routePreview:Step(dt or 1 / 60, state and state.phase)
@@ -2880,21 +2901,21 @@ RunService.RenderStepped:Connect(function(dt)
 			if badge and badge.Parent and badge.Visible then badge.Rotation = math.sin(now * 7) * 14 end
 		end
 	end
-	if contextRefreshPending and not UserInputService:GetFocusedTextBox() then renderContext() end
+	if kit.contextRefreshPending and not UserInputService:GetFocusedTextBox() then renderContext() end
 	animateLobby(dt or 1 / 60)
 	celebrate:Step(dt or 1 / 60)
 	if refs.elevatorCount then
 		local count = elevatorCountText()
 		if refs.elevatorCount.Text ~= count then refs.elevatorCount.Text = count end
 	end
-	if os.clock() >= nameplateAt then
-		nameplateAt = os.clock() + 0.7
+	if os.clock() >= kit.nameplateAt then
+		kit.nameplateAt = os.clock() + 0.7
 		nameplates:Refresh()
 	end
 	-- A contextual panel belongs to the place that opened it: walk away from
 	-- the pedestal and the panel closes, the way the physical lobby implies.
-	if contextPanel and contextPanel.anchor and os.clock() >= anchorCheckAt then
-		anchorCheckAt = os.clock() + 0.25
+	if contextPanel and contextPanel.anchor and os.clock() >= kit.anchorCheckAt then
+		kit.anchorCheckAt = os.clock() + 0.25
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		if root and (root.Position - contextPanel.anchor).Magnitude > 26 then closeContext() end
@@ -2908,12 +2929,12 @@ end)
 -- Layouts are computed in pixels from the usable screen, so any change to it
 -- re-lays the HUD out: a rotation, a resized window, or Roblox changing its
 -- own topbar inset. Debounced, and skipped when the size did not really move.
-local resizeQueued = false
+kit.resizeQueued = false
 local function queueRelayout()
-	if resizeQueued then return end
-	resizeQueued = true
+	if kit.resizeQueued then return end
+	kit.resizeQueued = true
 	task.delay(0.2, function()
-		resizeQueued = false
+		kit.resizeQueued = false
 		local key = screenKey()
 		if key == layoutKind then return end
 		layoutKind = key

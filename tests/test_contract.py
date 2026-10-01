@@ -118,7 +118,7 @@ class ContractTests(unittest.TestCase):
         server = re.search(r'contains\(\{([^}]*)\},payload\.priority\)', MATCH)
         self.assertIsNotNone(server, "MatchService no longer validates SetPriority against a list")
         accepted = set(re.findall(r'"(\w+)"', server.group(1)))
-        client = re.search(r'local priorityOrder = \{([^}]*)\}', CLIENT)
+        client = re.search(r'(?:local |kit\.)priorityOrder = \{([^}]*)\}', CLIENT)
         self.assertIsNotNone(client, "the client no longer declares priorityOrder")
         cycled = set(re.findall(r'"(\w+)"', client.group(1)))
         self.assertEqual(cycled, accepted, "the client cycles priorities the server does not accept")
