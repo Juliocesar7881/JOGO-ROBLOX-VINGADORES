@@ -33,10 +33,11 @@ task.spawn(function()
 		local chat = game:GetService("TextChatService")
 		local window = chat:WaitForChild("ChatWindowConfiguration", 10)
 		if window then
-			-- A small, see-through window on the left edge, clear of the
-			-- battlefield's middle; players can still open it bigger.
-			for key, value in pairs({ VerticalAlignment = Enum.VerticalAlignment.Center, HorizontalAlignment = Enum.HorizontalAlignment.Left,
-				HeightScale = 0.5, WidthScale = 0.55, BackgroundColor3 = C.panel, BackgroundTransparency = 0.55, TextSize = 13 }) do
+			-- A small, see-through window on the right edge: the left holds the
+			-- lobby's menu column and the bottom the hero bar, and the right
+			-- middle is open sky in the lobby and open road in a battle.
+			for key, value in pairs({ VerticalAlignment = Enum.VerticalAlignment.Center, HorizontalAlignment = Enum.HorizontalAlignment.Right,
+				HeightScale = 0.34, WidthScale = 0.34, BackgroundColor3 = C.panel, BackgroundTransparency = 0.6, TextSize = 13 }) do
 				pcall(function() window[key] = value end)
 			end
 		end
