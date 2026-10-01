@@ -7,7 +7,7 @@
 -- (unix seconds, UTC) after which the code stops working. Each account can
 -- redeem each code once. Add a code here, rebuild, publish.
 return {
-	VINGADORES = { gold = 500 },
+	MULTIVERSO = { gold = 500 },
 	DOOMSDAY = { gold = 300, xp = 100 },
 	ULTIMATE = { gold = 1000, chest = "rare", expires = 1798761600 }, -- 2027-01-01 00:00 UTC
 }

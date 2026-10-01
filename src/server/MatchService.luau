@@ -186,8 +186,8 @@ function Match:Start(members, mapId, modeId, runId)
 		self.world:MovePlayer(player,true,index)
 	end
 	if modeId == "tutorial" then
-		self:_notice("TREINAMENTO • Escolha Homem de Ferro e posicione ao lado da rota. Os inimigos derrubam Ouro: pegue para comprar mais heróis.",
-			"TRAINING • Select Iron Man and place him beside the path. Enemies drop Gold: pick it up to buy more heroes.")
+		self:_notice("TREINAMENTO • Escolha Volt e posicione ao lado da rota. Os inimigos derrubam Ouro: pegue para comprar mais heróis.",
+			"TRAINING • Select Volt and place him beside the path. Enemies drop Gold: pick it up to buy more heroes.")
 	elseif self.cardMode then
 		self:_notice("ROGUELIKE DE CARTAS • A cada 5 ondas escolha uma carta. Chefe a cada 10 ondas. 50 ondas.",
 			"CARD ROGUELIKE • Pick a card every 5 waves. A boss every 10 waves. 50 waves.")
@@ -335,7 +335,7 @@ function Match:_beginWave()
 	for _, spec in ipairs(self.pendingSpawns) do
 		if spec.enemyId == "stealth" then threats.stealth=true elseif spec.enemyId=="flyer" then threats.air=true elseif spec.enemyId=="armored" then threats.armor=true end
 	end
-	if threats.stealth then self:_notice("Camuflados chegando: Viúva Negra, Demolidor ou uma habilidade de revelar mostram os alvos.","Cloaked enemies incoming: Black Widow, Daredevil or a reveal ability shows them.")
+	if threats.stealth then self:_notice("Camuflados chegando: Sombra, Eco ou uma habilidade de revelar mostram os alvos.","Cloaked enemies incoming: Shade, Echo or a reveal ability shows them.")
 	elseif threats.air then self:_notice("Ameaça aérea: use heróis que atinjam voadores.","Air threat: use heroes that target flying enemies.")
 	elseif threats.armor then self:_notice("Blindados: perfuração e dano mágico são eficientes.","Armored enemies: piercing and magic are effective.") end
 	-- The tutorial teaches one idea per wave instead of dumping everything in
@@ -629,7 +629,7 @@ function Match:_power(enemy)
 	elseif id=="loki" then
 		-- Illusions: worthless decoys that pull fire for a few seconds.
 		self:_summon(enemy,2+enemy.phase+bonus,"illusion")
-		enemy.hint="Ilusões somem sozinhas; mire no Loki verdadeiro / Illusions fade on their own; aim at the real Loki"
+		enemy.hint="Ilusões somem sozinhas; mire no Mestre verdadeiro / Illusions fade on their own; aim at the real Master"
 	end
 	self:_fx({kind="Pulse",position=enemy.position,radius=24,color=Color3.fromRGB(104,255,119),shake=enemy.final and 1 or 0.7})
 	enemy.vulnerableUntil=self.elapsed+VULNERABLE_SECONDS

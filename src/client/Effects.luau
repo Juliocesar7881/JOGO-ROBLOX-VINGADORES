@@ -659,7 +659,7 @@ function Effects.ShotSound(heroId)
 	return "shotTech"
 end
 
-local MUZZLE_PARTS = {ironman="Repulsor",hawkeye="Arrow",spiderman="Hand",thor="Mjolnir",captain="Shield",widow="BatonCharge",
+local MUZZLE_PARTS = {ironman="Repulsor",hawkeye="Arrow",spiderman="Hand",thor="Hammer",captain="Shield",widow="BatonCharge",
 	bucky="RifleBarrel",rocket="GunMuzzle",warmachine="CannonMuzzle",starlord="BlasterGlow",wanda="ChaosSpell",strange="SpellGlyph",vision="MindGem",captainmarvel="PhotonFist",
 	wolverine="AdamantiumClaw",cyclops="Visor",gambit="ChargedCard",iceman="IceFist",psylocke="Blade",nova="Visor",beast="FurryFist"}
 

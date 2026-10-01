@@ -90,17 +90,17 @@ Catalog.Heroes = {
 	--- Common ---------------------------------------------------------------
 	ironman = {
 		id = "ironman", rarity = "common", starter = true, ability = "repulsorBarrage",
-		name = text("Homem de Ferro", "Iron Man"), role = text("Dano tecnológico versátil", "Versatile tech damage"), cost = 250,
+		name = text("Volt", "Volt"), role = text("Dano tecnológico versátil", "Versatile tech damage"), cost = 250,
 		description = text("Rajadas tecnológicas atingem alvos terrestres e aéreos.", "Technology blasts strike ground and flying targets."),
 		damage = 20, range = 27, interval = 0.9, color = { 220, 48, 51 }, attack = "single", damageType = "tech", air = true,
 		branches = {
-			{ name = text("Mísseis Jericho", "Jericho Missiles"), description = text("Explosões atingem grupos inteiros.", "Explosions strike entire groups."), mods = { set("attack", "splash"), set("splash", 8) } },
-			{ name = text("Unifeixe", "Unibeam"), description = text("Laser perfura a armadura dos inimigos.", "A laser penetrates enemy armor."), mods = { set("armorPierce", 0.65), mul("damage", 1.35) } },
+			{ name = text("Mísseis Faísca", "Spark Missiles"), description = text("Explosões atingem grupos inteiros.", "Explosions strike entire groups."), mods = { set("attack", "splash"), set("splash", 8) } },
+			{ name = text("Feixe Central", "Core Beam"), description = text("Laser perfura a armadura dos inimigos.", "A laser penetrates enemy armor."), mods = { set("armorPierce", 0.65), mul("damage", 1.35) } },
 		},
 	},
 	hawkeye = {
 		id = "hawkeye", rarity = "common", starter = true, ability = "deadeye",
-		name = text("Gavião Arqueiro", "Hawkeye"), role = text("Longo alcance e alvos prioritários", "Long range, priority targets"), cost = 180,
+		name = text("Lince", "Lynx"), role = text("Longo alcance e alvos prioritários", "Long range, priority targets"), cost = 180,
 		description = text("Arqueiro de longo alcance, excelente contra alvos prioritários.", "A long-range archer, excellent against priority targets."),
 		damage = 27, range = 33, interval = 1.6, color = { 147, 80, 202 }, attack = "single", damageType = "physical", air = true,
 		branches = {
@@ -110,38 +110,38 @@ Catalog.Heroes = {
 	},
 	falcon = {
 		id = "falcon", rarity = "common", ability = "airCommand",
-		name = text("Falcão", "Falcon"), role = text("Ataque rápido contra voadores", "Fast strikes against flyers"), cost = 220,
+		name = text("Cotovia", "Skylark"), role = text("Ataque rápido contra voadores", "Fast strikes against flyers"), cost = 220,
 		description = text("Rasantes rápidos: ótimo contra voadores e alvos ágeis.", "Fast dives: great against flyers and agile targets."),
 		pickup = 14, damage = 16, range = 30, interval = 0.68, color = { 196, 52, 60 }, attack = "single", damageType = "physical", air = true,
 		branches = {
 			{ name = text("Rasante", "Dive Bomb"), description = text("Mais dano e mais alcance.", "More damage and more range."), mods = { mul("damage", 1.3), add("range", 6) } },
-			{ name = text("Drone Redwing", "Redwing Drone"), description = text("Ataca quase o dobro de vezes.", "Attacks almost twice as often."), mods = { mul("interval", 0.6) } },
+			{ name = text("Drone Pluma", "Plume Drone"), description = text("Ataca quase o dobro de vezes.", "Attacks almost twice as often."), mods = { mul("interval", 0.6) } },
 		},
 	},
 	bucky = {
 		id = "bucky", rarity = "common", ability = "ambush",
-		name = text("Soldado Invernal", "Winter Soldier"), role = text("Perfuração de armadura", "Armor piercing"), cost = 300,
+		name = text("Sargento Prata", "Silver Sergeant"), role = text("Perfuração de armadura", "Armor piercing"), cost = 300,
 		description = text("Tiros secos que atravessam a armadura inimiga.", "Dry shots that pierce enemy armor."),
 		damage = 28, range = 28, interval = 1.0, color = { 128, 142, 156 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.15,
 		branches = {
-			{ name = text("Braço de vibranium", "Vibranium Arm"), description = text("Perfura quase toda a armadura.", "Pierces almost all armor."), mods = { set("armorPierce", 0.5), mul("damage", 1.2) } },
+			{ name = text("Braço de titânio", "Titanium Arm"), description = text("Perfura quase toda a armadura.", "Pierces almost all armor."), mods = { set("armorPierce", 0.5), mul("damage", 1.2) } },
 			{ name = text("Atirador de elite", "Sharpshooter"), description = text("Alcance enorme e dano contra chefes.", "Huge range and boss damage."), mods = { add("range", 10), set("bossDamage", 0.5) } },
 		},
 	},
 	--- Rare -----------------------------------------------------------------
 	spiderman = {
 		id = "spiderman", rarity = "rare", ability = "webField",
-		name = text("Homem-Aranha", "Spider-Man"), role = text("Desaceleração e controle", "Slowing and crowd control"), cost = 280,
-		description = text("Teias mantêm os infectados dentro do alcance da equipe.", "Webs keep the infected within your team's range."),
+		name = text("Laçadora", "Lasso"), role = text("Desaceleração e controle", "Slowing and crowd control"), cost = 280,
+		description = text("Laços mantêm os infectados dentro do alcance da equipe.", "Lassos keep the infected within your team's range."),
 		damage = 14, range = 24, interval = 1.1, color = { 235, 68, 67 }, attack = "splash", damageType = "physical", air = false, splash = 7, slow = 0.22,
 		branches = {
-			{ name = text("Rede urbana", "Urban Web"), description = text("Teias cobrem uma área muito maior.", "Webs cover a much larger area."), mods = { set("splash", 11), set("slow", 0.38) } },
-			{ name = text("Teia de impacto", "Impact Web"), description = text("Mais dano e controle concentrado.", "More damage and concentrated control."), mods = { mul("damage", 2.1), set("slow", 0.48) } },
+			{ name = text("Rede urbana", "Urban Net"), description = text("Redes cobrem uma área muito maior.", "Nets cover a much larger area."), mods = { set("splash", 11), set("slow", 0.38) } },
+			{ name = text("Laço de impacto", "Impact Lasso"), description = text("Mais dano e controle concentrado.", "More damage and concentrated control."), mods = { mul("damage", 2.1), set("slow", 0.48) } },
 		},
 	},
 	widow = {
 		id = "widow", rarity = "rare", ability = "widowBite",
-		name = text("Viúva Negra", "Black Widow"), role = text("Revela camuflados e marca alvos", "Reveals hidden enemies, marks targets"), cost = 260,
+		name = text("Sombra", "Shade"), role = text("Revela camuflados e marca alvos", "Reveals hidden enemies, marks targets"), cost = 260,
 		description = text("Revela camuflados e marca inimigos para a equipe.", "Reveals hidden enemies and marks targets for the team."),
 		damage = 14, range = 25, interval = 0.75, color = { 199, 49, 63 }, attack = "single", damageType = "tech", air = true, reveal = true, support = true, mark = 0.08,
 		branches = {
@@ -151,17 +151,17 @@ Catalog.Heroes = {
 	},
 	antman = {
 		id = "antman", rarity = "rare", ability = "growth",
-		name = text("Homem-Formiga", "Ant-Man"), role = text("Ataques rápidos e pisões", "Fast attacks and stomps"), cost = 380,
+		name = text("Titã de Bolso", "Pocket Titan"), role = text("Ataques rápidos e pisões", "Fast attacks and stomps"), cost = 380,
 		description = text("Ataques rápidos alternam com pisões gigantes.", "Quick attacks alternate with giant stomps."),
 		pickup = 14, damage = 22, range = 26, interval = 0.7, color = { 205, 72, 72 }, attack = "single", damageType = "tech", air = false, splash = 8, stompEvery = 5,
 		branches = {
-			{ name = text("Gigante", "Giant-Man"), description = text("Pisões gigantes acontecem com mais frequência.", "Giant stomps happen more frequently."), mods = { set("periodicSplash", 2) } },
-			{ name = text("Impacto Pym", "Pym Impact"), description = text("Pisões alcançam uma área enorme.", "Stomps reach an enormous area."), mods = { set("splash", 16), set("periodicSplash", 4) } },
+			{ name = text("Gigante", "Giant"), description = text("Pisões gigantes acontecem com mais frequência.", "Giant stomps happen more frequently."), mods = { set("periodicSplash", 2) } },
+			{ name = text("Impacto Quântico", "Quantum Impact"), description = text("Pisões alcançam uma área enorme.", "Stomps reach an enormous area."), mods = { set("splash", 16), set("periodicSplash", 4) } },
 		},
 	},
 	wasp = {
 		id = "wasp", rarity = "rare", ability = "swarmSting",
-		name = text("Vespa", "Wasp"), role = text("Ferrão rápido que desacelera", "Fast slowing stings"), cost = 240,
+		name = text("Pirilampo", "Firefly"), role = text("Ferrão rápido que desacelera", "Fast slowing stings"), cost = 240,
 		description = text("Ferroadas elétricas rápidas que atrasam o alvo.", "Fast electric stings that slow the target."),
 		damage = 10, range = 22, interval = 0.4, color = { 240, 196, 52 }, attack = "single", damageType = "tech", air = true, slow = 0.15,
 		branches = {
@@ -171,7 +171,7 @@ Catalog.Heroes = {
 	},
 	rocket = {
 		id = "rocket", rarity = "rare", ability = "salvage",
-		name = text("Rocket", "Rocket"), role = text("Explosivos em área", "Area explosives"), cost = 330,
+		name = text("Guaxo", "Rascal"), role = text("Explosivos em área", "Area explosives"), cost = 330,
 		description = text("Um arsenal improvisado que explode em pequenas áreas.", "An improvised arsenal that bursts in small areas."),
 		pickup = 14, damage = 15, range = 26, interval = 1.3, color = { 168, 112, 78 }, attack = "splash", damageType = "tech", air = true, splash = 4.5,
 		branches = {
@@ -181,7 +181,7 @@ Catalog.Heroes = {
 	},
 	daredevil = {
 		id = "daredevil", rarity = "rare", ability = "radarSense",
-		name = text("Demolidor", "Daredevil"), role = text("Enxerga camuflados", "Sees hidden enemies"), cost = 270,
+		name = text("Eco", "Echo"), role = text("Enxerga camuflados", "Sees hidden enemies"), cost = 270,
 		description = text("Sente inimigos camuflados e ataca em sequência.", "Senses cloaked enemies and strikes in sequence."),
 		damage = 17, range = 20, interval = 0.6, color = { 176, 32, 44 }, attack = "single", damageType = "physical", air = false, reveal = true,
 		branches = {
@@ -191,38 +191,38 @@ Catalog.Heroes = {
 	},
 	shangchi = {
 		id = "shangchi", rarity = "rare", ability = "tenRings",
-		name = text("Shang-Chi", "Shang-Chi"), role = text("Combate corpo a corpo veloz", "Fast close combat"), cost = 340,
+		name = text("Rin", "Rin"), role = text("Combate corpo a corpo veloz", "Fast close combat"), cost = 340,
 		description = text("Golpes velozes que rompem a proteção dos inimigos.", "Rapid strikes that break enemy protection."),
 		damage = 14, range = 18, interval = 0.4, color = { 202, 64, 44 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.1,
 		branches = {
-			{ name = text("Dez Anéis", "Ten Rings"), description = text("Os anéis saltam entre vários inimigos.", "The rings jump between several enemies."), mods = { set("attack", "chain"), set("chain", 4), mul("damage", 1.2) } },
-			{ name = text("Punho de ferro", "Iron Fist"), description = text("Perfura e enfraquece a armadura.", "Pierces and weakens armor."), mods = { set("armorPierce", 0.6), set("armorShred", 0.15) } },
+			{ name = text("Anéis Celestes", "Sky Rings"), description = text("Os anéis saltam entre vários inimigos.", "The rings jump between several enemies."), mods = { set("attack", "chain"), set("chain", 4), mul("damage", 1.2) } },
+			{ name = text("Punho de jade", "Jade Fist"), description = text("Perfura e enfraquece a armadura.", "Pierces and weakens armor."), mods = { set("armorPierce", 0.6), set("armorShred", 0.15) } },
 		},
 	},
 	--- Epic -----------------------------------------------------------------
 	captain = {
 		id = "captain", rarity = "epic", ability = "vibraniumShield",
-		name = text("Capitão América", "Captain America"), role = text("Ricochetes e suporte às torres", "Ricochets and tower support"), cost = 360,
+		name = text("Comandante Égide", "Commander Aegis"), role = text("Ricochetes e suporte às torres", "Ricochets and tower support"), cost = 360,
 		description = text("O escudo ricocheteia e a liderança fortalece aliados próximos.", "His shield ricochets while leadership strengthens nearby allies."),
 		damage = 17, range = 23, interval = 1.05, color = { 58, 121, 221 }, attack = "chain", damageType = "physical", air = false, chain = 4, support = true, supportBoost = 0.06,
 		branches = {
 			{ name = text("Escudo ofensivo", "Offensive Shield"), description = text("Mais ricochetes e dano por ataque.", "More ricochets and damage per attack."), mods = { set("chain", 6), mul("damage", 1.35) } },
-			{ name = text("Vingadores, avante!", "Avengers Assemble!"), description = text("Amplia o poder da aura de liderança.", "Strengthens the leadership aura."), mods = { set("supportBoost", 0.18), add("range", 5) } },
+			{ name = text("Todos juntos!", "All Together!"), description = text("Amplia o poder da aura de liderança.", "Strengthens the leadership aura."), mods = { set("supportBoost", 0.18), add("range", 5) } },
 		},
 	},
 	panther = {
 		id = "panther", rarity = "epic", ability = "wakandaForever",
-		name = text("Pantera Negra", "Black Panther"), role = text("Ataques rápidos e enfraquece armadura", "Fast strikes, armor shredding"), cost = 400,
-		description = text("Garras de vibranium enfraquecem a armadura dos inimigos.", "Vibranium claws weaken enemy armor."),
+		name = text("Ônix", "Onyx"), role = text("Ataques rápidos e enfraquece armadura", "Fast strikes, armor shredding"), cost = 400,
+		description = text("Garras de ônix enfraquecem a armadura dos inimigos.", "Onyx claws weaken enemy armor."),
 		damage = 19, range = 19, interval = 0.48, color = { 107, 82, 186 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.18, shredBase = 0.15, shredPerLevel = 0.025,
 		branches = {
 			{ name = text("Caçador de elites", "Elite Hunter"), description = text("Ataca muito mais rápido contra grandes ameaças.", "Strikes faster against major threats."), mods = { mul("interval", 0.7), set("bossDamage", 0.45) } },
-			{ name = text("Garras de vibranium", "Vibranium Claws"), description = text("Reduz a armadura para toda a equipe.", "Shreds armor for the entire team."), mods = { set("armorPierce", 0.45), set("armorShred", 0.25) } },
+			{ name = text("Garras de ônix", "Onyx Claws"), description = text("Reduz a armadura para toda a equipe.", "Shreds armor for the entire team."), mods = { set("armorPierce", 0.45), set("armorShred", 0.25) } },
 		},
 	},
 	hulk = {
 		id = "hulk", rarity = "epic", ability = "hulkSmash",
-		name = text("Hulk", "Hulk"), role = text("Dano de área terrestre", "Ground area damage"), cost = 450,
+		name = text("Pedregulho", "Boulder"), role = text("Dano de área terrestre", "Ground area damage"), cost = 450,
 		description = text("Pancadas pesadas destroem grupos no chão.", "Heavy ground strikes devastate clustered enemies."),
 		damage = 34, range = 24, interval = 1.6, color = { 99, 192, 77 }, attack = "splash", damageType = "physical", air = false, splash = 8,
 		branches = {
@@ -232,7 +232,7 @@ Catalog.Heroes = {
 	},
 	vision = {
 		id = "vision", rarity = "epic", ability = "phaseShift",
-		name = text("Visão", "Vision"), role = text("Feixe que atravessa alinhados", "Beam through lined-up enemies"), cost = 480,
+		name = text("Prisma", "Prism"), role = text("Feixe que atravessa alinhados", "Beam through lined-up enemies"), cost = 480,
 		description = text("Um feixe solar atravessa inimigos alinhados.", "A solar beam pierces enemies standing in a line."),
 		damage = 44, range = 30, interval = 1.3, color = { 229, 187, 89 }, attack = "beam", damageType = "tech", air = true, beamWidth = 3,
 		branches = {
@@ -242,7 +242,7 @@ Catalog.Heroes = {
 	},
 	warmachine = {
 		id = "warmachine", rarity = "epic", ability = "bombardment",
-		name = text("Máquina de Combate", "War Machine"), role = text("Artilharia pesada em área", "Heavy area artillery"), cost = 520,
+		name = text("Bigorna", "Anvil"), role = text("Artilharia pesada em área", "Heavy area artillery"), cost = 520,
 		description = text("Artilharia pesada: mísseis e canhões que atingem grandes áreas.", "Heavy artillery: missiles and cannons that strike wide areas."),
 		damage = 27, range = 28, interval = 1.4, color = { 96, 108, 122 }, attack = "splash", damageType = "tech", air = true, splash = 10,
 		branches = {
@@ -252,7 +252,7 @@ Catalog.Heroes = {
 	},
 	starlord = {
 		id = "starlord", rarity = "epic", ability = "awesomeMix",
-		name = text("Senhor das Estrelas", "Star-Lord"), role = text("Rajadas rápidas de blasters", "Rapid blaster fire"), cost = 430,
+		name = text("Cometa", "Comet"), role = text("Rajadas rápidas de blasters", "Rapid blaster fire"), cost = 430,
 		description = text("Blasters gêmeos disparam em rajadas muito rápidas.", "Twin blasters fire in very rapid bursts."),
 		pickup = 14, damage = 16, range = 25, interval = 0.32, color = { 186, 56, 68 }, attack = "single", damageType = "tech", air = true,
 		branches = {
@@ -262,7 +262,7 @@ Catalog.Heroes = {
 	},
 	groot = {
 		id = "groot", rarity = "epic", ability = "rootWall",
-		name = text("Groot", "Groot"), role = text("Controle e dano em área terrestre", "Ground control and area damage"), cost = 420,
+		name = text("Carvalho", "Oakheart"), role = text("Controle e dano em área terrestre", "Ground control and area damage"), cost = 420,
 		description = text("Raízes prendem grupos inteiros no chão.", "Roots pin entire groups to the ground."),
 		damage = 19, range = 23, interval = 1.5, color = { 130, 100, 62 }, attack = "splash", damageType = "physical", air = false, splash = 10, slow = 0.3,
 		branches = {
@@ -273,7 +273,7 @@ Catalog.Heroes = {
 	--- Legendary --------------------------------------------------------------
 	thor = {
 		id = "thor", rarity = "legendary", ability = "thunderCall",
-		name = text("Thor", "Thor"), role = text("Relâmpagos encadeados e defesa aérea", "Chain lightning, air defense"), cost = 550,
+		name = text("Brontus", "Brontus"), role = text("Relâmpagos encadeados e defesa aérea", "Chain lightning, air defense"), cost = 550,
 		description = text("Relâmpagos saltam entre infectados, inclusive voadores.", "Lightning jumps between infected enemies, including flyers."),
 		damage = 32, range = 26, interval = 1.5, color = { 98, 206, 249 }, attack = "chain", damageType = "magic", air = true, chain = 4,
 		branches = {
@@ -283,17 +283,17 @@ Catalog.Heroes = {
 	},
 	wanda = {
 		id = "wanda", rarity = "legendary", ability = "hexBind",
-		name = text("Feiticeira Escarlate", "Scarlet Witch"), role = text("Dano mágico persistente em área", "Persistent magic area damage"), cost = 650,
+		name = text("Rubi", "Ruby"), role = text("Dano mágico persistente em área", "Persistent magic area damage"), cost = 650,
 		description = text("Magia do caos deixa uma zona de dano persistente.", "Chaos magic leaves a persistent damage zone."),
 		damage = 34, range = 26, interval = 1.8, color = { 252, 63, 119 }, attack = "dot", damageType = "magic", air = true, splash = 8, dotDuration = 3,
 		branches = {
 			{ name = text("Domínio do caos", "Chaos Domain"), description = text("Expande a zona de magia persistente.", "Expands the persistent magic zone."), mods = { set("splash", 13) } },
-			{ name = text("Ruína escarlate", "Scarlet Ruin"), description = text("Inimigos expostos sofrem mais dano.", "Exposed enemies suffer more damage."), mods = { mul("damage", 1.5), set("dotDuration", 5) } },
+			{ name = text("Ruína rubi", "Ruby Ruin"), description = text("Inimigos expostos sofrem mais dano.", "Exposed enemies suffer more damage."), mods = { mul("damage", 1.5), set("dotDuration", 5) } },
 		},
 	},
 	strange = {
 		id = "strange", rarity = "legendary", ability = "dimensionalSlow",
-		name = text("Doutor Estranho", "Doctor Strange"), role = text("Controle espacial e suporte mágico", "Spatial control, magic support"), cost = 560,
+		name = text("Arcano", "Arcanus"), role = text("Controle espacial e suporte mágico", "Spatial control, magic support"), cost = 560,
 		description = text("Portais atrasam inimigos e fortalecem aliados mágicos.", "Portals delay enemies and strengthen magic allies."),
 		damage = 36, range = 28, interval = 1.5, color = { 246, 172, 70 }, attack = "splash", damageType = "magic", air = true, splash = 9, slow = 0.2, support = true, supportBoost = 0.06,
 		branches = {
@@ -303,28 +303,28 @@ Catalog.Heroes = {
 	},
 	ghostrider = {
 		id = "ghostrider", rarity = "legendary", ability = "hellfire",
-		name = text("Motoqueiro Fantasma", "Ghost Rider"), role = text("Fogo do inferno persistente", "Persistent hellfire"), cost = 620,
-		description = text("Chamas infernais queimam tudo que atravessa a zona.", "Hellfire burns everything that crosses the zone."),
+		name = text("Cavaleiro Brasa", "Ember Rider"), role = text("Fogo fantasma persistente", "Persistent spirit fire"), cost = 620,
+		description = text("Chamas infernais queimam tudo que atravessa a zona.", "Spirit Fire burns everything that crosses the zone."),
 		damage = 28, range = 26, interval = 1.4, color = { 255, 122, 30 }, attack = "dot", damageType = "magic", air = false, splash = 8, dotDuration = 4,
 		branches = {
-			{ name = text("Chamas do inferno", "Hell Flames"), description = text("Área muito maior e queima por mais tempo.", "A much larger area that burns longer."), mods = { set("splash", 13), set("dotDuration", 6) } },
-			{ name = text("Olhar da penitência", "Penance Stare"), description = text("Dano imenso contra chefes.", "Immense damage against bosses."), mods = { mul("damage", 2), set("bossDamage", 0.6) } },
+			{ name = text("Chamas fantasmas", "Ghost Flames"), description = text("Área muito maior e queima por mais tempo.", "A much larger area that burns longer."), mods = { set("splash", 13), set("dotDuration", 6) } },
+			{ name = text("Olhar ardente", "Burning Gaze"), description = text("Dano imenso contra chefes.", "Immense damage against bosses."), mods = { mul("damage", 2), set("bossDamage", 0.6) } },
 		},
 	},
 	--- Mythic ---------------------------------------------------------------
 	captainmarvel = {
 		id = "captainmarvel", rarity = "mythic", ability = "photonNova",
-		name = text("Capitã Marvel", "Captain Marvel"), role = text("Feixe cósmico devastador", "Devastating cosmic beam"), cost = 780,
+		name = text("Solaria", "Solaria"), role = text("Feixe cósmico devastador", "Devastating cosmic beam"), cost = 780,
 		description = text("Energia fotônica em um feixe largo que varre a linha inteira.", "Photon energy in a wide beam that sweeps the whole line."),
 		damage = 68, range = 30, interval = 1.5, color = { 255, 196, 64 }, attack = "beam", damageType = "tech", air = true, beamWidth = 4,
 		branches = {
 			{ name = text("Pulso fotônico", "Photon Pulse"), description = text("Feixe enorme e mais dano.", "An enormous beam and more damage."), mods = { set("beamWidth", 8), mul("damage", 1.2) } },
-			{ name = text("Forma binária", "Binary Form"), description = text("Dispara o dobro de vezes.", "Fires twice as often."), mods = { mul("interval", 0.5) } },
+			{ name = text("Forma estelar", "Star Form"), description = text("Dispara o dobro de vezes.", "Fires twice as often."), mods = { mul("interval", 0.5) } },
 		},
 	},
 	silversurfer = {
 		id = "silversurfer", rarity = "mythic", ability = "cosmicSmite",
-		name = text("Surfista Prateado", "Silver Surfer"), role = text("Energia cósmica encadeada", "Chained cosmic energy"), cost = 800,
+		name = text("Órbita", "Orbit"), role = text("Energia cósmica encadeada", "Chained cosmic energy"), cost = 800,
 		description = text("Energia cósmica salta por vários inimigos, terrestres ou voadores.", "Cosmic energy leaps between many enemies, ground or air."),
 		damage = 34, range = 32, interval = 1.2, color = { 190, 210, 230 }, attack = "chain", damageType = "magic", air = true, chain = 5,
 		branches = {
@@ -347,18 +347,18 @@ Catalog.Maps = {
 		paths = { { { -92, -72 }, { -60, -72 }, { -60, -20 }, { 0, -20 }, { 0, 25 }, { -55, 25 }, { -55, 70 }, { 0, 70 }, { 0, 90 } }, { { 92, -72 }, { 60, -72 }, { 60, -20 }, { 0, -20 }, { 0, 25 }, { 55, 25 }, { 55, 70 }, { 0, 70 }, { 0, 90 } } },
 	},
 	hydra = {
-		id = "hydra", difficulty = 1.0, name = text("Instalação da HYDRA", "HYDRA Facility"), chapter = 3, bossId = "redskull", color = { 72, 87, 74 },
+		id = "hydra", difficulty = 1.0, name = text("Fundição Sombria", "Shadow Foundry"), chapter = 3, bossId = "redskull", color = { 72, 87, 74 },
 		description = text("Rotas alternadas exigem reposicionar sua estratégia.", "Alternating routes demand a flexible strategy."),
 		paths = { { { -92, -76 }, { -65, -76 }, { -65, 50 }, { -25, 50 }, { -25, -42 }, { 18, -42 }, { 18, 76 }, { 88, 76 } }, { { 92, -76 }, { 60, -76 }, { 60, 12 }, { 18, 12 }, { 18, 76 }, { 88, 76 } } },
 	},
 	wakanda = {
-		id = "wakanda", difficulty = 1.0, name = text("Fronteira de Wakanda", "Wakanda Border"), chapter = 4, bossId = "killmonger", color = { 87, 67, 118 },
-		description = text("Enfrente escudos de vibranium em posições espaçadas.", "Face vibranium shields between widely spaced defenses."),
+		id = "wakanda", difficulty = 1.0, name = text("Selva de Cristal", "Crystal Jungle"), chapter = 4, bossId = "killmonger", color = { 87, 67, 118 },
+		description = text("Enfrente escudos de cristal em posições espaçadas.", "Face crystal shields between widely spaced defenses."),
 		paths = { { { -92, 72 }, { -65, 72 }, { -65, -66 }, { 65, -66 }, { 65, 44 }, { -15, 44 }, { -15, -8 }, { 20, -8 } } },
 	},
 	latveria = {
-		id = "latveria", difficulty = 1.0, name = text("Fortaleza da Latvéria", "Latveria Fortress"), chapter = 5, bossId = "doom", color = { 64, 92, 85 },
-		description = text("Feche os portais e derrote o exército de Doutor Destino.", "Close the portals and defeat Doctor Doom's army."),
+		id = "latveria", difficulty = 1.0, name = text("Cidadela do Tirano", "Tyrant's Citadel"), chapter = 5, bossId = "doom", color = { 64, 92, 85 },
+		description = text("Feche os portais e derrote o exército de Tirano de Ferro.", "Close the portals and defeat Iron Tyrant's army."),
 		paths = { { { -92, -72 }, { -42, -72 }, { -42, -30 }, { 0, -30 }, { 0, 28 }, { 65, 28 }, { 65, 78 }, { 88, 78 } }, { { 92, -72 }, { 42, -72 }, { 42, -30 }, { 0, -30 }, { 0, 28 }, { 65, 28 }, { 65, 78 }, { 88, 78 } }, { { -92, 72 }, { -42, 72 }, { -42, 28 }, { 0, 28 }, { 65, 28 }, { 65, 78 }, { 88, 78 } } },
 	},
 }
@@ -374,14 +374,14 @@ Catalog.Enemies = {
 	flyer = { id = "flyer", name = text("Voador contaminado", "Infected Flyer"), hp = 56, speed = 13.5, leak = 2, reward = 13, armor = 0, air = true, stealth = false, boss = false, color = { 82, 180, 151 } },
 	support = { id = "support", name = text("Infectado de suporte", "Infected Support"), hp = 118, speed = 8.5, leak = 3, reward = 18, armor = 0.1, air = false, stealth = false, boss = false, color = { 112, 223, 108 } },
 	summoner = { id = "summoner", name = text("Invocador", "Summoner"), hp = 190, speed = 7.4, leak = 4, reward = 22, armor = 0.12, air = false, stealth = false, boss = false, color = { 170, 84, 205 } },
-	lizard = { id = "lizard", name = text("Lagarto infectado", "Infected Lizard"), hp = 1962, speed = 7.5, leak = 35, reward = 100, armor = 0.12, air = false, stealth = false, boss = true, color = { 113, 205, 85 }, hint = text("Concentre dano para interromper a regeneração.", "Focus your damage to interrupt regeneration.") },
-	abomination = { id = "abomination", name = text("Abominável infectado", "Infected Abomination"), hp = 2314, speed = 6.9, leak = 40, reward = 110, armor = 0.2, air = false, stealth = false, boss = true, color = { 174, 167, 86 }, hint = text("Impactos anunciados interrompem torres próximas.", "Telegraphed impacts interrupt nearby towers.") },
-	redskull = { id = "redskull", name = text("Caveira Vermelha infectado", "Infected Red Skull"), hp = 2114, speed = 8.0, leak = 40, reward = 110, armor = 0.18, air = false, stealth = false, boss = true, color = { 226, 71, 63 }, hint = text("Soldados próximos recebem o bônus de comando.", "Nearby soldiers receive a command boost.") },
-	killmonger = { id = "killmonger", name = text("Killmonger infectado", "Infected Killmonger"), hp = 2466, speed = 8.4, leak = 45, reward = 120, armor = 0.3, air = false, stealth = false, boss = true, color = { 212, 166, 71 }, hint = text("A descarga de vibranium é anunciada antes do impacto.", "The vibranium discharge is telegraphed before impact.") },
-	loki = { id = "loki", name = text("Loki corrompido", "Corrupted Loki"), hp = 2640, speed = 8.2, leak = 48, reward = 125, armor = 0.22, air = false, stealth = false, boss = true, color = { 82, 196, 104 }, hint = text("Ilusões temporárias confundem as torres; elas somem sozinhas e não dão recompensa.", "Temporary illusions distract your towers; they fade on their own and give no reward.") },
+	lizard = { id = "lizard", name = text("Gekko Colosso", "Colossal Gecko"), hp = 1962, speed = 7.5, leak = 35, reward = 100, armor = 0.12, air = false, stealth = false, boss = true, color = { 113, 205, 85 }, hint = text("Concentre dano para interromper a regeneração.", "Focus your damage to interrupt regeneration.") },
+	abomination = { id = "abomination", name = text("Megabruto infectado", "Infected Megabrute"), hp = 2314, speed = 6.9, leak = 40, reward = 110, armor = 0.2, air = false, stealth = false, boss = true, color = { 174, 167, 86 }, hint = text("Impactos anunciados interrompem torres próximas.", "Telegraphed impacts interrupt nearby towers.") },
+	redskull = { id = "redskull", name = text("Comandante Sombra", "Shadow Commander"), hp = 2114, speed = 8.0, leak = 40, reward = 110, armor = 0.18, air = false, stealth = false, boss = true, color = { 226, 71, 63 }, hint = text("Soldados próximos recebem o bônus de comando.", "Nearby soldiers receive a command boost.") },
+	killmonger = { id = "killmonger", name = text("Rei Saqueador infectado", "Infected Raider King"), hp = 2466, speed = 8.4, leak = 45, reward = 120, armor = 0.3, air = false, stealth = false, boss = true, color = { 212, 166, 71 }, hint = text("A descarga de cristal é anunciada antes do impacto.", "The crystal discharge is telegraphed before impact.") },
+	loki = { id = "loki", name = text("Mestre das Ilusões", "Illusion Master"), hp = 2640, speed = 8.2, leak = 48, reward = 125, armor = 0.22, air = false, stealth = false, boss = true, color = { 82, 196, 104 }, hint = text("Ilusões temporárias confundem as torres; elas somem sozinhas e não dão recompensa.", "Temporary illusions distract your towers; they fade on their own and give no reward.") },
 	-- Loki's decoys: never in a wave pool, never worth anything, gone in seconds.
-	illusion = { id = "illusion", name = text("Ilusão de Loki", "Loki's Illusion"), hp = 70, speed = 9.5, leak = 0, reward = 0, armor = 0, air = false, stealth = false, boss = false, color = { 120, 230, 140 }, illusion = true },
-	doom = { id = "doom", name = text("Doutor Destino", "Doctor Doom"), hp = 2818, speed = 7.5, leak = 50, reward = 130, armor = 0.28, air = false, stealth = false, boss = true, color = { 87, 220, 126 }, hint = text("Armadura, magia e portais mudam a cada fase.", "Armor, magic and portals change with each phase.") },
+	illusion = { id = "illusion", name = text("Ilusão do Mestre", "Master's Illusion"), hp = 70, speed = 9.5, leak = 0, reward = 0, armor = 0, air = false, stealth = false, boss = false, color = { 120, 230, 140 }, illusion = true },
+	doom = { id = "doom", name = text("Tirano de Ferro", "Iron Tyrant"), hp = 2818, speed = 7.5, leak = 50, reward = 130, armor = 0.28, air = false, stealth = false, boss = true, color = { 87, 220, 126 }, hint = text("Armadura, magia e portais mudam a cada fase.", "Armor, magic and portals change with each phase.") },
 }
 
 
@@ -429,7 +429,7 @@ Catalog.Afk = {
 		name = text("Farm de XP AFK", "AFK XP Farm"), rate = text("+10 XP POR MINUTO", "+10 XP PER MINUTE") },
 }
 Catalog.Maps.asgard = {
-	id="asgard",difficulty=1,name=text("Ponte de Asgard","Asgard Bridge"),chapter=6,bossId="loki",color={220,184,96},
+	id="asgard",difficulty=1,name=text("Ponte Celeste","Sky Bridge"),chapter=6,bossId="loki",color={220,184,96},
 	description=text("Defenda a ponte dourada contra uma invasão sem fim. As curvas recompensam alcance e controle.","Defend the golden bridge against an endless invasion. Its bends reward range and control."),
 	paths={{{-92,-80},{-60,-80},{-60,-40},{50,-40},{50,0},{-50,0},{-50,40},{60,40},{60,80},{88,80}}},
 }
@@ -475,7 +475,7 @@ local function ability(id, kind, target, cooldown, fields, name, description)
 end
 Catalog.Abilities = {
 	repulsorBarrage = ability("repulsorBarrage", "blast", "area", 55, { power = 0.35, radius = 22, unit = "pct", color = { 255, 90, 70 } },
-		text("Rajada Repulsora", "Repulsor Barrage"), text("Rajada em área: {power}% da vida máxima de cada inimigo em {radius} studs.", "Area barrage: {power}% of each enemy's max health within {radius} studs.")),
+		text("Rajada de Plasma", "Plasma Barrage"), text("Rajada em área: {power}% da vida máxima de cada inimigo em {radius} studs.", "Area barrage: {power}% of each enemy's max health within {radius} studs.")),
 	deadeye = ability("deadeye", "execute", "area", 50, { power = 0.22, radius = 14, unit = "pct", color = { 190, 120, 255 } },
 		text("Tiro Mortal", "Deadeye"), text("Elimina inimigos comuns com menos de {power}% de vida em {radius} studs. Chefes sofrem dano menor.", "Eliminates ordinary enemies below {power}% health within {radius} studs. Bosses take less.")),
 	airCommand = ability("airCommand", "rally", "self", 60, { power = 0.25, duration = 8, stat = "speed", unit = "pct", color = { 255, 110, 110 } },
@@ -483,11 +483,11 @@ Catalog.Abilities = {
 	ambush = ability("ambush", "stun", "area", 55, { duration = 2.2, radius = 16, unit = "pct", color = { 150, 170, 190 } },
 		text("Emboscada", "Ambush"), text("Paralisa inimigos por {duration} s em {radius} studs. Chefes resistem.", "Stuns enemies for {duration} s within {radius} studs. Bosses resist.")),
 	webField = ability("webField", "slow", "area", 60, { power = 0.5, duration = 5, radius = 28, unit = "pct", color = { 240, 240, 250 } },
-		text("Teia Gigante", "Giant Web"), text("Desacelera inimigos em {power}% por {duration} s em {radius} studs.", "Slows enemies by {power}% for {duration} s within {radius} studs.")),
+		text("Rede Gigante", "Giant Net"), text("Desacelera inimigos em {power}% por {duration} s em {radius} studs.", "Slows enemies by {power}% for {duration} s within {radius} studs.")),
 	widowBite = ability("widowBite", "reveal", "area", 55, { power = 0.2, duration = 9, radius = 30, unit = "pct", color = { 255, 80, 90 } },
-		text("Marca da Viúva", "Widow's Mark"), text("Revela camuflados e faz alvos sofrerem +{power}% de dano por {duration} s em {radius} studs.", "Reveals hidden enemies and makes targets take +{power}% damage for {duration} s within {radius} studs.")),
+		text("Marca da Sombra", "Shade's Mark"), text("Revela camuflados e faz alvos sofrerem +{power}% de dano por {duration} s em {radius} studs.", "Reveals hidden enemies and makes targets take +{power}% damage for {duration} s within {radius} studs.")),
 	growth = ability("growth", "overdrive", "tower", 45, { power = 0.5, duration = 8, unit = "pct", color = { 255, 150, 90 } },
-		text("Partículas Pym", "Pym Particles"), text("Uma torre sua ataca {power}% mais rápido por {duration} s.", "One of your towers attacks {power}% faster for {duration} s.")),
+		text("Partículas Quânticas", "Quantum Particles"), text("Uma torre sua ataca {power}% mais rápido por {duration} s.", "One of your towers attacks {power}% faster for {duration} s.")),
 	swarmSting = ability("swarmSting", "chain", "area", 50, { power = 0.16, count = 6, radius = 40, unit = "pct", color = { 255, 220, 80 } },
 		text("Enxame Elétrico", "Electric Swarm"), text("Ferroa {count} inimigos: {power}% da vida máxima de cada um.", "Stings {count} enemies: {power}% of each one's max health.")),
 	salvage = ability("salvage", "energy", "self", 60, { power = 0.6, unit = "pct", color = { 120, 220, 255 } },
@@ -495,22 +495,22 @@ Catalog.Abilities = {
 	radarSense = ability("radarSense", "reveal", "area", 70, { power = 0.12, duration = 14, radius = 45, unit = "pct", color = { 255, 60, 60 } },
 		text("Sentido Radar", "Radar Sense"), text("Revela camuflados por {duration} s e marca alvos (+{power}% de dano) em {radius} studs.", "Reveals hidden enemies for {duration} s and marks targets (+{power}% damage) within {radius} studs.")),
 	tenRings = ability("tenRings", "pull", "area", 55, { power = 26, radius = 24, unit = "studs", color = { 255, 170, 60 } },
-		text("Dez Anéis", "Ten Rings"), text("Empurra inimigos {power} studs para trás na rota em {radius} studs. Chefes não são afetados.", "Pushes enemies {power} studs back along the path within {radius} studs. Bosses are unaffected.")),
+		text("Anéis Celestes", "Sky Rings"), text("Empurra inimigos {power} studs para trás na rota em {radius} studs. Chefes não são afetados.", "Pushes enemies {power} studs back along the path within {radius} studs. Bosses are unaffected.")),
 	vibraniumShield = ability("vibraniumShield", "barrier", "self", 90, { power = 20, duration = 10, unit = "hp", color = { 90, 150, 255 } },
-		text("Escudo de Vibranium", "Vibranium Shield"), text("Um escudo absorve {power} de dano à base por {duration} s.", "A shield absorbs {power} core damage for {duration} s.")),
+		text("Escudo Égide", "Aegis Shield"), text("Um escudo absorve {power} de dano à base por {duration} s.", "A shield absorbs {power} core damage for {duration} s.")),
 	wakandaForever = ability("wakandaForever", "heal", "self", 100, { power = 14, unit = "hp", color = { 170, 120, 255 },
 		extras = { { kind = "barrier", power = 10, duration = 8 } } },
-		text("Wakanda para Sempre", "Wakanda Forever"), text("Restaura {power} de vida do núcleo e o protege com um escudo de {e1.power} por {e1.duration} s.", "Restores {power} core health and shields it for {e1.power} over {e1.duration} s.")),
+		text("Garra da Noite", "Night Claw"), text("Restaura {power} de vida do núcleo e o protege com um escudo de {e1.power} por {e1.duration} s.", "Restores {power} core health and shields it for {e1.power} over {e1.duration} s.")),
 	hulkSmash = ability("hulkSmash", "blast", "area", 60, { power = 0.35, radius = 28, unit = "pct", color = { 110, 220, 80 },
 		extras = { { kind = "stun", duration = 1.8 } } },
-		text("Hulk Esmaga!", "Hulk Smash!"), text("Esmagamento: {power}% da vida máxima de cada inimigo em {radius} studs e paralisa por {e1.duration} s.", "Smash: {power}% of each enemy's max health within {radius} studs and stuns for {e1.duration} s.")),
+		text("Pedregulho Esmaga!", "Boulder Smash!"), text("Esmagamento: {power}% da vida máxima de cada inimigo em {radius} studs e paralisa por {e1.duration} s.", "Smash: {power}% of each enemy's max health within {radius} studs and stuns for {e1.duration} s.")),
 	phaseShift = ability("phaseShift", "weaken", "area", 55, { power = 0.45, duration = 10, radius = 40, unit = "pct", color = { 255, 210, 90 },
 		extras = { { kind = "reveal", power = 0.15, duration = 10 } } },
 		text("Fase Densa", "Phase Shift"), text("Reduz a armadura dos inimigos em {power}% por {duration} s em {radius} studs e os marca (+{e1.power}% de dano).", "Reduces enemy armor by {power}% for {duration} s within {radius} studs and marks them (+{e1.power}% damage).")),
 	bombardment = ability("bombardment", "blast", "area", 65, { power = 0.28, radius = 42, unit = "pct", color = { 200, 210, 225 } },
 		text("Bombardeio", "Bombardment"), text("Bombardeio: {power}% da vida máxima de cada inimigo em {radius} studs.", "Bombardment: {power}% of each enemy's max health within {radius} studs.")),
 	awesomeMix = ability("awesomeMix", "rally", "self", 65, { power = 0.25, duration = 9, stat = "damage", unit = "pct", color = { 255, 90, 140 } },
-		text("Mixtape Incrível", "Awesome Mix"), text("Todas as suas torres causam {power}% mais dano por {duration} s.", "All your towers deal {power}% more damage for {duration} s.")),
+		text("Batida Cósmica", "Cosmic Beat"), text("Todas as suas torres causam {power}% mais dano por {duration} s.", "All your towers deal {power}% more damage for {duration} s.")),
 	rootWall = ability("rootWall", "stun", "area", 60, { duration = 3, radius = 22, unit = "pct", color = { 150, 200, 90 },
 		extras = { { kind = "slow", power = 0.5, duration = 5 } } },
 		text("Muralha de Raízes", "Root Wall"), text("Prende inimigos por {duration} s em {radius} studs e os desacelera em {e1.power}% depois. Chefes resistem.", "Roots enemies for {duration} s within {radius} studs, then slows them {e1.power}%. Bosses resist.")),
@@ -519,13 +519,13 @@ Catalog.Abilities = {
 		text("Chamado do Trovão", "Thunder Call"), text("ULTIMATE: relâmpagos atingem {count} inimigos ({power}% da vida máxima de cada) e os paralisam por {e1.duration} s.", "ULTIMATE: lightning strikes {count} enemies ({power}% of each one's max health) and stuns them for {e1.duration} s.")),
 	hexBind = ability("hexBind", "stun", "area", 80, { duration = 3.5, radius = 34, unit = "pct", color = { 255, 80, 130 }, ultimate = true,
 		extras = { { kind = "weaken", power = 0.4, duration = 8 }, { kind = "blast", power = 0.2 } } },
-		text("Hex Escarlate", "Hex Bind"), text("ULTIMATE: a realidade se dobra. Paralisa por {duration} s em {radius} studs, derrete {e1.power}% da armadura e causa {e2.power}% da vida máxima. Chefes resistem.", "ULTIMATE: reality bends. Stuns for {duration} s within {radius} studs, melts {e1.power}% of armor and deals {e2.power}% of max health. Bosses resist.")),
+		text("Feitiço Rubi", "Hex Bind"), text("ULTIMATE: a realidade se dobra. Paralisa por {duration} s em {radius} studs, derrete {e1.power}% da armadura e causa {e2.power}% da vida máxima. Chefes resistem.", "ULTIMATE: reality bends. Stuns for {duration} s within {radius} studs, melts {e1.power}% of armor and deals {e2.power}% of max health. Bosses resist.")),
 	dimensionalSlow = ability("dimensionalSlow", "slow", "area", 85, { power = 0.85, duration = 9, radius = 70, unit = "pct", color = { 255, 180, 80 }, ultimate = true,
 		extras = { { kind = "pull", power = 22 } } },
 		text("Dilatação do Tempo", "Time Dilation"), text("ULTIMATE: o tempo quase para em {radius} studs. Desacelera {power}% por {duration} s e empurra os inimigos {e1.power} studs para trás.", "ULTIMATE: time nearly stops within {radius} studs. Slows {power}% for {duration} s and pushes enemies {e1.power} studs back.")),
 	hellfire = ability("hellfire", "burn", "area", 80, { power = 0.6, duration = 7, radius = 32, unit = "pct", color = { 255, 120, 30 }, ultimate = true,
 		extras = { { kind = "slow", power = 0.4, duration = 7 }, { kind = "stun", duration = 1 } } },
-		text("Fogo do Inferno", "Hellfire"), text("ULTIMATE: o inferno engole a zona. Queima {power}% da vida máxima em {duration} s, atordoa por {e2.duration} s e desacelera em {e1.power}%.", "ULTIMATE: hell swallows the zone. Burns {power}% of max health over {duration} s, stuns for {e2.duration} s and slows by {e1.power}%.")),
+		text("Fogo Fantasma", "Spirit Fire"), text("ULTIMATE: o inferno engole a zona. Queima {power}% da vida máxima em {duration} s, atordoa por {e2.duration} s e desacelera em {e1.power}%.", "ULTIMATE: hell swallows the zone. Burns {power}% of max health over {duration} s, stuns for {e2.duration} s and slows by {e1.power}%.")),
 	photonNova = ability("photonNova", "blast", "area", 90, { power = 0.6, radius = 60, unit = "pct", color = { 255, 210, 90 }, ultimate = true,
 		extras = { { kind = "stun", duration = 2.5 }, { kind = "reveal", power = 0.25, duration = 10 } } },
 		text("Nova Fotônica", "Photon Nova"), text("ULTIMATE: uma nova varre quase o mapa todo. {power}% da vida máxima de cada inimigo em {radius} studs, paralisa por {e1.duration} s e marca os alvos (+{e2.power}% de dano). Chefes sofrem bem menos.", "ULTIMATE: a nova sweeps nearly the whole map. {power}% of each enemy's max health within {radius} studs, stuns for {e1.duration} s and marks targets (+{e2.power}% damage). Bosses take far less.")),
@@ -640,18 +640,18 @@ Catalog.Cards = {
 -- the Gold chest shop. Ids stay in Config.luau; an id of 0 means unavailable.
 -- Reinforcements: authored combat stats, two branches and a leader skill each.
 local reinforcements = {
-	{"wolverine","Wolverine","Wolverine","epic",{245,191,48},420,36,16,0.65,"single","physical",false,"claws","execute",0.28,55},
-	{"cyclops","Ciclope","Cyclops","rare",{77,121,221},320,38,32,1.35,"beam","tech",true,"visor","blast",0.28,60},
-	{"storm","Tempestade","Storm","legendary",{228,234,249},600,40,34,1.4,"chain","magic",true,"cape","chain",0.26,75},
-	{"jean","Jean Grey","Jean Grey","mythic",{244,131,61},760,44,30,1.3,"splash","magic",true,"phoenix","burn",0.08,80},
-	{"iceman","Homem de Gelo","Iceman","rare",{141,230,255},300,17,25,1.05,"splash","magic",false,"ice","slow",0.5,65},
-	{"gambit","Gambit","Gambit","epic",{218,114,218},390,35,29,1.15,"splash","magic",true,"cards","blast",0.32,60},
-	{"nightcrawler","Noturno","Nightcrawler","rare",{107,101,223},290,24,22,0.8,"single","magic",false,"tail","pull",22,65},
-	{"beast","Fera","Beast","rare",{84,142,217},240,26,18,0.95,"splash","physical",false,"fur","stun",0,65},
-	{"psylocke","Psylocke","Psylocke","epic",{171,92,238},400,32,23,0.7,"single","magic",false,"blade","weaken",0.4,65},
-	{"deadpool","Deadpool","Deadpool","epic",{200,64,74},380,24,28,0.6,"single","physical",true,"swords","rally",0.2,65},
-	{"moonknight","Cavaleiro da Lua","Moon Knight","rare",{224,223,204},310,34,25,1.05,"single","physical",true,"moon","reveal",0.18,65},
-	{"nova","Nova","Nova","legendary",{255,199,80},590,48,32,1.05,"beam","tech",true,"nova","blast",0.38,75},
+	{"wolverine","Presa","Fang","epic",{245,191,48},420,36,16,0.65,"single","physical",false,"claws","execute",0.28,55},
+	{"cyclops","Farol","Beacon","rare",{77,121,221},320,38,32,1.35,"beam","tech",true,"visor","blast",0.28,60},
+	{"storm","Monção","Monsoon","legendary",{228,234,249},600,40,34,1.4,"chain","magic",true,"cape","chain",0.26,75},
+	{"jean","Aurora","Aurora","mythic",{244,131,61},760,44,30,1.3,"splash","magic",true,"phoenix","burn",0.08,80},
+	{"iceman","Geada","Frost","rare",{141,230,255},300,17,25,1.05,"splash","magic",false,"ice","slow",0.5,65},
+	{"gambit","Ás","Ace","epic",{218,114,218},390,35,29,1.15,"splash","magic",true,"cards","blast",0.32,60},
+	{"nightcrawler","Pisca","Blink","rare",{107,101,223},290,24,22,0.8,"single","magic",false,"tail","pull",22,65},
+	{"beast","Juba","Mane","rare",{84,142,217},240,26,18,0.95,"splash","physical",false,"fur","stun",0,65},
+	{"psylocke","Kunai","Kunai","epic",{171,92,238},400,32,23,0.7,"single","magic",false,"blade","weaken",0.4,65},
+	{"deadpool","Confete","Confetti","epic",{200,64,74},380,24,28,0.6,"single","physical",true,"swords","rally",0.2,65},
+	{"moonknight","Eclipse","Eclipse","rare",{224,223,204},310,34,25,1.05,"single","physical",true,"moon","reveal",0.18,65},
+	{"nova","Pulsar","Pulsar","legendary",{255,199,80},590,48,32,1.05,"beam","tech",true,"nova","blast",0.38,75},
 }
 for _, row in ipairs(reinforcements) do
 	local id, pt, en, rarity, color, cost, damage, range, interval, attack, damageType, air, costume, kind, power, cooldown = unpack(row)
@@ -680,7 +680,7 @@ for _, row in ipairs(reinforcements) do
 		rally=text("Suas torres ganham {power}% de dano por {duration} s.","Your towers gain {power}% damage for {duration} s."),
 		reveal=text("Revela e marca: +{power}% de dano por {duration} s.","Reveals and marks: +{power}% damage for {duration} s."),
 	}
-	local names={wolverine=text("Fúria de adamantium","Adamantium fury"),cyclops=text("Explosão óptica","Optic blast"),storm=text("Olho da tempestade","Eye of the storm"),jean=text("Chama da Fênix","Phoenix flame"),iceman=text("Era do gelo","Ice age"),gambit=text("Ás explosivo","Explosive ace"),nightcrawler=text("Bamf!","Bamf!"),beast=text("Salto selvagem","Wild leap"),psylocke=text("Corte psíquico","Psychic slash"),deadpool=text("Trabalho em equipe","Teamwork"),moonknight=text("Luz de Khonshu","Khonshu's light"),nova=text("Supernova","Supernova")}
+	local names={wolverine=text("Fúria das garras","Claw fury"),cyclops=text("Explosão óptica","Optic blast"),storm=text("Olho da tempestade","Eye of the storm"),jean=text("Chama Aurora","Aurora flame"),iceman=text("Era do gelo","Ice age"),gambit=text("Ás explosivo","Explosive ace"),nightcrawler=text("Puf!","Poof!"),beast=text("Salto selvagem","Wild leap"),psylocke=text("Corte psíquico","Psychic slash"),deadpool=text("Trabalho em equipe","Teamwork"),moonknight=text("Luz da Lua","Moonlight"),nova=text("Supernova","Supernova")}
 	Catalog.Abilities[skillId]=ability(skillId,kind,kind=="rally" and "self" or "area",cooldown,
 		{power=power,duration=kind=="stun" and 2 or 6,radius=30,count=6,stat="damage",unit=kind=="pull" and "studs" or "pct",color=color,ultimate=rarity=="mythic" or rarity=="legendary"},names[id],descriptions[kind])
 	table.insert(Catalog.AbilityOrder,skillId)
@@ -695,7 +695,7 @@ local identities={
 	wolverine={text("Garras contra elites","Claws against elites"),text("Caçador de chefes","Boss hunter"),{set("bossDamage",0.8),mul("damage",1.25)},text("Frenesi","Frenzy"),{mul("interval",0.55),add("range",3)}},
 	cyclops={text("Feixe que atravessa a horda","Beam through the horde"),text("Feixe amplo","Wide beam"),{set("beamWidth",7),mul("damage",1.2)},text("Foco óptico","Optic focus"),{set("armorPierce",0.6),add("range",8)}},
 	storm={text("Relâmpagos e defesa aérea","Lightning and air defense"),text("Cadeia de trovões","Thunder chain"),{set("chain",6)},text("Olho do furacão","Hurricane eye"),{mul("damage",1.5),set("slow",0.25)}},
-	jean={text("Explosões de energia psíquica","Psychic energy blasts"),text("Asas da Fênix","Phoenix wings"),{set("splash",12)},text("Fogo concentrado","Focused fire"),{mul("damage",1.5),set("bossDamage",0.45)}},
+	jean={text("Explosões de energia psíquica","Psychic energy blasts"),text("Asas de fogo","Wings of fire"),{set("splash",12)},text("Fogo concentrado","Focused fire"),{mul("damage",1.5),set("bossDamage",0.45)}},
 	iceman={text("Congela o avanço de grupos","Freezes group advances"),text("Nevasca","Blizzard"),{set("splash",11),set("slow",0.35)},text("Zero absoluto","Absolute zero"),{set("slow",0.55),mul("damage",1.35)}},
 	gambit={text("Cartas explosivas contra grupos","Explosive cards against groups"),text("Baralho completo","Full deck"),{set("splash",12)},text("Ás de armadura","Armor ace"),{set("armorPierce",0.65),mul("damage",1.3)}},
 	nightcrawler={text("Ataques rápidos e recuo tático","Fast attacks and tactical pushback"),text("Espadas gêmeas","Twin swords"),{mul("interval",0.5)},text("Sombra distante","Distant shadow"),{add("range",12),set("reveal",true)}},
@@ -734,16 +734,16 @@ Catalog.BaseOrder={"outpost","workshop","garden","bunker","arsenal","barracks","
 Catalog.Bases={}
 local bases={
 	{"outpost","Posto da Resistência","Resistance outpost","common","balanced",{139,213,151},20,0,0,0,0},
-	{"workshop","Oficina Stark","Stark workshop","common","farm",{255,193,83},45,4,0,0,0},
+	{"workshop","Oficina Volt","Volt workshop","common","farm",{255,193,83},45,4,0,0,0},
 	{"garden","Horta de suprimentos","Supply garden","common","farm",{146,213,106},40,8,0,0,0},
-	{"bunker","Bunker S.H.I.E.L.D.","S.H.I.E.L.D. bunker","rare","wall",{108,188,228},20,18,0,120,0},
-	{"arsenal","Arsenal Stark","Stark arsenal","rare","turret",{228,116,82},20,8,26,0,0},
-	{"barracks","Quartel de Wakanda","Wakandan barracks","epic","soldiers",{190,139,241},25,12,0,0,85},
-	{"reactor","Reator de vibranium","Vibranium reactor","epic","farm",{89,228,194},65,8,0,0,0},
-	{"citadel","Cidadela de Asgard","Asgard citadel","legendary","wall",{255,210,118},28,28,0,240,0},
+	{"bunker","Bunker da Agência","Agency bunker","rare","wall",{108,188,228},20,18,0,120,0},
+	{"arsenal","Arsenal Volt","Volt arsenal","rare","turret",{228,116,82},20,8,26,0,0},
+	{"barracks","Quartel da Selva","Jungle barracks","epic","soldiers",{190,139,241},25,12,0,0,85},
+	{"reactor","Reator de cristal","Crystal reactor","epic","farm",{89,228,194},65,8,0,0,0},
+	{"citadel","Cidadela Celeste","Sky citadel","legendary","wall",{255,210,118},28,28,0,240,0},
 	{"carrier","Porta-aviões da Resistência","Resistance carrier","legendary","soldiers",{146,183,225},32,14,0,0,140},
-	{"sanctum","Sanctum Sanctorum","Sanctum Sanctorum","mythic","turret",{242,142,92},30,14,48,0,0},
-	{"worldtree","Jardim de Yggdrasil","Yggdrasil garden","mythic","farm",{245,177,221},85,12,0,0,0},
+	{"sanctum","Santuário Arcano","Arcane sanctum","mythic","turret",{242,142,92},30,14,48,0,0},
+	{"worldtree","Jardim da Árvore-Mundo","World-tree garden","mythic","farm",{245,177,221},85,12,0,0,0},
 }
 local roles={balanced=text("Renda básica e vida ao evoluir.","Basic income and HP when upgraded."),farm=text("Mais Ouro da partida a cada onda concluída.","More match Gold each completed wave."),wall=text("Barricada troca vida por dano e se regenera fora de combate.","Barricade trades HP for damage and regenerates out of combat."),turret=text("Canhão automático protege a chegada ao núcleo.","Automatic cannon guards the approach to the core."),soldiers=text("Soldados percorrem a rota ao contrário e colidem com inimigos.","Soldiers march backwards along the path and collide with enemies.")}
 for _,row in ipairs(bases) do
@@ -771,7 +771,7 @@ for _,id in ipairs(Catalog.BaseChestOrder) do table.insert(Catalog.ChestOrder,id
 
 -- Map factions preserve family counters while adding distinct silhouettes.
 Catalog.MapEnemyVariants={}
-local factions={manhattan={"sinister","Capanga Sinistro","Sinister minion",{191,134,99}},gamma={"gamma","Mutante Gama","Gamma mutant",{145,197,86}},hydra={"hydra","Soldado HYDRA","HYDRA soldier",{88,153,128}},wakanda={"vibranium","Saqueador de vibranium","Vibranium raider",{171,120,201}},latveria={"doombot","Doombot","Doombot",{118,161,164}}}
+local factions={manhattan={"sinister","Capanga Sombrio","Grim minion",{191,134,99}},gamma={"gamma","Mutante Gama","Gamma mutant",{145,197,86}},hydra={"hydra","Soldado Sombra","Shadow trooper",{88,153,128}},wakanda={"crystal","Saqueador de cristal","Crystal raider",{171,120,201}},latveria={"doombot","Robô do Tirano","Tyrant bot",{118,161,164}}}
 for mapId,faction in pairs(factions) do
 	Catalog.MapEnemyVariants[mapId]={}
 	for _,family in ipairs({"zombie","runner","armored"}) do

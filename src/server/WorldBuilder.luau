@@ -585,7 +585,7 @@ HERO_EXTRAS.thor = function(f)
 	f.add("Head", "Beard", Vector3.new(f.parts.Head.Size.X * 0.6, 0.3 * s, 0.1 * s), f.face(0, -0.66, -0.02), HC.gold:Lerp(HC.ink, 0.2), FABRIC)
 	-- Mjolnir in the right hand.
 	f.rod("RightHand", "HammerHandle", Vector3.new(0, 0, 0), Vector3.new(0, -1.1 * s, 0), 0.2 * s, HC.leather, FABRIC)
-	f.add("RightHand", "Mjolnir", Vector3.new(1.3, 0.8, 0.8) * s, CFrame.new(0, -1.35 * s, 0), HC.silver, METAL)
+	f.add("RightHand", "Hammer", Vector3.new(1.3, 0.8, 0.8) * s, CFrame.new(0, -1.35 * s, 0), HC.silver, METAL)
 	muzzle(f, "RightHand", Vector3.new(0, -1.35 * s, 0))
 end
 HERO_EXTRAS.widow = function(f)
@@ -2790,10 +2790,10 @@ function World:BuildHeroTower(lobby)
 	gui.SizingMode, gui.PixelsPerStud, gui.Parent = Enum.SurfaceGuiSizingMode.PixelsPerStud, 30, nameplate
 	local title = Instance.new("TextLabel")
 	title.Name, title.BackgroundTransparency, title.Size, title.Font, title.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.LuckiestGuy, true
-	title.TextColor3, title.Text, title.Parent = HQ.gold, "TORRE DOS VINGADORES", gui
-	title:SetAttribute("LobbyTextPT", "TORRE DOS VINGADORES"); title:SetAttribute("LobbyTextEN", "AVENGERS TOWER")
+	title.TextColor3, title.Text, title.Parent = HQ.gold, "TORRE DOS HERÓIS", gui
+	title:SetAttribute("LobbyTextPT", "TORRE DOS HERÓIS"); title:SetAttribute("LobbyTextEN", "HEROES TOWER")
 	-- The Robux kiosks' title floats over the left row of stands.
-	Kit.floatText(model, "StarkShopTitle", V(HUB.X - 27, GROUND_Y + 12.5, HUB.Z + LAYOUT.kioskDz), "LOJA STARK", "STARK SHOP", HQ.gold, 26)
+	Kit.floatText(model, "StarkShopTitle", V(HUB.X - 27, GROUND_Y + 12.5, HUB.Z + LAYOUT.kioskDz), "LOJA VOLT", "VOLT SHOP", HQ.gold, 26)
 	return model
 end
 
@@ -2956,7 +2956,7 @@ function World:BuildCampaignTerrace(hq)
 	for i = 0, 8 do table.insert(back, V(c.X - 62 + i * 15.5, GROUND_Y, backZ)) end
 	Kit.fence(hq, back, 3.4, Color3.fromRGB(120, 240, 190))
 	Kit.sign(hq, "CampaignSign", CFrame.lookAt(V(c.X, 38, backZ - 4.6), V(c.X, 38, HUB.Z)), 58, 18, {
-		title = { "CAMPANHA", "CAMPAIGN" }, subtitle = { "SALVE MANHATTAN • GAMA • HYDRA", "SAVE MANHATTAN • GAMMA • HYDRA" },
+		title = { "CAMPANHA", "CAMPAIGN" }, subtitle = { "SALVE MANHATTAN • GAMA • FUNDIÇÃO", "SAVE MANHATTAN • GAMMA • FOUNDRY" },
 		top = Color3.fromRGB(90, 215, 255), bottom = Color3.fromRGB(30, 110, 170), accent = Color3.fromRGB(90, 230, 170),
 		art = "skyline", artX = 0.5, artY = 0.62, artW = 0.96, artH = 0.62, titleY = 0.36, legs = GRASS_Y,
 	})
@@ -3242,7 +3242,7 @@ function World:BuildShieldSites(hq)
 		for _, spot in ipairs({ { 15, -15 }, { 12.6, -16.4 } }) do Kit.column(outpost, "FuelDrum", S * V(spot[1], 0, spot[2]), 3.2, 2.2, Color3.fromRGB(178, 52, 44), metal) end
 		agent(standing(S, 9, 12, 0.3))
 		agent(standing(S, -11, 11, -0.4))
-		Kit.floatText(outpost, "HangarTitle", (S * CFrame.new(0, 17, -8)).Position, "HANGAR DA S.H.I.E.L.D.", "S.H.I.E.L.D. HANGAR", blue, 34)
+		Kit.floatText(outpost, "HangarTitle", (S * CFrame.new(0, 17, -8)).Position, "HANGAR DA AGÊNCIA", "AGENCY HANGAR", blue, 34)
 	end
 
 	-- Command post: a field HQ module, the holo table, radar and signal mast.
@@ -3311,7 +3311,7 @@ function World:BuildShieldSites(hq)
 		end
 		agent(standing(S, -3, 9, 0.2))
 		agent(standing(S, 6, 11, -0.5))
-		Kit.floatText(outpost, "ArmoryTitle", (S * CFrame.new(0, 21, -9)).Position, "ARSENAL DA S.H.I.E.L.D.", "S.H.I.E.L.D. ARMORY", blue, 34)
+		Kit.floatText(outpost, "ArmoryTitle", (S * CFrame.new(0, 21, -9)).Position, "ARSENAL DA AGÊNCIA", "AGENCY ARMORY", blue, 34)
 	end
 
 	-- The Helicarrier holds station over the north-west sea, rotors turning,
@@ -3419,10 +3419,10 @@ function World:BuildIslands(hq)
 		end
 		Kit.block(hq, "AsgardLintel", V(3, 2, 18), CFrame.new(archX, GROUND_Y + 16.6, walkZ), gold, Enum.Material.Metal)
 		for i, color in ipairs({ Color3.fromRGB(255, 80, 80), Color3.fromRGB(255, 170, 60), Color3.fromRGB(255, 230, 80), Color3.fromRGB(90, 220, 120), Color3.fromRGB(80, 160, 255), Color3.fromRGB(170, 110, 255) }) do
-			Kit.block(hq, "Bifrost", V(12, 0.1, 1.5), CFrame.new(archX - 5, GROUND_Y + 0.05, walkZ - 5.25 + i * 1.5), color, Enum.Material.Neon)
+			Kit.block(hq, "RainbowBridge", V(12, 0.1, 1.5), CFrame.new(archX - 5, GROUND_Y + 0.05, walkZ - 5.25 + i * 1.5), color, Enum.Material.Neon)
 		end
 		Kit.sign(hq, "ExpeditionSign", CFrame.lookAt(hubAt(-272, 81, 38), hubAt(-150, 81, 38)), 38, 15, {
-			title = { "EXPEDIÇÕES", "EXPEDITIONS" }, subtitle = { "WAKANDA • ASGARD", "WAKANDA • ASGARD" },
+			title = { "EXPEDIÇÕES", "EXPEDITIONS" }, subtitle = { "SELVA • PONTE CELESTE", "SELVA • PONTE CELESTE" },
 			top = Color3.fromRGB(190, 140, 255), bottom = Color3.fromRGB(80, 40, 150), accent = purple,
 			art = "mountains", artX = 0.5, artY = 0.6, artW = 0.96, artH = 0.7, titleY = 0.34, legs = GRASS_Y,
 		})
@@ -3451,7 +3451,7 @@ function World:BuildIslands(hq)
 			Kit.block(hq, "BannerTrim", V(0.35, 0.6, 5.2), CFrame.new(c.X + 21.7, GROUND_Y + 5.3, c.Z + dz), HQ.gold, Enum.Material.Metal)
 		end
 		Kit.sign(hq, "LatveriaSign", CFrame.lookAt(V(c.X + 21, 36, c.Z), V(HUB.X, 36, c.Z)), 34, 13, {
-			title = { "LATVÉRIA", "LATVERIA" }, subtitle = { "EXPEDIÇÃO FINAL • 70 ONDAS", "FINAL EXPEDITION • 70 WAVES" },
+			title = { "CIDADELA", "LATVERIA" }, subtitle = { "EXPEDIÇÃO FINAL • 70 ONDAS", "FINAL EXPEDITION • 70 WAVES" },
 			top = Color3.fromRGB(90, 200, 130), bottom = Color3.fromRGB(20, 60, 50), accent = green,
 			art = "castle", artX = 0.17, artW = 0.3, titleX = 0.6, titleW = 0.74, legs = GROUND_Y,
 		})
@@ -4489,8 +4489,8 @@ end
 --==============================================================================
 local FACADES = {}
 local CITY_BILLBOARDS = {
-	{ "STARK INDUSTRIES", { 255, 196, 72 } }, { "DAILY BUGLE", { 255, 90, 90 } }, { "OSCORP", { 110, 220, 255 } },
-	{ "AVENGERS", { 240, 240, 255 } }, { "S.H.I.E.L.D.", { 140, 200, 255 } }, { "PYM TECH", { 255, 120, 150 } },
+	{ "VOLT INDÚSTRIAS", { 255, 196, 72 } }, { "DAILY BUGLE", { 255, 90, 90 } }, { "OSCORP", { 110, 220, 255 } },
+	{ "MULTIVERSO", { 240, 240, 255 } }, { "AGÊNCIA", { 140, 200, 255 } }, { "QUANTUM TECH", { 255, 120, 150 } },
 	{ "ROXXON", { 255, 160, 60 } }, { "BAXTER", { 120, 170, 255 } },
 }
 

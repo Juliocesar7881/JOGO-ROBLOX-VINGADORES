@@ -825,7 +825,7 @@ function Panels.new(ctx)
 				lastDistrict=district
 				local headings={
 					center={T("CAMPANHA","CAMPAIGN"),T("Os três portais do centro do refúgio. Comece por aqui!","The three portals in the middle of the refuge. Start here!")},
-					expedition={T("EXPEDIÇÕES","EXPEDITIONS"),T("Campanhas mais longas nas ilhas: Wakanda e Asgard na ilha oeste, a final, Latvéria (70 ondas), na ilha leste.","Longer campaigns on the islands: Wakanda and Asgard on the west island, the finale, Latveria (70 waves), on the east island.")},
+					expedition={T("EXPEDIÇÕES","EXPEDITIONS"),T("Campanhas mais longas nas ilhas: Selva de Cristal e Ponte Celeste na ilha oeste, a final, Cidadela do Tirano (70 ondas), na ilha leste.","Longer campaigns on the islands: Crystal Jungle and Sky Bridge on the west island, the finale, Tyrant's Citadel (70 waves), on the east island.")},
 					arena={T("ARENA COMPETITIVA","COMPETITIVE ARENA"),T("Três portais vizinhos. Cada mapa tem seu placar e exige uma estratégia diferente.","Three neighboring portals. Each map has its own leaderboard and calls for a different strategy.")},
 					special={T("TREINO E CARTAS","TRAINING & CARDS"),T("Na ilha norte: o treino de 20 ondas e o roguelike de cartas.","On the north island: the 20-wave training and the card roguelike.")},
 				}
@@ -932,12 +932,12 @@ function Panels.new(ctx)
 			UI.label(tile,entry[2],{Position=UDim2.fromOffset(57,10),Size=UDim2.new(1,-67,0,40),TextSize=15,Font=Enum.Font.GothamBold,TextWrapped=true,TextColor3=entry[5]})
 			UI.label(tile,entry[3],{Position=UDim2.fromOffset(12,55),Size=UDim2.new(1,-24,0,33),TextSize=12,TextWrapped=true,TextColor3=C.muted})
 		end
-		UI.section(body,T("AS ILHAS DO REFÚGIO","THE REFUGE ISLANDS"),T("Três pontes levam às ilhas dos portais. A S.H.I.E.L.D. guarda os cantos da praça.","Three bridges lead to the portal islands. S.H.I.E.L.D. guards the plaza's corners."))
+		UI.section(body,T("AS ILHAS DO REFÚGIO","THE REFUGE ISLANDS"),T("Três pontes levam às ilhas dos portais. A Agência guarda os cantos da praça.","Three bridges lead to the portal islands. The Agency guards the plaza's corners."))
 		for _,place in ipairs({
 			{T("ACADEMIA DO BOSQUE","WOODLAND ACADEMY"),T("Ponte norte, atrás da árvore: TREINO e CARTAS, o campo de treino, cabanas e o poço.","North bridge, beyond the tree: TRAINING and CARDS, the training yard, cottages and the well."),"heart",C.green},
-			{T("POSTO DE EXPEDIÇÕES","EXPEDITION OUTPOST"),T("Ponte oeste: os portais de WAKANDA e ASGARD e o mirante.","West bridge: the WAKANDA and ASGARD portals and the lookout."),"star",C.gold},
-			{T("VIGIA DA LATVÉRIA","LATVERIA WATCH"),T("Ponte leste: o portal da FORTALEZA DA LATVÉRIA e o observatório.","East bridge: the LATVERIAN FORTRESS portal and the observatory."),"star",C.violet},
-			{T("S.H.I.E.L.D.","S.H.I.E.L.D."),T("Nos cantos da praça: o Quinjet no hangar, o posto de comando e o arsenal. Olhe para o céu: o Helicarrier!","In the plaza's corners: the Quinjet's hangar, the command post and the armory. Look up: the Helicarrier!"),"bolt",C.blue},
+			{T("POSTO DE EXPEDIÇÕES","EXPEDITION OUTPOST"),T("Ponte oeste: os portais de SELVA e PONTE CELESTE e o mirante.","West bridge: the JUNGLE and SKY BRIDGE portals and the lookout."),"star",C.gold},
+			{T("VIGIA DA CIDADELA","CITADEL WATCH"),T("Ponte leste: o portal da CIDADELA DO TIRANO e o observatório.","East bridge: the LATVERIAN FORTRESS portal and the observatory."),"star",C.violet},
+			{T("AGÊNCIA","The Agency"),T("Nos cantos da praça: o jato no hangar, o posto de comando e o arsenal. Olhe para o céu: o porta-aviões voador!","In the plaza's corners: the jet's hangar, the command post and the armory. Look up: the flying carrier!"),"bolt",C.blue},
 		}) do
 			local card=UI.roundFrame(body,{Name="ExplorePlace",Size=UDim2.new(1,-6,0,114),BackgroundColor3=place[4]:Lerp(C.panel,0.9)},place[4])
 			UI.illustration(card,place[3],place[4],{Position=UDim2.fromOffset(12,14),Size=UDim2.fromOffset(32,32)})

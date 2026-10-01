@@ -4,10 +4,11 @@ Guidance for Claude Code sessions working in this repository.
 
 ## What this is
 
-"Vingadores: Doomsday — Última Defesa," a cooperative Roblox tower-defense
+"Multiverse Doomsday — Última Defesa," a cooperative Roblox tower-defense
 built entirely from Luau source (no Toolbox assets — maps, heroes, enemies
 and VFX are all authored by script and built to `.rbxlx` by
-`tools/build.py`). Portuguese is the primary player-facing language; English
+`tools/build.py`). Heroes, villains and places are original: no third-party
+name reaches a player (`tests/ip_blocklist.json`, `tests/test_ip_safety.py`). Portuguese is the primary player-facing language; English
 is the secondary one via the `text(pt, en)` helper. Reply to the user in
 Portuguese unless they switch.
 

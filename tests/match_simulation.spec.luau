@@ -456,7 +456,7 @@ if campaign then
 	check(campaign.picks == 0, "the campaign offers no cards")
 	-- Manhattan's own boss, the Lizard, waits for the last wave; the rest
 	-- of the cast comes first, in story order.
-	local expectedBosses = { [10] = "Abominável infectado", [20] = "Caveira Vermelha infectado", [30] = "Killmonger infectado", [40] = "Lagarto infectado" }
+	local expectedBosses = { [10] = "Megabruto infectado", [20] = "Comandante Sombra", [30] = "Rei Saqueador infectado", [40] = "Gekko Colosso" }
 	for wave, name in pairs(expectedBosses) do
 		if campaign.results.waves >= wave then check(campaign.bossWaves[wave] == name, "wave " .. wave .. " brings " .. name .. ", saw " .. tostring(campaign.bossWaves[wave])) end
 	end

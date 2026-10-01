@@ -550,8 +550,19 @@ do
 		-- barrierPower no longer exists; victoryGold's parent (magnet) has no rank.
 		talents = { roundGold = 2, killGold = 1, barrierPower = 3, victoryGold = 4 },
 		campaign = {}, tutorialComplete = true, settings = { language = "pt", lowFX = false, shake = true },
+		-- Unlocked under the old names: they follow today's names on load.
+		achievements = {
+			allHeroes = { name = { pt = "Vingadores reunidos", en = "Avengers assembled" }, unlockedAt = 5, kind = "achievement" },
+			["medal:hydra"] = { name = { pt = "Defesa perfeita: Instalação da HYDRA", en = "Flawless defense: HYDRA Facility" }, unlockedAt = 6, kind = "medal", mapId = "hydra" },
+			firstChest = { name = { pt = "Primeiro baú", en = "First chest" }, unlockedAt = 7, kind = "achievement" },
+		},
 	}
 	local healed = service:Load(legacyPlayer)
+	check(healed and healed.achievements.allHeroes.name.pt == "Coleção completa" and healed.achievements.allHeroes.unlockedAt == 5,
+		"An achievement unlocked under an old name shows today's name and keeps its date")
+	check(healed and healed.achievements["medal:hydra"].name.pt == "Defesa perfeita: " .. Catalog.Maps.hydra.name.pt,
+		"A map medal follows the map's current name")
+	check(healed and healed.achievements.firstChest.name.pt == "Primeiro baú", "Other achievements keep their names")
 	check(healed ~= nil, "An older profile still loads")
 	check(healed.gold == 1234 and healed.xp == 5000, "Gold and experience survive the migration")
 	check(healed.skills == nil and healed.activeSkills == nil and healed.passives == nil, "Legacy skill fields are dropped")

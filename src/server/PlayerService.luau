@@ -174,6 +174,19 @@ local function normalize(raw, now, catalog)
 		if type(rewards[key]) ~= "table" then rewards[key] = {} end
 	end
 	if type(rewards.groupClaimed) ~= "boolean" then rewards.groupClaimed = false end
+	-- Achievements keep the names they were unlocked with, except the ones
+	-- named after a hero, a map or an old name: those follow today's names.
+	local renamed = { allHeroes = { pt = "Coleção completa", en = "Full collection" }, firstVictory = { pt = "Vitória da Resistência", en = "Resistance victory" } }
+	for id, entry in pairs(profile.achievements) do
+		if type(entry) == "table" and type(id) == "string" then
+			local kind, key = string.match(id, "^(%w+):(.+)$")
+			local hero, map = key and catalog.Heroes[key], key and catalog.Maps[key]
+			if renamed[id] then entry.name = copy(renamed[id])
+			elseif kind == "mythic" and hero then entry.name = { pt = "Lenda cósmica: " .. hero.name.pt, en = "Cosmic legend: " .. hero.name.en }
+			elseif kind == "mastery" and hero then entry.name = { pt = "Despertar: " .. hero.name.pt, en = "Awakening: " .. hero.name.en }
+			elseif kind == "medal" and map then entry.name = { pt = "Defesa perfeita: " .. map.name.pt, en = "Flawless defense: " .. map.name.en } end
+		end
+	end
 	return profile
 end
 
@@ -444,7 +457,7 @@ function PlayerService:_grantHero(profile, heroId, now, options)
 	profile.heroes[heroId] = { xp = 0, level = 1 }
 	profile.abilities[heroId] = 1
 	if #profile.loadout < MAX_LOADOUT then table.insert(profile.loadout, heroId) end
-	if tableCount(profile.heroes) >= #self.catalog.HeroOrder then achievement(profile, "allHeroes", "Vingadores reunidos", "Avengers assembled", now) end
+	if tableCount(profile.heroes) >= #self.catalog.HeroOrder then achievement(profile, "allHeroes", "Coleção completa", "Full collection", now) end
 	if hero.rarity == "mythic" then achievement(profile, "mythic:" .. heroId, "Lenda cósmica: " .. hero.name.pt, "Cosmic legend: " .. hero.name.en, now) end
 	return false, { gold = 0, mastery = 0 }
 end
@@ -839,7 +852,7 @@ function PlayerService:Award(player, awardId, reward)
 		if reward.finished then profile.stats.matches += 1 end
 		if won then
 			profile.stats.wins += 1
-			achievement(profile, "firstVictory", "Vitória dos Vingadores", "Avengers victory", now)
+			achievement(profile, "firstVictory", "Vitória da Resistência", "Resistance victory", now)
 			if reward.noDamage and reward.mapId and reward.tutorial ~= true then
 				local map = self.catalog.Maps[reward.mapId]
 				achievement(profile, "medal:" .. reward.mapId, "Defesa perfeita: " .. map.name.pt, "Flawless defense: " .. map.name.en, now, "medal", reward.mapId)
