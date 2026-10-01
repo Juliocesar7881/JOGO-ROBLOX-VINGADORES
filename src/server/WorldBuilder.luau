@@ -4978,7 +4978,8 @@ function World:Build(mapId)
 	emitter(base, coreTint, 9, 3, 1.2, 2.2)
 	local coreLight = Instance.new("PointLight")
 	coreLight.Color, coreLight.Range, coreLight.Brightness, coreLight.Parent = coreTint, 30, 1.6, base
-	label(base, "NÚCLEO / CORE", Vector3.new(0, 9, 0), coreTint)
+	-- "BASE" reads the same in both languages, like the HUD's health bar.
+	label(base, "BASE", Vector3.new(0, 9, 0), coreTint)
 	self.base = base
 	self.mapId = mapId
 end

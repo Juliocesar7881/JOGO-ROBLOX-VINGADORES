@@ -2307,7 +2307,7 @@ local function renderMatch()
 	local topRect = layout.top
 	local top = UI.roundFrame(main, {Position = at(topRect), Size = dims(topRect), BackgroundColor3 = C.panel, BackgroundTransparency = 0.1})
 	UI.stroke(top, C.ink, 3)
-	refs.wave = UI.label(top, "", {Position = at(layout.wave, topRect), Size = dims(layout.wave), TextSize = class.short and 20 or (compact and 23 or 30), Font = UI.Fonts.display, TextColor3 = C.gold})
+	refs.wave = UI.label(top, "", {Position = at(layout.wave, topRect), Size = dims(layout.wave), TextSize = math.min(class.short and 20 or (compact and 23 or 30), layout.wave.h + 2), Font = UI.Fonts.display, TextColor3 = C.gold})
 	refs.map = UI.label(top, "", {Position = at(layout.map, topRect), Size = dims(layout.map), TextWrapped=class.narrow, TextSize = compact and 11 or 14, Font = UI.Fonts.display, TextColor3 = C.muted})
 	refs.hpText = UI.button(top, "", openBaseUpgrade, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
 	UI.outline(refs.hpText, 2)
@@ -2396,7 +2396,7 @@ updateMatch = function()
 	refs.wave.Text = T("ONDA ", "WAVE ") .. tostring(match.wave or 0) .. (match.totalWaves == 0 and " / ∞" or " / " .. tostring(match.totalWaves or 50))
 	refs.map.Text = mapName(match.mapId) .. "  /  " .. modeName(match.modeId)
 	-- One line: a second one used to fall behind the health bar.
-	refs.hpText.Text = T("BASE ", "CORE ") .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  🛡" .. math.ceil(match.shield) or "")
+	refs.hpText.Text = "BASE " .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  🛡" .. math.ceil(match.shield) or "")
 		.. (refs.layout and refs.layout.class.narrow and "  ⬆" or T("   ⬆ EVOLUIR", "   ⬆ UPGRADE"))
 	refs.hp.Size = UDim2.fromScale(math.clamp((match.baseHP or 0) / (match.maxBaseHP or 100), 0, 1), 1)
 	refs.hp.BackgroundColor3 = (match.baseHP or 0)/math.max(1,match.maxBaseHP or 100) > 0.3 and C.green or C.red
