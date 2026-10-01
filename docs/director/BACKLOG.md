@@ -16,11 +16,11 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 
 ## M1.5 — Consertos de HUD que todo jogador vê (da AUDIT)
 - [x] M1.5.0 Câmera da partida abre de cima (commit 9a774e9).
-- [ ] M1.5.1 Barra de heróis estilo TTD: quadrado com retrato, número e preço; nome só no selecionado. Aceite: 5 espaços inteiros em 667×375, nenhum nome quebrado.
-- [ ] M1.5.2 Baús no celular: botão INVOCAR sempre visível sem rolar.
-- [ ] M1.5.3 Chat do Roblox fora do menu esquerdo e da barra do celular.
-- [ ] M1.5.4 "ONDA 20 / 50" sem estourar; rótulo da base só no idioma do jogador.
-- [ ] M1.5.5 Fim de partida: botão "JOGAR DE NOVO" (mesmo mapa/modo) + texto sem corte.
+- [x] M1.5.1 Barra de heróis estilo TTD: quadrado com retrato, número e preço; nome só no selecionado. Aceite: 5 espaços inteiros em 667×375, nenhum nome quebrado.
+- [x] M1.5.2 Baús no celular: botão INVOCAR sempre visível sem rolar.
+- [x] M1.5.3 Chat do Roblox fora do menu esquerdo e da barra do celular.
+- [x] M1.5.4 "ONDA 20 / 50" sem estourar; rótulo da base só no idioma do jogador.
+- [x] M1.5.5 Fim de partida: botão "JOGAR DE NOVO" (mesmo mapa/modo) + texto sem corte.
 - [ ] M1.5.6 Painel da torre no celular: não cobre o chefe; texto ≥12 px.
 
 ## M2 — Marca original
