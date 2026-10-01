@@ -1013,7 +1013,7 @@ function Panels.new(ctx)
 		local nextTitle,nextHint,nextPanel
 		if not p.tutorialComplete then
 			nextTitle=T("SUA PRIMEIRA MISSÃO","YOUR FIRST MISSION")
-			nextHint=T("Aprenda a defender em 8 ondas. A primeira vitória no treino dá 1.000 Ouro.","Learn to defend in 8 waves. Your first training victory grants 1,000 Gold.")
+			nextHint=T("Aprenda a defender em "..Catalog.Modes.tutorial.waves.." ondas. A primeira vitória no treino dá "..number(Catalog.Chests.rare.cost).." Ouro.","Learn to defend in "..Catalog.Modes.tutorial.waves.." waves. Your first training victory grants "..number(Catalog.Chests.rare.cost).." Gold.")
 			nextPanel="modes"
 		elseif (p.talentPoints or 0)>0 then
 			nextTitle=T("VOCÊ PODE EVOLUIR!","YOU CAN GROW!")
@@ -1035,6 +1035,7 @@ function Panels.new(ctx)
 			{"bases",T("Minha base","My base"),T("Equipe sua defesa","Equip your defense"),"heart",C.green},
 			{"talents",T("Academia","Academy"),T("Gaste seus pontos","Spend your points"),"star",C.violet},
 			{"shopWay",T("Loja","Shop"),T("Baús de heróis e bases: ande até o Mercado","Hero and base chests: walk to the Market"),"chest",C.gold},
+			{"rewards",T("Prêmios","Gifts"),T("Baú grátis, presentes e passe de temporada","Free chest, gifts and the season pass"),"gift",C.pink},
 			{"quests",T("Missões","Missions"),T("Objetivos e conquistas","Goals and achievements"),"star",C.coral},
 			{"leaderboard",T("Placares","Leaderboards"),T("Ranks e recordes","Ranks and records"),"trophy",C.gold},
 			{"settings",T("Opções","Settings"),T("Idioma, som e controles","Language, sound and controls"),"bolt",C.cream},
