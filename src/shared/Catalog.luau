@@ -92,7 +92,7 @@ Catalog.Heroes = {
 		id = "ironman", rarity = "common", starter = true, ability = "repulsorBarrage",
 		name = text("Volt", "Volt"), role = text("Dano tecnológico versátil", "Versatile tech damage"), cost = 250,
 		description = text("Rajadas tecnológicas atingem alvos terrestres e aéreos.", "Technology blasts strike ground and flying targets."),
-		damage = 20, range = 27, interval = 0.9, color = { 220, 48, 51 }, attack = "single", damageType = "tech", air = true,
+		damage = 20, range = 27, interval = 0.9, color = { 52, 140, 245 }, attack = "single", damageType = "tech", air = true,
 		branches = {
 			{ name = text("Mísseis Faísca", "Spark Missiles"), description = text("Explosões atingem grupos inteiros.", "Explosions strike entire groups."), mods = { set("attack", "splash"), set("splash", 8) } },
 			{ name = text("Feixe Central", "Core Beam"), description = text("Laser perfura a armadura dos inimigos.", "A laser penetrates enemy armor."), mods = { set("armorPierce", 0.65), mul("damage", 1.35) } },
@@ -133,7 +133,7 @@ Catalog.Heroes = {
 		id = "spiderman", rarity = "rare", ability = "webField",
 		name = text("Laçadora", "Lasso"), role = text("Desaceleração e controle", "Slowing and crowd control"), cost = 280,
 		description = text("Laços mantêm os infectados dentro do alcance da equipe.", "Lassos keep the infected within your team's range."),
-		damage = 14, range = 24, interval = 1.1, color = { 235, 68, 67 }, attack = "splash", damageType = "physical", air = false, splash = 7, slow = 0.22,
+		damage = 14, range = 24, interval = 1.1, color = { 150, 84, 226 }, attack = "splash", damageType = "physical", air = false, splash = 7, slow = 0.22,
 		branches = {
 			{ name = text("Rede urbana", "Urban Net"), description = text("Redes cobrem uma área muito maior.", "Nets cover a much larger area."), mods = { set("splash", 11), set("slow", 0.38) } },
 			{ name = text("Laço de impacto", "Impact Lasso"), description = text("Mais dano e controle concentrado.", "More damage and concentrated control."), mods = { mul("damage", 2.1), set("slow", 0.48) } },
@@ -204,7 +204,7 @@ Catalog.Heroes = {
 		id = "captain", rarity = "epic", ability = "vibraniumShield",
 		name = text("Comandante Égide", "Commander Aegis"), role = text("Ricochetes e suporte às torres", "Ricochets and tower support"), cost = 360,
 		description = text("O escudo ricocheteia e a liderança fortalece aliados próximos.", "His shield ricochets while leadership strengthens nearby allies."),
-		damage = 17, range = 23, interval = 1.05, color = { 58, 121, 221 }, attack = "chain", damageType = "physical", air = false, chain = 4, support = true, supportBoost = 0.06,
+		damage = 17, range = 23, interval = 1.05, color = { 24, 170, 160 }, attack = "chain", damageType = "physical", air = false, chain = 4, support = true, supportBoost = 0.06,
 		branches = {
 			{ name = text("Escudo ofensivo", "Offensive Shield"), description = text("Mais ricochetes e dano por ataque.", "More ricochets and damage per attack."), mods = { set("chain", 6), mul("damage", 1.35) } },
 			{ name = text("Todos juntos!", "All Together!"), description = text("Amplia o poder da aura de liderança.", "Strengthens the leadership aura."), mods = { set("supportBoost", 0.18), add("range", 5) } },
@@ -214,7 +214,7 @@ Catalog.Heroes = {
 		id = "panther", rarity = "epic", ability = "wakandaForever",
 		name = text("Ônix", "Onyx"), role = text("Ataques rápidos e enfraquece armadura", "Fast strikes, armor shredding"), cost = 400,
 		description = text("Garras de ônix enfraquecem a armadura dos inimigos.", "Onyx claws weaken enemy armor."),
-		damage = 19, range = 19, interval = 0.48, color = { 107, 82, 186 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.18, shredBase = 0.15, shredPerLevel = 0.025,
+		damage = 19, range = 19, interval = 0.48, color = { 130, 82, 210 }, attack = "single", damageType = "physical", air = false, armorPierce = 0.18, shredBase = 0.15, shredPerLevel = 0.025,
 		branches = {
 			{ name = text("Caçador de elites", "Elite Hunter"), description = text("Ataca muito mais rápido contra grandes ameaças.", "Strikes faster against major threats."), mods = { mul("interval", 0.7), set("bossDamage", 0.45) } },
 			{ name = text("Garras de ônix", "Onyx Claws"), description = text("Reduz a armadura para toda a equipe.", "Shreds armor for the entire team."), mods = { set("armorPierce", 0.45), set("armorShred", 0.25) } },
@@ -224,7 +224,7 @@ Catalog.Heroes = {
 		id = "hulk", rarity = "epic", ability = "hulkSmash",
 		name = text("Pedregulho", "Boulder"), role = text("Dano de área terrestre", "Ground area damage"), cost = 450,
 		description = text("Pancadas pesadas destroem grupos no chão.", "Heavy ground strikes devastate clustered enemies."),
-		damage = 34, range = 24, interval = 1.6, color = { 99, 192, 77 }, attack = "splash", damageType = "physical", air = false, splash = 8,
+		damage = 34, range = 24, interval = 1.6, color = { 226, 128, 56 }, attack = "splash", damageType = "physical", air = false, splash = 8,
 		branches = {
 			{ name = text("Cratera gama", "Gamma Crater"), description = text("Impactos atingem áreas maiores.", "Impacts strike a larger area."), mods = { set("splash", 15) } },
 			{ name = text("Esmagador", "Armor Smasher"), description = text("Golpes atravessam a proteção inimiga.", "Strikes break through enemy protection."), mods = { set("armorPierce", 0.7), set("armorShred", 0.12) } },
@@ -275,7 +275,7 @@ Catalog.Heroes = {
 		id = "thor", rarity = "legendary", ability = "thunderCall",
 		name = text("Brontus", "Brontus"), role = text("Relâmpagos encadeados e defesa aérea", "Chain lightning, air defense"), cost = 550,
 		description = text("Relâmpagos saltam entre infectados, inclusive voadores.", "Lightning jumps between infected enemies, including flyers."),
-		damage = 32, range = 26, interval = 1.5, color = { 98, 206, 249 }, attack = "chain", damageType = "magic", air = true, chain = 4,
+		damage = 32, range = 26, interval = 1.5, color = { 76, 132, 236 }, attack = "chain", damageType = "magic", air = true, chain = 4,
 		branches = {
 			{ name = text("Tempestade", "Thunderstorm"), description = text("Relâmpagos saltam por mais inimigos.", "Lightning jumps through more enemies."), mods = { set("chain", 8) } },
 			{ name = text("Fúria do trovão", "Thunder Fury"), description = text("Concentra o trovão em alvos resistentes.", "Concentrates thunder on resilient targets."), mods = { set("chain", 2), mul("damage", 2.4) } },
@@ -305,7 +305,7 @@ Catalog.Heroes = {
 		id = "ghostrider", rarity = "legendary", ability = "hellfire",
 		name = text("Cavaleiro Brasa", "Ember Rider"), role = text("Fogo fantasma persistente", "Persistent spirit fire"), cost = 620,
 		description = text("Chamas infernais queimam tudo que atravessa a zona.", "Spirit Fire burns everything that crosses the zone."),
-		damage = 28, range = 26, interval = 1.4, color = { 255, 122, 30 }, attack = "dot", damageType = "magic", air = false, splash = 8, dotDuration = 4,
+		damage = 28, range = 26, interval = 1.4, color = { 255, 128, 44 }, attack = "dot", damageType = "magic", air = false, splash = 8, dotDuration = 4,
 		branches = {
 			{ name = text("Chamas fantasmas", "Ghost Flames"), description = text("Área muito maior e queima por mais tempo.", "A much larger area that burns longer."), mods = { set("splash", 13), set("dotDuration", 6) } },
 			{ name = text("Olhar ardente", "Burning Gaze"), description = text("Dano imenso contra chefes.", "Immense damage against bosses."), mods = { mul("damage", 2), set("bossDamage", 0.6) } },
@@ -316,7 +316,7 @@ Catalog.Heroes = {
 		id = "captainmarvel", rarity = "mythic", ability = "photonNova",
 		name = text("Solaria", "Solaria"), role = text("Feixe cósmico devastador", "Devastating cosmic beam"), cost = 780,
 		description = text("Energia fotônica em um feixe largo que varre a linha inteira.", "Photon energy in a wide beam that sweeps the whole line."),
-		damage = 68, range = 30, interval = 1.5, color = { 255, 196, 64 }, attack = "beam", damageType = "tech", air = true, beamWidth = 4,
+		damage = 68, range = 30, interval = 1.5, color = { 255, 196, 72 }, attack = "beam", damageType = "tech", air = true, beamWidth = 4,
 		branches = {
 			{ name = text("Pulso fotônico", "Photon Pulse"), description = text("Feixe enorme e mais dano.", "An enormous beam and more damage."), mods = { set("beamWidth", 8), mul("damage", 1.2) } },
 			{ name = text("Forma estelar", "Star Form"), description = text("Dispara o dobro de vezes.", "Fires twice as often."), mods = { mul("interval", 0.5) } },
@@ -326,7 +326,7 @@ Catalog.Heroes = {
 		id = "silversurfer", rarity = "mythic", ability = "cosmicSmite",
 		name = text("Órbita", "Orbit"), role = text("Energia cósmica encadeada", "Chained cosmic energy"), cost = 800,
 		description = text("Energia cósmica salta por vários inimigos, terrestres ou voadores.", "Cosmic energy leaps between many enemies, ground or air."),
-		damage = 34, range = 32, interval = 1.2, color = { 190, 210, 230 }, attack = "chain", damageType = "magic", air = true, chain = 5,
+		damage = 34, range = 32, interval = 1.2, color = { 176, 154, 255 }, attack = "chain", damageType = "magic", air = true, chain = 5,
 		branches = {
 			{ name = text("Onda cósmica", "Cosmic Wave"), description = text("A energia salta por muitos inimigos.", "The energy leaps through many enemies."), mods = { set("chain", 10) } },
 			{ name = text("Poder cósmico", "Cosmic Power"), description = text("Concentra tudo em poucos alvos.", "Concentrates everything on a few targets."), mods = { set("chain", 3), mul("damage", 2.5) } },
@@ -640,7 +640,7 @@ Catalog.Cards = {
 -- the Gold chest shop. Ids stay in Config.luau; an id of 0 means unavailable.
 -- Reinforcements: authored combat stats, two branches and a leader skill each.
 local reinforcements = {
-	{"wolverine","Presa","Fang","epic",{245,191,48},420,36,16,0.65,"single","physical",false,"claws","execute",0.28,55},
+	{"wolverine","Presa","Fang","epic",{235,130,40},420,36,16,0.65,"single","physical",false,"claws","execute",0.28,55},
 	{"cyclops","Farol","Beacon","rare",{77,121,221},320,38,32,1.35,"beam","tech",true,"visor","blast",0.28,60},
 	{"storm","Monção","Monsoon","legendary",{228,234,249},600,40,34,1.4,"chain","magic",true,"cape","chain",0.26,75},
 	{"jean","Aurora","Aurora","mythic",{244,131,61},760,44,30,1.3,"splash","magic",true,"phoenix","burn",0.08,80},
@@ -649,7 +649,7 @@ local reinforcements = {
 	{"nightcrawler","Pisca","Blink","rare",{107,101,223},290,24,22,0.8,"single","magic",false,"tail","pull",22,65},
 	{"beast","Juba","Mane","rare",{84,142,217},240,26,18,0.95,"splash","physical",false,"fur","stun",0,65},
 	{"psylocke","Kunai","Kunai","epic",{171,92,238},400,32,23,0.7,"single","magic",false,"blade","weaken",0.4,65},
-	{"deadpool","Confete","Confetti","epic",{200,64,74},380,24,28,0.6,"single","physical",true,"swords","rally",0.2,65},
+	{"deadpool","Confete","Confetti","epic",{240,90,170},380,24,28,0.6,"single","physical",true,"swords","rally",0.2,65},
 	{"moonknight","Eclipse","Eclipse","rare",{224,223,204},310,34,25,1.05,"single","physical",true,"moon","reveal",0.18,65},
 	{"nova","Pulsar","Pulsar","legendary",{255,199,80},590,48,32,1.05,"beam","tech",true,"nova","blast",0.38,75},
 }
