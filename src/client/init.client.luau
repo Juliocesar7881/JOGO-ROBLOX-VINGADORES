@@ -79,7 +79,11 @@ end
 local function colorFor(id) return UI.color(Catalog.Heroes[id] and Catalog.Heroes[id].color) end
 local function heroName(id) return L(Catalog.Heroes[id] and Catalog.Heroes[id].name or id) end
 local function mapName(id) return L(Catalog.Maps[id] and Catalog.Maps[id].name or id) end
-local function modeName(id) return L(Catalog.Modes[id] and Catalog.Modes[id].name or id) end
+-- With a campaign difficulty above Normal, its name follows the mode's.
+local function modeName(id, difficultyId)
+	local difficulty = difficultyId ~= "normal" and Catalog.Difficulties[difficultyId or ""]
+	return L(Catalog.Modes[id] and Catalog.Modes[id].name or id) .. (difficulty and (" • " .. Catalog.Upper(L(difficulty.name))) or "")
+end
 local function contains(array, id) return table.find(array or {}, id) ~= nil end
 local function copy(array) return table.clone(array or {}) end
 
@@ -428,7 +432,7 @@ renderContext = function()
 	kit.contextRefreshPending=false
 	if not reuse and panel then panel:Destroy(); panel=nil; body=nil end
 	local size = screenSize()
-	local slot=UI.contextLayout(size.X,size.Y,{wide=contextPanel.kind=="talents" or contextPanel.kind=="chests",elevator=state.elevator~=nil})
+	local slot=UI.contextLayout(size.X,size.Y,{wide=contextPanel.kind=="talents" or contextPanel.kind=="chests",elevator=state.elevator~=nil,difficulty=state.elevator~=nil and state.elevator.modeId=="normal"})
 	lobbyChrome(not slot.modal)
 	local theme=UI.Themes[contextPanel.kind] or UI.Themes.inventory
 	local tint=theme.color
@@ -552,7 +556,7 @@ renderElevator = function()
 	else
 		kit.elevatorDeadline = nil
 	end
-	local signature = e and HttpService:JSONEncode({e.portalId, e.queueId, e.slot, e.departing, e.modeId, e.mapId or "random", #(e.riders or {}), e.host, e.carId, profile().equippedBase, language}) or nil
+	local signature = e and HttpService:JSONEncode({e.portalId, e.queueId, e.slot, e.departing, e.modeId, e.difficultyId, e.mapId or "random", #(e.riders or {}), e.host, e.carId, profile().equippedBase, language}) or nil
 	if signature == kit.elevatorSignature and (refs.elevator ~= nil) == (e ~= nil) then return false end
 	kit.elevatorSignature = signature
 	-- The pad this player rides lights up: a column of light and rising sparks
@@ -594,9 +598,12 @@ renderElevator = function()
 	if refs.firstVisitHint then refs.firstVisitHint.Visible = e == nil and contextPanel == nil end
 	if not e then return true end
 	local size = screenSize()
-	local hud = UI.lobbyLayout(size.X, size.Y)
+	-- The campaign's card is taller: it carries a row of difficulties.
+	local withDifficulty = e.modeId == "normal"
+	local hud = UI.lobbyLayout(size.X, size.Y, { difficulty = withDifficulty })
 	local compact, r = hud.class.compact, hud.elevator
 	local tint = kit.modeTint[e.portalId] or C.green
+	local chipH = UI.difficultyRowH(hud.class)
 	local card = UI.roundFrame(main, {Name = "ElevatorCard", Position = at(r), Size = dims(r), BackgroundColor3 = C.background}, tint)
 	refs.elevator = card
 	-- The plan before anyone is committed: map, mode, length, final boss and
@@ -608,6 +615,8 @@ renderElevator = function()
 	local prize=e.modeId=="ranked" and T("🏆 25/onda","🏆 25/wave") or ("🏆 "..number(Rules.RunGold(e.modeId,e.mapId,waves,true)))
 	local summary=(waves==0 and T("SEM FIM","ENDLESS") or (tostring(waves).." "..T("ONDAS","WAVES")))
 		..((boss and waves>0) and ("  •  "..T("CHEFE: ","BOSS: ")..Catalog.Upper(L(boss.name))) or "").."  •  "..prize
+	-- A short phone's campaign card gives the riders' line to the difficulties.
+	if withDifficulty and hud.class.short then summary=tostring(#(e.riders or {})).."/"..tostring(e.max or 4).."  •  "..summary end
 	UI.label(card, Catalog.Upper(title), {Name="PortalDestination",Position = UDim2.fromOffset(14, 3), Size = UDim2.new(1, -90, 0, 22), TextWrapped=true,TextSize = compact and 12 or 15, Font = UI.Fonts.display, TextColor3 = tint})
 	UI.label(card, summary, {Name="PortalSummary",Position = UDim2.fromOffset(14, 25), Size = UDim2.new(1, -90, 0, 18), TextSize = compact and 10 or 12, Font = Enum.Font.GothamBold, TextColor3 = C.muted})
 	refs.elevatorCount = UI.label(card, elevatorCountText(), {Position = UDim2.new(1, -80, 0, 4), Size = UDim2.fromOffset(66, 40), TextSize = compact and 28 or 34, Font = Enum.Font.GothamBlack, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
@@ -623,9 +632,34 @@ renderElevator = function()
 		UI.button(card, T("COMEÇAR", "START"), function() act("ElevatorStart", {}) end, {Name = "ElevatorStartNow", Position = UDim2.new(1, -(leaveW + startW + 20), 0, rowY), Size = UDim2.fromOffset(startW, rowH), BackgroundColor3 = C.blue, TextSize = 13})
 		statusRight += startW + 8
 	end
+	-- Normal / Hard / Nightmare: the host picks, everyone sees the choice.
+	-- The lock shown is only a hint; the server re-checks every rider.
+	-- On a short phone they take the riders' line instead of a row of their own.
+	local inline = withDifficulty and hud.class.short
+	if withDifficulty then
+		local rowW = inline and (r.w - 14 - statusRight) or (r.w - 28)
+		local chipW = math.floor((rowW - 2 * 6) / 3)
+		local chipY = inline and rowY or 46
+		if inline then chipH = rowH end
+		for index, id in ipairs(Catalog.DifficultyOrder) do
+			local def = Catalog.Difficulties[id]
+			local open = Rules.DifficultyUnlocked(profile(), e.mapId, id)
+			local chosen = (e.difficultyId or "normal") == id
+			local color = UI.color(def.color)
+			local label = (open and "" or "🔒 ") .. Catalog.Upper(L(def.name)) .. (def.rewardMultiplier > 1 and not inline and ("  ×" .. string.gsub(tostring(def.rewardMultiplier), "%.", language == "en" and "." or ",")) or "")
+			local chip = UI.button(card, label, function()
+				if chosen then return end
+				if not e.host then showToast(T("Só quem entrou primeiro escolhe a dificuldade.", "Only the first rider picks the difficulty."), true); return end
+				act("SetDifficulty", { difficultyId = id })
+			end, { Name = "Difficulty_" .. id, Position = UDim2.fromOffset(14 + (index - 1) * (chipW + 6), chipY), Size = UDim2.fromOffset(chipW, chipH),
+				BackgroundColor3 = chosen and color or C.card, TextColor3 = chosen and C.background or (open and color or C.muted), TextSize = compact and 11 or 13 })
+			if chosen then UI.stroke(chip, C.text, 2) end
+		end
+	end
 	local names = {}
 	for _, rider in ipairs(e.riders or {}) do table.insert(names, rider.name) end
 	local status = tostring(#names) .. "/" .. tostring(e.max or 4) .. "  " .. T("jogadores", "players") .. "  •  " .. table.concat(names, ", ")
+	if inline then return true end
 	UI.label(card, status, {Position = UDim2.fromOffset(14, rowY), Size = UDim2.new(1, -(14 + statusRight), 0, rowH), TextSize = compact and 11 or 12, TextColor3 = C.muted})
 	return true
 end
@@ -1056,7 +1090,7 @@ updateMatch = function()
 	if not state or not state.match or not refs.wave then return end
 	local match = state.match
 	refs.wave.Text = T("ONDA ", "WAVE ") .. tostring(match.wave or 0) .. (match.totalWaves == 0 and " / ∞" or " / " .. tostring(match.totalWaves or 50))
-	refs.map.Text = mapName(match.mapId) .. "  /  " .. modeName(match.modeId)
+	refs.map.Text = mapName(match.mapId) .. "  /  " .. modeName(match.modeId, match.difficultyId)
 	-- One line: a second one used to fall behind the health bar.
 	refs.hpText.Text = "BASE " .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  🛡" .. math.ceil(match.shield) or "")
 		.. (refs.layout and refs.layout.class.narrow and "  ⬆" or T("   ⬆ EVOLUIR", "   ⬆ UPGRADE"))

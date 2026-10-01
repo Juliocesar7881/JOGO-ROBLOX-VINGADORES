@@ -936,7 +936,9 @@ local function session(screen)
 		}
 		click("×")
 		push(riding)
-		local card = frameAt(main, lobbyLayout.elevator)
+		-- A campaign car is taller: it carries the row of difficulties.
+		local ridingLayout = UILayout.lobbyLayout(SCREEN.w, SCREEN.h, { difficulty = true })
+		local card = frameAt(main, ridingLayout.elevator)
 		check(card ~= nil, tag .. ": the elevator card sits where lobbyLayout puts it")
 		check(named(gui,"LobbyNavigation").Visible == not lobbyLayout.class.short,
 			tag .. ": short screens hide the dock while boarding so Leave stays reachable")
@@ -957,10 +959,20 @@ local function session(screen)
 		push(riding)
 		check(countdown() == 4, tag .. ": a snapshot with the same countdown does not rewind it, got " .. tostring(countdown()))
 		local joined = table.concat(labels(), " | ")
-		check(string.find(joined, "2/4", 1, true) ~= nil and string.find(joined, "Ally", 1, true) ~= nil,
+		check(string.find(joined, "2/4", 1, true) ~= nil and (ridingLayout.class.short or string.find(joined, "Ally", 1, true) ~= nil),
 			tag .. ": the card lists who is riding, got " .. joined)
 		check(string.find(joined, "MANHATTAN", 1, true) ~= nil, tag .. ": the card names the sector")
 		check(named(gui,"PortalChooseMap")==nil,tag..": fixed portal has no map switch")
+		for _, id in ipairs(Catalog.DifficultyOrder) do
+			local chip = named(card, "Difficulty_" .. id)
+			local chipRect = chip and screenRect(chip, gui, SCREEN)
+			local cardRect = screenRect(card, gui, SCREEN)
+			check(chipRect ~= nil and chipRect.h >= 30 and chipRect.x >= cardRect.x and chipRect.x + chipRect.w <= cardRect.x + cardRect.w,
+				tag .. ": the campaign card shows a thumb-sized " .. id .. " button inside it")
+		end
+		check(string.find(named(card, "Difficulty_nightmare").Text, "🔒", 1, true) ~= nil, tag .. ": a difficulty not opened yet shows a lock")
+		clickNamed("Difficulty_hard")
+		check(asked("SetDifficulty"), tag .. ": the host's pick is sent to the server as an intent")
 		fx({ kind = "OpenPanel", panel = "quests" })
 		check(main:FindFirstChild("ContextPanel") ~= nil, tag .. ": a panel opened while riding stops above the card")
 		local panelRect = screenRect(named(gui, "ContextPanel"), gui, SCREEN)
@@ -982,11 +994,11 @@ local function session(screen)
 		guest.elevator = table.clone(riding.elevator)
 		guest.elevator.host = false
 		push(guest)
-		card = frameAt(main, lobbyLayout.elevator)
+		card = frameAt(main, ridingLayout.elevator)
 		local arrows = card and findButton(card, "▶")
 		check(card ~= nil and arrows == nil, tag .. ": only the first rider gets the sector switch")
 		push(lobbySnapshot(veteranProfile()))
-		check(frameAt(main, lobbyLayout.elevator) == nil, tag .. ": stepping off removes the card")
+		check(frameAt(main, ridingLayout.elevator) == nil, tag .. ": stepping off removes the card")
 	end)
 
 	step("walking away closes the panel that belongs to a place", function()

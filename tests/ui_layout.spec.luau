@@ -214,6 +214,14 @@ for _, screen in ipairs(SCREENS) do
 	check(H.context.h >= 140, tag .. ": a contextual panel keeps usable height, got " .. H.context.h)
 	check(H.contextRiding.h >= 120, tag .. ": a panel opened while riding keeps usable height, got " .. H.contextRiding.h)
 	check(H.elevator.h >= 80, tag .. ": the elevator card fits its countdown and Leave button")
+	-- A campaign car is taller (its row of difficulties) and still fits.
+	local D = UI.lobbyLayout(screen.w, screen.h, { difficulty = true })
+	check(inside(D.elevator, screen.w, screen.h) and (D.class.short or D.elevator.h >= H.elevator.h + UI.difficultyRowH(D.class)), tag .. ": the campaign card fits its difficulty row on screen " .. describe(D.elevator))
+	for _, corner in ipairs({ "pill", "squad", "settings" }) do
+		check(not overlaps(D.elevator, D[corner]), tag .. ": the campaign card never covers the " .. corner)
+	end
+	local DP = UI.contextLayout(screen.w, screen.h, { elevator = true, difficulty = true })
+	check(not overlaps(DP, D.elevator) and DP.h - 72 >= 100, tag .. ": a panel opened in a campaign car stops above it and stays usable, got h " .. DP.h)
 	-- Inventory and progression now have persistent, labelled navigation;
 	-- keep its width bounded so it does not become four giant desktop strips.
 	check(H.navigation.h >= 48 and H.navigation.w <= 720, tag .. ": navigation is tappable and bounded on desktop")

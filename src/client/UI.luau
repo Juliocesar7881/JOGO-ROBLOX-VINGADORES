@@ -904,7 +904,9 @@ end
 -- Heroes, evolution, shop, gifts, missions.
 UI.NAV_COUNT = 5
 
-function UI.lobbyLayout(width, height)
+function UI.difficultyRowH(class) return class.compact and 30 or 34 end
+
+function UI.lobbyLayout(width, height, options)
 	width, height = clampScreen(width, height)
 	local class = UI.sizeClass(width, height)
 	local pad = class.compact and 10 or 14
@@ -931,6 +933,9 @@ function UI.lobbyLayout(width, height)
 	local floor = column and height - pad or navigation.y - 8
 	local cardW = math.min(460, width - 2 * pad)
 	local cardH = class.short and 84 or 96
+	-- A campaign car adds its row of difficulties (Normal / Hard / Nightmare).
+	-- A short phone has no height to spare: there they take the riders' line.
+	if options and options.difficulty and not class.short then cardH += UI.difficultyRowH(class) + 6 end
 	local elevator = rect(math.floor((width - cardW) / 2), (class.short and height - pad or floor) - cardH, cardW, cardH)
 	local hintW = math.min(520, width - 2 * pad)
 	local hint = rect(math.floor((width - hintW) / 2), floor - 44, hintW, 44)
@@ -957,7 +962,7 @@ end
 function UI.contextLayout(width, height, options)
 	width, height = clampScreen(width, height)
 	options = options or {}
-	local hud = UI.lobbyLayout(width, height)
+	local hud = UI.lobbyLayout(width, height, { difficulty = options.difficulty })
 	local pad = hud.class.compact and 10 or 14
 	local modal = hud.class.short
 	local top = modal and pad or hud.contextTop

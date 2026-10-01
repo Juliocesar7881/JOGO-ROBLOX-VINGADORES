@@ -156,7 +156,7 @@ function Panels.new(ctx)
 		local catalog=isBase and Catalog.Bases or Catalog.Heroes
 		local owned=isBase and (p.bases or {outpost=true}) or (p.heroes or {})
 		local ids=isBase and Catalog.BaseChestOrder or Catalog.HeroChestOrder
-		local size=screenSize(); local slot=UI.contextLayout(size.X,size.Y,{wide=true,elevator=ctx.state().elevator~=nil})
+		local size=screenSize(); local slot=UI.contextLayout(size.X,size.Y,{wide=true,elevator=ctx.state().elevator~=nil,difficulty=ctx.state().elevator~=nil and ctx.state().elevator.modeId=="normal"})
 		local width=slot.w-34; local wide=width>=620
 		local function portrait(parent,id,properties)
 			if isBase then return UI.basePortrait(parent,catalog[id],properties) end
