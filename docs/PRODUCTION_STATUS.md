@@ -4,6 +4,28 @@ Este registro separa o que está pronto e verificado do que ainda depende de
 teste real, de arte ou de configuração. Plano de referência: "Plano de
 produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 
+## Rodada do diretor (2026-10-01)
+
+Uma noite e uma manhã de trabalho autônomo (log completo em
+`docs/director/LOG.md`, fila em `docs/director/BACKLOG.md`). O que mudou:
+
+- **Marca original**: nenhum nome de terceiros chega ao jogador
+  (`tests/test_ip_safety.py` na suíte); 36 heróis com visual próprio.
+- **Sensação de partida**: câmera de cima, barra de heróis em ladrilhos,
+  números de dano, antes → depois no upgrade, limite por herói (8/6/5/4/3),
+  chefe com entrada de câmera e fases, MVP e "jogar de novo", perigo por mapa,
+  dificuldades Normal/Difícil/Pesadelo, tiros em lote, qualidade automática.
+- **Progressão**: estrelas por duplicata (+3% de dano, até 5), variante
+  brilhante (1/40), missões rotativas, balanço dos raros medido.
+- **Primeiros minutos**: treino de 12 ondas (~7,5 min) com um toque.
+- **Dinheiro**: passes (3x, drone coletor, treinamento, VIP), Pacote Inicial,
+  pacotes de Ouro e produtos de herói **criados no Creator Hub** (parcial, ver
+  `docs/director/ROBUX_CATALOG.md`); IDs no `Config.luau`.
+- **Processo**: revisão de telas no Studio sem editar scripts do lugar,
+  cliente dividido em módulos, trava para uma sessão por vez.
+
+O que ainda impede declarar lançamento: `docs/RELEASE_CHECKLIST.md`.
+
 ## Refinamento visual (2026-09-27)
 
 Diagnóstico com capturas do Studio (vitrine, lobby na altura do jogador e
