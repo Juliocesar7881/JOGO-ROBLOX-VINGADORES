@@ -36,6 +36,9 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed, difficultyId)
 	-- Competitive never ends: past wave 50 health keeps climbing while the
 	-- head count stays capped, so the arena gets harder, not more crowded.
 	if modeId == "ranked" and wave > 50 then hpMultiplier *= 1.045 ^ math.min(250, wave - 50) end
+	-- A mutated wave changes the whole wave (see Catalog.Mutations).
+	local mutation = Catalog.Mutations[Rules.WaveMutation(modeId, mapId, wave, seed) or ""]
+	if mutation then hpMultiplier *= mutation.hp or 1 end
 	local function pathFor(index)
 		if mapId == "hydra" then return (wave - 1) % #map.paths + 1 end
 		if mapId == "latveria" then
@@ -52,11 +55,12 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed, difficultyId)
 			enemyId = enemyId,
 			delay = if index == 1 then 0 else (if modeId == "tutorial" then 1.25 else math.max(0.35, 0.85 - wave * 0.011)),
 			pathIndex = pathFor(index), hpMultiplier = hpMultiplier * (override or 1),
-			speedMultiplier = difficulty.speedMultiplier, rewardless = false,
-			cash = Rules.KillCash(enemyId),
+			speedMultiplier = difficulty.speedMultiplier * (mutation and mutation.speed or 1), rewardless = false,
+			cash = math.floor(Rules.KillCash(enemyId) * (mutation and mutation.cash or 1) + 0.5),
 		})
 	end
 	local count = if modeId == "tutorial" then 6 + wave else math.min(100, 9 + math.floor(wave * 1.4))
+	if mutation and mutation.count then count = math.min(100, math.floor(count * mutation.count)) end
 	local pool = { "zombie", "zombie", "zombie" }
 	local ranked = modeId == "ranked"
 	if wave >= 3 then table.insert(pool, "runner") end

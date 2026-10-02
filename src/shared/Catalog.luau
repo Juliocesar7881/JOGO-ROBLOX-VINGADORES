@@ -63,6 +63,20 @@ Catalog.SeasonThemes = {
 -- Playing together pays: every extra commander in the match adds this much to
 -- the Gold and XP each of them earns (a party of four: +30%).
 Catalog.PartyBonus = { perPlayer = 0.1 }
+-- Wave mutations: about one wave in four (never training, never a boss wave,
+-- never before wave 6) arrives with a rule of its own, announced while the
+-- squad prepares. Each trades danger for Gold: `speed`, `hp` and `count` scale
+-- the wave, `cash` scales what its enemies drop.
+Catalog.MutationOrder = { "rush", "swarm", "iron" }
+Catalog.Mutations = {
+	rush = { id = "rush", icon = "💨", name = text("CORRIDA", "RUSH"), speed = 1.3, cash = 1.2,
+		description = text("Inimigos 30% mais rápidos, mas largam 20% mais Ouro.", "Enemies 30% faster, but they drop 20% more Gold.") },
+	swarm = { id = "swarm", icon = "🐝", name = text("ENXAME", "SWARM"), count = 1.5, hp = 0.7, cash = 1,
+		description = text("50% mais inimigos, cada um com 30% menos vida.", "50% more enemies, each with 30% less health.") },
+	iron = { id = "iron", icon = "🛡", name = text("BLINDADA", "ARMORED"), hp = 1.35, cash = 1.35,
+		description = text("Inimigos com 35% mais vida, que largam 35% mais Ouro.", "Enemies with 35% more health that drop 35% more Gold.") },
+}
+
 -- The map of the day: one campaign map a day, in turn, pays this much more Gold
 -- and XP (normal mode only), so there is always a reason to try a different map.
 Catalog.DailyFeature = { bonus = 0.25 }

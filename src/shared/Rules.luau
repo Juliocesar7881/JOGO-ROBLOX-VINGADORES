@@ -335,6 +335,15 @@ function Rules.PartyBonus(size)
 	return 1 + Catalog.PartyBonus.perPlayer * (size - 1)
 end
 
+-- The mutation of a wave, or nil: decided by the match seed and the wave number
+-- alone, so every server and the preview agree.
+function Rules.WaveMutation(modeId, mapId, wave, seed)
+	if modeId == "tutorial" or type(wave) ~= "number" or wave ~= wave or wave < 6 or Rules.IsBossWave(modeId, wave, mapId) then return nil end
+	local hash = (math.abs(math.floor(number(seed, 0))) * 2654435761 + math.floor(wave) * 40503 + 17) % 4093
+	if hash % 4 ~= 0 then return nil end
+	return Catalog.MutationOrder[math.floor(hash / 4) % #Catalog.MutationOrder + 1]
+end
+
 -- The campaign map featured on a given day (the day number is the Unix day,
 -- decided by the server), and the multiplier it pays on that day.
 function Rules.FeaturedMap(day)

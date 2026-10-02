@@ -1157,7 +1157,10 @@ updateMatch = function()
 	-- A boss within three waves is announced while there is time to prepare.
 	local bossAhead = state.phase == "Preparing" and match.nextBoss and (match.nextBoss - (match.wave or 0)) or nil
 	local bossNote = bossAhead and bossAhead >= 1 and bossAhead <= 3 and ("   ⚠ " .. (bossAhead == 1 and T("CHEFE NA PRÓXIMA ONDA!", "BOSS NEXT WAVE!") or (T("CHEFE EM ", "BOSS IN ") .. bossAhead .. T(" ONDAS", " WAVES")))) or ""
-	refs.waveInfo.Text = state.phase == "Preparing" and (T("VEM AÍ: ", "COMING: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or ("👾 " .. tostring(match.enemies or 0) .. T(" inimigos     🦸 ", " enemies     🦸 ") .. towerCount .. "/" .. tostring(match.towerLimit or 16))
+	-- A mutated wave says so, in front of everything else.
+	local mutationDef = match.mutation and Catalog.Mutations[match.mutation]
+	local mutationNote = mutationDef and (mutationDef.icon .. " " .. L(mutationDef.name) .. "  ") or ""
+	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("VEM AÍ: ", "COMING: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. "👾 " .. tostring(match.enemies or 0) .. T(" inimigos     🦸 ", " enemies     🦸 ") .. towerCount .. "/" .. tostring(match.towerLimit or 16))
 	local boss = match.boss
 	refs.boss.Visible = boss ~= nil
 	if boss then
@@ -1368,6 +1371,9 @@ fxRemote.OnClientEvent:Connect(function(event)
 	if event.kind == "Notice" then
 		showToast(event.text, event.tone == "boss")
 		if event.tone == "boss" then audio:Cue("boss", 4) end
+	elseif event.kind == "Mutation" then
+		local def = Catalog.Mutations[event.mutationId]
+		if def then celebrate:Banner({pt = def.icon .. " ONDA " .. string.upper(def.name.pt), en = def.icon .. " " .. string.upper(def.name.en) .. " WAVE"}, def.description, C.coral, {cue = "boss", duration = 2.2}) end
 	elseif event.kind == "WaveCash" then
 		-- The wave bonus lands straight in the wallet: show it next to the Gold.
 		if refs.energy and refs.energy.Parent and tonumber(event.amount) then

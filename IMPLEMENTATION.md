@@ -178,6 +178,13 @@ victory Gold and the XP of everyone in the match (`MatchService:_endWave`,
 `_checkpoint`, `Finish`); the multiplier travels in `results.party` and the
 elevator card and end screen name it.
 
+**Wave mutations.** `Catalog.Mutations` (rush, swarm, iron) and
+`Rules.WaveMutation(modeId, mapId, wave, seed)`: about one wave in four, never in
+training, before wave 6 or on a boss wave, decided by the match seed alone.
+`Waves.Generate` applies the mutation (speed, health, head count, drop Gold);
+`MatchService` announces it in the snapshot (`match.mutation`, the preview while
+preparing, the current wave while it runs) and with a `Mutation` FX event.
+
 **Map of the day.** `Catalog.DailyFeature.bonus = 0.25`; `Rules.FeaturedMap(day)`
 cycles the campaign maps by Unix day and `Rules.FeaturedBonus` multiplies the
 Gold and XP of a normal-mode match on that map (`MatchService.rewardBonus` =

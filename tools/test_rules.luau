@@ -155,6 +155,31 @@ approx(hostile.rangeBonus, 0.10, "Range cap holds against hostile input")
 check(hostile.attackSpeedBonus <= 0.10, "Attack speed cap holds against hostile input")
 local rookie = Rules.PermanentModifiers({ heroes = { ironman = { xp = 0 } }, talents = {} }, "ironman")
 approx(rookie.damageBonus, 0, "A fresh hero has no permanent bonus")
+-- Wave mutations: rare, deterministic, never in training, before wave 6 or on a boss wave.
+do
+	local mutated, total, kinds = 0, 0, {}
+	for seed = 20000, 20019 do
+		for wave = 1, 50 do
+			local id = Rules.WaveMutation("normal", "manhattan", wave, seed)
+			equal(id, Rules.WaveMutation("normal", "manhattan", wave, seed), "A mutation is deterministic")
+			if id then
+				check(Catalog.Mutations[id] ~= nil, "A mutation names a real kind: " .. id)
+				check(wave >= 6 and not Rules.IsBossWave("normal", wave, "manhattan"), "Never before wave 6 or on a boss wave: " .. wave)
+				mutated += 1
+				kinds[id] = true
+			end
+			if wave >= 6 and not Rules.IsBossWave("normal", wave, "manhattan") then total += 1 end
+			equal(Rules.WaveMutation("tutorial", "manhattan", wave, seed), nil, "Training is never mutated")
+		end
+	end
+	check(mutated / total > 0.15 and mutated / total < 0.35, "About one wave in four is mutated, got " .. mutated .. "/" .. total)
+	for _, id in ipairs(Catalog.MutationOrder) do check(kinds[id], "Every kind turns up: " .. id) end
+	for _, id in ipairs(Catalog.MutationOrder) do
+		local def = Catalog.Mutations[id]
+		check(def.name.pt and def.name.en and def.description.pt and def.description.en and def.icon, "A mutation is named and described in both languages: " .. id)
+	end
+end
+
 -- The map of the day: every campaign map takes its turn, only normal mode benefits.
 do
 	local normals = Rules.MapsForMode("normal")
@@ -400,7 +425,8 @@ for _, mapId in Catalog.MapOrder do
 					check(spec.pathIndex >= 1 and spec.pathIndex <= #map.paths, "Valid path assignment")
 					check(spec.hpMultiplier > 0 and Rules.IsFinite(spec.hpMultiplier), "Finite positive HP")
 					check(spec.delay >= 0, "Valid spawn timing")
-					equal(spec.cash, Rules.KillCash(spec.enemyId), "Each enemy drops its own match Gold")
+					local wavePayout = Catalog.Mutations[Rules.WaveMutation(modeId, mapId, wave, 12345) or ""]
+					equal(spec.cash, math.floor(Rules.KillCash(spec.enemyId) * (wavePayout and wavePayout.cash or 1) + 0.5), "Each enemy drops its own match Gold")
 					if enemy.boss then bosses += 1; bossId = spec.enemyId end
 					if mapId == "hydra" then equal(spec.pathIndex, (wave - 1) % 2 + 1, "Announced alternating HYDRA path") end
 				end

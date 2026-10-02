@@ -1575,6 +1575,61 @@ do
 	check(calm.hazardCount == 0, "Manhattan has no hazard")
 end
 
+print("--- wave mutations ---")
+do
+	-- Find a seed and wave that mutate, then compare with the same wave unmutated.
+	local seedFound, waveFound, kind
+	for seed = 1, 400 do
+		for wave = 6, 9 do
+			local id = Rules.WaveMutation("normal", "manhattan", wave, seed)
+			if id == "swarm" and not seedFound then seedFound, waveFound, kind = seed, wave, id end
+		end
+	end
+	check(seedFound ~= nil, "a swarm wave exists to test")
+	if seedFound then
+		local plain = Waves.Generate("manhattan", "tutorial", 1, 1, seedFound)
+		check(#plain > 0, "a plain wave generates")
+		local mutated = Waves.Generate("manhattan", "normal", waveFound, 1, seedFound)
+		local baseCount = math.min(100, 9 + math.floor(waveFound * 1.4))
+		check(#mutated == math.min(100, math.floor(baseCount * Catalog.Mutations.swarm.count)), "a swarm wave has 50% more enemies: " .. #mutated .. " vs " .. baseCount)
+		-- Rush and iron change speed and gold.
+		for _, wanted in ipairs({ "rush", "iron" }) do
+			local foundSeed, foundWave
+			for seed = 1, 600 do
+				for wave = 6, 9 do
+					if not foundSeed and Rules.WaveMutation("normal", "manhattan", wave, seed) == wanted then foundSeed, foundWave = seed, wave end
+				end
+			end
+			check(foundSeed ~= nil, "a " .. wanted .. " wave exists to test")
+			if foundSeed then
+				local specs = Waves.Generate("manhattan", "normal", foundWave, 1, foundSeed)
+				local def = Catalog.Mutations[wanted]
+				check(math.abs(specs[1].speedMultiplier - (def.speed or 1)) < 1e-9, wanted .. " sets the wave's speed")
+				check(specs[1].cash == math.floor(Rules.KillCash(specs[1].enemyId) * def.cash + 0.5), wanted .. " scales what its enemies drop")
+			end
+		end
+	end
+	-- The match announces it: in the preview while preparing, as an event when it starts.
+	local match = stage({ mapId = "manhattan", wave = 5 })
+	local announced = {}
+	local original = match._fx
+	match._fx = function(self, event, ...) table.insert(announced, event) return original(self, event, ...) end
+	local mutatingSeed
+	for seed = 1, 600 do
+		if Rules.WaveMutation("normal", "manhattan", 6, seed) then mutatingSeed = seed break end
+	end
+	match.seed = mutatingSeed
+	match.phase = "Preparing"
+	match.wave = 5
+	match:_previewThreats()
+	check(match.nextMutation == Rules.WaveMutation("normal", "manhattan", 6, mutatingSeed), "the preview knows the next wave's mutation")
+	match.prepRemaining = 0
+	match:_beginWave()
+	local sawEvent = false
+	for _, event in ipairs(announced) do if event.kind == "Mutation" and event.mutationId == match.mutation then sawEvent = true end end
+	check(match.mutation ~= nil and sawEvent, "starting a mutated wave announces it to every client")
+end
+
 print("--- map of the day ---")
 do
 	local day = math.floor(os.time() / 86400)

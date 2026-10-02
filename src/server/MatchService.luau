@@ -253,8 +253,9 @@ end
 -- Announced before the wave arrives, so a player can answer camouflage, armour
 -- and air with the heroes they already own instead of losing to a surprise.
 function Match:_previewThreats()
-	self.nextThreats = {}
+	self.nextThreats, self.nextMutation = {}, nil
 	if not self.running and self.phase ~= "Preparing" then return end
+	self.nextMutation = self.rules.WaveMutation(self.modeId, self.mapId, self.wave + 1, self.seed)
 	local ok, specs = pcall(self.waves.Generate, self.mapId, self.modeId, self.wave + 1, self.size, self.seed, self.difficultyId)
 	if not ok or type(specs) ~= "table" then return end
 	-- Which roads the next wave walks, and whether that changed: the client
@@ -352,6 +353,8 @@ function Match:_beginWave()
 	end
 	self.pendingSpawns = self.waves.Generate(self.mapId,self.modeId,self.wave,self.size,self.seed,self.difficultyId)
 	self.spawnIndex, self.spawnTimer = 1, 0
+	self.mutation = self.rules.WaveMutation(self.modeId, self.mapId, self.wave, self.seed)
+	if self.mutation then self:_fx({kind="Mutation",mutationId=self.mutation}) end
 	local threats = {}
 	for _, spec in ipairs(self.pendingSpawns) do
 		if spec.enemyId == "stealth" then threats.stealth=true elseif spec.enemyId=="flyer" then threats.air=true elseif spec.enemyId=="armored" then threats.armor=true end
@@ -1532,6 +1535,7 @@ function Match:Snapshot(player)
 		prepRemaining=math.max(0,math.ceil(self.prepRemaining)),enemies=self.alive,elapsed=self.elapsed,ability=ability,
 		cards=table.clone(p.cards),cardOffers=p.cardOffers,cardMode=self.cardMode,goldEarned=p.goldEarned,xpEarned=p.xpEarned,towers=towers,boss=boss,
 		partySize=self.size,skipVotes=votes,nextBoss=nextBoss,threats=self.phase=="Preparing" and self.nextThreats or nil,
+		mutation=self.phase=="Preparing" and self.nextMutation or (self.phase=="Wave" and self.mutation or nil),
 			nextPaths=self.phase=="Preparing" and self.nextPaths or nil,newEntrance=self.phase=="Preparing" and self.newEntrance or nil,
 		speed=self:Speed(),speedVote=p.speedVote or 1,speedVotes=speedVotes,autoSkip=p.autoSkip==true,endVote=p.endVote==true,endVotes=endVotes},p.results
 end

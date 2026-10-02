@@ -1308,6 +1308,25 @@ local function session(screen)
 		frames(1 / 30, 2)
 	end)
 
+	step("a mutated wave is announced in the preview and by a banner", function()
+		local function anyLabel(text)
+			for _, item in ipairs(gui:GetDescendants()) do
+				if type(item.Text) == "string" and string.find(item.Text, text, 1, true) then return item end
+			end
+			return nil
+		end
+		push(matchSnapshot(veteranProfile(), "Preparing", { mutation = "rush" }))
+		frames(1 / 30, 2)
+		check(anyLabel("CORRIDA") ~= nil, tag .. ": the preview names the mutation")
+		fx({ kind = "Mutation", mutationId = "swarm" })
+		check(named(overlays, "CelebrationBanner") ~= nil and anyLabel("ENXAME") ~= nil, tag .. ": a banner announces the mutated wave")
+		push(matchSnapshot(veteranProfile(), "Preparing", {}))
+		frames(1 / 30, 2)
+		check(anyLabel("CORRIDA") == nil, tag .. ": an ordinary wave carries no mutation line")
+		push(matchSnapshot(veteranProfile(), "Wave"))
+		frames(1 / 30, 2)
+	end)
+
 	step("each owned tower carries its next upgrade above it", function()
 		local function board(id) return playerGui:FindFirstChild("Upgrade_" .. id) end
 		local function green(c) local g = UILayout.Colors.green; return c ~= nil and math.abs(c.R - g.R) + math.abs(c.G - g.G) + math.abs(c.B - g.B) < 0.01 end
