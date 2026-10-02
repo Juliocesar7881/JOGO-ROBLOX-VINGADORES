@@ -1260,6 +1260,12 @@ render = function()
 			{ "Use o poder do líder (Q) para virar uma onda difícil.", "Use your leader's power (Q) to turn a hard wave." },
 			{ "Missões e partidas enchem a barra da temporada.", "Missions and matches fill the season bar." },
 			{ "Ouro do chão some: ande até ele ou compre o Drone coletor.", "Gold on the ground fades: walk to it or get the Collector drone." },
+			{ "Gosmentos racham ao morrer: dano em área limpa os fragmentos.", "Splitters burst when they die: area damage clears the fragments." },
+			{ "Sabotadores paralisam torres: derrube-os cedo ou use heróis imunes.", "Saboteurs stun towers: take them down early or field stun-proof heroes." },
+			{ "Segure o dedo no chão (ou G) para marcar um local aos amigos.", "Hold your finger on the ground (or G) to ping a spot for your squad." },
+			{ "Todo dia um mapa paga +25% de Ouro e XP: veja o mapa do dia.", "Every day one map pays +25% Gold and XP: check the map of the day." },
+			{ "Ondas mutantes avisam antes: Corrida, Enxame ou Blindada.", "Mutant waves warn you first: Rush, Swarm or Armored." },
+			{ "O herói do primeiro slot define o poder que você usa em partida.", "The hero in your first slot sets the power you use in a match." },
 		}
 		local tip = tips[math.random(1, #tips)]
 		UI.label(card, T(tip[1], tip[2]), {Name = "SplashTip", Position = UDim2.fromOffset(0, 190), Size = UDim2.new(1, 0, 0, 56), TextSize = 16, TextWrapped = true, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
