@@ -339,17 +339,29 @@ function Panels.new(ctx)
 		if not pack or profile().starterPack then return end
 		local info=productInfo["product:starterPack"]
 		local ready=type(info)=="table"
+		local function purchase()
+			if not ready then return end
+			local ok=pcall(function() MarketplaceService:PromptProductPurchase(player,info.id) end)
+			if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
+		end
+		-- On a short phone screen the banner is one slim row, so the gold and
+		-- the first products stay in view under it.
+		if UI.sizeClass(screenSize().X,screenSize().Y).short then
+			local slim=UI.roundFrame(body,{Name="StarterPack",Size=UDim2.new(1,-6,0,72),BackgroundColor3=C.gold:Lerp(C.panel,0.45)},C.gold)
+			UI.candy(slim)
+			UI.label(slim,Catalog.Upper(L(pack.name)).."  •  "..T("SÓ UMA VEZ","ONE TIME ONLY"),{Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-170,0,24),Font=UI.Fonts.display,TextSize=16,TextColor3=C.gold})
+			UI.label(slim,L(Catalog.Heroes[pack.heroId].name).." + 💰 "..UI.format(pack.gold),{Position=UDim2.fromOffset(12,32),Size=UDim2.new(1,-170,0,34),TextWrapped=true,TextSize=13})
+			local fast=UI.button(slim,ready and ("R$ "..tostring(info.price)) or T("Carregando…","Loading…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(1,-150,0,14),Size=UDim2.fromOffset(138,44),BackgroundColor3=C.green,TextSize=16})
+			if not ready then UI.disabled(fast) end
+			return
+		end
 		local row=UI.roundFrame(body,{Name="StarterPack",Size=UDim2.new(1,-6,0,132),BackgroundColor3=C.gold:Lerp(C.panel,0.45)},C.gold)
 		UI.candy(row)
 		heroPortrait(row,pack.heroId,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(104,116)})
 		UI.chip(row,T("SÓ UMA VEZ","ONE TIME ONLY"),C.red,{Position=UDim2.fromOffset(120,10),Size=UDim2.fromOffset(120,22),TextSize=12})
 		UI.label(row,Catalog.Upper(L(pack.name)),{Position=UDim2.fromOffset(120,34),Size=UDim2.new(1,-130,0,28),Font=UI.Fonts.display,TextSize=22,TextColor3=C.gold})
 		UI.label(row,L(Catalog.Heroes[pack.heroId].name).." + 💰 "..UI.format(pack.gold),{Position=UDim2.fromOffset(120,60),Size=UDim2.new(1,-130,0,22),Font=UI.Fonts.display,TextSize=16})
-		local buy=UI.button(row,ready and ("R$ "..tostring(info.price)) or T("Carregando preço…","Loading price…"),function()
-			if not ready then return end
-			local ok=pcall(function() MarketplaceService:PromptProductPurchase(player,info.id) end)
-			if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
-		end,{Name="Buy_product:starterPack",Position=UDim2.new(0,120,1,-46),Size=UDim2.new(1,-132,0,40),BackgroundColor3=C.green,TextSize=17})
+		local buy=UI.button(row,ready and ("R$ "..tostring(info.price)) or T("Carregando preço…","Loading price…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(0,120,1,-46),Size=UDim2.new(1,-132,0,40),BackgroundColor3=C.green,TextSize=17})
 		if not ready then UI.disabled(buy) end
 	end
 
@@ -369,18 +381,47 @@ function Panels.new(ctx)
 				if pa~=pb then return pa<pb end
 				return a<b
 			end)
+			-- Gold packs say how good a deal they are: the best Gold per Robux wears
+			-- a badge, and the pack most people take (Catalog popular) another.
+			local bestGold,bestRatio
+			if group.kind=="product" then
+				for key,def in pairs(group.items) do
+					if def.gold and key~="starterPack" and def.price and def.price>0 then
+						local ratio=def.gold/def.price
+						if not bestRatio or ratio>bestRatio then bestGold,bestRatio=key,ratio end
+					end
+				end
+			end
 			for _,key in ipairs(keys) do
 				local def=group.items[key]; local info=productInfo[group.kind..":"..key]
 				local owned=group.kind=="hero" and (profile().heroes or {})[key] or group.kind=="pass" and (profile().passes or {})[key]
 				local tint=group.kind=="hero" and UI.color(Catalog.Rarities[Catalog.Heroes[key].rarity].color) or group.kind=="pass" and C.green or C.gold
-				local row=UI.roundFrame(body,{Name="Product_"..key,Size=UDim2.new(1,-6,0,118),BackgroundColor3=tint:Lerp(C.panel,0.6)},tint)
+				-- A short phone screen gets a slimmer row, so more than one product shows.
+				local slim=UI.sizeClass(screenSize().X,screenSize().Y).short
+				local rowH,artW,buttonH=slim and 92 or 118,slim and 72 or 100,slim and 36 or 46
+				local topY=slim and 5 or 10
+				local row=UI.roundFrame(body,{Name="Product_"..key,Size=UDim2.new(1,-6,0,rowH),BackgroundColor3=tint:Lerp(C.panel,0.6)},tint)
 				UI.candy(row)
-				local left=118
-				local art=UI.portraitStage(row,tint,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(100,102)})
-				if group.kind=="hero" then heroPortrait(row,key,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(100,102)})
-				else UI.illustration(art,group.kind=="pass" and "star" or "coin",C.gold,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(64,64)}) end
-				if group.kind=="hero" then UI.chip(row,Catalog.Upper(L(Catalog.Rarities[Catalog.Heroes[key].rarity].name)),tint,{Position=UDim2.fromOffset(left,10),Size=UDim2.fromOffset(96,20),TextSize=12}) end
-				UI.label(row,L(def.name),{Position=UDim2.fromOffset(left,group.kind=="hero" and 32 or 12),Size=UDim2.new(1,-left-12,0,30),TextWrapped=true,Font=UI.Fonts.display,TextSize=20})
+				local left=artW+18
+				local art=UI.portraitStage(row,tint,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(artW,rowH-16)})
+				if group.kind=="hero" then heroPortrait(row,key,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(artW,rowH-16)})
+				else UI.illustration(art,group.kind=="pass" and "star" or "coin",C.gold,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(slim and 48 or 64,slim and 48 or 64)}) end
+				if group.kind=="hero" then UI.chip(row,Catalog.Upper(L(Catalog.Rarities[Catalog.Heroes[key].rarity].name)),tint,{Position=UDim2.fromOffset(left,topY),Size=UDim2.fromOffset(96,20),TextSize=12}) end
+				local isGold=group.kind=="product" and def.gold~=nil
+				if isGold then
+					local badge=key==bestGold and {T("MELHOR VALOR","BEST VALUE"),C.green} or def.popular and {T("MAIS POPULAR","MOST POPULAR"),C.coral} or nil
+					local used=0
+					if badge then
+						UI.chip(row,badge[1],badge[2],{Name="Badge_"..key,Position=UDim2.fromOffset(left,topY),Size=UDim2.fromOffset(122,20),TextSize=12})
+						used=130
+					end
+					-- The Gold per Robux comes from the price the platform reports.
+					local price=type(info)=="table" and tonumber(info.price) or def.price
+					if price and price>0 then
+						UI.label(row,T("≈ ","≈ ")..UI.format(math.floor(def.gold/price+0.5))..T(" Ouro por R$"," Gold per R$"),{Name="Value_"..key,Position=UDim2.fromOffset(left+used,topY),Size=UDim2.new(1,-left-used-12,0,20),TextSize=13,TextColor3=C.cream})
+					end
+				end
+				UI.label(row,L(def.name),{Position=UDim2.fromOffset(left,(group.kind=="hero" or isGold) and (slim and 25 or 32) or (slim and 8 or 12)),Size=UDim2.new(1,-left-12,0,slim and 22 or 30),TextWrapped=true,Font=UI.Fonts.display,TextSize=slim and 17 or 20})
 				local cacheKey=group.kind..":"..key
 				local ready=type(info)=="table"
 				local label=owned and T("✓ JÁ É SEU","✓ YOURS") or ready and ("R$ "..tostring(info.price))
@@ -390,7 +431,7 @@ function Panels.new(ctx)
 					if not ready or owned then return end
 					local ok=pcall(function() if group.kind=="pass" then MarketplaceService:PromptGamePassPurchase(player,info.id) else MarketplaceService:PromptProductPurchase(player,info.id) end end)
 					if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
-				end,{Name="Buy_"..cacheKey,Position=UDim2.new(0,left,1,-56),Size=UDim2.new(1,-left-12,0,46),BackgroundColor3=owned and C.card or C.green,TextSize=17})
+				end,{Name="Buy_"..cacheKey,Position=UDim2.new(0,left,1,-buttonH-(slim and 6 or 10)),Size=UDim2.new(1,-left-12,0,buttonH),BackgroundColor3=owned and C.card or C.green,TextSize=slim and 16 or 17})
 				if owned or (not ready and info~="retry") then UI.disabled(buy) end
 			end
 		end

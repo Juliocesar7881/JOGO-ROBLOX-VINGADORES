@@ -609,6 +609,12 @@ local function session(screen)
 		click("OURO")
 		local unsold=named(gui,"Buy_product:gold1000")
 		check(unsold~=nil and unsold.Text=="Indisponível",tag..": a product that is not configured reads unavailable")
+		-- The Gold packs rank themselves: the biggest pack is the best deal and
+		-- the mid pack is the one most people take; each pack states Gold per R$.
+		check(named(gui,"Badge_gold30000")~=nil and named(gui,"Badge_gold5000")~=nil and named(gui,"Badge_gold1000")==nil and named(gui,"Badge_gold12000")==nil,tag..": only the best-value and the most-popular Gold pack wear a badge")
+		check(named(gui,"Badge_gold30000").Text=="MELHOR VALOR" and named(gui,"Badge_gold5000").Text=="MAIS POPULAR",tag..": the badges read best value and most popular")
+		local valueLine=named(gui,"Value_gold12000")
+		check(valueLine~=nil and string.find(valueLine.Text,"20",1,true)~=nil,tag..": a pack states its Gold per Robux, got "..tostring(valueLine and valueLine.Text))
 		click("PASSES")
 		retry=named(gui,"Buy_pass:training")
 		collectorPrice=true
@@ -1064,6 +1070,10 @@ local function session(screen)
 		check(named(gui, "TutorialShortcut") ~= nil, tag .. ": the card offers to skip the walk")
 		fx({kind="OpenPanel",panel="modes",hud=true})
 		check(named(gui, "FirstMission") ~= nil, tag .. ": a newcomer's play menu leads with the short training")
+		-- A short phone screen has no room for the card beside an open panel.
+		frames(1 / 30, 2)
+		local openCard = named(gui, "TutorialCard")
+		check(openCard ~= nil and openCard.Visible == (SCREEN.h >= 500), tag .. ": the lesson card steps aside for an open panel only on a short screen (h " .. tostring(SCREEN.h) .. ")")
 		clickNamed("FindTrainingPortal")
 		check(asked("StartTraining") and not asked("StartMatch"), tag .. ": the training button asks the server to board the training queue")
 		check(not contextOpen(),tag..": the play menu steps aside once training starts")

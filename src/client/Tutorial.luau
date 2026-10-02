@@ -491,6 +491,10 @@ function Tutorial:Step(dt)
 			if top < cardY + cardHeight + 6 and top + height > cardY - 6 then cardY = top + height + 10 end
 		end
 		self.card.Position = UDim2.new(0.5, 0, 0, cardY)
+		-- On a short phone screen an open panel fills the area the card uses;
+		-- the walk resumes when it closes.
+		local panelOpen = self.ctx.panelOpen and self.ctx.panelOpen()
+		self.card.Visible = not (panelOpen and not inMatch and screen and screen.Y < 500)
 	end
 
 	local world = step.world

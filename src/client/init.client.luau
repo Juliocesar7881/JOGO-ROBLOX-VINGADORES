@@ -1565,6 +1565,7 @@ kit.tutorial = require(script:WaitForChild("Tutorial")).new({
 	state = function() return state end, refs = function() return refs end, act = act, profile = profile,
 	-- Which hero is being placed, and whether its spot is already pinned.
 	placement = function() return selectedHero, placementPinned end,
+	panelOpen = function() return contextPanel ~= nil end,
 })
 RunService.RenderStepped:Connect(function(dt)
 	kit.autoQuality:Step(dt)

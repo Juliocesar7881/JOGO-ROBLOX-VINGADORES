@@ -19,7 +19,7 @@
 local Review = {}
 
 Review.STAGES = {
-	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium",
+	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium", "premiumgold",
 	"quests", "leaderboard", "settings", "rewards", "boarding",
 	"preparing", "wave", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
 	"reveal", "revealbase", "revealcommon",
@@ -215,6 +215,8 @@ function Review.start(api)
 					or stage == "revealcommon" and { heroId = common, rarity = "common", duplicate = true, refundGold = 150, refundMastery = 60 }
 					or { heroId = legendary, rarity = "legendary", duplicate = false, refundGold = 0, refundMastery = 0 }
 				api.celebrate:Chest(result, stage == "revealbase" and "base_epic" or "legendary")
+			elseif stage == "premiumgold" then
+				api.openContext("shop", { hud = true, shopKind = "product" })
 			elseif stage == "basechests" then
 				api.openContext("chests", { chestId = "base_cosmic" })
 			elseif stage ~= "lobby" and stage ~= "boarding" and stage ~= "newcomer" then

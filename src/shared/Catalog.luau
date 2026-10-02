@@ -972,7 +972,7 @@ Catalog.Products = {
 	},
 	Consumables = {
 		gold1000 = { id = 0, price = 79, gold = 1000, name = text("1.000 de Ouro", "1,000 Gold") },
-		gold5000 = { id = 0, price = 299, gold = 5000, name = text("5.000 de Ouro", "5,000 Gold") },
+		gold5000 = { id = 0, price = 299, gold = 5000, popular = true, name = text("5.000 de Ouro", "5,000 Gold") },
 		gold12000 = { id = 0, price = 599, gold = 12000, name = text("12.000 de Ouro", "12,000 Gold") },
 		gold30000 = { id = 0, price = 1299, gold = 30000, name = text("30.000 de Ouro", "30,000 Gold") },
 		-- Once per account: an epic hero and Gold. Bought again (a second
