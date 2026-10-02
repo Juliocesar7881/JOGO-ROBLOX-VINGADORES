@@ -146,6 +146,10 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 	self.runId, self.mapId, self.modeId = runId or HttpService:GenerateGUID(false), mapId, modeId
 	self.difficultyId = difficultyId or "normal"
 	self.size, self.wave, self.completedWaves, self.baseHP, self.shield = #members, 0, 0, self.config.BaseHP, 0
+	-- Party size and the map of the day each add to every commander's Gold and XP.
+	self.partyBonus = self.rules.PartyBonus(#members)
+	self.featuredBonus = self.config.DailyFeature == false and 1 or self.rules.FeaturedBonus(mapId, modeId, math.floor(os.time() / 86400))
+	self.rewardBonus = self.partyBonus * self.featuredBonus
 	self.maxBaseHP, self.recovery, self.baseWasDamaged = self.config.BaseHP, 0, false
 	self.lastStandHeal, self.lastStandUsed = 0, false
 	for _, member in ipairs(members) do
@@ -823,7 +827,7 @@ function Match:_checkpoint(p, suffix, completed)
 	local mastery={}
 	local xp=0
 	if completed and p.contributed and not p.disconnectedAt then
-		xp=math.floor(self.rules.WaveXP(self.wave)*self.rules.PartyBonus(self.size))
+		xp=math.floor(self.rules.WaveXP(self.wave)*self.rewardBonus)
 		for id in pairs(p.waveHeroes) do
 			mastery[id]=self.rules.WaveMastery(self.wave)
 			p.masteryEarned[id]=(p.masteryEarned[id] or 0)+mastery[id]
@@ -861,7 +865,7 @@ function Match:_endWave()
 			if p.contributed and not p.disconnectedAt then
 				-- Lobby Gold for the completed wave, banked now so a later
 				-- defeat or disconnect never takes it back.
-				local banked = math.floor((self.rules.WaveGold(self.modeId, self.wave) + talent(p,"roundGold") * 2) * self.rules.PartyBonus(self.size))
+				local banked = math.floor((self.rules.WaveGold(self.modeId, self.wave) + talent(p,"roundGold") * 2) * self.rewardBonus)
 				p.waveGold += banked p.goldEarned += banked
 			end
 			self:_checkpoint(p,"wave:"..self.wave,true)
@@ -903,7 +907,7 @@ function Match:Finish(victory, ended)
 		if not p.returned then
 			-- A harder campaign difficulty pays its victory Gold and XP over.
 			local paid=(self.catalog.Difficulties[self.difficultyId] or {rewardMultiplier=1}).rewardMultiplier
-			local party=self.rules.PartyBonus(self.size)
+			local party=self.rewardBonus
 			local bonus=0
 			if victory and p.contributed and not p.disconnectedAt then
 				bonus=math.floor(self.rules.VictoryGold(self.modeId,self.mapId) * (1+talent(p,"victoryGold")*0.02) * paid * party)
@@ -921,7 +925,7 @@ function Match:Finish(victory, ended)
 			end
 			p.xpEarned+=victory and 150*paid*party*(p.profile.passes and p.profile.passes.training and 1.25 or 1) or 0
 			p.results={victory=victory,ended=ended==true,waves=self.completedWaves,gold=math.floor(p.goldEarned),xp=math.floor(p.xpEarned),
-				mapId=self.mapId,modeId=self.modeId,difficultyId=self.difficultyId,mastery=p.masteryEarned,startLevel=p.startLevel,cards=table.clone(p.cards),party=party}
+				mapId=self.mapId,modeId=self.modeId,difficultyId=self.difficultyId,mastery=p.masteryEarned,startLevel=p.startLevel,cards=table.clone(p.cards),party=self.partyBonus,featured=self.featuredBonus}
 			p.coins={}
 			self:_fx({kind="Clear"},p.player)
 		end

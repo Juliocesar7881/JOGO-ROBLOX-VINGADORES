@@ -155,6 +155,20 @@ approx(hostile.rangeBonus, 0.10, "Range cap holds against hostile input")
 check(hostile.attackSpeedBonus <= 0.10, "Attack speed cap holds against hostile input")
 local rookie = Rules.PermanentModifiers({ heroes = { ironman = { xp = 0 } }, talents = {} }, "ironman")
 approx(rookie.damageBonus, 0, "A fresh hero has no permanent bonus")
+-- The map of the day: every campaign map takes its turn, only normal mode benefits.
+do
+	local normals = Rules.MapsForMode("normal")
+	local seen = {}
+	for day = 20000, 20000 + #normals - 1 do seen[Rules.FeaturedMap(day)] = (seen[Rules.FeaturedMap(day)] or 0) + 1 end
+	for _, mapId in ipairs(normals) do equal(seen[mapId], 1, "Every campaign map is featured once per cycle: " .. mapId) end
+	equal(Rules.FeaturedMap(20000), Rules.FeaturedMap(20000 + #normals), "The cycle repeats")
+	local today = Rules.FeaturedMap(20123)
+	approx(Rules.FeaturedBonus(today, "normal", 20123), 1 + Catalog.DailyFeature.bonus, "The featured map pays more")
+	equal(Rules.FeaturedBonus(today, "ranked", 20123), 1, "Only the campaign benefits")
+	equal(Rules.FeaturedBonus("nowhere", "normal", 20123), 1, "Other maps pay as usual")
+	equal(Rules.FeaturedMap(0 / 0), nil, "A bad day names no map")
+end
+
 -- Party bonus: each extra commander adds the same share, from 1 to 4, no more.
 approx(Rules.PartyBonus(1), 1, "Playing alone has no party bonus")
 approx(Rules.PartyBonus(3), 1 + 2 * Catalog.PartyBonus.perPlayer, "A party of three earns two shares")

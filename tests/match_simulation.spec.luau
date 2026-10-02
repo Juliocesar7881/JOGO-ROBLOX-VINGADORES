@@ -110,6 +110,8 @@ warn = function() end
 -- Declared in dependency order: each inlined module captures the previous ones
 -- as upvalues, which is how the rewritten requires resolve.
 local Config = __CONFIG__
+-- The map of the day would change expected rewards with the calendar: switched off here, tested apart.
+Config.DailyFeature = false
 local Catalog = __CATALOG__
 local Rules = __RULES__
 local Waves = __WAVES__
@@ -1571,6 +1573,25 @@ do
 	calm.hazardTimer = 999
 	calm:_hazardStep(1)
 	check(calm.hazardCount == 0, "Manhattan has no hazard")
+end
+
+print("--- map of the day ---")
+do
+	local day = math.floor(os.time() / 86400)
+	local featuredMapId = Rules.FeaturedMap(day)
+	local other
+	for _, id in ipairs(Rules.MapsForMode("normal")) do if id ~= featuredMapId then other = id break end end
+	local previous = Config.DailyFeature
+	Config.DailyFeature = nil
+	local match = stage({ mapId = featuredMapId, wave = 1 })
+	check(math.abs(match.featuredBonus - (1 + Catalog.DailyFeature.bonus)) < 1e-9, "a match on the map of the day carries the bonus")
+	check(math.abs(match.rewardBonus - match.partyBonus * match.featuredBonus) < 1e-9, "and it multiplies the party bonus")
+	local plain = stage({ mapId = other, wave = 1 })
+	check(plain.featuredBonus == 1, "any other map pays as usual")
+	Config.DailyFeature = false
+	local off = stage({ mapId = featuredMapId, wave = 1 })
+	check(off.featuredBonus == 1, "the feature can be switched off")
+	Config.DailyFeature = previous
 end
 
 print("--- punches and indestructibility ---")

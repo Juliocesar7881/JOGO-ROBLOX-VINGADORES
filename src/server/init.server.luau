@@ -235,6 +235,12 @@ local function snapshotFor(player)
 		match = matchState,
 		results = results,
 		notice = notices[player.UserId],
+		-- The campaign map of the day, and what it pays on top (the server applies it).
+		featured = (function()
+			local day = math.floor(os.time() / 86400)
+			local mapId = Rules.FeaturedMap(day)
+			return mapId and { mapId = mapId, bonus = Catalog.DailyFeature.bonus, endsAt = (day + 1) * 86400 } or nil
+		end)(),
 	}
 	notices[player.UserId] = nil
 	return snapshot

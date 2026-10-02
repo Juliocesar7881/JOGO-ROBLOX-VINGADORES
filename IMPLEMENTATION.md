@@ -178,6 +178,13 @@ victory Gold and the XP of everyone in the match (`MatchService:_endWave`,
 `_checkpoint`, `Finish`); the multiplier travels in `results.party` and the
 elevator card and end screen name it.
 
+**Map of the day.** `Catalog.DailyFeature.bonus = 0.25`; `Rules.FeaturedMap(day)`
+cycles the campaign maps by Unix day and `Rules.FeaturedBonus` multiplies the
+Gold and XP of a normal-mode match on that map (`MatchService.rewardBonus` =
+party × featured; `Config.DailyFeature = false` switches it off, as the match
+simulation does). The lobby snapshot carries `featured = {mapId, bonus, endsAt}`
+for the ribbon on the play menu, the elevator card and `results.featured`.
+
 **Season pass.** `Catalog.Season = { levels = 30, firstXp = 2000, stepXp = 200 }`
 (level n costs `firstXp + stepXp * (n - 1)`, 147,000 XP in all); every
 XP the account earns (match rewards, mission claims, reward-claim XP) also

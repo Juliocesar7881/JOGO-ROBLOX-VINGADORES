@@ -335,6 +335,19 @@ function Rules.PartyBonus(size)
 	return 1 + Catalog.PartyBonus.perPlayer * (size - 1)
 end
 
+-- The campaign map featured on a given day (the day number is the Unix day,
+-- decided by the server), and the multiplier it pays on that day.
+function Rules.FeaturedMap(day)
+	local maps = Rules.MapsForMode("normal")
+	if #maps == 0 or type(day) ~= "number" or day ~= day then return nil end
+	return maps[math.floor(day) % #maps + 1]
+end
+
+function Rules.FeaturedBonus(mapId, modeId, day)
+	if modeId == "normal" and mapId ~= nil and mapId == Rules.FeaturedMap(day) then return 1 + Catalog.DailyFeature.bonus end
+	return 1
+end
+
 -- What a victory adds on top of the banked waves.
 function Rules.VictoryGold(modeId, mapId)
 	local rate = RUN_GOLD_PER_WAVE[modeId]

@@ -63,6 +63,9 @@ Catalog.SeasonThemes = {
 -- Playing together pays: every extra commander in the match adds this much to
 -- the Gold and XP each of them earns (a party of four: +30%).
 Catalog.PartyBonus = { perPlayer = 0.1 }
+-- The map of the day: one campaign map a day, in turn, pays this much more Gold
+-- and XP (normal mode only), so there is always a reason to try a different map.
+Catalog.DailyFeature = { bonus = 0.25 }
 -- Shiny: one hero chest in forty also makes its hero shiny, a collectible
 -- shine (cosmetic only: no stat changes). Drawn with the chest's rolls.
 Catalog.ShinyChance = 1 / 40

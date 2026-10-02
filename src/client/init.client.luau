@@ -625,6 +625,9 @@ renderElevator = function()
 	local map=Catalog.Maps[e.mapId]
 	local boss=map and Catalog.Enemies[e.modeId=="tutorial" and "lizard" or map.bossId]
 	local prize=e.modeId=="ranked" and T("🏆 25/onda","🏆 25/wave") or ("🏆 "..number(Rules.RunGold(e.modeId,e.mapId,waves,true)))
+	-- The map of the day pays more.
+	local featured=state.featured
+	if featured and featured.mapId==e.mapId and e.modeId=="normal" then prize=prize.."  ★ +"..math.floor(featured.bonus*100+0.5).."%" end
 	local summary=(waves==0 and T("SEM FIM","ENDLESS") or (tostring(waves).." "..T("ONDAS","WAVES")))
 		..((boss and waves>0) and ("  •  "..T("CHEFE: ","BOSS: ")..Catalog.Upper(L(boss.name))) or "").."  •  "..prize
 	-- A short phone's campaign card gives the riders' line to the difficulties.

@@ -972,6 +972,12 @@ function Panels.new(ctx)
 			local waves=Rules.WaveCount(destination.modeId,destination.mapId)
 			UI.label(card,L(mode.name).." • "..(waves==0 and T("SEM FIM","ENDLESS") or tostring(waves).." "..T("ONDAS","WAVES")),{Position=UDim2.fromOffset(118,54),Size=UDim2.new(1,-132,0,24),TextSize=12,Font=Enum.Font.GothamBold,TextWrapped=true})
 			UI.label(card,allowed and L(map.description) or L(kit.modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(118,81),Size=UDim2.new(1,-132,0,40),TextSize=12,TextWrapped=true,TextColor3=C.muted})
+			local featured=ctx.state().featured
+			if featured and featured.mapId==destination.mapId and destination.modeId=="normal" then
+				-- The map of the day pays more: a ribbon on its card.
+				local ribbon=UI.label(card,"★ "..T("MAPA DO DIA","MAP OF THE DAY").."  +"..math.floor(featured.bonus*100+0.5).."%",{Name="FeaturedRibbon",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,-8),Size=UDim2.fromOffset(176,24),BackgroundTransparency=0,BackgroundColor3=C.gold,TextColor3=C.background,TextSize=12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=3})
+				UI.corner(ribbon,12)
+			end
 			local button=UI.button(card,allowed and T("ENCONTRAR PORTAL","FIND PORTAL") or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function() routePreview.goPortal(id) end,{Name="FindPortal_"..id,Position=UDim2.fromOffset(12,126),Size=UDim2.new(1,-24,0,44),BackgroundColor3=allowed and C.green or tint,TextSize=17})
 			if not allowed then
 				UI.disabled(button)
