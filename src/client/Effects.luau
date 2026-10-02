@@ -1043,6 +1043,7 @@ function Effects:Handle(event)
 				-- reads bigger and whiter; a boss's damage is gold.
 				local dealt = current.lastHP - hp
 				local weight = math.clamp(dealt / math.max(enemy.maxHP or hp, 1) * 3, 0, 1)
+				current.hitWeight = weight
 				local tint = current.def.boss and UI.Colors.gold or Color3.fromRGB(255, 92, 76):Lerp(Color3.fromRGB(255, 236, 120), weight)
 				self:_popup(enemy.position + Vector3.new(0, 2.6 * current.scale, 0), dealt, tint, "-", math.floor(21 + weight * 15 + (current.def.boss and 5 or 0)))
 			end
@@ -1265,6 +1266,12 @@ function Effects:Step(dt)
 		local family = enemy.def.family or enemy.def.id
 		-- Runners sprint leaning into the road; everyone else walks upright.
 		if family == "runner" and not enemy.rig and (enemy.statusFlags or 0) % 2 == 0 and not settings.lowFX then pivot *= CFrame.Angles(-0.3, 0, 0) end
+		-- A hit shoves the enemy back a hair, more for a heavy blow (never a boss,
+		-- and not under reduced effects).
+		local sinceHit = enemy.hitAt and self.clock - enemy.hitAt or 1
+		if sinceHit < 0.14 and not enemy.def.boss and not settings.lowFX then
+			pivot *= CFrame.new(0, 0, (0.12 + 0.5 * (enemy.hitWeight or 0)) * math.sin(sinceHit / 0.14 * math.pi))
+		end
 		enemy.model:PivotTo(pivot)
 		if enemy.groundShadow then
 			enemy.groundShadow.CFrame = CFrame.new(enemy.position.X, enemy.position.Y + 0.08, enemy.position.Z) * CFrame.Angles(0, 0, math.pi / 2)

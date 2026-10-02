@@ -1505,7 +1505,7 @@ local MAP_LIGHTING = {
 		bloom = 0.25, fogColor = { 123, 148, 176 }, fogEnd = 680,
 	},
 	gamma = {
-		sun = 2.6, clockTime = 14, ambient = { 40, 70, 45 }, outdoor = { 70, 110, 60 },
+		sun = 2.6, clockTime = 14, ambient = { 70, 100, 70 }, outdoor = { 100, 140, 88 },
 		atmosphereColor = { 140, 200, 120 }, atmosphereDensity = 0.38, glare = 0.18,
 		tint = { 170, 255, 150 }, contrast = 0.12, saturation = 0.05, brightness = 0,
 		bloom = 0.5, fogColor = { 32, 55, 30 }, fogEnd = 520,
@@ -4046,8 +4046,8 @@ local STREET_THEME = {
 		clouds = { cover = 0.6, density = 0.32, color = Color3.fromRGB(92, 104, 132) },
 	},
 	gamma = {
-		ground = { Enum.Material.Ground, Color3.fromRGB(74, 70, 56) },
-		patches = { { Enum.Material.Mud, Color3.fromRGB(60, 66, 46) }, { Enum.Material.Concrete, Color3.fromRGB(112, 116, 108) } },
+		ground = { Enum.Material.Ground, Color3.fromRGB(112, 108, 80) },
+		patches = { { Enum.Material.Grass, Color3.fromRGB(104, 150, 64) }, { Enum.Material.Concrete, Color3.fromRGB(150, 154, 146) } },
 		road = { Enum.Material.Concrete, Color3.fromRGB(96, 100, 96) },
 		walk = { Enum.Material.Pavement, Color3.fromRGB(132, 134, 124) },
 		curb = { Enum.Material.Metal, Color3.fromRGB(214, 178, 48) },

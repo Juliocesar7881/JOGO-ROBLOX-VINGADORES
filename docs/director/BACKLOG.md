@@ -87,9 +87,9 @@ Escolha pela régua: o pior eixo primeiro. Cada item cabe numa sessão.
 - [x] M11.8 (6 nomes em ciclo, fim em dias no cartão) **Eventos de temporada**: nome e cor da temporada no cartão (ex.: "Temporada 1 • Ilhas do Alvorecer"). Aceite: `Catalog.Seasons` com nomes e a temporada atual derivada de `_season()`.
 
 ## M12 — Da revisão crítica de 02/10
-- [ ] M12.1 Combate: o inimigo reage a golpe forte (flash + micro recuo visual) e a morte tem estouro curto; orçamento de partes. Aceite: captura de 3 quadros + `Effects` dentro do limite.
-- [ ] M12.2 Manhattan e Gama menos cinzentos de cima (cor de telhado/ruas/arbustos). Aceite: folha de mapas com nenhum mapa mais monótono que a Selva.
-- [ ] M12.3 Celular: topo esquerdo da partida concentra três painéis; separar o painel da torre para a direita em tela baixa. Aceite: ui_layout + captura 667×375.
+- [x] M12.1 (flash e número já existiam; 02/10 entrou o micro recuo por golpe, maior nos fortes) Combate: o inimigo reage a golpe forte. Aceite: captura de 3 quadros + `Effects` dentro do limite.
+- [x] M12.2 (02/10: Manhattan mais clara e quente, Gama com grama e chão claros) Manhattan e Gama menos cinzentos de cima (cor de telhado/ruas/arbustos). Aceite: folha de mapas com nenhum mapa mais monótono que a Selva.
+- [x] M12.3 (conferido 02/10: já cabe em 667×375 sem sobreposição; nomes encurtados) Celular: topo esquerdo da partida concentra três painéis; separar o painel da torre para a direita em tela baixa. Aceite: ui_layout + captura 667×375.
 - [ ] M12.4 Vitrine de coleção no lobby (estátuas dos heróis que você tem). Aceite: world_boot conta as estátuas do perfil.
 - [ ] M12.5 Presente entre amigos / convite com recompensa (servidor decide, sem comprar). Aceite: player_service + client_boot.
 - [ ] M12.6 Evento de tempo limitado ligado à temporada (mapa em destaque com bônus). Aceite: Rules + testes.
