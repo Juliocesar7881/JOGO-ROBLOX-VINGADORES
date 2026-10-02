@@ -1,4 +1,40 @@
-# Relatório da manhã — 01/10/2026 (atualizado 17:30)
+# Relatório da manhã — atualizado 02/10/2026 (madrugada)
+
+## O que mudou depois do seu feedback (lobby, tutorial, heróis)
+
+- **Brilho**: bloom, exposição e neon do lobby e dos mapas abaixados; o neon claro
+  (que virava branco) agora puxa para cores mais profundas.
+- **Física**: jato, caixas, prédios da agência, troncos, cristais, o **núcleo** e
+  a **base de cada jogador** agora são sólidos; o comandante nasce ao lado da
+  própria base (antes cairia dentro dela no Complexo Gama).
+- **Acabamento**: os três sets da agência viraram complexos fechados (barreiras com
+  listras, postes, cones, bandeira) e **perderam os títulos** (são só cenário).
+- **Idioma**: segue o idioma do Roblox (pt-* → português, o resto → inglês);
+  escolher em Opções vale para sempre; mensagens do servidor são bilíngues.
+- **Tutorial sem Nico**: seta grande + trilha + seta na borda levam ao portal de
+  TREINO; dentro do treino, cartão de 5 passos com ponteiro no botão certo;
+  depois, setas para o primeiro baú e para o portal da campanha.
+- **Heróis**: 36 nomes descritivos que lembram os originais e **6 heróis novos** com
+  kit próprio (Capitão Men, Guardião Verde, Titã Solar, Velocista Rubro, Amazona
+  Dourada, Rei dos Mares) com mecânicas novas (empurrão, imunidade a paralisia,
+  voo, aura) e poses/efeitos próprios. Total: 42 heróis.
+- **Retenção**: mapa do dia (+25% Ouro e XP), bônus de grupo, temporada nomeada.
+- **Auditoria crítica** honesta em `AUDIT.md` (02/10) e fila nova M12.
+
+## Decisões e riscos que são seus
+
+1. **IP dos visuais (importante):** os heróis novos e os renomeados são homenagens
+   próximas a personagens conhecidos (cores, símbolos, poses). Nenhum nome de
+   terceiros aparece, mas o **risco de denúncia/moderação do Roblox ao publicar é
+   real**. Recomendo, antes de abrir ao público, trocar os visuais por designs
+   originais mantendo os kits. Você decide.
+2. Creator Hub: aceitar os termos; renomear os 15 produtos de herói já criados para
+   os nomes novos (`ROBUX_CATALOG.md`); criar 25 produtos novos + passe de
+   temporada + preço do VIP. Chrome precisa estar conectado.
+3. Áudio próprio: sem upload não há áudio de mercado.
+
+---
+
 
 Tudo está no GitHub `main` (55 commits desde 23:56) e sincronizado no lugar da
 equipe (place 97132875544830). **Nada foi publicado ao vivo.** A suíte

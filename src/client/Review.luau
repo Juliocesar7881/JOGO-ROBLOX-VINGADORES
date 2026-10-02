@@ -198,7 +198,7 @@ function Review.start(api)
 				p.loadout = { Catalog.HeroOrder[1], Catalog.HeroOrder[2] }
 				p.heroes = { [Catalog.HeroOrder[1]] = { level = 1, xp = 0 }, [Catalog.HeroOrder[2]] = { level = 1, xp = 0 } }
 			end
-			local snapshot = { phase = "Lobby", role = "Standalone", profile = p, players = actors() }
+			local snapshot = { phase = "Lobby", role = "Standalone", profile = p, players = actors(), featured = { mapId = Rules.FeaturedMap(math.floor(os.time() / 86400)), bonus = Catalog.DailyFeature.bonus, endsAt = os.time() + 7200 } }
 			if stage == "boarding" then
 				snapshot.elevator = { portalId = "normal", modeId = "normal", mapId = firstBoss(), max = 4, remaining = 99, host = true, maps = 5, riders = actors() }
 			end
