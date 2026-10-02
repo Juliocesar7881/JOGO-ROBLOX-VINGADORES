@@ -92,5 +92,5 @@ Os 36 heróis foram renomeados e há 6 heróis novos. O jogo mostra os nomes do
 de compra do Roblox: renomeie os 15 produtos já criados para o nome novo de
 `docs/HEROES.md` (ex.: "Pocket Titan" → "Tiny Man"). Produtos novos a criar
 (IDs 0 até lá; a loja mostra "Indisponível"): Capitão Men (449), Amazona
-Dourada (449), Rei dos Mares (449), Sentinela Esmeralda (999), Velocista Rubro
+Dourada (449), Rei dos Mares (449), Guardião Verde (999), Velocista Rubro
 (999), Titã Solar (1.999).

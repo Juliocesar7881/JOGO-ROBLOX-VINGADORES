@@ -128,7 +128,7 @@ Catalog.Heroes = {
 	},
 	hawkeye = {
 		id = "hawkeye", rarity = "common", starter = true, ability = "deadeye",
-		name = text("Arqueiro Olho de Águia", "Eagle-Eye Archer"), role = text("Longo alcance e alvos prioritários", "Long range, priority targets"), cost = 180,
+		name = text("Olho de Águia", "Eagle Eye"), role = text("Longo alcance e alvos prioritários", "Long range, priority targets"), cost = 180,
 		description = text("Arqueiro de longo alcance, excelente contra alvos prioritários.", "A long-range archer, excellent against priority targets."),
 		damage = 27, range = 33, interval = 1.6, color = { 70, 160, 96 }, attack = "single", damageType = "physical", air = true,
 		branches = {
@@ -290,7 +290,7 @@ Catalog.Heroes = {
 	},
 	groot = {
 		id = "groot", rarity = "epic", ability = "rootWall",
-		name = text("Gigante da Floresta", "Forest Giant"), role = text("Controle e dano em área terrestre", "Ground control and area damage"), cost = 420,
+		name = text("Gigante Verde", "Forest Giant"), role = text("Controle e dano em área terrestre", "Ground control and area damage"), cost = 420,
 		description = text("Raízes prendem grupos inteiros no chão.", "Roots pin entire groups to the ground."),
 		damage = 19, range = 23, interval = 1.5, color = { 130, 100, 62 }, attack = "splash", damageType = "physical", air = false, splash = 10, slow = 0.3,
 		branches = {
@@ -311,7 +311,7 @@ Catalog.Heroes = {
 	},
 	wanda = {
 		id = "wanda", rarity = "legendary", ability = "hexBind",
-		name = text("Feiticeira do Caos", "Chaos Witch"), role = text("Dano mágico persistente em área", "Persistent magic area damage"), cost = 650,
+		name = text("Bruxa do Caos", "Chaos Witch"), role = text("Dano mágico persistente em área", "Persistent magic area damage"), cost = 650,
 		description = text("Magia do caos deixa uma zona de dano persistente.", "Chaos magic leaves a persistent damage zone."),
 		damage = 34, range = 26, interval = 1.8, color = { 210, 70, 160 }, attack = "dot", damageType = "magic", air = true, splash = 8, dotDuration = 3,
 		branches = {
@@ -331,7 +331,7 @@ Catalog.Heroes = {
 	},
 	ghostrider = {
 		id = "ghostrider", rarity = "legendary", ability = "hellfire",
-		name = text("Cavaleiro Flamejante", "Flaming Rider"), role = text("Fogo fantasma persistente", "Persistent spirit fire"), cost = 620,
+		name = text("Motoqueiro Chama", "Flaming Rider"), role = text("Fogo fantasma persistente", "Persistent spirit fire"), cost = 620,
 		description = text("Chamas infernais queimam tudo que atravessa a zona.", "Spirit Fire burns everything that crosses the zone."),
 		damage = 28, range = 26, interval = 1.4, color = { 255, 128, 44 }, attack = "dot", damageType = "magic", air = false, splash = 8, dotDuration = 4,
 		branches = {
@@ -414,7 +414,7 @@ Catalog.Enemies = {
 	abomination = { id = "abomination", name = text("Megabruto infectado", "Infected Megabrute"), hp = 2314, speed = 6.9, leak = 40, reward = 110, armor = 0.2, air = false, stealth = false, boss = true, color = { 174, 167, 86 }, hint = text("Impactos anunciados interrompem torres próximas.", "Telegraphed impacts interrupt nearby towers.") },
 	redskull = { id = "redskull", name = text("Comandante Sombra", "Shadow Commander"), hp = 2114, speed = 8.0, leak = 40, reward = 110, armor = 0.18, air = false, stealth = false, boss = true, color = { 226, 71, 63 }, hint = text("Soldados próximos recebem o bônus de comando.", "Nearby soldiers receive a command boost.") },
 	killmonger = { id = "killmonger", name = text("Rei Saqueador infectado", "Infected Raider King"), hp = 2466, speed = 8.4, leak = 45, reward = 120, armor = 0.3, air = false, stealth = false, boss = true, color = { 212, 166, 71 }, hint = text("A descarga de cristal é anunciada antes do impacto.", "The crystal discharge is telegraphed before impact.") },
-	loki = { id = "loki", name = text("Mestre das Ilusões", "Illusion Master"), hp = 2640, speed = 8.2, leak = 48, reward = 125, armor = 0.22, air = false, stealth = false, boss = true, color = { 82, 196, 104 }, hint = text("Ilusões temporárias confundem as torres; elas somem sozinhas e não dão recompensa.", "Temporary illusions distract your towers; they fade on their own and give no reward.") },
+	loki = { id = "loki", name = text("Mestre das Ilusões", "Illusion Master"), hp = 2640, speed = 8.2, leak = 48, reward = 125, armor = 0.22, air = false, stealth = false, boss = true, color = { 82, 196, 104 }, hint = text("Ilusões confundem as torres, mas somem sozinhas.", "Illusions confuse towers but fade on their own.") },
 	-- Loki's decoys: never in a wave pool, never worth anything, gone in seconds.
 	illusion = { id = "illusion", name = text("Ilusão do Mestre", "Master's Illusion"), hp = 70, speed = 9.5, leak = 0, reward = 0, armor = 0, air = false, stealth = false, boss = false, color = { 120, 230, 140 }, illusion = true },
 	doom = { id = "doom", name = text("Tirano de Ferro", "Iron Tyrant"), hp = 2818, speed = 7.5, leak = 50, reward = 130, armor = 0.28, air = false, stealth = false, boss = true, color = { 87, 220, 126 }, hint = text("Armadura, magia e portais mudam a cada fase.", "Armor, magic and portals change with each phase.") },
@@ -703,7 +703,7 @@ local reinforcements = {
 	{"nightcrawler","Teleportador Azul","Blue Teleporter","rare",{245,205,80},290,24,22,0.8,"single","magic",false,"tail","pull",22,65},
 	{"beast","Acrobata Peludo","Furry Acrobat","rare",{226,170,80},270,15,18,0.95,"splash","physical",false,"fur","stun",0,65},
 	{"psylocke","Ninja Psíquica","Psychic Ninja","epic",{200,40,64},400,32,23,0.7,"single","magic",false,"blade","weaken",0.4,65},
-	{"deadpool","Mercenário Tagarela","Chatty Mercenary","epic",{240,90,170},380,24,28,0.6,"single","physical",true,"swords","rally",0.2,65},
+	{"deadpool","Mercenário Falante","Chatty Mercenary","epic",{240,90,170},380,24,28,0.6,"single","physical",true,"swords","rally",0.2,65},
 	{"moonknight","Cavaleiro Lunar","Lunar Knight","rare",{255,200,90},310,34,25,1.05,"single","physical",true,"moon","reveal",0.18,65},
 	{"nova","Guardião Cósmico","Cosmic Guardian","legendary",{90,200,240},590,48,32,1.05,"beam","tech",true,"nova","blast",0.38,75},
 }
@@ -806,7 +806,7 @@ local league = {
 	},
 	emerald = {
 		id = "emerald", rarity = "legendary", ability = "emeraldConstruct",
-		name = text("Sentinela Esmeralda", "Emerald Sentinel"), role = text("Construções de energia e controle", "Energy constructs and control"), cost = 600,
+		name = text("Guardião Verde", "Emerald Guard"), role = text("Construções de energia e controle", "Energy constructs and control"), cost = 600,
 		description = text("O anel cria punhos e correntes de energia que esmagam e seguram grupos inteiros.", "The ring forges fists and chains of energy that crush and hold whole groups."),
 		damage = 30, range = 28, interval = 1.5, color = { 48, 220, 110 }, attack = "splash", damageType = "magic", air = true, splash = 8, slow = 0.25,
 		branches = {
@@ -886,7 +886,7 @@ Catalog.Bases={}
 local bases={
 	{"outpost","Posto da Resistência","Resistance outpost","common","balanced",{139,213,151},20,0,0,0,0},
 	{"workshop","Oficina de Ferro","Iron workshop","common","farm",{255,193,83},45,4,0,0,0},
-	{"garden","Horta de suprimentos","Supply garden","common","farm",{146,213,106},40,8,0,0,0},
+	{"garden","Horta de Suprimentos","Supply garden","common","farm",{146,213,106},40,8,0,0,0},
 	{"bunker","Bunker da Agência","Agency bunker","rare","wall",{108,188,228},20,18,0,120,0},
 	{"arsenal","Arsenal de Ferro","Iron arsenal","rare","turret",{228,116,82},20,8,26,0,0},
 	{"barracks","Quartel da Selva","Jungle barracks","epic","soldiers",{190,139,241},25,12,0,0,85},

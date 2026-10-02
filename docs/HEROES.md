@@ -15,7 +15,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Armadura de Ferro** — Dano tecnológico versátil | 250 | único (ar) | 20 | 27 | 0.90s | Rajada de Plasma |
-| **Arqueiro Olho de Águia** — Longo alcance e alvos prioritários | 180 | único (ar) | 27 | 33 | 1.60s | Tiro Mortal |
+| **Olho de Águia** — Longo alcance e alvos prioritários | 180 | único (ar) | 27 | 33 | 1.60s | Tiro Mortal |
 | **Homem-Asa** — Ataque rápido contra voadores | 220 | único (ar) | 16 | 30 | 0.68s | Comando Aéreo |
 | **Soldado de Prata** — Perfuração de armadura | 300 | único | 28 | 28 | 1.00s | Emboscada |
 
@@ -46,11 +46,11 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Androide Prisma** — Feixe que atravessa alinhados | 480 | feixe (ar) | 44 | 30 | 1.30s | Fase Densa |
 | **Soldado Blindado** — Artilharia pesada em área | 520 | área (ar) | 27 | 28 | 1.40s | Bombardeio |
 | **Pirata Estelar** — Rajadas rápidas de blasters | 430 | único (ar) | 16 | 25 | 0.32s | Batida Cósmica |
-| **Gigante da Floresta** — Controle e dano em área terrestre | 420 | área | 19 | 23 | 1.50s | Muralha de Raízes |
+| **Gigante Verde** — Controle e dano em área terrestre | 420 | área | 19 | 23 | 1.50s | Muralha de Raízes |
 | **Garra de Aço** — Garras contra elites | 420 | único | 36 | 16 | 0.65s | Fúria das garras |
 | **Mestre das Cartas** — Cartas explosivas contra grupos | 390 | área (ar) | 35 | 29 | 1.15s | Ás explosivo |
 | **Ninja Psíquica** — Lâminas psíquicas perfurantes | 400 | único | 32 | 23 | 0.70s | Corte psíquico |
-| **Mercenário Tagarela** — Rajadas rápidas e apoio ofensivo | 380 | único (ar) | 24 | 28 | 0.60s | Trabalho em equipe |
+| **Mercenário Falante** — Rajadas rápidas e apoio ofensivo | 380 | único (ar) | 24 | 28 | 0.60s | Trabalho em equipe |
 | **Capitão Men** — Socos que empurram, imbatível | 400 | único | 24 | 17 | 0.60s | Indestrutível |
 | **Amazona Dourada** — Laço da verdade e espada | 420 | corrente | 18 | 24 | 0.90s | Laço da Verdade |
 | **Rei dos Mares** — Marés que atrasam e empurram | 430 | área | 19 | 25 | 1.40s | Maremoto |
@@ -60,12 +60,12 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Deus do Trovão** — Relâmpagos encadeados e defesa aérea | 550 | corrente (ar) | 32 | 26 | 1.50s | Chamado do Trovão ⚡ (ultimate) |
-| **Feiticeira do Caos** — Dano mágico persistente em área | 650 | queima contínua (ar) | 34 | 26 | 1.80s | Feitiço Rubi ⚡ (ultimate) |
+| **Bruxa do Caos** — Dano mágico persistente em área | 650 | queima contínua (ar) | 34 | 26 | 1.80s | Feitiço Rubi ⚡ (ultimate) |
 | **Doutor Místico** — Controle espacial e suporte mágico | 560 | área (ar) | 36 | 28 | 1.50s | Dilatação do Tempo ⚡ (ultimate) |
-| **Cavaleiro Flamejante** — Fogo fantasma persistente | 620 | queima contínua | 28 | 26 | 1.40s | Fogo Fantasma ⚡ (ultimate) |
+| **Motoqueiro Chama** — Fogo fantasma persistente | 620 | queima contínua | 28 | 26 | 1.40s | Fogo Fantasma ⚡ (ultimate) |
 | **Deusa do Clima** — Relâmpagos e defesa aérea | 600 | corrente (ar) | 40 | 34 | 1.40s | Olho da tempestade ⚡ (ultimate) |
 | **Guardião Cósmico** — Feixe cósmico antiaéreo | 590 | feixe (ar) | 48 | 32 | 1.05s | Supernova ⚡ (ultimate) |
-| **Sentinela Esmeralda** — Construções de energia e controle | 600 | área (ar) | 30 | 28 | 1.50s | Construção Esmeralda ⚡ (ultimate) |
+| **Guardião Verde** — Construções de energia e controle | 600 | área (ar) | 30 | 28 | 1.50s | Construção Esmeralda ⚡ (ultimate) |
 | **Velocista Rubro** — Golpes ultrarrápidos | 560 | corrente (ar) | 11 | 24 | 0.18s | Supervelocidade ⚡ (ultimate) |
 
 ## Mítico — 1999 Robux (compra direta)
@@ -87,7 +87,7 @@ maestria exigida crescendo por rank e multiplicados pela raridade do herói
 | Habilidade | Herói | Recarga | Descrição (rank 1) |
 | --- | --- | --- | --- |
 | Rajada de Plasma | Armadura de Ferro | 55s | Rajada em área: 35% da vida máxima de cada inimigo em 22 studs. |
-| Tiro Mortal | Arqueiro Olho de Águia | 50s | Elimina inimigos comuns com menos de 22% de vida em 14 studs. Chefes sofrem dano menor. |
+| Tiro Mortal | Olho de Águia | 50s | Elimina inimigos comuns com menos de 22% de vida em 14 studs. Chefes sofrem dano menor. |
 | Comando Aéreo | Homem-Asa | 60s | Todas as suas torres atacam 25% mais rápido por 8 s. |
 | Emboscada | Soldado de Prata | 55s | Paralisa inimigos por 2.2 s em 16 studs. Chefes resistem. |
 | Rede Gigante | Aranha Urbana | 60s | Desacelera inimigos em 50% por 5 s em 28 studs. |
@@ -103,11 +103,11 @@ maestria exigida crescendo por rank e multiplicados pela raridade do herói
 | Fase Densa | Androide Prisma | 55s | Reduz a armadura dos inimigos em 45% por 10 s em 40 studs e os marca (+15% de dano). |
 | Bombardeio | Soldado Blindado | 65s | Bombardeio: 28% da vida máxima de cada inimigo em 42 studs. |
 | Batida Cósmica | Pirata Estelar | 65s | Todas as suas torres causam 25% mais dano por 9 s. |
-| Muralha de Raízes | Gigante da Floresta | 60s | Prende inimigos por 3 s em 22 studs e os desacelera em 50% depois. Chefes resistem. |
+| Muralha de Raízes | Gigante Verde | 60s | Prende inimigos por 3 s em 22 studs e os desacelera em 50% depois. Chefes resistem. |
 | Chamado do Trovão ⚡ | Deus do Trovão | 75s | ULTIMATE: relâmpagos atingem 10 inimigos (30% da vida máxima de cada) e os paralisam por 1.5 s. |
-| Feitiço Rubi ⚡ | Feiticeira do Caos | 80s | ULTIMATE: a realidade se dobra. Paralisa por 3.5 s em 34 studs, derrete 40% da armadura e causa 20% da vida máxima. Chefes resistem. |
+| Feitiço Rubi ⚡ | Bruxa do Caos | 80s | ULTIMATE: a realidade se dobra. Paralisa por 3.5 s em 34 studs, derrete 40% da armadura e causa 20% da vida máxima. Chefes resistem. |
 | Dilatação do Tempo ⚡ | Doutor Místico | 85s | ULTIMATE: o tempo quase para em 70 studs. Desacelera 85% por 9 s e empurra os inimigos 22 studs para trás. |
-| Fogo Fantasma ⚡ | Cavaleiro Flamejante | 80s | ULTIMATE: o inferno engole a zona. Queima 60% da vida máxima em 7 s, atordoa por 1 s e desacelera em 40%. |
+| Fogo Fantasma ⚡ | Motoqueiro Chama | 80s | ULTIMATE: o inferno engole a zona. Queima 60% da vida máxima em 7 s, atordoa por 1 s e desacelera em 40%. |
 | Nova Fotônica ⚡ | Capitã Estelar | 90s | ULTIMATE: uma nova varre quase o mapa todo. 60% da vida máxima de cada inimigo em 60 studs, paralisa por 2.5 s e marca os alvos (+25% de dano). Chefes sofrem bem menos. |
 | Julgamento Cósmico ⚡ | Surfista Cósmico | 90s | ULTIMATE: destrói o inimigo mais forte (95% da vida máxima), fulmina outros 6 em todo o mapa (35% cada) e derrete 40% da armadura de todos por 8 s. Chefes sofrem bem menos. |
 | Fúria das garras | Garra de Aço | 55s | Finaliza alvos abaixo de 28% de vida em 30 studs. Chefes resistem. |
@@ -119,11 +119,11 @@ maestria exigida crescendo por rank e multiplicados pela raridade do herói
 | Puf! | Teleportador Azul | 65s | Recua inimigos 22 studs. Não move chefes. |
 | Salto selvagem | Acrobata Peludo | 65s | Paralisa por 2 s em 30 studs. Chefes resistem. |
 | Corte psíquico | Ninja Psíquica | 65s | Remove 40% de armadura por 6 s. |
-| Trabalho em equipe | Mercenário Tagarela | 65s | Suas torres ganham 20% de dano por 6 s. |
+| Trabalho em equipe | Mercenário Falante | 65s | Suas torres ganham 20% de dano por 6 s. |
 | Luz da Lua | Cavaleiro Lunar | 65s | Revela e marca: +18% de dano por 6 s. |
 | Supernova ⚡ | Guardião Cósmico | 75s | Explosão: 38% da vida em 30 studs; revela e marca (+12% dano). Chefes resistem. |
 | Indestrutível | Capitão Men | 80s | Um escudo absorve 30 de dano ao núcleo por 12 s e o núcleo recupera 8 de vida. |
-| Construção Esmeralda ⚡ | Sentinela Esmeralda | 80s | ULTIMATE: uma gaiola de energia paralisa por 3 s em 36 studs, puxa os inimigos 10 studs para trás e derrete 30% da armadura. Chefes resistem. |
+| Construção Esmeralda ⚡ | Guardião Verde | 80s | ULTIMATE: uma gaiola de energia paralisa por 3 s em 36 studs, puxa os inimigos 10 studs para trás e derrete 30% da armadura. Chefes resistem. |
 | Fúria Solar ⚡ | Titã Solar | 85s | ULTIMATE: uma explosão de calor varre 55 studs: 50% da vida máxima de cada inimigo, atordoa por 2 s e queima 30% em 5 s. Chefes sofrem bem menos. |
 | Supervelocidade ⚡ | Velocista Rubro | 80s | ULTIMATE: o mundo desacelera para a sua equipe. Todas as suas torres atacam 40% mais rápido por 10 s e todos os inimigos andam 50% mais devagar por 6 s. |
 | Laço da Verdade | Amazona Dourada | 60s | Revela camuflados e faz alvos sofrerem +30% de dano por 10 s em 40 studs, e derrete 30% da armadura. |
