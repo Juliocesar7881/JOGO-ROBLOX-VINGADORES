@@ -102,7 +102,6 @@ do
 	local passable, checkedSolid = {}, 0
 	for _, piece in ipairs(outpost and outpost:GetDescendants() or {}) do
 		if piece:IsA("BasePart") and piece.Material ~= Enum.Material.Neon and piece.Material ~= Enum.Material.ForceField and (piece.Transparency or 0) < 0.45
-			and not string.find(piece.Name, "Helicarrier", 1, true) and not string.find(piece.Name, "Rotor", 1, true)
 			and math.min(piece.Size.X, piece.Size.Y, piece.Size.Z) >= 0.35 and piece.Position.Y < 24 then
 			checkedSolid += 1
 			if not piece.CanCollide then table.insert(passable, piece.Name) end

@@ -2479,7 +2479,7 @@ function World.SolidifyProps(root)
 		if item:IsA("BasePart") and not item.CanCollide then
 			local inOutpost = within(item, "ShieldOutpost")
 			if (inOutpost or SOLID_NAMES[item.Name]) and item.Material ~= Enum.Material.Neon and item.Material ~= Enum.Material.ForceField
-				and (item.Transparency or 0) < 0.45 and not string.find(item.Name, "Helicarrier", 1, true) and not string.find(item.Name, "Rotor", 1, true) then
+				and (item.Transparency or 0) < 0.45 then
 				local size = item.Size
 				-- Thin plates are markings and emblems; high pieces are out of reach.
 				if size and math.min(size.X, size.Y, size.Z) >= 0.35 and item.Position and item.Position.Y < 24 then
