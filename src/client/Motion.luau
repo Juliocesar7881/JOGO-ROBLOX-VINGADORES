@@ -248,4 +248,75 @@ function Motion.Hero(joints, pose)
 	set(joints, "Root", CFrame.new(0, 0.03 * breathe - brace * 0.5 + lift, 0))
 end
 
+-- Rigs a live portrait (UI.heroPortraitLive) for Perform: its joint tree, where
+-- the root stands and the hero's attack style. False when the figure has no joints.
+function Motion.Prepare(live)
+	local ok, rig = pcall(Motion.Rig, live.model)
+	if not (ok and rig and rig.joints) then return false end
+	live.rig, live.baseRoot = rig, rig.root.CFrame
+	live.style = live.figure and live.figure:GetAttribute("PoseStyle") or "shoot"
+	return true
+end
+
+-- A figure shown off in a preview (the revealed hero, the hero page). `live` is
+-- what UI.heroPortraitLive returned plus rig/baseRoot/style; `since` the seconds
+-- on its own clock; mode:
+--   "rest"    the first frame: standing, no breath
+--   "reveal"  a leap out of the chest with a full turn and both arms up, a landing,
+--             a cheer, then the signature move on a loop
+--   "idle"    breathing, with the signature move every few seconds, and at once
+--             when `live.tapAt` is set to a recent `since` (a tap on the portrait)
+-- The camera drifts a little to each side of the front view.
+function Motion.Perform(live, since, mode)
+	local rig = live.rig
+	if not rig then return end
+	local clamp = math.clamp
+	local pose = { style = live.style, t = since, breathe = math.sin(since * 2.2) }
+	local yaw, lift, squash = 0, 0, 0
+	if mode == "rest" or since < 0 then
+		pose.breathe = 0
+	elseif mode == "idle" then
+		local sinceTap = live.tapAt and since - live.tapAt or math.huge
+		local cycle = (since + 0.6) % 3.6
+		if sinceTap < 0.7 then
+			pose.fire, pose.fireProgress = math.sin(math.pi * sinceTap / 0.7), sinceTap / 0.7
+		elseif cycle > 2.9 then
+			pose.fire, pose.fireProgress = math.sin(math.pi * (cycle - 2.9) / 0.7), (cycle - 2.9) / 0.7
+		end
+		pose.count = math.floor((since + 0.6) / 3.6) + (live.taps or 0)
+	elseif since < 0.9 then
+		-- The leap: up and down on an arc, one full turn, arms flung up.
+		local u = since / 0.9
+		lift = 1.8 * math.sin(math.pi * u)
+		yaw = 2 * math.pi * (1 - (1 - u) ^ 3)
+		pose.hop = math.sin(math.pi * clamp(u * 1.15, 0, 1))
+	elseif since < 1.15 then
+		-- The landing: a short crouch.
+		local u = (since - 0.9) / 0.25
+		squash = math.sin(math.pi * u)
+		pose.cast = 0.35 * squash
+	elseif since < 2.7 then
+		-- The cheer: both arms up, a little bounce.
+		local u = clamp((since - 1.15) / 0.3, 0, 1)
+		pose.cast = u
+		lift = 0.18 * math.abs(math.sin((since - 1.15) * 5)) * u
+	else
+		-- Signature move on a loop, easing back to a breath in between.
+		local cycle = (since - 2.7) % 2.4
+		pose.cast = clamp(1 - (since - 2.7) / 0.5, 0, 1)
+		if cycle < 0.7 then
+			pose.fire = math.sin(math.pi * cycle / 0.7)
+			pose.fireProgress = cycle / 0.7
+		end
+		pose.count = math.floor((since - 2.7) / 2.4)
+	end
+	Motion.Hero(rig.joints, pose)
+	if squash > 0 and rig.joints.Root then rig.joints.Root.Transform = CFrame.new(0, -0.45 * squash, 0) * rig.joints.Root.Transform end
+	rig.root.CFrame = live.baseRoot * CFrame.new(0, lift, 0) * CFrame.Angles(0, yaw, 0)
+	Motion.Solve(rig)
+	local swing = mode == "rest" and 0 or (mode == "idle" and 0.3 or 0.45) * math.sin(since * 0.8)
+	local offset = CFrame.Angles(0, swing, 0) * live.offset
+	live.camera.CFrame = CFrame.lookAt(live.focus + offset, live.focus)
+end
+
 return Motion

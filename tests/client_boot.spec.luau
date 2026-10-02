@@ -1485,6 +1485,49 @@ local function session(screen)
 		push(lobbySnapshot(veteranProfile()))
 	end)
 
+	-- The hero page is not a photograph either: the hero breathes and, every few
+	-- seconds and whenever it is tapped, shows its move.
+	step("the hero page shows a living hero", function()
+		local function findRoot(node)
+			for _, child in ipairs(node:GetChildren()) do
+				if child.Name == "HumanoidRootPart" then return child end
+				local deeper = findRoot(child)
+				if deeper then return deeper end
+			end
+		end
+		local function armY(live)
+			local hand
+			for _, item in ipairs(live:GetDescendants()) do if item.Name == "RightHand" then hand = item end end
+			return hand and hand.CFrame.Position.Y
+		end
+		push(lobbySnapshot(veteranProfile()))
+		fx({ kind = "OpenPanel", panel = "hero", heroId = "ironman", hud = true })
+		local live = named(gui, "HeroLive")
+		check(live ~= nil and findRoot(live) ~= nil, tag .. ": the hero page shows the jointed figure")
+		if live then
+			local low, high = math.huge, -math.huge
+			for _ = 1, 150 do
+				frames(1 / 30, 1)
+				local y = armY(live)
+				if y then low, high = math.min(low, y), math.max(high, y) end
+			end
+			check(high - low > 0.3, tag .. ": the hero's arms move on their own over time, range " .. tostring(high - low))
+			local tap = named(gui, "HeroLiveTap")
+			check(tap ~= nil, tag .. ": the portrait can be tapped")
+			if tap then tap.Activated:Fire() flush() end
+			check(live ~= nil and named(gui, "HeroLive") ~= nil, tag .. ": a tap keeps the hero on stage")
+		end
+		clickNamed("CloseContext")
+		-- Reduced effects keeps the still picture.
+		local calm = veteranProfile()
+		calm.settings.lowFX = true
+		push(lobbySnapshot(calm))
+		fx({ kind = "OpenPanel", panel = "hero", heroId = "ironman", hud = true })
+		check(named(gui, "HeroLive") == nil, tag .. ": with reduced effects the hero page keeps a still portrait")
+		clickNamed("CloseContext")
+		push(lobbySnapshot(veteranProfile()))
+	end)
+
 	step("training: the arrows teach one lesson at a time", function()
 		local trainee = veteranProfile()
 		trainee.loadout = { "ironman", "hawkeye" }

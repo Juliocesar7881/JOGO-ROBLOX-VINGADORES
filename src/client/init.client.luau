@@ -18,6 +18,7 @@ local Effects = require(script:WaitForChild("Effects"))
 local Audio = require(script:WaitForChild("Audio"))
 local Nameplates = require(script:WaitForChild("Nameplates"))
 local Celebrate = require(script:WaitForChild("Celebrate"))
+local Motion = require(script:WaitForChild("Motion"))
 local RoutePreview = require(script:WaitForChild("RoutePreview"))
 local BuildOverlay = require(script:WaitForChild("BuildOverlay"))
 local Panels = require(script:WaitForChild("Panels"))
@@ -294,6 +295,23 @@ end
 local function livePortrait(parent, id, properties)
 	return UI.heroPortraitLive(parent, id, heroSource(id), colorFor(id), properties)
 end
+-- Heroes on show (the hero page): each idles on its own clock until its frame is gone.
+local showcases, showcaseFrame = {}, 0
+local function registerShowcase(live)
+	live.born = os.clock()
+	table.insert(showcases, live)
+end
+local function stepShowcases()
+	showcaseFrame += 1
+	for index = #showcases, 1, -1 do
+		local live = showcases[index]
+		if not live.frame.Parent then
+			table.remove(showcases, index)
+		elseif (showcaseFrame + index) % 2 == 0 then
+			pcall(Motion.Perform, live, os.clock() - live.born, "idle")
+		end
+	end
+end
 
 -- Chest reveals, banners, confetti and counter pops. Purely presentation:
 -- every number it shows was committed by the server first.
@@ -355,6 +373,8 @@ local panels = Panels.new({
 	heading = heading,
 	heroName = heroName,
 	heroPortrait = heroPortrait,
+	livePortrait = livePortrait,
+	registerShowcase = registerShowcase,
 	kit = kit,
 	levelProgress = levelProgress,
 	mapName = mapName,
@@ -1608,6 +1628,7 @@ kit.inspect = require(script:WaitForChild("Inspect")).new({
 RunService.RenderStepped:Connect(function(dt)
 	kit.autoQuality:Step(dt)
 	kit.inspect:Step(dt or 1 / 60)
+	stepShowcases()
 	kit.movement:Step(dt or 1 / 60)
 	kit.tutorial:Step(dt or 1 / 60)
 	if os.clock() >= kit.afkBannerAt then

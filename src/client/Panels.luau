@@ -5,6 +5,8 @@
 -- change, like the state snapshot, through accessor functions) and keeps the
 -- state it shares with them (selected chest, hero tab, inventory view) in
 -- `kit`. Purely presentation: every action is a request the server decides.
+local Motion = require(script.Parent:WaitForChild("Motion"))
+
 local Panels = {}
 
 function Panels.new(ctx)
@@ -56,7 +58,23 @@ function Panels.new(ctx)
 		local short = UI.sizeClass(screenSize().X, screenSize().Y).short
 		local showcase = UI.row(body, short and 132 or 210)
 		UI.portraitStage(showcase,tint,{Name="HeroStage",Size=UDim2.new(0.42,0,1,0)})
-		heroPortrait(showcase,id,{Position=UDim2.fromOffset(4,4),Size=UDim2.new(0.42,-8,1,-8)})
+		-- The hero is alive on its stage: it breathes, shows its move every few
+		-- seconds and again whenever the portrait is tapped. Reduced effects keeps
+		-- the still picture.
+		local portraitProperties={Position=UDim2.fromOffset(4,4),Size=UDim2.new(0.42,-8,1,-8)}
+		local settings=profile().settings or {}
+		local live=ctx.livePortrait and settings.lowFX~=true and ctx.livePortrait(showcase,id,portraitProperties)
+		if live and Motion.Prepare(live) then
+			live.frame.Name="HeroLive"
+			ctx.registerShowcase(live)
+			UI.button(showcase,"",function()
+				live.taps=(live.taps or 0)+1
+				live.tapAt=os.clock()-(live.born or os.clock())
+			end,{Name="HeroLiveTap",Position=portraitProperties.Position,Size=portraitProperties.Size,BackgroundTransparency=1,ZIndex=20})
+		else
+			if live then live.frame:Destroy() end
+			heroPortrait(showcase,id,portraitProperties)
+		end
 		local info=UI.frame(showcase,{Position=UDim2.new(0.42,12,0,0),Size=UDim2.new(0.58,-12,1,0),BackgroundTransparency=1})
 		UI.chip(info,Catalog.Upper(L(rarity.name)),tint,{Size=UDim2.fromOffset(110,24),TextSize=13})
 		UI.label(info,((owned and owned.shiny) and "◆ " or "")..L(def.name),{Name="HeroTitle",Position=UDim2.fromOffset(0,28),Size=UDim2.new(1,0,0,short and 36 or 66),TextSize=short and 24 or 28,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
