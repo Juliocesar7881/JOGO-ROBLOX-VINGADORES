@@ -1683,8 +1683,8 @@ function Kit.fence(parent, points, height, glow, closed)
 		if length > 0.5 then
 			local look = CFrame.lookAt((a + b) / 2, b)
 			Kit.block(parent, "FenceCurb", Vector3.new(1.3, 1, length), look * CFrame.new(0, 0.5, 0), HQ.steel, Enum.Material.Metal, true)
-			local glass = Kit.block(parent, "FenceGlass", Vector3.new(0.35, height - 1.6, math.max(0.4, length - 1.2)), look * CFrame.new(0, 1 + (height - 1.6) / 2, 0), glow, Enum.Material.Neon)
-			glass.Transparency = 0.3
+			local glass = Kit.block(parent, "FenceGlass", Vector3.new(0.35, height - 1.6, math.max(0.4, length - 1.2)), look * CFrame.new(0, 1 + (height - 1.6) / 2, 0), glow:Lerp(HQ.navy, 0.35), Enum.Material.Neon)
+			glass.Transparency = 0.55
 			Kit.block(parent, "FenceRail", Vector3.new(0.9, 0.5, length + 0.4), look * CFrame.new(0, height - 0.15, 0), HQ.navy, Enum.Material.Metal, true)
 		end
 	end
@@ -3377,6 +3377,31 @@ function World:BuildShieldSites(hq)
 	-- a site does.
 	local function standing(frame, x, z, turn) return frame * CFrame.new(x, 0, z) * CFrame.Angles(0, math.pi + (turn or 0), 0) end
 
+	-- Every set piece is fenced in the same way so it reads as a finished
+	-- compound: low concrete barriers with hazard stripes along the back and the
+	-- two sides (the front stays open to the plaza), a lamp at each corner and
+	-- traffic cones at the gap. Purely scenery.
+	local function compound(S, halfX, backZ, frontZ)
+		local function barrier(x, z, yaw)
+			local frame = S * CFrame.new(x, 1.1, z) * CFrame.Angles(0, yaw, 0)
+			p("PerimeterBarrier", V(5, 2.2, 1.4), frame, pale, Enum.Material.Concrete)
+			p("BarrierStripe", V(5.04, 0.5, 1.44), frame * CFrame.new(0, 0.5, 0), yellow, Enum.Material.SmoothPlastic)
+		end
+		for x = -halfX + 2.5, halfX - 2.5, 5 do barrier(x, backZ, 0) end
+		for z = backZ + 5, frontZ - 8, 5 do
+			barrier(-halfX, z, math.pi / 2)
+			barrier(halfX, z, math.pi / 2)
+		end
+		for _, corner in ipairs({ { -halfX, backZ }, { halfX, backZ }, { -halfX, frontZ - 3 }, { halfX, frontZ - 3 } }) do
+			Kit.lamp(outpost, S * V(corner[1], 0, corner[2]), 8)
+		end
+		for _, side in ipairs({ -1, 1 }) do
+			local cone = Kit.column(outpost, "TrafficCone", S * V(side * (halfX - 1.5), 0, frontZ - 6), 1.8, 1.1, Color3.fromRGB(255, 122, 40), Enum.Material.SmoothPlastic)
+			cone.CanCollide = true
+			Kit.column(outpost, "ConeBand", S * V(side * (halfX - 1.5), 0.9, frontZ - 6), 0.4, 1.12, white, Enum.Material.SmoothPlastic)
+		end
+	end
+
 	-- Hangar: a Quinjet on its pad, crates and fuel drums.
 	do
 		local S = site(LAYOUT.hangar)
@@ -3397,6 +3422,11 @@ function World:BuildShieldSites(hq)
 		for _, spot in ipairs({ { 15, -15 }, { 12.6, -16.4 } }) do Kit.column(outpost, "FuelDrum", S * V(spot[1], 0, spot[2]), 3.2, 2.2, Color3.fromRGB(178, 52, 44), metal) end
 		agent(standing(S, 9, 12, 0.3))
 		agent(standing(S, -11, 11, -0.4))
+		compound(S, 18.2, -18, 18)
+		Kit.flag(outpost, S * V(14, 0, 10), 12, blue, 4)
+		for _, spot in ipairs({ { 14.5, -9 }, { 16, -6.5 } }) do
+			Kit.column(outpost, "TireStack", S * V(spot[1], 0, spot[2]), 2.2, 2.4, Color3.fromRGB(34, 34, 38), Enum.Material.SmoothPlastic, true)
+		end
 		-- Scenery only: no title, so nobody expects a door to open.
 	end
 
@@ -3429,6 +3459,7 @@ function World:BuildShieldSites(hq)
 		for i = 0, 2 do p("JerseyBarrier", V(5, 2.2, 1.4), S * CFrame.new(-6 + i * 6, 1.1, -16.5), pale, Enum.Material.Concrete) end
 		agent(standing(S, 3, 7, 0.4))
 		agent(standing(S, -7, 5, -0.2))
+		compound(S, 18.2, -18, 18)
 		-- Scenery only: no title, so nobody expects a door to open.
 	end
 
@@ -3466,6 +3497,7 @@ function World:BuildShieldSites(hq)
 		end
 		agent(standing(S, -3, 9, 0.2))
 		agent(standing(S, 6, 11, -0.5))
+		compound(S, 19, -16.2, 17)
 		-- Scenery only: no title, so nobody expects a door to open.
 	end
 
