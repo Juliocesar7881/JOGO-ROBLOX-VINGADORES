@@ -31,7 +31,7 @@ for _, rarity in Catalog.RarityOrder do
 	end
 end
 equal(#Catalog.MapOrder, 6, "Campaign map count")
-equal(#Catalog.EnemyOrder, 24, "Enemy families")
+equal(#Catalog.EnemyOrder, 25, "Enemy families")
 equal(#Catalog.BossOrder, 6, "Six bosses: one per map, Loki for Asgard")
 equal(#Catalog.ModeOrder, 4, "Campaign, competitive and cards plus training")
 equal(#Catalog.PortalOrder, 4, "Four kinds of portal")
@@ -476,6 +476,30 @@ do
 			local total = def.hp + def.split.count * child.hp
 			check(total <= def.hp * 2, id .. " does not hide more than twice its own health in fragments")
 			check(Rules.KillCash(def.split.into) < Rules.KillCash(id), id .. " fragments pay less than the parent")
+		end
+	end
+end
+
+-- A saboteur's shock is data, bounded, and never part of the training map.
+do
+	local first
+	for _, modeId in { "normal", "ranked", "tutorial" } do
+		for wave = 1, 60 do
+			for _, spec in Waves.Generate("gamma", modeId, wave, 1, 5) do
+				if spec.enemyId == "saboteur" then
+					check(modeId ~= "tutorial", "Training teaches the basics without saboteurs")
+					if modeId == "normal" and not first then first = wave end
+				end
+			end
+		end
+	end
+	check(first ~= nil and first >= 18, "Saboteurs wait for wave 18 in the campaign, first seen on wave " .. tostring(first))
+	for id, def in Catalog.Enemies do
+		if def.shock then
+			check(def.shock.radius >= 8 and def.shock.radius <= 20, id .. " shocks a nearby circle, not the whole map")
+			check(def.shock.seconds > 0 and def.shock.seconds <= 2.5, id .. " stuns for a moment, not for good")
+			check(def.shock.every >= def.shock.seconds * 3, id .. " leaves long gaps between shocks")
+			check(def.shock.warn >= 1, id .. " warns at least a second ahead")
 		end
 	end
 end

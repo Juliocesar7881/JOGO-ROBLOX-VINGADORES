@@ -416,7 +416,7 @@ Catalog.Maps = {
 	},
 }
 
-Catalog.EnemyOrder = { "zombie", "runner", "brute", "armored", "stealth", "flyer", "support", "summoner", "splitter" }
+Catalog.EnemyOrder = { "zombie", "runner", "brute", "armored", "stealth", "flyer", "support", "summoner", "splitter", "saboteur" }
 Catalog.BossOrder = { "lizard", "abomination", "redskull", "killmonger", "doom", "loki" }
 Catalog.Enemies = {
 	zombie = { id = "zombie", name = text("Infectado", "Infected"), hp = 40, speed = 9.8, leak = 1, reward = 10, armor = 0, air = false, stealth = false, boss = false, color = { 111, 165, 94 } },
@@ -431,6 +431,10 @@ Catalog.Enemies = {
 	-- pieces, a lone sniper wades through them. Fragments are never in a wave
 	-- pool; only a dying splitter makes them.
 	splitter = { id = "splitter", name = text("Gosmento", "Splitter"), hp = 118, speed = 8.8, leak = 2, reward = 12, armor = 0, air = false, stealth = false, boss = false, color = { 96, 214, 150 }, split = { into = "splitling", count = 2 } },
+	-- Shorts out the towers it walks past: a telegraphed shock stuns every
+	-- tower in range for a moment, so it is the first thing to shoot. Heroes
+	-- that are stun-proof (and their aura) shrug it off.
+	saboteur = { id = "saboteur", name = text("Sabotador", "Saboteur"), hp = 92, speed = 10.4, leak = 2, reward = 15, armor = 0.04, air = false, stealth = false, boss = false, color = { 90, 190, 255 }, shock = { radius = 15, seconds = 1.6, every = 7, warn = 1.2, first = 2 } },
 	splitling = { id = "splitling", name = text("Fragmento", "Fragment"), hp = 36, speed = 12.4, leak = 1, reward = 5, armor = 0, air = false, stealth = false, boss = false, color = { 140, 236, 180 }, fragment = true },
 	lizard = { id = "lizard", name = text("Gekko Colosso", "Colossal Gecko"), hp = 1962, speed = 7.5, leak = 35, reward = 100, armor = 0.12, air = false, stealth = false, boss = true, color = { 113, 205, 85 }, hint = text("Concentre dano para interromper a regeneração.", "Focus your damage to interrupt regeneration.") },
 	abomination = { id = "abomination", name = text("Megabruto infectado", "Infected Megabrute"), hp = 2314, speed = 6.9, leak = 40, reward = 110, armor = 0.2, air = false, stealth = false, boss = true, color = { 174, 167, 86 }, hint = text("Impactos anunciados interrompem torres próximas.", "Telegraphed impacts interrupt nearby towers.") },

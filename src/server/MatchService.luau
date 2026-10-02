@@ -273,7 +273,7 @@ function Match:_previewThreats()
 	for _, spec in ipairs(specs) do
 		local def = self.catalog.Enemies[spec.enemyId]
 		local notable = def and (def.boss or def.air or def.stealth or (def.armor or 0) >= 0.3
-			or spec.enemyId == "summoner" or spec.enemyId == "support" or spec.enemyId == "brute" or spec.enemyId == "splitter")
+			or spec.enemyId == "summoner" or spec.enemyId == "support" or spec.enemyId == "brute" or spec.enemyId == "splitter" or spec.enemyId == "saboteur")
 		if notable and not seen[spec.enemyId] then
 			seen[spec.enemyId] = true
 			table.insert(self.nextThreats, spec.enemyId)
@@ -327,7 +327,7 @@ function Match:_spawn(spec)
 	local enemy = {id=id,def=def,enemyId=spec.enemyId,hp=hp,maxHP=hp,progress=spec.progress or 0,
 		routeIndex=routeIndex,cash=spec.rewardless and 0 or (spec.cash or self.rules.KillCash(spec.enemyId)),rewardless=spec.rewardless,
 		position=self:_pathPosition(routeIndex,spec.progress or 0),slow=0,slowUntil=0,revealUntil=0,
-		mark=0,markUntil=0,armorBreak=0,armorUntil=0,nextPower=self.elapsed+10,summons=0,
+		mark=0,markUntil=0,armorBreak=0,armorUntil=0,nextPower=self.elapsed+(def.shock and def.shock.first or 10),summons=0,
 		phase=1,shield=0,lastHit=0,portalUntil=0,stunUntil=0,stunImmuneUntil=0,final=final == true,
 		expiresAt=def.illusion and self.elapsed+8 or nil}
 	self.enemies[id], self.alive = enemy, self.alive + 1
@@ -358,12 +358,15 @@ function Match:_beginWave()
 	if self.mutation then self:_fx({kind="Mutation",mutationId=self.mutation}) end
 	local threats = {}
 	for _, spec in ipairs(self.pendingSpawns) do
-		if spec.enemyId == "stealth" then threats.stealth=true elseif spec.enemyId=="flyer" then threats.air=true elseif spec.enemyId=="armored" then threats.armor=true elseif spec.enemyId=="splitter" then threats.split=true end
+		if spec.enemyId == "stealth" then threats.stealth=true elseif spec.enemyId=="flyer" then threats.air=true elseif spec.enemyId=="armored" then threats.armor=true elseif spec.enemyId=="splitter" then threats.split=true elseif spec.enemyId=="saboteur" then threats.shock=true end
 	end
 	-- The first splitter wave of a run explains itself once; later waves keep the usual warnings.
 	if threats.split and not self.splitTold then
 		self.splitTold=true
 		self:_notice("Gosmentos chegando: eles se dividem ao morrer. Dano em área limpa os fragmentos.","Splitters incoming: they burst into fragments when they die. Area damage clears the pieces.")
+	elseif threats.shock and not self.shockTold then
+		self.shockTold=true
+		self:_notice("Sabotadores chegando: eles paralisam as torres por perto. Elimine-os cedo; heróis imunes a paralisia protegem a linha.","Saboteurs incoming: they stun nearby towers. Take them out early; stun-proof heroes keep the line firing.")
 	elseif threats.stealth then self:_notice("Camuflados chegando: Viúva Sombria, Vigilante Cego ou uma habilidade de revelar mostram os alvos.","Cloaked enemies incoming: Shadow Widow, Blind Vigilante or a reveal ability shows them.")
 	elseif threats.air then self:_notice("Ameaça aérea: use heróis que atinjam voadores.","Air threat: use heroes that target flying enemies.")
 	elseif threats.armor then self:_notice("Blindados: perfuração e dano mágico são eficientes.","Armored enemies: piercing and magic are effective.") end
@@ -709,6 +712,14 @@ function Match:_stunProof(tower)
 	return false
 end
 
+-- Whether a tower that is not stun-proof stands within reach of a shock.
+function Match:_shockable(center, radius)
+	for _,t in pairs(self.towers) do
+		if distanceXZ(t.position,center)<radius and not self:_stunProof(t) then return true end
+	end
+	return false
+end
+
 function Match:_stunTowers(center, radius, seconds)
 	local ids={}
 	for _,t in pairs(self.towers) do
@@ -803,6 +814,22 @@ function Match:_enemiesStep(dt)
 					if enemy.shield>0 then self:_power(enemy) end
 				end
 				if enemy.regenUntil and enemy.regenUntil>self.elapsed then enemy.hp=math.min(enemy.maxHP,enemy.hp+enemy.maxHP*0.009*dt) end
+			elseif enemy.def.shock and enemy.stunUntil<=self.elapsed then
+				-- A shock is announced a moment ahead, over the saboteur, and only
+				-- when a tower that can feel it is in reach. A stun cancels it.
+				local shock=enemy.def.shock
+				if not enemy.shockTold and self.elapsed>=enemy.nextPower and self:_shockable(enemy.position,shock.radius) then
+					enemy.shockTold=true enemy.nextPower=self.elapsed+shock.warn
+					self:_fx({kind="Pulse",position=enemy.position,radius=shock.radius,color=Color3.fromRGB(90,190,255),duration=shock.warn,
+						followEnemyId=enemy.id,warningText={pt="CHOQUE",en="SHOCK"}})
+				elseif enemy.shockTold and self.elapsed>=enemy.nextPower then
+					enemy.shockTold=false enemy.nextPower=self.elapsed+shock.every
+					self:_stunTowers(enemy.position,shock.radius,shock.seconds)
+					self:_fx({kind="Pulse",position=enemy.position,radius=shock.radius,color=Color3.fromRGB(150,225,255),shake=0.25})
+				end
+			elseif enemy.def.shock and enemy.shockTold then
+				-- Stunned mid-warning: the shock fizzles and starts over later.
+				enemy.shockTold=false enemy.nextPower=enemy.stunUntil+enemy.def.shock.every*0.5
 			elseif enemy.enemyId=="summoner" and enemy.summons<2 then
 				-- A summons is announced a moment ahead and opens a portal; the
 				-- orbs on the staff show how many are left (EnemySync "ch").

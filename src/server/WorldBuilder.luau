@@ -1105,6 +1105,7 @@ local ENEMY_LOOK = {
 	flyer = { gait = "hover", body = { scale = 0.72, width = 0.9, arm = 0.9, leg = 0.84, legLength = 0.9 }, skin = EC.infected },
 	support = { gait = "march", body = { scale = 0.84, width = 1.04 }, skin = Color3.fromRGB(150, 210, 110) },
 	summoner = { gait = "glide", body = { scale = 0.9, width = 0.94 }, skin = Color3.fromRGB(170, 160, 190) },
+	saboteur = { gait = "stalk", body = { scale = 0.82, width = 0.88, arm = 0.92, leg = 0.92 }, skin = Color3.fromRGB(150, 176, 198) },
 	splitter = { gait = "shamble", body = { scale = 0.86, width = 1.32, depth = 1.2, chest = 1.3, head = 0.82, arm = 0.92, leg = 0.92, legLength = 0.84 }, skin = Color3.fromRGB(112, 196, 150) },
 	splitling = { gait = "sprint", body = { scale = 0.5, width = 0.96 }, skin = Color3.fromRGB(150, 226, 184) },
 	illusion = { gait = "glide", body = { scale = 1.25, width = 0.92, arm = 0.9 }, skin = Color3.fromRGB(226, 206, 184) },
@@ -1256,6 +1257,33 @@ ENEMY_EXTRAS.support = function(f)
 	f.disc("UpperTorso", "Emitter", 0.6 * s, 0.1 * s, CFrame.new(0, c.Y * 0.08, -c.Z / 2 - 0.06 * s), Color3.fromRGB(174, 248, 115), NEON)
 	f.rod("UpperTorso", "Antenna", Vector3.new(0.36 * s, c.Y * 0.4, c.Z / 2 + 0.2 * s), Vector3.new(0.4 * s, c.Y * 0.4 + 1.3 * s, c.Z / 2 + 0.3 * s), 0.08 * s, Color3.fromRGB(80, 90, 96), METAL)
 	f.add("UpperTorso", "AntennaLight", Vector3.new(0.26, 0.26, 0.26) * s, CFrame.new(0.4 * s, c.Y * 0.4 + 1.4 * s, c.Z / 2 + 0.3 * s), Color3.fromRGB(174, 248, 115), NEON, "ball")
+end
+-- The saboteur: goggles, a humming coil on its back and live electrodes in
+-- both fists, so the danger is readable from the road.
+ENEMY_EXTRAS.saboteur = function(f)
+	clothes(f, true)
+	-- One uniform dark-blue jacket (not the random shirt) so the family reads on the road.
+	for _, name in ipairs({ "UpperTorso", "LeftUpperArm", "RightUpperArm" }) do
+		f.parts[name]:SetAttribute("Tint", nil)
+		f.parts[name].Color = Color3.fromRGB(34, 46, 92)
+	end
+	infectedFace(f, Color3.fromRGB(150, 225, 255))
+	local c, s = f.sizes.chest, f.scale
+	local volt = Color3.fromRGB(110, 210, 255)
+	f.add("Head", "Goggles", f.parts.Head.Size * Vector3.new(0.9, 0.24, 0.12), f.face(0, 0.14, 0.03), volt, NEON)
+	f.add("UpperTorso", "Pack", Vector3.new(c.X * 0.7, c.Y * 0.8, 0.6 * s), CFrame.new(0, 0, c.Z / 2 + 0.3 * s), Color3.fromRGB(64, 74, 88), METAL)
+	f.add("UpperTorso", "Coil", Vector3.new(0.5, 0.5, 0.5) * s, CFrame.new(0, c.Y * 0.1, c.Z / 2 + 0.75 * s), volt, NEON, "ball")
+	f.add("UpperTorso", "CoilRod", Vector3.new(0.1, 1.2, 0.1) * s, CFrame.new(0, c.Y * 0.1 + 0.9 * s, c.Z / 2 + 0.75 * s), Color3.fromRGB(190, 200, 210), METAL)
+	for _, name in ipairs({ "LeftHand", "RightHand" }) do
+		f.add(name, "Electrode", Vector3.new(0.62, 0.62, 0.62) * s, CFrame.new(0, -0.3 * s, -0.1 * s), volt, NEON, "ball")
+	end
+	-- A lightning bolt across the chest, readable from the front.
+	local z = -c.Z / 2 - 0.05 * s
+	local bolt = { Vector3.new(0.22, 0.34, z), Vector3.new(-0.12, 0.04, z), Vector3.new(0.12, -0.04, z), Vector3.new(-0.22, -0.34, z) }
+	for index = 1, 3 do
+		local a, b = bolt[index], bolt[index + 1]
+		f.rod("UpperTorso", "Bolt", Vector3.new(a.X * c.X, a.Y * c.Y, a.Z), Vector3.new(b.X * c.X, b.Y * c.Y, b.Z), 0.16 * s, volt, NEON)
+	end
 end
 -- The splitter carries its two fragments inside a swollen sac: two glowing
 -- cores behind a seam down the middle, so the split is no surprise.

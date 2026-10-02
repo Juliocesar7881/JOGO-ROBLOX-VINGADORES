@@ -1408,6 +1408,53 @@ do
 		check(sm.alive == Config.MaxEnemies, "a burst never exceeds the enemy cap, alive is " .. sm.alive)
 	end
 
+	-- A saboteur warns, then shorts out the towers beside it for a moment. A
+	-- stun-proof hero keeps firing, and a stunned saboteur cancels its shock.
+	do
+		local sb, sbPlayer = stage({ modeId = "normal", mapId = "manhattan", wave = 20, loadout = { "ironman", "capmen" } })
+		local sbEvents = {}
+		local sbFx = sb._fx
+		sb._fx = function(self, event, ...) table.insert(sbEvents, event) return sbFx(self, event, ...) end
+		sb.participants[sbPlayer.UserId].cash = 1e6
+		for id in pairs(sb.enemies) do sb.enemies[id] = nil end
+		sb.alive, sb.pendingSpawns, sb.spawnIndex = 0, {}, 1
+		local soft = place(sb, sbPlayer, "ironman")
+		local hard = place(sb, sbPlayer, "capmen")
+		hard.position = soft.position + v3(4, 0, 0)
+		local saboteur = spawn(sb, "saboteur", 30, 1)
+		local function near() saboteur.position = soft.position + v3(3, 0, 0) end
+		-- Out of reach of every tower it just walks: no warning, no shock.
+		saboteur.position = soft.position + v3(300, 0, 0)
+		sb.elapsed = saboteur.nextPower + 0.1
+		sb:_enemiesStep(0.01)
+		check(not saboteur.shockTold, "a saboteur with no tower in reach does not warn")
+		near()
+		sb:_enemiesStep(0.01)
+		local warning
+		for _, event in ipairs(sbEvents) do if event.kind == "Pulse" and event.followEnemyId == saboteur.id and event.warningText then warning = event end end
+		check(warning ~= nil and saboteur.shockTold and (soft.stunnedUntil or 0) <= sb.elapsed, "the shock is announced before it lands")
+		sb.elapsed += Catalog.Enemies.saboteur.shock.warn + 0.05
+		near()
+		sb:_enemiesStep(0.01)
+		check((soft.stunnedUntil or 0) > sb.elapsed, "the shock stuns the tower beside it")
+		check((hard.stunnedUntil or 0) <= sb.elapsed, "a stun-proof hero ignores the shock")
+		local stunEvent
+		for _, event in ipairs(sbEvents) do if event.kind == "TowersStunned" and table.find(event.towerIds, soft.id) then stunEvent = event end end
+		check(stunEvent ~= nil and table.find(stunEvent.towerIds, hard.id) == nil, "the shock names exactly the towers it stopped")
+		check(not saboteur.shockTold and saboteur.nextPower > sb.elapsed + 5, "the next shock is a long way off")
+		-- Stunned during the warning, the shock fizzles.
+		soft.stunnedUntil = 0
+		sb.elapsed = saboteur.nextPower + 0.1
+		near()
+		sb:_enemiesStep(0.01)
+		check(saboteur.shockTold, "the second shock is announced too")
+		saboteur.stunUntil = sb.elapsed + 3
+		sb.elapsed += Catalog.Enemies.saboteur.shock.warn + 0.05
+		near()
+		sb:_enemiesStep(0.01)
+		check((soft.stunnedUntil or 0) <= sb.elapsed and not saboteur.shockTold, "a stunned saboteur's shock fizzles")
+	end
+
 	-- Scavenger towers and area powers sweep up their owner's Gold: less
 	-- walking, never more Gold.
 	local areaHero
