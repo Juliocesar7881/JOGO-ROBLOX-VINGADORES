@@ -416,6 +416,11 @@ Catalog.Maps = {
 	},
 }
 
+-- How a commander moves (lobby and matches alike). The client runs on Shift
+-- and jumps twice; the server sets the walk values when it places a commander
+-- and resets anything above the ceilings, so movement is never an advantage.
+Catalog.Movement = { walk = 23, sprint = 34, jumpPower = 56, maxSpeed = 40, maxJumpPower = 90 }
+
 Catalog.EnemyOrder = { "zombie", "runner", "brute", "armored", "stealth", "flyer", "support", "summoner", "splitter", "saboteur" }
 Catalog.BossOrder = { "lizard", "abomination", "redskull", "killmonger", "doom", "loki" }
 Catalog.Enemies = {

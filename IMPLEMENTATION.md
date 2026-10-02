@@ -65,6 +65,12 @@ interpola o visual. Limite de seis soldados por comandante; dano e recompensas
 usam o mesmo caminho autoritativo das torres. [BASES.md](docs/BASES.md) documenta
 o conteúdo e a economia atuais; as seções antigas abaixo são históricas.
 
+Movimento (`Catalog.Movement`): o comandante corre com Shift (botão CORRER no celular,
+L3 no controle) e pula duas vezes (`src/client/Movement.luau`). É só sensação: o
+servidor define a velocidade e o pulo ao posicionar o comandante e, a cada segundo,
+devolve aos valores de caminhada qualquer velocidade ou pulo acima dos tetos
+(`maxSpeed`, `maxJumpPower`). Nenhuma regra de jogo depende disso.
+
 Minas (herói `nightstalker`, `attack = "mine"`): a torre não acerta o alvo, planta
 uma mina na estrada à frente dele (até `mineMax` por torre, afastadas ≥ 7 studs e
 dentro do alcance). O servidor guarda `Match.mines`; a mina detona quando um

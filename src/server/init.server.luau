@@ -869,7 +869,27 @@ local function stepAfk(elapsed, visitors)
 	end
 end
 
+-- Movement is the client's to feel and the server's to bound: a speed or a
+-- jump above the ceiling in Catalog.Movement goes back to the walking values.
+local movementTimer = 0
+local function boundMovement()
+	local movement = Catalog.Movement
+	for _, player in ipairs(Players:GetPlayers()) do
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			if humanoid.WalkSpeed > movement.maxSpeed then humanoid.WalkSpeed = movement.walk end
+			if humanoid.UseJumpPower and humanoid.JumpPower > movement.maxJumpPower then humanoid.JumpPower = movement.jumpPower end
+		end
+	end
+end
+
 RunService.Heartbeat:Connect(function(dt)
+	movementTimer += dt
+	if movementTimer >= 1 then
+		movementTimer = 0
+		pcall(boundMovement)
+	end
 	-- 2x speed is match time running twice as fast as the frame clock; the
 	-- six-tick cap still bounds the work done in any one frame.
 	accumulator += math.min(dt, 0.5) * match:Speed()

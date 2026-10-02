@@ -1276,6 +1276,7 @@ render = function()
 			{ "Todo dia um mapa paga +25% de Ouro e XP: veja o mapa do dia.", "Every day one map pays +25% Gold and XP: check the map of the day." },
 			{ "Ondas mutantes avisam antes: Corrida, Enxame ou Blindada.", "Mutant waves warn you first: Rush, Swarm or Armored." },
 			{ "O herói do primeiro slot define o poder que você usa em partida.", "The hero in your first slot sets the power you use in a match." },
+			{ "Segure Shift para correr e aperte pular de novo no ar para um pulo duplo.", "Hold Shift to run and press jump again in the air for a double jump." },
 		}
 		local tip = tips[math.random(1, #tips)]
 		UI.label(card, T(tip[1], tip[2]), {Name = "SplashTip", Position = UDim2.fromOffset(0, 190), Size = UDim2.new(1, 0, 0, 56), TextSize = 16, TextWrapped = true, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
@@ -1586,12 +1587,17 @@ kit.tutorial = require(script:WaitForChild("Tutorial")).new({
 	placement = function() return selectedHero, placementPinned end,
 	panelOpen = function() return contextPanel ~= nil end,
 })
+kit.movement = require(script:WaitForChild("Movement")).new({
+	player = player, input = UserInputService, gui = overlays, UI = UI, C = C, T = T, config = Catalog.Movement, folder = effects.folder,
+	lowFX = function() local p = profile() return p and p.settings and p.settings.lowFX end,
+})
 kit.inspect = require(script:WaitForChild("Inspect")).new({
 	gui = overlays, UI = UI, C = C, T = T, L = L, Catalog = Catalog, effects = effects, state = function() return state end,
 })
 RunService.RenderStepped:Connect(function(dt)
 	kit.autoQuality:Step(dt)
 	kit.inspect:Step(dt or 1 / 60)
+	kit.movement:Step(dt or 1 / 60)
 	kit.tutorial:Step(dt or 1 / 60)
 	if os.clock() >= kit.afkBannerAt then
 		kit.afkBannerAt = os.clock() + 0.25

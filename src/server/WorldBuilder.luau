@@ -5580,7 +5580,11 @@ function World:MovePlayer(player, inMatch, index)
 		local pos = inMatch and self:CommanderSpot(index) or self.lobbySpawn
 		character:PivotTo(CFrame.new(pos))
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
-		if humanoid then humanoid.WalkSpeed, humanoid.MaxHealth, humanoid.Health = 23, 100000, 100000 end
+		if humanoid then
+			local movement = self.catalog.Movement
+			humanoid.WalkSpeed, humanoid.MaxHealth, humanoid.Health = movement.walk, 100000, 100000
+			humanoid.UseJumpPower, humanoid.JumpPower = true, movement.jumpPower
+		end
 		for _, item in ipairs(character:GetDescendants()) do
 			if item:IsA("BasePart") then item.CollisionGroup = "Commanders" end
 		end

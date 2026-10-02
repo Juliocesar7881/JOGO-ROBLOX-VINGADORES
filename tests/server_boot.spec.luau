@@ -381,6 +381,20 @@ local function noticed(player, fragment)
 	return false
 end
 check(noticed(ana, "campanha"), "the refusal tells the newcomer to win a campaign first")
+-- Movement is bounded: placing a commander sets the walking values, and a
+-- speed or jump above the ceiling is put back within a second.
+do
+	local moves = Catalog.Movement
+	local humanoid = ana.Character:FindFirstChildOfClass("Humanoid")
+	check(humanoid ~= nil and humanoid.WalkSpeed == moves.walk and humanoid.JumpPower == moves.jumpPower and humanoid.UseJumpPower == true, "a commander is placed with the catalogue walk speed and jump")
+	humanoid.WalkSpeed = moves.sprint
+	frames(1.2)
+	check(humanoid.WalkSpeed == moves.sprint, "the run speed is left alone")
+	humanoid.WalkSpeed = 120
+	humanoid.JumpPower = 400
+	frames(1.2)
+	check(humanoid.WalkSpeed == moves.walk and humanoid.JumpPower == moves.jumpPower, "a speed or jump above the ceiling goes back to the walking values")
+end
 local anaRoot = ana.Character.HumanoidRootPart
 local hardPad = workspace:FindFirstChild("DoomLobby").Portal_ranked.Pad
 check((anaRoot.Position - hardPad.Position).Magnitude > 6, "and the newcomer is set down outside that portal")

@@ -290,7 +290,7 @@ local function session(screen)
 	function runService:BindToRenderStep(name, _, fn) self.binds[name] = fn end
 	function runService:IsStudio() return true end
 	function runService:IsServer() return false end
-	local input = { InputBegan = newSignal(), TouchTapInWorld = newSignal(), TouchLongPress = newSignal(), TouchEnabled = false }
+	local input = { InputBegan = newSignal(), InputEnded = newSignal(), JumpRequest = newSignal(), TouchTapInWorld = newSignal(), TouchLongPress = newSignal(), TouchEnabled = false }
 	function input:GetFocusedTextBox() return self.focused end
 	function input:GetMouseLocation() return Vector2.new(SCREEN.w / 2, SCREEN.h / 2) end
 	local guiService = {}
@@ -1315,6 +1315,83 @@ local function session(screen)
 		fx({ kind = "Clear" })
 		frames(1 / 30, 2)
 		check(named(gui, "EnemyCard") == nil, tag .. ": the card goes when its enemy does")
+	end)
+
+	-- Run on Shift, jump twice, on every screen; a phone gets a run button.
+	step("moving: run and double jump", function()
+		local moves = Catalog.Movement
+		local humanoid = Instance.new("Humanoid")
+		humanoid.Name, humanoid.WalkSpeed, humanoid.Health, humanoid.FloorMaterial = "Humanoid", moves.walk, 100, Enum.Material.Plastic
+		humanoid.MoveDirection, humanoid.Sit = v3(1, 0, 0), false
+		local changes = {}
+		humanoid.ChangeState = function(_, state) table.insert(changes, state) end
+		humanoid.Parent = localPlayer.Character
+		local root = localPlayer.Character:FindFirstChild("HumanoidRootPart")
+		root.AssemblyLinearVelocity = v3(0, 0, 0)
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == moves.walk, tag .. ": a commander walks at the catalogue speed")
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift }, false)
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == moves.sprint, tag .. ": holding Shift runs")
+		input.InputEnded:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == moves.walk, tag .. ": letting go walks again")
+		-- A speed the game did not set (a future slowing power) is never overwritten.
+		humanoid.WalkSpeed = 9
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift }, false)
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == 9, tag .. ": a speed set by something else is left alone")
+		humanoid.WalkSpeed = moves.walk
+		input.InputEnded:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
+		-- Typing in a text box does not run.
+		input.focused = true
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift }, false)
+		input.focused = nil
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == moves.walk, tag .. ": Shift typed into a text box does not run")
+		input.InputEnded:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
+		-- The first jump leaves the ground; the second, in the air, pushes up again, once.
+		input.JumpRequest:Fire()
+		check(#changes == 0, tag .. ": a jump from the ground is the game's own, not a double jump")
+		task.wait(0.3)
+		humanoid.FloorMaterial = Enum.Material.Air
+		for _ = 1, 20 do frames(1 / 30, 1) end
+		input.JumpRequest:Fire()
+		check(#changes == 1 and root.AssemblyLinearVelocity.Y == moves.jumpPower, tag .. ": a jump in the air pushes up again")
+		input.JumpRequest:Fire()
+		check(#changes == 1, tag .. ": there is only one extra jump per landing")
+		humanoid.FloorMaterial = Enum.Material.Plastic
+		frames(1 / 30, 2)
+		humanoid.FloorMaterial = Enum.Material.Air
+		for _ = 1, 20 do frames(1 / 30, 1) end
+		input.JumpRequest:Fire()
+		check(#changes == 2, tag .. ": landing gives the extra jump back")
+		local visuals = workspace:FindFirstChild("DoomClientVisuals")
+		local function countParts(name)
+			local count = 0
+			for _, item in ipairs(visuals and visuals:GetChildren() or {}) do if item.Name == name then count += 1 end end
+			return count
+		end
+		check(countParts("JumpRing") >= 1, tag .. ": the extra jump opens a ring of light")
+		frames(1 / 30, 30)
+		check(countParts("JumpRing") == 0, tag .. ": the ring fades away")
+		-- The phone's run button toggles running.
+		check(named(gui, "RunButton") == nil, tag .. ": no run button without a touch screen")
+		input.TouchEnabled = true
+		frames(1 / 30, 2)
+		local runButton = named(gui, "RunButton")
+		check(runButton ~= nil, tag .. ": a touch screen gets a run button")
+		humanoid.FloorMaterial = Enum.Material.Plastic
+		if runButton then runButton.Activated:Fire() flush() end
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == moves.sprint, tag .. ": the run button runs")
+		if runButton then runButton.Activated:Fire() flush() end
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == moves.walk, tag .. ": and stops running")
+		input.TouchEnabled = false
+		frames(1 / 30, 2)
+		check(named(gui, "RunButton") == nil, tag .. ": the run button goes with the touch screen")
+		humanoid:Destroy()
 	end)
 
 	step("training: the arrows teach one lesson at a time", function()
