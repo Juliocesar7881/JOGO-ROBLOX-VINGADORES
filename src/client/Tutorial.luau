@@ -16,7 +16,7 @@ local Workspace = game:GetService("Workspace")
 local Tutorial = {}
 Tutorial.__index = Tutorial
 
-local CHEVRON_SPACING, CHEVRONS = 9, 10
+local CHEVRON_SPACING, CHEVRONS = 10, 9
 local ARRIVED = 12
 
 -- ctx: gui (the overlay frame), UI, C (colours), T (pt/en), Catalog, Rules,
@@ -227,7 +227,6 @@ end
 --------------------------------------------------------------------------------
 function Tutorial:_clear()
 	for _, child in ipairs(self.folder:GetChildren()) do child:Destroy() end
-	for _, chevron in ipairs(self.chevrons) do chevron:Destroy() end
 	self.chevrons = {}
 	self.anchor, self.ring, self.beam = nil, nil, nil
 	if self.card then self.card:Destroy(); self.card = nil end
@@ -241,7 +240,7 @@ function Tutorial:_buildCard(step)
 	local UI, C, T = ctx.UI, ctx.C, ctx.T
 	local inMatch = ctx.state() and ctx.state().phase ~= "Lobby"
 	local card = UI.roundFrame(ctx.gui, {
-		Name = "TutorialCard", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, inMatch and 104 or 10),
+		Name = "TutorialCard", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, inMatch and 122 or 10),
 		Size = UDim2.new(1, -140, 0, step.shortcut and 74 or 52), BackgroundColor3 = C.background, ZIndex = 49,
 	}, C.green)
 	UI.create("UISizeConstraint", { MaxSize = Vector2.new(520, 90), MinSize = Vector2.new(260, 40) }, card)
@@ -273,17 +272,17 @@ function Tutorial:_ensureWorld(lowFX)
 	anchor.CanCollide, anchor.CanTouch, anchor.CanQuery, anchor.CastShadow = false, false, false, false
 	anchor.Parent = self.folder
 	local gui = Instance.new("BillboardGui")
-	gui.Name, gui.Size, gui.AlwaysOnTop, gui.MaxDistance = "TutorialArrow", UDim2.fromOffset(84, 96), true, 2000
+	gui.Name, gui.Size, gui.AlwaysOnTop, gui.MaxDistance = "TutorialArrow", UDim2.fromOffset(110, 126), true, 2000
 	gui.StudsOffsetWorldSpace = Vector3.new(0, 7, 0)
 	gui.Adornee, gui.Parent = anchor, anchor
 	local arrow = Instance.new("TextLabel")
-	arrow.Name, arrow.Size, arrow.BackgroundTransparency, arrow.Text = "Arrow", UDim2.new(1, 0, 0, 70), 1, "▼"
+	arrow.Name, arrow.Size, arrow.BackgroundTransparency, arrow.Text = "Arrow", UDim2.new(1, 0, 0, 92), 1, "▼"
 	arrow.Font, arrow.TextScaled, arrow.TextColor3, arrow.TextStrokeTransparency = Enum.Font.FredokaOne, true, C.green, 0
 	arrow.TextStrokeColor3 = Color3.fromRGB(10, 40, 20)
 	arrow.Parent = gui
 	local distance = Instance.new("TextLabel")
-	distance.Name, distance.Position, distance.Size, distance.BackgroundTransparency = "Distance", UDim2.fromOffset(0, 68), UDim2.new(1, 0, 0, 24), 1
-	distance.Font, distance.TextSize, distance.TextColor3, distance.TextStrokeTransparency = Enum.Font.FredokaOne, 18, C.cream, 0.3
+	distance.Name, distance.Position, distance.Size, distance.BackgroundTransparency = "Distance", UDim2.fromOffset(0, 90), UDim2.new(1, 0, 0, 28), 1
+	distance.Font, distance.TextSize, distance.TextColor3, distance.TextStrokeTransparency = Enum.Font.FredokaOne, 22, C.cream, 0.2
 	distance.Text = ""
 	distance.Parent = gui
 	self.anchor, self.arrowLabel, self.distanceLabel = anchor, arrow, distance
@@ -298,12 +297,16 @@ end
 function Tutorial:_ensureTrail(root)
 	if #self.chevrons > 0 then return end
 	for _ = 1, CHEVRONS do
-		local part = Instance.new("Part")
-		part.Name, part.Size, part.Color = "TutorialChevron", Vector3.new(3.4, 0.2, 1.8), self.ctx.C.green
-		part.Material, part.Transparency, part.Anchored = Enum.Material.Neon, 0.25, true
-		part.CanCollide, part.CanTouch, part.CanQuery, part.CastShadow = false, false, false, false
-		part.Parent = self.folder
-		table.insert(self.chevrons, part)
+		local chevron = { arms = {} }
+		for side = 1, 2 do
+			local part = Instance.new("Part")
+			part.Name, part.Size, part.Color = "TutorialChevron", Vector3.new(1, 0.2, 4.6), self.ctx.C.green
+			part.Material, part.Transparency, part.Anchored = Enum.Material.Neon, 0.25, true
+			part.CanCollide, part.CanTouch, part.CanQuery, part.CastShadow = false, false, false, false
+			part.Parent = self.folder
+			table.insert(chevron.arms, part)
+		end
+		table.insert(self.chevrons, chevron)
 	end
 end
 
@@ -328,7 +331,7 @@ function Tutorial:_edgeArrow(worldPoint)
 	if not self.edge then
 		local UI, C = ctx.UI, ctx.C
 		local frame = UI.frame(ctx.gui, { Name = "TutorialEdge", AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(64, 64), BackgroundTransparency = 1, ZIndex = 48 })
-		local glyph = UI.label(frame, "➤", { Name = "Glyph", Size = UDim2.fromScale(1, 1), TextSize = 56, Font = UI.Fonts.display, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 49 })
+		local glyph = UI.label(frame, "▶", { Name = "Glyph", Size = UDim2.fromScale(1, 1), TextSize = 56, Font = UI.Fonts.display, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 49 })
 		glyph.TextStrokeTransparency = 0
 		self.edge = frame
 	end
@@ -396,7 +399,9 @@ function Tutorial:Step(dt)
 	if not world then
 		if self.anchor then self.anchor.Parent = nil; self.ring.Parent = nil end
 		if self.edge then self.edge.Visible = false end
-		for _, chevron in ipairs(self.chevrons) do chevron.Transparency = 1 end
+		for _, chevron in ipairs(self.chevrons) do
+			for _, arm in ipairs(chevron.arms) do arm.Transparency = 1 end
+		end
 		return
 	end
 	self:_ensureWorld(lowFX)
@@ -424,11 +429,16 @@ function Tutorial:Step(dt)
 		local offset = (self.clock * 6) % CHEVRON_SPACING
 		for index, chevron in ipairs(self.chevrons) do
 			local along = (index - 1) * CHEVRON_SPACING + offset + 5
-			if along < length - 4 then
-				chevron.Transparency = 0.2 + 0.6 * (index - 1) / #self.chevrons
-				chevron.CFrame = CFrame.lookAt(from + unit * along, from + unit * (along + 1))
-			else
-				chevron.Transparency = 1
+			local visible = along < length - 4
+			local fade = 0.2 + 0.6 * (index - 1) / #self.chevrons
+			for side, arm in ipairs(chevron.arms) do
+				arm.Transparency = visible and fade or 1
+				if visible then
+					-- A ">" lying on the ground, its point toward the target: two bars
+					-- leaning back from the tip.
+					local tip = from + unit * along
+					arm.CFrame = CFrame.lookAt(tip, tip + unit) * CFrame.Angles(0, (side == 1 and 1 or -1) * math.rad(40), 0) * CFrame.new(0, 0, 2.1)
+				end
 			end
 		end
 	end
