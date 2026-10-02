@@ -460,7 +460,10 @@ function Tutorial:Step(dt)
 	-- tile) sits where the card does, the card steps down just below it.
 	if self.card then
 		local inMatch = self.ctx.state() and self.ctx.state().phase ~= "Lobby"
-		local cardY = inMatch and 122 or 10
+		-- In the lobby on a short phone the gold pill and the options button share the
+		-- top row with the card, so it drops one row lower there.
+		local screen = self.ctx.gui.AbsoluteSize
+		local cardY = inMatch and 122 or ((screen and screen.Y < 500) and 62 or 10)
 		local target = step.gui
 		local origin, position, size = self.ctx.gui.AbsolutePosition, target and target.AbsolutePosition, target and target.AbsoluteSize
 		local cardHeight = self.card.AbsoluteSize and self.card.AbsoluteSize.Y or 52
