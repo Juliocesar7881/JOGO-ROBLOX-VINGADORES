@@ -23,6 +23,27 @@ function Sheet:Close()
 	self.shade, self.body = nil, nil
 end
 
+-- Called every frame: the sheet belongs to a match, so it goes with it, and its
+-- numbers follow the base upgrades and the cards picked while it is open.
+function Sheet:Sync()
+	if not self:IsOpen() then return end
+	local state = self.ctx.state()
+	local match = state and state.match
+	if not match or state.phase == "Lobby" or state.phase == "Results" then
+		self:Close()
+		return
+	end
+	local signature = Sheet._signature(match)
+	if signature ~= self.signature then
+		self.signature = signature
+		self:_render()
+	end
+end
+
+function Sheet._signature(match)
+	return tostring(match.base and match.base.level) .. ":" .. tostring(#(match.cards or {})) .. ":" .. tostring(match.cardMode)
+end
+
 function Sheet:Toggle()
 	if self:IsOpen() then self:Close() else self:Open() end
 end
@@ -46,6 +67,7 @@ function Sheet:Open(tab)
 	local state = ctx.state()
 	if not state or not state.match then return end
 	self:Close()
+	self.signature = Sheet._signature(state.match)
 	self.tab = tab or self.tab or "talents"
 	local screen = ctx.screenSize()
 	local shade = UI.frame(ctx.overlays, { Name = "CommanderSheet", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.25, Active = true, ZIndex = 45 })

@@ -1629,6 +1629,7 @@ RunService.RenderStepped:Connect(function(dt)
 	kit.autoQuality:Step(dt)
 	kit.inspect:Step(dt or 1 / 60)
 	stepShowcases()
+	kit.sheet:Sync()
 	kit.movement:Step(dt or 1 / 60)
 	kit.tutorial:Step(dt or 1 / 60)
 	if os.clock() >= kit.afkBannerAt then
