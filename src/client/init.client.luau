@@ -1592,6 +1592,7 @@ kit.tutorial = require(script:WaitForChild("Tutorial")).new({
 })
 kit.movement = require(script:WaitForChild("Movement")).new({
 	player = player, input = UserInputService, gui = overlays, UI = UI, C = C, T = T, config = Catalog.Movement, folder = effects.folder,
+	actions = (function() local ok, service = pcall(game.GetService, game, "ContextActionService") return ok and service or nil end)(),
 	lowFX = function() local p = profile() return p and p.settings and p.settings.lowFX end,
 })
 kit.inspect = require(script:WaitForChild("Inspect")).new({

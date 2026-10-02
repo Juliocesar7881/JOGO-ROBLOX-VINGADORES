@@ -9,8 +9,13 @@ Movement.__index = Movement
 
 local RING_LIFETIME = 0.4
 
--- ctx: player, input (UserInputService), gui (an overlay frame), UI, C, T,
--- config (Catalog.Movement), lowFX() -> boolean, folder (where rings go).
+-- ctx: player, input (UserInputService), actions (ContextActionService, when
+-- there is one), gui (an overlay frame), UI, C, T, config (Catalog.Movement),
+-- lowFX() -> boolean, folder (where rings go).
+--
+-- Running is bound as a context action: Roblox itself draws its button beside
+-- the jump button on a phone (where thumbs expect it, clear of our own HUD),
+-- and the same action carries Shift and the controller's left stick click.
 function Movement.new(ctx)
 	local self = setmetatable({
 		ctx = ctx, running = false, toggled = false, doubleUsed = false, lastJump = -10,
@@ -18,9 +23,32 @@ function Movement.new(ctx)
 	}, Movement)
 	local input = ctx.input
 	if input.JumpRequest then input.JumpRequest:Connect(function() self:_jumpRequest() end) end
-	if input.InputBegan then input.InputBegan:Connect(function(event, processed) self:_began(event, processed) end) end
-	if input.InputEnded then input.InputEnded:Connect(function(event) self:_ended(event) end) end
+	if ctx.actions then
+		local bound = pcall(function()
+			ctx.actions:BindAction("DoomRun", function(_, state, event) return self:_action(state, event) end, true, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3)
+			ctx.actions:SetTitle("DoomRun", ctx.T("CORRER", "RUN"))
+		end)
+		self.bound = bound
+	end
+	-- Without it (a stand-in, or an engine without the service) the keys are read directly.
+	if not self.bound then
+		if input.InputBegan then input.InputBegan:Connect(function(event, processed) self:_began(event, processed) end) end
+		if input.InputEnded then input.InputEnded:Connect(function(event) self:_ended(event) end) end
+	end
 	return self
+end
+
+-- The context action: a tap on the phone's button or a click of the left stick
+-- toggles running; Shift runs while it is held. Never sinks the input.
+function Movement:_action(state, event)
+	local touch = event and event.UserInputType == Enum.UserInputType.Touch
+	if state == Enum.UserInputState.Begin then
+		if touch or (event and event.KeyCode == Enum.KeyCode.ButtonL3) then self.toggled = not self.toggled
+		else self.held = true end
+	elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
+		if not touch and not (event and event.KeyCode == Enum.KeyCode.ButtonL3) then self.held = false end
+	end
+	return Enum.ContextActionResult.Pass
 end
 
 local function humanoidOf(player)
@@ -92,7 +120,7 @@ end
 -- The run button on touch screens, above the thumb's jump button.
 function Movement:_ensurePhoneButton()
 	local ctx = self.ctx
-	if not ctx.input.TouchEnabled then
+	if self.bound or not ctx.input.TouchEnabled then
 		if self.phoneButton then self.phoneButton:Destroy() self.phoneButton = nil end
 		return
 	end
@@ -121,9 +149,14 @@ function Movement:Step(dt)
 		end
 		if humanoid.FloorMaterial ~= Enum.Material.Air then self.doubleUsed = false end
 		self.running = humanoid.WalkSpeed == config.sprint and humanoid.MoveDirection.Magnitude > 0.1 and humanoid.FloorMaterial ~= Enum.Material.Air
+		local title = self.toggled and ctx.T("PARAR", "STOP") or ctx.T("CORRER", "RUN")
 		if self.phoneButton then
-			self.phoneButton.Text = self.toggled and ctx.T("PARAR", "STOP") or ctx.T("CORRER", "RUN")
+			self.phoneButton.Text = title
 			self.phoneButton.BackgroundColor3 = self.toggled and ctx.C.green or ctx.C.card
+		end
+		if self.bound and self.title ~= title then
+			self.title = title
+			pcall(function() ctx.actions:SetTitle("DoomRun", title) end)
 		end
 		-- Dust kicked up at the heels while running, a few puffs a second.
 		if self.running and root and not (ctx.lowFX and ctx.lowFX()) and ctx.folder then
@@ -158,6 +191,7 @@ function Movement:Step(dt)
 end
 
 function Movement:Destroy()
+	if self.bound then pcall(function() self.ctx.actions:UnbindAction("DoomRun") end) end
 	for _, entry in ipairs(self.rings) do entry.part:Destroy() end
 	self.rings = {}
 	if self.phoneButton then self.phoneButton:Destroy() end

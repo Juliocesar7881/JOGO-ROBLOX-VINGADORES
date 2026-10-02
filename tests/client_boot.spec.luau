@@ -301,6 +301,12 @@ local function session(screen)
 		PromptProductPurchase = function(_, _, id) table.insert(prompts, "product:" .. tostring(id)) end,
 	}
 	services.RunService, services.UserInputService, services.GuiService = runService, input, guiService
+	-- Context actions: the bound handlers and button titles are kept so a test can press them.
+	local contextActions = { handlers = {}, titles = {} }
+	function contextActions:BindAction(name, handler) self.handlers[name] = handler end
+	function contextActions:SetTitle(name, title) self.titles[name] = title end
+	function contextActions:UnbindAction(name) self.handlers[name] = nil end
+	services.ContextActionService = contextActions
 	services.TweenService = { Create = function() return { Play = function() end, Cancel = function() end } end }
 	services.MarketplaceService = market
 
@@ -1355,26 +1361,21 @@ local function session(screen)
 		root.AssemblyLinearVelocity = v3(0, 0, 0)
 		frames(1 / 30, 2)
 		check(humanoid.WalkSpeed == moves.walk, tag .. ": a commander walks at the catalogue speed")
-		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift }, false)
+		contextActions.handlers.DoomRun("DoomRun", Enum.UserInputState.Begin, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
 		frames(1 / 30, 2)
 		check(humanoid.WalkSpeed == moves.sprint, tag .. ": holding Shift runs")
-		input.InputEnded:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
+		contextActions.handlers.DoomRun("DoomRun", Enum.UserInputState.End, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
 		frames(1 / 30, 2)
 		check(humanoid.WalkSpeed == moves.walk, tag .. ": letting go walks again")
 		-- A speed the game did not set (a future slowing power) is never overwritten.
 		humanoid.WalkSpeed = 9
-		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift }, false)
+		contextActions.handlers.DoomRun("DoomRun", Enum.UserInputState.Begin, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
 		frames(1 / 30, 2)
 		check(humanoid.WalkSpeed == 9, tag .. ": a speed set by something else is left alone")
 		humanoid.WalkSpeed = moves.walk
-		input.InputEnded:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
-		-- Typing in a text box does not run.
-		input.focused = true
-		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift }, false)
-		input.focused = nil
-		frames(1 / 30, 2)
-		check(humanoid.WalkSpeed == moves.walk, tag .. ": Shift typed into a text box does not run")
-		input.InputEnded:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
+		contextActions.handlers.DoomRun("DoomRun", Enum.UserInputState.End, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
+		check(contextActions.handlers.DoomRun("DoomRun", Enum.UserInputState.Begin, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift }) == Enum.ContextActionResult.Pass, tag .. ": the action never swallows the key")
+		contextActions.handlers.DoomRun("DoomRun", Enum.UserInputState.End, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
 		-- The first jump leaves the ground; the second, in the air, pushes up again, once.
 		input.JumpRequest:Fire()
 		check(#changes == 0, tag .. ": a jump from the ground is the game's own, not a double jump")
@@ -1400,22 +1401,33 @@ local function session(screen)
 		check(countParts("JumpRing") >= 1, tag .. ": the extra jump opens a ring of light")
 		frames(1 / 30, 30)
 		check(countParts("JumpRing") == 0, tag .. ": the ring fades away")
-		-- The phone's run button toggles running.
-		check(named(gui, "RunButton") == nil, tag .. ": no run button without a touch screen")
-		input.TouchEnabled = true
-		frames(1 / 30, 2)
-		local runButton = named(gui, "RunButton")
-		check(runButton ~= nil, tag .. ": a touch screen gets a run button")
+		-- Running is a context action, so a phone gets Roblox's own button beside
+		-- the jump button, and the controller its stick click.
+		check(contextActions.handlers.DoomRun ~= nil, tag .. ": running is bound as a context action")
+		check(named(gui, "RunButton") == nil, tag .. ": we draw no run button of our own over the HUD")
+		local run = contextActions.handlers.DoomRun
 		humanoid.FloorMaterial = Enum.Material.Plastic
-		if runButton then runButton.Activated:Fire() flush() end
+		run("DoomRun", Enum.UserInputState.Begin, { UserInputType = Enum.UserInputType.Touch, KeyCode = Enum.KeyCode.Unknown })
+		run("DoomRun", Enum.UserInputState.End, { UserInputType = Enum.UserInputType.Touch, KeyCode = Enum.KeyCode.Unknown })
 		frames(1 / 30, 2)
-		check(humanoid.WalkSpeed == moves.sprint, tag .. ": the run button runs")
-		if runButton then runButton.Activated:Fire() flush() end
+		check(humanoid.WalkSpeed == moves.sprint, tag .. ": a tap on the phone's button turns running on and it stays on")
+		check(contextActions.titles.DoomRun == "PARAR", tag .. ": and its title says how to stop, got " .. tostring(contextActions.titles.DoomRun))
+		run("DoomRun", Enum.UserInputState.Begin, { UserInputType = Enum.UserInputType.Touch, KeyCode = Enum.KeyCode.Unknown })
+		run("DoomRun", Enum.UserInputState.End, { UserInputType = Enum.UserInputType.Touch, KeyCode = Enum.KeyCode.Unknown })
 		frames(1 / 30, 2)
-		check(humanoid.WalkSpeed == moves.walk, tag .. ": and stops running")
-		input.TouchEnabled = false
+		check(humanoid.WalkSpeed == moves.walk and contextActions.titles.DoomRun == "CORRER", tag .. ": a second tap stops")
+		run("DoomRun", Enum.UserInputState.Begin, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
 		frames(1 / 30, 2)
-		check(named(gui, "RunButton") == nil, tag .. ": the run button goes with the touch screen")
+		check(humanoid.WalkSpeed == moves.sprint, tag .. ": Shift through the action runs while held")
+		run("DoomRun", Enum.UserInputState.End, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.LeftShift })
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == moves.walk, tag .. ": and walks again when released")
+		run("DoomRun", Enum.UserInputState.Begin, { UserInputType = Enum.UserInputType.Gamepad1, KeyCode = Enum.KeyCode.ButtonL3 })
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == moves.sprint, tag .. ": the controller's stick click toggles running on")
+		run("DoomRun", Enum.UserInputState.Begin, { UserInputType = Enum.UserInputType.Gamepad1, KeyCode = Enum.KeyCode.ButtonL3 })
+		frames(1 / 30, 2)
+		check(humanoid.WalkSpeed == moves.walk, tag .. ": and off again")
 		humanoid:Destroy()
 	end)
 
