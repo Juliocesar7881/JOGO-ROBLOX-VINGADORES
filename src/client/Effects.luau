@@ -613,6 +613,21 @@ function Effects:_groundImpact(position, color, radius)
 	if effect then effect.growFrom, effect.growTo = radius, radius * 2 end
 end
 
+-- The full-screen beat of an ultimate (only this client's view): saturation and
+-- brightness fall, then recover over about a second.
+function Effects:_ultimateGrade(tint)
+	local lighting = game:GetService("Lighting")
+	local grade = lighting:FindFirstChild("DoomUltimate")
+	if not grade then
+		grade = Instance.new("ColorCorrectionEffect")
+		grade.Name = "DoomUltimate"
+		grade.Parent = lighting
+	end
+	grade.Saturation, grade.Brightness, grade.Contrast = -0.85, -0.08, 0.25
+	grade.TintColor = Color3.new(1, 1, 1):Lerp(tint, 0.4)
+	TweenService:Create(grade, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Saturation = 0, Brightness = 0, Contrast = 0, TintColor = Color3.new(1, 1, 1)}):Play()
+end
+
 -- A tower just placed: a ring spreads from its pedestal and a short column of
 -- light rises, in the hero's colour. Reduced effects keeps the ring only.
 -- A squad mate's marker: a ring and a beam of light on the ground and the name
@@ -988,6 +1003,9 @@ function Effects:Handle(event)
 		local lowFX=state and state.profile and state.profile.settings and state.profile.settings.lowFX
 		local tint=UI.color(event.color)
 		local kind=event.abilityKind
+		-- An ultimate takes over the screen for a heartbeat: the world drains of
+		-- colour, then floods back, tinted by the power (not under reduced effects).
+		if event.ultimate and not lowFX then self:_ultimateGrade(tint) end
 		if typeof(event.position)=="Vector3" then
 			self:Handle({kind="Pulse",position=event.position,color=event.color,radius=math.max(event.radius or 0,5),duration=math.clamp(event.duration or 0.5,0.5,6)})
 			if not lowFX then
