@@ -228,7 +228,7 @@ do
 	for portalId, destination in pairs(Catalog.Destinations) do
 		check(onFloor(v3(destination.x, 0, destination.z), -2) ~= nil, "station " .. portalId .. " stands on an area floor")
 	end
-	check(countClass(lobby, "BasePart") < 3600, "the lobby remains under its geometry budget, got " .. tostring(countClass(lobby, "BasePart")))
+	check(countClass(lobby, "BasePart") < 4500, "the lobby remains under its geometry budget, got " .. tostring(countClass(lobby, "BasePart")))
 	print("  lobby: " .. tostring(countClass(lobby, "BasePart")) .. " parts")
 end
 -- Coplanar overlapping faces flicker (z-fighting) as the camera moves.

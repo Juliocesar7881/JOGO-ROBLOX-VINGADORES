@@ -5,6 +5,7 @@
 -- a server part; split out of init.client to keep that script small.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local Motion = require(script.Parent:WaitForChild("Motion"))
 
 local LobbyWorld = {}
 
@@ -128,6 +129,37 @@ function LobbyWorld.new(ctx)
 	-- or Sway (flags, hinged at the pole) comes alive. Purely local and cheap;
 	-- reduced effects leaves them still.
 	local lobbyProps = nil
+	-- Figures standing as scenery (statues, cameos, the agency's staff) breathe
+	-- and glance about: each is rigged once and posed by hand, only while it is
+	-- near the camera and at about half the frame rate.
+	local idleFigures = {}
+	local idleFrame = 0
+	local function idleStep(now)
+		idleFrame += 1
+		local camera = workspace.CurrentCamera
+		local eye = camera and camera.CFrame.Position
+		for index = #idleFigures, 1, -1 do
+			local figure = idleFigures[index]
+			if not figure.model.Parent then
+				table.remove(idleFigures, index)
+			elseif (idleFrame + index) % 2 == 0 and (not eye or (figure.rig.root.Position - eye).Magnitude < 150) then
+				local t = now + figure.phase
+				local joints = figure.rig.joints
+				Motion.Hero(joints, { breathe = math.sin(t * 1.7), style = "idle", t = t })
+				-- Heads turn slowly to one side, hold and come back.
+				local glance = math.max(0, math.sin(t * 0.31)) ^ 0.5 * math.sin(t * 0.9) * 0.45
+				if joints.Neck then joints.Neck.Transform = CFrame.Angles(-0.02 * math.sin(t * 1.7), glance, 0) end
+				if figure.guard and joints.LeftShoulder and joints.RightShoulder then
+					-- Hands folded in front, as staff stand at a post.
+					joints.LeftShoulder.Transform = CFrame.Angles(0.5, 0, 0.3)
+					joints.RightShoulder.Transform = CFrame.Angles(0.5, 0, -0.3)
+					joints.LeftElbow.Transform = CFrame.Angles(1.25, 0, 0)
+					joints.RightElbow.Transform = CFrame.Angles(1.25, 0, 0)
+				end
+				Motion.Solve(figure.rig)
+			end
+		end
+	end
 	local function animateLobby(dt)
 		local state = ctx.state()
 		if not state or state.phase ~= "Lobby" then return end
@@ -153,7 +185,14 @@ function LobbyWorld.new(ctx)
 					collect(model, "AfkIcon", 1.4, 0.35)
 				end
 			end
+			idleFigures = {}
 			for _, child in ipairs(lobby and lobby:GetDescendants() or {}) do
+				if child:IsA("Model") and child:GetAttribute("IdleFigure") then
+					local rigged, rig = pcall(Motion.Rig, child)
+					if rigged and rig and rig.joints and rig.joints.LeftShoulder then
+						table.insert(idleFigures, { model = child, rig = rig, phase = child:GetAttribute("IdlePhase") or 0, guard = child:GetAttribute("IdleGuard") == true })
+					end
+				end
 				-- Portal vortices turn; each one a little differently.
 				if child:IsA("SurfaceGui") and child.Name == "PortalSwirl" and child.Parent then
 					local swirl = child:FindFirstChild("Swirl")
@@ -175,6 +214,7 @@ function LobbyWorld.new(ctx)
 			end
 		end
 		local now = os.clock()
+		idleStep(now)
 		for _, prop in ipairs(lobbyProps) do
 			prop.angle += dt * prop.spin
 			if prop.swirl then

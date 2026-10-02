@@ -1055,6 +1055,41 @@ function Figure.Hero(parent, heroId, hero, scale)
 	return figure
 end
 
+-- The agency's staff: the same jointed human the heroes are, in a dark suit,
+-- white shirt and tie, dark glasses, an earpiece with its wire. They stand
+-- still as scenery but breathe and glance about (the client animates every
+-- figure tagged IdleFigure; `guard` folds their hands in front of them).
+local AGENT_SKIN = { Color3.fromRGB(232, 181, 147), Color3.fromRGB(141, 92, 64), Color3.fromRGB(198, 146, 108), Color3.fromRGB(96, 64, 46) }
+local AGENT_HAIR = { Color3.fromRGB(38, 30, 28), Color3.fromRGB(96, 64, 40), Color3.fromRGB(20, 20, 24), Color3.fromRGB(150, 110, 60) }
+function Figure.Agent(parent, index)
+	local suit, white, navy = Color3.fromRGB(26, 28, 36), Color3.fromRGB(240, 242, 246), Color3.fromRGB(28, 38, 84)
+	local skin = AGENT_SKIN[(index - 1) % #AGENT_SKIN + 1]
+	local figure = Figure.Build(parent, { scale = 1.02, width = 1.04 }, {
+		skin = skin, head = skin, chest = suit, pelvis = suit, upperArm = suit, lowerArm = suit, hand = skin,
+		upperLeg = suit, lowerLeg = suit, foot = Color3.fromRGB(14, 14, 18),
+	})
+	figure.model.Name = "Agent"
+	local f, c, h, s = figure, figure.sizes.chest, figure.parts.Head.Size, figure.scale
+	f.add("UpperTorso", "Shirt", Vector3.new(c.X * 0.3, c.Y * 0.78, 0.06 * s), CFrame.new(0, c.Y * 0.08, -c.Z / 2 - 0.03 * s), white, FABRIC)
+	f.add("UpperTorso", "Tie", Vector3.new(0.2 * s, c.Y * 0.62, 0.08 * s), CFrame.new(0, c.Y * 0.02, -c.Z / 2 - 0.07 * s), navy, FABRIC)
+	f.add("UpperTorso", "TieKnot", Vector3.new(0.26, 0.2, 0.1) * s, CFrame.new(0, c.Y * 0.4, -c.Z / 2 - 0.08 * s), navy, FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "Lapel", Vector3.new(0.34 * s, c.Y * 0.84, 0.1 * s), CFrame.new(side * c.X * 0.26, c.Y * 0.04, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * 0.16), Color3.fromRGB(14, 16, 22), FABRIC)
+	end
+	f.add("LowerTorso", "Belt", Vector3.new(f.sizes.pelvis.X * 1.04, f.sizes.pelvis.Y * 0.4, f.sizes.pelvis.Z * 1.06), CFrame.new(0, f.sizes.pelvis.Y * 0.28, 0), Color3.fromRGB(10, 10, 14), FABRIC)
+	Figure.Hair(f, AGENT_HAIR[(index * 3 - 1) % #AGENT_HAIR + 1])
+	-- Dark glasses and a firm mouth.
+	Figure.Face(f, "lens", { lens = Color3.fromRGB(10, 12, 18), rim = Color3.fromRGB(10, 12, 18), width = 0.38, height = 0.2, slant = 0.06 })
+	f.add("Head", "Mouth", Vector3.new(0.3, 0.06, 0.05) * s, f.face(0, -0.5, 0.0), Color3.fromRGB(70, 40, 40), FABRIC)
+	-- The earpiece and its wire running down into the collar.
+	f.add("Head", "Earpiece", Vector3.new(0.18, 0.26, 0.2) * s, CFrame.new(-h.X / 2 - 0.05 * s, -h.Y * 0.04, 0.1 * s), Color3.fromRGB(20, 20, 24), METAL, "ball")
+	f.rod("Head", "EarWire", Vector3.new(-h.X / 2 - 0.08 * s, -h.Y * 0.14, 0.12 * s), Vector3.new(-h.X * 0.4, -h.Y * 0.68, 0.3 * s), 0.05 * s, Color3.fromRGB(150, 150, 160), METAL)
+	f.model:SetAttribute("IdleFigure", true)
+	f.model:SetAttribute("IdleGuard", true)
+	f.model:SetAttribute("IdlePhase", index * 1.7)
+	return f
+end
+
 -- Tower evolutions show on the hero: shoulder guards at level 2, glowing
 -- bracers at 3, a chest crest at 4, and at 5 the branch's colour burns in
 -- both hands and in a halo. Rebuilt from scratch on every upgrade.
@@ -1546,6 +1581,9 @@ local function staticFigure(parent, heroId, hero, origin, scale)
 		model = Figure.Hero(parent, heroId, hero, emphasis).model
 	end
 	model:SetAttribute("HeroArt", true)
+	-- A figure standing as scenery still breathes and looks about (client side).
+	model:SetAttribute("IdleFigure", true)
+	model:SetAttribute("IdlePhase", (origin.Position.X * 0.37 + origin.Position.Z * 0.21) % 6.28)
 	for _, item in ipairs(model:GetDescendants()) do
 		if item:IsA("BasePart") then item.Anchored, item.CanCollide, item.CanQuery, item.CanTouch = true, false, false, false end
 	end
@@ -1787,16 +1825,39 @@ function Kit.lamp(parent, base, height)
 	return glow
 end
 
--- Round-crowned trees in two greens; a whole tree is one Model.
+-- A tree with some body to it: a trunk that flares at the roots and forks into
+-- two limbs, and a crown of overlapping lobes in three greens, darker under and
+-- lighter on top, so it reads as foliage instead of two balls. A whole tree is
+-- one Model.
 function Kit.tree(parent, base, scale, tint)
 	scale, tint = scale or 1, tint or HQ.leaf
 	local tree = Instance.new("Model")
 	tree.Name, tree.Parent = "HQTree", parent
-	Kit.column(tree, "TreeTrunk", base - Vector3.new(0, 0.5, 0), 7 * scale, 1.4 * scale, HQ.trunk, Enum.Material.Wood)
-	local light = tint:Lerp(HQ.leafLight, 0.5)
-	for i, c in ipairs({ { 0, 8.6, 0, 9.5, tint }, { -2.6, 7.2, 1.3, 6.8, light }, { 2.4, 7.6, -1.2, 7, tint:Lerp(HQ.leafLight, 0.25) } }) do
-		local crown = Kit.blob(tree, "TreeCrown", Vector3.new(c[4], c[4] * 0.86, c[4]) * scale, CFrame.new(base + Vector3.new(c[1], c[2], c[3]) * scale), c[5])
-		if i == 1 then crown.CastShadow = true end
+	local bark = HQ.trunk
+	local barkDark = bark:Lerp(Color3.new(0, 0, 0), 0.22)
+	Kit.column(tree, "TreeTrunk", base - Vector3.new(0, 0.5, 0), 3.4 * scale, 1.9 * scale, barkDark, Enum.Material.Wood)
+	Kit.column(tree, "TreeTrunk", base + Vector3.new(0, 2.6 * scale, 0), 3.8 * scale, 1.35 * scale, bark, Enum.Material.Wood)
+	for index = 0, 2 do
+		local a = index * 2.1 + 0.4
+		local out = Vector3.new(math.cos(a), 0, math.sin(a))
+		Kit.blob(tree, "TreeRoot", Vector3.new(1.3, 0.8, 1.0) * scale, CFrame.lookAt(base + out * 0.85 * scale + Vector3.new(0, 0.05, 0), base + Vector3.new(0, 0.05, 0)), barkDark, Enum.Material.Wood)
+	end
+	local fork = base + Vector3.new(0, 6 * scale, 0)
+	for _, side in ipairs({ -1, 1 }) do
+		Kit.beam(tree, "TreeLimb", fork, fork + Vector3.new(side * 1.9, 2.3, side * 0.7) * scale, 0.62 * scale, 0.62 * scale, bark, Enum.Material.Wood)
+	end
+	tint = tint:Lerp(HQ.leafLight, 0.2)
+	local shade, light = tint:Lerp(Color3.new(0, 0, 0), 0.16), tint:Lerp(HQ.leafLight, 0.55)
+	-- { x, y, z, diameter, colour }: the centre lobe, a ring of six and a cap.
+	local lobes = {
+		{ 0, 8.7, 0, 8.4, tint },
+		{ -3.4, 7.4, 0.8, 5.6, shade }, { 3.2, 7.6, -1, 5.9, shade }, { 0.6, 7.2, 3.6, 5.4, tint },
+		{ -0.8, 7.5, -3.5, 5.7, shade }, { -2.6, 9.6, -1.8, 5.2, light }, { 2.6, 9.9, 1.9, 5.4, tint },
+		{ 0.2, 11.6, 0.2, 5.2, light },
+	}
+	for index, c in ipairs(lobes) do
+		local crown = Kit.blob(tree, "TreeCrown", Vector3.new(c[4], c[4] * 0.86, c[4]) * scale, CFrame.new(base + Vector3.new(c[1], c[2], c[3]) * scale), c[5], Enum.Material.Grass)
+		if index == 1 then crown.CastShadow = true end
 	end
 	return tree
 end
@@ -1813,23 +1874,47 @@ function Kit.palm(parent, base, scale, lean)
 	for i = 0, 5 do
 		local a = i * math.pi / 3 + lean
 		local out = Vector3.new(math.cos(a), 0, math.sin(a))
-		Kit.blob(palm, "PalmFrond", Vector3.new(2 * scale, 0.35 * scale, 7.5 * scale), CFrame.lookAt(top + out * 3.2 * scale - Vector3.new(0, 0.9 * scale, 0), top + out * 7 * scale - Vector3.new(0, 2.6 * scale, 0)),
-			i % 2 == 0 and HQ.leaf or HQ.leafLight)
+		local frond = i % 2 == 0 and HQ.leaf or HQ.leafLight
+		Kit.blob(palm, "PalmFrond", Vector3.new(2 * scale, 0.35 * scale, 5.2 * scale), CFrame.lookAt(top + out * 2.6 * scale - Vector3.new(0, 0.4 * scale, 0), top + out * 5.2 * scale - Vector3.new(0, 1.3 * scale, 0)), frond, Enum.Material.Grass)
+		-- The tip droops, so the frond arches instead of sticking out like a plank.
+		Kit.blob(palm, "PalmFrondTip", Vector3.new(1.5 * scale, 0.3 * scale, 3.6 * scale), CFrame.lookAt(top + out * 5.6 * scale - Vector3.new(0, 1.7 * scale, 0), top + out * 7.6 * scale - Vector3.new(0, 3.9 * scale, 0)), frond:Lerp(HQ.leafLight, 0.3), Enum.Material.Grass)
 	end
 	Kit.blob(palm, "Coconut", Vector3.new(1.3, 1.3, 1.3) * scale, CFrame.new(top - Vector3.new(0, 0.9 * scale, 0)), Color3.fromRGB(110, 76, 44))
 	return palm
 end
 function Kit.bush(parent, pos, size, tint)
-	size, tint = size or 3, tint or HQ.leaf
-	Kit.blob(parent, "Bush", Vector3.new(size, size * 0.8, size), CFrame.new(pos + Vector3.new(0, size * 0.25, 0)), tint)
-	Kit.blob(parent, "Bush", Vector3.new(size * 0.7, size * 0.6, size * 0.7), CFrame.new(pos + Vector3.new(size * 0.45, size * 0.2, size * 0.2)), tint:Lerp(HQ.leafLight, 0.4))
+	size, tint = size or 3, (tint or HQ.leaf):Lerp(HQ.leafLight, 0.15)
+	local shade, light = tint:Lerp(Color3.new(0, 0, 0), 0.16), tint:Lerp(HQ.leafLight, 0.5)
+	-- Five overlapping clumps, each its own tone, and a few berries.
+	for _, c in ipairs({ { 0, 0.3, 0, 1, tint }, { 0.45, 0.2, 0.2, 0.7, light }, { -0.42, 0.25, -0.2, 0.78, shade }, { 0.1, 0.55, 0.38, 0.55, light }, { -0.25, 0.5, 0.3, 0.6, tint } }) do
+		Kit.blob(parent, "Bush", Vector3.new(size * c[4], size * c[4] * 0.8, size * c[4]), CFrame.new(pos + Vector3.new(c[1] * size, c[2] * size, c[3] * size)), c[5], Enum.Material.Grass)
+	end
+	for index = 1, 3 do
+		local a = index * 2.3
+		Kit.blob(parent, "BushBerry", Vector3.new(0.3, 0.3, 0.3) * math.max(1, size / 4), CFrame.new(pos + Vector3.new(math.cos(a) * size * 0.5, size * 0.5, math.sin(a) * size * 0.5)), Color3.fromRGB(236, 84, 96))
+	end
 end
--- Flower beds: a few blossoms on a low green mound.
+-- Flower beds: a low stone border, dark soil, a few leaf tufts and flowers with
+-- real stems, a yellow heart and a flat ring of petals.
 function Kit.flowers(parent, pos, colors)
-	Kit.blob(parent, "FlowerBed", Vector3.new(4.2, 1, 3.2), CFrame.new(pos + Vector3.new(0, 0.3, 0)), HQ.leaf)
-	for i = 1, 5 do
-		local a = i * 1.26
-		Kit.blob(parent, "Blossom", Vector3.new(0.8, 0.5, 0.8), CFrame.new(pos + Vector3.new(math.cos(a) * 1.3, 0.85, math.sin(a) * 1.0)), colors[i % #colors + 1])
+	local stone = HQ.stoneDark
+	for _, side in ipairs({ -1, 1 }) do
+		Kit.block(parent, "BedBorder", Vector3.new(4.6, 0.7, 0.55), CFrame.new(pos + Vector3.new(0, 0.35, side * 1.7)), stone, Enum.Material.Slate, true)
+		Kit.block(parent, "BedBorder", Vector3.new(0.55, 0.7, 3.4), CFrame.new(pos + Vector3.new(side * 2.0, 0.35, 0)), stone, Enum.Material.Slate, true)
+	end
+	Kit.block(parent, "BedSoil", Vector3.new(3.8, 0.5, 2.8), CFrame.new(pos + Vector3.new(0, 0.3, 0)), Color3.fromRGB(78, 56, 40), Enum.Material.Ground)
+	for index = 1, 3 do
+		local a = index * 2.1
+		Kit.blob(parent, "BedTuft", Vector3.new(1.3, 0.9, 1.3), CFrame.new(pos + Vector3.new(math.cos(a) * 1.2, 0.8, math.sin(a) * 0.8)), HQ.leaf:Lerp(HQ.leafLight, 0.3), Enum.Material.Grass)
+	end
+	for index = 1, 6 do
+		local a = index * 1.05 + 0.3
+		local at = pos + Vector3.new(math.cos(a) * 1.3, 0, math.sin(a) * 0.85)
+		local height = 1.5 + (index % 3) * 0.45
+		Kit.column(parent, "BlossomStem", at + Vector3.new(0, 0.5, 0), height - 0.5, 0.14, HQ.leaf:Lerp(Color3.new(0, 0, 0), 0.25), Enum.Material.SmoothPlastic)
+		local top = at + Vector3.new(0, height, 0)
+		Kit.disc(parent, "BlossomPetals", top, 1.15, 0.12, colors[index % #colors + 1], Enum.Material.SmoothPlastic)
+		Kit.blob(parent, "BlossomHeart", Vector3.new(0.5, 0.4, 0.5), CFrame.new(top + Vector3.new(0, 0.1, 0)), Color3.fromRGB(255, 214, 72))
 	end
 end
 -- A stone planter with a tree or a bush.
@@ -3551,21 +3636,18 @@ function World:BuildShieldSites(hq)
 			Kit.triangle(outpost, "EmblemWing", frame * V(side * size * 0.05, size * 0.12, -0.22), toWorld(frame, V(side * size * 0.3, 0, 0)), toWorld(frame, V(0, -size * 0.26, 0)), 0.1, white)
 		end
 	end
-	local SKIN = { Color3.fromRGB(232, 181, 147), Color3.fromRGB(141, 92, 64), Color3.fromRGB(198, 146, 108), Color3.fromRGB(96, 64, 46) }
-	local HAIR = { Color3.fromRGB(38, 30, 28), Color3.fromRGB(96, 64, 40), Color3.fromRGB(20, 20, 24), Color3.fromRGB(150, 110, 60) }
 	local agents = 0
 	local function agent(frame)
 		agents += 1
-		for _, side in ipairs({ -1, 1 }) do
-			Kit.blob(outpost, "AgentLeg", V(0.62, 1.7, 0.66), frame * CFrame.new(side * 0.34, 0.8, 0), suit)
-			Kit.blob(outpost, "AgentArm", V(0.5, 1.55, 0.54), frame * CFrame.new(side * 1.02, 2.35, 0) * CFrame.Angles(0, 0, side * 0.12), suit)
+		-- The jointed figure, placed after it is anchored (see staticFigure).
+		local made = Figure.Agent(outpost, agents)
+		for _, item in ipairs(made.model:GetDescendants()) do
+			if item:IsA("BasePart") then item.Anchored, item.CanCollide, item.CanQuery, item.CanTouch = true, false, false, false end
 		end
-		Kit.blob(outpost, "AgentBody", V(1.8, 1.95, 1.1), frame * CFrame.new(0, 2.45, 0), suit)
-		Kit.blob(outpost, "AgentShirt", V(0.62, 0.95, 0.3), frame * CFrame.new(0, 2.95, -0.46), white)
-		Kit.blob(outpost, "AgentTie", V(0.18, 0.75, 0.12), frame * CFrame.new(0, 2.8, -0.6), navy)
-		Kit.blob(outpost, "AgentHead", V(1.26, 1.3, 1.2), frame * CFrame.new(0, 4.05, 0), SKIN[(agents - 1) % #SKIN + 1])
-		Kit.blob(outpost, "AgentHair", V(1.32, 0.62, 1.26), frame * CFrame.new(0, 4.5, 0.08), HAIR[(agents - 1) % #HAIR + 1])
-		Kit.blob(outpost, "AgentShades", V(1.1, 0.3, 0.26), frame * CFrame.new(0, 4.12, -0.56), Color3.fromRGB(12, 14, 18), glass)
+		made.model:PivotTo(frame)
+		-- A solid, invisible body: staff are not walked through.
+		local body = Kit.block(outpost, "AgentBody", V(2.4, 6.4, 2.4), frame * CFrame.new(0, 3.2, 0), HQ.ink, Enum.Material.SmoothPlastic, true)
+		body.Transparency = 1
 	end
 	-- A site's frame: local +Z faces the hub, local -Z is the back.
 	local function site(position)
