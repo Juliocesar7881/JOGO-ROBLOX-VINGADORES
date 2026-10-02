@@ -1359,6 +1359,55 @@ do
 	for _, event in ipairs(readEvents) do if event.kind == "Shot" and event.towerId == gunner.id then shot = event end end
 	check(shot ~= nil and shot.armored == true, "a shot on armour says so, for the sparks")
 
+	-- A splitter bursts into its fragments where it fell: the same health
+	-- scaling, a share of its Gold, no second burst, and the wave stays open
+	-- until the pieces are gone.
+	do
+		local sm, smPlayer = stage({ modeId = "normal", mapId = "manhattan", wave = 14 })
+		local smEvents = {}
+		local smFx = sm._fx
+		sm._fx = function(self, event, ...) table.insert(smEvents, event) return smFx(self, event, ...) end
+		for id in pairs(sm.enemies) do sm.enemies[id] = nil end
+		sm.alive, sm.pendingSpawns, sm.spawnIndex = 0, {}, 1
+		local blob = spawn(sm, "splitter", 30, 2)
+		sm:_damage(blob, blob.hp + 1, nil, { trueDamage = true })
+		check(sm.enemies[blob.id] == nil, "a fallen splitter leaves the road")
+		local down
+		for _, event in ipairs(smEvents) do if event.kind == "EnemyDown" and event.id == blob.id then down = event end end
+		check(down ~= nil and down.split == true, "the splitter's fall says it bursts, for the splat")
+		check(sm.alive == 0 and #sm.splits == 1, "the fragments wait for the end of the damage pass, not inside it")
+		sm:_flushSplits()
+		local pieces = {}
+		for _, enemy in pairs(sm.enemies) do table.insert(pieces, enemy) end
+		check(#pieces == 2 and sm.alive == 2 and #sm.splits == 0, "a splitter leaves two fragments, got " .. #pieces)
+		for _, piece in ipairs(pieces) do
+			check(piece.enemyId == "splitling" and math.abs(piece.maxHP - Catalog.Enemies.splitling.hp * 2) < 1e-6, "a fragment keeps its parent's health scaling")
+			check(math.abs(piece.progress - 30) <= 3 and piece.cash == Rules.KillCash("splitling"), "a fragment stands where it fell and carries its own Gold")
+		end
+		check(pieces[1].progress ~= pieces[2].progress, "the two fragments do not stack")
+		sm.phase = "Wave"
+		sm:_damage(pieces[1], 1e9, nil, { trueDamage = true })
+		sm:_flushSplits()
+		check(sm.alive == 1 and #sm.splits == 0, "a fragment dies for good, without a second burst")
+		-- A summoned or rewardless splitter pays nothing, in pieces either.
+		local ghost = spawn(sm, "splitter", 40, 1)
+		ghost.rewardless, ghost.cash = true, 0
+		sm:_damage(ghost, ghost.hp + 1, nil, { trueDamage = true })
+		sm:_flushSplits()
+		local freebies = 0
+		for _, enemy in pairs(sm.enemies) do if enemy.enemyId == "splitling" and enemy.cash == 0 and enemy.rewardless then freebies += 1 end end
+		check(freebies == 2, "the pieces of a rewardless splitter are rewardless too")
+		-- The enemy cap holds: with one free slot a burst makes one fragment, not two.
+		for id in pairs(sm.enemies) do sm.enemies[id] = nil end
+		sm.alive = 0
+		local crowded = spawn(sm, "splitter", 50, 1)
+		sm.alive = Config.MaxEnemies
+		sm:_damage(crowded, crowded.hp + 1, nil, { trueDamage = true })
+		sm.alive = Config.MaxEnemies - 1
+		sm:_flushSplits()
+		check(sm.alive == Config.MaxEnemies, "a burst never exceeds the enemy cap, alive is " .. sm.alive)
+	end
+
 	-- Scavenger towers and area powers sweep up their owner's Gold: less
 	-- walking, never more Gold.
 	local areaHero

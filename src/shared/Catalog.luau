@@ -416,7 +416,7 @@ Catalog.Maps = {
 	},
 }
 
-Catalog.EnemyOrder = { "zombie", "runner", "brute", "armored", "stealth", "flyer", "support", "summoner" }
+Catalog.EnemyOrder = { "zombie", "runner", "brute", "armored", "stealth", "flyer", "support", "summoner", "splitter" }
 Catalog.BossOrder = { "lizard", "abomination", "redskull", "killmonger", "doom", "loki" }
 Catalog.Enemies = {
 	zombie = { id = "zombie", name = text("Infectado", "Infected"), hp = 40, speed = 9.8, leak = 1, reward = 10, armor = 0, air = false, stealth = false, boss = false, color = { 111, 165, 94 } },
@@ -427,6 +427,11 @@ Catalog.Enemies = {
 	flyer = { id = "flyer", name = text("Voador contaminado", "Infected Flyer"), hp = 56, speed = 13.5, leak = 2, reward = 13, armor = 0, air = true, stealth = false, boss = false, color = { 82, 180, 151 } },
 	support = { id = "support", name = text("Infectado de suporte", "Infected Support"), hp = 118, speed = 8.5, leak = 3, reward = 18, armor = 0.1, air = false, stealth = false, boss = false, color = { 112, 223, 108 } },
 	summoner = { id = "summoner", name = text("Invocador", "Summoner"), hp = 190, speed = 7.4, leak = 4, reward = 22, armor = 0.12, air = false, stealth = false, boss = false, color = { 170, 84, 205 } },
+	-- Bursts into two fragments where it falls: splash and chain shots clear the
+	-- pieces, a lone sniper wades through them. Fragments are never in a wave
+	-- pool; only a dying splitter makes them.
+	splitter = { id = "splitter", name = text("Gosmento", "Splitter"), hp = 118, speed = 8.8, leak = 2, reward = 12, armor = 0, air = false, stealth = false, boss = false, color = { 96, 214, 150 }, split = { into = "splitling", count = 2 } },
+	splitling = { id = "splitling", name = text("Fragmento", "Fragment"), hp = 36, speed = 12.4, leak = 1, reward = 5, armor = 0, air = false, stealth = false, boss = false, color = { 140, 236, 180 }, fragment = true },
 	lizard = { id = "lizard", name = text("Gekko Colosso", "Colossal Gecko"), hp = 1962, speed = 7.5, leak = 35, reward = 100, armor = 0.12, air = false, stealth = false, boss = true, color = { 113, 205, 85 }, hint = text("Concentre dano para interromper a regeneração.", "Focus your damage to interrupt regeneration.") },
 	abomination = { id = "abomination", name = text("Megabruto infectado", "Infected Megabrute"), hp = 2314, speed = 6.9, leak = 40, reward = 110, armor = 0.2, air = false, stealth = false, boss = true, color = { 174, 167, 86 }, hint = text("Impactos anunciados interrompem torres próximas.", "Telegraphed impacts interrupt nearby towers.") },
 	redskull = { id = "redskull", name = text("Comandante Sombra", "Shadow Commander"), hp = 2114, speed = 8.0, leak = 40, reward = 110, armor = 0.18, air = false, stealth = false, boss = true, color = { 226, 71, 63 }, hint = text("Soldados próximos recebem o bônus de comando.", "Nearby soldiers receive a command boost.") },

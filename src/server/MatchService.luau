@@ -170,6 +170,7 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 	self.participants, self.enemies, self.towers, self.rewardQueue, self.skipVotes = {}, {}, {}, {}, {}
 	self.soldiers={}
 	self.pendingSpawns, self.spawnIndex, self.spawnTimer, self.alive = {}, 1, 0, 0
+	self.splits = {}
 	self.routeCache = {}
 	for index, route in ipairs(self.catalog.Maps[mapId].paths) do
 		local points, lengths, total = {}, {}, 0
@@ -272,7 +273,7 @@ function Match:_previewThreats()
 	for _, spec in ipairs(specs) do
 		local def = self.catalog.Enemies[spec.enemyId]
 		local notable = def and (def.boss or def.air or def.stealth or (def.armor or 0) >= 0.3
-			or spec.enemyId == "summoner" or spec.enemyId == "support" or spec.enemyId == "brute")
+			or spec.enemyId == "summoner" or spec.enemyId == "support" or spec.enemyId == "brute" or spec.enemyId == "splitter")
 		if notable and not seen[spec.enemyId] then
 			seen[spec.enemyId] = true
 			table.insert(self.nextThreats, spec.enemyId)
@@ -357,9 +358,13 @@ function Match:_beginWave()
 	if self.mutation then self:_fx({kind="Mutation",mutationId=self.mutation}) end
 	local threats = {}
 	for _, spec in ipairs(self.pendingSpawns) do
-		if spec.enemyId == "stealth" then threats.stealth=true elseif spec.enemyId=="flyer" then threats.air=true elseif spec.enemyId=="armored" then threats.armor=true end
+		if spec.enemyId == "stealth" then threats.stealth=true elseif spec.enemyId=="flyer" then threats.air=true elseif spec.enemyId=="armored" then threats.armor=true elseif spec.enemyId=="splitter" then threats.split=true end
 	end
-	if threats.stealth then self:_notice("Camuflados chegando: Viúva Sombria, Vigilante Cego ou uma habilidade de revelar mostram os alvos.","Cloaked enemies incoming: Shadow Widow, Blind Vigilante or a reveal ability shows them.")
+	-- The first splitter wave of a run explains itself once; later waves keep the usual warnings.
+	if threats.split and not self.splitTold then
+		self.splitTold=true
+		self:_notice("Gosmentos chegando: eles se dividem ao morrer. Dano em área limpa os fragmentos.","Splitters incoming: they burst into fragments when they die. Area damage clears the pieces.")
+	elseif threats.stealth then self:_notice("Camuflados chegando: Viúva Sombria, Vigilante Cego ou uma habilidade de revelar mostram os alvos.","Cloaked enemies incoming: Shadow Widow, Blind Vigilante or a reveal ability shows them.")
 	elseif threats.air then self:_notice("Ameaça aérea: use heróis que atinjam voadores.","Air threat: use heroes that target flying enemies.")
 	elseif threats.armor then self:_notice("Blindados: perfuração e dano mágico são eficientes.","Armored enemies: piercing and magic are effective.") end
 	-- The tutorial teaches one idea per wave instead of dumping everything in
@@ -447,7 +452,9 @@ function Match:_damage(enemy, amount, tower, stats)
 	if enemy.hp<=0 then
 		if owner then owner.kills = (owner.kills or 0) + 1 end
 		self.enemies[enemy.id]=nil self.alive-=1
-		self:_fx({kind="EnemyDown",id=enemy.id,enemyId=enemy.enemyId,position=enemy.position,boss=enemy.def.boss==true})
+		self:_fx({kind="EnemyDown",id=enemy.id,enemyId=enemy.enemyId,position=enemy.position,boss=enemy.def.boss==true,split=enemy.def.split and true or nil})
+		-- The fragments wait for the end of the damage pass (see _flushSplits).
+		if enemy.def.split then table.insert(self.splits,enemy) end
 		for _, p in pairs(self.participants) do
 			if p.contributed and not p.returned and not p.disconnectedAt then
 				-- Every contributor gets their own pile; talents and cards grow it.
@@ -611,6 +618,25 @@ function Match:_attack(tower, stats)
 	if self.shotBuffer then shot.kind=nil table.insert(self.shotBuffer,shot) else self:_fx(shot) end
 	if attack=="splash" or attack=="dot" then self:_fx({kind="Pulse",position=target.position,radius=stats.splash or 8,color=Color3.fromRGB(c[1],c[2],c[3])}) end
 	return true
+end
+
+-- A splitter that fell leaves its fragments on the road where it died, with
+-- the same health scaling and a share of its Gold. They are made after the
+-- damage pass, never inside it: adding to self.enemies while a loop walks it
+-- would skip or repeat enemies.
+function Match:_flushSplits()
+	if #self.splits==0 then return end
+	local fallen=self.splits
+	self.splits={}
+	for _,enemy in ipairs(fallen) do
+		local split=enemy.def.split
+		local share=enemy.rewardless and 0 or math.floor(self.rules.KillCash(split.into)*enemy.cash/math.max(1,self.rules.KillCash(enemy.enemyId))+0.5)
+		for index=1,split.count do
+			-- Spread along the road so the pieces do not stack into one blob.
+			self:_spawn({enemyId=split.into,pathIndex=enemy.routeIndex,progress=math.max(0,enemy.progress+(index*2-split.count-1)*1.6),
+				hpMultiplier=enemy.maxHP/enemy.def.hp,rewardless=enemy.rewardless,cash=share})
+		end
+	end
 end
 
 function Match:_summon(enemy, count, enemyId)
@@ -1304,8 +1330,10 @@ function Match:Step(dt)
 				if self:_attack(tower,stats) then tower.nextAttack=self.elapsed+stats.interval else tower.nextAttack=self.elapsed+0.2 end
 			end
 		end
+		self:_flushSplits()
 		self:_enemiesStep(dt)
 		self:_hazardStep(dt)
+		self:_flushSplits()
 		if self.running and self.alive==0 and self.spawnIndex>#self.pendingSpawns then self:_endWave() end
 	end
 	self.syncTimer+=realDt

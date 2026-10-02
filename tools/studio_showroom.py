@@ -78,6 +78,10 @@ print("__MARKER__", #ids)
 '''
 
 ENEMIES = r'''
+-- The clients clone the figures the server published at boot; republish them
+-- from the modules currently in Studio so a new enemy shows its real figure,
+-- not the plain block of an id the stale folder does not know.
+fresh(SSS.DoomServer.WorldBuilder).Figure.PublishEnemies(catalog)
 local effects
 do
 	local copy = client.Effects:Clone()

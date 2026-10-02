@@ -31,7 +31,7 @@ for _, rarity in Catalog.RarityOrder do
 	end
 end
 equal(#Catalog.MapOrder, 6, "Campaign map count")
-equal(#Catalog.EnemyOrder, 23, "Enemy families")
+equal(#Catalog.EnemyOrder, 24, "Enemy families")
 equal(#Catalog.BossOrder, 6, "Six bosses: one per map, Loki for Asgard")
 equal(#Catalog.ModeOrder, 4, "Campaign, competitive and cards plus training")
 equal(#Catalog.PortalOrder, 4, "Four kinds of portal")
@@ -450,6 +450,34 @@ do
 		for wave = 10, Rules.WaveCount("normal", mapId), 10 do bosses[Rules.BossId(wave, mapId, "normal")] = true end
 	end
 	for _, id in Catalog.BossOrder do check(bosses[id], "The campaigns meet every boss, including " .. id) end
+end
+
+-- A splitter's fragments exist only as what it leaves behind: a real enemy
+-- that cannot split again and is never part of a wave of its own.
+do
+	local fragmentSeen, splitterFirst = false, nil
+	for _, modeId in { "normal", "ranked", "tutorial" } do
+		for wave = 1, 60 do
+			for _, spec in Waves.Generate("manhattan", modeId, wave, 1, 11) do
+				if Catalog.Enemies[spec.enemyId].fragment then fragmentSeen = true end
+				if spec.enemyId == "splitter" and modeId == "normal" and not splitterFirst then splitterFirst = wave end
+				if spec.enemyId == "splitter" then check(modeId ~= "tutorial", "Training teaches the basics without splitters") end
+			end
+		end
+	end
+	check(not fragmentSeen, "A fragment never walks in a wave of its own")
+	check(splitterFirst ~= nil and splitterFirst >= 12, "Splitters wait for wave 12 in the campaign, first seen on wave " .. tostring(splitterFirst))
+	for id, def in Catalog.Enemies do
+		if def.split then
+			local child = Catalog.Enemies[def.split.into]
+			check(child ~= nil and child.fragment == true and child.split == nil, id .. " splits into a fragment that does not split again")
+			check(def.split.count >= 2 and def.split.count <= 3, id .. " bursts into two or three pieces")
+			-- The pieces together are tougher than the parent alone, but not absurdly.
+			local total = def.hp + def.split.count * child.hp
+			check(total <= def.hp * 2, id .. " does not hide more than twice its own health in fragments")
+			check(Rules.KillCash(def.split.into) < Rules.KillCash(id), id .. " fragments pay less than the parent")
+		end
+	end
 end
 
 -- The final boss is the strongest thing in the run.

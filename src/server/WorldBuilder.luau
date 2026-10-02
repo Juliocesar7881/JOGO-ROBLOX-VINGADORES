@@ -1105,6 +1105,8 @@ local ENEMY_LOOK = {
 	flyer = { gait = "hover", body = { scale = 0.72, width = 0.9, arm = 0.9, leg = 0.84, legLength = 0.9 }, skin = EC.infected },
 	support = { gait = "march", body = { scale = 0.84, width = 1.04 }, skin = Color3.fromRGB(150, 210, 110) },
 	summoner = { gait = "glide", body = { scale = 0.9, width = 0.94 }, skin = Color3.fromRGB(170, 160, 190) },
+	splitter = { gait = "shamble", body = { scale = 0.86, width = 1.32, depth = 1.2, chest = 1.3, head = 0.82, arm = 0.92, leg = 0.92, legLength = 0.84 }, skin = Color3.fromRGB(112, 196, 150) },
+	splitling = { gait = "sprint", body = { scale = 0.5, width = 0.96 }, skin = Color3.fromRGB(150, 226, 184) },
 	illusion = { gait = "glide", body = { scale = 1.25, width = 0.92, arm = 0.9 }, skin = Color3.fromRGB(226, 206, 184) },
 	lizard = { gait = "reptile", body = { scale = 1.55, width = 1.16, depth = 1.1, head = 1.02, arm = 1.12, hand = 1.3, leg = 1.2, legLength = 0.9 }, skin = Color3.fromRGB(96, 170, 70) },
 	abomination = { gait = "stomp", body = { scale = 1.8, width = 1.46, depth = 1.3, chest = 1.3, head = 0.78, arm = 1.7, hand = 1.4, leg = 1.45, legLength = 0.84 }, skin = Color3.fromRGB(128, 136, 80) },
@@ -1254,6 +1256,30 @@ ENEMY_EXTRAS.support = function(f)
 	f.disc("UpperTorso", "Emitter", 0.6 * s, 0.1 * s, CFrame.new(0, c.Y * 0.08, -c.Z / 2 - 0.06 * s), Color3.fromRGB(174, 248, 115), NEON)
 	f.rod("UpperTorso", "Antenna", Vector3.new(0.36 * s, c.Y * 0.4, c.Z / 2 + 0.2 * s), Vector3.new(0.4 * s, c.Y * 0.4 + 1.3 * s, c.Z / 2 + 0.3 * s), 0.08 * s, Color3.fromRGB(80, 90, 96), METAL)
 	f.add("UpperTorso", "AntennaLight", Vector3.new(0.26, 0.26, 0.26) * s, CFrame.new(0.4 * s, c.Y * 0.4 + 1.4 * s, c.Z / 2 + 0.3 * s), Color3.fromRGB(174, 248, 115), NEON, "ball")
+end
+-- The splitter carries its two fragments inside a swollen sac: two glowing
+-- cores behind a seam down the middle, so the split is no surprise.
+ENEMY_EXTRAS.splitter = function(f)
+	infectedFace(f, Color3.fromRGB(196, 255, 150))
+	local c, s = f.sizes.chest, f.scale
+	local slime = Color3.fromRGB(130, 232, 170)
+	-- No shirt: the whole body is the same wet green, so the sac is the focus.
+	for _, name in ipairs({ "UpperTorso", "LeftUpperArm", "RightUpperArm" }) do f.parts[name].Color = Color3.fromRGB(86, 172, 138) end
+	for _, name in ipairs({ "LowerTorso", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" }) do f.parts[name].Color = Color3.fromRGB(54, 108, 100) end
+	local sac = f.add("UpperTorso", "Sac", c * Vector3.new(1.02, 0.92, 0.72), CFrame.new(0, -c.Y * 0.02, -c.Z / 2 - 0.12 * s), slime, FABRIC, "ball")
+	sac.Transparency = 0.3
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "Core", Vector3.new(0.5, 0.5, 0.5) * s, CFrame.new(side * c.X * 0.2, -c.Y * 0.02, -c.Z / 2 - 0.22 * s), Color3.fromRGB(204, 255, 150), NEON, "ball")
+	end
+	f.add("UpperTorso", "Seam", Vector3.new(0.07 * s, c.Y * 0.8, 0.06 * s), CFrame.new(0, -c.Y * 0.02, -c.Z / 2 - 0.5 * s), EC.ink, FABRIC)
+	f.add("Head", "Drip", Vector3.new(0.3, 0.46, 0.3) * s, CFrame.new(-f.parts.Head.Size.X * 0.34, f.parts.Head.Size.Y * 0.5, 0), slime, FABRIC, "ball")
+end
+ENEMY_EXTRAS.splitling = function(f)
+	infectedFace(f, Color3.fromRGB(196, 255, 150))
+	local c, s = f.sizes.chest, f.scale
+	for _, name in ipairs({ "UpperTorso", "LeftUpperArm", "RightUpperArm" }) do f.parts[name].Color = Color3.fromRGB(112, 202, 162) end
+	for _, name in ipairs({ "LowerTorso", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" }) do f.parts[name].Color = Color3.fromRGB(70, 130, 118) end
+	f.add("UpperTorso", "Core", Vector3.new(0.7, 0.7, 0.5) * s, CFrame.new(0, 0, -c.Z / 2 - 0.1 * s), Color3.fromRGB(204, 255, 150), NEON, "ball")
 end
 ENEMY_EXTRAS.summoner = function(f)
 	local h, c, p, s = f.parts.Head.Size, f.sizes.chest, f.sizes.pelvis, f.scale

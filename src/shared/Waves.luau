@@ -70,9 +70,11 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed, difficultyId)
 		if wave >= 9 then table.insert(pool, "flyer") end
 		if wave >= (ranked and 10 or 14) then table.insert(pool, "stealth") end
 		if wave >= 17 then table.insert(pool, "support") end
+		if wave >= (ranked and 8 or 12) then table.insert(pool, "splitter") end
 		if wave >= 21 then table.insert(pool, "summoner") end
 		-- The late game leans on the heavy families.
 		if wave >= 28 then table.insert(pool, "armored"); table.insert(pool, "brute") end
+		if wave >= 30 then table.insert(pool, "splitter") end
 		if wave >= 36 then table.insert(pool, "flyer"); table.insert(pool, "stealth"); table.insert(pool, "summoner") end
 		if ranked and wave >= 20 then table.insert(pool, "armored"); table.insert(pool, "support") end
 	elseif wave >= 12 then

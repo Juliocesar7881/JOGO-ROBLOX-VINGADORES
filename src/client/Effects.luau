@@ -962,7 +962,7 @@ function Effects:Handle(event)
 		if fallen and not event.boss and not lowFX and (self.poofBudget or 0) < 10 then
 			self.poofBudget = (self.poofBudget or 0) + 1
 			local height = fallen.def.air and (fallen.airLift or 6) + 3 or 2.2 * (fallen.scale or 1)
-			self:_impact(fallen.position + Vector3.new(0, height, 0), Color3.fromRGB(214, 255, 190), 1.8 * math.max(0.8, fallen.scale or 1))
+			self:_impact(fallen.position + Vector3.new(0, height, 0), event.split and Color3.fromRGB(150, 255, 190) or Color3.fromRGB(214, 255, 190), (event.split and 2.8 or 1.8) * math.max(0.8, fallen.scale or 1))
 		end
 		self:Release(tostring(event.id))
 		if event.boss and typeof(event.position)=="Vector3" then self:_groundImpact(event.position,UI.Colors.gold,12) end
