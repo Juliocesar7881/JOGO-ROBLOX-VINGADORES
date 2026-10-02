@@ -348,7 +348,7 @@ check(not request(ana, "StartMatch", { mapId = "atlantis", modeId = "normal" }).
 local LOBBY_FUZZ = { "BuyGuaranteed", "EquipBase", "UpgradeTalent", "ResetTalents", "OpenChest", "UpgradeAbility", "SetLoadout", "Settings", "ClaimQuest",
 	"ProductInfo", "Leaderboard", "SetTitle", "ClaimFreeChest", "ClaimLogin", "ClaimPlaytime", "ClaimMilestone", "ClaimSeason", "RedeemCode",
 	"ClaimGroupReward", "CreateParty", "JoinParty", "LeaveParty", "SetDifficulty", "ElevatorLeave", "ElevatorStart", "ElevatorMap", "StartMatch",
-	"EnterAfkServer", "LeaveAfk", "PlaceTower", "UpgradeTower", "SellTower", "CastSkill", "ChooseCard", "SetSpeed", "ReturnLobby", "PlayAgain" }
+	"EnterAfkServer", "LeaveAfk", "Ping", "PlaceTower", "UpgradeTower", "SellTower", "CastSkill", "ChooseCard", "SetSpeed", "ReturnLobby", "PlayAgain" }
 local fuzzedInLobby = fuzz(LOBBY_FUZZ, 40)
 local afterFuzz = latest(ana)
 check(afterFuzz ~= nil and afterFuzz.profile ~= nil and afterFuzz.profile.gold == afterFuzz.profile.gold and afterFuzz.profile.gold >= 0 and afterFuzz.profile.xp >= 0,
@@ -420,7 +420,7 @@ check(not request(ana, "BuyHero", { heroId = "spiderman" }).ok, "lobby actions a
 check(not request(ana, "PlaceTower", { heroId = "ironman", position = v3(0, 0, -15) }).ok, "building on the route is refused")
 check(not request(ana, "PlaceTower", { heroId = "thor", position = v3(-28, 0, -40) }).ok, "a hero not in the squad cannot be placed")
 
-local MATCH_FUZZ = { "UpgradeBase", "PlaceTower", "UpgradeTower", "SellTower", "SetPriority", "CastSkill", "CollectCoin", "SkipWave", "ChooseCard", "SetSpeed", "SetAutoSkip" }
+local MATCH_FUZZ = { "Ping", "UpgradeBase", "PlaceTower", "UpgradeTower", "SellTower", "SetPriority", "CastSkill", "CollectCoin", "SkipWave", "ChooseCard", "SetSpeed", "SetAutoSkip" }
 local fuzzedInMatch = fuzz(MATCH_FUZZ, 60)
 local afterMatchFuzz = latest(ana)
 check(afterMatchFuzz ~= nil and afterMatchFuzz.match ~= nil and afterMatchFuzz.match.baseHP == afterMatchFuzz.match.baseHP and afterMatchFuzz.match.cash == afterMatchFuzz.match.cash,
