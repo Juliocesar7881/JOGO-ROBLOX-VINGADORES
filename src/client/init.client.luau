@@ -1356,6 +1356,12 @@ local function applyState(nextState)
 			C.violet, {big = true, cue = "levelUp", confetti = 40})
 	end
 	celebrateChanges(previousGold, previousMatch, phaseChanged)
+	-- Once per session, in a squad: how to mark a spot for the others.
+	if activeMatch() and (state.match.partySize or 1) >= 2 and not kit.pingHinted and state.match.tutorial ~= true then
+		kit.pingHinted = true
+		showToast(UserInputService.TouchEnabled and T("Em grupo: segure o dedo no chão para marcar um local.", "In a squad: hold a finger on the ground to mark a spot.")
+			or T("Em grupo: aperte G sobre o chão para marcar um local.", "In a squad: press G over the ground to mark a spot."))
+	end
 	nameplates:Update(state.players)
 	if state.notice then showToast(state.notice) end
 end
@@ -1456,6 +1462,22 @@ end)
 
 UserInputService.TouchTapInWorld:Connect(function(position, processed)
 	if not processed then handleWorldPointer(position) end
+end)
+
+-- Pinging: in a squad, holding a finger on the ground (or pressing G over it)
+-- marks the spot for everyone. The server relays and rate-limits it.
+local function pingAt(screenPosition)
+	if not activeMatch() or (state.match.partySize or 1) < 2 or selectedHero then return end
+	local hit = raycast(screenPosition, false)
+	if hit then act("Ping", {position = Vector3.new(hit.Position.X, 0, hit.Position.Z)}) end
+end
+UserInputService.TouchLongPress:Connect(function(positions, gestureState, processed)
+	if processed or gestureState ~= Enum.UserInputState.Begin or type(positions) ~= "table" or not positions[1] then return end
+	pingAt(positions[1])
+end)
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed or UserInputService:GetFocusedTextBox() or input.KeyCode ~= Enum.KeyCode.G then return end
+	pingAt(UserInputService:GetMouseLocation())
 end)
 
 -- AFK farm banner. The server marks the commander standing in a farm chamber

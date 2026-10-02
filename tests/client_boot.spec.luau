@@ -290,7 +290,7 @@ local function session(screen)
 	function runService:BindToRenderStep(name, _, fn) self.binds[name] = fn end
 	function runService:IsStudio() return true end
 	function runService:IsServer() return false end
-	local input = { InputBegan = newSignal(), TouchTapInWorld = newSignal(), TouchEnabled = false }
+	local input = { InputBegan = newSignal(), TouchTapInWorld = newSignal(), TouchLongPress = newSignal(), TouchEnabled = false }
 	function input:GetFocusedTextBox() return self.focused end
 	function input:GetMouseLocation() return Vector2.new(SCREEN.w / 2, SCREEN.h / 2) end
 	local guiService = {}
@@ -1323,6 +1323,33 @@ local function session(screen)
 		push(matchSnapshot(veteranProfile(), "Preparing", {}))
 		frames(1 / 30, 2)
 		check(anyLabel("CORRIDA") == nil, tag .. ": an ordinary wave carries no mutation line")
+		push(matchSnapshot(veteranProfile(), "Wave"))
+		frames(1 / 30, 2)
+	end)
+
+	step("squad pings: a long press marks the ground, only in a group", function()
+		local before = #actions
+		local function pings() local n = 0 for _, a in ipairs(actions) do if a == "Ping" then n += 1 end end return n end
+		local start = pings()
+		-- partySize 2 in the fixture: a long press on the ground sends a Ping.
+		rayHit = { Position = v3(10, 0, 20), Instance = workspace }
+		input.TouchLongPress:Fire({ Vector2.new(300, 300) }, Enum.UserInputState.Begin, false)
+		flush()
+		check(pings() == start + 1, tag .. ": a long press in a squad sends a ping")
+		check(actionPayloads.Ping ~= nil and typeof(actionPayloads.Ping.position) == "Vector3" and actionPayloads.Ping.position.Y == 0, tag .. ": the ping carries a ground point only")
+		fx({ kind = "Ping", position = v3(10, 0, 20), name = "Ally", ownerId = ALLY_ID, slot = 2 })
+		local marker = workspace:FindFirstChild("DoomClientVisuals") and named(workspace:FindFirstChild("DoomClientVisuals"), "PingMarker")
+		local seen = {}
+		for _, item in ipairs(workspace:FindFirstChild("DoomClientVisuals"):GetChildren()) do seen[#seen + 1] = item.Name end
+		check(marker ~= nil, tag .. ": a ping from a squad mate draws a marker (" .. table.concat(seen, ",") .. ")")
+		-- A long press with a hero selected is placement, not a ping; alone there is nobody to tell.
+		local solo = matchSnapshot(veteranProfile(), "Wave", { partySize = 1 })
+		push(solo)
+		local count = pings()
+		input.TouchLongPress:Fire({ Vector2.new(300, 300) }, Enum.UserInputState.Begin, false)
+		flush()
+		check(pings() == count, tag .. ": alone, a long press sends no ping")
+		rayHit = nil
 		push(matchSnapshot(veteranProfile(), "Wave"))
 		frames(1 / 30, 2)
 	end)

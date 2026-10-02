@@ -467,11 +467,11 @@ end
 local MATCH_ACTIONS = {
 	UpgradeBase = true, PlaceTower = true, UpgradeTower = true, SellTower = true, SetPriority = true,
 	CastSkill = true, CollectCoin = true, SkipWave = true, ChooseCard = true, ReturnLobby = true,
-	SetSpeed = true, SetAutoSkip = true, PlayAgain = true,
+	SetSpeed = true, SetAutoSkip = true, PlayAgain = true, Ping = true,
 }
 -- Coin pickups arrive several times per second and already answer with their
 -- own FX event, so they never trigger a full snapshot broadcast.
-local QUIET_ACTIONS = { CollectCoin = true }
+local QUIET_ACTIONS = { CollectCoin = true, Ping = true }
 -- Actions that move gold, so the economy can be read from the funnels instead
 -- of being inferred from balance snapshots.
 local ECONOMY_ACTIONS = { OpenChest = "Chest", UpgradeAbility = "Upgrade", ClaimQuest = "Gameplay" }

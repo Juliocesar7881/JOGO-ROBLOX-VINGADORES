@@ -615,6 +615,34 @@ end
 
 -- A tower just placed: a ring spreads from its pedestal and a short column of
 -- light rises, in the hero's colour. Reduced effects keeps the ring only.
+-- A squad mate's marker: a ring and a beam of light on the ground and the name
+-- floating over it, for four seconds, at most four at a time.
+local PING_COLORS = { Color3.fromRGB(255, 196, 64), Color3.fromRGB(96, 220, 255), Color3.fromRGB(255, 120, 190), Color3.fromRGB(150, 255, 130) }
+function Effects:PingMarker(position, name, slot, own)
+	if typeof(position) ~= "Vector3" then return end
+	self.pings = self.pings or {}
+	while #self.pings >= 4 do
+		local oldest = table.remove(self.pings, 1)
+		if oldest.anchor then oldest.anchor:Destroy() end
+	end
+	local color = PING_COLORS[((tonumber(slot) or 1) - 1) % #PING_COLORS + 1]
+	local anchor = part(self.folder, Vector3.new(1, 1, 1), color, Enum.Material.SmoothPlastic)
+	anchor.Name, anchor.Transparency, anchor.CFrame = "PingMarker", 1, CFrame.new(position + Vector3.new(0, 1, 0))
+	local beam = part(anchor, Vector3.new(14, 0.6, 0.6), color, Enum.Material.Neon)
+	beam.Name, beam.Shape, beam.Transparency = "PingBeam", Enum.PartType.Cylinder, 0.45
+	beam.CFrame = CFrame.new(position + Vector3.new(0, 7, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	local ring = part(anchor, Vector3.new(0.2, 8, 8), color, Enum.Material.Neon)
+	ring.Name, ring.Shape, ring.Transparency = "PingRing", Enum.PartType.Cylinder, 0.4
+	ring.CFrame = CFrame.new(position + Vector3.new(0, 0.25, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size, billboard.StudsOffsetWorldSpace, billboard.AlwaysOnTop, billboard.MaxDistance = UDim2.fromOffset(180, 40), Vector3.new(0, 16, 0), true, 400
+	billboard.Adornee, billboard.Parent = anchor, anchor
+	local label = UI.label(billboard, "📍 " .. tostring(name or ""), {Size = UDim2.fromScale(1, 1), Font = UI.Fonts.display, TextSize = 20, TextColor3 = color, TextStrokeTransparency = 0, TextXAlignment = Enum.TextXAlignment.Center})
+	label.TextStrokeColor3 = Color3.fromRGB(10, 10, 20)
+	table.insert(self.pings, { anchor = anchor, expires = (self.clock or 0) + 4 })
+	if self.audio then self.audio:Cue("place", own and 0.05 or 0.2) end
+end
+
 function Effects:PlaceBurst(position, color)
 	if typeof(position) ~= "Vector3" then return end
 	self:_groundImpact(position, color, 5)
@@ -871,6 +899,10 @@ function Effects:Handle(event)
 				self:Handle(shot)
 			end
 		end
+		return
+	end
+	if event.kind == "Ping" then
+		self:PingMarker(event.position, event.name, event.slot, event.ownerId == self.player.UserId)
 		return
 	end
 	if event.kind=="BaseShot" then
@@ -1228,6 +1260,14 @@ function Effects:Step(dt)
 		for _,leg in ipairs(record.legs) do leg.part.CFrame=pivot*leg.base*CFrame.Angles(lowAllyFX and 0 or math.sin(self.clock*10+leg.side*math.pi/2)*0.4,0,0) end
 	end
 	self.clock += dt
+	-- Squad markers fade after four seconds.
+	for index = #(self.pings or {}), 1, -1 do
+		local entry = self.pings[index]
+		if self.clock >= entry.expires then
+			if entry.anchor.Parent then entry.anchor:Destroy() end
+			table.remove(self.pings, index)
+		end
+	end
 	if self.clock >= (self.dustResetAt or 0) then self.dustBudget, self.poofBudget, self.dustResetAt = 0, 0, self.clock + 0.5 end
 	local state = self.getState()
 	local settings = state and state.profile and state.profile.settings or {}

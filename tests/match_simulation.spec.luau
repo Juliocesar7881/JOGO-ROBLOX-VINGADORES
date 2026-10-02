@@ -1575,6 +1575,33 @@ do
 	check(calm.hazardCount == 0, "Manhattan has no hazard")
 end
 
+print("--- squad pings ---")
+do
+	local duo = simulate({ mapId = "manhattan", modeId = "tutorial", size = 2 })
+	local match = duo.match
+	check(match ~= nil, "a duo match exists for the ping test")
+	if match then
+		match.running, match.phase = true, "Wave"
+		local first, second = duo.members[1], duo.members[2]
+		local events = {}
+		local original = match._fx
+		match._fx = function(self, event, ...) table.insert(events, event) return original(self, event, ...) end
+		local ok = match:Handle(first, "Ping", { position = v3(10, 5, 20) })
+		check(ok, "a commander in a squad can ping")
+		local ping
+		for _, event in ipairs(events) do if event.kind == "Ping" then ping = event end end
+		check(ping ~= nil and ping.position.Y == 0 and ping.position.X == 10 and ping.ownerId == first.UserId, "the ping is relayed flat on the ground with its owner")
+		check(not match:Handle(first, "Ping", { position = v3(10, 0, 20) }), "pings are rate limited per commander")
+		check(match:Handle(second, "Ping", { position = v3(-30, 0, 40) }), "another commander's limit is their own")
+		check(not match:Handle(second, "Ping", { position = v3(9999, 0, 0) }), "a ping off the map is refused")
+		check(not match:Handle(second, "Ping", { position = "here" }), "a malformed ping is refused")
+	end
+	local solo = stage({ mapId = "manhattan", wave = 1 })
+	local soloPlayer
+	for _, p in pairs(solo.participants) do soloPlayer = p.player end
+	check(not solo:Handle(soloPlayer, "Ping", { position = v3(1, 0, 1) }), "alone there is nobody to ping")
+end
+
 print("--- wave mutations ---")
 do
 	-- Find a seed and wave that mutate, then compare with the same wave unmutated.

@@ -1476,6 +1476,16 @@ function Match:Handle(player,action,payload)
 		p.speedVote=payload.speed
 		self:_refreshSpeed()
 		return true,{speed=self.speed}
+	elseif action=="Ping" then
+		-- A squad's marker: "look here". Relayed to everyone in the match, at most
+		-- one per commander every 1.5 s; alone there is nobody to tell.
+		if self.size<2 then return false,"Marcar um local é para jogar em grupo. / Pings are for playing in a group." end
+		local at=payload.position
+		if not validPosition(at) or math.abs(at.X)>112 or math.abs(at.Z)>112 then return false,"Marque um ponto do mapa. / Mark a point on the map." end
+		if os.clock()-(p.lastPing or -10)<1.5 then return false,"Calma! / Easy!" end
+		p.lastPing=os.clock()
+		self:_fx({kind="Ping",position=Vector3.new(at.X,0,at.Z),name=player.DisplayName,ownerId=player.UserId,slot=p.index})
+		return true
 	elseif action=="SetAutoSkip" then
 		if type(payload.on)~="boolean" then return false,"Configuração inválida. / Invalid setting." end
 		p.autoSkip=payload.on

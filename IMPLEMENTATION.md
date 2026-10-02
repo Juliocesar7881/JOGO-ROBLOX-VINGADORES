@@ -100,7 +100,7 @@ Roblox). The rewards panel has the code box, the group card (only when
 
 ## Match speed and auto-skip — 22/09/2026
 
-Match actions `SetSpeed {speed = 1|2|3}` → `{speed}` (3 needs the `speed3` pass; the match runs at the slowest speed anyone present chose) and `SetAutoSkip {on}`.
+Match actions `SetSpeed {speed = 1|2|3}` → `{speed}` (3 needs the `speed3` pass; the match runs at the slowest speed anyone present chose) and `SetAutoSkip {on}`. `Ping {position}` (squads of 2+, one per commander every 1.5 s, flat on the ground, inside the map) is relayed to everyone in the match as an FX `Ping {position, name, ownerId, slot}`; the client draws a marker for four seconds (long press on touch, G on a keyboard).
 `Match:Speed()` is 2 only while every participant still playing (not
 returned, not disconnected) voted 2; a solo player decides alone; a finished
 match is always 1. The bootstrap multiplies its frame time by `match:Speed()`
