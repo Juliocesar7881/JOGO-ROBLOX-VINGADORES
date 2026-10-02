@@ -260,9 +260,18 @@ function Review.start(api)
 		local focus = player:GetAttribute("DoomReviewFocus")
 		local state = api.getState()
 		local tower = state and state.match and state.match.towers and state.match.towers[1]
+		local numbers = type(focus) == "string" and string.match(focus, "^cam:(.+)$")
 		if focus == "tower" and tower and typeof(tower.position) == "Vector3" then
 			camera.CameraType = Enum.CameraType.Scriptable
 			camera.CFrame = CFrame.lookAt(tower.position + Vector3.new(0, 30, 26), tower.position)
+		elseif numbers then
+			-- "cam:x,y,z,tx,ty,tz": look from one point at another (any scene, lobby too).
+			local values = {}
+			for number in string.gmatch(numbers, "-?[%d%.]+") do table.insert(values, tonumber(number)) end
+			if #values == 6 then
+				camera.CameraType = Enum.CameraType.Scriptable
+				camera.CFrame = CFrame.lookAt(Vector3.new(values[1], values[2], values[3]), Vector3.new(values[4], values[5], values[6]))
+			end
 		else
 			camera.CameraType = Enum.CameraType.Custom
 		end

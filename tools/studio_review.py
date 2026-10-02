@@ -15,6 +15,7 @@ captures the window with PrintWindow and presses Stop. Scenes:
                        crowd <n> | endwave [wave] | finish true|false | panel <name>
     wait:<seconds>     let the real game run before the next capture
     focus:tower        camera on the first tower (focus: alone resets it)
+    focus:cam:x,y,z,tx,ty,tz   camera at (x,y,z) looking at (tx,ty,tz), e.g. in the lobby
     hideui:on|off      hide (or show) the game's own interface, for clean marketing shots
     hidechrome:on|off  hide only Roblox's own buttons and chat
 

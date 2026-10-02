@@ -98,6 +98,29 @@ do
 		check(outpost and outpost:FindFirstChild(name, true) ~= nil, "S.H.I.E.L.D. set piece: " .. name)
 	end
 	check(hq and hq:FindFirstChild("CitySkyline") ~= nil, "a city skyline stands across the bay")
+	-- Scenery is physical: nobody walks through the agency's jet, crates or buildings, nor through a trunk.
+	local passable, checkedSolid = {}, 0
+	for _, piece in ipairs(outpost and outpost:GetDescendants() or {}) do
+		if piece:IsA("BasePart") and piece.Material ~= Enum.Material.Neon and piece.Material ~= Enum.Material.ForceField and (piece.Transparency or 0) < 0.45
+			and not string.find(piece.Name, "Helicarrier", 1, true) and not string.find(piece.Name, "Rotor", 1, true)
+			and math.min(piece.Size.X, piece.Size.Y, piece.Size.Z) >= 0.35 and piece.Position.Y < 24 then
+			checkedSolid += 1
+			if not piece.CanCollide then table.insert(passable, piece.Name) end
+		end
+	end
+	check(checkedSolid > 40, "the agency set pieces have plenty of solid parts to check, got " .. checkedSolid)
+	check(#passable == 0, "every agency set piece is solid, yet passable: " .. table.concat(passable, ", "))
+	local trunks, softTrunks = 0, 0
+	for _, piece in ipairs(lobby:GetDescendants()) do
+		if piece:IsA("BasePart") and (piece.Name == "TreeTrunk" or piece.Name == "PalmTrunk") then
+			trunks += 1
+			if not piece.CanCollide then softTrunks += 1 end
+		end
+	end
+	check(trunks > 10 and softTrunks == 0, "tree and palm trunks stop a walking commander: " .. softTrunks .. " of " .. trunks .. " are passable")
+	for _, piece in ipairs(outpost and outpost:GetDescendants() or {}) do
+		check(not (piece:IsA("BasePart") and string.find(piece.Name, "Title", 1, true)), "the agency set pieces carry no title: " .. tostring(piece.Name))
+	end
 	-- Every area has its big illustrated sign, localized.
 	for _, name in ipairs({ "CampaignSign", "AfkSign", "SummonSign", "ExpeditionSign", "LatveriaSign", "AcademySign" }) do
 		local sign = hq and hq:FindFirstChild(name)

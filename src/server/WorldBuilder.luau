@@ -2007,21 +2007,21 @@ function World:ApplyLobbyLighting()
 	-- A bright tropical afternoon: saturated colour, soft shadows and enough
 	-- bloom that every neon strip glows. No depth blur: the lobby is read, not
 	-- admired through a lens.
-	lighting.ClockTime, lighting.Brightness = 14.3, 3
-	lighting.ExposureCompensation = 0.1
-	lighting.Ambient, lighting.OutdoorAmbient = Color3.fromRGB(112, 120, 142), Color3.fromRGB(150, 158, 176)
+	lighting.ClockTime, lighting.Brightness = 14.3, 2.3
+	lighting.ExposureCompensation = -0.15
+	lighting.Ambient, lighting.OutdoorAmbient = Color3.fromRGB(96, 104, 126), Color3.fromRGB(132, 140, 158)
 	lighting.FogColor, lighting.FogStart, lighting.FogEnd = Color3.fromRGB(176, 214, 245), 700, 2600
 	local atmos = ensureLightingEffect(lighting, "Atmosphere", "Atmosphere")
 	atmos.Density, atmos.Offset, atmos.Color, atmos.Decay, atmos.Glare, atmos.Haze = 0.28, 0.2, Color3.fromRGB(199, 226, 255), Color3.fromRGB(104, 150, 206), 0.25, 1.3
 	local bloom = ensureLightingEffect(lighting, "BloomEffect", "Bloom")
-	bloom.Intensity, bloom.Size, bloom.Threshold = 0.45, 26, 1.05
+	bloom.Intensity, bloom.Size, bloom.Threshold = 0.16, 18, 1.5
 	local grade = ensureLightingEffect(lighting, "ColorCorrectionEffect", "ColorGrade")
-	grade.TintColor, grade.Contrast, grade.Saturation, grade.Brightness = Color3.fromRGB(255, 251, 244), 0.1, 0.2, 0.02
+	grade.TintColor, grade.Contrast, grade.Saturation, grade.Brightness = Color3.fromRGB(255, 251, 244), 0.06, 0.1, 0
 	local rays = ensureLightingEffect(lighting, "SunRaysEffect", "SunRays")
-	rays.Intensity, rays.Spread = 0.06, 0.5
+	rays.Intensity, rays.Spread = 0.02, 0.5
 	local dof = ensureLightingEffect(lighting, "DepthOfFieldEffect", "DOF")
 	dof.FarIntensity, dof.NearIntensity, dof.FocusDistance, dof.InFocusRadius = 0, 0, 100, 200
-	lighting.EnvironmentDiffuseScale, lighting.EnvironmentSpecularScale = 0.8, 1
+	lighting.EnvironmentDiffuseScale, lighting.EnvironmentSpecularScale = 0.7, 0.7
 	lighting.GlobalShadows, lighting.ShadowSoftness = true, 0.2
 	-- The sea, the island's own terrain colours and the sky; a chapter may
 	-- have recoloured all of them, so they are put back here too.
@@ -2459,6 +2459,39 @@ World.CoplanarConflicts = function(root)
 	end
 	return #found, table.concat(names, " ")
 end
+-- Scenery a visitor can walk into must be solid: the agency's set pieces,
+-- tree and palm trunks, crystals, giant cards and the tower's glass podium.
+-- Light strips, glass panes you see through, floor markings, foliage and
+-- everything high above the ground stay passable. Returns how many parts it
+-- made solid.
+local SOLID_NAMES = { TreeTrunk = true, PalmTrunk = true, VibraniumCrystal = true, GiantCard = true, PodiumGlass = true }
+function World.SolidifyProps(root)
+	local made = 0
+	local function within(item, name)
+		local cursor = item.Parent
+		while cursor do
+			if cursor.Name == name then return true end
+			cursor = cursor.Parent
+		end
+		return false
+	end
+	for _, item in ipairs(root:GetDescendants()) do
+		if item:IsA("BasePart") and not item.CanCollide then
+			local inOutpost = within(item, "ShieldOutpost")
+			if (inOutpost or SOLID_NAMES[item.Name]) and item.Material ~= Enum.Material.Neon and item.Material ~= Enum.Material.ForceField
+				and (item.Transparency or 0) < 0.45 and not string.find(item.Name, "Helicarrier", 1, true) and not string.find(item.Name, "Rotor", 1, true) then
+				local size = item.Size
+				-- Thin plates are markings and emblems; high pieces are out of reach.
+				if size and math.min(size.X, size.Y, size.Z) >= 0.35 and item.Position and item.Position.Y < 24 then
+					item.CanCollide, item.CanQuery = true, true
+					made += 1
+				end
+			end
+		end
+	end
+	return made
+end
+
 -- Push the smaller face of every flickering pair out along its normal; the
 -- big surface stays put. A few rounds settle stacks of three or more.
 function World.SeparateCoplanar(root)
@@ -2525,6 +2558,7 @@ function World:BuildLobby()
 	self:BuildHeroCameos(hq)
 	self:BuildHorizon(hq)
 	self:DressHeroesHQ(hq)
+	World.SolidifyProps(lobby)
 	-- Last: no two surfaces of the finished lobby may share a plane.
 	World.SeparateCoplanar(lobby)
 end
@@ -3270,7 +3304,7 @@ function World:BuildShieldSites(hq)
 		for _, spot in ipairs({ { 15, -15 }, { 12.6, -16.4 } }) do Kit.column(outpost, "FuelDrum", S * V(spot[1], 0, spot[2]), 3.2, 2.2, Color3.fromRGB(178, 52, 44), metal) end
 		agent(standing(S, 9, 12, 0.3))
 		agent(standing(S, -11, 11, -0.4))
-		Kit.floatText(outpost, "HangarTitle", (S * CFrame.new(0, 17, -8)).Position, "HANGAR DA AGÊNCIA", "AGENCY HANGAR", blue, 34)
+		-- Scenery only: no title, so nobody expects a door to open.
 	end
 
 	-- Command post: a field HQ module, the holo table, radar and signal mast.
@@ -3302,7 +3336,7 @@ function World:BuildShieldSites(hq)
 		for i = 0, 2 do p("JerseyBarrier", V(5, 2.2, 1.4), S * CFrame.new(-6 + i * 6, 1.1, -16.5), pale, Enum.Material.Concrete) end
 		agent(standing(S, 3, 7, 0.4))
 		agent(standing(S, -7, 5, -0.2))
-		Kit.floatText(outpost, "CommandTitle", (S * CFrame.new(0, 22, -12)).Position, "POSTO DE COMANDO", "COMMAND POST", blue, 32)
+		-- Scenery only: no title, so nobody expects a door to open.
 	end
 
 	-- Armory: a vaulted depot, weapon lockers and the agents' black SUV.
@@ -3339,7 +3373,7 @@ function World:BuildShieldSites(hq)
 		end
 		agent(standing(S, -3, 9, 0.2))
 		agent(standing(S, 6, 11, -0.5))
-		Kit.floatText(outpost, "ArmoryTitle", (S * CFrame.new(0, 21, -9)).Position, "ARSENAL DA AGÊNCIA", "AGENCY ARMORY", blue, 34)
+		-- Scenery only: no title, so nobody expects a door to open.
 	end
 
 	-- The Helicarrier holds station over the north-west sea, rotors turning,
