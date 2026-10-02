@@ -179,10 +179,16 @@ function Tutorial:_matchStep(state)
 	if #mine == 0 then
 		local hero = loadout[1]
 		local card = hero and refs.heroCards and refs.heroCards[hero]
+		local picked, pinned = ctx.placement()
+		if picked and pinned and refs.confirm then
+			-- The spot is chosen: only CONFIRM is left.
+			return { id = "place1", number = 1, total = total, text = T("Agora aperte CONFIRMAR para posicionar", "Now press CONFIRM to place him"), gui = refs.confirm, side = "left" }
+		elseif picked then
+			return { id = "place1", number = 1, total = total, text = T(clickWord(T) .. " no ponto marcado, perto da estrada", clickWord(T) .. " the marked spot beside the road"), world = self:_spot(match, positions) }
+		end
 		return {
 			id = "place1", number = 1, total = total,
-			text = T("Escolha seu herói na barra e " .. string.lower(clickWord(T)) .. " perto da estrada para posicionar",
-				"Pick your hero on the bar, then " .. string.lower(clickWord(T)) .. " beside the road to place him"),
+			text = T("Escolha seu herói na barra embaixo", "Pick your hero on the bar below"),
 			gui = card and card.button, world = self:_spot(match, positions),
 		}
 	end
@@ -223,11 +229,15 @@ function Tutorial:_matchStep(state)
 		local card = refs.heroCards and refs.heroCards[hero]
 		local cost = ctx.Catalog.Heroes[hero] and ctx.Catalog.Heroes[hero].cost or 0
 		local affordable = (match.cash or 0) >= cost
+		local picked, pinned = ctx.placement()
+		if affordable and picked and pinned and refs.confirm then
+			return { id = "place2", number = 5, total = total, text = T("Aperte CONFIRMAR", "Press CONFIRM"), gui = refs.confirm, side = "left" }
+		end
 		return {
 			id = "place2", number = 5, total = total,
-			text = affordable and T("Posicione um segundo herói", "Place a second hero")
+			text = affordable and (picked and T(clickWord(T) .. " no ponto marcado", clickWord(T) .. " the marked spot") or T("Posicione um segundo herói", "Place a second hero"))
 				or T("Junte Ouro para um segundo herói", "Save up Gold for a second hero"),
-			gui = affordable and card and card.button or nil,
+			gui = affordable and not picked and card and card.button or nil,
 			world = affordable and self:_spot(match, positions) or self:_nearestCoin(),
 		}
 	end

@@ -1563,6 +1563,8 @@ kit.autoQuality = require(script:WaitForChild("AutoQuality")).new({
 kit.tutorial = require(script:WaitForChild("Tutorial")).new({
 	gui = overlays, UI = UI, C = C, T = T, Catalog = Catalog, Rules = Rules, Config = Config, player = player, effects = effects,
 	state = function() return state end, refs = function() return refs end, act = act, profile = profile,
+	-- Which hero is being placed, and whether its spot is already pinned.
+	placement = function() return selectedHero, placementPinned end,
 })
 RunService.RenderStepped:Connect(function(dt)
 	kit.autoQuality:Step(dt)

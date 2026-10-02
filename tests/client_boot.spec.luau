@@ -1237,6 +1237,17 @@ local function session(screen)
 		check(string.find(lesson(), "herói", 1, true) ~= nil or string.find(lesson(), "hero", 1, true) ~= nil, tag .. ": the first lesson is placing a hero, got " .. lesson())
 		check(named(gui, "TutorialPointer") ~= nil, tag .. ": a pointer sits over the hero card")
 		check(named(workspace, "TutorialArrow") ~= nil, tag .. ": an arrow marks a legal spot beside the road")
+		-- Picking the hero changes the lesson to the spot; pinning it, to CONFIRM.
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.One, Position = v3(0, 0, 0) }, false)
+		frames(1 / 30, 3)
+		check(string.find(lesson(), "ponto", 1, true) ~= nil or string.find(lesson(), "spot", 1, true) ~= nil, tag .. ": with the hero picked the lesson points at the spot, got " .. lesson())
+		rayHit = { Position = v3(-28, 0, -40), Instance = workspace }
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, Position = v3(400, 300, 0) }, false)
+		frames(1 / 30, 3)
+		check(string.find(lesson(), "CONFIRM", 1, true) ~= nil, tag .. ": with the spot pinned the lesson is to confirm, got " .. lesson())
+		rayHit = nil
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Escape, Position = v3(0, 0, 0) }, false)
+		frames(1 / 30, 2)
 		idle.towers = { mine(1) }
 		teach("Preparing", idle)
 		check(string.find(lesson(), "PRONTO", 1, true) ~= nil, tag .. ": then calling the wave, got " .. lesson())
