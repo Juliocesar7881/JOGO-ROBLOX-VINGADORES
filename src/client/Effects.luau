@@ -678,6 +678,19 @@ function Effects:_syncMines(rows)
 	end
 end
 
+-- Used by the inspector: the nearest live enemy to a ground point, if any.
+function Effects:EnemyNear(position, reach)
+	local best, bestKey, distance
+	for key, record in pairs(self.enemies) do
+		local at = record.position
+		if typeof(at) == "Vector3" and not record.def.illusion then
+			local d = Vector3.new(at.X - position.X, 0, at.Z - position.Z).Magnitude
+			if d <= reach + (record.def.boss and 3 or 0) and (not distance or d < distance) then best, bestKey, distance = record, key, d end
+		end
+	end
+	return bestKey, best
+end
+
 function Effects:PingMarker(position, name, slot, own)
 	if typeof(position) ~= "Vector3" then return end
 	self.pings = self.pings or {}

@@ -1449,7 +1449,10 @@ local function handleWorldPointer(position)
 			local d = (Vector3.new(tower.position.X, 0, tower.position.Z) - Vector3.new(hit.Position.X, 0, hit.Position.Z)).Magnitude
 			if d < 5 and (not distance or d < distance) then best, distance = tower.id, d end
 		end
-		if best then selectTower(best) end
+		if best then selectTower(best) return end
+		-- No tower: an enemy near the tap is inspected; empty ground folds the card away.
+		local key, record = effects:EnemyNear(hit.Position, 5)
+		if key then kit.inspect:Show(key, record) else kit.inspect:Hide() end
 	end
 end
 
@@ -1573,8 +1576,12 @@ kit.tutorial = require(script:WaitForChild("Tutorial")).new({
 	placement = function() return selectedHero, placementPinned end,
 	panelOpen = function() return contextPanel ~= nil end,
 })
+kit.inspect = require(script:WaitForChild("Inspect")).new({
+	gui = overlays, UI = UI, C = C, T = T, L = L, Catalog = Catalog, effects = effects, state = function() return state end,
+})
 RunService.RenderStepped:Connect(function(dt)
 	kit.autoQuality:Step(dt)
+	kit.inspect:Step(dt or 1 / 60)
 	kit.tutorial:Step(dt or 1 / 60)
 	if os.clock() >= kit.afkBannerAt then
 		kit.afkBannerAt = os.clock() + 0.25
@@ -1673,5 +1680,9 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		openBaseUpgrade = openBaseUpgrade,
 		openContext = function(kind, data) openContext(kind, data) end,
 		hold = function(fn) reviewHold = fn end,
+		inspectEnemy = function(enemyId, hp)
+			local def = Catalog.Enemies[enemyId]
+			if def then kit.inspect:Show("review", { def = def, lastHP = hp, maxHP = def.hp }, true) end
+		end,
 	})
 end

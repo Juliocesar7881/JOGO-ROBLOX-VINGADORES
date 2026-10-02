@@ -21,11 +21,11 @@ local Review = {}
 Review.STAGES = {
 	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium", "premiumgold",
 	"quests", "leaderboard", "settings", "rewards", "boarding",
-	"preparing", "wave", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
+	"preparing", "wave", "enemycard", "enemycardboss", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
 	"reveal", "revealbase", "revealcommon",
 }
 
-local MATCH_STAGES = { preparing = true, wave = true, tower = true, cards = true, finalboss = true, baseupgrade = true }
+local MATCH_STAGES = { preparing = true, wave = true, enemycard = true, enemycardboss = true, tower = true, cards = true, finalboss = true, baseupgrade = true }
 
 local function clone(value)
 	if type(value) ~= "table" then return value end
@@ -181,6 +181,9 @@ function Review.start(api)
 			api.setState(matchFixture(p, stage))
 			api.render()
 			if stage == "tower" then api.selectTower("review2") end
+			-- The enemy inspector, pinned so it stays up for the capture.
+			if stage == "enemycard" then api.inspectEnemy("splitter", 74) end
+			if stage == "enemycardboss" then api.inspectEnemy("lizard", 1400) end
 			if stage == "baseupgrade" then api.openBaseUpgrade() end
 		elseif stage == "results" or stage == "defeat" then
 			local mapId = firstBoss()

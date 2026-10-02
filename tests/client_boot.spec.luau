@@ -1277,6 +1277,46 @@ local function session(screen)
 		check(mineParts() == 0, tag .. ": malformed mine rows are ignored")
 	end)
 
+	-- Tapping an enemy opens a card with its health, armour, pace and a line on
+	-- what it does; empty ground folds it away again.
+	step("inspecting an enemy", function()
+		local ground = workspace:FindFirstChild("DoomWorld").BuildZones.BuildGround
+		fx({ kind = "EnemySync", enemies = {
+			{ id = 801, enemyId = "splitter", position = v3(40, 0, -20), hp = 80, maxHP = 118, st = 0 },
+			{ id = 802, enemyId = "lizard", position = v3(90, 0, -20), hp = 1500, maxHP = 2000, st = 0 },
+		} })
+		frames(1 / 30, 2)
+		local function tap(x, z)
+			rayHit = { Instance = ground, Position = v3(x, 0, z) }
+			input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, KeyCode = Enum.KeyCode.Unknown, Position = v3(400, 300, 0) }, false)
+			flush()
+		end
+		tap(41, -21)
+		local card = named(gui, "EnemyCard")
+		check(card ~= nil, tag .. ": tapping an enemy opens its card")
+		if card then
+			check(named(card, "EnemyName").Text == "Gosmento", tag .. ": the card names the enemy, got " .. tostring(named(card, "EnemyName").Text))
+			check(named(card, "EnemyHealth").Text == "80 / 118", tag .. ": it shows the health the server last synced, got " .. tostring(named(card, "EnemyHealth").Text))
+			check(string.find(named(card, "EnemyNote").Text, "Racha", 1, true) ~= nil, tag .. ": a line says what it does, got " .. tostring(named(card, "EnemyNote").Text))
+			check(math.abs(named(card, "EnemyHealthFill").Size.X.Scale - 80 / 118) < 1e-6, tag .. ": the bar matches the health")
+		end
+		tap(91, -21)
+		card = named(gui, "EnemyCard")
+		check(card ~= nil and named(card, "EnemyName").Text == "Gekko Colosso" and named(card, "EnemyNote").Text == Catalog.Enemies.lizard.hint.pt, tag .. ": a boss shows its own hint")
+		check(countNamed(gui, "EnemyCard") == 1, tag .. ": only one card at a time")
+		tap(-60, 60)
+		check(named(gui, "EnemyCard") == nil, tag .. ": a tap on empty ground folds the card away")
+		tap(41, -21)
+		frames(1, 7)
+		check(named(gui, "EnemyCard") == nil, tag .. ": the card folds away on its own after a few seconds")
+		-- The inspected enemy leaves the road: the card goes with it.
+		tap(41, -21)
+		check(named(gui, "EnemyCard") ~= nil, tag .. ": the enemy can be inspected again")
+		fx({ kind = "Clear" })
+		frames(1 / 30, 2)
+		check(named(gui, "EnemyCard") == nil, tag .. ": the card goes when its enemy does")
+	end)
+
 	step("training: the arrows teach one lesson at a time", function()
 		local trainee = veteranProfile()
 		trainee.loadout = { "ironman", "hawkeye" }
