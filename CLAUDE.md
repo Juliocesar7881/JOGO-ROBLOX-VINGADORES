@@ -68,8 +68,9 @@ src/shared/   Catalog (all game data), Config (IDs/environment), Rules (pure
 src/server/   init.server (bootstrap/router), MatchService, PlayerService,
               PartyService, ElevatorService, WorldBuilder, PresenceService,
               AnalyticsService, RejoinService
-src/client/   init.client (controller), UI (layout + widgets), Effects,
-              Audio, Nameplates
+src/client/   init.client (controller), UI (layout + widgets), Panels (lobby
+              panels), MatchHud, LobbyWorld, Tutorial (arrow-taught training),
+              Effects, Audio, Nameplates, AutoQuality, Review (Studio only)
 tools/        build.py, test.py, setup_luau.py, gen_heroes_doc.luau, sweeps
 tests/        real-module tests via the official Luau CLI + deterministic
               Roblox stand-ins (tests/roblox_stubs.luau and friends)
@@ -100,3 +101,15 @@ deployment/   template.json of every account ID the release needs
 
 Commit messages and PR descriptions end with the attribution lines given in
 this session's own system reminder — do not hand-write different ones.
+
+## What the owner has asked for (standing rules)
+
+- No mascot or guide character: the newcomer is taught by arrows (`Tutorial.luau`).
+- No blown-out glow (Bloom <= ~0.2, no pale Neon: `World.TameNeon`); `tools/studio_review.py`
+  prints GLARE when a capture is washed out.
+- Scenery is solid (`World.SolidifyProps`); decoration carries no floating title.
+- Language follows the Roblox locale; every server message is "pt / en".
+- Hero names are descriptive epithets (see `docs/HEROES.md`); exact third-party names
+  stay on `tests/ip_blocklist.json`. The look of the league heroes is a close homage:
+  flag the IP risk before any public release.
+- Run `python tools/test.py > out.txt; echo $?`: piping into `tail` hides a failing exit code.

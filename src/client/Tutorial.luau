@@ -17,7 +17,6 @@ local Tutorial = {}
 Tutorial.__index = Tutorial
 
 local CHEVRON_SPACING, CHEVRONS = 10, 9
-local ARRIVED = 12
 
 -- ctx: gui (the overlay frame), UI, C (colours), T (pt/en), Catalog, Rules,
 -- Config, effects (its folder and coins), state(), refs(), act(), profile().
