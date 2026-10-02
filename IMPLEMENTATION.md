@@ -65,6 +65,14 @@ interpola o visual. Limite de seis soldados por comandante; dano e recompensas
 usam o mesmo caminho autoritativo das torres. [BASES.md](docs/BASES.md) documenta
 o conteúdo e a economia atuais; as seções antigas abaixo são históricas.
 
+Ficha do comandante (`src/client/Sheet.luau`): na partida, o botão FICHA (ou a tecla C)
+abre talentos (a árvore em modo leitura, `Panels.buildTalents{readOnly=true}`), a base
+ativa (`match.base`) e as cartas escolhidas (`match.cards`, no modo cartas). Só mostra:
+nenhuma ação nova no servidor; evoluir a base continua sendo `UpgradeBase` com o Ouro
+da partida. Ímã global (`Catalog.Talents.globalMagnet`, fim da trilha Fortuna, exige
+`victoryGold` 10/10): `Match:_magnet` devolve `Catalog.GlobalMagnetRadius` (e confere o
+pré-requisito mesmo se o perfil trouxer o talento sem ele).
+
 Movimento (`Catalog.Movement`): o comandante corre com Shift (botão CORRER no celular,
 L3 no controle) e pula duas vezes (`src/client/Movement.luau`). É só sensação: o
 servidor define a velocidade e o pulo ao posicionar o comandante e, a cada segundo,

@@ -16,6 +16,13 @@
   rolar; Fundição, Wakanda e Cidadela mais claras (brilho médio 72→98, 91→97,
   90→102); 12 dicas de carregamento; teste de contrato do toque (tocar fixa o
   local, CONFIRMAR coloca).
+- **Seus pedidos da tarde/noite (02/10)**: sem emoji em lugar nenhum (teste na suíte);
+  correr com Shift e pulo duplo no lobby e nas partidas (no celular, o botão de ação do
+  próprio Roblox); abertura de baú com o herói pulando, comemorando e mostrando o golpe;
+  árvores, arbustos, canteiros e funcionários do lobby refeitos (figuras articuladas que
+  respiram); **Ficha do comandante** na partida (talentos, base ativa e cartas só para
+  ver); árvore de talentos refeita em favo compacto de ícones; **Ímã global** no fim da
+  trilha Fortuna.
 - Produtos de Robux a criar agora são **7 heróis novos** (inclui o Caçador da Noite,
   449) — tabela em `ROBUX_CATALOG.md`.
 
