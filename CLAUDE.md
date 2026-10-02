@@ -70,7 +70,8 @@ src/server/   init.server (bootstrap/router), MatchService, PlayerService,
               AnalyticsService, RejoinService
 src/client/   init.client (controller), UI (layout + widgets), Panels (lobby
               panels), MatchHud, LobbyWorld, Tutorial (arrow-taught training),
-              Effects, Audio, Nameplates, AutoQuality, Review (Studio only)
+              Inspect (tap an enemy for its card), Effects, Audio, Nameplates,
+              AutoQuality, Review (Studio only)
 tools/        build.py, test.py, setup_luau.py, gen_heroes_doc.luau, sweeps
 tests/        real-module tests via the official Luau CLI + deterministic
               Roblox stand-ins (tests/roblox_stubs.luau and friends)
