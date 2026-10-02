@@ -42,6 +42,31 @@ if not ok then
 	error("world boot failed", 0)
 end
 
+--==============================================================================
+-- Enemy figures: up to 180 walk at once, so each one has a part budget
+--==============================================================================
+print("--- enemy figures ---")
+do
+	local storage = game:GetService("ReplicatedStorage")
+	local folder = storage:FindFirstChild("DoomFigures")
+	local enemies = folder and folder:FindFirstChild("Enemies")
+	check(enemies ~= nil, "the published enemy figures exist")
+	local report = {}
+	for id, def in pairs(Catalog.Enemies) do
+		local figure = enemies and enemies:FindFirstChild(id)
+		check(figure ~= nil, "every enemy has a published figure: " .. id)
+		if figure then
+			local parts = 0
+			for _, item in ipairs(figure:GetDescendants()) do if item:IsA("BasePart") then parts += 1 end end
+			table.insert(report, id .. "=" .. parts)
+			-- A common enemy is drawn by the hundred; only a boss may be elaborate.
+			check(parts <= (def.boss and 60 or 40), id .. " stays inside its part budget, got " .. parts)
+		end
+	end
+	table.sort(report)
+	print("  parts: " .. table.concat(report, " "))
+end
+
 local lobby = workspace:FindFirstChild("DoomLobby")
 check(lobby ~= nil, "the lobby model lands in the workspace")
 check(countClass(lobby, "BasePart") > 40,
