@@ -134,11 +134,11 @@ end
 
 function Match:Start(members, mapId, modeId, runId, difficultyId)
 	if not self:CanStart() then return false, "Já existe uma partida neste servidor. / A match is already active." end
-	if not self.catalog.Maps[mapId] or not self.catalog.Modes[modeId] then return false, "Mapa ou modo inválido." end
-	if #members < 1 or #members > 4 then return false, "Grupo inválido." end
+	if not self.catalog.Maps[mapId] or not self.catalog.Modes[modeId] then return false, "Mapa ou modo inválido. / Invalid map or mode." end
+	if #members < 1 or #members > 4 then return false, "Grupo inválido. / Invalid party." end
 	for _, player in ipairs(members) do
 		local profile = self.profiles:Snapshot(player)
-		if not profile then return false, "Perfil indisponível." end
+		if not profile then return false, "Perfil indisponível. / Profile unavailable." end
 		local ok, reason = self.rules.CanStart(profile, mapId, modeId)
 		if ok then ok, reason = self.rules.CanUseDifficulty(profile, mapId, modeId, difficultyId) end
 		if not ok then return false, reason end
@@ -1414,7 +1414,7 @@ function Match:Handle(player,action,payload)
 		if action=="SellTower" then
 			p.cash+=math.floor(tower.invested*0.7) p.towerCount-=1 tower.model:Destroy() self.towers[tower.id]=nil return true
 		elseif action=="SetPriority" then
-			if not contains({"First","Last","Strongest","Nearest"},payload.priority) then return false,"Prioridade inválida." end
+			if not contains({"First","Last","Strongest","Nearest"},payload.priority) then return false,"Prioridade inválida. / Invalid priority." end
 			tower.priority=payload.priority return true
 		end
 		local stats=self:_baseStats(tower)

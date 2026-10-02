@@ -47,7 +47,14 @@ task.spawn(function()
 	end)
 end)
 
-local state, language = nil, "pt"
+-- Until the profile arrives (the loading splash), the language is the player's
+-- Roblox locale: Portuguese for pt-*, English for the rest.
+local function localeLanguage()
+	local ok, locale = pcall(function() return player.LocaleId end)
+	if ok and type(locale) == "string" and locale ~= "" then return string.sub(string.lower(locale), 1, 2) == "pt" and "pt" or "en" end
+	return "pt"
+end
+local state, language = nil, localeLanguage()
 -- Leaderboard panel state, one table to spare the script's local slots.
 local board = { size = 1, map = "hydra", data = nil, mode = "ranked", failed = false }
 local selectedTower, selectedHero, selectedSkill = nil, nil, nil
@@ -160,7 +167,13 @@ showToast = function(message, bad)
 		Size = UDim2.new(1, -32, 0, inBattle and 48 or 62), ZIndex = 60,
 	}, bad and C.red or C.green)
 	UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 100)}, toast)
-	UI.label(toast, L(message), {Position = UDim2.fromOffset(14, 6), Size = UDim2.new(1, -28, 1, -12), TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextSize = 14, ZIndex = 61})
+	-- Server messages arrive as "pt / en" strings (or {pt, en} tables).
+	local shown = message
+	if type(message) == "string" then
+		local pt, en = string.match(message, "^(.-) / (.+)$")
+		if pt and en then shown = language == "en" and en or pt end
+	end
+	UI.label(toast, L(shown), {Position = UDim2.fromOffset(14, 6), Size = UDim2.new(1, -28, 1, -12), TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextSize = 14, ZIndex = 61})
 	toast.Active=false
 	welcomePanel(toast)
 	task.delay(4.5, function() if toast.Parent then toast:Destroy() end end)

@@ -939,6 +939,29 @@ do
 	check(not handled, "no client action grants a feat")
 end
 
+-- Language: a new account follows the Roblox locale until the player picks one.
+do
+	local portuguese = player(91)
+	portuguese.LocaleId = "pt-br"
+	local english = player(92)
+	english.LocaleId = "en-us"
+	local spanish = player(93)
+	spanish.LocaleId = "es-es"
+	local unknown = player(94)
+	check(service:Load(portuguese).settings.language == "pt", "a pt-br locale starts in Portuguese")
+	check(service:Load(english).settings.language == "en", "an en-us locale starts in English")
+	check(service:Load(spanish).settings.language == "en", "any other locale starts in English")
+	check(service:Load(unknown).settings.language == "pt", "a player without a locale keeps the default")
+	-- Picking a language wins over the locale, for good.
+	local _, chose = service:Handle(english, "Settings", { language = "pt" }, true)
+	check(chose and service:Get(english).settings.language == "pt" and service:Get(english).settings.languageSet == true, "choosing a language sticks")
+	service:Release(english)
+	english.LocaleId = "en-us"
+	check(service:Load(english).settings.language == "pt", "a chosen language is not overridden by the locale on the next visit")
+	local _, frenchOk = service:Handle(english, "Settings", { language = "fr" }, true)
+	check(not frenchOk and service:Get(english).settings.language == "pt", "an unsupported language is refused and changes nothing")
+end
+
 -- Season pass: XP climbs levels, the free track pays everyone, the premium
 -- track only the owner, and every claim is idempotent.
 do

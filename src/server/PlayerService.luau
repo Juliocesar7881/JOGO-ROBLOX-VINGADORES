@@ -97,7 +97,7 @@ local function newProfile(now)
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
 		codes = {}, starterPack = false, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		campaign = {}, tutorialComplete = false, title = "",
-		settings = { language = "pt", lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
+		settings = { language = "pt", languageSet = false, lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
 		quests = {}, achievements = {}, best = {},
 		stats = { waves = 0, bosses = 0, wins = 0, matches = 0, goldEarned = 0, chests = 0 },
 		createdAt = now, updatedAt = now,
@@ -392,7 +392,7 @@ function PlayerService:_withLock(userId, callback)
 	if gate.serving > gate.issued then self.gates[userId] = nil end
 	if not outcome[1] then
 		warn("[PlayerService] Transaction failed: " .. tostring(outcome[2]))
-		return false, "Serviço de dados indisponível. Tente novamente."
+		return false, "Serviço de dados indisponível. Tente novamente. / Data service unavailable. Try again."
 	end
 	return table.unpack(outcome, 2, outcome.n)
 end
@@ -417,8 +417,16 @@ function PlayerService:_update(userId, transform)
 	return false, nil
 end
 
+-- A new account speaks the language of the player's Roblox locale (Portuguese
+-- for pt-*, English for everything else) until they pick one in Options.
+local function localeLanguage(player)
+	local ok, locale = pcall(function() return player.LocaleId end)
+	if not ok or type(locale) ~= "string" or locale == "" then return nil end
+	return string.sub(string.lower(locale), 1, 2) == "pt" and "pt" or "en"
+end
+
 function PlayerService:Load(player)
-	if self.closed then return nil, "Servidor encerrando." end
+	if self.closed then return nil, "Servidor encerrando. / The server is closing." end
 	local result, failure = self:_withLock(player.UserId, function()
 		local existing = self.records[player.UserId]
 		if existing and not existing.lost and not existing.closing and existing.profile._session and existing.profile._session.expires > os.time() then existing.player = player; return existing end
@@ -428,14 +436,15 @@ function PlayerService:Load(player)
 			local now = os.time()
 			local profile = normalize(raw, now, self.catalog)
 			local session = profile._session
-			if session and session.id ~= self.sessionId and (session.expires or 0) > now then lockFailure = "Seu perfil ainda está em outro servidor. Aguarde alguns segundos."; return nil end
+			if session and session.id ~= self.sessionId and (session.expires or 0) > now then lockFailure = "Seu perfil ainda está em outro servidor. Aguarde alguns segundos. / Your profile is still on another server. Wait a few seconds."; return nil end
 			lockFailure = nil
 			profile._session = { id = self.sessionId, expires = now + self.leaseSeconds }
 			refreshQuests(profile, now)
+			if profile.settings.languageSet ~= true then profile.settings.language = localeLanguage(player) or profile.settings.language end
 			profile.updatedAt = now
 			return profile
 		end)
-		if not ok or not persisted then return nil, lockFailure or "Não foi possível carregar seu perfil. Nenhum dado foi substituído." end
+		if not ok or not persisted then return nil, lockFailure or "Não foi possível carregar seu perfil. Nenhum dado foi substituído. / Could not load your profile. No data was replaced." end
 		local record = { player = player, profile = persisted, passes = {}, closing = false, lost = false, lastSaved = os.time(), playMark = os.time(), randomRestricted = false }
 		self.records[player.UserId] = record
 		return record
@@ -478,7 +487,7 @@ function PlayerService:_transaction(player, mutate, operationId, options)
 	operationId = operationId or HttpService:GenerateGUID(false)
 	local ok, result = self:_withLock(player.UserId, function()
 		local record = self.records[player.UserId]
-		if not record or record.player ~= player or record.lost or (record.closing and not options.releasing) then return false, "Perfil ainda não disponível." end
+		if not record or record.player ~= player or record.lost or (record.closing and not options.releasing) then return false, "Perfil ainda não disponível. / Profile not available yet." end
 		local rejected, value, lost = nil, nil, false
 		-- Fixed before the callback, which UpdateAsync may run more than once.
 		local elapsed = math.clamp(os.time() - (record.playMark or os.time()), 0, PLAYTIME_CAP)
@@ -486,7 +495,7 @@ function PlayerService:_transaction(player, mutate, operationId, options)
 			rejected, value, lost = nil, nil, false
 			local now = os.time()
 			local profile = normalize(raw, now, self.catalog)
-			if not profile._session or profile._session.id ~= self.sessionId or profile._session.expires <= now then lost = true; rejected = "Sessão de dados expirada. Entre novamente."; return nil end
+			if not profile._session or profile._session.id ~= self.sessionId or profile._session.expires <= now then lost = true; rejected = "Sessão de dados expirada. Entre novamente. / Data session expired. Please rejoin."; return nil end
 			local previous = profile._operations[operationId]
 			if previous then value = copy(previous.result); return profile end
 			refreshQuests(profile, now)
@@ -507,8 +516,8 @@ function PlayerService:_transaction(player, mutate, operationId, options)
 			return profile
 		end)
 		if lost then record.lost = true end
-		if not saved then return false, "Não foi possível salvar. A operação pode ser repetida com segurança." end
-		if not persisted then return false, rejected or "Alteração não confirmada." end
+		if not saved then return false, "Não foi possível salvar. A operação pode ser repetida com segurança. / Could not save. The action can be safely repeated." end
+		if not persisted then return false, rejected or "Alteração não confirmada. / Change not confirmed." end
 		record.profile = persisted
 		record.lastSaved = os.time()
 		record.playMark = os.time()
@@ -690,11 +699,11 @@ function PlayerService:_validHeroes(profile, heroes)
 end
 
 function PlayerService:Handle(player, action, payload, inLobby)
-	if not ACTIONS[action] then return false, false, "Ação não reconhecida." end
+	if not ACTIONS[action] then return false, false, "Ação não reconhecida. / Unknown action." end
 	if type(payload) ~= "table" then return true, false, "Dados inválidos." end
 	local record = self.records[player.UserId]
-	if not record or record.player ~= player or record.closing or record.lost then return true, false, "Aguarde o carregamento do perfil." end
-	if not inLobby and action ~= "Settings" then return true, false, "Esta ação só está disponível no lobby." end
+	if not record or record.player ~= player or record.closing or record.lost then return true, false, "Aguarde o carregamento do perfil. / Wait for your profile to load." end
+	if not inLobby and action ~= "Settings" then return true, false, "Esta ação só está disponível no lobby. / This action is only available in the lobby." end
 	if action == "ProductInfo" then
 		local ok, result = self:_productInfo(payload, record)
 		return true, ok, result
@@ -861,23 +870,25 @@ function PlayerService:Handle(player, action, payload, inLobby)
 				if payload[key] ~= nil and type(payload[key]) ~= "boolean" then return false, "Configuração inválida." end
 			end
 			for _, key in ipairs({ "language", "lowFX", "shake", "music", "effects", "interface", "autoSkip", "fastForward" }) do if payload[key] ~= nil then profile.settings[key] = payload[key] end end
+			-- Once the player picks a language, the locale no longer decides it.
+			if payload.language ~= nil then profile.settings.languageSet = true end
 		elseif action == "SetTitle" then
 			local id = payload.titleId
 			if id == nil or id == "" then
 				profile.title = ""
 			elseif not validId(id) then
-				return false, "Título inválido."
+				return false, "Título inválido. / Invalid title."
 			elseif id == "vip" then
-				if not current.passes.vip then return false, "Este título acompanha o pacote VIP." end
+				if not current.passes.vip then return false, "Este título acompanha o pacote VIP. / This title comes with the VIP pack." end
 				profile.title = id
 			else
 				local unlocked = profile.achievements[id]
-				if type(unlocked) ~= "table" or unlocked.kind ~= "title" then return false, "Você ainda não conquistou este título." end
+				if type(unlocked) ~= "table" or unlocked.kind ~= "title" then return false, "Você ainda não conquistou este título. / You have not earned this title yet." end
 				profile.title = id
 			end
 		elseif action == "ClaimQuest" then
 			local quest = validId(payload.questId) and profile.quests[payload.questId]
-			if not quest or quest.expiresAt <= now or quest.claimed or quest.progress < quest.target then return false, "Missão incompleta, resgatada ou expirada." end
+			if not quest or quest.expiresAt <= now or quest.claimed or quest.progress < quest.target then return false, "Missão incompleta, resgatada ou expirada. / Mission incomplete, claimed or expired." end
 			quest.claimed = true
 			profile.gold += quest.gold
 			local questXp = math.floor(quest.xp * (current.passes.training and 1.25 or 1))
@@ -896,10 +907,10 @@ end
 local PRODUCT_CATEGORY = { pass = "Passes", product = "Consumables", hero = "Heroes" }
 
 function PlayerService:_productInfo(payload, record)
-	if self.memory then return false, "Compras desativadas no modo de memória do Studio." end
+	if self.memory then return false, "Compras desativadas no modo de memória do Studio. / Purchases are off in Studio memory mode." end
 	local category = PRODUCT_CATEGORY[payload.kind]
 	local product = category and type(payload.key) == "string" and self.products[category][payload.key]
-	if not product or not integer(product.id, 1, 9007199254740991) then return false, "Produto ainda não configurado." end
+	if not product or not integer(product.id, 1, 9007199254740991) then return false, "Produto ainda não configurado. / Product not set up yet." end
 	if category == "Consumables" and record and record.randomRestricted then
 		return false, "Indisponível na sua região. / Unavailable in your region."
 	end
@@ -907,7 +918,7 @@ function PlayerService:_productInfo(payload, record)
 	local ok, info = pcall(function()
 		return MarketplaceService:GetProductInfoAsync(product.id, category == "Passes" and Enum.InfoType.GamePass or Enum.InfoType.Product)
 	end)
-	if not ok or type(info) ~= "table" or not integer(info.PriceInRobux, 0, 1000000000) or info.IsForSale == false then return false, "Preço indisponível. Tente novamente." end
+	if not ok or type(info) ~= "table" or not integer(info.PriceInRobux, 0, 1000000000) or info.IsForSale == false then return false, "Preço indisponível. Tente novamente. / Price unavailable. Try again." end
 	return true, { id = product.id, price = info.PriceInRobux, name = info.Name or product.name, kind = payload.kind, key = payload.key }
 end
 
