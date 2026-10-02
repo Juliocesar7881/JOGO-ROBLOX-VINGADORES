@@ -282,7 +282,7 @@ function Review.start(api)
 		local command, rest = line:match("^(%S+)%s*(.*)$")
 		local arg, modeId = rest:match("^(%S*)%s*(%S*)$")
 		local value = arg
-		if command == "spawn" then value = string.split(arg, ",")
+		if command == "spawn" or command == "give" then value = string.split(arg, ",")
 		elseif command == "crowd" or command == "endwave" then value = tonumber(arg)
 		elseif command == "finish" then value = arg == "true" end
 		local result = api.serverRequest("StudioReview", { command = command, arg = value, modeId = modeId ~= "" and modeId or nil }, true)

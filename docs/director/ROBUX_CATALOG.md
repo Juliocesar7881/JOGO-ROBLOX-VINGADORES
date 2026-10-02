@@ -84,3 +84,13 @@ a criação parou. Com o aviso aceito, retomar:
   conta de teste antes de divulgar.
 - Nenhuma compra real foi feita. O teste de compra com conta alternativa fica
   no `docs/RELEASE_CHECKLIST.md`.
+
+## Atenção: nomes mudaram (01/10 noite)
+
+Os 36 heróis foram renomeados e há 6 heróis novos. O jogo mostra os nomes do
+`Catalog.luau`, mas o **nome do produto no Creator Hub** é o que aparece na tela
+de compra do Roblox: renomeie os 15 produtos já criados para o nome novo de
+`docs/HEROES.md` (ex.: "Pocket Titan" → "Tiny Man"). Produtos novos a criar
+(IDs 0 até lá; a loja mostra "Indisponível"): Capitão Men (449), Amazona
+Dourada (449), Rei dos Mares (449), Sentinela Esmeralda (999), Velocista Rubro
+(999), Titã Solar (1.999).

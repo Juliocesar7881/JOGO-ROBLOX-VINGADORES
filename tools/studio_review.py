@@ -11,7 +11,7 @@ captures the window with PrintWindow and presses Stop. Scenes:
 
     <stage>            a fixture screen (see Review.STAGES); nothing reaches the server
     live               the real game as the server sends it
-    server:<command>   a Studio-only server scene: start <map> [mode] | spawn a,b |
+    server:<command>   a Studio-only server scene: start <map> [mode] | give a,b,c (field these heroes) | spawn a,b |
                        crowd <n> | endwave [wave] | finish true|false | panel <name>
     wait:<seconds>     let the real game run before the next capture
     focus:tower        camera on the first tower (focus: alone resets it)

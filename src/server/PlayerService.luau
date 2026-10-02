@@ -654,6 +654,25 @@ function PlayerService:GrantCosmetic(player, featId)
 	return ok, result
 end
 
+-- Studio memory mode only: own these heroes and field them as the squad, for
+-- reviewing a hero without opening chests. Never touches saved data.
+function PlayerService:StudioGrant(player, heroIds)
+	local record = self.records[player.UserId]
+	if not self.memory or not record or type(heroIds) ~= "table" then return false end
+	local loadout = {}
+	for _, id in ipairs(heroIds) do
+		if self.catalog.Heroes[id] and #loadout < 5 then
+			record.profile.heroes[id] = record.profile.heroes[id] or { xp = 0, level = 1, stars = 0 }
+			record.profile.abilities[id] = record.profile.abilities[id] or 1
+			table.insert(loadout, id)
+		end
+	end
+	if #loadout == 0 then return false end
+	record.profile.loadout = loadout
+	self:_notify(player)
+	return true
+end
+
 function PlayerService:Get(player)
 	return self:Snapshot(player)
 end

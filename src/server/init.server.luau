@@ -973,6 +973,11 @@ if RunService:IsStudio() then
 			if ok then pushMatch() end
 			return ok
 		end
+		if command == "give" and type(arg) == "table" then
+			local granted = false
+			for _, player in ipairs(Players:GetPlayers()) do granted = profiles:StudioGrant(player, arg) or granted end
+			return granted
+		end
 		if command == "panel" and type(arg) == "string" then
 			for _, player in ipairs(Players:GetPlayers()) do remotes.FX:FireClient(player, { kind = "OpenPanel", panel = arg }) end
 			return true
