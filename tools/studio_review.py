@@ -133,10 +133,34 @@ def capture(handle: int, name: str) -> Path:
         prepare(handle)
         powershell("-File", str(ROOT / "tools" / "capture_studio.ps1"), "-OutputPath", str(path.relative_to(ROOT)), "-WindowHandle", str(handle))
         if drawable(path):
+            glare_report(path)
             return path
         time.sleep(2)
     print(f"  WARNING {path.name} looks blank: the Studio window was not drawable")
     return path
+
+
+def glare_report(path: Path, limit: float = 0.06) -> float | None:
+    """Print a warning when too much of the game view is blown out to white.
+
+    The owner's standing complaint is "brilho estourado": neon and bloom that
+    turn flat white. Pixels that are near-white (every channel above 215, one above 240) inside the game view
+    (no Studio chrome) count; above `limit` of the view the capture is flagged.
+    Interface panels count too, but a modal's text and borders stay far below.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    with Image.open(path) as image:
+        rgb = image.convert("RGB")
+        width, height = rgb.size
+        view = rgb.crop((16, 223, max(17, width - 241), max(224, height - 146))).resize((320, 180))
+        pixels = list(view.getdata())
+    blown = sum(1 for r, g, b in pixels if min(r, g, b) > 215 and max(r, g, b) > 240) / len(pixels)
+    if blown > limit:
+        print(f"  GLARE {path.name}: {blown:.0%} of the view is blown out to white (limit {limit:.0%})")
+    return blown
 
 
 def drawable(path: Path) -> bool:
