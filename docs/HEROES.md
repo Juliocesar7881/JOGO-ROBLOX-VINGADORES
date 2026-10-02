@@ -54,7 +54,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Capitão Men** — Socos que empurram, imbatível | 400 | único | 24 | 17 | 0.60s | Indestrutível |
 | **Amazona Dourada** — Laço da verdade e espada | 420 | corrente | 18 | 24 | 0.90s | Laço da Verdade |
 | **Rei dos Mares** — Marés que atrasam e empurram | 430 | área | 19 | 25 | 1.40s | Maremoto |
-| **Caçador da Noite** — Minas e armadilhas na estrada | 380 | mine | 34 | 26 | 1.50s | Bomba de Fumaça |
+| **Caçador da Noite** — Minas e armadilhas na estrada | 380 | mine | 40 | 26 | 1.50s | Bomba de Fumaça |
 
 ## Lendário — 999 Robux (compra direta)
 

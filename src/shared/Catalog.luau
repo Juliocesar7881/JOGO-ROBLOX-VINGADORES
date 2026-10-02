@@ -875,7 +875,7 @@ local league = {
 		id = "nightstalker", rarity = "epic", ability = "smokeBomb",
 		name = text("Caçador da Noite", "Night Hunter"), role = text("Minas e armadilhas na estrada", "Mines and traps on the road"), cost = 380,
 		description = text("Planta minas na estrada à frente dos inimigos; cada uma explode em área quando o primeiro passa por cima.", "Plants mines on the road ahead of the enemy; each one blasts an area when the first one steps on it."),
-		damage = 34, range = 26, interval = 1.5, color = { 74, 84, 118 }, attack = "mine", damageType = "physical", air = false,
+		damage = 40, range = 26, interval = 1.5, color = { 74, 84, 118 }, attack = "mine", damageType = "physical", air = false,
 		mineMax = 4, mineRadius = 9,
 		branches = {
 			{ name = text("Minas de fragmentação", "Cluster Mines"), description = text("Mais minas ativas, explosões maiores e mais fortes.", "More active mines, bigger and stronger blasts."), mods = { set("mineMax", 7), set("mineRadius", 13), mul("damage", 1.2) } },
