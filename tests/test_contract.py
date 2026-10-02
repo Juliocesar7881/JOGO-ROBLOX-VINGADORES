@@ -113,7 +113,7 @@ class ContractTests(unittest.TestCase):
         self.assertIsNotNone(router, "route() not found in the bootstrap")
         for statement in re.findall(r"return (\{.*?\})", router.group(1), re.S):
             self.assertIn("ok", statement)
-        self.assertIn('return { ok = false, message = text("Resposta invalida.', BOOTSTRAP)
+        self.assertIn('return { ok = false, message = text("Resposta inválida.', BOOTSTRAP)
 
     def test_target_priorities_match_between_client_and_server(self):
         """The client used to cycle lowercase priorities the server refused."""
