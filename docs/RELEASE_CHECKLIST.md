@@ -72,3 +72,5 @@ faz e como conferir.
 - [ ] Publicar a partir do Studio (Arquivo → Publicar no Roblox) no lugar da
   equipe; marcar a experiência como pública **só depois** dos itens 1 a 4.
 - [ ] Vigiar a primeira hora: Analytics → funil "Tutorial", quedas e compras.
+
+- Texto pronto da página da experiência (título, descrição pt/en, tags, nota da v1.0): `docs/STORE_PAGE.md`.
