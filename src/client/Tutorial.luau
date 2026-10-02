@@ -125,7 +125,17 @@ end
 
 -- A spot beside the road where a hero may stand: the first valid one found
 -- walking back from the base, either side, twelve studs off the road.
+-- Cached for half a second: the search walks the whole road, and a frame has no
+-- business doing that sixty times a second.
 function Tutorial:_spot(match, taken)
+	local cache = self.spotCache
+	if cache and cache.key == #taken .. ":" .. tostring(match.mapId) and self.clock - cache.at < 0.5 then return cache.value end
+	local value = self:_findSpot(match, taken)
+	self.spotCache = { key = #taken .. ":" .. tostring(match.mapId), at = self.clock, value = value }
+	return value
+end
+
+function Tutorial:_findSpot(match, taken)
 	local ctx = self.ctx
 	local map = ctx.Catalog.Maps[match.mapId]
 	local route = map and map.paths[1]
