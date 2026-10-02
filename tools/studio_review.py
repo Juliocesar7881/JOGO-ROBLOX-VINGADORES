@@ -14,6 +14,7 @@ captures the window with PrintWindow and presses Stop. Scenes:
     server:<command>   a Studio-only server scene: start <map> [mode] | give a,b,c (field these heroes) | spawn a,b |
                        crowd <n> | endwave [wave] | finish true|false | panel <name>
     wait:<seconds>     let the real game run before the next capture
+    snap               capture what is on screen now (an animation in flight) without starting a scene
     focus:tower        camera on the first tower (focus: alone resets it)
     focus:cam:x,y,z,tx,ty,tz   camera at (x,y,z) looking at (tx,ty,tz), e.g. in the lobby
     hideui:on|off      hide (or show) the game's own interface, for clean marketing shots
@@ -215,6 +216,12 @@ def main() -> int:
                 continue
             if scene.startswith("wait:"):
                 time.sleep(float(scene[5:]))
+                continue
+            if scene == "snap":
+                # A capture of whatever is on screen now, without starting a scene (animations in flight).
+                shot = capture(handle, f"{index:02d}-snap")
+                shots.append(shot)
+                print(shot)
                 continue
             if scene.startswith("hidechrome:"):
                 command(f'{player}:SetAttribute("DoomReviewHideChrome", {"true" if scene[11:] == "on" else "false"})', f"DOOM_HIDECHROME_{int(time.time())}_{index}")

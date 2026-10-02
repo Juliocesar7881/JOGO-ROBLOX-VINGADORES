@@ -723,6 +723,31 @@ local function session(screen)
 		local tier = stage and named(stage, "TierLabel")
 		check(tier ~= nil and tier.Text ~= "", tag .. ": the chest climbs through rarity names while it charges")
 		check(not named(stage, "RevealContinue").Visible, tag .. ": no way out before the prize is shown")
+		-- The hero is not a photograph: it leaps out of the chest and keeps moving.
+		local function findRoot(node)
+			for _, child in ipairs(node:GetChildren()) do
+				if child.Name == "HumanoidRootPart" then return child end
+				local deeper = findRoot(child)
+				if deeper then return deeper end
+			end
+		end
+		local portrait = card and named(card, "RevealPortrait")
+		local heroRoot = portrait and findRoot(portrait)
+		if heroRoot then
+			local lowest, highest, turned = math.huge, -math.huge, false
+			local first = heroRoot.CFrame
+			for _ = 1, 150 do
+				frames(1 / 30, 1)
+				local y = heroRoot.CFrame.Position.Y
+				lowest, highest = math.min(lowest, y), math.max(highest, y)
+				if (heroRoot.CFrame.LookVector - first.LookVector).Magnitude > 0.5 then turned = true end
+			end
+			check(highest - lowest > 1.5, tag .. ": the revealed hero leaps, rising " .. tostring(highest - lowest) .. " studs")
+			check(turned, tag .. ": and turns a full circle on the way")
+			check(portrait ~= nil and portrait.Parent ~= nil, tag .. ": the live portrait is still the card's portrait")
+		else
+			check(true, tag .. ": this hero has no jointed figure to animate")
+		end
 		clickNamed("RevealSkip")
 		check(card.Visible and named(stage, "RevealContinue").Visible, tag .. ": a tap skips straight to the hero")
 		check(named(stage, "RevealName").Text == Catalog.Heroes.thor.name.pt, tag .. ": the reveal names the hero the server granted")

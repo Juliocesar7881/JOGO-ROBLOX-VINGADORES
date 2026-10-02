@@ -12,6 +12,7 @@ TOKENS = {
     "__STUBS__": Path("tests/roblox_stubs.luau"),
     "__CATALOG__": Path("src/shared/Catalog.luau"),
     "__WORLD__": Path("src/server/WorldBuilder.luau"),
+    "__MOTION__": Path("src/client/Motion.luau"),
 }
 
 

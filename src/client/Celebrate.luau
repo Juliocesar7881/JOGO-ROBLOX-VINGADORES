@@ -11,6 +11,7 @@
 -- flash, the colour strobing while the chest charges, shaking and confetti,
 -- and shortens the reveal, but still shows exactly the same result.
 local Catalog = require(game:GetService("ReplicatedStorage"):WaitForChild("DoomShared"):WaitForChild("Catalog"))
+local Motion = require(script.Parent:WaitForChild("Motion"))
 
 local Celebrate = {}
 Celebrate.__index = Celebrate
@@ -40,6 +41,7 @@ function Celebrate.new(options)
 	self.root = options.root
 	self.audio = options.audio
 	self.portrait = options.portrait
+	self.livePortrait = options.livePortrait
 	self.language = options.language or function() return "pt" end
 	self.lowFX = options.lowFX or function() return false end
 	self.clock = options.clock or os.clock
@@ -263,9 +265,59 @@ end
 
 -- result: the server's committed OpenChest result {heroId, rarity, duplicate,
 -- refundGold, refundMastery}. chestId picks the chest's own colour.
+-- The revealed hero's show, `since` seconds after the card appeared: a leap out
+-- of the chest with a full turn and both arms up, a landing, a cheer, then its
+-- signature attack every couple of seconds, while the camera drifts around it.
+-- Pure presentation: poses come from Motion.Hero, positions from Motion.Solve.
+function Celebrate:_performHero(live, since, rest)
+	local rig = live.rig
+	if not rig then return end
+	local clamp = math.clamp
+	local pose = { style = live.style, t = since, breathe = math.sin(since * 2.2) }
+	local yaw, lift, squash = 0, 0, 0
+	if rest or since < 0 then
+		pose.breathe = 0
+	elseif since < 0.9 then
+		-- The leap: up and down on an arc, one full turn, arms flung up.
+		local u = since / 0.9
+		lift = 1.8 * math.sin(math.pi * u)
+		yaw = 2 * math.pi * (1 - (1 - u) ^ 3)
+		pose.hop = math.sin(math.pi * clamp(u * 1.15, 0, 1))
+	elseif since < 1.15 then
+		-- The landing: a short crouch.
+		local u = (since - 0.9) / 0.25
+		squash = math.sin(math.pi * u)
+		pose.cast = 0.35 * squash
+	elseif since < 2.7 then
+		-- The cheer: both arms up, a little bounce.
+		local u = clamp((since - 1.15) / 0.3, 0, 1)
+		pose.cast = u
+		lift = 0.18 * math.abs(math.sin((since - 1.15) * 5)) * u
+	else
+		-- Signature move on a loop, easing back to a breath in between.
+		local cycle = (since - 2.7) % 2.4
+		local settle = clamp(1 - (since - 2.7) / 0.5, 0, 1)
+		pose.cast = settle
+		if cycle < 0.7 then
+			pose.fire = math.sin(math.pi * cycle / 0.7)
+			pose.fireProgress = cycle / 0.7
+		end
+		pose.count = math.floor((since - 2.7) / 2.4)
+	end
+	Motion.Hero(rig.joints, pose)
+	if squash > 0 and rig.joints.Root then rig.joints.Root.Transform = CFrame.new(0, -0.45 * squash, 0) * rig.joints.Root.Transform end
+	rig.root.CFrame = live.baseRoot * CFrame.new(0, lift, 0) * CFrame.Angles(0, yaw, 0)
+	Motion.Solve(rig)
+	-- The camera drifts a little to each side of the front view.
+	local swing = rest and 0 or 0.45 * math.sin(since * 0.8)
+	local offset = CFrame.Angles(0, swing, 0) * live.offset
+	live.camera.CFrame = CFrame.lookAt(live.focus + offset, live.focus)
+end
+
 function Celebrate:Chest(result, chestId, onClosed)
 	if type(result) ~= "table" or not (Catalog.Heroes[result.heroId] or Catalog.Bases[result.baseId]) then return end
 	if self.reveal then self:_closeReveal() end
+	local performer
 	local UI = self.UI
 	local lowFX = self.lowFX()
 	local hero = Catalog.Bases[result.baseId] or Catalog.Heroes[result.heroId]
@@ -342,7 +394,21 @@ function Celebrate:Chest(result, chestId, onClosed)
 	if result.baseId then
 		UI.basePortrait(card, hero, { Name = "RevealBase", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 72), Size = UDim2.fromOffset(220, 180), ZIndex = 92 })
 	elseif self.portrait then
-		pcall(self.portrait, card, result.heroId, { Name = "RevealPortrait", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70), Size = UDim2.fromOffset(230, 186), BackgroundTransparency = 1, ZIndex = 92 })
+		local portraitProperties = { Name = "RevealPortrait", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70), Size = UDim2.fromOffset(230, 186), BackgroundTransparency = 1, ZIndex = 92 }
+		-- The hero is not a photograph: it jumps out of the chest, cheers and
+		-- then keeps showing its signature move (see _performHero).
+		if self.livePortrait and not lowFX then
+			local made, live = pcall(self.livePortrait, card, result.heroId, portraitProperties)
+			if made and live then
+				local rigged, rig = pcall(Motion.Rig, live.model)
+				if rigged and rig and rig.joints then
+					live.rig, live.baseRoot = rig, rig.root.CFrame
+					live.style = live.figure and live.figure:GetAttribute("PoseStyle") or "shoot"
+					performer = live
+				end
+			end
+		end
+		if not performer then pcall(self.portrait, card, result.heroId, portraitProperties) end
 	end
 	local nameLabel = UI.label(card, self:_t(hero.name), { Name = "RevealName", Position = UDim2.fromOffset(10, 262), Size = UDim2.new(1, -20, 0, 38), Font = Enum.Font.GothamBlack, TextSize = 28, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, TextScaled = true, ZIndex = 91 })
 	UI.outline(nameLabel, 3)
@@ -373,6 +439,7 @@ function Celebrate:Chest(result, chestId, onClosed)
 	end
 
 	local lastTier, opened, carded = 0, false, false
+	if performer then pcall(self._performHero, self, performer, 0, true) end
 	self:_cue("chest", 0.05)
 	self.reveal = { root = root, finalAt = finalAt, onClosed = onClosed, result = result }
 	self.reveal.anim = self:_add({ duration = math.huge, update = function(t, dt)
@@ -452,6 +519,7 @@ function Celebrate:Chest(result, chestId, onClosed)
 			cardScale.Scale = rise
 			card.Position = UDim2.fromScale(0.5, 0.5 + 0.18 * (1 - clamp01((t - cardAt) / 0.35)))
 			card.Rotation = lowFX and 0 or math.sin(t * 2.2) * 2
+			if performer then pcall(self._performHero, self, performer, t - cardAt, false) end
 		end
 		if t >= finalAt then
 			continueButton.Visible = true

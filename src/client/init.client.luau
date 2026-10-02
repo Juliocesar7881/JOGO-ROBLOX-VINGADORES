@@ -291,11 +291,14 @@ end
 local function heroPortrait(parent, id, properties)
 	return UI.heroPortrait(parent, id, heroSource(id), colorFor(id), properties)
 end
+local function livePortrait(parent, id, properties)
+	return UI.heroPortraitLive(parent, id, heroSource(id), colorFor(id), properties)
+end
 
 -- Chest reveals, banners, confetti and counter pops. Purely presentation:
 -- every number it shows was committed by the server first.
 local celebrate = Celebrate.new({
-	UI = UI, root = overlays, audio = audio, portrait = heroPortrait,
+	UI = UI, root = overlays, audio = audio, portrait = heroPortrait, livePortrait = livePortrait,
 	language = function() return language end,
 	lowFX = function() local settings = profile().settings return settings ~= nil and settings.lowFX == true end,
 })

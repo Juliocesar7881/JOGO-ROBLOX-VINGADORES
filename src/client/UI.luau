@@ -690,6 +690,35 @@ function UI.heroModel(parent, heroId, source)
 	return model
 end
 
+-- A portrait whose figure can be posed: the jointed figure itself (not the
+-- flattened geometry), its camera and where it looks. Returns nil when the hero
+-- has no jointed figure to show, and the caller keeps the still portrait.
+function UI.heroPortraitLive(parent, heroId, source, tint, properties)
+	local art = source and source:FindFirstChild("HeroFigure", true)
+	if not (art and art:GetAttribute("HeroArt")) then return nil end
+	local defaults = {
+		Name = "PortraitLive_" .. heroId, Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = tint:Lerp(UI.Colors.background, 0.8), BorderSizePixel = 0,
+		Ambient = Color3.fromRGB(195, 207, 224), LightColor = Color3.fromRGB(255, 245, 228),
+		LightDirection = Vector3.new(-1, -0.6, -1), BackgroundTransparency = 0.05,
+	}
+	for key, value in pairs(properties or {}) do defaults[key] = value end
+	local viewportFrame = UI.create("ViewportFrame", defaults, parent)
+	UI.corner(viewportFrame, 8)
+	local world = UI.create("WorldModel", {Name = "HeroPreview"}, viewportFrame)
+	local model = UI.heroModel(world, heroId, source)
+	local figure = model:FindFirstChild("HeroFigure", true)
+	local frame, bounds = model:GetBoundingBox()
+	local focus = frame.Position + Vector3.new(0, bounds.Y * 0.06, 0)
+	-- A touch further back than the still portrait: the figure jumps and needs headroom.
+	local span = math.max(bounds.Y, bounds.X * 0.9, 5) * 1.02
+	local camera = UI.create("Camera", {Name = "PortraitCamera", FieldOfView = 32}, viewportFrame)
+	local offset = Vector3.new(span * 0.44, span * 0.12, -span * 1.95)
+	camera.CFrame = CFrame.lookAt(focus + offset, focus)
+	viewportFrame.CurrentCamera = camera
+	return { frame = viewportFrame, model = model, figure = figure, camera = camera, focus = focus, offset = offset }
+end
+
 function UI.heroPortrait(parent, heroId, source, tint, properties)
 	local defaults = {
 		Name = "Portrait_" .. heroId, Size = UDim2.fromScale(1, 1),

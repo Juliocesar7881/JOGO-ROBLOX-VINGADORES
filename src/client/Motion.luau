@@ -36,6 +36,37 @@ local function set(joints, name, value)
 	if motor then motor.Transform = value end
 end
 
+-- A rig for figures whose parts are all anchored (a preview in a ViewportFrame,
+-- where no physics runs): the joint tree, so a pose can be solved by hand.
+function Motion.Rig(model)
+	local root = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart", true)
+	if not root then return nil end
+	local children = {}
+	for _, item in ipairs(model:GetDescendants()) do
+		if (item:IsA("Motor6D") or item:IsA("Weld")) and item.Part0 and item.Part1 then
+			children[item.Part0] = children[item.Part0] or {}
+			table.insert(children[item.Part0], item)
+		end
+	end
+	return { root = root, children = children, joints = Motion.Joints(model) }
+end
+
+-- Places every part from the root outward: each child sits where its parent's
+-- joint puts it, with the joint's current Transform. Motor6D.Transform is what
+-- Motion.Hero writes, so the same pose that moves a tower moves a preview.
+function Motion.Solve(rig)
+	local queue, head = { rig.root }, 1
+	while queue[head] do
+		local part = queue[head]
+		head += 1
+		for _, joint in ipairs(rig.children[part] or {}) do
+			local transform = joint:IsA("Motor6D") and joint.Transform or IDENTITY
+			joint.Part1.CFrame = part.CFrame * (joint.C0 or IDENTITY) * transform * (joint.C1 or IDENTITY):Inverse()
+			table.insert(queue, joint.Part1)
+		end
+	end
+end
+
 -- How each family walks. stride: studs per step (at scale 1); hip/knee/arm:
 -- swing in radians; lean: forward tilt of the whole body; arms: resting
 -- shoulder pitch (1.3 = reaching forward like the classic shambler).

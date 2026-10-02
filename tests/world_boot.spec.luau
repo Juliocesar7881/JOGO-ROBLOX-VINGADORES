@@ -10,6 +10,7 @@ local v3 = Stubs.v3
 
 local Catalog = __CATALOG__
 local WorldBuilder = __WORLD__
+local Motion = __MOTION__
 
 local checks, failures = 0, 0
 local function check(condition, label)
@@ -65,6 +66,48 @@ do
 	end
 	table.sort(report)
 	print("  parts: " .. table.concat(report, " "))
+end
+
+-- A preview figure can be posed by hand (Motion.Rig / Motion.Solve): the same
+-- joints the towers use, solved outward from the root with every part anchored.
+do
+	local portraits = game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
+	local source = portraits and portraits:FindFirstChild("thor")
+	local figure = source and source:FindFirstChild("HeroFigure", true)
+	check(figure ~= nil and figure:GetAttribute("HeroArt") == true, "a hero's portrait source holds its jointed figure")
+	if figure then
+		local copy = figure:Clone()
+		for _, item in ipairs(copy:GetDescendants()) do if item:IsA("BasePart") then item.Anchored = true end end
+		local rig = Motion.Rig(copy)
+		check(rig ~= nil and rig.joints ~= nil and rig.joints.LeftShoulder ~= nil and rig.joints.RightShoulder ~= nil, "the rig finds the figure's joints")
+		if rig and rig.joints then
+			local function part(name) return copy:FindFirstChild(name, true) end
+			local function pose(values)
+				Motion.Reset(rig.joints)
+				Motion.Hero(rig.joints, values)
+				Motion.Solve(rig)
+			end
+			pose({ breathe = 0 })
+			local head, hand, shoulder = part("Head"), part("LeftHand"), part("LeftUpperArm")
+			check(head ~= nil and hand ~= nil and shoulder ~= nil, "the figure has a head, a hand and an upper arm")
+			local restY = hand.Position.Y
+			local shoulderToHand = (hand.Position - shoulder.Position).Magnitude
+			check(hand.Position.Y < head.Position.Y - 1, "at rest the hand hangs well below the head")
+			pose({ cast = 1, breathe = 0 })
+			check(hand.Position.Y > head.Position.Y, "a cheer lifts the hand above the head, got " .. tostring(hand.Position.Y - head.Position.Y))
+			check(math.abs((hand.Position - shoulder.Position).Magnitude - shoulderToHand) < 0.35 * shoulderToHand, "the arm keeps its length while it moves")
+			check(hand.Position.Y > restY + 1.5, "the hand really travelled")
+			-- Moving the root carries the whole figure with it.
+			local rootAt = rig.root.Position
+			rig.root.CFrame = rig.root.CFrame * CFrame.new(0, 3, 0)
+			Motion.Solve(rig)
+			check(math.abs(head.Position.Y - (rootAt.Y + 3 + (head.Position.Y - rootAt.Y - 3))) < 1e-3 and head.Position.Y > rootAt.Y + 3, "moving the root moves every part")
+			-- Welded extras (capes, hammers) follow their host.
+			local welded = 0
+			for _, joint in ipairs(copy:GetDescendants()) do if joint:IsA("Weld") then welded += 1 end end
+			check(welded > 0, "the figure has welded gear that follows its body, found " .. welded)
+		end
+	end
 end
 
 local lobby = workspace:FindFirstChild("DoomLobby")
