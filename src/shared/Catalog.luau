@@ -833,7 +833,7 @@ local league = {
 		id = "capmen", rarity = "epic", ability = "indestructible",
 		name = text("Capitão Men", "Captain Men"), role = text("Socos que empurram, imbatível", "Knockback punches, unbreakable"), cost = 400,
 		description = text("Socos pesados jogam os infectados para trás. Ele e os aliados ao lado nunca são paralisados.", "Heavy punches throw the infected back. He and the allies beside him are never stunned."),
-		damage = 24, range = 17, interval = 0.6, color = { 226, 70, 56 }, attack = "single", damageType = "physical", air = false,
+		damage = 29, range = 17, interval = 0.6, color = { 226, 70, 56 }, attack = "single", damageType = "physical", air = false,
 		armorPierce = 0.12, knockback = 1.5, stunProof = true,
 		branches = {
 			{ name = text("Soco sônico", "Sonic Punch"), description = text("Muito mais dano e empurra bem mais longe.", "Far more damage and a much longer shove."), mods = { mul("damage", 1.4), set("knockback", 3.5) } },

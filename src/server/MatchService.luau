@@ -1221,8 +1221,15 @@ function ABILITY_HANDLERS.barrier(self, p, stats)
 	self.shieldUntil = self.elapsed + stats.duration
 end
 
+-- Core healing wears off: each heal a commander casts restores 15% less than the
+-- one before (never below a fifth). Measured in the competitive sweep, a leader
+-- whose power heals the core carried a run to wave 63 against 20 for everyone
+-- else, because leaks were simply healed away; this lets a heal slow the end of
+-- a run, never cancel it.
 function ABILITY_HANDLERS.heal(self, p, stats)
-	self.baseHP = math.min(self.maxBaseHP, self.baseHP + stats.power)
+	local casts = p.heals or 0
+	p.heals = casts + 1
+	self.baseHP = math.min(self.maxBaseHP, self.baseHP + stats.power * math.max(0.2, 0.85 ^ casts))
 end
 
 function ABILITY_HANDLERS.weaken(self, p, stats, at)

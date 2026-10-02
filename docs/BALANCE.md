@@ -152,3 +152,19 @@ perto do fim; quem não joga quase nada pega os níveis grátis. Os primeiros n�
 saem em uma partida (2.000 XP), o último em duas. Se a medição real mostrar
 que a maioria fecha em menos de 25 dias, subir `stepXp`; se quase ninguém passar
 do nível 15, descer `firstXp`.
+
+## Líderes de cura no competitivo (02/10/2026)
+
+`--sweep heroes` (cada herói de líder + Homem de Ferro, competitivo): Rei Pantera
+(cura 14 de vida do núcleo) e Capitão Men (escudo + cura) chegavam a **63 ondas**
+contra ~22 dos outros. Trocando o líder para o Homem de Ferro eles caíam para
+25 e 22: o que carregava a partida não era a torre, era a habilidade do líder
+**desfazendo os vazamentos** de um modo sem fim. Agora cada cura de núcleo de um
+comandante vale 15% menos que a anterior (piso de 20%, `ABILITY_HANDLERS.heal`):
+Pantera 33 ondas, Capitão Men 36 (com +5 de dano, de 24 para 29), ambos ainda acima
+da média dos épicos (28), mas sem furar o placar. Cuidado com a leitura: heróis de
+800 de Ouro quase nunca são construídos pelo robô da varredura (ele gasta nos baratos),
+então o 'mítico fraco' dessa tabela é artefato; a varredura `duel` (mesmo orçamento)
+mostra os míticos no topo com 7.000 de Ouro (87% contra 72% dos comuns).
+`--hero a,b,c` limita a varredura; a tabela agora mostra os minutos simulados.
+

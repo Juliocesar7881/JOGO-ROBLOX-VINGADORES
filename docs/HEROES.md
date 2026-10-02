@@ -51,7 +51,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Mestre das Cartas** — Cartas explosivas contra grupos | 390 | área (ar) | 35 | 29 | 1.15s | Ás explosivo |
 | **Ninja Psíquica** — Lâminas psíquicas perfurantes | 400 | único | 32 | 23 | 0.70s | Corte psíquico |
 | **Mercenário Falante** — Rajadas rápidas e apoio ofensivo | 380 | único (ar) | 24 | 28 | 0.60s | Trabalho em equipe |
-| **Capitão Men** — Socos que empurram, imbatível | 400 | único | 24 | 17 | 0.60s | Indestrutível |
+| **Capitão Men** — Socos que empurram, imbatível | 400 | único | 29 | 17 | 0.60s | Indestrutível |
 | **Amazona Dourada** — Laço da verdade e espada | 420 | corrente | 18 | 24 | 0.90s | Laço da Verdade |
 | **Rei dos Mares** — Marés que atrasam e empurram | 430 | área | 19 | 25 | 1.40s | Maremoto |
 | **Caçador da Noite** — Minas e armadilhas na estrada | 380 | mine | 40 | 26 | 1.50s | Bomba de Fumaça |

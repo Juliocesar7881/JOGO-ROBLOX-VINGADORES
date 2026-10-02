@@ -7,7 +7,12 @@
 local unlocked = { campaign = { manhattan = { normal = true, ranked = true }, hydra = { normal = true, ranked = true }, wakanda = { normal = true, ranked = true }, latveria = { normal = true, ranked = true } } }
 local MAPS = Rules.MapsForMode("ranked")
 local rows = {}
+local function wanted(heroId)
+	if not ONLY_HEROES then return true end
+	return table.find(ONLY_HEROES, heroId) ~= nil
+end
 for _, heroId in ipairs(Catalog.HeroOrder) do
+	if not wanted(heroId) then continue end
 	local hero = Catalog.Heroes[heroId]
 	local reached, minutes = 0, 0
 	for _, mapId in ipairs(MAPS) do
@@ -15,12 +20,12 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 		reached += run.results.waves
 		minutes += run.seconds / 60
 	end
-	table.insert(rows, { id = heroId, rarity = hero.rarity, cost = hero.cost, kind = hero.attack, waves = reached / #MAPS })
+	table.insert(rows, { id = heroId, rarity = hero.rarity, cost = hero.cost, kind = hero.attack, waves = reached / #MAPS, minutes = minutes / #MAPS })
 end
 print(string.format("%-14s %-10s %5s  %-7s %s", "heroi", "raridade", "custo", "ataque", "ondas (ranked, media dos mapas)"))
 local byRarity = {}
 for _, row in ipairs(rows) do
-	print(string.format("%-14s %-10s %5d  %-7s %5.1f  %s", row.id, row.rarity, row.cost, row.kind, row.waves, string.rep("#", math.floor(row.waves / 2))))
+	print(string.format("%-14s %-10s %5d  %-7s %5.1f %6.1f min  %s", row.id, row.rarity, row.cost, row.kind, row.waves, row.minutes, string.rep("#", math.floor(row.waves / 2))))
 	byRarity[row.rarity] = byRarity[row.rarity] or { sum = 0, count = 0 }
 	byRarity[row.rarity].sum += row.waves
 	byRarity[row.rarity].count += 1
@@ -28,5 +33,5 @@ end
 print("")
 for _, rarity in ipairs(Catalog.RarityOrder) do
 	local entry = byRarity[rarity]
-	print(string.format("%-10s media %5.1f ondas", rarity, entry.sum / entry.count))
+	if entry then print(string.format("%-10s media %5.1f ondas", rarity, entry.sum / entry.count)) end
 end
