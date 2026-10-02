@@ -93,6 +93,15 @@ function Panels.new(ctx)
 			UI.label(card,entry[3],{Position=UDim2.fromOffset(8,28),Size=UDim2.new(1,-16,0,38),TextSize=28,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 		end
 		UI.label(body,def.air and T("✈ ACERTA INIMIGOS NO CHÃO E VOANDO","✈ HITS GROUND AND FLYING ENEMIES") or T("🦶 ACERTA SÓ INIMIGOS NO CHÃO","🦶 HITS GROUND ENEMIES ONLY"),{Name="HeroTargets",Size=UDim2.new(1,-6,0,26),TextColor3=def.air and C.green or C.coral,Font=UI.Fonts.display,TextSize=15,TextWrapped=true})
+		-- What sets this hero apart from the rest, one line each.
+		local traits={}
+		if (def.knockback or 0)>0 then table.insert(traits,"👊 "..T("Cada soco empurra o inimigo para trás","Every punch shoves the enemy back")) end
+		if def.stunProof then table.insert(traits,"🛡 "..T("Nunca é paralisado","Can never be stunned")) end
+		if (def.stunAura or 0)>0 then table.insert(traits,"🛡 "..T("No nível 5, ele protege os aliados da paralisia","At level 5 he shields allies from stuns")) end
+		if def.reveal then table.insert(traits,"👁 "..T("Revela inimigos camuflados","Reveals hidden enemies")) end
+		if (def.slow or 0)>0 then table.insert(traits,"❄ "..T("Desacelera quem acerta","Slows what it hits")) end
+		if def.support then table.insert(traits,"✚ "..T("Fortalece as torres ao redor","Strengthens the towers around it")) end
+		for _,trait in ipairs(traits) do UI.label(body,trait,{Name="HeroTrait",Size=UDim2.new(1,-6,0,24),TextColor3=C.cream,Font=UI.Fonts.display,TextSize=14}) end
 		if def.pickup then UI.label(body,"🧲 "..T("Puxa o Ouro que cai perto dela","Pulls in Gold that lands nearby"),{Size=UDim2.new(1,-6,0,24),TextColor3=C.gold,Font=UI.Fonts.display,TextSize=14}) end
 		if not short then drawActions() end
 		local tabs=UI.row(body,44)
