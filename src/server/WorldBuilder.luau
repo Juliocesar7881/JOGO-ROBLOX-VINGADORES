@@ -5325,7 +5325,57 @@ local function buildBlocks(self, mapId, theme, streets, rng)
 		local pick = rng:NextInteger(index, #open)
 		open[index], open[pick] = open[pick], open[index]
 		local spot = open[index]
+		table.insert(self.blockSpots, spot)
 		BLOCKS[kinds[(index - 1) % #kinds + 1]](folder, theme, rng, spot[1], spot[2])
+	end
+end
+
+--==============================================================================
+-- Ground detail: tufts, pebbles and stains scattered over the open ground, so a
+-- map is not one flat colour seen from above. Each is a tiny model in the
+-- Clutter folder, which a tower's platform clears (World:ClearClutter).
+--==============================================================================
+local function buildGroundScatter(self, mapId, theme, streets, rng)
+	local ground = theme.ground[2]
+	local grassy = theme.ground[1] == Enum.Material.Grass or theme.ground[1] == Enum.Material.LeafyGrass
+	local spots = self.blockSpots or {}
+	local made, tries = 0, 0
+	while made < 64 and tries < 600 do
+		tries += 1
+		local x, z = rng:NextNumber(-100, 100), rng:NextNumber(-100, 100)
+		local clear = true
+		for _, s in ipairs(streets) do
+			if insideStreet(s, x, z, WALK + 5) then clear = false break end
+		end
+		for _, spot in ipairs(spots) do
+			if (spot[1] - x) ^ 2 + (spot[2] - z) ^ 2 < 18 * 18 then clear = false break end
+		end
+		if (x * x + z * z) < 14 * 14 then clear = false end
+		if clear then
+			made += 1
+			local kind = rng:NextInteger(1, 10)
+			local model = clutterModel(self, "GroundDetail", x, z, 1.4)
+			if grassy and kind <= 6 then
+				-- A tuft: three blades of lawn leaning apart.
+				local leaf = ground:Lerp(Color3.fromRGB(120, 190, 80), 0.35 + rng:NextNumber() * 0.25)
+				for blade = 1, 3 do
+					local a = blade * 2.1 + rng:NextNumber()
+					Kit.blob(model, "Tuft", Vector3.new(0.55, 0.6, 0.55), CFrame.new(x + math.cos(a) * 0.35, 0.1, z + math.sin(a) * 0.35) * CFrame.Angles(math.sin(a) * 0.25, 0, math.cos(a) * 0.25), leaf, Enum.Material.Grass)
+				end
+			elseif kind <= 8 then
+				-- Pebbles: a big one and a small one.
+				local stone = theme.curb[2]:Lerp(ground, 0.4)
+				Kit.blob(model, "Pebble", Vector3.new(1.4, 0.6, 1.1), CFrame.new(x, 0.1, z) * CFrame.Angles(0, rng:NextNumber() * 3, 0), stone, Enum.Material.Slate)
+				Kit.blob(model, "Pebble", Vector3.new(0.7, 0.4, 0.6), CFrame.new(x + 1.1, 0.08, z + 0.5), stone:Lerp(Color3.new(0, 0, 0), 0.15), Enum.Material.Slate)
+			else
+				-- A stain or a worn patch: a flat disc a shade off the ground.
+				local disc = Kit.disc(model, "Stain", Vector3.new(x, 0.06, z), rng:NextNumber(2.4, 4.2), 0.05, ground:Lerp(Color3.new(0, 0, 0), 0.18 + rng:NextNumber() * 0.12), Enum.Material.Slate)
+				disc.CanCollide = false
+			end
+			for _, item in ipairs(model:GetDescendants()) do
+				if item:IsA("BasePart") then item.CanCollide, item.CanTouch, item.CanQuery, item.CastShadow = false, false, false, false end
+			end
+		end
 	end
 end
 
@@ -5334,12 +5384,14 @@ function World:DressMap(mapId, map)
 	local rng = Random.new(map.chapter * 977 + 13)
 	local streets = streetsOf(map)
 	self.streets = streets
+	self.blockSpots = {}
 	buildTerrain(self, map, theme, rng)
 	buildStreets(self, map, theme, streets)
 	buildBlocks(self, mapId, theme, streets, rng)
 	buildSidewalks(self, map, theme, streets, rng)
 	buildOuterRing(self, map, theme, streets, rng)
 	buildCityWall(self, map, theme, streets, rng)
+	buildGroundScatter(self, mapId, theme, streets, rng)
 end
 
 -- Building a tower clears any street furniture under its platform.

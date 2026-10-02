@@ -916,7 +916,8 @@ function Panels.new(ctx)
 		end
 		-- Pointy-top hexagons in a honeycomb: rows are the tiers of every branch,
 		-- each row shifted half a hexagon from the one above, so they interlock.
-		local R = 46
+		-- A phone on its side has little height: smaller hexagons there.
+		local R = UI.sizeClass(screenSize().X, screenSize().Y).short and 34 or 46
 		local GAP = 5
 		local stepX = 1.732 * R + GAP
 		local stepY = 1.5 * R + GAP * 0.87
@@ -977,12 +978,12 @@ function Panels.new(ctx)
 				local fill = rank > 0 and tint or (open and tint:Lerp(C.panel, 0.55) or C.card:Lerp(tint, 0.12))
 				local face = hexagon(map, "TalentHex_" .. id, at, R, fill, 3)
 				local iconTint = rank > 0 and C.cream or (open and tint:Lerp(C.cream, 0.45) or C.muted)
-				UI.icon(map, TALENT_ICONS[id] or "star", iconTint, {Name = "TalentIcon_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y - 9), Size = UDim2.fromOffset(36, 36), ZIndex = 5})
+				UI.icon(map, TALENT_ICONS[id] or "star", iconTint, {Name = "TalentIcon_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y - R * 0.2), Size = UDim2.fromOffset(R * 0.78, R * 0.78), ZIndex = 5})
 				if not open then
-					UI.icon(map, "lock", C.cream, {Name = "TalentLock_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X + 22, at.Y - 24), Size = UDim2.fromOffset(18, 18), ZIndex = 6})
+					UI.icon(map, "lock", C.cream, {Name = "TalentLock_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X + R * 0.48, at.Y - R * 0.52), Size = UDim2.fromOffset(18, 18), ZIndex = 6})
 				end
 				-- The short word under the icon, and the level badge on the top edge.
-				local word = UI.label(map, def.short and L(def.short) or "", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y + 21), Size = UDim2.fromOffset(R * 1.5, 14), TextScaled = true, Font = UI.Fonts.display, TextColor3 = rank > 0 and C.cream or C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 5})
+				local word = UI.label(map, def.short and L(def.short) or "", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y + R * 0.46), Size = UDim2.fromOffset(R * 1.5, 14), TextScaled = true, Font = UI.Fonts.display, TextColor3 = rank > 0 and C.cream or C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 5})
 				UI.create("UITextSizeConstraint", {MaxTextSize = 12, MinTextSize = 7}, word)
 				local badge = UI.chip(map, maxed and "MAX" or (rank .. "/" .. def.maxRank), maxed and C.gold or (rank > 0 and C.cream or C.muted), {Name = "TalentRank_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y - R + 6), Size = UDim2.fromOffset(44, 16), TextSize = 10, ZIndex = 7})
 				UI.button(map, "", function() talentSelected = id; rerender() end, {Name = "TalentNode_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y), Size = UDim2.fromOffset(R * 1.732, R * 1.9), BackgroundTransparency = 1, ZIndex = 8})
