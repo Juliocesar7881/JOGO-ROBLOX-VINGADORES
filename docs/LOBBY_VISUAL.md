@@ -15,7 +15,7 @@ batalha apareça do outro lado do mar, e não colada nos portais.
   anel viário em volta. Farol com a Terra holográfica girando entre duas
   órbitas e o parkour de sete pedras. Estátuas coloridas do Homem de Ferro e
   do Capitão América em pedestais dourados com placa. Sete balcões (guia com
-  o Nico, mapas, equipe, bases, academia, missões e salão da fama), cada um
+  mapas, equipe, bases, academia, missões e salão da fama), cada um
   com um ícone grande flutuando.
 - **Áreas no anel**: terraço da campanha com os três destinos (sul), arena
   com placar elevado e refletores (leste), zona AFK com palmeiras (oeste),
@@ -202,7 +202,7 @@ O código temporário que abria a galeria para inspeção foi removido após o t
 
 ## Continuação — 25/09/2026
 
-O lobby ganhou quatro serviços físicos: Nico/guia, equipe, Academia e bases.
+O lobby ganhou serviços físicos: mapas, equipe, Academia e bases (o antigo guia Nico saiu em 01/10/2026: o novato é conduzido por setas, ver `src/client/Tutorial.luau`).
 Todos abrem as telas reais existentes e usam a validação de proximidade do
 servidor. Missões e placar foram movidos para a aproximação do bosque, voltados
 para a praça; não é mais necessário passar por trás dos portais para encontrá-los.
@@ -212,7 +212,7 @@ há pontos disponíveis ou preparação da equipe, conforme o perfil. Seus oito
 atalhos abrem jogar, equipe, bases, Academia, baús, missões, placares e opções.
 Não concede recompensas nem altera o inventário por conta própria.
 
-A vila agora tem um farol, balcões de madeira, molduras nas placas, Nico
+A vila agora tem um farol, balcões de madeira, molduras nas placas, (antes: Nico)
 modelado no cenário, três bancos com assentos utilizáveis, flores e acabamento
 na praça. Bandeirolas e cristais têm movimento local; menos efeitos interrompe
 essas animações. A câmera inicial enquadra os portais e o farol.

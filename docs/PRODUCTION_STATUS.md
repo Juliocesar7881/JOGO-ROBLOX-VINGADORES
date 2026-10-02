@@ -160,7 +160,7 @@ partida real em Manhattan). Os três problemas de maior impacto:
   regionais (camisa rasgada, sobrancelha, equipamento que acompanha o braço,
   11–19 peças cada); os seis chefes com silhueta própria; lobby com troncos
   redondos, bandeirolas triangulares acima dos portais, pisos de pedra nos
-  distritos e o Nico no mesmo estilo. `tools/studio_showroom.py` fotografa
+  distritos no mesmo estilo (o Nico foi removido: o treino é guiado por setas). `tools/studio_showroom.py` fotografa
   heróis, inimigos e chefes direto no Studio.
 
 ### Implementado, aguardando teste real (Studio/aplicativo)

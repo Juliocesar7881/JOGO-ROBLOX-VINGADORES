@@ -2606,6 +2606,31 @@ function World.SolidifyProps(root)
 	return made
 end
 
+-- Neon blows out to flat white when its colour is pale: a light cyan or pale
+-- yellow plate next to the camera turns into a white wall. Every neon part of
+-- the lobby is pulled to a deeper, more saturated version of its own colour, so
+-- the glow stays a glow and reads as the colour it was meant to be.
+function World.TameNeon(root)
+	local tamed = 0
+	for _, item in ipairs(root:GetDescendants()) do
+		if item:IsA("BasePart") and item.Material == Enum.Material.Neon and item.Color then
+			local c = item.Color
+			local r, g, b = c.R, c.G, c.B
+			local high, low = math.max(r, g, b), math.min(r, g, b)
+			if high - low < 0.15 then
+				-- Whitish: just a little dimmer.
+				r, g, b = r * 0.86, g * 0.86, b * 0.86
+			else
+				local pull = low * 0.25
+				r, g, b = r * 0.82 - pull, g * 0.82 - pull, b * 0.82 - pull
+			end
+			item.Color = Color3.new(math.max(0, r), math.max(0, g), math.max(0, b))
+			tamed += 1
+		end
+	end
+	return tamed
+end
+
 -- Push the smaller face of every flickering pair out along its normal; the
 -- big surface stays put. A few rounds settle stacks of three or more.
 function World.SeparateCoplanar(root)
@@ -2673,6 +2698,7 @@ function World:BuildLobby()
 	self:BuildHorizon(hq)
 	self:DressHeroesHQ(hq)
 	World.SolidifyProps(lobby)
+	World.TameNeon(lobby)
 	-- Last: no two surfaces of the finished lobby may share a plane.
 	World.SeparateCoplanar(lobby)
 end
@@ -3703,6 +3729,12 @@ function World:BuildHeroCameos(hq)
 			ground = foot + V(0, 0.6, 0)
 		end
 		local model = staticFigure(figure, heroId, hero, CFrame.lookAt(ground, V(lookAt.X, ground.Y, lookAt.Z)), scale)
+		-- A cameo standing on the ground is a solid thing: an invisible body the
+		-- size of the figure stops anyone walking through it.
+		if not pedestal and foot.Y < 3 then
+			local body = Kit.block(figure, "CameoBody", V(3 * scale, 8 * scale, 3 * scale), CFrame.new(ground + V(0, 4 * scale, 0)), HQ.ink, Enum.Material.SmoothPlastic, true)
+			body.Transparency = 1
+		end
 		local head = model and model:FindFirstChild("Head", true)
 		if head then
 			local name = label(head, upper(hero.name.pt), V(0, 2.4, 0), rgb(hero.color):Lerp(HQ.white, 0.55), 200, 70)
