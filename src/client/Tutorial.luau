@@ -60,10 +60,47 @@ function Tutorial:_trainingDestination()
 	return nil
 end
 
+-- A pad in the lobby by model name: the portal's "Pad", the hall's entry pad.
+function Tutorial:_padOf(modelName, padName)
+	local lobby = Workspace:FindFirstChild("DoomLobby")
+	local model = lobby and lobby:FindFirstChild(modelName)
+	local pad = model and (model:FindFirstChild(padName) or model.PrimaryPart)
+	return pad and pad.Position or nil
+end
+
+-- After the training, two short errands finish the first minutes: open the
+-- first chest, then enter the campaign. Only for accounts that really have the
+-- stats to say so, and gone for good after the first real match.
+function Tutorial:_firstErrands(state, root)
+	local ctx = self.ctx
+	local T, profile = ctx.T, state.profile
+	local stats = profile.stats
+	if type(stats) ~= "table" or not root then return nil end
+	if state.elevator and state.elevator.modeId == "normal" then
+		return { id = "campaign", number = 2, total = 2, text = T("Boa! A partida começa em instantes.", "Nice! The match starts in a moment.") }
+	end
+	local cost = ctx.Catalog.Chests.rare.cost
+	if (stats.chests or 0) == 0 and (profile.gold or 0) >= cost and not profile.paidRandomRestricted then
+		local target = self:_padOf("Chest_rare", "ShopEntryPad")
+		if target then
+			return { id = "chest", number = 1, total = 2, world = target, final = target, trail = true,
+				text = T("Abra seu primeiro baú de herói na INVOCAÇÃO", "Open your first hero chest at the SUMMON hall") }
+		end
+	elseif (stats.matches or 0) <= 1 and next(profile.campaign or {}) == nil then
+		local target = self:_padOf("Portal_normal", "Pad")
+		if target then
+			return { id = "campaign", number = 2, total = 2, world = target, final = target, trail = true,
+				text = T("Agora enfrente a CAMPANHA: entre no portal", "Now take on the CAMPAIGN: step into the portal") }
+		end
+	end
+	return nil
+end
+
 -- The lobby leg: the way from the plaza to the training portal.
 function Tutorial:_lobbyStep(state, root)
 	local ctx = self.ctx
 	local T = ctx.T
+	if state.profile.tutorialComplete then return self:_firstErrands(state, root) end
 	local id, def = self:_trainingDestination()
 	if not def or not root then return nil end
 	if state.elevator and state.elevator.modeId == "tutorial" then
@@ -80,7 +117,7 @@ function Tutorial:_lobbyStep(state, root)
 	table.insert(points, target)
 	local nextPoint = Tutorial.NextWaypoint(root.Position, points)
 	return {
-		id = "walk", number = 1, total = 2, world = nextPoint, final = target,
+		id = "walk", number = 1, total = 2, world = nextPoint, final = target, trail = true,
 		text = T("Siga a seta até o portal de TREINO", "Follow the arrow to the TRAINING portal"),
 		shortcut = true,
 	}
@@ -212,7 +249,6 @@ function Tutorial:Evaluate()
 	local state = ctx.state()
 	if not state or not state.profile then return nil end
 	if state.phase == "Lobby" then
-		if state.profile.tutorialComplete then return nil end
 		local character = Players.LocalPlayer.Character
 		return self:_lobbyStep(state, character and character:FindFirstChild("HumanoidRootPart"))
 	end
@@ -395,8 +431,8 @@ function Tutorial:Step(dt)
 
 	-- The first time the way to the portal is shown, the camera swings to look
 	-- along it: the plaza spawns everyone facing the other way.
-	if step.id == "walk" and step.world and root and not self.oriented then
-		self.oriented = true
+	if step.trail and step.world and root and self.orientedFor ~= step.id then
+		self.orientedFor = step.id
 		local camera = Workspace.CurrentCamera
 		if camera and camera.CameraType == Enum.CameraType.Custom then
 			local line = Vector3.new(step.world.X - root.Position.X, 0, step.world.Z - root.Position.Z)
@@ -435,7 +471,7 @@ function Tutorial:Step(dt)
 	self:_edgeArrow(world + Vector3.new(0, 4, 0))
 
 	-- Walking leg: a trail of chevrons from the player toward the point.
-	if step.id == "walk" and root and not lowFX then
+	if step.trail and root and not lowFX then
 		self:_ensureTrail(root)
 		local from = Vector3.new(root.Position.X, ground.Y, root.Position.Z)
 		local line = Vector3.new(world.X - from.X, 0, world.Z - from.Z)

@@ -1260,6 +1260,38 @@ local function session(screen)
 		check(named(gui, "TutorialCard") == nil and named(workspace, "TutorialArrow") == nil, tag .. ": a real match carries no lesson")
 	end)
 
+	step("after the training, two errands: the first chest, then the campaign", function()
+		local fresh = veteranProfile()
+		fresh.tutorialComplete = true
+		fresh.gold = 1500
+		fresh.stats = { waves = 12, bosses = 1, wins = 1, matches = 1, goldEarned = 400, chests = 0 }
+		fresh.campaign = {}
+		push(lobbySnapshot(fresh))
+		frames(1 / 30, 3)
+		local function errand()
+			local card = named(gui, "TutorialCard")
+			local text = card and named(card, "TutorialText")
+			return text and text.Text or ""
+		end
+		check(string.find(errand(), "baú", 1, true) ~= nil, tag .. ": a trained commander with Gold is sent to open the first chest, got " .. errand())
+		check(named(workspace, "TutorialArrow") ~= nil, tag .. ": an arrow marks the summon hall")
+		fresh.stats.chests = 1
+		push(lobbySnapshot(fresh))
+		frames(1 / 30, 3)
+		check(string.find(errand(), "CAMPANHA", 1, true) ~= nil, tag .. ": then to the campaign portal, got " .. errand())
+		fresh.stats.matches = 2
+		push(lobbySnapshot(fresh))
+		frames(1 / 30, 3)
+		check(named(gui, "TutorialCard") == nil, tag .. ": after the first real match the errands are over")
+		local veteran = veteranProfile()
+		push(lobbySnapshot(veteran))
+		frames(1 / 30, 3)
+		check(named(gui, "TutorialCard") == nil, tag .. ": a profile without the stats gets no errand")
+		-- Back to the battle the next steps expect.
+		push(matchSnapshot(veteranProfile(), "Wave"))
+		frames(1 / 30, 2)
+	end)
+
 	step("each owned tower carries its next upgrade above it", function()
 		local function board(id) return playerGui:FindFirstChild("Upgrade_" .. id) end
 		local function green(c) local g = UILayout.Colors.green; return c ~= nil and math.abs(c.R - g.R) + math.abs(c.G - g.G) + math.abs(c.B - g.B) < 0.01 end
