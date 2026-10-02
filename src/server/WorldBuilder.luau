@@ -2854,7 +2854,7 @@ function World:BuildHeroTower(lobby)
 	title.TextColor3, title.Text, title.Parent = HQ.gold, "TORRE DOS HERÓIS", gui
 	title:SetAttribute("LobbyTextPT", "TORRE DOS HERÓIS"); title:SetAttribute("LobbyTextEN", "HEROES TOWER")
 	-- The Robux kiosks' title floats over the left row of stands.
-	Kit.floatText(model, "StarkShopTitle", V(HUB.X - 27, GROUND_Y + 12.5, HUB.Z + LAYOUT.kioskDz), "LOJA VOLT", "VOLT SHOP", HQ.gold, 26)
+	Kit.floatText(model, "StarkShopTitle", V(HUB.X - 27, GROUND_Y + 12.5, HUB.Z + LAYOUT.kioskDz), "LOJA DE FERRO", "IRON SHOP", HQ.gold, 26)
 	return model
 end
 
@@ -4529,7 +4529,7 @@ end
 --==============================================================================
 local FACADES = {}
 local CITY_BILLBOARDS = {
-	{ "VOLT INDÚSTRIAS", { 255, 196, 72 } }, { "DAILY BUGLE", { 255, 90, 90 } }, { "OSCORP", { 110, 220, 255 } },
+	{ "FERRO INDÚSTRIAS", { 255, 196, 72 } }, { "NOTÍCIAS DA CIDADE", { 255, 90, 90 } }, { "NEO CORP", { 110, 220, 255 } },
 	{ "MULTIVERSO", { 240, 240, 255 } }, { "AGÊNCIA", { 140, 200, 255 } }, { "QUANTUM TECH", { 255, 120, 150 } },
 	{ "ROXXON", { 255, 160, 60 } }, { "BAXTER", { 120, 170, 255 } },
 }

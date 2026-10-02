@@ -352,7 +352,7 @@ function Match:_beginWave()
 	for _, spec in ipairs(self.pendingSpawns) do
 		if spec.enemyId == "stealth" then threats.stealth=true elseif spec.enemyId=="flyer" then threats.air=true elseif spec.enemyId=="armored" then threats.armor=true end
 	end
-	if threats.stealth then self:_notice("Camuflados chegando: Sombra, Eco ou uma habilidade de revelar mostram os alvos.","Cloaked enemies incoming: Shade, Echo or a reveal ability shows them.")
+	if threats.stealth then self:_notice("Camuflados chegando: Viúva Sombria, Vigilante Cego ou uma habilidade de revelar mostram os alvos.","Cloaked enemies incoming: Shadow Widow, Blind Vigilante or a reveal ability shows them.")
 	elseif threats.air then self:_notice("Ameaça aérea: use heróis que atinjam voadores.","Air threat: use heroes that target flying enemies.")
 	elseif threats.armor then self:_notice("Blindados: perfuração e dano mágico são eficientes.","Armored enemies: piercing and magic are effective.") end
 	-- The tutorial teaches one idea per wave instead of dumping everything in
