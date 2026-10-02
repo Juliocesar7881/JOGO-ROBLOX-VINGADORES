@@ -1,4 +1,24 @@
-# Relatório da manhã — atualizado 02/10/2026 (madrugada)
+# Relatório da manhã — atualizado 02/10/2026 (tarde)
+
+## Novidades da tarde de 02/10 (depois do relatório da madrugada)
+
+- **Dois inimigos novos que mudam a leitura da partida**: o **Gosmento** racha em
+  dois fragmentos ao morrer (dano em área é a resposta) e o **Sabotador** avisa e
+  paraliza as torres por perto (derrube cedo; Capitão Men e a Muralha humana são
+  imunes). Entram nas ondas 12 e 18; nunca no treino.
+- **Herói novo com mecânica inédita**: **Caçador da Noite** planta **minas** na
+  estrada à frente dos inimigos; dois ramos (Fragmentação / Choque) e Bomba de
+  Fumaça. Total: **43 heróis**.
+- **Polimento medido no Studio**: o letreiro "COMECE AQUI" ficava escondido atrás da
+  seta do tutorial (removido); loja de Ouro com "MELHOR VALOR / MAIS POPULAR" e
+  "Ouro por R$"; pacote inicial e linhas da loja mais enxutos no celular; o
+  cartão do tutorial não cobre mais painéis em tela curta; tela final cabe sem
+  rolar; Fundição, Wakanda e Cidadela mais claras (brilho médio 72→98, 91→97,
+  90→102); 12 dicas de carregamento; teste de contrato do toque (tocar fixa o
+  local, CONFIRMAR coloca).
+- Produtos de Robux a criar agora são **7 heróis novos** (inclui o Caçador da Noite,
+  449) — tabela em `ROBUX_CATALOG.md`.
+
 
 ## O que mudou depois do seu feedback (lobby, tutorial, heróis)
 

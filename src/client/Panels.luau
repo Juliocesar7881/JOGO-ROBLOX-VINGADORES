@@ -98,6 +98,7 @@ function Panels.new(ctx)
 		if (def.knockback or 0)>0 then table.insert(traits,"👊 "..T("Cada soco empurra o inimigo para trás","Every punch shoves the enemy back")) end
 		if def.stunProof then table.insert(traits,"🛡 "..T("Nunca é paralisado","Can never be stunned")) end
 		if (def.stunAura or 0)>0 then table.insert(traits,"🛡 "..T("No nível 5, ele protege os aliados da paralisia","At level 5 he shields allies from stuns")) end
+		if def.attack=="mine" then table.insert(traits,"💣 "..T("Planta até "..tostring(def.mineMax or 0).." minas na estrada; explodem em área","Lays up to "..tostring(def.mineMax or 0).." mines on the road; they blast an area")) end
 		if def.reveal then table.insert(traits,"👁 "..T("Revela inimigos camuflados","Reveals hidden enemies")) end
 		if (def.slow or 0)>0 then table.insert(traits,"❄ "..T("Desacelera quem acerta","Slows what it hits")) end
 		if def.support then table.insert(traits,"✚ "..T("Fortalece as torres ao redor","Strengthens the towers around it")) end
