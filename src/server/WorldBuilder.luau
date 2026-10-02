@@ -1555,7 +1555,7 @@ local function applyMapLighting(mapId)
 	atmosphere.Density, atmosphere.Offset = preset.atmosphereDensity, 0.15
 	atmosphere.Color, atmosphere.Decay, atmosphere.Glare, atmosphere.Haze = rgb(preset.atmosphereColor), rgb(preset.atmosphereColor):Lerp(Color3.new(), 0.35), preset.glare, 1.1
 	local bloom = ensureLightingEffect(lighting, "BloomEffect", "Bloom")
-	bloom.Intensity, bloom.Size, bloom.Threshold = preset.bloom, 24, 0.9
+	bloom.Intensity, bloom.Size, bloom.Threshold = preset.bloom * 0.55, 24, 1.1
 	local grade = ensureLightingEffect(lighting, "ColorCorrectionEffect", "ColorGrade")
 	grade.TintColor = rgb(preset.tint):Lerp(Color3.new(1, 1, 1), 0.8)
 	grade.Contrast, grade.Saturation, grade.Brightness = preset.contrast * 0.4, preset.saturation, 0.025
@@ -5180,13 +5180,13 @@ function World:Build(mapId)
 	local trim = part(self.Scenery, "CoreTrim", Vector3.new(14.4, 0.25, 14.4), CFrame.new(coreX, 2.1, coreZ), coreTint, Enum.Material.Neon)
 	trim.CanCollide = false
 	for _, corner in ipairs({ { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } }) do
-		part(self.Scenery, "CoreButtress", Vector3.new(1.6, 7, 1.6), CFrame.new(coreX + corner[1] * 6.6, 3.5, coreZ + corner[2] * 6.6), Color3.fromRGB(58, 78, 94), Enum.Material.Metal)
+		part(self.Scenery, "CoreButtress", Vector3.new(1.6, 7, 1.6), CFrame.new(coreX + corner[1] * 6.6, 3.5, coreZ + corner[2] * 6.6), Color3.fromRGB(58, 78, 94), Enum.Material.Metal).CanCollide = true
 		local cap = part(self.Scenery, "CoreButtressCap", Vector3.new(2.2, 0.5, 2.2), CFrame.new(coreX + corner[1] * 6.6, 7.1, coreZ + corner[2] * 6.6), coreTint, Enum.Material.Neon)
 		cap.CanCollide = false
 	end
 	local base = part(self.Scenery, "ResistanceCore", Vector3.new(9, 8, 9), CFrame.new(coreX, 6, coreZ), Color3.fromRGB(62, 193, 235), Enum.Material.Glass)
 	base.Shape=Enum.PartType.Ball
-	base.CanCollide, base.Transparency = false, 0.25
+	base.CanCollide, base.Transparency = true, 0.25
 	local column = part(self.Scenery, "CoreColumn", Vector3.new(9.5, 3.4, 3.4), CFrame.new(coreX, 6, coreZ), coreTint, Enum.Material.Neon)
 	column.Shape, column.CanCollide = Enum.PartType.Cylinder, false
 	column.CFrame = CFrame.new(coreX, 6, coreZ) * CFrame.Angles(0, 0, math.pi / 2)
@@ -5201,6 +5201,7 @@ function World:Build(mapId)
 	label(base, "BASE", Vector3.new(0, 9, 0), coreTint)
 	self.base = base
 	self.mapId = mapId
+	World.TameNeon(self.Scenery)
 end
 
 function World:UpdateBase(index, base, core)
@@ -5210,9 +5211,12 @@ function World:UpdateBase(index, base, core)
 	local def=self.catalog.Bases[base.id]; local tint=Color3.fromRGB(unpack(def.color))
 	local offsets={{-12,-12},{12,-12},{-12,12},{12,12}}
 	local at=Vector3.new(math.clamp(core.X+offsets[index][1],-100,100),0,math.clamp(core.Z+offsets[index][2],-100,100))
+	-- The body of the outpost is solid (a commander walks around it, not through
+	-- it); lamps, crops and trim stay passable.
+	local SOLID={Foundation=true,Building=true,Roof=true,WallSection=true,Turret=true}
 	local function block(key,size,offset,color,material)
 		local p=part(model,key,size,CFrame.new(at+offset),color or tint,material or Enum.Material.Metal)
-		p.CanCollide=false; return p
+		p.CanCollide=SOLID[key]==true; return p
 	end
 	block("Foundation",Vector3.new(9,1,9),Vector3.new(0,0.5,0),Color3.fromRGB(53,48,61))
 	block("Trim",Vector3.new(9.3,0.2,9.3),Vector3.new(0,1.1,0),tint,Enum.Material.Neon)
@@ -5238,6 +5242,7 @@ function World:UpdateBase(index, base, core)
 		end
 	end
 	label(building,def.name.pt.." • "..base.level.."/5",Vector3.new(0,6,0),tint)
+	World.TameNeon(model)
 	return at
 end
 
@@ -5368,11 +5373,39 @@ function World:UpgradeTower(model, level, branch, mastery)
 	end
 end
 
+-- Where a commander stands at the start of a match: on open ground just beside
+-- their own base, clear of the core and of every other base (they are solid).
+function World:CommanderSpot(index)
+	local fallback = Vector3.new(-18 + (index or 1) * 8, 4, 80)
+	local scenery = self.Scenery
+	local mine = scenery and scenery:FindFirstChild("PlayerBase_" .. tostring(index or 1))
+	local foundation = mine and mine:FindFirstChild("Foundation")
+	if not foundation then return fallback end
+	local obstacles = {}
+	if self.base then table.insert(obstacles, { self.base.Position, 8.5 }) end
+	for other = 1, 4 do
+		local base = other ~= index and scenery:FindFirstChild("PlayerBase_" .. other)
+		local piece = base and base:FindFirstChild("Foundation")
+		if piece then table.insert(obstacles, { piece.Position, 8.5 }) end
+	end
+	local center = foundation.Position
+	for _, offset in ipairs({ { 0, 9 }, { 0, -9 }, { 9, 0 }, { -9, 0 }, { 9, 9 }, { -9, -9 }, { 9, -9 }, { -9, 9 } }) do
+		local spot = Vector3.new(center.X + offset[1], 4, center.Z + offset[2])
+		local clear = math.abs(spot.X) <= 104 and math.abs(spot.Z) <= 104
+		for _, obstacle in ipairs(obstacles) do
+			local flat = Vector3.new(spot.X - obstacle[1].X, 0, spot.Z - obstacle[1].Z)
+			if flat.Magnitude < obstacle[2] then clear = false end
+		end
+		if clear then return spot end
+	end
+	return fallback
+end
+
 function World:MovePlayer(player, inMatch, index)
 	local function move(character)
 		local hrp = character:WaitForChild("HumanoidRootPart", 8)
 		if not hrp then return end
-		local pos = inMatch and Vector3.new(-18 + (index or 1) * 8, 4, 80) or self.lobbySpawn
+		local pos = inMatch and self:CommanderSpot(index) or self.lobbySpawn
 		character:PivotTo(CFrame.new(pos))
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if humanoid then humanoid.WalkSpeed, humanoid.MaxHealth, humanoid.Health = 23, 100000, 100000 end

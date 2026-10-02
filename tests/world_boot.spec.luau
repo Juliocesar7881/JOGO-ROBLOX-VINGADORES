@@ -901,6 +901,25 @@ check(placed == #Catalog.HeroOrder, "every hero has a tower model, got " .. tost
 check(#missing == 0, "each tower is complete, upgradeable and branch-distinct: " .. table.concat(missing, ", "))
 print(string.format("  %d herois modelados", placed))
 
+-- A commander starts beside their own base, never inside a base or the core.
+do
+	for _, spec in ipairs({ { 88, 66 }, { 0, 90 }, { 88, 76 }, { -20, 40 } }) do
+		for index = 1, 4 do
+			world:UpdateBase(index, { id = "outpost", level = 1 }, v3(spec[1], 0, spec[2]))
+		end
+		for index = 1, 4 do
+			local spot = world:CommanderSpot(index)
+			local own = world.Scenery:FindFirstChild("PlayerBase_" .. index).Foundation.Position
+			check((v3(spot.X - own.X, 0, spot.Z - own.Z)).Magnitude < 14, "the commander arrives beside their own base: " .. index)
+			for other = 1, 4 do
+				local foundation = world.Scenery:FindFirstChild("PlayerBase_" .. other).Foundation
+				local flat = v3(spot.X - foundation.Position.X, 0, spot.Z - foundation.Position.Z)
+				check(math.abs(flat.X) > 4.6 or math.abs(flat.Z) > 4.6, "and not inside a base's foundation: " .. index .. " vs " .. other)
+			end
+		end
+	end
+end
+
 for _,id in ipairs(Catalog.BaseOrder) do
 	for level=1,5 do
 		local position=world:UpdateBase(1,{id=id,level=level},v3(88,0,78))
@@ -910,7 +929,11 @@ for _,id in ipairs(Catalog.BaseOrder) do
 		local markers=0
 		for _,item in ipairs(model:GetChildren()) do
 			if item.Name=="LevelLamp" then markers+=1 end
-			if item:IsA("BasePart") then check(not item.CanCollide,"base decoration cannot block player") end
+			if item:IsA("BasePart") then
+				-- The body of the outpost is solid; every piece of dressing is passable.
+				local solid = item.Name == "Foundation" or item.Name == "Building" or item.Name == "Roof" or item.Name == "WallSection" or item.Name == "Turret"
+				check(item.CanCollide == solid, "only the outpost's body is solid: " .. item.Name)
+			end
 		end
 		check(markers==level,"base upgrade level is visible")
 	end
