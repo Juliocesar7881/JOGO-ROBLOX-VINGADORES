@@ -451,7 +451,9 @@ Catalog.Destinations = {
 	ranked_wakanda = {modeId="ranked",mapId="wakanda",x=112,z=480,facing=-math.pi/2,district="arena"},
 	ranked_latveria = {modeId="ranked",mapId="latveria",x=112,z=513,facing=-math.pi/2,district="arena"},
 	cards = {modeId="cards",mapId="gamma",x=18,z=733,facing=math.pi,district="special"},
-	training = {modeId="tutorial",mapId="manhattan",x=-18,z=733,facing=math.pi,district="special"},
+	-- via: the bridge's two ends, so the arrows lead a newcomer across it (the lobby
+	-- layout puts the north bridge 156 to 183 studs north of the hub at z = 480).
+	training = {modeId="tutorial",mapId="manhattan",x=-18,z=733,facing=math.pi,district="special",via={{x=0,z=636},{x=0,z=663}}},
 }
 -- AFK farm: standing in one of these lobby chambers pays a small amount every
 -- minute, measured and paid by the server. Deliberately far below playing:

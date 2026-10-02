@@ -203,8 +203,8 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 		self.world:MovePlayer(player,true,index)
 	end
 	if modeId == "tutorial" then
-		self:_notice("TREINAMENTO • Escolha Volt e posicione ao lado da rota. Os inimigos derrubam Ouro: pegue para comprar mais heróis.",
-			"TRAINING • Select Volt and place him beside the path. Enemies drop Gold: pick it up to buy more heroes.")
+		self:_notice("TREINAMENTO • Siga as setas: elas ensinam o jogo passo a passo. Os inimigos derrubam Ouro: pegue para comprar mais heróis.",
+			"TRAINING • Follow the arrows: they teach the game one step at a time. Enemies drop Gold: pick it up to buy more heroes.")
 	elseif self.cardMode then
 		self:_notice("ROGUELIKE DE CARTAS • A cada 5 ondas escolha uma carta. Chefe a cada 10 ondas. 50 ondas.",
 			"CARD ROGUELIKE • Pick a card every 5 waves. A boss every 10 waves. 50 waves.")

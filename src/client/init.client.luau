@@ -471,7 +471,6 @@ renderContext = function()
 	panel:SetAttribute("ContextKind",contextPanel.kind)
 	local titles = {hero = T("GALERIA DE HERÓIS", "HERO GALLERY"), skill = T("TREINAMENTO", "TRAINING"), shop = T("SUPRIMENTOS", "SUPPLIES"), quests = T("CENTRAL DE MISSÕES", "MISSION BOARD"), leaderboard = T("LENDAS DA RESISTÊNCIA", "RESISTANCE LEGENDS"), squad = T("FORMAÇÃO TÁTICA", "TACTICAL FORMATION"), settings = T("OPÇÕES", "SETTINGS")}
 	titles.talents = T("ÁRVORE DE EVOLUÇÃO", "TALENT TREE")
-	titles.guide = T("REFÚGIO DA AURORA", "AURORA REFUGE")
 	titles.maps = T("ESCOLHA SEU MAPA", "CHOOSE YOUR MAP")
 	titles.bases=T("MINHA BASE","MY BASE")
 	titles.chests=Catalog.Chests[kit.selectedChest].kind=="base" and T("INVOCAR BASES","SUMMON BASES") or T("INVOCAR HERÓIS","SUMMON HEROES"); titles.premium=T("LOJA ROBUX","ROBUX SHOP"); titles.inventory=T("INVENTÁRIO","INVENTORY")
@@ -744,29 +743,30 @@ renderLobby = function()
 		refs.navigation[entry[1]]={button=button,line=line,tint=entry[3],badge=badge,count=entry[5],icon=disc,iconX=0,phase=i*0.9}
 	end
 
-	-- Nico, the HQ's little robot, gives the next step in a speech strip.
+	-- What to do next. A newcomer is taught by the arrows of Tutorial.luau; once
+	-- the training is done, a short strip names something worth doing now (a
+	-- chest to open, gifts waiting, talent points) and tapping it goes there.
 	local newcomer=not profile().tutorialComplete
-	refs.firstVisitHint=UI.button(main,"",function()
-		if newcomer then act("StartTraining",{}) else openContext("guide",{}) end
-	end,{
-		Name="FirstVisitHint",Position=at(hud.hint),Size=dims(hud.hint),BackgroundColor3=newcomer and C.green or C.ink,BackgroundTransparency=newcomer and 0 or 0.2,
-	})
-	do
+	local p=profile()
+	local suggestion
+	if not newcomer then
+		if canOpenChest() then
+			suggestion={T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."),function() routePreview.goShop() end}
+		elseif tonumber(p.rewards and p.rewards.claimable) and p.rewards.claimable>0 then
+			suggestion={T("Tem prêmios esperando por você!","You have gifts waiting!"),function() openContext("rewards",{hud=true}) end}
+		elseif (p.talentPoints or 0)>0 then
+			suggestion={T("Você tem pontos para gastar na EVOLUÇÃO.","You have points to spend on TALENTS."),function() openContext("talents",{}) end}
+		end
+	end
+	if suggestion then
+		refs.firstVisitHint=UI.button(main,"",suggestion[2],{
+			Name="FirstVisitHint",Position=at(hud.hint),Size=dims(hud.hint),BackgroundColor3=C.ink,BackgroundTransparency=0.2,
+		})
 		local hint=refs.firstVisitHint
 		hint:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(0,22)
 		hint:FindFirstChild("Border").Color=C.gold
-		UI.illustration(hint,"guide",C.gold,{Position=UDim2.fromOffset(4,-12),Size=UDim2.fromOffset(50,50)})
-		local p=profile()
-		local tip=not p.tutorialComplete and T("▶ COMEÇAR TREINO  •  ganhe um baú!","▶ START TRAINING  •  win a chest!")
-			or (canOpenChest() and T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."))
-			or T("Toque aqui: o Nico mostra o caminho.","Tap here: Nico shows the way.")
-		UI.label(hint,tip,{Name="GuideTip",Position=UDim2.fromOffset(58,0),Size=UDim2.new(1,-66,1,0),TextSize=compact and 14 or 16,Font=UI.Fonts.display,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None})
-	end
-	refs.firstVisitHint.Visible=not state.elevator and contextPanel==nil
-	-- A newcomer's START TRAINING breathes, so the eye finds it first.
-	if newcomer and not (profile().settings or {}).lowFX then
-		local pulse=UI.create("UIScale",{Name="Pulse",Scale=1},refs.firstVisitHint)
-		TweenService:Create(pulse,TweenInfo.new(0.7,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),{Scale=1.07}):Play()
+		UI.label(hint,suggestion[1],{Name="GuideTip",Position=UDim2.fromOffset(16,0),Size=UDim2.new(1,-32,1,0),TextSize=compact and 14 or 16,Font=UI.Fonts.display,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None,TextXAlignment=Enum.TextXAlignment.Center})
+		refs.firstVisitHint.Visible=not state.elevator and contextPanel==nil
 	end
 
 	kit.elevatorSignature = nil
@@ -1529,8 +1529,13 @@ kit.autoQuality = require(script:WaitForChild("AutoQuality")).new({
 		showToast(T("Reduzimos os efeitos para o jogo ficar fluido. Mude em Opções.", "Effects reduced so the game runs smoothly. Change it in Options."))
 	end,
 })
+kit.tutorial = require(script:WaitForChild("Tutorial")).new({
+	gui = overlays, UI = UI, C = C, T = T, Catalog = Catalog, Rules = Rules, Config = Config, player = player, effects = effects,
+	state = function() return state end, refs = function() return refs end, act = act, profile = profile,
+})
 RunService.RenderStepped:Connect(function(dt)
 	kit.autoQuality:Step(dt)
+	kit.tutorial:Step(dt or 1 / 60)
 	if os.clock() >= kit.afkBannerAt then
 		kit.afkBannerAt = os.clock() + 0.25
 		updateAfkBanner()

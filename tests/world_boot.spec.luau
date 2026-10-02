@@ -314,12 +314,12 @@ end
 
 check(#(byKind.ShopStand or {}) == 5, "hero showcase, gold vault and one stand per pass, got "
 	.. tostring(#(byKind.ShopStand or {})))
-check(#(byKind.Board or {}) == 7, "missions, ranking, guide, maps, team, academy and base desks, got "
+check(#(byKind.Board or {}) == 6, "missions, ranking, maps, team, academy and base desks, got "
 	.. tostring(#(byKind.Board or {})))
 local boardIds = {}
 for _, model in ipairs(byKind.Board or {}) do boardIds[model:GetAttribute("BoardId")] = true end
 check(boardIds.quests and boardIds.leaderboard, "both the quest board and the leaderboard totem exist")
-for _,id in ipairs({"guide","inventory","talents","bases"}) do
+for _,id in ipairs({"maps","inventory","talents","bases"}) do
 	check(boardIds[id],"functional service desk exists: "..id)
 end
 for _,id in ipairs({"quests","leaderboard"}) do
@@ -329,7 +329,7 @@ for _,id in ipairs({"quests","leaderboard"}) do
 	check(board:FindFirstChild("Post")==nil,"central support no longer obscures notice text: "..id)
 end
 local details=lobby:FindFirstChild("HubServices")
-check(details and details:FindFirstChild("GuideHead")~=nil,"Nico welcomes players at the guide desk")
+check(details and details:FindFirstChild("GuideHead")==nil and boardIds.guide==nil,"there is no guide character or desk: a new player is taught by arrows")
 check(details and countClass(details,"Seat")==3,"hub benches provide usable seats")
 check(world.leaderboardText ~= nil, "the leaderboard totem exposes a text label to update")
 
@@ -487,7 +487,7 @@ do
 		end
 	end
 	check(#wrong == 0, "every lobby prompt opens its own panel and refuses a distant player: " .. table.concat(wrong, ", "))
-	local expected = 2 + 5 + 7 + 1
+	local expected = 2 + 5 + 6 + 1
 	check(refused == expected, "the distance re-check refused all " .. expected .. " far presses, got " .. tostring(refused))
 end
 
@@ -514,7 +514,7 @@ do
 	check(#blocked == 0, "every bridge corridor is clear: " .. table.concat(blocked, ", "))
 end
 -- Chests, Robux stands, boards and desks, plus the arena scoreboard kiosk.
-local expectedPrompts = 2 + 5 + 7 + 1
+local expectedPrompts = 2 + 5 + 6 + 1
 check(totalPrompts == expectedPrompts,
 	"every physical location is interactive, got " .. tostring(totalPrompts) .. "/" .. tostring(expectedPrompts))
 print(string.format("  %d parts, %d locais interativos", countClass(lobby, "BasePart"), totalPrompts))

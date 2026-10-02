@@ -1971,7 +1971,6 @@ local LAYOUT = {
 	},
 	kiosks = { -38, -27, -16, 16, 27 }, kioskDz = 107,
 	services = {
-		{ id = "guide", angle = 120, pt = "NICO • GUIA", en = "NICO • GUIDE", color = Color3.fromRGB(255, 205, 90) },
 		{ id = "maps", angle = 150, pt = "ESCOLHER MAPA", en = "CHOOSE MAP", color = Color3.fromRGB(110, 220, 170) },
 		{ id = "inventory", angle = 210, pt = "SUA EQUIPE", en = "YOUR TEAM", color = Color3.fromRGB(255, 150, 110) },
 		{ id = "bases", angle = 240, pt = "SUAS BASES", en = "YOUR BASES", color = Color3.fromRGB(150, 215, 140) },
@@ -2892,7 +2891,7 @@ function World:BuildHeroStatues(lobby)
 end
 
 --------------------------------------------------------------------------------
--- Service desks around the hub: the guide with Nico, maps, team, bases, the
+-- Service desks around the hub: maps, team, bases, the
 -- academy, and the two notice boards. Each is a small lit kiosk facing the
 -- plaza.
 --------------------------------------------------------------------------------
@@ -2923,7 +2922,7 @@ function World:BuildServiceDesks(lobby)
 		local text = Instance.new("TextLabel")
 		text.BackgroundTransparency, text.Size, text.TextScaled, text.Text, text.Parent = 1, UDim2.fromScale(1, 1), true, glyph, gui
 	end
-	local glyphs = { guide = "🤖", maps = "🗺️", inventory = "🦸", bases = "🛡️", talents = "🎓", quests = "📜", leaderboard = "🏆" }
+	local glyphs = { maps = "🗺️", inventory = "🦸", bases = "🛡️", talents = "🎓", quests = "📜", leaderboard = "🏆" }
 	-- A desk's local +Z looks at the hub.
 	for _, def in ipairs(LAYOUT.services) do
 		local at = polar(def.angle, 54, 0)
@@ -2941,7 +2940,6 @@ function World:BuildServiceDesks(lobby)
 		text.Text = text:GetAttribute("LobbyTextPT")
 		local prompt = panel:FindFirstChildOfClass("ProximityPrompt")
 		if prompt then localized(prompt, def.pt, def.en) end
-		if def.id == "guide" then self.guideDesk = frame end
 		icon(frame, glyphs[def.id] or "⭐")
 	end
 	-- The two public boards: missions and the hall of fame.
@@ -2963,27 +2961,7 @@ function World:BuildServiceDesks(lobby)
 			self.leaderboardText = text
 		end
 	end
-	-- Nico, the HQ's little caretaker robot, beside the guide desk. Its prompt
-	-- is the guide desk's prompt; there is only one tap target.
-	local origin = (self.guideDesk or CFrame.new(HUB)) * CFrame.new(6.5, GROUND_Y, 1.5) * CFrame.Angles(0, math.pi + 0.3, 0)
-	local wood, pale, green = Color3.fromRGB(104, 72, 46), Color3.fromRGB(231, 213, 173), Color3.fromRGB(63, 109, 96)
-	local smooth = Enum.Material.SmoothPlastic
-	for _, side in ipairs({ -1, 1 }) do
-		Kit.blob(scene, "GuideBoot", V(0.9, 0.6, 1.3), origin * CFrame.new(side * 0.5, 0.35, -0.1), wood, smooth)
-		Kit.blob(scene, "GuideArm", V(0.55, 1.45, 0.6), origin * CFrame.new(side * 1.15, 1.9, 0) * CFrame.Angles(0, 0, side * 0.2), pale, smooth)
-		Kit.blob(scene, "GuideHand", V(0.62, 0.62, 0.62), origin * CFrame.new(side * 1.3, 1.15, 0), green, smooth)
-		Kit.blob(scene, "GuideEar", V(0.32, 0.66, 0.66), origin * CFrame.new(side * 1.1, 3.55, 0), ART.gold, smooth)
-		Kit.blob(scene, "GuideEye", V(0.3, 0.36, 0.1), origin * CFrame.new(side * 0.36, 3.58, -0.84), Color3.fromRGB(158, 237, 197), Enum.Material.Neon)
-	end
-	Kit.blob(scene, "GuideBody", V(1.9, 2.1, 1.4), origin * CFrame.new(0, 1.75, 0), green, smooth)
-	Kit.blob(scene, "GuidePanel", V(1.1, 0.9, 0.3), origin * CFrame.new(0, 1.6, -0.62), pale, smooth)
-	Kit.blob(scene, "GuideScarf", V(1.95, 0.45, 1.45), origin * CFrame.new(0, 2.72, 0), ART.gold, smooth)
-	Kit.blob(scene, "GuideHead", V(2.2, 1.6, 1.7), origin * CFrame.new(0, 3.55, 0), pale, smooth)
-	Kit.blob(scene, "GuideVisor", V(1.6, 0.8, 0.5), origin * CFrame.new(0, 3.58, -0.62), Color3.fromRGB(29, 50, 47), Enum.Material.Glass)
-	Kit.block(scene, "GuideAntenna", V(0.13, 0.8, 0.13), origin * CFrame.new(0.7, 4.5, 0), wood, Enum.Material.Metal)
-	local tip = Kit.block(scene, "GuideAntennaTip", V(0.35, 0.35, 0.35), origin * CFrame.new(0.7, 4.95, 0), ART.gold, Enum.Material.Neon)
-	tip.Shape = Enum.PartType.Ball
-	Kit.animate(tip, 0, 0.15)
+	local wood = Color3.fromRGB(104, 72, 46)
 	-- Benches with real seats face the plaza between the desks.
 	for _, angle in ipairs({ 90 - 16, 90 + 16, 270 - 16 }) do
 		local at = polar(angle, 60, GROUND_Y)

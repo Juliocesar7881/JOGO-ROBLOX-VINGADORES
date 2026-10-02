@@ -497,19 +497,12 @@ local function session(screen)
 
 	local contextSlot = lobbyLayout.context
 	local function contextOpen() return main:FindFirstChild("ContextPanel") ~= nil end
-	step("refuge guide reaches every core lobby screen",function()
-		for _,id in ipairs({"modes","inventory","bases","talents","quests","leaderboard","settings"}) do
-			clickNamed("FirstVisitHint")
-			check(named(gui,"RefugeWelcome")~=nil,tag..": guide opens from the persistent button")
-			check(#offscreen(main,SCREEN)==0,tag..": guide stays inside usable screen")
-			clickNamed("GuideLink_"..id)
-			check(contextOpen() and named(gui,"RefugeWelcome")==nil,tag..": guide opens "..id)
-			clickNamed("CloseContext")
-		end
-		-- Chests are bought at the shop: the guide shows the way, it opens no menu.
+	step("the next-goal strip sends the player to a place",function()
+		-- Chests are bought at the shop: the strip shows the way, it opens no menu.
 		clickNamed("FirstVisitHint")
-		clickNamed("GuideLink_shopWay")
-		check(not contextOpen() and named(gui,"RefugeWelcome")==nil,tag..": the shop link sends the player walking, no chest menu")
+		check(not contextOpen(),tag..": the shop suggestion sends the player walking, no chest menu")
+		check(named(gui,"RefugeWelcome")==nil and named(gui,"GuideLink_modes")==nil,tag..": there is no guide panel")
+		check(#offscreen(main,SCREEN)==0,tag..": the strip stays inside the usable screen")
 	end)
 	step("a portal opens no menu", function()
 		fx({ kind = "OpenPanel", panel = "play", modeId = "normal" })
@@ -1061,9 +1054,14 @@ local function session(screen)
 		check(countNamed(lobby.Portal_training, "StartHere") == 1, tag .. ": a newcomer sees one START HERE beacon")
 		local newcomerBoard = lobby.Board_quests.Panel.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(newcomerBoard, "TREINE", 1, true) ~= nil, tag .. ": the mission board points a newcomer to training, got " .. newcomerBoard)
-		check(frameAt(main, lobbyLayout.hint) ~= nil, tag .. ": the first-visit pointer is on screen")
-		local newcomerTip = named(gui, "GuideTip")
-		check(newcomerTip ~= nil and string.find(newcomerTip.Text, "LOJA", 1, true) == nil, tag .. ": no shop nudge without the Gold to open a chest")
+		check(named(gui, "FirstVisitHint") == nil, tag .. ": a newcomer gets no tip strip: the arrows teach")
+		frames(1 / 30, 3)
+		local card = named(gui, "TutorialCard")
+		check(card ~= nil, tag .. ": a newcomer sees the training objective card")
+		local cardText = card and named(card, "TutorialText")
+		check(cardText ~= nil and string.find(cardText.Text, "TREINO", 1, true) ~= nil, tag .. ": the card says to follow the arrow to the training portal, got " .. tostring(cardText and cardText.Text))
+		check(named(workspace, "TutorialArrow") ~= nil, tag .. ": an arrow stands over the way to the training portal")
+		check(named(gui, "TutorialShortcut") ~= nil, tag .. ": the card offers to skip the walk")
 		fx({kind="OpenPanel",panel="modes",hud=true})
 		check(named(gui, "FirstMission") ~= nil, tag .. ": a newcomer's play menu leads with the short training")
 		clickNamed("FindTrainingPortal")
@@ -1219,6 +1217,47 @@ local function session(screen)
 			if string.sub(item.Name, 1, 7) == "NoBuild" or item.Name == "BuildEdge" then leftover += 1 end
 		end
 		check(leftover == 0, tag .. ": leaving placement clears the tint, " .. leftover .. " left")
+	end)
+
+	step("training: the arrows teach one lesson at a time", function()
+		local trainee = veteranProfile()
+		trainee.loadout = { "ironman", "hawkeye" }
+		local function mine(level, id)
+			return { id = id or "tt1", heroId = "ironman", ownerId = LOCAL_ID, level = level, position = v3(-28, 0, -40), priority = "First", damage = 26, range = 28.8, rate = 1.2,
+				upgradeCost = level < 5 and 350 or 0, invested = 250, base = { damage = 26, range = 28.8, rate = 1.2 } }
+		end
+		local function teach(phase, extra) push(matchSnapshot(trainee, phase, extra)); frames(1 / 30, 3) end
+		local function lesson()
+			local card = named(gui, "TutorialCard")
+			local text = card and named(card, "TutorialText")
+			return text and text.Text or ""
+		end
+		local idle = { modeId = "tutorial", wave = 0, completedWaves = 0, cash = 600, towers = {}, ability = { id = Catalog.Heroes.ironman.ability, heroId = "ironman", rank = 1, target = "area", cooldown = 0, cooldownTotal = 60, radius = 20 } }
+		teach("Preparing", idle)
+		check(string.find(lesson(), "herói", 1, true) ~= nil or string.find(lesson(), "hero", 1, true) ~= nil, tag .. ": the first lesson is placing a hero, got " .. lesson())
+		check(named(gui, "TutorialPointer") ~= nil, tag .. ": a pointer sits over the hero card")
+		check(named(workspace, "TutorialArrow") ~= nil, tag .. ": an arrow marks a legal spot beside the road")
+		idle.towers = { mine(1) }
+		teach("Preparing", idle)
+		check(string.find(lesson(), "PRONTO", 1, true) ~= nil, tag .. ": then calling the wave, got " .. lesson())
+		idle.wave, idle.cash = 1, 100
+		teach("Wave", idle)
+		check(string.find(lesson(), "Ouro", 1, true) ~= nil, tag .. ": then collecting Gold for the upgrade, got " .. lesson())
+		idle.cash = 1000
+		teach("Wave", idle)
+		check(string.find(lesson(), "Evolua", 1, true) ~= nil, tag .. ": then upgrading the tower, got " .. lesson())
+		idle.towers = { mine(2) }
+		teach("Wave", idle)
+		check(string.find(lesson(), "poder", 1, true) ~= nil, tag .. ": then the leader's power, got " .. lesson())
+		idle.ability.cooldown = 30
+		teach("Wave", idle)
+		check(string.find(lesson(), "segundo", 1, true) ~= nil, tag .. ": then a second hero, got " .. lesson())
+		idle.towers = { mine(2), mine(1, "tt2") }
+		teach("Wave", idle)
+		check(string.find(lesson(), "Sobreviva", 1, true) ~= nil, tag .. ": then the lesson is to survive, got " .. lesson())
+		push(matchSnapshot(trainee, "Wave", { modeId = "normal" }))
+		frames(1 / 30, 3)
+		check(named(gui, "TutorialCard") == nil and named(workspace, "TutorialArrow") == nil, tag .. ": a real match carries no lesson")
 	end)
 
 	step("each owned tower carries its next upgrade above it", function()
@@ -1688,10 +1727,10 @@ local function session(screen)
 		push(lobbySnapshot(english))
 		check(findButton(gui, "SETTINGS") ~= nil, tag .. ": the HUD speaks English after the switch")
 		local village=workspace:FindFirstChild("DoomLobby")
-		local guide=village:FindFirstChild("Board_guide").PrimaryPart
-		check(guide.Board:FindFirstChildOfClass("TextLabel").Text:find("NICO • GUIDE",1,true)~=nil,
+		local desk=village:FindFirstChild("Board_maps").PrimaryPart
+		check(desk.Board:FindFirstChildOfClass("TextLabel").Text:find("CHOOSE MAP",1,true)~=nil,
 			tag..": service desk signage changes language")
-		check(guide:FindFirstChildOfClass("ProximityPrompt").ObjectText=="NICO • GUIDE",
+		check(desk:FindFirstChildOfClass("ProximityPrompt").ObjectText=="CHOOSE MAP",
 			tag..": service prompt changes language")
 		local summon=village.HeroesHQ:FindFirstChild("SummonSign")
 		local title,subtitle=summon:FindFirstChild("Title",true),summon:FindFirstChild("Subtitle",true)

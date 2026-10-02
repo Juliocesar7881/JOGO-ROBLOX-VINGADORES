@@ -1,5 +1,5 @@
 -- The lobby's context panels: heroes, squad, chests, shop, quests, rewards,
--- leaderboard, talents, modes, bases, settings and the guide. They used to
+-- leaderboard, talents, modes, bases and settings. They used to
 -- live in init.client, which ran into Luau's 200-register limit; the
 -- controller builds them once with everything they use in `ctx` (values that
 -- change, like the state snapshot, through accessor functions) and keeps the
@@ -1022,67 +1022,8 @@ function Panels.new(ctx)
 		smallText(body,T("*No grupo, cada bônus de vida é dividido pelo tamanho inicial da equipe. Renda exige contribuição na onda.","*In co-op, each HP bonus is divided by the starting party size. Income requires wave contribution."),0,60)
 	end
 
-	local function contextGuide(body)
-		local p=profile()
-		local intro=UI.roundFrame(body,{Name="RefugeWelcome",Size=UDim2.new(1,-6,0,112),BackgroundColor3=C.cream},C.gold)
-		UI.illustration(intro,"guide",C.green,{Position=UDim2.fromOffset(12,18),Size=UDim2.fromOffset(64,64)})
-		UI.label(intro,T("BEM-VINDO AO REFÚGIO!","WELCOME TO THE REFUGE!"),{Position=UDim2.fromOffset(87,12),Size=UDim2.new(1,-100,0,36),TextSize=17,TextWrapped=true,Font=Enum.Font.GothamBlack,TextColor3=C.background})
-		UI.label(intro,T("Sou o Nico! Prepare sua equipe, explore o bosque e entre em um portal para defender o mundo.","I'm Nico! Prepare your team, explore the woods and step into a portal to defend the world."),{Position=UDim2.fromOffset(87,53),Size=UDim2.new(1,-100,0,49),TextSize=12,TextWrapped=true,TextColor3=C.panel})
-		local nextTitle,nextHint,nextPanel
-		if not p.tutorialComplete then
-			nextTitle=T("SUA PRIMEIRA MISSÃO","YOUR FIRST MISSION")
-			nextHint=T("Aprenda a defender em "..Catalog.Modes.tutorial.waves.." ondas. A primeira vitória no treino dá "..number(Catalog.Chests.rare.cost).." Ouro.","Learn to defend in "..Catalog.Modes.tutorial.waves.." waves. Your first training victory grants "..number(Catalog.Chests.rare.cost).." Gold.")
-			nextPanel="modes"
-		elseif (p.talentPoints or 0)>0 then
-			nextTitle=T("VOCÊ PODE EVOLUIR!","YOU CAN GROW!")
-			nextHint=tostring(p.talentPoints)..T(" ponto(s) para melhorar suas passivas. Escolha na Academia."," point(s) to improve your passives. Choose in the Academy.")
-			nextPanel="talents"
-		else
-			nextTitle=T("PRONTO PARA A PRÓXIMA?","READY FOR THE NEXT ADVENTURE?")
-			nextHint=T("O primeiro herói da equipe é seu líder e define seu poder ativo. Confira sua base antes de sair!","Your first hero is the leader and determines your active power. Check your base before leaving!")
-			nextPanel="inventory"
-		end
-		local goal=UI.roundFrame(body,{Name="RefugeNextGoal",Size=UDim2.new(1,-6,0,144),BackgroundColor3=C.panel},C.green)
-		UI.label(goal,nextTitle,{Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-24,0,24),TextSize=14,Font=Enum.Font.GothamBold,TextColor3=C.green})
-		UI.label(goal,nextHint,{Position=UDim2.fromOffset(12,37),Size=UDim2.new(1,-24,0,45),TextWrapped=true,TextSize=12})
-		UI.button(goal,T("VAMOS LÁ","LET'S GO"),function() openContext(nextPanel,{}) end,{Name="GuideNextGoal",Position=UDim2.fromOffset(12,91),Size=UDim2.new(1,-24,0,44),TextSize=13})
-		UI.section(body,T("O QUE VOCÊ QUER FAZER?","WHAT WOULD YOU LIKE TO DO?"),T("Abra por aqui ou visite os balcões da praça.","Open it here or visit the desks in the square."))
-		local links={
-			{"modes",T("Jogar","Play"),T("Solo ou grupo de até 4","Solo or a party of up to 4"),"bolt",C.green},
-			{"inventory",T("Minha equipe","My team"),T("5 heróis • 1 líder","5 heroes • 1 leader"),"hero",C.coral},
-			{"bases",T("Minha base","My base"),T("Equipe sua defesa","Equip your defense"),"heart",C.green},
-			{"talents",T("Academia","Academy"),T("Gaste seus pontos","Spend your points"),"star",C.violet},
-			{"shopWay",T("Loja","Shop"),T("Baús de heróis e bases: ande até o Mercado","Hero and base chests: walk to the Market"),"chest",C.gold},
-			{"rewards",T("Prêmios","Gifts"),T("Baú grátis, presentes e passe de temporada","Free chest, gifts and the season pass"),"gift",C.pink},
-			{"quests",T("Missões","Missions"),T("Objetivos e conquistas","Goals and achievements"),"star",C.coral},
-			{"leaderboard",T("Placares","Leaderboards"),T("Ranks e recordes","Ranks and records"),"trophy",C.gold},
-			{"settings",T("Opções","Settings"),T("Idioma, som e controles","Language, sound and controls"),"bolt",C.cream},
-		}
-		local columns=screenSize().X<400 and 1 or 2
-		local grid=UI.frame(body,{Name="RefugeDirectory",Size=UDim2.new(1,-6,0,math.ceil(#links/columns)*106),BackgroundTransparency=1})
-		for i,entry in ipairs(links) do
-			local tile=UI.button(grid,"",function() if entry[1]=="shopWay" then routePreview.goShop() else openContext(entry[1],{}) end end,{Name="GuideLink_"..entry[1],Position=UDim2.new(((i-1)%columns)/columns,0,0,math.floor((i-1)/columns)*106),Size=UDim2.new(1/columns,-6,0,98),BackgroundColor3=C.card})
-			UI.illustration(tile,entry[4],entry[5],{Position=UDim2.fromOffset(10,12),Size=UDim2.fromOffset(38,38)})
-			UI.label(tile,entry[2],{Position=UDim2.fromOffset(57,10),Size=UDim2.new(1,-67,0,40),TextSize=15,Font=Enum.Font.GothamBold,TextWrapped=true,TextColor3=entry[5]})
-			UI.label(tile,entry[3],{Position=UDim2.fromOffset(12,55),Size=UDim2.new(1,-24,0,33),TextSize=12,TextWrapped=true,TextColor3=C.muted})
-		end
-		UI.section(body,T("AS ILHAS DO REFÚGIO","THE REFUGE ISLANDS"),T("Três pontes levam às ilhas dos portais. A Agência guarda os cantos da praça.","Three bridges lead to the portal islands. The Agency guards the plaza's corners."))
-		for _,place in ipairs({
-			{T("ACADEMIA DO BOSQUE","WOODLAND ACADEMY"),T("Ponte norte, atrás da árvore: TREINO e CARTAS, o campo de treino, cabanas e o poço.","North bridge, beyond the tree: TRAINING and CARDS, the training yard, cottages and the well."),"heart",C.green},
-			{T("POSTO DE EXPEDIÇÕES","EXPEDITION OUTPOST"),T("Ponte oeste: os portais de SELVA e PONTE CELESTE e o mirante.","West bridge: the JUNGLE and SKY BRIDGE portals and the lookout."),"star",C.gold},
-			{T("VIGIA DA CIDADELA","CITADEL WATCH"),T("Ponte leste: o portal da CIDADELA DO TIRANO e o observatório.","East bridge: the LATVERIAN FORTRESS portal and the observatory."),"star",C.violet},
-			{T("AGÊNCIA","The Agency"),T("Nos cantos da praça: o jato no hangar, o posto de comando e o arsenal. Olhe para o céu: o porta-aviões voador!","In the plaza's corners: the jet's hangar, the command post and the armory. Look up: the flying carrier!"),"bolt",C.blue},
-		}) do
-			local card=UI.roundFrame(body,{Name="ExplorePlace",Size=UDim2.new(1,-6,0,114),BackgroundColor3=place[4]:Lerp(C.panel,0.9)},place[4])
-			UI.illustration(card,place[3],place[4],{Position=UDim2.fromOffset(12,14),Size=UDim2.fromOffset(32,32)})
-			UI.label(card,place[1],{Position=UDim2.fromOffset(54,10),Size=UDim2.new(1,-66,0,38),TextColor3=place[4],TextSize=14,Font=Enum.Font.GothamBold,TextWrapped=true})
-			UI.label(card,place[2],{Position=UDim2.fromOffset(14,52),Size=UDim2.new(1,-28,0,52),TextSize=12,TextWrapped=true})
-		end
-	end
-
 	local contextBuilders = {
 		maps=contextModes,
-		guide=contextGuide,
 		bases=contextBases,
 		modes=contextModes,
 		talents = contextTalents,

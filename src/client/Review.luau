@@ -20,7 +20,7 @@ local Review = {}
 
 Review.STAGES = {
 	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium",
-	"quests", "leaderboard", "settings", "rewards", "guide", "boarding",
+	"quests", "leaderboard", "settings", "rewards", "boarding",
 	"preparing", "wave", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
 	"reveal", "revealbase", "revealcommon",
 }
