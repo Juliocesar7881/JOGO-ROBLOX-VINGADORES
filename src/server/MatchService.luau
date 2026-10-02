@@ -1488,6 +1488,8 @@ end
 
 -- How far a commander's magnet reaches for match Gold on the ground.
 function Match:_magnet(p)
+	-- The capstone of the Fortune branch: the whole map is within reach.
+	if talent(p,"globalMagnet")>0 and talent(p,"victoryGold")>=self.catalog.Talents.globalMagnet.requiredRank then return self.catalog.GlobalMagnetRadius end
 	local per = ((self.catalog.Talents.magnet or {}).effect or 15) / 100
 	return self.config.CollectRadius*(1+talent(p,"magnet")*per)
 end

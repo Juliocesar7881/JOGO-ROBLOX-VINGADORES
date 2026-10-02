@@ -1248,6 +1248,26 @@ do
 	local reach = magnetMatch:Snapshot(magnetPlayer).magnet
 	check(math.abs(reach - Config.CollectRadius * (1 + 5 * Catalog.Talents.magnet.effect / 100)) < 1e-9, "Magnetism widens the magnet by its talent effect")
 	check(reach > Config.CollectRadius * 1.5, "a maxed magnet reaches much further")
+	-- The Fortune branch's capstone: the whole map is within reach, from anywhere.
+	local fortune = { roundGold = 5, killGold = 5, magnet = 5, victoryGold = 10, globalMagnet = 1 }
+	local globalMatch, globalPlayer = stage({ modeId = "normal", mapId = "gamma", wave = 5, profile = { talents = fortune, campaign = { manhattan = { normal = true } } } })
+	check(globalMatch:Snapshot(globalPlayer).magnet == Catalog.GlobalMagnetRadius and Catalog.GlobalMagnetRadius >= 400, "the global magnet reaches the whole map")
+	local gp = globalMatch.participants[globalPlayer.UserId]
+	gp.contributed = true
+	globalPlayer.Character = newPlayer(globalPlayer.UserId, v3(0, 3, -150)).Character
+	local fallen = spawn(globalMatch, "zombie", 120, 1)
+	globalMatch:_damage(fallen, 1e9, nil, { trueDamage = true })
+	local globalId, globalPile = next(gp.coins)
+	local cashBefore = gp.cash
+	check(globalPile ~= nil, "a kill far from the commander still drops its Gold")
+	globalMatch.running = true
+	globalMatch.phase = "Wave"
+	globalMatch:Step(0.1)
+	check(next(gp.coins) == nil and gp.cash >= cashBefore + (globalPile and globalPile.value or 0), "the global magnet collects it without moving")
+	-- Without the capstone the same pile waits, and one rank short of the branch does not unlock it.
+	local shortFortune = { roundGold = 5, killGold = 5, magnet = 5, victoryGold = 9, globalMagnet = 1 }
+	local shortMatch, shortPlayer = stage({ modeId = "normal", mapId = "gamma", wave = 5, profile = { talents = shortFortune, campaign = { manhattan = { normal = true } } } })
+	check(shortMatch:Snapshot(shortPlayer).magnet < 100, "an unfinished Fortune branch does not give the global magnet, got " .. tostring(shortMatch:Snapshot(shortPlayer).magnet))
 
 	-- Loki fills the road with worthless illusions that fade on their own.
 	local asgard, asgardPlayer = stage({ modeId = "normal", mapId = "asgard", wave = 50 })

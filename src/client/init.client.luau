@@ -1098,6 +1098,7 @@ local function renderMatch()
 		end, {LayoutOrder = 3, Size = UDim2.fromOffset(layout.saluteW, layout.buttonH), TextColor3 = C.gold, TextSize = 12})
 	end
 	refs.speedToggle = UI.secondary(abilities, "1x", toggleSpeed, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 13, Font = Enum.Font.GothamBlack})
+	refs.sheetButton = UI.secondary(abilities, T("FICHA", "SHEET"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11, Font = Enum.Font.GothamBlack})
 	refs.autoSkipToggle = UI.secondary(abilities, "AUTO", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 12, Font = Enum.Font.GothamBlack})
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
@@ -1479,7 +1480,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		local index = table.find(keys, input.KeyCode)
 		if index and profile().loadout[index] then chooseHero(profile().loadout[index])
 		elseif input.KeyCode == Enum.KeyCode.Q and state.match.ability then chooseSkill(state.match.ability.id)
-		elseif input.KeyCode == Enum.KeyCode.F then toggleSpeed() end
+		elseif input.KeyCode == Enum.KeyCode.F then toggleSpeed()
+		elseif input.KeyCode == Enum.KeyCode.C then kit.sheet:Toggle() end
 	end
 end)
 
@@ -1595,6 +1597,11 @@ kit.movement = require(script:WaitForChild("Movement")).new({
 	actions = (function() local ok, service = pcall(game.GetService, game, "ContextActionService") return ok and service or nil end)(),
 	lowFX = function() local p = profile() return p and p.settings and p.settings.lowFX end,
 })
+kit.sheet = require(script:WaitForChild("Sheet")).new({
+	UI = UI, C = C, T = T, L = L, Catalog = Catalog, Rules = Rules, overlays = overlays, screenSize = screenSize,
+	state = function() return state end, profile = profile, number = number,
+	buildTalents = panels.buildTalents, openBaseUpgrade = function() openBaseUpgrade() end,
+})
 kit.inspect = require(script:WaitForChild("Inspect")).new({
 	gui = overlays, UI = UI, C = C, T = T, L = L, Catalog = Catalog, effects = effects, state = function() return state end,
 })
@@ -1700,6 +1707,7 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		openBaseUpgrade = openBaseUpgrade,
 		openContext = function(kind, data) openContext(kind, data) end,
 		hold = function(fn) reviewHold = fn end,
+		openSheet = function(tab) kit.sheet:Open(tab) end,
 		inspectEnemy = function(enemyId, hp)
 			local def = Catalog.Enemies[enemyId]
 			if def then kit.inspect:Show("review", { def = def, lastHP = hp, maxHP = def.hp }, true) end

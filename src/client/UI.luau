@@ -237,6 +237,33 @@ function UI.icon(parent, kind, tint, properties)
 		shape(0.08, 0.08, 0.84, 0.84, 0, tint, 99)
 		shape(0.2, 0.2, 0.6, 0.6, 0, tint:Lerp(Color3.new(0, 0, 0), 0.22), 99)
 		shape(0.38, 0.28, 0.24, 0.44, 0, tint:Lerp(Color3.new(1, 1, 1), 0.35), 3)
+	elseif kind == "magnet" then
+		-- A horseshoe: two arms with light tips and a rounded bridge.
+		shape(0.16, 0.14, 0.24, 0.6, 0, tint, 5)
+		shape(0.6, 0.14, 0.24, 0.6, 0, tint, 5)
+		shape(0.16, 0.56, 0.68, 0.3, 0, tint, 9)
+		shape(0.4, 0.14, 0.2, 0.46, 0, UI.Colors.background, 3)
+		shape(0.16, 0.12, 0.24, 0.16, 0, Color3.fromRGB(236, 240, 248), 3)
+		shape(0.6, 0.12, 0.24, 0.16, 0, Color3.fromRGB(236, 240, 248), 3)
+	elseif kind == "sword" then
+		shape(0.44, 0.04, 0.12, 0.62, 28, tint, 3)
+		shape(0.24, 0.5, 0.44, 0.09, 28, tint, 3)
+		shape(0.5, 0.62, 0.1, 0.26, 28, tint:Lerp(Color3.new(0, 0, 0), 0.3), 3)
+	elseif kind == "plus" then
+		shape(0.38, 0.12, 0.24, 0.76, 0, tint, 4)
+		shape(0.12, 0.38, 0.76, 0.24, 0, tint, 4)
+	elseif kind == "clock" then
+		shape(0.08, 0.08, 0.84, 0.84, 0, tint, 99)
+		shape(0.18, 0.18, 0.64, 0.64, 0, UI.Colors.background, 99)
+		shape(0.47, 0.26, 0.06, 0.28, 0, tint, 2)
+		shape(0.47, 0.47, 0.22, 0.06, 0, tint, 2)
+	elseif kind == "globe" then
+		shape(0.08, 0.08, 0.84, 0.84, 0, tint, 99)
+		shape(0.14, 0.14, 0.72, 0.72, 0, tint:Lerp(Color3.new(0, 0, 0), 0.35), 99)
+		shape(0.47, 0.1, 0.06, 0.8, 0, tint, 2)
+		shape(0.1, 0.47, 0.8, 0.06, 0, tint, 2)
+		shape(0.3, 0.12, 0.4, 0.76, 0, Color3.new(0, 0, 0), 99).BackgroundTransparency = 1
+		shape(0.32, 0.14, 0.36, 0.72, 0, tint, 99).BackgroundTransparency = 0.7
 	elseif kind == "lock" then
 		shape(0.28, 0.1, 0.1, 0.4, 0, tint, 3)
 		shape(0.62, 0.1, 0.1, 0.4, 0, tint, 3)
@@ -855,12 +882,26 @@ function UI.matchLayout(width, height, options)
 	local small = class.short or class.narrow
 	local skillW = small and 124 or (class.compact and 144 or 190)
 	local saluteW = small and 78 or 96
-	-- Speed (1x/2x) and auto-skip ride in the same band as the ability: they
+	-- Speed (1x/2x), auto-skip and the commander's sheet ride in the same band as the ability: they
 	-- are pressed often, so they get thumb height and sit where the hand is.
 	local controlW = small and 52 or 64
-	local abilitiesW = count * skillW + math.max(0, count - 1) * 8
-	if options.vip then abilitiesW += (count > 0 and 8 or 0) + saluteW end
-	abilitiesW += (abilitiesW > 0 and 8 or 0) + 2 * controlW + 8
+	local function bandWidth()
+		local w = count * skillW + math.max(0, count - 1) * 8
+		if options.vip then w += (count > 0 and 8 or 0) + saluteW end
+		return w + (w > 0 and 8 or 0) + 3 * controlW + 16
+	end
+	-- On a narrow screen the band gives way a little at a time: the ability
+	-- first, then the salute, then the small controls (never under 44 wide).
+	local available = width - 2 * pad
+	for _, step in ipairs({ { "skill", 96 }, { "salute", 56 }, { "control", 44 } }) do
+		while bandWidth() > available do
+			if step[1] == "skill" and skillW > step[2] then skillW -= 2
+			elseif step[1] == "salute" and saluteW > step[2] then saluteW -= 2
+			elseif step[1] == "control" and controlW > step[2] then controlW -= 1
+			else break end
+		end
+	end
+	local abilitiesW = bandWidth()
 	layout.controlW = controlW
 	local buttonH = 48
 	local bandH = class.compact and 64 or 86

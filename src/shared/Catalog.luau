@@ -419,6 +419,7 @@ Catalog.Maps = {
 -- How a commander moves (lobby and matches alike). The client runs on Shift
 -- and jumps twice; the server sets the walk values when it places a commander
 -- and resets anything above the ceilings, so movement is never an advantage.
+Catalog.GlobalMagnetRadius = 500
 Catalog.Movement = { walk = 23, sprint = 34, jumpPower = 56, maxSpeed = 40, maxJumpPower = 90 }
 
 Catalog.EnemyOrder = { "zombie", "runner", "brute", "armored", "stealth", "flyer", "support", "summoner", "splitter", "saboteur" }
@@ -656,7 +657,7 @@ Catalog.Rewards = {
 -- One talent point per account level after the first. The tree lives on the
 -- screen, not in the world. Every branch stays fully earnable over time.
 Catalog.TalentBranches = {
-	{ id = "fortune", name = text("FORTUNA", "FORTUNE"), color = { 255, 200, 70 }, nodes = { "roundGold", "killGold", "magnet", "victoryGold" } },
+	{ id = "fortune", name = text("FORTUNA", "FORTUNE"), color = { 255, 200, 70 }, nodes = { "roundGold", "killGold", "magnet", "victoryGold", "globalMagnet" } },
 	{ id = "guardian", name = text("GUARDIÃO", "GUARDIAN"), color = { 76, 221, 174 }, nodes = { "baseVitality", "baseRecovery", "lastStand" } },
 	{ id = "command", name = text("COMANDO", "COMMAND"), color = { 149, 132, 255 }, nodes = { "startingEnergy", "towerPower", "reach", "skillTempo", "abilityPower" } },
 }
@@ -665,6 +666,9 @@ Catalog.Talents = {
 	killGold = { short = text("TROFÉU", "TROPHY"), name = text("Coleta de troféus", "Trophy collector"), description = text("+4% no Ouro da partida que cada inimigo derruba, por ponto.", "+4% match Gold dropped by each enemy, per point."), maxRank = 5, parent = "roundGold", requiredRank = 2, effect = 4, unit = "%", icon = "KO" },
 	magnet = { short = text("ÍMÃ", "MAGNET"), name = text("Magnetismo", "Magnetism"), description = text("+15% no raio do ímã que puxa o Ouro do chão, por ponto.", "+15% magnet radius for pulling Gold off the ground, per point."), maxRank = 5, parent = "killGold", requiredRank = 2, effect = 15, unit = "%", icon = "MG" },
 	victoryGold = { short = text("VITÓRIA", "VICTORY"), name = text("Recompensa de vitória", "Victory bounty"), description = text("+2% no bônus de vitória por ponto. Não altera primeiras vitórias nem compras.", "+2% victory bonus per point. Excludes first-win bonuses and purchases."), maxRank = 10, parent = "magnet", requiredRank = 3, effect = 2, unit = "%", icon = "WIN" },
+	-- The capstone of the Fortune branch: a switch, not a number. Once the whole
+	-- branch is maxed, the magnet reaches the entire map (Catalog.GlobalMagnetRadius).
+	globalMagnet = { short = text("ÍMÃ TOTAL", "ALL GOLD"), name = text("Ímã global", "Global magnet"), description = text("O ímã puxa todo o Ouro do mapa até você, de qualquer lugar. Exige a trilha Fortuna completa.", "The magnet pulls all the Gold on the map to you, from anywhere. Needs the whole Fortune branch."), maxRank = 1, parent = "victoryGold", requiredRank = 10, effect = 1, unit = "", flag = true, icon = "ALL" },
 	baseVitality = { short = text("VIDA", "HEALTH"), name = text("Núcleo reforçado", "Reinforced core"), description = text("+4 vida máxima por ponto. No grupo vale o maior bônus.", "+4 max core HP per point. Highest teammate bonus applies."), maxRank = 5, effect = 4, unit = "HP", icon = "HP" },
 	baseRecovery = { short = text("REPARO", "REPAIR"), name = text("Equipe de reparos", "Repair crew"), description = text("Recupera 1 vida por ponto a cada 5 ondas. No grupo vale o maior bônus.", "Restore 1 HP per point every 5 waves. Highest teammate bonus applies."), maxRank = 5, parent = "baseVitality", requiredRank = 2, effect = 1, unit = "HP", icon = "+HP" },
 	lastStand = { short = text("RESISTE", "LAST STAND"), name = text("Última resistência", "Last stand"), description = text("Uma vez por partida, com o núcleo abaixo de 30%, recupera 5 de vida por ponto.", "Once per match, with the core below 30%, restore 5 HP per point."), maxRank = 3, parent = "baseRecovery", requiredRank = 2, effect = 5, unit = "HP", icon = "LS" },

@@ -262,6 +262,14 @@ local function offscreen(root, screen)
 	return bad
 end
 
+local function textOf(root)
+	local parts = {}
+	for _, item in ipairs(root:GetDescendants()) do
+		if type(item.Text) == "string" and item.Text ~= "" then table.insert(parts, item.Text) end
+	end
+	return table.concat(parts, " ")
+end
+
 local function countNamed(root, name)
 	local total = 0
 	for _, item in ipairs(root:GetDescendants()) do if item.Name == name then total += 1 end end
@@ -555,24 +563,27 @@ local function session(screen)
 		push(lobbySnapshot(veteranProfile()))
 	end)
 
-	step("the talent honeycomb: select, requirements, zoom", function()
+	step("the talent honeycomb: select, requirements, a compact tree", function()
 		local evolved = veteranProfile()
 		evolved.talents, evolved.talentPoints = {}, 3
 		push(lobbySnapshot(evolved))
 		fx({kind="OpenPanel",panel="talents"})
-		check(countNamed(gui, "TalentHex_roundGold") == 1 and countNamed(gui, "TalentHex_abilityPower") == 1, tag .. ": every talent is a hexagon on the map")
+		check(countNamed(gui, "TalentHex_roundGold") == 1 and countNamed(gui, "TalentHex_abilityPower") == 1 and countNamed(gui, "TalentHex_globalMagnet") == 1, tag .. ": every talent is a hexagon on the map")
+		check(countNamed(gui, "TalentIcon_roundGold") == 1 and countNamed(gui, "TalentIcon_abilityPower") == 1, tag .. ": each hexagon carries a drawn icon")
+		check(countNamed(gui, "TalentLink") == 0 and countNamed(gui, "TalentZoomIn") == 0, tag .. ": no connecting lines and no zoom controls clutter the tree")
+		check(named(gui, "TalentLegend") ~= nil, tag .. ": the three branches are named once, above the tree")
+		check(named(gui, "TalentLock_killGold") ~= nil and named(gui, "TalentLock_roundGold") == nil, tag .. ": a talent whose parent is too low shows a lock, an open one does not")
+		check(named(named(gui, "TalentRank_roundGold"), "Text") == nil and named(gui, "TalentRank_roundGold").Text == "0/5", tag .. ": the level badge reads 0/5")
+		-- The honeycomb is narrow enough for any panel: nothing to drag sideways.
+		local treeFrame = named(gui, "TalentTree")
+		local mapFrame = treeFrame and named(treeFrame, "TalentMap")
+		check(mapFrame ~= nil and mapFrame.Size.X.Offset <= 340, tag .. ": the honeycomb is compact, " .. tostring(mapFrame and mapFrame.Size.X.Offset) .. " px wide")
 		clickNamed("TalentNode_killGold")
 		check(named(gui, "Talent_killGold") ~= nil, tag .. ": tapping a hexagon shows its card")
 		local nowNext = named(gui, "TalentNowNext")
 		check(nowNext and string.find(nowNext.Text, "Próximo", 1, true) ~= nil, tag .. ": the card shows now and next values, got " .. tostring(nowNext and nowNext.Text))
 		local locked = named(gui, "UpgradeTalent_killGold")
 		check(locked and locked.Active == false, tag .. ": a talent whose parent is too low cannot be bought")
-		local tree = named(gui, "TalentTree")
-		local before = tree and tree.CanvasSize.X.Offset
-		clickNamed("TalentZoomIn")
-		local after = named(gui, "TalentTree")
-		check(before and after and after.CanvasSize.X.Offset > before, tag .. ": zooming in grows the map")
-		clickNamed("TalentZoomOut")
 		clickNamed("CloseContext")
 		push(lobbySnapshot(veteranProfile()))
 	end)
@@ -1429,6 +1440,49 @@ local function session(screen)
 		frames(1 / 30, 2)
 		check(humanoid.WalkSpeed == moves.walk, tag .. ": and off again")
 		humanoid:Destroy()
+	end)
+
+	-- The commander's sheet: your talents, active base and cards, readable in a
+	-- match and never editable there.
+	step("the commander's sheet in a match", function()
+		local sheetProfile = veteranProfile()
+		sheetProfile.talents = { roundGold = 3, killGold = 2, magnet = 1 }
+		local base = Rules.BaseStats("outpost", 2)
+		push(matchSnapshot(sheetProfile, "Wave", { base = { id = "outpost", level = 2, stats = base, wall = 0 }, cardMode = false }))
+		check(named(gui, "SheetButton") ~= nil, tag .. ": the match HUD has a button for the commander's sheet")
+		check(named(gui, "CommanderSheet") == nil, tag .. ": the sheet starts closed")
+		clickNamed("SheetButton")
+		check(named(gui, "CommanderSheet") ~= nil, tag .. ": the sheet opens in the middle of a match")
+		check(named(gui, "SheetTab_talents") ~= nil and named(gui, "SheetTab_base") ~= nil and named(gui, "SheetTab_cards") == nil, tag .. ": tabs: talents and base, no cards outside the cards mode")
+		check(named(gui, "TalentReadOnlyNote") ~= nil, tag .. ": the talents say they only change in the lobby")
+		check(named(gui, "TalentNode_roundGold") ~= nil and named(gui, "TalentNode_globalMagnet") ~= nil, tag .. ": the whole tree is drawn, capstone included")
+		check(countNamed(gui, "UpgradeTalent_roundGold") == 0 and named(gui, "TalentOverview") == nil, tag .. ": nothing can be spent in a match")
+		check(countNamed(gui, "ResetTalents") == 0 and findButton(gui, "Redistribuir") == nil, tag .. ": and nothing can be reset")
+		clickNamed("TalentNode_globalMagnet")
+		local card = named(gui, "Talent_globalMagnet")
+		check(card ~= nil and string.find(named(card, "TalentNowNext").Text, "inativo", 1, true) ~= nil, tag .. ": a talent card says whether the capstone is active, got " .. tostring(card and named(card, "TalentNowNext").Text))
+		check(card ~= nil and named(card, "UpgradeTalent_globalMagnet") == nil, tag .. ": the card has no upgrade button")
+		clickNamed("SheetTab_base")
+		check(string.find(named(gui, "SheetBaseName").Text, Catalog.Bases.outpost.name.pt, 1, true) ~= nil, tag .. ": the base tab names the active base")
+		check(string.find(named(gui, "SheetBaseName").Text, "2 / 5", 1, true) ~= nil, tag .. ": and its level")
+		check(named(gui, "SheetBaseNote") ~= nil, tag .. ": and says it only changes in the lobby")
+		clickNamed("SheetUpgradeBase")
+		check(named(gui, "CommanderSheet") == nil and named(gui, "BaseUpgrade") ~= nil, tag .. ": the upgrade button hands over to the base upgrade, closing the sheet")
+		named(gui, "BaseUpgrade"):Destroy()
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.C }, false)
+		check(named(gui, "CommanderSheet") ~= nil, tag .. ": the C key opens the sheet")
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.C }, false)
+		check(named(gui, "CommanderSheet") == nil, tag .. ": and closes it")
+		-- The cards mode adds a tab with the cards picked so far.
+		push(matchSnapshot(sheetProfile, "Wave", { base = { id = "outpost", level = 2, stats = base, wall = 0 }, cardMode = true, cards = { "sharpen", "sharpen", "income" } }))
+		clickNamed("SheetButton")
+		check(named(gui, "SheetTab_cards") ~= nil, tag .. ": the cards mode gets a cards tab")
+		clickNamed("SheetTab_cards")
+		check(named(gui, "SheetCard_sharpen") ~= nil and string.find(textOf(named(gui, "SheetCard_sharpen")), "×2", 1, true) ~= nil and named(gui, "SheetCard_income") ~= nil, tag .. ": each picked card is listed with its stacks")
+		clickNamed("CloseSheet")
+		check(named(gui, "CommanderSheet") == nil, tag .. ": the close button closes the sheet")
+		push(matchSnapshot(sheetProfile, "Preparing"))
+		push(lobbySnapshot(veteranProfile()))
 	end)
 
 	step("training: the arrows teach one lesson at a time", function()

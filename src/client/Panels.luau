@@ -867,31 +867,56 @@ function Panels.new(ctx)
 		UI.label(body, T("1–5: escolher herói  •  Q: poder do líder\nClique ou toque: selecionar posição / torre\nConfirmar: posicionar  •  Esc / Cancelar: cancelar seleção", "1–5: choose hero  •  Q: leader power\nClick or tap: select position / tower\nConfirm: place tower  •  Esc / Cancel: cancel selection"), {Size = UDim2.new(1, -6, 0, 90), TextColor3 = C.muted, TextSize = 13, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
 	end
 
-	local talentSelected, talentZoom = nil, 1
-	local function contextTalents(body)
+	local talentSelected = nil
+	-- One drawn icon per talent (UI.icon kinds): no letters, no emoji.
+	local TALENT_ICONS = {
+		roundGold = "coin", killGold = "star", magnet = "magnet", victoryGold = "trophy", globalMagnet = "globe",
+		baseVitality = "heart", baseRecovery = "plus", lastStand = "shield",
+		startingEnergy = "bolt", towerPower = "sword", reach = "target", skillTempo = "clock", abilityPower = "sparkle",
+	}
+	-- The talent tree: a compact honeycomb, three branches side by side, a few
+	-- rows deep. In the lobby it spends points; inside a match it is read-only and
+	-- only shows what the commander already has.
+	-- options.readOnly, options.rerender (how to redraw the host), options.canvasHeight.
+	local function buildTalents(body, options)
+		options = options or {}
+		local readOnly = options.readOnly == true
+		local rerender = options.rerender or function() renderContext() end
 		local p = profile()
 		local points = p.talentPoints or 0
 		local ranks = p.talents or {}
-		local overview = UI.roundFrame(body, {Name = "TalentOverview", Size = UDim2.new(1, -6, 0, 126), BackgroundColor3 = Color3.fromRGB(68,43,91)}, C.violet)
-		UI.printTexture(overview,C.violet)
-		UI.label(overview,T("CADA AVENTURA TE FAZ CRESCER!", "EVERY ADVENTURE HELPS YOU GROW!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,18),Font=Enum.Font.GothamBlack,TextColor3=C.gold,TextSize=12})
-		UI.label(overview, tostring(points), {Position = UDim2.fromOffset(14, 29), Size = UDim2.fromOffset(62, 53), TextSize = 46, Font = Enum.Font.GothamBlack, TextColor3 = C.gold})
-		UI.label(overview, T("PONTOS DISPONÍVEIS", "AVAILABLE POINTS"), {Position = UDim2.fromOffset(82, 35), Size = UDim2.new(1, -92, 0, 22), TextSize = 12, Font = Enum.Font.GothamBold})
-		UI.label(overview, T("Subiu de nível? Ganhou 1 ponto! Escolha o que melhorar.", "Level up, earn 1 point! Choose what to improve."), {Position = UDim2.fromOffset(82, 59), Size = UDim2.new(1, -92, 0, 40), TextWrapped = true, TextSize = 12, TextColor3 = C.muted})
-		local track = UI.roundFrame(overview, {Position = UDim2.fromOffset(14, 110), Size = UDim2.new(1, -28, 0, 6), BackgroundColor3 = C.background})
-		UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.gold})
-		-- The tree is a honeycomb on a canvas you can drag, zoom and re-centre:
-		-- one column per branch, each talent a hexagon, lines to its parent.
-		-- Tapping a hexagon shows its card below: now → next, cost, requirement.
-		local COLUMN_X, ROW_Y, TOP, HEX = 190, 112, 92, 92
+		if readOnly then
+			UI.label(body, T("Seus talentos nesta partida. Só mudam no lobby.", "Your talents in this match. They only change in the lobby."), {Name = "TalentReadOnlyNote", Size = UDim2.new(1, -6, 0, 28), TextSize = 13, TextWrapped = true, TextColor3 = C.muted})
+		else
+			-- One slim row: the points to spend and the level bar under them.
+			local overview = UI.roundFrame(body, {Name = "TalentOverview", Size = UDim2.new(1, -6, 0, 64), BackgroundColor3 = Color3.fromRGB(68,43,91)}, C.violet)
+			UI.label(overview, tostring(points), {Position = UDim2.fromOffset(14, 6), Size = UDim2.fromOffset(60, 40), TextSize = 36, Font = Enum.Font.GothamBlack, TextColor3 = C.gold})
+			UI.label(overview, T("PONTOS PARA GASTAR", "POINTS TO SPEND"), {Position = UDim2.fromOffset(78, 8), Size = UDim2.new(1, -90, 0, 18), TextSize = 13, Font = Enum.Font.GothamBold})
+			UI.label(overview, T("Cada nível novo dá 1 ponto.", "Every new level gives 1 point."), {Position = UDim2.fromOffset(78, 27), Size = UDim2.new(1, -90, 0, 18), TextSize = 12, TextColor3 = C.muted})
+			local track = UI.roundFrame(overview, {Position = UDim2.fromOffset(14, 50), Size = UDim2.new(1, -28, 0, 6), BackgroundColor3 = C.background})
+			UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.gold})
+		end
+		-- Pointy-top hexagons in a honeycomb: rows are the tiers of every branch,
+		-- each row shifted half a hexagon from the one above, so they interlock.
+		local R = 46
+		local GAP = 5
+		local stepX = 1.732 * R + GAP
+		local stepY = 1.5 * R + GAP * 0.87
 		local positions, mapW, mapH = {}, 0, 0
 		for b, branch in ipairs(Catalog.TalentBranches) do
 			for index, id in ipairs(branch.nodes) do
-				local x = 100 + (b - 1) * COLUMN_X
-				local y = TOP + (index - 1) * ROW_Y + (b % 2 == 0 and ROW_Y / 2 or 0)
+				local x = R + 6 + (b - 1) * stepX + (index % 2 == 0 and stepX / 2 or 0)
+				local y = R + 6 + (index - 1) * stepY
 				positions[id] = Vector2.new(x, y)
-				mapW, mapH = math.max(mapW, x + 100), math.max(mapH, y + 80)
+				mapW, mapH = math.max(mapW, x + 1.732 * R / 2 + 6), math.max(mapH, y + R + 6)
 			end
+		end
+		-- The three branches, named once in colour, each over its own column.
+		local legend = UI.row(body, 26)
+		legend.Name = "TalentLegend"
+		local legendBar = UI.frame(legend, {Name = "TalentLegendBar", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.fromOffset(mapW, 26), BackgroundTransparency = 1})
+		for b, branch in ipairs(Catalog.TalentBranches) do
+			UI.chip(legendBar, L(branch.name), Color3.fromRGB(unpack(branch.color)), {Position = UDim2.fromOffset(6 + (b - 1) * stepX + stepX / 4, 0), Size = UDim2.fromOffset(stepX - 4, 24), TextSize = 11})
 		end
 		local function available(id)
 			local def = Catalog.Talents[id]
@@ -905,54 +930,44 @@ function Panels.new(ctx)
 			end
 			talentSelected = talentSelected or Catalog.TalentBranches[1].nodes[1]
 		end
-		local controls = UI.row(body, 44)
-		local canvasH = math.clamp(screenSize().Y - 330, 220, 430)
-		local canvas = UI.scroll(body, {Name = "TalentTree", Size = UDim2.new(1, -6, 0, canvasH), ScrollingDirection = Enum.ScrollingDirection.XY,
-			AutomaticCanvasSize = Enum.AutomaticSize.None, CanvasSize = UDim2.fromOffset(mapW * talentZoom, mapH * talentZoom),
-			BackgroundTransparency = 0.35, BackgroundColor3 = C.ink, ScrollBarThickness = 8})
+		local canvasH = math.min(mapH + 4, options.canvasHeight or math.clamp(screenSize().Y - 330, 220, 430))
+		local canvas = UI.scroll(body, {Name = "TalentTree", Size = UDim2.new(1, -6, 0, canvasH), ScrollingDirection = Enum.ScrollingDirection.Y,
+			AutomaticCanvasSize = Enum.AutomaticSize.None, CanvasSize = UDim2.fromOffset(0, mapH),
+			BackgroundTransparency = 0.45, BackgroundColor3 = C.ink, ScrollBarThickness = 6})
 		UI.corner(canvas, 14)
-		local map = UI.frame(canvas, {Name = "TalentMap", Size = UDim2.fromOffset(mapW, mapH), BackgroundTransparency = 1})
-		UI.create("UIScale", {Scale = talentZoom}, map)
-		local function centreOn(id)
-			local at = positions[id]
-			if not at then return end
-			local view = canvas.AbsoluteSize
-			local w, h = (view and view.X > 0) and view.X or 500, (view and view.Y > 0) and view.Y or canvasH
-			canvas.CanvasPosition = Vector2.new(math.max(0, at.X * talentZoom - w / 2), math.max(0, at.Y * talentZoom - h / 2))
-		end
-		UI.secondary(controls, "−", function() talentZoom = math.max(0.6, talentZoom - 0.2); renderContext() end, {Name = "TalentZoomOut", Size = UDim2.fromOffset(52, 44), TextSize = 24})
-		UI.secondary(controls, "+", function() talentZoom = math.min(1.6, talentZoom + 0.2); renderContext() end, {Name = "TalentZoomIn", Position = UDim2.fromOffset(58, 0), Size = UDim2.fromOffset(52, 44), TextSize = 24})
-		UI.secondary(controls, T("CENTRALIZAR", "CENTRE"), function() centreOn(talentSelected) end, {Name = "TalentCentre", Position = UDim2.fromOffset(116, 0), Size = UDim2.fromOffset(140, 44), TextSize = 14})
-		-- Hexagons: the UI has no polygons, so three bars turned 0/60/120° form one.
-		local function hexagon(parent, name, center, width, tint, z)
-			local root = UI.frame(parent, {Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(center.X, center.Y), Size = UDim2.fromOffset(width, width), BackgroundTransparency = 1, ZIndex = z})
-			local r = width / 2
-			for _, angle in ipairs({0, 60, 120}) do
-				UI.frame(root, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(r, r * 1.732), Rotation = angle, BackgroundColor3 = tint, ZIndex = z})
+		-- The honeycomb sits in the middle of the canvas.
+		local map = UI.frame(canvas, {Name = "TalentMap", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.fromOffset(mapW, mapH), BackgroundTransparency = 1})
+		-- Hexagons: the UI has no polygons, so three bars turned 30/90/150 degrees
+		-- form a pointy-top one.
+		local function hexagon(parent, name, center, circumradius, tint, z)
+			local root = UI.frame(parent, {Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(center.X, center.Y), Size = UDim2.fromOffset(circumradius * 2, circumradius * 2), BackgroundTransparency = 1, ZIndex = z})
+			for _, angle in ipairs({30, 90, 150}) do
+				UI.frame(root, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(circumradius, circumradius * 1.732), Rotation = angle, BackgroundColor3 = tint, ZIndex = z})
 			end
 			return root
 		end
-		for b, branch in ipairs(Catalog.TalentBranches) do
+		for _, branch in ipairs(Catalog.TalentBranches) do
 			local tint = Color3.fromRGB(unpack(branch.color))
-			local first = positions[branch.nodes[1]]
-			UI.label(map, L(branch.name), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(first.X, 8), Size = UDim2.fromOffset(COLUMN_X - 10, 30), TextSize = 20, Font = UI.Fonts.display, TextColor3 = tint, TextXAlignment = Enum.TextXAlignment.Center})
-			for index, id in ipairs(branch.nodes) do
+			for _, id in ipairs(branch.nodes) do
 				local def = Catalog.Talents[id]
 				local rank, open = ranks[id] or 0, available(id)
+				local maxed = rank >= def.maxRank
 				local at = positions[id]
-				if index > 1 then
-					local from = positions[branch.nodes[index - 1]]
-					local dx, dy = at.X - from.X, at.Y - from.Y
-					UI.frame(map, {Name = "TalentLink", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset((at.X + from.X) / 2, (at.Y + from.Y) / 2), Size = UDim2.fromOffset(8, math.sqrt(dx * dx + dy * dy)), Rotation = math.deg(math.atan2(dx, -dy)), BackgroundColor3 = open and tint or C.card, ZIndex = 1})
-				end
 				local selected = id == talentSelected
-				hexagon(map, "TalentHexOutline_" .. id, at, HEX + 8, selected and C.gold or C.ink, 2)
-				hexagon(map, "TalentHex_" .. id, at, HEX, rank > 0 and tint or (open and tint:Lerp(C.panel, 0.55) or C.card), 3)
-				-- A word a child can read (DANO, ALCANCE, ÍMÃ), not an abbreviation.
-				local word = UI.label(map, def.short and L(def.short) or def.icon or "?", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y - 9), Size = UDim2.fromOffset(HEX - 14, 26), TextScaled = true, Font = UI.Fonts.display, TextColor3 = open and C.text or C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 4})
-				UI.create("UITextSizeConstraint", {MaxTextSize = 20, MinTextSize = 9}, word)
-				UI.label(map, rank .. "/" .. def.maxRank, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y + 18), Size = UDim2.fromOffset(HEX, 22), TextSize = 15, Font = UI.Fonts.display, TextColor3 = rank >= def.maxRank and C.gold or C.text, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 4})
-				UI.button(map, "", function() talentSelected = id; renderContext() end, {Name = "TalentNode_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y), Size = UDim2.fromOffset(HEX, HEX), BackgroundTransparency = 1, ZIndex = 5})
+				-- A maxed talent wears a gold rim; the chosen one a white one.
+				hexagon(map, "TalentHexOutline_" .. id, at, R + (selected and 4 or (maxed and 3 or 1)), selected and C.cream or (maxed and C.gold or C.ink), 2)
+				local fill = rank > 0 and tint or (open and tint:Lerp(C.panel, 0.55) or C.card:Lerp(tint, 0.12))
+				local face = hexagon(map, "TalentHex_" .. id, at, R, fill, 3)
+				local iconTint = rank > 0 and C.cream or (open and tint:Lerp(C.cream, 0.45) or C.muted)
+				UI.icon(map, TALENT_ICONS[id] or "star", iconTint, {Name = "TalentIcon_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y - 9), Size = UDim2.fromOffset(36, 36), ZIndex = 5})
+				if not open then
+					UI.icon(map, "lock", C.cream, {Name = "TalentLock_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X + 22, at.Y - 24), Size = UDim2.fromOffset(18, 18), ZIndex = 6})
+				end
+				-- The short word under the icon, and the level badge on the top edge.
+				local word = UI.label(map, def.short and L(def.short) or "", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y + 21), Size = UDim2.fromOffset(R * 1.5, 14), TextScaled = true, Font = UI.Fonts.display, TextColor3 = rank > 0 and C.cream or C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 5})
+				UI.create("UITextSizeConstraint", {MaxTextSize = 12, MinTextSize = 7}, word)
+				local badge = UI.chip(map, maxed and "MAX" or (rank .. "/" .. def.maxRank), maxed and C.gold or (rank > 0 and C.cream or C.muted), {Name = "TalentRank_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y - R + 6), Size = UDim2.fromOffset(44, 16), TextSize = 10, ZIndex = 7})
+				UI.button(map, "", function() talentSelected = id; rerender() end, {Name = "TalentNode_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y), Size = UDim2.fromOffset(R * 1.732, R * 1.9), BackgroundTransparency = 1, ZIndex = 8})
 			end
 		end
 		-- The chosen talent's card: exactly what one more point does, and why not.
@@ -963,31 +978,38 @@ function Panels.new(ctx)
 			for _, branch in ipairs(Catalog.TalentBranches) do if table.find(branch.nodes, id) then branchTint = Color3.fromRGB(unpack(branch.color)) end end
 			local rank, open = ranks[id] or 0, available(id)
 			local unit = def.unit == "%" and "%" or (def.unit == "HP" and " HP" or (def.unit == "gold" and T(" Ouro", " Gold") or ""))
-			local function value(r) return (r > 0 and "+" or "") .. tostring(r * def.effect) .. unit end
-			local card = UI.roundFrame(body, {Name = "Talent_" .. id, Size = UDim2.new(1, -6, 0, 196), BackgroundColor3 = branchTint:Lerp(C.background, 0.78)}, branchTint)
+			local function value(r)
+				if def.flag then return r > 0 and T("ATIVO", "ACTIVE") or T("inativo", "inactive") end
+				return (r > 0 and "+" or "") .. tostring(r * def.effect) .. unit
+			end
+			local card = UI.roundFrame(body, {Name = "Talent_" .. id, Size = UDim2.new(1, -6, 0, readOnly and 138 or 190), BackgroundColor3 = branchTint:Lerp(C.background, 0.78)}, branchTint)
 			UI.label(card, L(def.name), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -90, 0, 30), TextSize = 20, Font = UI.Fonts.display, TextColor3 = branchTint})
 			UI.label(card, rank .. " / " .. def.maxRank, {Position = UDim2.new(1, -82, 0, 10), Size = UDim2.fromOffset(70, 26), TextSize = 18, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Right})
 			UI.label(card, L(def.description), {Position = UDim2.fromOffset(12, 40), Size = UDim2.new(1, -24, 0, 40), TextWrapped = true, TextSize = 12, TextColor3 = C.muted, TextYAlignment = Enum.TextYAlignment.Top})
 			local nowNext = rank >= def.maxRank and (T("Agora: ", "Now: ") .. value(rank) .. T("  •  nível máximo", "  •  max level"))
-				or (T("Agora: ", "Now: ") .. value(rank) .. "  →  " .. T("Próximo: ", "Next: ") .. value(rank + 1) .. "  •  " .. T("custa 1 ponto", "costs 1 point"))
+				or (T("Agora: ", "Now: ") .. value(rank) .. "  →  " .. T("Próximo: ", "Next: ") .. value(rank + 1) .. (readOnly and "" or ("  •  " .. T("custa 1 ponto", "costs 1 point"))))
 			UI.label(card, nowNext, {Name = "TalentNowNext", Position = UDim2.fromOffset(12, 84), Size = UDim2.new(1, -24, 0, 26), TextSize = 15, Font = UI.Fonts.display, TextColor3 = C.gold})
 			local parentDef = def.parent and Catalog.Talents[def.parent]
 			local need = not open and parentDef and (T("Requer ", "Requires ") .. L(parentDef.name) .. " " .. def.requiredRank .. "/" .. parentDef.maxRank) or ""
 			UI.label(card, need, {Position = UDim2.fromOffset(12, 110), Size = UDim2.new(1, -24, 0, 22), TextSize = 12, TextColor3 = C.red})
-			local label = rank >= def.maxRank and T("COMPLETO!", "COMPLETE!") or not open and T("BLOQUEADO", "LOCKED") or points < 1 and T("GANHE MAIS XP", "EARN MORE XP") or T("EVOLUIR • 1 PONTO", "UPGRADE • 1 POINT")
-			local button = UI.button(card, label, function()
-				act("UpgradeTalent", {talentId = id, expectedRank = rank}, function() audio:Cue("upgrade"); showToast(L(def.name) .. "  " .. (rank + 1) .. "/" .. def.maxRank) end)
-			end, {Name = "UpgradeTalent_" .. id, Position = UDim2.fromOffset(12, 138), Size = UDim2.new(1, -24, 0, 48), BackgroundColor3 = branchTint, TextSize = 15})
-			if not open or rank >= def.maxRank or points < 1 then UI.disabled(button) end
+			if not readOnly then
+				local label = rank >= def.maxRank and T("COMPLETO!", "COMPLETE!") or not open and T("BLOQUEADO", "LOCKED") or points < 1 and T("GANHE MAIS XP", "EARN MORE XP") or T("EVOLUIR • 1 PONTO", "UPGRADE • 1 POINT")
+				local button = UI.button(card, label, function()
+					act("UpgradeTalent", {talentId = id, expectedRank = rank}, function() audio:Cue("upgrade"); showToast(L(def.name) .. "  " .. (rank + 1) .. "/" .. def.maxRank) end)
+				end, {Name = "UpgradeTalent_" .. id, Position = UDim2.fromOffset(12, 136), Size = UDim2.new(1, -24, 0, 46), BackgroundColor3 = branchTint, TextSize = 15})
+				if not open or rank >= def.maxRank or points < 1 then UI.disabled(button) end
+			end
 		end
-		task.defer(function() if canvas.Parent then centreOn(talentSelected) end end)
-		local confirmReset = false
-		local reset
-		reset = UI.secondary(body, T("Redistribuir pontos • grátis", "Reset points • free"), function()
-			if not confirmReset then confirmReset = true; reset.Text = T("Confirmar redistribuição", "Confirm reset"); return end
-			act("ResetTalents", {}, function() showToast(T("Pontos devolvidos. Experimente outra especialidade!", "Points refunded. Try a different specialty!")) end)
-		end, {Size = UDim2.new(1, -6, 0, 44)})
+		if not readOnly then
+			local confirmReset = false
+			local reset
+			reset = UI.secondary(body, T("Redistribuir pontos • grátis", "Reset points • free"), function()
+				if not confirmReset then confirmReset = true; reset.Text = T("Confirmar redistribuição", "Confirm reset"); return end
+				act("ResetTalents", {}, function() showToast(T("Pontos devolvidos. Experimente outra especialidade!", "Points refunded. Try a different specialty!")) end)
+			end, {Size = UDim2.new(1, -6, 0, 44)})
+		end
 	end
+	local function contextTalents(body) buildTalents(body, nil) end
 
 	local function contextModes(body)
 		UI.section(body,T("ESCOLHA SEU DESTINO","CHOOSE YOUR DESTINATION"),T("Cada portal tem seu mapa e seu modo. Para jogar com amigos, entrem no mesmo portal.","Each portal has its own map and mode. To play with friends, enter the same portal."))
@@ -1089,7 +1111,7 @@ function Panels.new(ctx)
 		rewards = contextRewards,
 	}
 
-	return { contextBuilders = contextBuilders, loadBoard = loadBoard }
+	return { contextBuilders = contextBuilders, loadBoard = loadBoard, buildTalents = buildTalents }
 end
 
 return Panels
