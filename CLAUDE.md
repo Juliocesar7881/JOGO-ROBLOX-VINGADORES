@@ -103,6 +103,19 @@ deployment/   template.json of every account ID the release needs
 Commit messages and PR descriptions end with the attribution lines given in
 this session's own system reminder — do not hand-write different ones.
 
+## Driving Roblox Studio from scripts
+
+`tools/studio_sync.py` (push modules), `tools/studio_review.py` (screens and live
+scenes with captures), `tools/studio_showroom.py` (heroes/enemies on a stage) and
+`tools/studio_action.ps1` (play/stop through UI Automation) are the first choice and
+never touch the pointer. Studio's ribbon and Asset Manager are custom-drawn, so for
+those only: UI Automation for menus (Window > Asset Manager), then
+`tools/studio_realclick.py` (one real click, drag or wheel; it restores the cursor and
+the foreground window) and `tools/studio_file_dialog.ps1` for the file dialog.
+`tools/studio_upload_audio.py` chains them to upload WAVs. Never accept a terms or
+agreement dialog on the owner's behalf, and never confirm "Redefinir layout" (it
+restarts Studio).
+
 ## What the owner has asked for (standing rules)
 
 - No mascot or guide character: the newcomer is taught by arrows (`Tutorial.luau`).

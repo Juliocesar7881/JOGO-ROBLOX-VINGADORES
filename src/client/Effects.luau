@@ -1003,6 +1003,8 @@ function Effects:Handle(event)
 			local lowFX = state and state.profile and state.profile.settings and state.profile.settings.lowFX
 			local color = UI.color(event.color)
 			self:_groundImpact(event.position, color, math.clamp(tonumber(event.radius) or 9, 4, 20))
+			local camera = workspace.CurrentCamera
+			if self.audio and camera then self.audio:Shot("shotBlast", (event.position - camera.CFrame.Position).Magnitude) end
 			if not lowFX then self:_impact(event.position + Vector3.new(0, 1.2, 0), Color3.fromRGB(255, 226, 170), 4.5) end
 		end
 		if event.shake then self:Shake(event.shake) end
