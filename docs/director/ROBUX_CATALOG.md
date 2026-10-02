@@ -87,10 +87,10 @@ a criação parou. Com o aviso aceito, retomar:
 
 ## Atenção: nomes mudaram (01/10 noite)
 
-Os 36 heróis foram renomeados e há 6 heróis novos. O jogo mostra os nomes do
+Os 36 heróis foram renomeados e há 7 heróis novos. O jogo mostra os nomes do
 `Catalog.luau`, mas o **nome do produto no Creator Hub** é o que aparece na tela
 de compra do Roblox: renomeie os 15 produtos já criados para o nome novo de
 `docs/HEROES.md` (ex.: "Pocket Titan" → "Tiny Man"). Produtos novos a criar
 (IDs 0 até lá; a loja mostra "Indisponível"): Capitão Men (449), Amazona
-Dourada (449), Rei dos Mares (449), Guardião Verde (999), Velocista Rubro
-(999), Titã Solar (1.999).
+Dourada (449), Rei dos Mares (449), Caçador da Noite (449, 02/10), Guardião Verde
+(999), Velocista Rubro (999), Titã Solar (1.999). São 7 heróis novos no total.

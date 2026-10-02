@@ -1255,6 +1255,28 @@ local function session(screen)
 		input.TouchEnabled = false
 	end)
 
+	-- Mines are listed by the server; the client only draws what the list says.
+	step("mines on the road", function()
+		local function mineParts()
+			local count = 0
+			local visuals = workspace:FindFirstChild("DoomClientVisuals")
+			for _, item in ipairs(visuals and visuals:GetChildren() or {}) do if item.Name == "Mine" then count += 1 end end
+			return count
+		end
+		fx({ kind = "MineSync", mines = { { id = "m1", position = v3(10, 0, 5), radius = 9 }, { id = "m2", position = v3(30, 0, 5), radius = 9 } } })
+		check(mineParts() == 2, tag .. ": every listed mine is drawn, got " .. mineParts())
+		fx({ kind = "MineSync", mines = { { id = "m1", position = v3(10, 0, 5), radius = 9 }, { id = "m2", position = v3(30, 0, 5), radius = 9 } } })
+		check(mineParts() == 2, tag .. ": a repeated list does not draw a mine twice")
+		fx({ kind = "MineBlast", id = "m1", position = v3(10, 0, 5), radius = 9, color = Color3.fromRGB(74, 84, 118) })
+		check(mineParts() == 1, tag .. ": a mine that went off leaves the road at once")
+		fx({ kind = "MineSync", mines = { { id = "m3", position = v3(50, 0, 5), radius = 9 } } })
+		check(mineParts() == 1, tag .. ": a mine the list no longer holds is taken off the road")
+		fx({ kind = "MineSync", mines = {} })
+		check(mineParts() == 0, tag .. ": an empty list clears every mine")
+		fx({ kind = "MineSync", mines = { { id = "bad" }, "junk", { id = "m9", position = "nowhere" } } })
+		check(mineParts() == 0, tag .. ": malformed mine rows are ignored")
+	end)
+
 	step("training: the arrows teach one lesson at a time", function()
 		local trainee = veteranProfile()
 		trainee.loadout = { "ironman", "hawkeye" }

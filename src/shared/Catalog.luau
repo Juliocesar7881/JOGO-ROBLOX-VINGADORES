@@ -818,6 +818,7 @@ end
 --   speedster     jabs so fast the whole team speeds up with him
 --   amazon        a golden lasso that reveals and marks, a sword that cuts armor
 --   seaking       tides that slow and drag the horde back down the road
+--   nightstalker  plants mines on the road ahead of the horde
 local league = {
 	capmen = {
 		id = "capmen", rarity = "epic", ability = "indestructible",
@@ -870,6 +871,17 @@ local league = {
 			{ name = text("Laço da verdade", "Truth Lasso"), description = text("Marca mais forte, alcance maior e mais ricochetes.", "A stronger mark, more range and more ricochets."), mods = { set("mark", 0.25), add("range", 6), set("chain", 5) } },
 		},
 	},
+	nightstalker = {
+		id = "nightstalker", rarity = "epic", ability = "smokeBomb",
+		name = text("Caçador da Noite", "Night Hunter"), role = text("Minas e armadilhas na estrada", "Mines and traps on the road"), cost = 380,
+		description = text("Planta minas na estrada à frente dos inimigos; cada uma explode em área quando o primeiro passa por cima.", "Plants mines on the road ahead of the enemy; each one blasts an area when the first one steps on it."),
+		damage = 34, range = 26, interval = 1.5, color = { 74, 84, 118 }, attack = "mine", damageType = "physical", air = false,
+		mineMax = 4, mineRadius = 9,
+		branches = {
+			{ name = text("Minas de fragmentação", "Cluster Mines"), description = text("Mais minas ativas, explosões maiores e mais fortes.", "More active mines, bigger and stronger blasts."), mods = { set("mineMax", 7), set("mineRadius", 13), mul("damage", 1.2) } },
+			{ name = text("Minas de choque", "Shock Mines"), description = text("Cada explosão paralisa por 1,5 s e as minas são plantadas bem mais rápido.", "Each blast stuns for 1.5 s and mines are planted much faster."), mods = { set("mineStun", 1.5), mul("interval", 0.7) } },
+		},
+	},
 	seaking = {
 		id = "seaking", rarity = "epic", ability = "tidalWave",
 		name = text("Rei dos Mares", "Sea King"), role = text("Marés que atrasam e empurram", "Tides that slow and push"), cost = 430,
@@ -881,7 +893,7 @@ local league = {
 		},
 	},
 }
-for _, id in ipairs({ "capmen", "amazon", "seaking", "emerald", "speedster", "solartitan" }) do
+for _, id in ipairs({ "capmen", "amazon", "seaking", "emerald", "speedster", "solartitan", "nightstalker" }) do
 	Catalog.Heroes[id] = league[id]
 	table.insert(Catalog.HeroOrder, id)
 end
@@ -903,7 +915,10 @@ Catalog.Abilities.truthLasso = ability("truthLasso", "reveal", "area", 60, { pow
 Catalog.Abilities.tidalWave = ability("tidalWave", "pull", "area", 70, { power = 30, radius = 45, unit = "studs", color = { 40, 170, 214 },
 	extras = { { kind = "slow", power = 0.5, duration = 5 } } },
 	text("Maremoto", "Tidal Wave"), text("Uma onda empurra os inimigos {power} studs para trás em {radius} studs e os desacelera em {e1.power}% depois. Chefes não saem do lugar.", "A wave drives enemies back {power} studs within {radius} studs, then slows them {e1.power}%. Bosses hold their ground."))
-for _, id in ipairs({ "indestructible", "emeraldConstruct", "solarWrath", "superSpeed", "truthLasso", "tidalWave" }) do table.insert(Catalog.AbilityOrder, id) end
+Catalog.Abilities.smokeBomb = ability("smokeBomb", "stun", "area", 70, { duration = 3, radius = 34, unit = "pct", color = { 90, 100, 130 },
+	extras = { { kind = "weaken", power = 0.25, duration = 8 } } },
+	text("Bomba de Fumaça", "Smoke Bomb"), text("Paralisa por {duration} s em {radius} studs e derrete {e1.power}% da armadura por {e1.duration} s. Chefes resistem.", "Stuns for {duration} s within {radius} studs and melts {e1.power}% of armor for {e1.duration} s. Bosses resist."))
+for _, id in ipairs({ "indestructible", "emeraldConstruct", "solarWrath", "superSpeed", "truthLasso", "tidalWave", "smokeBomb" }) do table.insert(Catalog.AbilityOrder, id) end
 
 -- Personal outposts support the shared core. Income is match Gold, never
 -- lobby Gold. Each has five match-only levels, bought with match Gold.

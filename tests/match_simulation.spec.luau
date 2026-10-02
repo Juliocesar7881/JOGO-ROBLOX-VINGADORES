@@ -1816,6 +1816,135 @@ do
 	check(not match:_stunProof(ally), "an ally outside the aura is not steady")
 end
 
+print("--- mines ---")
+do
+	local match, builder = stage({ mapId = "manhattan", wave = 5, loadout = { "nightstalker", "ironman" } })
+	local events = {}
+	local fx = match._fx
+	match._fx = function(self, event, ...) table.insert(events, event) return fx(self, event, ...) end
+	match.participants[builder.UserId].cash = 1e6
+	for id in pairs(match.enemies) do match.enemies[id] = nil end
+	match.alive, match.pendingSpawns, match.spawnIndex = 0, {}, 1
+	local hunter = place(match, builder, "nightstalker")
+	local stats = match:_towerStats(hunter)
+	check(stats.attack == "mine" and stats.mineMax == 4 and stats.mineRadius == 9 and stats.mineStun == 0, "the Night Hunter's tower carries its mine numbers")
+	local function mineCount()
+		local count = 0
+		for _ in pairs(match.mines) do count += 1 end
+		return count
+	end
+	-- An enemy well inside his reach, far from the end of the road.
+	local progress
+	for at = 20, 400, 2 do
+		if distanceBetween(match:_pathPosition(1, at), hunter.position) <= stats.range - 6 then progress = at; break end
+	end
+	check(progress ~= nil, "some stretch of the road lies inside the hunter's reach")
+	if progress then
+		local victim = spawn(match, "zombie", progress, 60)
+		hunter.nextAttack = 0
+		local before = victim.hp
+		check(match:_attack(hunter, stats) == true, "planting a mine counts as an attack")
+		check(victim.hp == before and mineCount() == 1, "the mine is planted, the target is not hit")
+		local _, mine = next(match.mines)
+		check(distanceBetween(mine.position, victim.position) > 5 and distanceBetween(mine.position, victim.position) < 25 and distanceBetween(mine.position, hunter.position) <= stats.range, "the mine lies on the road ahead of the target, within the tower's reach")
+		-- The next mine is laid behind the first, never on top of it.
+		hunter.nextAttack = 0
+		check(match:_attack(hunter, stats) == true and mineCount() == 2, "a second mine is laid, got " .. mineCount())
+		for id, other in pairs(match.mines) do
+			if id ~= mine.id then check(distanceBetween(other.position, mine.position) >= 7, "mines keep their distance from each other") end
+		end
+		match.mines = { [mine.id] = mine }
+		-- Standing in the blast but not on the trigger: hurt without setting it off.
+		local bystander = spawn(match, "zombie", progress, 60)
+		bystander.position = mine.position + Vector3.new(6, 0, 0)
+		local flyer = spawn(match, "flyer", progress, 60)
+		flyer.position = mine.position + Vector3.new(1, 0, 0)
+		victim.position = mine.position + Vector3.new(300, 0, 0)
+		match:_minesStep()
+		check(mineCount() == 1, "a flyer overhead and an enemy outside the trigger leave the mine alone")
+		local far = spawn(match, "zombie", progress, 60)
+		far.position = mine.position + Vector3.new(30, 0, 0)
+		victim.position = mine.position + Vector3.new(1.5, 0, 0)
+		local bystanderHP, flyerHP, farHP, victimHP = bystander.hp, flyer.hp, far.hp, victim.hp
+		match:_minesStep()
+		check(mineCount() == 0, "the first ground enemy to step on a mine sets it off")
+		check(victim.hp < victimHP and bystander.hp < bystanderHP, "the blast hurts everything on the ground in its radius")
+		check(flyer.hp == flyerHP and far.hp == farHP, "it spares flyers and anything outside the radius")
+		local blast
+		for _, event in ipairs(events) do if event.kind == "MineBlast" then blast = event end end
+		check(blast ~= nil and blast.id == mine.id and blast.radius == stats.mineRadius, "the blast is announced with its radius")
+		-- A synced list goes to the clients, and is emptied once more when the last mine is gone.
+		local fresh = spawn(match, "zombie", progress, 60)
+		match.mines = {}
+		check(match:_plantMine(hunter, stats, fresh) ~= nil, "a fresh mine is planted for the sync")
+		hunter.nextAttack = math.huge
+		events = {}
+		match.syncTimer = 1e6
+		match:Step(0)
+		local synced
+		for _, event in ipairs(events) do if event.kind == "MineSync" then synced = event end end
+		check(synced ~= nil and #synced.mines == 1 and typeof(synced.mines[1].position) == "Vector3", "live mines travel with the sync")
+		match.mines = {}
+		events = {}
+		match.syncTimer = 1e6
+		match:Step(0)
+		synced = nil
+		for _, event in ipairs(events) do if event.kind == "MineSync" then synced = event end end
+		check(synced ~= nil and #synced.mines == 0, "the sync that follows the last mine empties the clients' list")
+		events = {}
+		match.syncTimer = 1e6
+		match:Step(0)
+		synced = nil
+		for _, event in ipairs(events) do if event.kind == "MineSync" then synced = event end end
+		check(synced == nil, "and then stays quiet")
+	end
+	-- The tower keeps at most mineMax, and an old mine expires or goes with the tower.
+	match.mines = {}
+	local capped = table.clone(stats)
+	capped.mineMax = 2
+	local planted = 0
+	for k = 0, 4 do
+		local target = spawn(match, "zombie", progress + k * 10, 60)
+		target.position = match:_pathPosition(1, progress + k * 10)
+		if match:_plantMine(hunter, capped, target) then planted += 1 end
+	end
+	check(planted == 2 and mineCount() == 2, "a tower never keeps more mines than its limit, got " .. planted)
+	for _, mine in pairs(match.mines) do mine.expiresAt = match.elapsed - 1 end
+	match:_minesStep()
+	check(mineCount() == 0, "mines left alone expire")
+	match.mines = {}
+	local target = spawn(match, "zombie", progress, 60)
+	check(match:_plantMine(hunter, stats, target) ~= nil, "a mine is planted again")
+	match:Handle(builder, "SellTower", { towerId = hunter.id })
+	match:_minesStep()
+	check(mineCount() == 0, "selling the tower takes its mines with it")
+end
+
+do
+	-- Shock Mines stun everything they hit, a boss only briefly; Cluster Mines
+	-- keep more mines out, further reaching.
+	local match, builder = stage({ mapId = "manhattan", wave = 5, loadout = { "nightstalker", "ironman" } })
+	match.participants[builder.UserId].cash = 1e6
+	local hunter = place(match, builder, "nightstalker")
+	hunter.level, hunter.branch, hunter.cache = 5, 2, nil
+	match.participants[builder.UserId].modsVersion += 1
+	local stats = match:_towerStats(hunter)
+	check(stats.mineStun == 1.5 and stats.interval < Catalog.Heroes.nightstalker.interval, "Shock Mines add a stun and plant faster")
+	local at = hunter.position + Vector3.new(0, 0, 0)
+	local zombie = spawn(match, "zombie", 40, 60)
+	local boss = spawn(match, "lizard", 40, 60)
+	zombie.position, boss.position = at + Vector3.new(2, 0, 0), at + Vector3.new(-2, 0, 0)
+	match.mines = {}
+	match.mines.m1 = { id = "m1", towerId = hunter.id, ownerId = builder.UserId, position = at, damage = stats.damage, radius = stats.mineRadius, stun = stats.mineStun, stats = table.clone(stats), expiresAt = match.elapsed + 30 }
+	match:_minesStep()
+	check(zombie.stunUntil > match.elapsed + 1.4, "an enemy caught in a Shock Mine is stunned for its full time")
+	check(boss.stunUntil > match.elapsed and boss.stunUntil < match.elapsed + 1.5 * 0.5, "a boss is stunned for only a share of it")
+	hunter.branch, hunter.cache = 1, nil
+	match.participants[builder.UserId].modsVersion += 1
+	local cluster = match:_towerStats(hunter)
+	check(cluster.mineMax == 7 and cluster.mineRadius == 13 and cluster.damage > stats.damage * 0.9, "Cluster Mines keep seven out and blast wider")
+end
+
 print("--- performance guard ---")
 do
 	local match, player = stage({ wave = 45 })

@@ -54,6 +54,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Capitão Men** — Socos que empurram, imbatível | 400 | único | 24 | 17 | 0.60s | Indestrutível |
 | **Amazona Dourada** — Laço da verdade e espada | 420 | corrente | 18 | 24 | 0.90s | Laço da Verdade |
 | **Rei dos Mares** — Marés que atrasam e empurram | 430 | área | 19 | 25 | 1.40s | Maremoto |
+| **Caçador da Noite** — Minas e armadilhas na estrada | 380 | mine | 34 | 26 | 1.50s | Bomba de Fumaça |
 
 ## Lendário — 999 Robux (compra direta)
 
@@ -128,4 +129,5 @@ maestria exigida crescendo por rank e multiplicados pela raridade do herói
 | Supervelocidade ⚡ | Velocista Rubro | 80s | ULTIMATE: o mundo desacelera para a sua equipe. Todas as suas torres atacam 40% mais rápido por 10 s e todos os inimigos andam 50% mais devagar por 6 s. |
 | Laço da Verdade | Amazona Dourada | 60s | Revela camuflados e faz alvos sofrerem +30% de dano por 10 s em 40 studs, e derrete 30% da armadura. |
 | Maremoto | Rei dos Mares | 70s | Uma onda empurra os inimigos 30 studs para trás em 45 studs e os desacelera em 50% depois. Chefes não saem do lugar. |
+| Bomba de Fumaça | Caçador da Noite | 70s | Paralisa por 3 s em 34 studs e derrete 25% da armadura por 8 s. Chefes resistem. |
 

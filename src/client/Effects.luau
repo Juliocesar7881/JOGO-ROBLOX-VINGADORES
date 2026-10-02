@@ -222,6 +222,7 @@ function Effects.new(player, request, getState, audio)
 	self.folder.Parent = workspace
 	self.enemies, self.pool, self.coins, self.shots = {}, {}, {}, {}
 	self.soldiers={}
+	self.mines = {}
 	self.shotPool, self.clock, self.collectAt = {}, 0, 0
 	self.shakeAmount = 0
 	self.towerModels, self.popups, self.popupPool = nil, {}, {}
@@ -633,6 +634,50 @@ end
 -- A squad mate's marker: a ring and a beam of light on the ground and the name
 -- floating over it, for four seconds, at most four at a time.
 local PING_COLORS = { Color3.fromRGB(255, 196, 64), Color3.fromRGB(96, 220, 255), Color3.fromRGB(255, 120, 190), Color3.fromRGB(150, 255, 130) }
+-- The mines on the road, as the server last listed them: a flat dark disc and
+-- a blinking light in the planter's colour. They carry no rule; an unlisted
+-- mine is simply taken off the road.
+function Effects:_syncMines(rows)
+	local seen = {}
+	for _, row in ipairs(rows or {}) do
+		if type(row) == "table" and row.id ~= nil and typeof(row.position) == "Vector3" then
+			local id = tostring(row.id)
+			seen[id] = true
+			if not self.mines[id] then
+				local tint = typeof(row.color) == "Color3" and row.color or Color3.fromRGB(255, 120, 80)
+				local base = Instance.new("Part")
+				base.Name, base.Shape, base.Size = "Mine", Enum.PartType.Cylinder, Vector3.new(0.45, 3.2, 3.2)
+				base.Color, base.Material = Color3.fromRGB(30, 34, 44), Enum.Material.Metal
+				base.Anchored, base.CanCollide, base.CanTouch, base.CanQuery, base.CastShadow = true, false, false, false, false
+				base.CFrame = CFrame.new(row.position + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+				base.Parent = self.folder
+				local light = Instance.new("Part")
+				light.Name, light.Shape, light.Size = "MineLight", Enum.PartType.Ball, Vector3.new(1.1, 1.1, 1.1)
+				light.Color, light.Material = tint:Lerp(Color3.fromRGB(255, 80, 70), 0.5), Enum.Material.Neon
+				light.Anchored, light.CanCollide, light.CanTouch, light.CanQuery, light.CastShadow = true, false, false, false, false
+				light.CFrame = CFrame.new(row.position + Vector3.new(0, 0.85, 0))
+				light.Parent = self.folder
+				-- A thin ring in the planter's colour, so a trap can be read from afar.
+				local ring = Instance.new("Part")
+				ring.Name, ring.Shape, ring.Size = "MineRing", Enum.PartType.Cylinder, Vector3.new(0.12, 5.2, 5.2)
+				ring.Color, ring.Material, ring.Transparency = tint:Lerp(Color3.fromRGB(255, 120, 90), 0.4), Enum.Material.Neon, 0.45
+				ring.Anchored, ring.CanCollide, ring.CanTouch, ring.CanQuery, ring.CastShadow = true, false, false, false, false
+				ring.CFrame = CFrame.new(row.position + Vector3.new(0, 0.15, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+				ring.Parent = self.folder
+				self.mines[id] = { base = base, light = light, ring = ring, phase = #id * 0.9 }
+			end
+		end
+	end
+	for id, record in pairs(self.mines) do
+		if not seen[id] then
+			record.base:Destroy()
+			record.light:Destroy()
+			record.ring:Destroy()
+			self.mines[id] = nil
+		end
+	end
+end
+
 function Effects:PingMarker(position, name, slot, own)
 	if typeof(position) ~= "Vector3" then return end
 	self.pings = self.pings or {}
@@ -749,6 +794,12 @@ function Effects:_heroShot(event, lowFX)
 			previous = point
 		end
 		self:_impact(target, white, 0.65)
+	elseif heroId == "nightstalker" then
+		-- A mine is lobbed: a short dark arc to where it will lie.
+		local top = from:Lerp(target, 0.5) + Vector3.new(0, 4, 0)
+		self:_line(from, top, Color3.fromRGB(150, 160, 190), 0.14, 0.2)
+		self:_line(top, target, Color3.fromRGB(150, 160, 190), 0.14, 0.2)
+		self:_impact(target, color, 1.2)
 	elseif heroId == "spiderman" then
 		self:_line(from, target, white, 0.09, 0.2)
 		for index = 0, 2 do
@@ -918,6 +969,30 @@ function Effects:Handle(event)
 	end
 	if event.kind == "Ping" then
 		self:PingMarker(event.position, event.name, event.slot, event.ownerId == self.player.UserId)
+		return
+	end
+	if event.kind == "MineSync" then
+		self:_syncMines(event.mines)
+		return
+	end
+	if event.kind == "MineBlast" then
+		-- The mine goes off: the disc is gone, a ring of the planter's colour
+		-- spreads over the blast radius and the camera jolts a hair.
+		local record = self.mines[tostring(event.id)]
+		if record then
+			record.base:Destroy()
+			record.light:Destroy()
+			record.ring:Destroy()
+			self.mines[tostring(event.id)] = nil
+		end
+		if typeof(event.position) == "Vector3" then
+			local state = self.getState()
+			local lowFX = state and state.profile and state.profile.settings and state.profile.settings.lowFX
+			local color = UI.color(event.color)
+			self:_groundImpact(event.position, color, math.clamp(tonumber(event.radius) or 9, 4, 20))
+			if not lowFX then self:_impact(event.position + Vector3.new(0, 1.2, 0), Color3.fromRGB(255, 226, 170), 4.5) end
+		end
+		if event.shake then self:Shake(event.shake) end
 		return
 	end
 	if event.kind=="BaseShot" then
@@ -1239,6 +1314,7 @@ function Effects:Handle(event)
 		end
 	elseif event.kind == "Clear" then
 		for _,record in pairs(self.soldiers) do record.model:Destroy() end; self.soldiers={}
+		self:_syncMines(nil)
 		for id in pairs(self.enemies) do self:Release(id, true) end
 		for _, death in ipairs(self.dying) do self:_poolEnemy(death.record) end
 		self.dying = {}
@@ -1287,6 +1363,9 @@ function Effects:Step(dt)
 		end
 	end
 	if self.clock >= (self.dustResetAt or 0) then self.dustBudget, self.poofBudget, self.dustResetAt = 0, 0, self.clock + 0.5 end
+	for _, mine in pairs(self.mines) do
+		mine.light.Transparency = 0.1 + 0.4 * (0.5 + 0.5 * math.sin(self.clock * 5 + mine.phase))
+	end
 	local state = self.getState()
 	local settings = state and state.profile and state.profile.settings or {}
 	local eye = workspace.CurrentCamera and workspace.CurrentCamera.CFrame.Position

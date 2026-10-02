@@ -65,6 +65,16 @@ interpola o visual. Limite de seis soldados por comandante; dano e recompensas
 usam o mesmo caminho autoritativo das torres. [BASES.md](docs/BASES.md) documenta
 o conteúdo e a economia atuais; as seções antigas abaixo são históricas.
 
+Minas (herói `nightstalker`, `attack = "mine"`): a torre não acerta o alvo, planta
+uma mina na estrada à frente dele (até `mineMax` por torre, afastadas ≥ 7 studs e
+dentro do alcance). O servidor guarda `Match.mines`; a mina detona quando um
+inimigo terrestre chega a 3,4 studs, ferindo todo inimigo terrestre no
+`mineRadius` (e paralisando com `mineStun`, chefes só um quarto), e expira em 30 s,
+no fim da onda ou quando a torre some. FX `MineSync {mines = {{id,position,radius,color}}}`
+sai junto da sincronização dos inimigos enquanto houver minas (e mais uma vez vazio
+quando a última some); `MineBlast {id,position,radius,color,towerId}` é só o visual
+da explosão. O cliente apenas desenha a lista e ignora linhas malformadas.
+
 Sections below are appended in the order they were written, most recent
 first, and some are superseded by later ones (each says so where it
 happens — e.g. "Contratos atuais" replaces the historical ability/purchase

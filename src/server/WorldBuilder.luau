@@ -413,7 +413,7 @@ local HERO_POSE = {
 	wanda = "magic", strange = "magic", jean = "magic", storm = "magic", iceman = "magic", silversurfer = "magic",
 	vision = "beam", captainmarvel = "beam", cyclops = "beam", nova = "shoot", ghostrider = "magic", nightcrawler = "strike",
 	-- The league: alternating jabs, a hovering flier, a spear thrust.
-	capmen = "punch", speedster = "punch", emerald = "magic", solartitan = "fly", amazon = "throw", seaking = "strike",
+	capmen = "punch", speedster = "punch", emerald = "magic", solartitan = "fly", amazon = "throw", seaking = "strike", nightstalker = "throw",
 }
 
 -- body, colors, face and hair per hero; `extras` below adds what makes each
@@ -462,6 +462,7 @@ local HERO_LOOK = {
 	solartitan = { body = { scale = 1.12, width = 1.1, arm = 1.12, chest = 1.1, leg = 1.06 }, colors = { chest = Color3.fromRGB(38, 100, 220), pelvis = Color3.fromRGB(200, 40, 48), upperArm = Color3.fromRGB(38, 100, 220), lowerArm = Color3.fromRGB(38, 100, 220), hand = HC.skin, upperLeg = Color3.fromRGB(38, 100, 220), lowerLeg = Color3.fromRGB(38, 100, 220), foot = Color3.fromRGB(200, 40, 48) }, face = "smile", hair = { Color3.fromRGB(28, 28, 36), "fringe" } },
 	speedster = { body = { width = 0.9, arm = 0.88, leg = 1.04, legLength = 1.06 }, colors = { head = Color3.fromRGB(222, 50, 50), chest = Color3.fromRGB(222, 50, 50), pelvis = Color3.fromRGB(222, 50, 50), upperArm = Color3.fromRGB(222, 50, 50), lowerArm = Color3.fromRGB(240, 196, 60), hand = Color3.fromRGB(222, 50, 50), upperLeg = Color3.fromRGB(222, 50, 50), lowerLeg = Color3.fromRGB(222, 50, 50), foot = Color3.fromRGB(240, 196, 60) }, face = "fierce" },
 	amazon = { body = { width = 0.9, arm = 0.88, leg = 0.94 }, colors = { chest = Color3.fromRGB(196, 40, 56), pelvis = Color3.fromRGB(30, 56, 140), upperArm = HC.skin, lowerArm = Color3.fromRGB(240, 196, 60), hand = HC.skin, upperLeg = HC.skin, lowerLeg = Color3.fromRGB(30, 56, 140), foot = Color3.fromRGB(196, 40, 56) }, face = "smile", hair = { Color3.fromRGB(36, 28, 30), "long" } },
+	nightstalker = { body = { width = 1.04, arm = 1.0, leg = 1.0 }, colors = { head = Color3.fromRGB(26, 28, 40), chest = Color3.fromRGB(52, 60, 86), pelvis = Color3.fromRGB(26, 28, 40), upperArm = Color3.fromRGB(52, 60, 86), lowerArm = Color3.fromRGB(26, 28, 40), hand = Color3.fromRGB(26, 28, 40), upperLeg = Color3.fromRGB(52, 60, 86), lowerLeg = Color3.fromRGB(26, 28, 40), foot = Color3.fromRGB(26, 28, 40) } },
 	seaking = { body = { width = 1.12, arm = 1.12, chest = 1.08, leg = 1.04 }, colors = { chest = Color3.fromRGB(232, 150, 44), pelvis = Color3.fromRGB(20, 120, 124), upperArm = Color3.fromRGB(232, 150, 44), lowerArm = Color3.fromRGB(20, 120, 124), hand = HC.tan, upperLeg = Color3.fromRGB(20, 120, 124), lowerLeg = Color3.fromRGB(20, 120, 124), foot = Color3.fromRGB(232, 150, 44) }, face = "fierce", hair = { Color3.fromRGB(226, 190, 90), "long" } },
 }
 Figure.HeroLook = HERO_LOOK
@@ -986,6 +987,31 @@ HERO_EXTRAS.amazon = function(f)
 	end
 	muzzle(f, "LeftLowerArm", Vector3.new(-arm.X / 2 - 0.3 * s, 0, 0))
 end
+HERO_EXTRAS.nightstalker = function(f)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local ink, steel, glow = Color3.fromRGB(26, 28, 40), Color3.fromRGB(170, 178, 200), Color3.fromRGB(255, 196, 60)
+	-- Night Hunter: a pointed cowl and a short scalloped cape, a bat-wing
+	-- crest on the chest, a utility belt of mines and two gauntlets with fins.
+	f.add("Head", "Cowl", h * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, h.Y * 0.2, h.Z * 0.04), ink, FABRIC, "ball")
+	-- The cowl leaves the chin bare: skin and a firm mouth under two white lenses.
+	f.add("Head", "Chin", Vector3.new(h.X * 0.5, h.Y * 0.24, 0.1 * s), f.face(0, -0.62, -0.03), HC.skin, FABRIC)
+	f.add("Head", "Mouth", Vector3.new(0.2, 0.05, 0.05) * s, f.face(0, -0.64, 0.04), HC.ink, FABRIC)
+	Figure.Face(f, "lens", { lens = Color3.fromRGB(236, 240, 255), rim = ink, width = 0.3, height = 0.16, slant = 0.3, glow = true })
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "Ear", Vector3.new(0.18, 0.55, 0.18) * s, CFrame.new(side * h.X * 0.32, h.Y * 0.62, 0), ink, FABRIC, "wedge")
+		f.add(side < 0 and "LeftLowerArm" or "RightLowerArm", "Gauntlet", f.sizes.lowerArm * Vector3.new(1.18, 0.6, 1.18), CFrame.new(0, -f.sizes.lowerArm.Y * 0.18, 0), ink, METAL)
+		f.add(side < 0 and "LeftLowerArm" or "RightLowerArm", "Fin", Vector3.new(0.06, 0.6, 0.5) * s, CFrame.new(side * f.sizes.lowerArm.X * 0.62, -f.sizes.lowerArm.Y * 0.1, 0), steel, METAL, "wedge")
+		f.add("UpperTorso", "WingTip", Vector3.new(c.X * 0.3, 0.16 * s, 0.06 * s), CFrame.new(side * c.X * 0.2, c.Y * 0.2, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * -0.3), glow, METAL)
+	end
+	f.add("UpperTorso", "WingCore", Vector3.new(0.34, 0.3, 0.06) * s, CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.05 * s), glow, METAL, "ball")
+	cape(f, Color3.fromRGB(34, 38, 56), 3.0, ink)
+	belt(f, Color3.fromRGB(70, 74, 96), glow)
+	for i = -1, 1, 2 do
+		f.add("LowerTorso", "MinePouch", Vector3.new(0.44, 0.44, 0.3) * s, CFrame.new(i * f.sizes.pelvis.X * 0.42, f.sizes.pelvis.Y * 0.1, -f.sizes.pelvis.Z * 0.56), Color3.fromRGB(50, 54, 72), METAL, "ball")
+		f.add("LowerTorso", "MineLight", Vector3.new(0.14, 0.14, 0.14) * s, CFrame.new(i * f.sizes.pelvis.X * 0.42, f.sizes.pelvis.Y * 0.1, -f.sizes.pelvis.Z * 0.56 - 0.18 * s), Color3.fromRGB(255, 90, 80), NEON, "ball")
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
+end
 HERO_EXTRAS.seaking = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
 	local gold, teal = Color3.fromRGB(240, 196, 60), Color3.fromRGB(70, 220, 230)
@@ -1008,7 +1034,7 @@ HERO_EXTRAS.seaking = function(f)
 end
 
 -- Faces for the heroes whose extras do not already draw one.
-local DRAWN_FACE = { ironman = true, captain = true, spiderman = true, antman = true, wasp = true, daredevil = true, panther = true,
+local DRAWN_FACE = { nightstalker = true, ironman = true, captain = true, spiderman = true, antman = true, wasp = true, daredevil = true, panther = true,
 	warmachine = true, starlord = true, ghostrider = true, wolverine = true, cyclops = true, deadpool = true, moonknight = true, nova = true }
 
 function Figure.Hero(parent, heroId, hero, scale)

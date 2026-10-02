@@ -440,6 +440,8 @@ function Rules.TowerStats(hero, level, branch, modifiers)
 		-- Punches that push an enemy back along the road (never a boss), a tower
 		-- no stun can touch, and the radius within which allies are as steady.
 		knockback = hero.knockback or 0, stunProof = hero.stunProof == true, stunAura = hero.stunAura or 0,
+		-- Mines: how many a tower keeps on the road, the blast radius and the stun.
+		mineMax = hero.mineMax or 0, mineRadius = hero.mineRadius or 0, mineStun = hero.mineStun or 0,
 		portal = false, periodicSplash = hero.stompEvery or 0,
 		dotDuration = hero.dotDuration or 0, beamWidth = hero.beamWidth or 3,
 		upgradeCost = if level < 5 then math.floor(hero.cost * ({ 0.9, 1.4, 2.2, 3.5 })[level]) else 0,

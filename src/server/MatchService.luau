@@ -170,7 +170,7 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 	self.participants, self.enemies, self.towers, self.rewardQueue, self.skipVotes = {}, {}, {}, {}, {}
 	self.soldiers={}
 	self.pendingSpawns, self.spawnIndex, self.spawnTimer, self.alive = {}, 1, 0, 0
-	self.splits = {}
+	self.splits, self.mines = {}, {}
 	self.routeCache = {}
 	for index, route in ipairs(self.catalog.Maps[mapId].paths) do
 		local points, lengths, total = {}, {}, 0
@@ -567,6 +567,13 @@ function Match:_attack(tower, stats)
 	local target=candidates[1]
 	local hits={target}
 	tower.attacks=(tower.attacks or 0)+1
+	-- A mine hero does not hit the target: it plants a mine on the road ahead.
+	local mineAt
+	if stats.attack=="mine" then
+		mineAt=self:_plantMine(tower,stats,target)
+		if not mineAt then tower.attacks-=1 return false end
+		hits={}
+	end
 	local attack=stats.attack
 	local stomp = false
 	if stats.periodicSplash and stats.periodicSplash>0 and tower.attacks%stats.periodicSplash==0 then attack="splash" stomp=true end
@@ -614,13 +621,84 @@ function Match:_attack(tower, stats)
 	local c=self.catalog.Heroes[tower.heroId].color
 	-- The figure's own chest when the world knows it; otherwise the old heights.
 	local visualHeight = (self.world.AimHeight and self.world:AimHeight(target.enemyId)) or (target.def.air and 8 or target.def.boss and 4.2 or target.enemyId=="brute" and 2.9 or 2)
-	local shot={kind="Shot",from=tower.position+Vector3.new(0,4,0),to=target.position+Vector3.new(0,visualHeight,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp,
+	local shot={kind="Shot",from=tower.position+Vector3.new(0,4,0),to=mineAt and mineAt+Vector3.new(0,0.4,0) or target.position+Vector3.new(0,visualHeight,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp,
 		armored=(target.def.armor or 0)>=0.25 or nil}
 	-- Inside a frame's batch every shot rides in one Shots event; alone (tests,
 	-- a stray call) it goes out at once.
 	if self.shotBuffer then shot.kind=nil table.insert(self.shotBuffer,shot) else self:_fx(shot) end
 	if attack=="splash" or attack=="dot" then self:_fx({kind="Pulse",position=target.position,radius=stats.splash or 8,color=Color3.fromRGB(c[1],c[2],c[3])}) end
 	return true
+end
+
+-- Mines: planted on the road a little ahead of the target, they wait for the
+-- first ground enemy to come within reach and then blast everything in their
+-- radius. A tower keeps at most mineMax of them; selling the tower, the end of
+-- the wave or half a minute without a victim removes them.
+local MINE_TRIGGER, MINE_LIFETIME, MINE_SPACING = 3.4, 30, 7
+
+function Match:_plantMine(tower, stats, target)
+	local max=stats.mineMax or 0
+	local count=0
+	for _,mine in pairs(self.mines) do if mine.towerId==tower.id then count+=1 end end
+	if count>=max then return nil end
+	-- As far ahead of the target as the tower can reach, so the trap is laid
+	-- before the horde gets there; never closer than a few studs.
+	local route=self.routeCache[target.routeIndex]
+	local at
+	for _,lead in ipairs({22,18,14,10,6}) do
+		local candidate=self:_pathPosition(target.routeIndex,math.min(route.total-2,target.progress+lead))
+		local clear=true
+		for _,mine in pairs(self.mines) do
+			if distanceXZ(mine.position,candidate)<MINE_SPACING then clear=false break end
+		end
+		if clear and distanceXZ(tower.position,candidate)<=stats.range then at=candidate break end
+	end
+	if not at then return nil end
+	local id=self:_nextId("m")
+	self.mines[id]={id=id,towerId=tower.id,ownerId=tower.ownerId,position=at,damage=stats.damage,radius=stats.mineRadius,stun=stats.mineStun or 0,
+		stats=table.clone(stats),expiresAt=self.elapsed+MINE_LIFETIME}
+	self:_contribute(tower)
+	return at
+end
+
+function Match:_detonate(mine)
+	self.mines[mine.id]=nil
+	local tower=self.towers[mine.towerId]
+	local victims={}
+	for _,enemy in pairs(self.enemies) do
+		if enemy.hp>0 and not enemy.def.air and distanceXZ(enemy.position,mine.position)<=mine.radius then table.insert(victims,enemy) end
+	end
+	for _,enemy in ipairs(victims) do
+		self:_damage(enemy,mine.damage,tower,mine.stats)
+		if mine.stun>0 and enemy.hp>0 then
+			if enemy.def.boss then
+				if enemy.stunImmuneUntil<=self.elapsed then
+					enemy.stunUntil=self.elapsed+mine.stun*BOSS_STUN_SHARE
+					enemy.stunImmuneUntil=self.elapsed+BOSS_STUN_IMMUNITY
+				end
+			else
+				enemy.stunUntil=math.max(enemy.stunUntil,self.elapsed+mine.stun)
+			end
+		end
+	end
+	local hero=tower and self.catalog.Heroes[tower.heroId]
+	local c=hero and hero.color or {255,170,64}
+	self:_fx({kind="MineBlast",id=mine.id,position=mine.position,radius=mine.radius,color=Color3.fromRGB(c[1],c[2],c[3]),towerId=mine.towerId,shake=0.2})
+end
+
+function Match:_minesStep()
+	for id,mine in pairs(self.mines) do
+		if self.elapsed>=mine.expiresAt or not self.towers[mine.towerId] then
+			self.mines[id]=nil
+		else
+			for _,enemy in pairs(self.enemies) do
+				if enemy.hp>0 and not enemy.def.air and not enemy.def.illusion and distanceXZ(enemy.position,mine.position)<=MINE_TRIGGER then
+					self:_detonate(mine)
+					break
+				end
+			end
+		end
+	end
 end
 
 -- A splitter that fell leaves its fragments on the road where it died, with
@@ -912,6 +990,7 @@ end
 function Match:_endWave()
 	if self.wave <= self.completedWaves then return end
 	self.completedWaves=self.wave
+	self.mines={}
 	if self.wave % 5 == 0 and self.recovery > 0 then
 		self.baseHP = math.min(self.maxBaseHP, self.baseHP + self.recovery)
 	end
@@ -954,6 +1033,7 @@ function Match:Finish(victory, ended)
 	if not self.running then return end
 	self.running,self.phase=false,"Results"
 	self.enemies,self.alive={},0
+	self.mines={}
 	self.hitBuffer={}
 	-- Standalone servers share one Workspace between the lobby and the map:
 	-- put the lighting back the moment the battle ends, before anyone walks
@@ -1359,6 +1439,7 @@ function Match:Step(dt)
 		end
 		self:_flushSplits()
 		self:_enemiesStep(dt)
+		self:_minesStep()
 		self:_hazardStep(dt)
 		self:_flushSplits()
 		if self.running and self.alive==0 and self.spawnIndex>#self.pendingSpawns then self:_endWave() end
@@ -1391,6 +1472,17 @@ function Match:Step(dt)
 		local soldiers={}
 		for _,s in pairs(self.soldiers) do table.insert(soldiers,{id=s.id,position=s.position,hp=s.hp,maxHP=s.maxHP,baseId=s.baseId}) end
 		self:_fx({kind="SoldierSync",soldiers=soldiers})
+		-- The mines on the road, sent only while there are some (and once more
+		-- when the last one is gone, so the clients clear them).
+		if next(self.mines) or self.minesShown then
+			local rows={}
+			for _,mine in pairs(self.mines) do
+				local hero=self.towers[mine.towerId] and self.catalog.Heroes[self.towers[mine.towerId].heroId]
+				table.insert(rows,{id=mine.id,position=mine.position,radius=mine.radius,color=hero and Color3.fromRGB(hero.color[1],hero.color[2],hero.color[3]) or nil})
+			end
+			self.minesShown=#rows>0
+			self:_fx({kind="MineSync",mines=rows})
+		end
 	end
 end
 
