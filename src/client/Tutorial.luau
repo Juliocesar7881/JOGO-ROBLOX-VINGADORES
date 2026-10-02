@@ -180,7 +180,7 @@ function Tutorial:_matchStep(state)
 		return {
 			id = "ready", number = 2, total = total,
 			text = T("Aperte PRONTO para chamar a primeira onda", "Press READY to call the first wave"),
-			gui = refs.skip,
+			gui = refs.skip, side = "left",
 		}
 	end
 	local upgradable
@@ -403,7 +403,18 @@ function Tutorial:_guiPointer(target)
 	local x = (position and position.X or 0) - (origin and origin.X or 0) + (size and size.X or 0) / 2
 	local y = (position and position.Y or 0) - (origin and origin.Y or 0)
 	local bob = math.sin(self.clock * 6) * 6
-	self.pointer.Position = UDim2.fromOffset(x, y - 4 + bob)
+	if self.step and self.step.side == "left" then
+		-- A wide button (READY) is pointed at from its left side, so the pointer
+		-- never covers the text above it.
+		self.pointer.Text = "▶"
+		self.pointer.AnchorPoint = Vector2.new(1, 0.5)
+		local left = (position and position.X or 0) - (origin and origin.X or 0)
+		self.pointer.Position = UDim2.fromOffset(left - 6 + bob, y + (size and size.Y or 0) / 2)
+	else
+		self.pointer.Text = "▼"
+		self.pointer.AnchorPoint = Vector2.new(0.5, 1)
+		self.pointer.Position = UDim2.fromOffset(x, y - 4 + bob)
+	end
 	self.pointer.Visible = target.Visible ~= false
 end
 
@@ -445,6 +456,20 @@ function Tutorial:Step(dt)
 	end
 
 	if step.gui then self:_guiPointer(step.gui) elseif self.pointer then self.pointer.Visible = false end
+	-- The card never covers what it points at: when the target (READY, a hero
+	-- tile) sits where the card does, the card steps down just below it.
+	if self.card then
+		local inMatch = self.ctx.state() and self.ctx.state().phase ~= "Lobby"
+		local cardY = inMatch and 122 or 10
+		local target = step.gui
+		local origin, position, size = self.ctx.gui.AbsolutePosition, target and target.AbsolutePosition, target and target.AbsoluteSize
+		local cardHeight = self.card.AbsoluteSize and self.card.AbsoluteSize.Y or 52
+		if origin and position and size and target.Visible ~= false then
+			local top, height = position.Y - origin.Y, size.Y
+			if top < cardY + cardHeight + 6 and top + height > cardY - 6 then cardY = top + height + 10 end
+		end
+		self.card.Position = UDim2.new(0.5, 0, 0, cardY)
+	end
 
 	local world = step.world
 	if not world then
