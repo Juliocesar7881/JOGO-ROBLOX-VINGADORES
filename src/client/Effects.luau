@@ -710,7 +710,7 @@ function Effects:PingMarker(position, name, slot, own)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Size, billboard.StudsOffsetWorldSpace, billboard.AlwaysOnTop, billboard.MaxDistance = UDim2.fromOffset(180, 40), Vector3.new(0, 16, 0), true, 400
 	billboard.Adornee, billboard.Parent = anchor, anchor
-	local label = UI.label(billboard, "📍 " .. tostring(name or ""), {Size = UDim2.fromScale(1, 1), Font = UI.Fonts.display, TextSize = 20, TextColor3 = color, TextStrokeTransparency = 0, TextXAlignment = Enum.TextXAlignment.Center})
+	local label = UI.label(billboard, "▼ " .. tostring(name or ""), {Size = UDim2.fromScale(1, 1), Font = UI.Fonts.display, TextSize = 20, TextColor3 = color, TextStrokeTransparency = 0, TextXAlignment = Enum.TextXAlignment.Center})
 	label.TextStrokeColor3 = Color3.fromRGB(10, 10, 20)
 	table.insert(self.pings, { anchor = anchor, expires = (self.clock or 0) + 4 })
 	if self.audio then self.audio:Cue("place", own and 0.05 or 0.2) end

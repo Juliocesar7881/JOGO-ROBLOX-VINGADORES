@@ -55,7 +55,7 @@ function Inspect:Show(key, record, pinned)
 		UI.chip(card, text, color, { Position = UDim2.fromOffset(x, 44), Size = UDim2.fromOffset(width, 20), TextSize = 12, ZIndex = 59 })
 		x += width + 6
 	end
-	if (def.armor or 0) > 0 then chip("🛡 " .. tostring(math.floor((def.armor or 0) * 100 + 0.5)) .. "%", C.blue, 62) end
+	if (def.armor or 0) > 0 then chip(T("ARMADURA ", "ARMOR ") .. tostring(math.floor((def.armor or 0) * 100 + 0.5)) .. "%", C.blue, 112) end
 	chip(Inspect.SpeedWord(def.speed or 9, T), C.violet, 74)
 	if def.air then chip(T("VOADOR", "FLYING"), C.cyan or C.blue, 78) end
 	if def.stealth then chip(T("CAMUFLADO", "HIDDEN"), C.violet, 96) end

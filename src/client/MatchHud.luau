@@ -30,12 +30,12 @@ function MatchHud.new(ctx)
 		local function tenth(v) return string.format("%.1f", v) end
 		local function rate(v) return string.format("%.2f", v) end
 		local lines = {
-			statChange("⚔", tower.damage, nextStats and nextStats.damage * ((tower.damage or 0) / math.max(0.001, now.damage or 1)), whole),
-			statChange("◎", tower.range, nextStats and nextStats.range, tenth),
-			statChange("⚡", tower.rate, nextStats and nextStats.rate * ((tower.rate or 0) / math.max(0.001, now.rate or 1)), rate),
+			statChange(T("DANO", "DMG"), tower.damage, nextStats and nextStats.damage * ((tower.damage or 0) / math.max(0.001, now.damage or 1)), whole),
+			statChange(T("ALCANCE", "RANGE"), tower.range, nextStats and nextStats.range, tenth),
+			statChange(T("VEL.", "RATE"), tower.rate, nextStats and nextStats.rate * ((tower.rate or 0) / math.max(0.001, now.rate or 1)), rate),
 		}
 		local hero = Catalog.Heroes[tower.heroId]
-		if hero and hero.pickup then table.insert(lines, "🧲 " .. hero.pickup) end
+		if hero and hero.pickup then table.insert(lines, hero.pickup) end
 		return table.concat(lines, wide and "    " or "\n")
 	end
 
@@ -74,14 +74,14 @@ function MatchHud.new(ctx)
 			return
 		end
 		if tower.level < 4 then
-			local upgrade = UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. "💰 " .. number(tower.upgradeCost), function() act("UpgradeTower", {towerId = tower.id}) end, {Name = "TowerUpgrade", Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = wide and 15 or 18, BackgroundColor3 = C.green})
+			local upgrade = UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. number(tower.upgradeCost), function() act("UpgradeTower", {towerId = tower.id}) end, {Name = "TowerUpgrade", Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = wide and 15 or 18, BackgroundColor3 = C.green})
 			local match = ctx.state().match
 			if (match and match.cash or 0) < (tower.upgradeCost or 0) then upgrade.BackgroundColor3 = C.card end
 		elseif tower.level == 4 then
 			-- Two specializations side by side, each with its new damage.
 			for branch = 1, 2 do
 				local after = tower.branches and tower.branches[branch]
-				local label = L(def.branches[branch].name) .. "\n" .. (after and ("⚔ " .. number(math.floor(after.damage + 0.5)) .. "  •  ") or "") .. "💰 " .. number(tower.upgradeCost)
+				local label = L(def.branches[branch].name) .. "\n" .. (after and (T("DANO ", "DMG ") .. number(math.floor(after.damage + 0.5)) .. "  •  ") or "") .. number(tower.upgradeCost)
 				UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Name = "TowerBranch" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY), Size = UDim2.fromOffset(half, actionH), TextSize = wide and 11 or 12, TextWrapped = true, BackgroundColor3 = branch == 1 and C.green or C.blue})
 			end
 		else
@@ -91,7 +91,7 @@ function MatchHud.new(ctx)
 			local index = table.find(kit.priorityOrder, tower.priority) or 1
 			act("SetPriority", {towerId = tower.id, priority = kit.priorityOrder[index % #kit.priorityOrder + 1]})
 		end, {Position = UDim2.fromOffset(12, rowY), Size = UDim2.fromOffset(half, rowH), TextSize = 12})
-		UI.secondary(panel, T("Vender • ", "Sell • ") .. "💰 " .. number(math.floor((tower.invested or 0) * 0.7)), function()
+		UI.secondary(panel, T("Vender • ", "Sell • ") .. number(math.floor((tower.invested or 0) * 0.7)), function()
 			act("SellTower", {towerId = tower.id}, closeTowerPanel)
 		end, {Position = UDim2.fromOffset(18 + half, rowY), Size = UDim2.fromOffset(half, rowH), TextColor3 = C.red, TextSize = 12})
 	end
@@ -156,7 +156,7 @@ function MatchHud.new(ctx)
 				local cost = tower.upgradeCost or 0
 				local affordable = (match.cash or 0) >= cost
 				local nextLevel = (tower.level or 1) + 1
-				board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("⬆ " .. tostring(nextLevel) .. "/5")) .. "  💰" .. number(cost)
+				board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("▲ " .. tostring(nextLevel) .. "/5")) .. "  " .. number(cost)
 				board.button.BackgroundColor3 = affordable and C.green or C.card
 				-- Light text on green: dark text under the dark outline read as blots.
 				board.button.TextColor3 = affordable and C.text or C.muted
@@ -198,12 +198,17 @@ function MatchHud.new(ctx)
 			local descSize = 12
 			if not P.stacked then
 				local effects, instant = def.effects or {}, def.instant or {}
-				local glyph = (instant.energy or effects.killGold or effects.energyIncome) and "💰"
-					or (instant.heal or instant.maxHealth) and "❤️" or instant.gamble and "🎲"
-					or (effects.damage or effects.bossDamage or effects.airDamage or effects.stealthDamage or effects.pierce) and "💥"
-					or effects.speed and "⚡" or (effects.range or effects.supportRange or effects.area) and "🎯"
-					or (effects.cooldown or effects.abilityPower) and "✨" or effects.discount and "🏷️" or "🃏"
-				UI.label(card, glyph, {Name = "CardGlyph", Position = at(desc, cardRect), Size = UDim2.fromOffset(desc.w, 52), TextSize = 40, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
+				local glyph, glyphColor = "cards", C.violet
+				if instant.energy or effects.killGold or effects.energyIncome then glyph, glyphColor = "coin", C.gold
+				elseif instant.heal or instant.maxHealth then glyph, glyphColor = "heart", C.red
+				elseif instant.gamble then glyph, glyphColor = "dice", C.cream
+				elseif effects.damage or effects.bossDamage or effects.airDamage or effects.stealthDamage or effects.pierce then glyph, glyphColor = "star", C.coral
+				elseif effects.speed then glyph, glyphColor = "bolt", C.gold
+				elseif effects.range or effects.supportRange or effects.area then glyph, glyphColor = "target", C.green
+				elseif effects.cooldown or effects.abilityPower then glyph, glyphColor = "sparkle", C.cream
+				elseif effects.discount then glyph, glyphColor = "tag", C.gold end
+				local glyphHolder = UI.frame(card, {Name = "CardGlyph", Position = at(desc, cardRect), Size = UDim2.fromOffset(desc.w, 52), BackgroundTransparency = 1, ZIndex = 54})
+				UI.icon(glyphHolder, glyph, glyphColor, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(44, 44), ZIndex = 55})
 				desc = { x = desc.x, y = desc.y + 54, w = desc.w, h = desc.h - 54 }
 				descSize = 16
 			end
@@ -234,7 +239,7 @@ function MatchHud.new(ctx)
 		if stats.damage>0 then line(T("DANO: ","DAMAGE: ")..stats.damage.." → "..nextStats.damage..T(" • ALCANCE: "," • RANGE: ")..stats.range.." → "..nextStats.range,C.coral) end
 		if stats.wall>0 then line(T("BARRICADA: ","BARRICADE: ")..(base.wall or 0).."/"..stats.wall.." → "..nextStats.wall..T(" HP • regenera após 5 s"," HP • regenerates after 5 s"),C.blue,40) end
 		if stats.soldier>0 then line(T("SOLDADO: ","SOLDIER: ")..stats.soldier.." → "..nextStats.soldier..T(" HP • a cada "," HP • every ")..stats.interval.." s",C.violet,40) end
-		local button=UI.button(body,base.level>=5 and T("NÍVEL MÁXIMO","MAXIMUM LEVEL") or T("EVOLUIR • ","UPGRADE • ").."💰 "..stats.upgradeCost,function()
+		local button=UI.button(body,base.level>=5 and T("NÍVEL MÁXIMO","MAXIMUM LEVEL") or T("EVOLUIR • ","UPGRADE • ")..stats.upgradeCost,function()
 			act("UpgradeBase",{expectedLevel=base.level},function() audio:Cue("upgrade"); shade:Destroy() end)
 		end,{Name="ConfirmBaseUpgrade",Size=UDim2.new(1,-8,0,48),TextSize=14,BackgroundColor3=C.green,ZIndex=48})
 		if base.level>=5 or (state.match.cash or 0)<stats.upgradeCost then UI.disabled(button) end
@@ -244,7 +249,7 @@ function MatchHud.new(ctx)
 			if not current or not current.base or current.base.level~=base.level then shade:Destroy(); ctx.refs().refreshBaseModal=nil; return end
 			local missing=math.max(0,stats.upgradeCost-(current.cash or 0))
 			if base.level>=5 then return end
-			button.Text=missing>0 and T("FALTAM ","NEED ").."💰 "..number(missing) or T("EVOLUIR • ","UPGRADE • ").."💰 "..stats.upgradeCost
+			button.Text=missing>0 and T("FALTAM ","NEED ")..number(missing) or T("EVOLUIR • ","UPGRADE • ")..stats.upgradeCost
 			if missing>0 then UI.disabled(button)
 			else button.Active=true; button.AutoButtonColor=true; button.BackgroundColor3=C.green; button.TextColor3=C.background end
 		end
@@ -282,7 +287,7 @@ function MatchHud.new(ctx)
 			UI.label(content, "★ " .. T("MAPA DO DIA +", "MAP OF THE DAY +") .. math.floor((result.featured - 1) * 100 + 0.5) .. "%", {Name = "ResultFeatured", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
 		end
 		if (tonumber(result.party) or 1) > 1 then
-			UI.label(content, "👥 " .. T("BÔNUS DE GRUPO +", "PARTY BONUS +") .. math.floor((result.party - 1) * 100 + 0.5) .. "%", {Name = "ResultParty", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
+			UI.label(content, "★ " .. T("BÔNUS DE GRUPO +", "PARTY BONUS +") .. math.floor((result.party - 1) * 100 + 0.5) .. "%", {Name = "ResultParty", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
 		end
 		-- Core rewards stay together and appear before the optional detailed history,
 		-- including on short screens where three large rows needed several scrolls.
@@ -313,15 +318,15 @@ function MatchHud.new(ctx)
 			local mvp=team[1]
 			local mine=mvp.userId==player.UserId
 			local card=UI.roundFrame(content,{Name="ResultMvp",Size=UDim2.new(1,-6,0,short and 54 or 66),BackgroundColor3=C.gold:Lerp(C.panel,0.72)},C.gold)
-			UI.label(card,"⭐ MVP",{Position=UDim2.fromOffset(12,4),Size=UDim2.new(0,90,1,-8),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextColor3=C.gold})
+			UI.label(card,"★ MVP",{Position=UDim2.fromOffset(12,4),Size=UDim2.new(0,90,1,-8),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextColor3=C.gold})
 			UI.label(card,mine and T("VOCÊ!","YOU!") or tostring(mvp.name),{Name="MvpName",Position=UDim2.fromOffset(102,4),Size=UDim2.new(1,-112,0.5,-2),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-			UI.label(card,"⚔ "..number(mvp.damage).."   💀 "..number(mvp.kills).."   💰 "..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,102,0.5,0),Size=UDim2.new(1,-112,0.5,-4),TextSize=short and 13 or 15,Font=UI.Fonts.display,TextColor3=C.cream})
+			UI.label(card,T("DANO ","DMG ")..number(mvp.damage).."   "..T("ABATES ","KILLS ")..number(mvp.kills).."   "..T("OURO ","GOLD ")..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,102,0.5,0),Size=UDim2.new(1,-112,0.5,-4),TextSize=short and 13 or 15,Font=UI.Fonts.display,TextColor3=C.cream})
 			for index=2,#team do
 				local entry=team[index]
 				local row=UI.row(content,short and 26 or 30)
 				row.Name="ResultTeam_"..index
 				UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Size=UDim2.new(0.5,0,1,0),TextSize=14,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-				UI.label(row,"⚔ "..number(entry.damage).."   💀 "..number(entry.kills),{Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,0,1,0),TextSize=14,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right})
+				UI.label(row,T("DANO ","DMG ")..number(entry.damage).."   "..T("ABATES ","KILLS ")..number(entry.kills),{Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,0,1,0),TextSize=14,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right})
 			end
 		end
 		if result.modeId=="ranked" then

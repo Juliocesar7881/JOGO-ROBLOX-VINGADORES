@@ -53,6 +53,7 @@ def main() -> None:
     for suite in (
         "test_director.py",
         "test_ip_safety.py",
+        "test_no_emoji.py",
         "test_ui_layout.py",
         "test_audio.py",
         "test_release.py",

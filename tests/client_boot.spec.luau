@@ -992,7 +992,7 @@ local function session(screen)
 			check(chipRect ~= nil and chipRect.h >= 30 and chipRect.x >= cardRect.x and chipRect.x + chipRect.w <= cardRect.x + cardRect.w,
 				tag .. ": the campaign card shows a thumb-sized " .. id .. " button inside it")
 		end
-		check(string.find(named(card, "Difficulty_nightmare").Text, "🔒", 1, true) ~= nil, tag .. ": a difficulty not opened yet shows a lock")
+		check(named(named(card, "Difficulty_nightmare"), "DifficultyLock") ~= nil and named(named(card, "Difficulty_normal"), "DifficultyLock") == nil, tag .. ": a difficulty not opened yet shows a drawn lock, an open one does not")
 		clickNamed("Difficulty_hard")
 		check(asked("SetDifficulty"), tag .. ": the host's pick is sent to the server as an intent")
 		fx({ kind = "OpenPanel", panel = "quests" })
@@ -1111,7 +1111,7 @@ local function session(screen)
 		local ultimateButton = named(gui, "LeaderPower")
 		check(ultimateButton ~= nil and string.find(ultimateButton.Text, Catalog.Abilities.thunderCall.name.pt, 1, true) ~= nil,
 			tag .. ": slot one's hero decides the button's ability and name, got " .. tostring(ultimateButton and ultimateButton.Text))
-		check(string.find(ultimateButton.Text, "⚡", 1, true) ~= nil, tag .. ": a legendary/mythic ability marks itself as an ultimate")
+		check(string.find(ultimateButton.Text, "★", 1, true) ~= nil, tag .. ": a legendary/mythic ability marks itself as an ultimate")
 		-- Back to the default loadout for every step that follows.
 		push(resultsSnapshot(profile))
 		push(matchSnapshot(profile, "Preparing"))
@@ -1162,7 +1162,7 @@ local function session(screen)
 		check(string.find(bannerTitle(), "CHEFE DERROTADO", 1, true) ~= nil, tag .. ": a fallen boss gets a big banner, got " .. bannerTitle())
 		fx({ kind = "Ability", heroId = "captainmarvel", abilityId = "photonNova", abilityKind = "blast", ultimate = true, ownerId = LOCAL_ID,
 			position = v3(0, 0, 0), radius = 60, duration = 2, color = Color3.fromRGB(255, 210, 90), points = {} })
-		check(string.find(bannerTitle(), "⚡", 1, true) ~= nil and string.find(bannerTitle(), "NOVA FOTÔNICA", 1, true) ~= nil,
+		check(string.find(bannerTitle(), "★", 1, true) ~= nil and string.find(bannerTitle(), "NOVA FOTÔNICA", 1, true) ~= nil,
 			tag .. ": your own ultimate shouts its name, accents intact, got " .. bannerTitle())
 		frames(1 / 30, 120)
 		check(named(overlays, "CelebrationBanner") == nil, tag .. ": banners clear themselves")
@@ -1516,7 +1516,7 @@ local function session(screen)
 		check(selectTower("t2") ~= nil, tag .. ": a level 4 tower offers both specializations")
 		check(findButton(gui, "Precisão absoluta") ~= nil and findButton(gui, "Flechas explosivas") ~= nil, tag .. ": both branch buttons are shown")
 		local branchOne = named(gui, "TowerBranch1")
-		check(branchOne ~= nil and string.find(branchOne.Text, "⚔ 96", 1, true) ~= nil, tag .. ": each specialization shows the damage it gives, got " .. tostring(branchOne and branchOne.Text))
+		check(branchOne ~= nil and string.find(branchOne.Text, "DANO 96", 1, true) ~= nil, tag .. ": each specialization shows the damage it gives, got " .. tostring(branchOne and branchOne.Text))
 		check(selectTower("t3") ~= nil, tag .. ": a maxed tower shows its specialization")
 		check(selectTower("t4") ~= nil, tag .. ": an ally's tower opens read-only")
 		check(findButton(gui, "Vender") == nil, tag .. ": an ally's tower cannot be sold from here")

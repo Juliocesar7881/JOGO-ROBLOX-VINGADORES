@@ -1929,6 +1929,103 @@ function Kit.star(parent, name, center, right, up, radius, color, material, thic
 	return core
 end
 
+-- Desk emblems: a small coat of arms drawn from parts and floating over a
+-- service desk (never text, never an emoji). `frame` is the emblem's own
+-- frame: +Z looks at the plaza, +Y is up; it fits a circle of about 5.4 studs.
+-- Every part bobs together (Kit.animate), so it reads as one object.
+function Kit.emblem(parent, kind, frame, tint)
+	local V = Vector3.new
+	local model = Instance.new("Model")
+	model.Name, model.Parent = "DeskEmblem_" .. tostring(kind), parent
+	local gold, ink, white = HQ.gold, HQ.navy, HQ.trim
+	local glowTint = tint:Lerp(white, 0.2)
+	local function bob(part) Kit.animate(part, 0, 0.35) return part end
+	local function box(name, size, offset, color, material, roll)
+		return bob(Kit.block(model, name, size, frame * CFrame.new(offset) * CFrame.Angles(0, 0, roll or 0), color, material or Enum.Material.SmoothPlastic))
+	end
+	local function ring(name, offset, diameter, thickness, color, material)
+		local made = bob(Kit.block(model, name, V(thickness, diameter, diameter), frame * CFrame.new(offset) * CFrame.Angles(0, math.pi / 2, 0), color, material or Enum.Material.SmoothPlastic))
+		made.Shape = Enum.PartType.Cylinder
+		return made
+	end
+	local function ball(name, offset, size, color, material)
+		return bob(Kit.blob(model, name, size, frame * CFrame.new(offset), color, material or Enum.Material.SmoothPlastic))
+	end
+	local function link(name, a, b, width, color, material)
+		return bob(Kit.beam(model, name, frame * a, frame * b, width, 0.2, color, material or Enum.Material.SmoothPlastic))
+	end
+	local function toWorld(v) return frame * v - frame.Position end
+	local function wedge(name, corner, span, chord, color)
+		return bob(Kit.triangle(model, name, frame * corner, toWorld(span), toWorld(chord), 0.3, color, Enum.Material.Metal))
+	end
+	-- The medal every emblem sits on: a dark field, a gold rim, a glowing edge.
+	ring("EmblemBack", V(0, 0, -0.2), 5.2, 0.3, ink, Enum.Material.Metal)
+	ring("EmblemRim", V(0, 0, 0), 5.5, 0.2, gold, Enum.Material.Metal)
+	ring("EmblemField", V(0, 0, 0.08), 4.9, 0.12, ink, Enum.Material.SmoothPlastic)
+	ring("EmblemGlow", V(0, 0, 0.16), 4.6, 0.06, glowTint, Enum.Material.Neon)
+	ring("EmblemInner", V(0, 0, 0.2), 4.3, 0.1, ink, Enum.Material.SmoothPlastic)
+	local z = 0.36
+	if kind == "maps" then
+		-- A compass rose: long blades north-south and east-west, short ones between.
+		box("CompassNS", V(0.55, 3.7, 0.2), V(0, 0, z), white, Enum.Material.Metal)
+		box("CompassEW", V(3.7, 0.55, 0.2), V(0, 0, z + 0.02), white, Enum.Material.Metal)
+		box("CompassNE", V(0.4, 2.5, 0.2), V(0, 0, z - 0.02), glowTint, Enum.Material.Neon, math.pi / 4)
+		box("CompassNW", V(0.4, 2.5, 0.2), V(0, 0, z - 0.02), glowTint, Enum.Material.Neon, -math.pi / 4)
+		ring("CompassHub", V(0, 0, z + 0.1), 1.0, 0.14, gold, Enum.Material.Metal)
+		ball("CompassNorth", V(0, 1.75, z + 0.1), V(0.5, 0.5, 0.3), gold, Enum.Material.Metal)
+	elseif kind == "inventory" then
+		-- A squad: three heads and shoulders, the leader in front and bigger.
+		for _, spec in ipairs({ { -1.35, -0.45, 0.8, tint }, { 1.35, -0.45, 0.8, tint }, { 0, -0.2, 1.1, white } }) do
+			local x, y, k, color = spec[1], spec[2], spec[3], spec[4]
+			ball("SquadHead", V(x, y + 1.1 * k, z), V(0.85, 0.85, 0.5) * k, color, Enum.Material.SmoothPlastic)
+			ball("SquadBody", V(x, y - 0.1 * k, z), V(1.5, 1.35, 0.5) * k, color:Lerp(ink, 0.15), Enum.Material.SmoothPlastic)
+		end
+		box("SquadBand", V(2.6, 0.18, 0.12), V(0, -1.45, z + 0.12), gold, Enum.Material.Metal)
+	elseif kind == "bases" then
+		-- A shield with a star: a block and two triangles that meet in a point.
+		box("ShieldTop", V(3.0, 2.0, 0.28), V(0, 0.75, z), white, Enum.Material.Metal)
+		wedge("ShieldLeft", V(0, -0.25, z - 0.14), V(-1.5, 0, 0), V(0, -2.1, 0), white)
+		wedge("ShieldRight", V(0, -0.25, z - 0.14), V(1.5, 0, 0), V(0, -2.1, 0), white)
+		box("ShieldField", V(2.4, 1.5, 0.12), V(0, 0.75, z + 0.18), tint, Enum.Material.SmoothPlastic)
+		Kit.star(model, "ShieldStar", frame * V(0, 0.6, z + 0.3), frame.RightVector, frame.UpVector, 0.95, gold, Enum.Material.Metal, 0.12)
+	elseif kind == "talents" then
+		-- A talent tree: nodes joined by lines, the root in gold.
+		local nodes = { V(0, 1.45, z), V(-1.3, 0.25, z), V(1.3, 0.25, z), V(-1.3, -1.25, z), V(0, -1.25, z), V(1.3, -1.25, z) }
+		for _, edge in ipairs({ { 1, 2 }, { 1, 3 }, { 2, 4 }, { 2, 5 }, { 3, 5 }, { 3, 6 } }) do
+			link("TalentLine", nodes[edge[1]], nodes[edge[2]], 0.14, glowTint, Enum.Material.Neon)
+		end
+		for index, at in ipairs(nodes) do
+			ring("TalentNode", at + V(0, 0, 0.1), index == 1 and 1.1 or 0.85, 0.2, index == 1 and gold or white, Enum.Material.Metal)
+			ring("TalentCore", at + V(0, 0, 0.2), index == 1 and 0.5 or 0.38, 0.12, index == 1 and white or tint, Enum.Material.Neon)
+		end
+	elseif kind == "quests" then
+		-- A clipboard with three lines and a check.
+		box("QuestBoard", V(2.7, 3.7, 0.22), V(0, -0.1, z), white, Enum.Material.SmoothPlastic)
+		box("QuestClip", V(1.2, 0.5, 0.3), V(0, 1.85, z + 0.05), gold, Enum.Material.Metal)
+		for index = 0, 2 do
+			box("QuestLine", V(1.55 - index * 0.2, 0.2, 0.1), V(0.2, 0.85 - index * 0.62, z + 0.15), tint, Enum.Material.SmoothPlastic)
+			ball("QuestDot", V(-0.95, 0.85 - index * 0.62, z + 0.16), V(0.28, 0.28, 0.12), gold, Enum.Material.Metal)
+		end
+		box("QuestCheckShort", V(0.2, 0.7, 0.12), V(-0.55, -1.2, z + 0.2), glowTint, Enum.Material.Neon, math.pi / 4)
+		box("QuestCheckLong", V(0.2, 1.3, 0.12), V(0.05, -1.05, z + 0.2), glowTint, Enum.Material.Neon, -math.pi / 4)
+	elseif kind == "leaderboard" then
+		-- A podium of three steps under a gold star.
+		box("PodiumFirst", V(1.25, 2.3, 0.5), V(0, -0.65, z), white, Enum.Material.SmoothPlastic)
+		box("PodiumSecond", V(1.25, 1.6, 0.5), V(-1.35, -1.0, z), tint, Enum.Material.SmoothPlastic)
+		box("PodiumThird", V(1.25, 1.1, 0.5), V(1.35, -1.25, z), tint:Lerp(ink, 0.25), Enum.Material.SmoothPlastic)
+		Kit.star(model, "PodiumStar", frame * V(0, 1.15, z + 0.1), frame.RightVector, frame.UpVector, 0.95, gold, Enum.Material.Metal, 0.14)
+		for index, x in ipairs({ -1.35, 0, 1.35 }) do
+			box("PodiumRank", V(0.3, 0.3, 0.12), V(x, index == 2 and 0.2 or (index == 1 and -0.45 or -0.85), z + 0.28), gold, Enum.Material.Metal, math.pi / 4)
+		end
+	else
+		Kit.star(model, "EmblemStar", frame * V(0, 0, z + 0.1), frame.RightVector, frame.UpVector, 1.7, gold, Enum.Material.Metal, 0.16)
+	end
+	for _, item in ipairs(model:GetDescendants()) do
+		if item:IsA("BasePart") then item.CastShadow = false end
+	end
+	return model
+end
+
 --==============================================================================
 -- Signs: big illustrated billboards and floating titles
 --==============================================================================
@@ -3134,17 +3231,11 @@ function World:BuildServiceDesks(lobby)
 		Kit.block(scene, "DeskCanopyGlow", V(11.2, 0.25, 0.3), frame * CFrame.new(0, 8.95 + GROUND_Y, 2.2), color, Enum.Material.Neon)
 		return frame
 	end
-	-- A big icon floats and bobs over every desk, readable from the plaza.
-	local function icon(frame, glyph)
-		local anchor = Kit.block(scene, "DeskIcon", Vector3.new(1, 1, 1), frame * CFrame.new(0, 12.6 + GROUND_Y, -0.2), HQ.white)
-		anchor.Transparency = 1
-		Kit.animate(anchor, 0, 0.45)
-		local gui = Instance.new("BillboardGui")
-		gui.Name, gui.Size, gui.LightInfluence, gui.MaxDistance, gui.Parent = "Icon", UDim2.fromScale(4.2, 4.2), 0, 160, anchor
-		local text = Instance.new("TextLabel")
-		text.BackgroundTransparency, text.Size, text.TextScaled, text.Text, text.Parent = 1, UDim2.fromScale(1, 1), true, glyph, gui
+	-- A coat of arms floats and bobs over every desk, readable from the plaza:
+	-- built from parts, so no emoji and no font decides how it looks.
+	local function icon(frame, kind, tint)
+		return Kit.emblem(scene, kind, frame * CFrame.new(0, 12.6 + GROUND_Y, -0.2), tint)
 	end
-	local glyphs = { maps = "🗺️", inventory = "🦸", bases = "🛡️", talents = "🎓", quests = "📜", leaderboard = "🏆" }
 	-- A desk's local +Z looks at the hub.
 	for _, def in ipairs(LAYOUT.services) do
 		local at = polar(def.angle, 54, 0)
@@ -3162,13 +3253,13 @@ function World:BuildServiceDesks(lobby)
 		text.Text = text:GetAttribute("LobbyTextPT")
 		local prompt = panel:FindFirstChildOfClass("ProximityPrompt")
 		if prompt then localized(prompt, def.pt, def.en) end
-		icon(frame, glyphs[def.id] or "⭐")
+		icon(frame, def.id, def.color)
 	end
 	-- The two public boards: missions and the hall of fame.
 	for _, id in ipairs({ "quests", "leaderboard" }) do
 		local at = polar(LAYOUT.boards[id], 54, 0)
 		local frame = kiosk(at, yawToward(at, HUB), id == "quests" and Color3.fromRGB(143, 208, 122) or HQ.gold)
-		icon(frame, glyphs[id])
+		icon(frame, id, id == "quests" and Color3.fromRGB(143, 208, 122) or HQ.gold)
 		local board, text = buildBoard(lobby, at.X, at.Z, id, id == "quests" and "MISSÕES" or "SALÃO DA FAMA\nCarregando…", self.openPanel)
 		local post = board:FindFirstChild("Post")
 		if post then post:Destroy() end

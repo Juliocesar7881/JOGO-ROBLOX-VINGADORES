@@ -194,7 +194,7 @@ local function act(action, payload, callback, onFail)
 	pending[action] = true
 	-- A slow answer says it is being handled, instead of looking like a dead button.
 	task.delay(0.6, function()
-		if pending[action] and not activeMatch() then showToast(T("⏳ Processando…", "⏳ Working…")) end
+		if pending[action] and not activeMatch() then showToast(T("Processando…", "Working…")) end
 	end)
 	task.spawn(function()
 		local result = request(action, payload)
@@ -314,7 +314,7 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 	UI.stroke(button, index == 1 and C.gold or tint, index == 1 and 3.5 or 2.5)
 	heroPortrait(button, id, {Position = UDim2.fromOffset(2, 1), Size = UDim2.new(1, -4, 1, -14)})
 	local priceH = height < 62 and 17 or 20
-	local price = UI.label(button, "💰" .. tostring(def.cost), {Name = "EnergyCost", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2),
+	local price = UI.label(button, tostring(def.cost), {Name = "EnergyCost", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2),
 		Size = UDim2.new(1, -6, 0, priceH), BackgroundTransparency = 0.15, BackgroundColor3 = C.background, TextColor3 = C.gold,
 		TextSize = height < 62 and 12 or 14, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
 	UI.corner(price, 8)
@@ -624,7 +624,7 @@ renderElevator = function()
 	local waves=Rules.WaveCount(e.modeId,e.mapId)
 	local map=Catalog.Maps[e.mapId]
 	local boss=map and Catalog.Enemies[e.modeId=="tutorial" and "lizard" or map.bossId]
-	local prize=e.modeId=="ranked" and T("🏆 25/onda","🏆 25/wave") or ("🏆 "..number(Rules.RunGold(e.modeId,e.mapId,waves,true)))
+	local prize=e.modeId=="ranked" and T("Ouro 25/onda","Gold 25/wave") or (T("Ouro ","Gold ")..number(Rules.RunGold(e.modeId,e.mapId,waves,true)))
 	-- The map of the day pays more.
 	local featured=state.featured
 	if featured and featured.mapId==e.mapId and e.modeId=="normal" then prize=prize.."  ★ +"..math.floor(featured.bonus*100+0.5).."%" end
@@ -661,7 +661,7 @@ renderElevator = function()
 			local open = Rules.DifficultyUnlocked(profile(), e.mapId, id)
 			local chosen = (e.difficultyId or "normal") == id
 			local color = UI.color(def.color)
-			local label = (open and "" or "🔒 ") .. Catalog.Upper(L(def.name)) .. (def.rewardMultiplier > 1 and not inline and ("  ×" .. string.gsub(tostring(def.rewardMultiplier), "%.", language == "en" and "." or ",")) or "")
+			local label = (open and "" or "     ") .. Catalog.Upper(L(def.name)) .. (def.rewardMultiplier > 1 and not inline and ("  ×" .. string.gsub(tostring(def.rewardMultiplier), "%.", language == "en" and "." or ",")) or "")
 			local chip = UI.button(card, label, function()
 				if chosen then return end
 				if not e.host then showToast(T("Só quem entrou primeiro escolhe a dificuldade.", "Only the first rider picks the difficulty."), true); return end
@@ -669,6 +669,9 @@ renderElevator = function()
 			end, { Name = "Difficulty_" .. id, Position = UDim2.fromOffset(14 + (index - 1) * (chipW + 6), chipY), Size = UDim2.fromOffset(chipW, chipH),
 				BackgroundColor3 = chosen and color or C.card, TextColor3 = chosen and C.background or (open and color or C.muted), TextSize = compact and 11 or 13 })
 			if chosen then UI.stroke(chip, C.text, 2) end
+			if not open then
+				UI.icon(chip, "lock", C.muted, { Name = "DifficultyLock", Position = UDim2.new(0, 8, 0.5, -8), Size = UDim2.fromOffset(16, 16), ZIndex = (chip.ZIndex or 1) + 1 })
+			end
 		end
 	end
 	local names = {}
@@ -952,7 +955,7 @@ local function confirmPlacement()
 			effects:PlaceBurst(position, colorFor(hero))
 			-- The price the server actually charged, floating off the wallet.
 			if reply and tonumber(reply.cost) and refs.energy and refs.energy.Parent then
-				celebrate:Float("-" .. number(reply.cost) .. " 💰", refs.energy, C.red)
+				celebrate:Float("-" .. number(reply.cost), refs.energy, C.red)
 			end
 		end)
 	elseif selectedSkill and selectedPosition and Catalog.Abilities[selectedSkill].target ~= "tower" then
@@ -1028,7 +1031,7 @@ local function renderMatch()
 	refs.hpText = UI.button(top, "", openBaseUpgrade, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
 	UI.outline(refs.hpText, 2)
 	refs.hp = UI.bar(top, C.green, at(layout.hpBar, topRect), dims(layout.hpBar))
-	UI.label(top, "❤", {Name = "CoreHeart", Position = UDim2.fromOffset(layout.hpBar.x - topRect.x - 30, layout.hpBar.y - topRect.y - 7), Size = UDim2.fromOffset(28, layout.hpBar.h + 14), TextSize = layout.hpBar.h + 10, TextColor3 = C.red, TextXAlignment = Enum.TextXAlignment.Center, TextTruncate = Enum.TextTruncate.None})
+	UI.icon(top, "heart", C.red, {Name = "CoreHeart", Position = UDim2.fromOffset(layout.hpBar.x - topRect.x - 30, layout.hpBar.y - topRect.y - 7), Size = UDim2.fromOffset(28, layout.hpBar.h + 14)})
 	refs.matchGold = UI.label(main, "", {Position = at(layout.gold), Size = dims(layout.gold), TextSize = compact and 15 or 18, TextColor3 = C.cream, Font = UI.Fonts.display, TextXAlignment = class.narrow and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right})
 	refs.energy = UI.label(main, "", {Position = at(layout.energy), Size = dims(layout.energy), TextColor3 = C.gold, Font = UI.Fonts.display, TextSize = compact and 18 or 24, TextXAlignment = class.narrow and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left})
 	surface(refs.matchGold,C.violet)
@@ -1036,6 +1039,13 @@ local function renderMatch()
 	refs.matchGold.BackgroundColor3,refs.matchGold.BackgroundTransparency=C.violet:Lerp(C.ink,0.55),0.1
 	refs.energy.BackgroundColor3,refs.energy.TextColor3,refs.energy.BackgroundTransparency=C.gold:Lerp(C.ink,0.62),C.gold,0.05
 	refs.energy.TextXAlignment=Enum.TextXAlignment.Center
+	-- A drawn coin and trophy instead of emoji: they stay sharp and match the game's own art.
+	do
+		local coinSize=math.clamp(layout.energy.h-12,14,28)
+		UI.icon(refs.energy,"coin",C.gold,{Name="EnergyCoin",Position=UDim2.new(0,8,0.5,-coinSize/2),Size=UDim2.fromOffset(coinSize,coinSize)})
+		local cupSize=math.clamp(layout.gold.h-12,14,26)
+		UI.icon(refs.matchGold,"trophy",C.gold,{Name="GoldTrophy",Position=UDim2.new(0,8,0.5,-cupSize/2),Size=UDim2.fromOffset(cupSize,cupSize)})
+	end
 	refs.matchGold.TextXAlignment=Enum.TextXAlignment.Center
 	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 14 or 17, Font = UI.Fonts.display, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Center})
 	surface(refs.waveInfo,C.stroke)
@@ -1112,17 +1122,17 @@ updateMatch = function()
 	refs.wave.Text = T("ONDA ", "WAVE ") .. tostring(match.wave or 0) .. (match.totalWaves == 0 and " / ∞" or " / " .. tostring(match.totalWaves or 50))
 	refs.map.Text = mapName(match.mapId) .. "  /  " .. modeName(match.modeId, match.difficultyId)
 	-- One line: a second one used to fall behind the health bar.
-	refs.hpText.Text = "BASE " .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  🛡" .. math.ceil(match.shield) or "")
-		.. (refs.layout and refs.layout.class.narrow and "  ⬆" or T("   ⬆ EVOLUIR", "   ⬆ UPGRADE"))
+	refs.hpText.Text = "BASE " .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  +" .. math.ceil(match.shield) or "")
+		.. (refs.layout and refs.layout.class.narrow and "  ▲" or T("   ▲ EVOLUIR", "   ▲ UPGRADE"))
 	refs.hp.Size = UDim2.fromScale(math.clamp((match.baseHP or 0) / (match.maxBaseHP or 100), 0, 1), 1)
 	refs.hp.BackgroundColor3 = (match.baseHP or 0)/math.max(1,match.maxBaseHP or 100) > 0.3 and C.green or C.red
 	-- Lobby Gold this run has banked so far: a reward, not money to spend.
-	refs.matchGold.Text = "🏆 +" .. number(match.goldEarned)
+	refs.matchGold.Text = "+" .. number(match.goldEarned)
 	local towerCount = 0
 	for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId then towerCount += 1 end end
 	-- Match Gold in hand, plus what is still lying on the ground to collect.
 	local waiting = match.coinsWaiting or 0
-	refs.energy.Text = "💰 " .. number(match.cash) .. (waiting > 0 and ("  +" .. number(waiting)) or "")
+	refs.energy.Text = number(match.cash) .. (waiting > 0 and ("  +" .. number(waiting)) or "")
 	refs.energy.TextSize=mobile() and 16 or 22
 	if refs.speedToggle then
 		local speed, vote = match.speed or 1, match.speedVote or 1
@@ -1156,11 +1166,11 @@ updateMatch = function()
 	end
 	-- A boss within three waves is announced while there is time to prepare.
 	local bossAhead = state.phase == "Preparing" and match.nextBoss and (match.nextBoss - (match.wave or 0)) or nil
-	local bossNote = bossAhead and bossAhead >= 1 and bossAhead <= 3 and ("   ⚠ " .. (bossAhead == 1 and T("CHEFE NA PRÓXIMA ONDA!", "BOSS NEXT WAVE!") or (T("CHEFE EM ", "BOSS IN ") .. bossAhead .. T(" ONDAS", " WAVES")))) or ""
+	local bossNote = bossAhead and bossAhead >= 1 and bossAhead <= 3 and ("   ▲ " .. (bossAhead == 1 and T("CHEFE NA PRÓXIMA ONDA!", "BOSS NEXT WAVE!") or (T("CHEFE EM ", "BOSS IN ") .. bossAhead .. T(" ONDAS", " WAVES")))) or ""
 	-- A mutated wave says so, in front of everything else.
 	local mutationDef = match.mutation and Catalog.Mutations[match.mutation]
 	local mutationNote = mutationDef and (mutationDef.icon .. " " .. L(mutationDef.name) .. "  ") or ""
-	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("VEM AÍ: ", "COMING: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. "👾 " .. tostring(match.enemies or 0) .. T(" inimigos     🦸 ", " enemies     🦸 ") .. towerCount .. "/" .. tostring(match.towerLimit or 16))
+	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("VEM AÍ: ", "COMING: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos     torres ", " enemies     towers ") .. towerCount .. "/" .. tostring(match.towerLimit or 16))
 	local boss = match.boss
 	refs.boss.Visible = boss ~= nil
 	if boss then
@@ -1183,7 +1193,7 @@ updateMatch = function()
 		if record.cooling and remaining <= 0 and state.phase == "Wave" then audio:Cue("abilityReady", 1) end
 		record.cooling = remaining > 0
 		local shortcut = UserInputService.TouchEnabled and "" or "Q  "
-		local label = (record.ultimate and "⚡ " or "")..record.name
+		local label = (record.ultimate and "★ " or "")..record.name
 		record.button.Text = shortcut..label.."\n"..(remaining>0 and (T("Recarrega em ","Ready in ")..math.ceil(remaining).."s") or state.phase=="Preparing" and T("Na próxima onda","Next wave") or T("PRONTO!","READY!"))
 		-- Ready: white outlined letters on the hero's colour, readable at a glance.
 		record.button.TextColor3 = remaining > 0 and C.muted or C.text
@@ -1389,7 +1399,7 @@ fxRemote.OnClientEvent:Connect(function(event)
 	elseif event.kind == "WaveCash" then
 		-- The wave bonus lands straight in the wallet: show it next to the Gold.
 		if refs.energy and refs.energy.Parent and tonumber(event.amount) then
-			celebrate:Float("+" .. number(event.amount) .. " 💰", refs.energy, C.gold)
+			celebrate:Float("+" .. number(event.amount), refs.energy, C.gold)
 			celebrate:Pop(refs.energy, 0.12)
 		end
 	elseif event.kind == "OpenPanel" and state and state.phase == "Lobby" then
@@ -1402,7 +1412,7 @@ fxRemote.OnClientEvent:Connect(function(event)
 	else
 		if event.kind == "BossArrive" and activeMatch() then
 			local def = Catalog.Enemies[event.enemyId]
-			celebrate:Banner(def and def.name or {pt = "CHEFE", en = "BOSS"}, event.final and {pt = "⚠ CHEFE FINAL", en = "⚠ FINAL BOSS"} or {pt = "⚠ CHEFE", en = "⚠ BOSS"}, C.red, {big = true, cue = "boss", duration = 2.4})
+			celebrate:Banner(def and def.name or {pt = "CHEFE", en = "BOSS"}, event.final and {pt = "▲ CHEFE FINAL", en = "▲ FINAL BOSS"} or {pt = "▲ CHEFE", en = "▲ BOSS"}, C.red, {big = true, cue = "boss", duration = 2.4})
 			-- A short entrance: the camera flies to the boss and back, unless
 			-- the player turned camera motion off or is placing a hero.
 			local camera = workspace.CurrentCamera
@@ -1423,7 +1433,7 @@ fxRemote.OnClientEvent:Connect(function(event)
 			celebrate:Banner({pt = "CHEFE DERROTADO!", en = "BOSS DEFEATED!"}, def and def.name or nil, C.gold, {big = true, cue = "victory", confetti = 50})
 		elseif event.kind == "Ability" and event.ultimate and event.ownerId == player.UserId then
 			local def = Catalog.Abilities[event.abilityId]
-			if def then celebrate:Banner({pt = "⚡ " .. Catalog.Upper(def.name.pt) .. "!", en = "⚡ " .. Catalog.Upper(def.name.en) .. "!"}, {pt = "ULTIMATE", en = "ULTIMATE"}, UI.color(def.color), {cue = "ability", duration = 1.5}) end
+			if def then celebrate:Banner({pt = "★ " .. Catalog.Upper(def.name.pt) .. "!", en = "★ " .. Catalog.Upper(def.name.en) .. "!"}, {pt = "ULTIMATE", en = "ULTIMATE"}, UI.color(def.color), {cue = "ability", duration = 1.5}) end
 		end
 		effects:Handle(event)
 	end
@@ -1501,7 +1511,7 @@ local function setAfkEco(on)
 	pcall(function() RunService:Set3dRenderingEnabled(not on) end)
 	if on and not afk.screen then
 		afk.screen = UI.frame(overlays, {Name = "AfkScreen", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.02, Active = true, ZIndex = 60})
-		UI.label(afk.screen, T("💤 FARM AFK", "💤 AFK FARM"), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 0), Size = UDim2.fromOffset(420, 56), TextSize = 40, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 61})
+		UI.label(afk.screen, T("FARM AFK", "AFK FARM"), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 0), Size = UDim2.fromOffset(420, 56), TextSize = 40, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 61})
 		afk.text = UI.label(afk.screen, "", {Name = "AfkScreenStats", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 70), Size = UDim2.fromOffset(460, 150), TextSize = 20, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 61})
 		UI.button(afk.screen, T("MOSTRAR O JOGO", "SHOW THE GAME"), function() setAfkEco(false) end, {Name = "AfkEcoOff", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, -115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.blue, TextSize = 16, ZIndex = 61})
 		UI.button(afk.screen, T("VOLTAR AO LOBBY", "BACK TO LOBBY"), function() setAfkEco(false); act("LeaveAfk", {}) end, {Name = "AfkLeave", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.red, TextSize = 16, ZIndex = 61})
@@ -1527,7 +1537,7 @@ local function updateAfkBanner()
 	end
 	local tint = UI.color(farm.color)
 	kit.afkBanner.Visible = true
-	kit.afkTitle.Text = "💤 " .. Catalog.Upper(L(farm.name))
+	kit.afkTitle.Text = Catalog.Upper(L(farm.name))
 	kit.afkTitle.TextColor3 = tint
 	-- Session clock, what has really been paid, and whether the last minute is
 	-- still being saved: the server sets all of it, the banner only reads it.

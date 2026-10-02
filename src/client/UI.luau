@@ -233,6 +233,41 @@ function UI.icon(parent, kind, tint, properties)
 		shape(0.68, 0.2, 0.24, 0.3, 16, tint, 5)
 		shape(0.43, 0.52, 0.14, 0.23)
 		shape(0.26, 0.76, 0.48, 0.13, 0, tint, 3)
+	elseif kind == "coin" then
+		shape(0.08, 0.08, 0.84, 0.84, 0, tint, 99)
+		shape(0.2, 0.2, 0.6, 0.6, 0, tint:Lerp(Color3.new(0, 0, 0), 0.22), 99)
+		shape(0.38, 0.28, 0.24, 0.44, 0, tint:Lerp(Color3.new(1, 1, 1), 0.35), 3)
+	elseif kind == "lock" then
+		shape(0.28, 0.1, 0.1, 0.4, 0, tint, 3)
+		shape(0.62, 0.1, 0.1, 0.4, 0, tint, 3)
+		shape(0.28, 0.08, 0.44, 0.12, 0, tint, 4)
+		shape(0.18, 0.44, 0.64, 0.46, 0, tint, 5)
+		shape(0.45, 0.58, 0.1, 0.16, 0, UI.Colors.background, 2)
+	elseif kind == "target" then
+		shape(0.06, 0.06, 0.88, 0.88, 0, tint, 99)
+		shape(0.2, 0.2, 0.6, 0.6, 0, UI.Colors.background, 99)
+		shape(0.3, 0.3, 0.4, 0.4, 0, tint, 99)
+		shape(0.4, 0.4, 0.2, 0.2, 0, UI.Colors.background, 99)
+	elseif kind == "shield" then
+		shape(0.18, 0.1, 0.64, 0.52, 0, tint, 6)
+		shape(0.27, 0.42, 0.46, 0.46, 45, tint, 4)
+	elseif kind == "dice" then
+		shape(0.14, 0.14, 0.72, 0.72, 0, tint, 9)
+		for _, spot in ipairs({ { 0.27, 0.27 }, { 0.62, 0.27 }, { 0.44, 0.44 }, { 0.27, 0.62 }, { 0.62, 0.62 } }) do
+			shape(spot[1], spot[2], 0.12, 0.12, 0, UI.Colors.background, 99)
+		end
+	elseif kind == "tag" then
+		shape(0.1, 0.26, 0.66, 0.48, 0, tint, 6)
+		shape(0.6, 0.31, 0.3, 0.38, 45, tint, 3)
+		shape(0.2, 0.43, 0.14, 0.14, 0, UI.Colors.background, 99)
+	elseif kind == "sparkle" then
+		shape(0.42, 0.06, 0.16, 0.88, 0, tint, 8)
+		shape(0.06, 0.42, 0.88, 0.16, 0, tint, 8)
+		shape(0.3, 0.3, 0.4, 0.4, 45, tint, 4)
+	elseif kind == "cards" then
+		shape(0.12, 0.22, 0.5, 0.66, -10, tint:Lerp(Color3.new(0, 0, 0), 0.2), 5)
+		shape(0.38, 0.12, 0.5, 0.66, 10, tint, 5)
+		shape(0.52, 0.3, 0.22, 0.22, 45, UI.Colors.background, 3)
 	elseif kind == "gift" then
 		shape(0.14, 0.42, 0.72, 0.46, 0, tint, 4)
 		shape(0.08, 0.3, 0.84, 0.15, 0, tint, 3)
