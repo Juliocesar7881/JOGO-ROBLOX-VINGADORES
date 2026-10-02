@@ -1051,7 +1051,7 @@ local function session(screen)
 		check(string.find(campaignSign, "40 ONDAS", 1, true) ~= nil, tag .. ": Manhattan's campaign sign shows its 40 waves, got " .. campaignSign)
 		local lockedSign = localPlayer.PlayerGui.PortalPicture_ranked.MapRules.Text
 		check(string.find(lockedSign, "BLOQUEADO", 1, true) ~= nil, tag .. ": a locked portal's sign says so, got " .. lockedSign)
-		check(countNamed(lobby.Portal_training, "StartHere") == 1, tag .. ": a newcomer sees one START HERE beacon")
+		check(countNamed(lobby.Portal_training, "StartHere") == 0, tag .. ": a newcomer gets the tutorial arrow, not a second sign over the same portal")
 		local newcomerBoard = lobby.Board_quests.Panel.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(newcomerBoard, "TREINE", 1, true) ~= nil, tag .. ": the mission board points a newcomer to training, got " .. newcomerBoard)
 		check(named(gui, "FirstVisitHint") == nil, tag .. ": a newcomer gets no tip strip: the arrows teach")

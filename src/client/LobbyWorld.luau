@@ -246,19 +246,11 @@ function LobbyWorld.new(ctx)
 				label.TextColor3 = kit.modeTint[portalId] or C.green
 			end
 		end
-		-- A first-time visitor sees one beacon, over the portal that starts
-		-- training, visible from the spawn through the crowd.
+		-- The tutorial's own arrow (Tutorial.luau) now leads a newcomer to this
+		-- portal; a second "START HERE" sign over the same spot hid behind it.
+		-- Clear any beacon an older session left.
 		local beacon = model:FindFirstChild("StartHere")
-		local wantBeacon = portalId == "training" and p.tutorialComplete ~= true
-		if wantBeacon and not beacon and model.PrimaryPart then
-			beacon = Instance.new("BillboardGui")
-			beacon.Name, beacon.Size, beacon.AlwaysOnTop = "StartHere", UDim2.fromOffset(200, 64), true
-			beacon.StudsOffset, beacon.MaxDistance = Vector3.new(0, 19, 0), 400
-			beacon.Adornee, beacon.Parent = model.PrimaryPart, model
-			UI.label(beacon, T("COMECE AQUI", "START HERE") .. "\n▼", {Size = UDim2.fromScale(1, 1), TextColor3 = C.gold, TextSize = 20, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = true, TextStrokeTransparency = 0.3})
-		elseif beacon and not wantBeacon then
-			beacon:Destroy()
-		end
+		if beacon then beacon:Destroy() end
 	end
 
 	local localizedLobby, localizedLanguage, localizedLabels
