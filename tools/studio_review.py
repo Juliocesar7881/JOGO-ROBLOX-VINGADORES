@@ -156,8 +156,13 @@ def glare_report(path: Path, limit: float = 0.06) -> float | None:
         rgb = image.convert("RGB")
         width, height = rgb.size
         view = rgb.crop((16, 223, max(17, width - 241), max(224, height - 146))).resize((320, 180))
-        pixels = list(view.getdata())
-    blown = sum(1 for r, g, b in pixels if min(r, g, b) > 215 and max(r, g, b) > 240) / len(pixels)
+        raw = view.tobytes()
+    blown = 0
+    for index in range(0, len(raw), 3):
+        r, g, b = raw[index], raw[index + 1], raw[index + 2]
+        if min(r, g, b) > 215 and max(r, g, b) > 240:
+            blown += 1
+    blown /= len(raw) / 3
     if blown > limit:
         print(f"  GLARE {path.name}: {blown:.0%} of the view is blown out to white (limit {limit:.0%})")
     return blown
