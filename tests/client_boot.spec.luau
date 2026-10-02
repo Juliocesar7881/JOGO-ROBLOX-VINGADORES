@@ -1229,6 +1229,32 @@ local function session(screen)
 		check(leftover == 0, tag .. ": leaving placement clears the tint, " .. leftover .. " left")
 	end)
 
+	-- Touch: a tap in the world pins the spot, CONFIRM places it, and a tap the
+	-- interface already used (processed) never moves anything.
+	step("placing a tower with a touch tap", function()
+		local function placed()
+			local count = 0
+			for _, name in ipairs(actions) do if name == "PlaceTower" then count += 1 end end
+			return count
+		end
+		input.TouchEnabled = true
+		local before = placed()
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.One, Position = v3(0, 0, 0) }, false)
+		flush()
+		rayHit = { Instance = workspace:FindFirstChild("DoomWorld").BuildZones.BuildGround, Position = v3(70, 0, -60) }
+		input.TouchTapInWorld:Fire(Vector2.new(SCREEN.w / 2, SCREEN.h / 2), true)
+		flush()
+		check(findButton(playerGui.DoomsdayUI, "CONFIRMAR") == nil, tag .. ": a tap the interface already used does not pin a spot")
+		input.TouchTapInWorld:Fire(Vector2.new(SCREEN.w / 2, SCREEN.h / 2), false)
+		flush()
+		check(placed() == before, tag .. ": a tap only pins the spot, it does not place")
+		click("CONFIRMAR")
+		check(placed() == before + 1, tag .. ": confirming a tapped spot sends PlaceTower")
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Escape, Position = v3(0, 0, 0) }, false)
+		flush()
+		input.TouchEnabled = false
+	end)
+
 	step("training: the arrows teach one lesson at a time", function()
 		local trainee = veteranProfile()
 		trainee.loadout = { "ironman", "hawkeye" }
