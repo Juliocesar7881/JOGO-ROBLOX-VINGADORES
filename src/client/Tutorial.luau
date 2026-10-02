@@ -393,6 +393,21 @@ function Tutorial:Step(dt)
 	local label = self.card and self.card:FindFirstChild("TutorialText")
 	if label and label.Text ~= step.text then label.Text = step.text end
 
+	-- The first time the way to the portal is shown, the camera swings to look
+	-- along it: the plaza spawns everyone facing the other way.
+	if step.id == "walk" and step.world and root and not self.oriented then
+		self.oriented = true
+		local camera = Workspace.CurrentCamera
+		if camera and camera.CameraType == Enum.CameraType.Custom then
+			local line = Vector3.new(step.world.X - root.Position.X, 0, step.world.Z - root.Position.Z)
+			if line.Magnitude > 1 then
+				local direction = line.Unit
+				local focus = root.Position + Vector3.new(0, 2, 0)
+				camera.CFrame = CFrame.lookAt(focus - direction * 23 + Vector3.new(0, 6, 0), focus)
+			end
+		end
+	end
+
 	if step.gui then self:_guiPointer(step.gui) elseif self.pointer then self.pointer.Visible = false end
 
 	local world = step.world
