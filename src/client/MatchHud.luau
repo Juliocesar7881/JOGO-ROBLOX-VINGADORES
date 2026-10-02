@@ -271,9 +271,9 @@ function MatchHud.new(ctx)
 			if waiting then UI.disabled(again) end
 			UI.secondary(panel,T("LOBBY","LOBBY"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0.62,0,1,-64),Size=UDim2.new(0.38,-18,0,48),TextSize=15})
 		end
-		UI.list(content, 12)
+		UI.list(content, 8)
 		local short=sizeClass().short
-		local celebration=UI.row(content,short and 44 or 72)
+		local celebration=UI.row(content,short and 44 or 64)
 		local emblemSize=short and 36 or 48
 		UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.fromOffset(2,short and 4 or 12),Size=UDim2.fromOffset(emblemSize,emblemSize)})
 		UI.label(celebration, result.ended and T("RECORDE GUARDADO!", "RECORD SAVED!") or victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("VAMOS TENTAR DE NOVO?", "LET'S TRY AGAIN!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.GothamBlack, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
@@ -326,25 +326,28 @@ function MatchHud.new(ctx)
 		end
 		if result.modeId=="ranked" then
 			local tier=Rules.RankForWaves(result.waves)
-			UI.section(content,"RANK: "..(ctx.language()=="en" and tier.en or tier.pt),T("Seu melhor resultado fica no placar da temporada.","Your best result stays on the seasonal leaderboard."))
+			local rankRow=UI.row(content,42)
+			rankRow.Name="ResultRank"
+			UI.label(rankRow,"RANK: "..(ctx.language()=="en" and tier.en or tier.pt),{Size=UDim2.new(1,-6,0,24),Font=UI.Fonts.display,TextSize=18,TextColor3=C.gold})
+			UI.label(rankRow,T("Seu melhor resultado fica no placar da temporada.","Your best result stays on the seasonal leaderboard."),{Position=UDim2.fromOffset(0,25),Size=UDim2.new(1,-6,0,16),TextSize=12,TextColor3=C.muted})
 		end
 		local earnedPoints = math.max(0, (profile().level or 1) - (result.startLevel or profile().level or 1))
-		local evolution = UI.roundFrame(content, {Name = "ResultEvolution", Size = UDim2.new(1, -6, 0, 98), BackgroundColor3 = C.gold:Lerp(C.background, 0.88)}, C.gold)
+		local evolution = UI.roundFrame(content, {Name = "ResultEvolution", Size = UDim2.new(1, -6, 0, 78), BackgroundColor3 = C.gold:Lerp(C.background, 0.88)}, C.gold)
 		UI.label(evolution, T("COMANDANTE • NÍVEL ", "COMMANDER • LEVEL ") .. tostring(profile().level or 1), {Position = UDim2.fromOffset(12, 10), Size = UDim2.new(1, -24, 0, 24), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.gold})
-		UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. T(" ponto(s) para sua árvore!", " point(s) for your talent tree!")) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 36), TextWrapped = true, TextSize = 13})
-		local xpTrack = UI.frame(evolution, {Position = UDim2.fromOffset(12, 82), Size = UDim2.new(1, -24, 0, 5), BackgroundColor3 = C.stroke})
+		UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. T(" ponto(s) para sua árvore!", " point(s) for your talent tree!")) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -24, 0, 24), TextWrapped = true, TextSize = 13})
+		local xpTrack = UI.frame(evolution, {Position = UDim2.fromOffset(12, 64), Size = UDim2.new(1, -24, 0, 5), BackgroundColor3 = C.stroke})
 		UI.frame(xpTrack, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.gold})
 		-- The season pass: where this match's XP took it, and whether a claim waits.
 		local season = profile().seasonStatus
 		if season then
-			local seasonCard = UI.roundFrame(content, {Name = "ResultSeason", Size = UDim2.new(1, -6, 0, 78), BackgroundColor3 = C.violet:Lerp(C.background, 0.86)}, C.violet)
-			UI.label(seasonCard, T("TEMPORADA • NÍVEL ", "SEASON • LEVEL ") .. tostring(season.level) .. "/" .. tostring(season.maxLevel), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 22), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.violet})
-			local seasonTrack = UI.frame(seasonCard, {Position = UDim2.fromOffset(12, 36), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
+			local seasonCard = UI.roundFrame(content, {Name = "ResultSeason", Size = UDim2.new(1, -6, 0, 68), BackgroundColor3 = C.violet:Lerp(C.background, 0.86)}, C.violet)
+			UI.label(seasonCard, T("TEMPORADA • NÍVEL ", "SEASON • LEVEL ") .. tostring(season.level) .. "/" .. tostring(season.maxLevel), {Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 0, 22), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.violet})
+			local seasonTrack = UI.frame(seasonCard, {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
 			UI.corner(seasonTrack, 4)
 			local seasonFill = UI.frame(seasonTrack, {Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpNeed, 0, 1), 1), BackgroundColor3 = C.violet})
 			UI.corner(seasonFill, 4)
 			UI.label(seasonCard, season.claimable > 0 and (tostring(season.claimable) .. T(" prêmio(s) esperando em PRÊMIOS!", " reward(s) waiting in GIFTS!")) or (number(season.xpInto) .. " / " .. number(season.xpNeed) .. " XP"),
-				{Name = "ResultSeasonHint", Position = UDim2.fromOffset(12, 50), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = season.claimable > 0 and C.gold or C.muted})
+				{Name = "ResultSeasonHint", Position = UDim2.fromOffset(12, 43), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = season.claimable > 0 and C.gold or C.muted})
 		end
 		local gains = {}
 		for heroId, earned in pairs(result.mastery or {}) do
@@ -360,7 +363,7 @@ function MatchHud.new(ctx)
 				UI.label(card, "+" .. number(gain.xp) .. " XP", {Position = UDim2.new(0.62, 0, 0, y), Size = UDim2.new(0.38, -12, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right})
 			end
 		end
-		UI.label(content,T("Próximo objetivo: evolua a habilidade do líder ou recrute nos baús.","Next goal: upgrade your leader ability or recruit from chests."),{Size=UDim2.new(1,-6,0,50),TextWrapped=true,TextColor3=C.muted})
+		UI.label(content,T("Próximo objetivo: evolua a habilidade do líder ou recrute nos baús.","Next goal: upgrade your leader ability or recruit from chests."),{Size=UDim2.new(1,-6,0,36),TextWrapped=true,TextColor3=C.muted,TextSize=13})
 		welcomePanel(panel)
 	end
 
