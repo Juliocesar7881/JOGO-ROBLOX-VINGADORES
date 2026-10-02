@@ -1028,7 +1028,7 @@ if RunService:IsStudio() then
 			return hazard ~= nil
 		end
 		if command == "crowd" and type(arg) == "number" then
-			local mix = { "zombie", "runner", "brute", "armored", "flyer", "stealth", "support" }
+			local mix = { "zombie", "runner", "brute", "armored", "flyer", "stealth", "support", "splitter", "saboteur", "summoner" }
 			for index = 1, math.clamp(arg, 1, 180) do
 				match:_spawn({ enemyId = mix[index % #mix + 1], pathIndex = 1, progress = (index % 60) * 2, hpMultiplier = 20 })
 			end
