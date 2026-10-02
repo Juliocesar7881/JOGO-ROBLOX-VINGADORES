@@ -102,6 +102,9 @@ function Audio:_stopMusic(except)
 end
 
 function Audio:Music(name)
+	-- A track Roblox will not serve (still under review, or rejected) stands in with
+	-- the lobby theme, so a moderated upload never leaves a match silent.
+	if name and self.unplayable and self.unplayable[name] and name ~= "lobby" then name = "lobby" end
 	local allowed = self:_allowed()
 	if self.track == name and self.musicAllowed == allowed then return end
 	self.musicAllowed = allowed
@@ -120,6 +123,19 @@ function Audio:Music(name)
 			self:_fade(name, VOLUME[name] or 0.3)
 		end)
 		if not ok then self.sounds[name] = nil end
+		-- Not loaded after a few seconds (IsLoaded is exactly false): remember it and
+		-- switch to the lobby theme. A stand-in or an engine without IsLoaded never trips this.
+		if name ~= "lobby" and ((Config.Audio or {})[name] or 0) > 0 then
+			task.delay(6, function()
+				if self.track == name and sound.IsLoaded == false then
+					self.unplayable = self.unplayable or {}
+					self.unplayable[name] = true
+					self:_stopMusic(nil)
+					self.track = nil
+					self:Music(name)
+				end
+			end)
+		end
 	end
 end
 

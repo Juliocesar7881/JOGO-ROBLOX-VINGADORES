@@ -23,6 +23,7 @@
   respiram); **Ficha do comandante** na partida (talentos, base ativa e cartas só para
   ver); árvore de talentos refeita em favo compacto de ícones; **Ímã global** no fim da
   trilha Fortuna.
+- **Áudio no jogo**: os 27 sons originais foram enviados à sua conta (Gerenciador de ativos do Studio) e ligados no `Config.Audio`: o jogo deixou de ser mudo. 26 já tocam; a trilha de batalha (`battle`) está em moderação do Roblox (se for negada, o lobby toca no lugar; dá para regerar a trilha com `python tools/generate_audio.py` e reenviar). Os áudios ficam privados na sua conta e liberados para esta experiência.
 - Produtos de Robux a criar agora são **7 heróis novos** (inclui o Caçador da Noite,
   449) — tabela em `ROBUX_CATALOG.md`.
 

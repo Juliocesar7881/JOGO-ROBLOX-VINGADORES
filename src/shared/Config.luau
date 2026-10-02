@@ -52,12 +52,21 @@ return {
 		},
 	},
 	-- Optional owned/licensed audio IDs. Zero keeps the experience silent.
-	Audio = { lobby = 0, battle = 0, collect = 0, victory = 0, defeat = 0, breach = 0, place = 0, upgrade = 0, levelUp = 0, ability = 0, boss = 0, wave = 0, chest = 0,
+	-- The project's own synthesized sounds (assets/audio, tools/generate_audio.py),
+	-- uploaded 2026-10-02 by LoopsDev7881 through Studio's Asset Manager. Sources and
+	-- IDs: assets/audio/uploads.json. A zero falls back to the built-in sounds.
+	Audio = {
+		lobby = 90120138259155, battle = 138426860300125, collect = 89386392576030, victory = 85206381307425, defeat = 89940652537869,
+		breach = 88806730855390, place = 110695275250497, upgrade = 123473912601268, levelUp = 87307736942781, ability = 106314680284413,
+		boss = 78255398419469, wave = 75814374915023, chest = 121229565044752,
 		-- One ambience loop per map, and a short cue per weapon family.
-		ambManhattan = 0, ambGamma = 0, ambHydra = 0, ambWakanda = 0, ambAsgard = 0, ambLatveria = 0,
-		shotTech = 0, shotArrow = 0, shotMagic = 0, shotMelee = 0, shotBlast = 0, abilityReady = 0,
+		ambManhattan = 132352626399475, ambGamma = 101885347333293, ambHydra = 134964091158105,
+		ambWakanda = 109955783634978, ambAsgard = 107103621057466, ambLatveria = 131878071679857,
+		shotTech = 113181820392283, shotArrow = 78755893231166, shotMagic = 116245675467513, shotMelee = 79230559057938,
+		shotBlast = 108098929987722, abilityReady = 116839098197325,
 		-- Interface: every button press and every panel opening.
-		click = 0, open = 0 },
+		click = 74693654931748, open = 78745367903334,
+	},
 	-- Real map photographs, uploaded by LoopsDev7881 via Studio's Asset Manager.
 	-- Sources and upload IDs: assets/map-photos/manifest.json. Zero uses the fallback.
 	MapImages = {

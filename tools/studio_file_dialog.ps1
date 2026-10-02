@@ -32,7 +32,7 @@ while ((Get-Date) -lt $end -and -not $dialog) {
 if (-not $dialog) { throw 'No file dialog appeared.' }
 $title = $dialog.Current.Name
 # Only ever answer the import prompt this tool is for.
-if ($title -notlike '*Import*' -and $title -notlike '*Importar*') { throw "Unexpected dialog: $title" }
+if ($title -notlike '*Import*' -and $title -notlike '*Importar*' -and $title -notlike '*Abrir arquivo*' -and $title -notlike '*Open*') { throw "Unexpected dialog: $title" }
 $hDialog = [IntPtr]$dialog.Current.NativeWindowHandle
 if ($Cancel) {
   [void][DlgWin]::SendMessage($hDialog, 0x111, [IntPtr]2, [IntPtr]::Zero) # WM_COMMAND IDCANCEL

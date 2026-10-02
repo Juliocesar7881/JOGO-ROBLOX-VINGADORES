@@ -16,10 +16,7 @@ faz e como conferir.
   `docs/director/ROBUX_CATALOG.md`; o fluxo está descrito lá) e gravar os IDs
   em `src/shared/Config.luau → Products.Heroes`. Até lá esses heróis aparecem
   como "Preço indisponível" na loja (sem erro).
-- [ ] **Enviar os áudios**: `assets/audio/*.wav` (28 arquivos) no Creator Hub →
-  Ativos → Áudio, e pôr os IDs em `Config.Audio` (0 = usa os sons do Roblox).
-  Cota pode ser de 10 por mês; a ordem de prioridade está em
-  `docs/director/BACKLOG.md` (M7.1).
+- [x] **Enviar os áudios** (03/10: feito pelo Studio; IDs em `assets/audio/uploads.json` e `Config.Audio`). Falta só conferir a trilha `battle`, que estava em moderação; se for negada, `python tools/generate_audio.py` e `python tools/studio_upload_audio.py --window-handle <hwnd> battle`. Ao publicar para o público, confira no Creator Hub que os 27 áudios estão aprovados e liberados para a experiência.
 - [ ] **Título e ícone da experiência**: nome "Multiverse Doomsday" (ou o que
   o dono escolher), ícone e miniaturas próprios, descrição em português.
   Imagens de divulgação 1920×1080 do próprio jogo (sem interface do Studio)

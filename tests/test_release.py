@@ -28,6 +28,22 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(len(missing), 81)
         self.assertEqual(configured, [])
 
+    def test_uploaded_audio_ids_match_the_manifest_and_the_files(self):
+        """Config.Audio carries the uploaded IDs, one per WAV, none repeated."""
+        uploads = json.loads((ROOT / 'assets/audio/uploads.json').read_text(encoding='utf-8'))['ids']
+        config = (ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8')
+        start = config.index('Audio = {')
+        block = config[start:config.index('MapImages', start)]
+        import re
+        found = {key: int(value) for key, value in re.findall(r'(\w+) = (\d+)', block)}
+        wavs = sorted(path.stem for path in (ROOT / 'assets/audio').glob('*.wav'))
+        self.assertEqual(sorted(uploads), wavs)
+        for key in wavs:
+            self.assertEqual(found.get(key), uploads[key], key)
+        self.assertEqual(len(set(uploads.values())), len(uploads))
+        for value in uploads.values():
+            self.assertTrue(10**13 < value < 10**16)
+
     def test_invalid_and_duplicate_ids_are_rejected(self):
         for invalid in (True, -1, 1.5, '123', 10**20):
             data = copy.deepcopy(self.template)
