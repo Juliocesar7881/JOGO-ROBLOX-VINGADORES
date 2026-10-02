@@ -30,3 +30,33 @@ O mundo já é nosso diferencial. O que separa do TTD é **o HUD da partida no
 celular** (barra de heróis, painel da torre, CTA escondido), **a sensação de
 combate** e **a marca**. Ordem: consertos rápidos de HUD que afetam todo
 jogador (M1.5) → marca original (M2) → combate (M3) → Robux (M4).
+
+---
+
+# Revisão crítica — 02/10/2026 (olhar de crítico de jogos Roblox)
+
+Feita sobre capturas reais do Studio (computador e celular deitado), os testes
+e a leitura do código. Notas 0–5; "TTD" é a referência. Honesta de propósito.
+
+| Área | Nota | O que um crítico diria |
+|---|---|---|
+| Primeiros 60 s | **4** | Seta grande + trilha + seta na borda levam ao portal de treino; no treino, cartão de 5 passos com ponteiro no botão certo; depois, baú e campanha. Falta ver com um jogador de verdade: não validamos toque nem o ritmo real. |
+| Lobby | **4** | Bonito e vivo, sem mascote. Muita placa flutuando ao mesmo tempo; o brilho foi baixado, mas ainda é o ponto mais forte de qualquer tela. Sets da agência agora são sólidos e fechados. |
+| Partida (leitura) | **4** | Barra de heróis, números de dano, antes→depois no upgrade, chefe com câmera. No celular o canto superior esquerdo concentra HUD + painel da torre + barra do chefe. |
+| Combate (sensação) | **3,5** | Efeito próprio por herói e poses (soco, voo, arco), mas inimigos reagem pouco ao dano (sem recuo/flash por golpe forte), e os mapas de Manhattan/Gama são cinzentos de cima. |
+| Variedade de heróis | **4** | 42 heróis, 42 poderes, 6 com mecânica própria (empurrão, imunidade a paralisia, voo). A maioria ainda é "dano + alcance + um modificador": só os 6 da liga e uns 10 antigos jogam diferente. |
+| Progressão | **4** | Nível, maestria, estrelas, brilhante, 16+ missões, passe de 30 níveis, bônus de grupo. Falta algo que dê meta de longo prazo visível (coleção completa tem marcos, mas sem vitrine no lobby). |
+| Monetização | **3** | Código completo e testado; produtos reais ainda incompletos (19 heróis + 6 novos + passe + preço do VIP). Não há como testar compra real sem o dono. |
+| Áudio | **2** | Só os sons nativos do Roblox: os WAVs próprios não foram enviados (Creator Hub parado). É a maior diferença para um jogo "de mercado". |
+| Celular | **3** | Layout testado em 9 telas e fonte ≥12 px, mas nada foi tocado num aparelho real; desempenho no celular não foi medido. |
+| Marca/IP | **2** | Os nomes são epítetos e os visuais são homenagens próximas (cores e símbolos) a personagens conhecidos. **Risco real de moderação/denúncia do Roblox** se publicar assim; o dono pediu esse estilo e decide. Alternativa: manter os kits e trocar visuais/nomes por originais antes de abrir ao público. |
+| Social/retenção | **3** | Bônus de grupo, placar, missões diárias. Faltam presentes entre amigos, convite com recompensa e eventos de tempo limitado. |
+
+## O que bloqueia uma nota 5 e quem pode resolver
+
+1. **Áudio próprio no jogo** — precisa do Creator Hub (Chrome conectado, termos aceitos). 
+2. **Aparelho real** — teste de toque, desempenho e teleporte num celular com o lugar publicado.
+3. **Decisão de IP** — o dono escolhe entre homenagem próxima (rápido, arriscado) e visual original.
+4. **Produtos de Robux** — dono aceita os termos; o diretor cria o resto.
+
+Tudo que não depende disso virou fila: ver `BACKLOG.md`, seção M12.

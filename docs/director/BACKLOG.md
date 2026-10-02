@@ -85,3 +85,13 @@ Escolha pela régua: o pior eixo primeiro. Cada item cabe numa sessão.
 - [ ] M11.6 **Loja de Robux**: mostrar "Mais popular"/"Melhor valor" e o valor em Ouro por Robux nos pacotes. Aceite: captura da loja; preço continua vindo do Roblox (nunca do código).
 - [x] M11.7 (calculado 01/10 em docs/BALANCE.md; falta confirmar com jogadores reais) **Equilíbrio do passe de temporada com dados reais**: medir XP por partida na simulação (campanha 50 ondas ≈ ?) e ajustar `firstXp/stepXp` para ~30–40 partidas ao todo. Aceite: número no `docs/BALANCE.md`.
 - [x] M11.8 (6 nomes em ciclo, fim em dias no cartão) **Eventos de temporada**: nome e cor da temporada no cartão (ex.: "Temporada 1 • Ilhas do Alvorecer"). Aceite: `Catalog.Seasons` com nomes e a temporada atual derivada de `_season()`.
+
+## M12 — Da revisão crítica de 02/10
+- [ ] M12.1 Combate: o inimigo reage a golpe forte (flash + micro recuo visual) e a morte tem estouro curto; orçamento de partes. Aceite: captura de 3 quadros + `Effects` dentro do limite.
+- [ ] M12.2 Manhattan e Gama menos cinzentos de cima (cor de telhado/ruas/arbustos). Aceite: folha de mapas com nenhum mapa mais monótono que a Selva.
+- [ ] M12.3 Celular: topo esquerdo da partida concentra três painéis; separar o painel da torre para a direita em tela baixa. Aceite: ui_layout + captura 667×375.
+- [ ] M12.4 Vitrine de coleção no lobby (estátuas dos heróis que você tem). Aceite: world_boot conta as estátuas do perfil.
+- [ ] M12.5 Presente entre amigos / convite com recompensa (servidor decide, sem comprar). Aceite: player_service + client_boot.
+- [ ] M12.6 Evento de tempo limitado ligado à temporada (mapa em destaque com bônus). Aceite: Rules + testes.
+- [!] M12.7 Áudio próprio (M7.1) — bloqueado no Creator Hub.
+- [!] M12.8 Decisão de IP dos visuais — do dono (ver AUDIT 02/10).
