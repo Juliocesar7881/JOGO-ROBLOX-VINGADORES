@@ -4,7 +4,7 @@
 
 - **Dois inimigos novos que mudam a leitura da partida**: o **Gosmento** racha em
   dois fragmentos ao morrer (dano em área é a resposta) e o **Sabotador** avisa e
-  paraliza as torres por perto (derrube cedo; Capitão Men e a Muralha humana são
+  paralisa as torres por perto (derrube cedo; Capitão Men e a Muralha humana são
   imunes). Entram nas ondas 12 e 18; nunca no treino.
 - **Herói novo com mecânica inédita**: **Caçador da Noite** planta **minas** na
   estrada à frente dos inimigos; dois ramos (Fragmentação / Choque) e Bomba de

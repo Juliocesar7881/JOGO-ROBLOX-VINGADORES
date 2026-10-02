@@ -290,7 +290,7 @@ local function sendToLobby(player)
 		if not ok then
 			travelling[player.UserId] = nil
 			warn("[Doomsday] Return teleport failed: " .. tostring(problem))
-			notify(player, text("Nao foi possivel voltar ao lobby. Tentando novamente.", "Could not return to the lobby. Retrying."))
+			notify(player, text("Não foi possível voltar ao lobby. Tentando novamente.", "Could not return to the lobby. Retrying."))
 			task.delay(4, function()
 				if player.Parent == Players then sendToLobby(player) end
 			end)
@@ -328,7 +328,7 @@ end
 
 local function sendToMatch(leader, members, mapId, modeId, difficultyId)
 	if travelling[leader.UserId] then
-		return { ok = false, message = text("Sua partida ja esta sendo preparada.", "Your match is already being prepared.") }
+		return { ok = false, message = text("Sua partida já está sendo preparada.", "Your match is already being prepared.") }
 	end
 	local reserved, accessCode = pcall(function()
 		return (TeleportService:ReserveServer(matchPlaceId))
@@ -371,7 +371,7 @@ local function resumeBattle(player)
 	local seat = rejoin:Lookup(player.UserId)
 	if not seat or player.Parent ~= Players or travelling[player.UserId] then return end
 	travelling[player.UserId] = true
-	notify(player, text("Levando voce de volta a sua batalha.", "Taking you back to your battle."))
+	notify(player, text("Levando você de volta à sua batalha.", "Taking you back to your battle."))
 	local options = Instance.new("TeleportOptions")
 	options.ReservedServerAccessCode = seat.code
 	local ok, problem = pcall(function()
@@ -381,7 +381,7 @@ local function resumeBattle(player)
 		travelling[player.UserId] = nil
 		rejoin:Forget(player.UserId)
 		warn("[Doomsday] Rejoin teleport failed: " .. tostring(problem))
-		notify(player, text("Sua batalha anterior nao esta mais disponivel.", "Your previous battle is no longer available."))
+		notify(player, text("Sua batalha anterior não está mais disponível.", "Your previous battle is no longer available."))
 	end
 end
 
@@ -391,7 +391,7 @@ TeleportService.TeleportInitFailed:Connect(function(player, result, problem)
 	-- The player never arrived, so the seat recorded for them is stale.
 	rejoin:Forget(player.UserId)
 	warn("[Doomsday] TeleportInitFailed " .. tostring(result) .. ": " .. tostring(problem))
-	notify(player, text("O teleporte falhou. Voce continua no lobby.", "The teleport failed. You are still in the lobby."))
+	notify(player, text("O teleporte falhou. Você continua no lobby.", "The teleport failed. You are still in the lobby."))
 end)
 
 --==============================================================================
@@ -419,7 +419,7 @@ local function registerArrival(player)
 	end
 	if match:Has(player) then return end
 	if match.running then
-		notify(player, text("Esta batalha ja comecou.", "This battle already started."))
+		notify(player, text("Esta batalha já começou.", "This battle already started."))
 		task.delay(3, function() if player.Parent == Players then sendToLobby(player) end end)
 		return
 	end
@@ -453,7 +453,7 @@ local function beginReservedMatch()
 	if ok then logMatchStart() end
 	if not ok then
 		for _, member in ipairs(present) do
-			notify(member, problem or text("Nao foi possivel iniciar a partida.", "Could not start the match."))
+			notify(member, problem or text("Não foi possível iniciar a partida.", "Could not start the match."))
 			sendToLobby(member)
 		end
 		return
@@ -492,7 +492,7 @@ local function launchFromPortal(members, mapId, modeId, difficultyId)
 		return result.ok == true, result.message
 	end
 	if not match:CanStart() then
-		return false, text("Uma batalha ja ocupa este servidor. Aguarde ela terminar.", "A battle is already using this server. Wait for it to end.")
+		return false, text("Uma batalha já ocupa este servidor. Aguarde ela terminar.", "A battle is already using this server. Wait for it to end.")
 	end
 	local ok, problem = match:Start(members, mapId, modeId, nil, difficultyId)
 	if not ok then return false, problem end
@@ -660,9 +660,9 @@ local function route(player, action, payload)
 		return { ok = false, message = text("O treino está cheio agora. Tente em instantes.", "Training is full right now. Try again shortly.") }
 	end
 	if MATCH_ACTIONS[action] then
-		return { ok = false, message = text("Esta acao so funciona durante uma partida.", "This action only works during a match.") }
+		return { ok = false, message = text("Esta ação só funciona durante uma partida.", "This action only works during a match.") }
 	end
-	return { ok = false, message = text("Acao desconhecida.", "Unknown action.") }
+	return { ok = false, message = text("Ação desconhecida.", "Unknown action.") }
 end
 
 -- A token bucket keeps a scripted client from turning the router into a
@@ -684,13 +684,13 @@ end
 
 remotes.Request.OnServerInvoke = function(player, action, payload)
 	if type(action) ~= "string" or #action > 40 then
-		return { ok = false, message = text("Acao invalida.", "Invalid action.") }
+		return { ok = false, message = text("Ação inválida.", "Invalid action.") }
 	end
 	if payload ~= nil and type(payload) ~= "table" then
 		return { ok = false, message = text("Dados invalidos.", "Invalid data.") }
 	end
 	if not allow(player) then
-		return { ok = false, message = text("Muitas acoes em pouco tempo.", "Too many actions at once.") }
+		return { ok = false, message = text("Muitas ações em pouco tempo.", "Too many actions at once.") }
 	end
 	local ok, result = pcall(route, player, action, payload or {})
 	if not ok then
@@ -698,7 +698,7 @@ remotes.Request.OnServerInvoke = function(player, action, payload)
 		return { ok = false, message = text("Erro interno. Nada foi alterado.", "Internal error. Nothing changed.") }
 	end
 	if type(result) ~= "table" then
-		return { ok = false, message = text("Resposta invalida.", "Invalid response.") }
+		return { ok = false, message = text("Resposta inválida.", "Invalid response.") }
 	end
 	return result
 end
