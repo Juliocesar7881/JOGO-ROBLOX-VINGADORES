@@ -412,6 +412,8 @@ local HERO_POSE = {
 	wolverine = "slash", psylocke = "slash", panther = "slash", moonknight = "strike", captain = "throw", gambit = "throw",
 	wanda = "magic", strange = "magic", jean = "magic", storm = "magic", iceman = "magic", silversurfer = "magic",
 	vision = "beam", captainmarvel = "beam", cyclops = "beam", nova = "shoot", ghostrider = "magic", nightcrawler = "strike",
+	-- The league: alternating jabs, a hovering flier, a spear thrust.
+	capmen = "punch", speedster = "punch", emerald = "magic", solartitan = "fly", amazon = "throw", seaking = "strike",
 }
 
 -- body, colors, face and hair per hero; `extras` below adds what makes each
@@ -455,6 +457,12 @@ local HERO_LOOK = {
 	deadpool = { colors = { head = Color3.fromRGB(40, 200, 190), chest = Color3.fromRGB(240, 90, 170), pelvis = Color3.fromRGB(40, 200, 190), upperArm = Color3.fromRGB(240, 90, 170), lowerArm = Color3.fromRGB(40, 200, 190), hand = HC.white, upperLeg = Color3.fromRGB(40, 200, 190), lowerLeg = Color3.fromRGB(240, 90, 170), foot = HC.white } },
 	moonknight = { colors = { head = Color3.fromRGB(36, 38, 52), chest = Color3.fromRGB(36, 38, 52), pelvis = Color3.fromRGB(170, 176, 196), upperArm = Color3.fromRGB(36, 38, 52), lowerArm = Color3.fromRGB(36, 38, 52), hand = Color3.fromRGB(170, 176, 196), upperLeg = Color3.fromRGB(36, 38, 52), lowerLeg = Color3.fromRGB(36, 38, 52), foot = Color3.fromRGB(170, 176, 196) } },
 	nova = { colors = { head = Color3.fromRGB(236, 244, 250), chest = Color3.fromRGB(40, 150, 200), pelvis = Color3.fromRGB(40, 150, 200), upperArm = Color3.fromRGB(40, 150, 200), lowerArm = Color3.fromRGB(236, 244, 250), hand = Color3.fromRGB(236, 244, 250), upperLeg = Color3.fromRGB(40, 150, 200), lowerLeg = Color3.fromRGB(236, 244, 250), foot = Color3.fromRGB(236, 244, 250) }, shiny = true },
+	capmen = { body = { width = 1.14, arm = 1.2, chest = 1.08, leg = 1.04, hand = 1.15 }, colors = { chest = Color3.fromRGB(214, 58, 52), pelvis = Color3.fromRGB(30, 44, 92), upperArm = Color3.fromRGB(214, 58, 52), lowerArm = Color3.fromRGB(236, 184, 76), hand = Color3.fromRGB(236, 184, 76), upperLeg = Color3.fromRGB(30, 44, 92), lowerLeg = Color3.fromRGB(214, 58, 52), foot = Color3.fromRGB(236, 184, 76) }, face = "fierce", hair = { Color3.fromRGB(40, 30, 28), "fringe" } },
+	emerald = { colors = { chest = Color3.fromRGB(40, 176, 94), pelvis = Color3.fromRGB(20, 26, 24), upperArm = Color3.fromRGB(40, 176, 94), lowerArm = Color3.fromRGB(20, 26, 24), hand = Color3.fromRGB(236, 240, 238), upperLeg = Color3.fromRGB(20, 26, 24), lowerLeg = Color3.fromRGB(20, 26, 24), foot = Color3.fromRGB(40, 176, 94) }, face = "smile", hair = { Color3.fromRGB(112, 78, 50), "fringe" } },
+	solartitan = { body = { scale = 1.12, width = 1.1, arm = 1.12, chest = 1.1, leg = 1.06 }, colors = { chest = Color3.fromRGB(38, 100, 220), pelvis = Color3.fromRGB(200, 40, 48), upperArm = Color3.fromRGB(38, 100, 220), lowerArm = Color3.fromRGB(38, 100, 220), hand = HC.skin, upperLeg = Color3.fromRGB(38, 100, 220), lowerLeg = Color3.fromRGB(38, 100, 220), foot = Color3.fromRGB(200, 40, 48) }, face = "smile", hair = { Color3.fromRGB(28, 28, 36), "fringe" } },
+	speedster = { body = { width = 0.9, arm = 0.88, leg = 1.04, legLength = 1.06 }, colors = { head = Color3.fromRGB(222, 50, 50), chest = Color3.fromRGB(222, 50, 50), pelvis = Color3.fromRGB(222, 50, 50), upperArm = Color3.fromRGB(222, 50, 50), lowerArm = Color3.fromRGB(240, 196, 60), hand = Color3.fromRGB(222, 50, 50), upperLeg = Color3.fromRGB(222, 50, 50), lowerLeg = Color3.fromRGB(222, 50, 50), foot = Color3.fromRGB(240, 196, 60) }, face = "fierce" },
+	amazon = { body = { width = 0.9, arm = 0.88, leg = 0.94 }, colors = { chest = Color3.fromRGB(196, 40, 56), pelvis = Color3.fromRGB(30, 56, 140), upperArm = HC.skin, lowerArm = Color3.fromRGB(240, 196, 60), hand = HC.skin, upperLeg = HC.skin, lowerLeg = Color3.fromRGB(30, 56, 140), foot = Color3.fromRGB(196, 40, 56) }, face = "smile", hair = { Color3.fromRGB(36, 28, 30), "long" } },
+	seaking = { body = { width = 1.12, arm = 1.12, chest = 1.08, leg = 1.04 }, colors = { chest = Color3.fromRGB(232, 150, 44), pelvis = Color3.fromRGB(20, 120, 124), upperArm = Color3.fromRGB(232, 150, 44), lowerArm = Color3.fromRGB(20, 120, 124), hand = HC.tan, upperLeg = Color3.fromRGB(20, 120, 124), lowerLeg = Color3.fromRGB(20, 120, 124), foot = Color3.fromRGB(232, 150, 44) }, face = "fierce", hair = { Color3.fromRGB(226, 190, 90), "long" } },
 }
 Figure.HeroLook = HERO_LOOK
 
@@ -890,6 +898,113 @@ HERO_EXTRAS.nova = function(f)
 	f.add("Head", "Visor", Vector3.new(h.X * 0.84, 0.2 * s, 0.1 * s), f.face(0, 0.12, 0.03), Color3.fromRGB(120, 220, 255), NEON)
 	star(f, "UpperTorso", CFrame.new(0, f.sizes.chest.Y * 0.16, -f.sizes.chest.Z / 2 - 0.04 * s), 0.36 * s, Color3.fromRGB(80, 210, 240))
 	muzzle(f, "Head", Vector3.new(0, h.Y * 0.1, -h.Z / 2 - 0.2 * s))
+end
+
+-- The league -------------------------------------------------------------------
+HERO_EXTRAS.capmen = function(f)
+	local s, c = f.scale, f.sizes.chest
+	local gold, white, orange = Color3.fromRGB(236, 184, 76), Color3.fromRGB(246, 246, 250), Color3.fromRGB(255, 150, 60)
+	-- Captain Men: a short gold cape, a white bolt in a gold roundel, gold gauntlets
+	-- and fists that glow when they land.
+	cape(f, gold, 2.8, white)
+	f.disc("UpperTorso", "Roundel", 0.62 * s, 0.07 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.04 * s), gold, METAL)
+	f.add("UpperTorso", "BoltTop", Vector3.new(0.2, 0.46, 0.06) * s, CFrame.new(0.06 * s, c.Y * 0.2, -c.Z / 2 - 0.09 * s) * CFrame.Angles(0, 0, -0.5), white, NEON)
+	f.add("UpperTorso", "BoltBottom", Vector3.new(0.2, 0.46, 0.06) * s, CFrame.new(-0.06 * s, c.Y * 0.06, -c.Z / 2 - 0.09 * s) * CFrame.Angles(0, 0, -0.5), white, NEON)
+	belt(f, HC.leather, gold)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add(side < 0 and "LeftHand" or "RightHand", "FistGlow", Vector3.new(0.78, 0.7, 0.78) * s, CFrame.new(0, -0.04 * s, 0), orange, NEON, "ball").Transparency = 0.5
+		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "ShoulderPlate", f.sizes.upperArm * Vector3.new(1.2, 0.46, 1.18), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0), gold, METAL)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
+end
+HERO_EXTRAS.emerald = function(f)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local ring, glow = Color3.fromRGB(70, 255, 140), Color3.fromRGB(120, 255, 170)
+	-- Emerald Sentinel: a domino mask, a glowing ring on the right hand, a ring
+	-- of light on the chest and a floating construct fist at the shoulder.
+	f.add("Head", "Mask", Vector3.new(h.X * 0.9, 0.3 * s, 0.08 * s), f.face(0, 0.1, 0.02), Color3.fromRGB(20, 26, 24), FABRIC)
+	for _, side in ipairs({ -1, 1 }) do f.add("Head", "MaskLens", Vector3.new(0.2, 0.2, 0.06) * s, f.face(side * 0.26, 0.1, 0.05), Color3.fromRGB(240, 255, 244), NEON, "ball") end
+	f.disc("UpperTorso", "ChestRing", 0.62 * s, 0.07 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.04 * s), ring, NEON)
+	f.disc("UpperTorso", "ChestRingCore", 0.34 * s, 0.08 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.06 * s), Color3.fromRGB(20, 26, 24), FABRIC)
+	f.disc("RightHand", "PowerRing", 0.5 * s, 0.1 * s, CFrame.new(0, -0.1 * s, 0) * CFrame.Angles(0, 0, math.pi / 2), ring, NEON)
+	local fist = f.add("UpperTorso", "ConstructFist", Vector3.new(1.0, 0.9, 0.9) * s, CFrame.new(c.X * 0.78, c.Y * 0.62, 0.1 * s), glow, NEON, "ball")
+	fist.Transparency = 0.45
+	f.add("UpperTorso", "ConstructKnuckles", Vector3.new(1.05, 0.34, 0.95) * s, CFrame.new(c.X * 0.78, c.Y * 0.84, 0.1 * s), ring, NEON).Transparency = 0.55
+	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
+end
+HERO_EXTRAS.solartitan = function(f)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local red, gold = Color3.fromRGB(200, 40, 48), Color3.fromRGB(246, 200, 64)
+	-- Solar Titan: a long red cape, a golden sun on the chest with a red star,
+	-- a gold belt and eyes that glow red when the heat ray fires.
+	cape(f, red, 4.6, gold)
+	f.disc("UpperTorso", "SunShield", 0.78 * s, 0.07 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.04 * s), gold, METAL)
+	star(f, "UpperTorso", CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.1 * s), 0.34 * s, red)
+	belt(f, gold, gold)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "HeatEye", Vector3.new(0.2, 0.12, 0.06) * s, f.face(side * 0.25, 0.14, 0.04), Color3.fromRGB(255, 70, 50), NEON)
+		f.add(side < 0 and "LeftLowerArm" or "RightLowerArm", "Bracelet", f.sizes.lowerArm * Vector3.new(1.1, 0.2, 1.1), CFrame.new(0, -f.sizes.lowerArm.Y * 0.36, 0), gold, METAL)
+	end
+	muzzle(f, "Head", Vector3.new(0, h.Y * 0.1, -h.Z / 2 - 0.2 * s))
+end
+HERO_EXTRAS.speedster = function(f)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local gold, bolt = Color3.fromRGB(240, 196, 60), Color3.fromRGB(255, 232, 90)
+	-- Crimson Speedster: a red cowl with golden wing-ears, a lightning bolt on
+	-- the chest and golden bracers and boots, with a trail of light at the back.
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EarWing", Vector3.new(0.14, 0.52, 0.8) * s, CFrame.new(side * h.X * 0.55, h.Y * 0.18, 0.04 * s) * CFrame.Angles(0, 0, side * -0.5), gold, METAL, "wedge")
+	end
+	f.add("Head", "Mask", Vector3.new(h.X * 0.86, 0.22 * s, 0.07 * s), f.face(0, 0.08, 0.03), Color3.fromRGB(34, 26, 28), FABRIC)
+	f.add("UpperTorso", "BoltTop", Vector3.new(0.22, 0.5, 0.06) * s, CFrame.new(0.07 * s, c.Y * 0.2, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), bolt, NEON)
+	f.add("UpperTorso", "BoltBottom", Vector3.new(0.22, 0.5, 0.06) * s, CFrame.new(-0.07 * s, c.Y * 0.0, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), bolt, NEON)
+	belt(f, gold, gold)
+	for i = 1, 3 do
+		f.add("UpperTorso", "SpeedTrail", Vector3.new(0.1, 0.1, (1.8 + i * 0.7) * s), CFrame.new((i - 2) * 0.34 * s, c.Y * 0.1 - i * 0.18 * s, c.Z / 2 + (1.1 + i * 0.35) * s), bolt, NEON).Transparency = 0.45 + i * 0.1
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
+end
+HERO_EXTRAS.amazon = function(f)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local gold, red = Color3.fromRGB(240, 196, 60), Color3.fromRGB(196, 40, 56)
+	-- Golden Amazon: a tiara, a gold eagle across the chest, a round shield on
+	-- the left forearm and a glowing lasso coiled at the hip.
+	f.add("Head", "Tiara", Vector3.new(h.X * 0.8, 0.16 * s, 0.1 * s), CFrame.new(0, h.Y * 0.4, -h.Z * 0.46), gold, METAL)
+	f.add("Head", "TiaraStar", Vector3.new(0.2, 0.2, 0.06) * s, CFrame.new(0, h.Y * 0.46, -h.Z * 0.5) * CFrame.Angles(0, 0, math.pi / 4), red, METAL)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "EagleWing", Vector3.new(c.X * 0.36, 0.14 * s, 0.06 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.28, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * -0.28), gold, METAL)
+	end
+	belt(f, gold, red)
+	local arm = f.sizes.lowerArm
+	f.add("LeftLowerArm", "Shield", Vector3.new(0.14 * s, 2.2 * s, 2.2 * s), CFrame.new(-arm.X / 2 - 0.12 * s, 0, -0.1 * s), gold, METAL, Enum.PartType.Cylinder)
+	f.add("LeftLowerArm", "ShieldFace", Vector3.new(0.14 * s, 1.7 * s, 1.7 * s), CFrame.new(-arm.X / 2 - 0.16 * s, 0, -0.1 * s), red, METAL, Enum.PartType.Cylinder)
+	f.add("LeftLowerArm", "ShieldStar", Vector3.new(0.06 * s, 0.7 * s, 0.7 * s), CFrame.new(-arm.X / 2 - 0.24 * s, 0, -0.1 * s), gold, METAL, Enum.PartType.Cylinder)
+	local r = 0.55 * s
+	for i = 0, 7 do
+		local a0, a1 = i * math.pi / 4, (i + 1) * math.pi / 4
+		f.rod("LowerTorso", "Lasso", Vector3.new(f.sizes.pelvis.X / 2 + 0.2 * s, math.cos(a0) * r, math.sin(a0) * r), Vector3.new(f.sizes.pelvis.X / 2 + 0.2 * s, math.cos(a1) * r, math.sin(a1) * r), 0.07 * s, Color3.fromRGB(255, 226, 120), NEON)
+	end
+	muzzle(f, "LeftLowerArm", Vector3.new(-arm.X / 2 - 0.3 * s, 0, 0))
+end
+HERO_EXTRAS.seaking = function(f)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local gold, teal = Color3.fromRGB(240, 196, 60), Color3.fromRGB(70, 220, 230)
+	-- Sea King: a golden crown, scale-shaped plates on the chest and a trident
+	-- with a glowing tide-blue head.
+	f.add("Head", "Crown", Vector3.new(h.X * 0.92, 0.2 * s, h.Z * 0.92), CFrame.new(0, h.Y * 0.48, 0), gold, METAL)
+	for i = -1, 1 do f.add("Head", "CrownPoint", Vector3.new(0.14, 0.34, 0.14) * s, CFrame.new(i * h.X * 0.3, h.Y * 0.66, 0), gold, METAL, "wedge") end
+	for row = 0, 2 do
+		for col = -1, 1 do
+			f.add("UpperTorso", "Scale", Vector3.new(0.34, 0.26, 0.05) * s, CFrame.new(col * 0.36 * s + (row % 2) * 0.18 * s, c.Y * 0.26 - row * 0.28 * s, -c.Z / 2 - 0.03 * s), Color3.fromRGB(20, 120, 124), METAL, "ball")
+		end
+	end
+	f.add("UpperTorso", "TideDrop", Vector3.new(0.36, 0.5, 0.06) * s, CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.1 * s), teal, NEON, "ball")
+	f.rod("RightHand", "TridentShaft", Vector3.new(0, 1.4 * s, 0), Vector3.new(0, -1.5 * s, 0), 0.16 * s, gold, METAL)
+	for _, x in ipairs({ -0.5, 0, 0.5 }) do
+		f.rod("RightHand", "TridentProng", Vector3.new(x * s, 1.55 * s, 0), Vector3.new(x * s, (x == 0 and 2.5 or 2.2) * s, 0), 0.12 * s, teal, NEON)
+	end
+	f.rod("RightHand", "TridentBar", Vector3.new(-0.5 * s, 1.55 * s, 0), Vector3.new(0.5 * s, 1.55 * s, 0), 0.14 * s, gold, METAL)
+	muzzle(f, "RightHand", Vector3.new(0, 2.5 * s, 0))
 end
 
 -- Faces for the heroes whose extras do not already draw one.

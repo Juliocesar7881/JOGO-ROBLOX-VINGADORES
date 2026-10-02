@@ -40,6 +40,9 @@
       }
     },
     "Heroes": {
+      "amazon": {
+        "id": 0
+      },
       "antman": {
         "id": 0
       },
@@ -47,6 +50,9 @@
         "id": 0
       },
       "bucky": {
+        "id": 0
+      },
+      "capmen": {
         "id": 0
       },
       "captain": {
@@ -62,6 +68,9 @@
         "id": 0
       },
       "deadpool": {
+        "id": 0
+      },
+      "emerald": {
         "id": 0
       },
       "falcon": {
@@ -103,10 +112,19 @@
       "rocket": {
         "id": 0
       },
+      "seaking": {
+        "id": 0
+      },
       "shangchi": {
         "id": 0
       },
       "silversurfer": {
+        "id": 0
+      },
+      "solartitan": {
+        "id": 0
+      },
+      "speedster": {
         "id": 0
       },
       "spiderman": {

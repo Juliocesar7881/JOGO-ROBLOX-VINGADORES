@@ -1573,6 +1573,50 @@ do
 	check(calm.hazardCount == 0, "Manhattan has no hazard")
 end
 
+print("--- punches and indestructibility ---")
+do
+	local match, builder = stage({ mapId = "manhattan", wave = 5, loadout = { "capmen", "ironman" } })
+	match.participants[builder.UserId].cash = 1e6
+	local puncher = place(match, builder, "capmen")
+	local stats = match:_towerStats(puncher)
+	check(stats.knockback == Catalog.Heroes.capmen.knockback and stats.stunProof, "Captain Men's tower carries his knockback and steadiness")
+	-- An enemy standing inside his reach, far from the end of the road.
+	local progress
+	for at = 20, 400, 2 do
+		local position = match:_pathPosition(1, at)
+		if distanceBetween(position, puncher.position) <= stats.range - 1 then progress = at; break end
+	end
+	check(progress ~= nil, "some stretch of the road lies inside the puncher's reach")
+	if progress then
+		local victim = spawn(match, "zombie", progress, 80)
+		puncher.nextAttack = 0
+		match:_attack(puncher, stats)
+		check(math.abs(victim.progress - (progress - stats.knockback)) < 1e-6, "a punch shoves the enemy back along the road: " .. tostring(victim.progress))
+		-- Never twice inside 0.8 s, so a fast puncher cannot pin an enemy down.
+		local shoved = victim.progress
+		match:_attack(puncher, stats)
+		check(victim.progress == shoved, "the shove has its own short cooldown")
+		-- A boss holds its ground.
+		local boss = spawn(match, "lizard", progress, 80)
+		match:_attack(puncher, stats)
+		check(boss.progress == progress, "a boss is never shoved")
+	end
+	-- Stuns: his tower shrugs them off, a plain one does not, and an aura covers allies.
+	local ally = place(match, builder, "ironman")
+	match:_stunTowers(puncher.position, 500, 3)
+	check((puncher.stunnedUntil or 0) <= match.elapsed, "no stun touches Captain Men")
+	check((ally.stunnedUntil or 0) > match.elapsed, "a plain tower is stunned by the same blast")
+	ally.stunnedUntil = 0
+	ally.position = puncher.position + Vector3.new(10, 0, 0)
+	puncher.level, puncher.branch, puncher.cache = 5, 2, nil
+	match.participants[builder.UserId].modsVersion += 1
+	check(match:_stunProof(ally), "the Human Wall branch steadies the ally beside him")
+	match:_stunTowers(ally.position, 500, 3)
+	check((ally.stunnedUntil or 0) <= match.elapsed, "so the blast no longer stuns the ally")
+	ally.position = puncher.position + Vector3.new(60, 0, 0)
+	check(not match:_stunProof(ally), "an ally outside the aura is not steady")
+end
+
 print("--- performance guard ---")
 do
 	local match, player = stage({ wave = 45 })

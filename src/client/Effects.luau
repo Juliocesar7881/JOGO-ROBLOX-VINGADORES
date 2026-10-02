@@ -325,7 +325,7 @@ end
 function Effects:_recoil(towerId)
 	local model = self:_towerModel(towerId)
 	local pose = model and self:_record(model)
-	if pose then pose.firedAt, pose.active = self.clock, true end
+	if pose then pose.firedAt, pose.active, pose.fireCount = self.clock, true, (pose.fireCount or 0) + 1 end
 	local ring = model and model:FindFirstChild("PowerRing")
 	if not ring or ring:GetAttribute("Recoiling") then return end
 	local function canonical()
@@ -474,8 +474,8 @@ function Effects:_turnTowers(dt)
 			local breathe = idle and math.sin(self.clock * 2.1 + record.breath) * 0.05 * record.scale or 0
 			local slump = stunned and 1 or 0
 			if reduced then pulse, cast, hop = 0, 0, 0 end
-			local melee = record.heroId == "hulk" or record.heroId == "thor" or record.heroId == "groot" or record.heroId == "shangchi"
-			local magic = record.heroId == "wanda" or record.heroId == "strange" or record.heroId == "silversurfer"
+			local melee = record.heroId == "hulk" or record.heroId == "thor" or record.heroId == "groot" or record.heroId == "shangchi" or record.heroId == "capmen" or record.heroId == "speedster"
+			local magic = record.heroId == "wanda" or record.heroId == "strange" or record.heroId == "silversurfer" or record.heroId == "emerald"
 			-- Upgrades lift the whole figure off the pedestal; everything else
 			-- bends from the waist or the shoulders over planted legs.
 			local lift = CFrame.new(0, hop * 1.1 * record.scale, 0)
@@ -490,6 +490,7 @@ function Effects:_turnTowers(dt)
 					Motion.Hero(record.rig, {
 						fire = pulse, fireProgress = firing and math.clamp(age / 0.42, 0, 1) or 0, cast = cast, hop = hop,
 						breathe = idle and math.sin(self.clock * 2.1 + record.breath) or 0, stunned = stunned, style = record.poseStyle,
+						count = record.fireCount or 0, t = self.clock,
 					})
 				end
 			end
@@ -660,9 +661,9 @@ end
 -- Which weapon cue a hero's shot makes: bows and thrown cards whoosh, area
 -- attacks boom, magic and energy chains shimmer, close fighters thud and the
 -- rest (repulsors, blasters, rifles) zap.
-local WHOOSH_HEROES = { hawkeye = true, gambit = true, spiderman = true, falcon = true, moonknight = true }
+local WHOOSH_HEROES = { hawkeye = true, gambit = true, spiderman = true, falcon = true, moonknight = true, speedster = true, amazon = true }
 local THUD_HEROES = { hulk = true, groot = true, panther = true, wolverine = true, shangchi = true, daredevil = true,
-	beast = true, psylocke = true, captain = true, antman = true, thor = true }
+	beast = true, psylocke = true, captain = true, antman = true, thor = true, capmen = true }
 function Effects.ShotSound(heroId)
 	local def = Catalog.Heroes[heroId]
 	if WHOOSH_HEROES[heroId] then return "shotArrow" end
@@ -674,7 +675,8 @@ end
 
 local MUZZLE_PARTS = {ironman="Repulsor",hawkeye="Arrow",spiderman="Hand",thor="StormOrb",captain="Shield",widow="BatonCharge",
 	bucky="RifleBarrel",rocket="GunMuzzle",warmachine="CannonMuzzle",starlord="BlasterGlow",wanda="ChaosSpell",strange="SpellGlyph",vision="MindGem",captainmarvel="PhotonFist",
-	wolverine="AdamantiumClaw",cyclops="Visor",gambit="ChargedCard",iceman="IceFist",psylocke="Blade",nova="Visor",beast="FurryFist"}
+	wolverine="AdamantiumClaw",cyclops="Visor",gambit="ChargedCard",iceman="IceFist",psylocke="Blade",nova="Visor",beast="FurryFist",
+	capmen="FistGlow",emerald="PowerRing",solartitan="HeatEye",speedster="BoltTop",amazon="Shield",seaking="TridentProng"}
 
 function Effects:_heroShot(event, lowFX)
 	local from, target = event.from, event.to
@@ -812,6 +814,45 @@ function Effects:_heroShot(event, lowFX)
 	elseif heroId == "silversurfer" then
 		self:_line(from, target, Color3.fromRGB(210, 225, 245), 0.16, 0.16)
 		self:_impact(target, Color3.fromRGB(190, 210, 230), 0.45)
+	elseif heroId == "capmen" then
+		-- A punch with weight: a shockwave ring on the ground and the enemy's
+		-- impact flash, in the hero's own red.
+		self:_groundImpact(target, color, 4)
+		self:_impact(target, Color3.fromRGB(255, 190, 120), 0.7)
+		for index = 0, 2 do
+			local angle = index * math.pi * 2 / 3 + self.shotSerial
+			local offset = Vector3.new(math.cos(angle), 0, math.sin(angle))
+			local fragment = self:_effect(Vector3.new(0.3, 0.3, 0.3), CFrame.new(target), Color3.fromRGB(255, 150, 60), 0.28, nil, 0.15)
+			if fragment then fragment.from, fragment.to, fragment.arc = target, target + offset * 2.4, 1.6 end
+		end
+	elseif heroId == "emerald" then
+		-- An energy fist drops on the target inside a ring of green light.
+		local fist = self:_effect(Vector3.new(1.3, 1.3, 1.3), CFrame.new(target + Vector3.new(0, 5, 0)), Color3.fromRGB(110, 255, 160), 0.3, Enum.PartType.Ball, 0.35)
+		if fist then fist.from, fist.to = target + Vector3.new(0, 5, 0), target + Vector3.new(0, 1, 0) end
+		self:_groundImpact(target, Color3.fromRGB(70, 255, 140), 4.5)
+		self:_line(from, target, Color3.fromRGB(110, 255, 160), 0.1, 0.16)
+	elseif heroId == "solartitan" then
+		self:_line(from, target, Color3.fromRGB(255, 70, 50), 0.34, 0.2)
+		self:_line(from, target, Color3.fromRGB(255, 220, 200), 0.1, 0.12)
+		self:_impact(target, Color3.fromRGB(255, 120, 80), 0.8)
+	elseif heroId == "speedster" then
+		-- Many jabs in one blink: a fan of short yellow streaks around the target.
+		for index = -2, 2 do
+			local offset = Vector3.new(index * 0.45, math.abs(index) * 0.2, index * 0.3)
+			self:_line(target + offset + Vector3.new(-0.5, 0.6, 0), target + offset + Vector3.new(0.5, -0.6, 0), Color3.fromRGB(255, 232, 90), 0.08, 0.1)
+		end
+		self:_line(from, target, Color3.fromRGB(255, 120, 90), 0.06, 0.08)
+	elseif heroId == "amazon" then
+		local shield = self:_effect(Vector3.new(0.15, 1.3, 1.3), CFrame.new(from), Color3.fromRGB(240, 196, 60), 0.38, Enum.PartType.Cylinder)
+		if shield then shield.from, shield.to, shield.returning, shield.disc = from, target, true, true end
+		self:_line(from, target, Color3.fromRGB(255, 226, 120), 0.07, 0.14)
+		self:_impact(target, Color3.fromRGB(255, 230, 140), 0.45)
+	elseif heroId == "seaking" then
+		self:_groundImpact(target, color, 5)
+		for index = -1, 1 do
+			self:_effect(Vector3.new(0.4, 1.6, 0.4), CFrame.new(target + Vector3.new(index * 0.9, -0.2, 0)) * CFrame.Angles(0, 0, index * 0.25), Color3.fromRGB(110, 225, 240), 0.35, nil, 0.2)
+		end
+		self:_line(from, target, Color3.fromRGB(110, 225, 240), 0.12, 0.14)
 	else
 		-- Repulsors remain pale blue even though Iron Man's suit is red.
 		local tint = heroId == "ironman" and Color3.fromRGB(136, 225, 255) or color

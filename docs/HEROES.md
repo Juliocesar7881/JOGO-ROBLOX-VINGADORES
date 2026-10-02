@@ -24,7 +24,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Aranha Urbana** — Desaceleração e controle | 280 | área | 14 | 24 | 1.10s | Rede Gigante |
-| **Viúva Sombria** — Revela camuflados e marca alvos | 260 | único (ar) | 18 | 25 | 0.75s | Marca da Sombra |
+| **Viúva Sombria** — Revela camuflados e marca alvos | 260 | único (ar) | 18 | 25 | 0.75s | Marca da Viúva |
 | **Homem Miúdo** — Ataques rápidos e pisões | 380 | único | 22 | 26 | 0.70s | Partículas Quânticas |
 | **Abelha Rainha** — Ferrão rápido que desacelera | 240 | único (ar) | 10 | 22 | 0.40s | Enxame Elétrico |
 | **Guaxinim Atirador** — Explosivos em área | 330 | área (ar) | 19 | 26 | 1.30s | Sucata Valiosa |
@@ -42,7 +42,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | --- | --- | --- | --- | --- | --- | --- |
 | **Capitão Escudo** — Ricochetes e suporte às torres | 360 | corrente | 17 | 23 | 1.05s | Escudo Égide |
 | **Rei Pantera** — Ataques rápidos e enfraquece armadura | 400 | único | 19 | 19 | 0.48s | Garra da Noite |
-| **Gigante Furioso** — Dano de área terrestre | 450 | área | 34 | 24 | 1.60s | Pedregulho Esmaga! |
+| **Gigante Furioso** — Dano de área terrestre | 450 | área | 34 | 24 | 1.60s | Gigante Esmaga! |
 | **Androide Prisma** — Feixe que atravessa alinhados | 480 | feixe (ar) | 44 | 30 | 1.30s | Fase Densa |
 | **Soldado Blindado** — Artilharia pesada em área | 520 | área (ar) | 27 | 28 | 1.40s | Bombardeio |
 | **Pirata Estelar** — Rajadas rápidas de blasters | 430 | único (ar) | 16 | 25 | 0.32s | Batida Cósmica |
@@ -51,6 +51,9 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Mestre das Cartas** — Cartas explosivas contra grupos | 390 | área (ar) | 35 | 29 | 1.15s | Ás explosivo |
 | **Ninja Psíquica** — Lâminas psíquicas perfurantes | 400 | único | 32 | 23 | 0.70s | Corte psíquico |
 | **Mercenário Tagarela** — Rajadas rápidas e apoio ofensivo | 380 | único (ar) | 24 | 28 | 0.60s | Trabalho em equipe |
+| **Capitão Men** — Socos que empurram, imbatível | 400 | único | 24 | 17 | 0.60s | Indestrutível |
+| **Amazona Dourada** — Laço da verdade e espada | 420 | corrente | 18 | 24 | 0.90s | Laço da Verdade |
+| **Rei dos Mares** — Marés que atrasam e empurram | 430 | área | 19 | 25 | 1.40s | Maremoto |
 
 ## Lendário — 999 Robux (compra direta)
 
@@ -62,6 +65,8 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Cavaleiro Flamejante** — Fogo fantasma persistente | 620 | queima contínua | 28 | 26 | 1.40s | Fogo Fantasma ⚡ (ultimate) |
 | **Deusa do Clima** — Relâmpagos e defesa aérea | 600 | corrente (ar) | 40 | 34 | 1.40s | Olho da tempestade ⚡ (ultimate) |
 | **Guardião Cósmico** — Feixe cósmico antiaéreo | 590 | feixe (ar) | 48 | 32 | 1.05s | Supernova ⚡ (ultimate) |
+| **Sentinela Esmeralda** — Construções de energia e controle | 600 | área (ar) | 30 | 28 | 1.50s | Construção Esmeralda ⚡ (ultimate) |
+| **Velocista Rubro** — Golpes ultrarrápidos | 560 | corrente (ar) | 11 | 24 | 0.18s | Supervelocidade ⚡ (ultimate) |
 
 ## Mítico — 1999 Robux (compra direta)
 
@@ -70,6 +75,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Capitã Estelar** — Feixe cósmico devastador | 780 | feixe (ar) | 68 | 30 | 1.50s | Nova Fotônica ⚡ (ultimate) |
 | **Surfista Cósmico** — Energia cósmica encadeada | 800 | corrente (ar) | 34 | 32 | 1.20s | Julgamento Cósmico ⚡ (ultimate) |
 | **Psíquica Radiante** — Explosões de energia psíquica | 760 | área (ar) | 44 | 30 | 1.30s | Chama Aurora ⚡ (ultimate) |
+| **Titã Solar** — Visão de calor e força suprema | 800 | feixe (ar) | 50 | 32 | 1.30s | Fúria Solar ⚡ (ultimate) |
 
 ## Habilidades
 
@@ -85,7 +91,7 @@ maestria exigida crescendo por rank e multiplicados pela raridade do herói
 | Comando Aéreo | Homem-Asa | 60s | Todas as suas torres atacam 25% mais rápido por 8 s. |
 | Emboscada | Soldado de Prata | 55s | Paralisa inimigos por 2.2 s em 16 studs. Chefes resistem. |
 | Rede Gigante | Aranha Urbana | 60s | Desacelera inimigos em 50% por 5 s em 28 studs. |
-| Marca da Sombra | Viúva Sombria | 55s | Revela camuflados e faz alvos sofrerem +20% de dano por 9 s em 30 studs. |
+| Marca da Viúva | Viúva Sombria | 55s | Revela camuflados e faz alvos sofrerem +20% de dano por 9 s em 30 studs. |
 | Partículas Quânticas | Homem Miúdo | 45s | Uma torre sua ataca 50% mais rápido por 8 s. |
 | Enxame Elétrico | Abelha Rainha | 50s | Ferroa 6 inimigos: 16% da vida máxima de cada um. |
 | Sucata Valiosa | Guaxinim Atirador | 60s | Recebe Ouro da partida na hora: 60% de uma onda inteira de renda. |
@@ -93,7 +99,7 @@ maestria exigida crescendo por rank e multiplicados pela raridade do herói
 | Anéis Celestes | Mestre dos Anéis | 55s | Empurra inimigos 26 studs para trás na rota em 24 studs. Chefes não são afetados. |
 | Escudo Égide | Capitão Escudo | 90s | Um escudo absorve 20 de dano à base por 10 s. |
 | Garra da Noite | Rei Pantera | 100s | Restaura 14 de vida do núcleo e o protege com um escudo de 10 por 8 s. |
-| Pedregulho Esmaga! | Gigante Furioso | 60s | Esmagamento: 35% da vida máxima de cada inimigo em 28 studs e paralisa por 1.8 s. |
+| Gigante Esmaga! | Gigante Furioso | 60s | Esmagamento: 35% da vida máxima de cada inimigo em 28 studs e paralisa por 1.8 s. |
 | Fase Densa | Androide Prisma | 55s | Reduz a armadura dos inimigos em 45% por 10 s em 40 studs e os marca (+15% de dano). |
 | Bombardeio | Soldado Blindado | 65s | Bombardeio: 28% da vida máxima de cada inimigo em 42 studs. |
 | Batida Cósmica | Pirata Estelar | 65s | Todas as suas torres causam 25% mais dano por 9 s. |
@@ -116,4 +122,10 @@ maestria exigida crescendo por rank e multiplicados pela raridade do herói
 | Trabalho em equipe | Mercenário Tagarela | 65s | Suas torres ganham 20% de dano por 6 s. |
 | Luz da Lua | Cavaleiro Lunar | 65s | Revela e marca: +18% de dano por 6 s. |
 | Supernova ⚡ | Guardião Cósmico | 75s | Explosão: 38% da vida em 30 studs; revela e marca (+12% dano). Chefes resistem. |
+| Indestrutível | Capitão Men | 80s | Um escudo absorve 30 de dano ao núcleo por 12 s e o núcleo recupera 8 de vida. |
+| Construção Esmeralda ⚡ | Sentinela Esmeralda | 80s | ULTIMATE: uma gaiola de energia paralisa por 3 s em 36 studs, puxa os inimigos 10 studs para trás e derrete 30% da armadura. Chefes resistem. |
+| Fúria Solar ⚡ | Titã Solar | 85s | ULTIMATE: uma explosão de calor varre 55 studs: 50% da vida máxima de cada inimigo, atordoa por 2 s e queima 30% em 5 s. Chefes sofrem bem menos. |
+| Supervelocidade ⚡ | Velocista Rubro | 80s | ULTIMATE: o mundo desacelera para a sua equipe. Todas as suas torres atacam 40% mais rápido por 10 s e todos os inimigos andam 50% mais devagar por 6 s. |
+| Laço da Verdade | Amazona Dourada | 60s | Revela camuflados e faz alvos sofrerem +30% de dano por 10 s em 40 studs, e derrete 30% da armadura. |
+| Maremoto | Rei dos Mares | 70s | Uma onda empurra os inimigos 30 studs para trás em 45 studs e os desacelera em 50% depois. Chefes não saem do lugar. |
 

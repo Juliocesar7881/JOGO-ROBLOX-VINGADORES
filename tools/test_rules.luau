@@ -17,7 +17,7 @@ end
 --==============================================================================
 -- Catalog shape
 --==============================================================================
-equal(#Catalog.HeroOrder, 36, "Roster size")
+equal(#Catalog.HeroOrder, 42, "Roster size")
 -- Shouted names keep their accents (string.upper alone produced "BAú LENDáRIO").
 equal(Catalog.Upper("Baú Lendário"), "BAÚ LENDÁRIO", "Accent-aware uppercase")
 equal(Catalog.Upper("Instalação da HYDRA"), "INSTALAÇÃO DA HYDRA", "Cedilla and tilde uppercase")
@@ -35,7 +35,7 @@ equal(#Catalog.EnemyOrder, 23, "Enemy families")
 equal(#Catalog.BossOrder, 6, "Six bosses: one per map, Loki for Asgard")
 equal(#Catalog.ModeOrder, 4, "Campaign, competitive and cards plus training")
 equal(#Catalog.PortalOrder, 4, "Four kinds of portal")
-equal(#Catalog.AbilityOrder, 36, "One ability per hero")
+equal(#Catalog.AbilityOrder, 42, "One ability per hero")
 check(Catalog.Modes.daily == nil and Catalog.Modes.bossrush == nil, "Daily challenge and boss rush are gone")
 check(Catalog.Modes.infinite == nil and Catalog.Modes.hard == nil, "The casual endless and hard modes are gone")
 check(Catalog.Skills == nil and Catalog.Protocols == nil, "The old skill and protocol systems are gone")
@@ -87,8 +87,8 @@ for _, id in Catalog.HeroOrder do
 		equal(product.id, 0, "Unconfigured hero products stay disabled: " .. id)
 	end
 end
-equal(rarityCount.common, 4, "Commons"); equal(rarityCount.rare, 12, "Rares"); equal(rarityCount.epic, 11, "Epics")
-equal(rarityCount.legendary, 6, "Legendaries"); equal(rarityCount.mythic, 3, "Mythics")
+equal(rarityCount.common, 4, "Commons"); equal(rarityCount.rare, 12, "Rares"); equal(rarityCount.epic, 14, "Epics")
+equal(rarityCount.legendary, 8, "Legendaries"); equal(rarityCount.mythic, 4, "Mythics")
 check(Catalog.Heroes.ironman.starter and Catalog.Heroes.hawkeye.starter, "Iron Man and Hawkeye are the starters")
 local starters = 0
 for _, id in Catalog.HeroOrder do if Catalog.Heroes[id].starter then starters += 1 end end

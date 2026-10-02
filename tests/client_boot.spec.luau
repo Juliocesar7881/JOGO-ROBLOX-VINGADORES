@@ -1432,19 +1432,33 @@ local function session(screen)
 		-- leftovers would silently eat the shots this checks for.
 		frames(1 / 30, 60)
 		local shotCovered = { ironman = true, hawkeye = true, spiderman = true }
-		local visualsBefore = #workspace:FindFirstChild("DoomClientVisuals"):GetChildren()
-		local shotIndex = 0
+		local function combatEffects()
+			local count = 0
+			for _, item in ipairs(workspace:FindFirstChild("DoomClientVisuals"):GetChildren()) do
+				if item.Name == "CombatEffect" then count += 1 end
+			end
+			return count
+		end
+		-- The ability effects above may still be fading: wait until the pool is empty.
+		for _ = 1, 40 do
+			if combatEffects() == 0 then break end
+			frames(1 / 30, 15)
+		end
+		local shotIndex, silent = 0, {}
 		for _, heroId in ipairs(Catalog.HeroOrder) do
 			if not shotCovered[heroId] then
 				shotIndex += 1
 				local vfxTowerId = "vfx" .. shotIndex
 				world:MakeTower(vfxTowerId, heroId, v3(70 + shotIndex, 0, 70), LOCAL_ID)
+				local before = combatEffects()
 				fx({ kind = "Shot", from = v3(70 + shotIndex, 4, 70), to = v3(70 + shotIndex, 2, 50), color = Color3.fromRGB(200, 200, 200), towerId = vfxTowerId })
+				frames(1 / 30, 1)
+				if combatEffects() <= before then table.insert(silent, heroId) end
+				-- Let this hero's effects expire so the shared pool never starves the next one.
+				frames(1 / 30, 20)
 			end
 		end
-		frames(1 / 30, 2)
-		local visualsAfter = #workspace:FindFirstChild("DoomClientVisuals"):GetChildren()
-		check(visualsAfter > visualsBefore, tag .. ": every hero's shot VFX actually renders something, not just avoids crashing")
+		check(#silent == 0, tag .. ": every hero's shot VFX actually renders something, not just avoids crashing: silent " .. table.concat(silent, ", "))
 		fx({kind="CardPicked",cardId="sharpen",rarity="common"})
 		fx({kind="EnemyDown",id=4,enemyId="lizard",position=v3(32,0,0),boss=true})
 		fx({ kind = "EnemySync", enemies = { enemies[1] } })

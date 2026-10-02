@@ -122,6 +122,7 @@ function Motion.Hero(joints, pose)
 	local lShoulder, lRoll, lElbow = 0.08, -0.12, 0.18
 	local rShoulder, rRoll, rElbow = 0.08, 0.12, 0.18
 	local waist, neck = 0.03 * breathe, -0.02 * breathe
+	local twist, lift = 0, 0
 	if style == "bow" then
 		lShoulder, lRoll, lElbow = 1.45 * (0.35 + 0.65 * fire), 0, 0
 		rShoulder, rRoll, rElbow = 1.3 * (0.3 + 0.7 * fire), 0.3, 1.9 * fire
@@ -136,6 +137,27 @@ function Motion.Hero(joints, pose)
 		lShoulder, rShoulder = 0.2 + 2.6 * raise, 0.2 + 2.6 * raise
 		lElbow, rElbow = 0.5 + 0.4 * raise, 0.5 + 0.4 * raise
 		waist = waist + (progress > 0.45 and -0.35 * (1 - raise) or 0.12 * raise)
+	elseif style == "punch" then
+		-- Alternating jabs: the side that swings changes with every attack, the other
+		-- fist stays up as a guard and the waist turns into the blow.
+		local leftJab = (pose.count or 0) % 2 == 0
+		if leftJab then
+			lShoulder, lRoll, lElbow = 0.3 + 1.6 * fire, 0.05, 0.9 * (1 - fire)
+			rShoulder, rRoll, rElbow = 0.9, 0.1, 1.4
+		else
+			rShoulder, rRoll, rElbow = 0.3 + 1.6 * fire, -0.05, 0.9 * (1 - fire)
+			lShoulder, lRoll, lElbow = 0.9, -0.1, 1.4
+		end
+		twist = (leftJab and -0.4 or 0.4) * fire
+		waist = waist - 0.08 * fire
+	elseif style == "fly" then
+		-- Hovering: the body floats on a slow bob with the legs trailing; the arms
+		-- reach forward when the heat ray fires.
+		lShoulder, rShoulder = 0.25 + 1.25 * fire, 0.25 + 1.25 * fire
+		lRoll, rRoll = -0.12, 0.12
+		lElbow, rElbow = 0.15, 0.15
+		waist = waist + 0.1
+		lift = 1.25 + 0.18 * sin((pose.t or 0) * 2.2)
 	elseif style == "strike" or style == "slash" then
 		rShoulder, rRoll, rElbow = 0.3 + 1.5 * fire, 0.1 - 0.5 * fire, 0.9 * (1 - fire)
 		lShoulder, lElbow = 0.5, 1.2
@@ -178,19 +200,21 @@ function Motion.Hero(joints, pose)
 	set(joints, "RightShoulder", angles(rShoulder, 0, rRoll))
 	set(joints, "LeftElbow", angles(lElbow, 0, 0))
 	set(joints, "RightElbow", angles(rElbow, 0, 0))
-	set(joints, "Waist", angles(waist, 0, 0))
+	set(joints, "Waist", angles(waist, twist, 0))
 	set(joints, "Neck", angles(neck, 0, 0))
-	-- A slight crouch when landing a heavy blow or bracing a cast.
+	-- A slight crouch when landing a heavy blow or bracing a cast; a flier's legs
+	-- trail behind it instead.
 	local progress = pose.fireProgress or 0
 	local brace = (style == "smash" and progress > 0.45 and fire * 0.35 or 0) + 0.2 * cast
-	set(joints, "LeftHip", angles(brace, 0, -0.05))
-	set(joints, "RightHip", angles(brace, 0, 0.05))
-	set(joints, "LeftKnee", angles(-brace * 1.6, 0, 0))
-	set(joints, "RightKnee", angles(-brace * 1.6, 0, 0))
+	local trail = lift > 0 and 0.35 or 0
+	set(joints, "LeftHip", angles(brace + trail, 0, -0.05))
+	set(joints, "RightHip", angles(brace + trail * 0.8, 0, 0.05))
+	set(joints, "LeftKnee", angles(-brace * 1.6 - trail * 0.2, 0, 0))
+	set(joints, "RightKnee", angles(-brace * 1.6 - trail * 0.3, 0, 0))
 	set(joints, "LeftAnkle", angles(brace * 0.6, 0, 0))
 	set(joints, "RightAnkle", angles(brace * 0.6, 0, 0))
-	-- Breathing lifts the whole figure a little; a brace lowers it.
-	set(joints, "Root", CFrame.new(0, 0.03 * breathe - brace * 0.5, 0))
+	-- Breathing lifts the whole figure a little; a brace lowers it; a flier hovers.
+	set(joints, "Root", CFrame.new(0, 0.03 * breathe - brace * 0.5 + lift, 0))
 end
 
 return Motion

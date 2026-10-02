@@ -4,8 +4,8 @@
 -- any roster. Alone, a ground-only hero would just be blamed for the flyers it can
 -- never hit. Compare each row with the Iron Man baseline: a hero well above it
 -- earns more than its price, one below it is being carried by its partner.
-local unlocked = { campaign = { manhattan = { normal = true, ranked = true } } }
-local MAPS = { "manhattan", "hydra", "wakanda" }
+local unlocked = { campaign = { manhattan = { normal = true, ranked = true }, hydra = { normal = true, ranked = true }, wakanda = { normal = true, ranked = true }, latveria = { normal = true, ranked = true } } }
+local MAPS = Rules.MapsForMode("ranked")
 local rows = {}
 for _, heroId in ipairs(Catalog.HeroOrder) do
 	local hero = Catalog.Heroes[heroId]
@@ -17,7 +17,7 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 	end
 	table.insert(rows, { id = heroId, rarity = hero.rarity, cost = hero.cost, kind = hero.attack, waves = reached / #MAPS })
 end
-print(string.format("%-14s %-10s %5s  %-7s %s", "heroi", "raridade", "custo", "ataque", "ondas (ranked, media de 3 mapas)"))
+print(string.format("%-14s %-10s %5s  %-7s %s", "heroi", "raridade", "custo", "ataque", "ondas (ranked, media dos mapas)"))
 local byRarity = {}
 for _, row in ipairs(rows) do
 	print(string.format("%-14s %-10s %5d  %-7s %5.1f  %s", row.id, row.rarity, row.cost, row.kind, row.waves, string.rep("#", math.floor(row.waves / 2))))

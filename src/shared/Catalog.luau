@@ -539,7 +539,7 @@ Catalog.Abilities = {
 	webField = ability("webField", "slow", "area", 60, { power = 0.5, duration = 5, radius = 28, unit = "pct", color = { 240, 240, 250 } },
 		text("Rede Gigante", "Giant Net"), text("Desacelera inimigos em {power}% por {duration} s em {radius} studs.", "Slows enemies by {power}% for {duration} s within {radius} studs.")),
 	widowBite = ability("widowBite", "reveal", "area", 55, { power = 0.2, duration = 9, radius = 30, unit = "pct", color = { 255, 80, 90 } },
-		text("Marca da Sombra", "Shade's Mark"), text("Revela camuflados e faz alvos sofrerem +{power}% de dano por {duration} s em {radius} studs.", "Reveals hidden enemies and makes targets take +{power}% damage for {duration} s within {radius} studs.")),
+		text("Marca da Viúva", "Widow's Mark"), text("Revela camuflados e faz alvos sofrerem +{power}% de dano por {duration} s em {radius} studs.", "Reveals hidden enemies and makes targets take +{power}% damage for {duration} s within {radius} studs.")),
 	growth = ability("growth", "overdrive", "tower", 45, { power = 0.5, duration = 8, unit = "pct", color = { 255, 150, 90 } },
 		text("Partículas Quânticas", "Quantum Particles"), text("Uma torre sua ataca {power}% mais rápido por {duration} s.", "One of your towers attacks {power}% faster for {duration} s.")),
 	swarmSting = ability("swarmSting", "chain", "area", 50, { power = 0.16, count = 6, radius = 40, unit = "pct", color = { 255, 220, 80 } },
@@ -557,7 +557,7 @@ Catalog.Abilities = {
 		text("Garra da Noite", "Night Claw"), text("Restaura {power} de vida do núcleo e o protege com um escudo de {e1.power} por {e1.duration} s.", "Restores {power} core health and shields it for {e1.power} over {e1.duration} s.")),
 	hulkSmash = ability("hulkSmash", "blast", "area", 60, { power = 0.35, radius = 28, unit = "pct", color = { 110, 220, 80 },
 		extras = { { kind = "stun", duration = 1.8 } } },
-		text("Pedregulho Esmaga!", "Boulder Smash!"), text("Esmagamento: {power}% da vida máxima de cada inimigo em {radius} studs e paralisa por {e1.duration} s.", "Smash: {power}% of each enemy's max health within {radius} studs and stuns for {e1.duration} s.")),
+		text("Gigante Esmaga!", "Giant Smash!"), text("Esmagamento: {power}% da vida máxima de cada inimigo em {radius} studs e paralisa por {e1.duration} s.", "Smash: {power}% of each enemy's max health within {radius} studs and stuns for {e1.duration} s.")),
 	phaseShift = ability("phaseShift", "weaken", "area", 55, { power = 0.45, duration = 10, radius = 40, unit = "pct", color = { 255, 210, 90 },
 		extras = { { kind = "reveal", power = 0.15, duration = 10 } } },
 		text("Fase Densa", "Phase Shift"), text("Reduz a armadura dos inimigos em {power}% por {duration} s em {radius} studs e os marca (+{e1.power}% de dano).", "Reduces enemy armor by {power}% for {duration} s within {radius} studs and marks them (+{e1.power}% damage).")),
@@ -782,6 +782,103 @@ for id,entry in pairs(identities) do
 	end
 end
 
+
+-- The league: six heroes with a kit of their own, each one a nod to a classic
+-- of the genre without borrowing its name. Every one has a unique tower (see
+-- the numbers), two branches at level 5 and an ability no other hero has.
+--   capmen        punches that shove enemies back; steadies himself and his allies
+--   emerald       a ring that builds fists and cages of energy
+--   solartitan    a flier with heat vision and a freezing breath
+--   speedster     jabs so fast the whole team speeds up with him
+--   amazon        a golden lasso that reveals and marks, a sword that cuts armor
+--   seaking       tides that slow and drag the horde back down the road
+local league = {
+	capmen = {
+		id = "capmen", rarity = "epic", ability = "indestructible",
+		name = text("Capitão Men", "Captain Men"), role = text("Socos que empurram, imbatível", "Knockback punches, unbreakable"), cost = 400,
+		description = text("Socos pesados jogam os infectados para trás. Ele e os aliados ao lado nunca são paralisados.", "Heavy punches throw the infected back. He and the allies beside him are never stunned."),
+		damage = 24, range = 17, interval = 0.6, color = { 226, 70, 56 }, attack = "single", damageType = "physical", air = false,
+		armorPierce = 0.12, knockback = 1.5, stunProof = true,
+		branches = {
+			{ name = text("Soco sônico", "Sonic Punch"), description = text("Muito mais dano e empurra bem mais longe.", "Far more damage and a much longer shove."), mods = { mul("damage", 1.4), set("knockback", 3.5) } },
+			{ name = text("Muralha humana", "Human Wall"), description = text("Aliados em 22 studs também ficam imunes a paralisia e a equipe causa mais dano.", "Allies within 22 studs are stun-proof too and the team deals more damage."), mods = { set("stunAura", 22), set("supportBoost", 0.09), add("range", 4) } },
+		},
+	},
+	emerald = {
+		id = "emerald", rarity = "legendary", ability = "emeraldConstruct",
+		name = text("Sentinela Esmeralda", "Emerald Sentinel"), role = text("Construções de energia e controle", "Energy constructs and control"), cost = 600,
+		description = text("O anel cria punhos e correntes de energia que esmagam e seguram grupos inteiros.", "The ring forges fists and chains of energy that crush and hold whole groups."),
+		damage = 30, range = 28, interval = 1.5, color = { 48, 220, 110 }, attack = "splash", damageType = "magic", air = true, splash = 8, slow = 0.25,
+		branches = {
+			{ name = text("Punho gigante", "Giant Fist"), description = text("A construção cobre uma área enorme e bate mais forte.", "The construct covers a huge area and hits harder."), mods = { set("splash", 14), mul("damage", 1.3) } },
+			{ name = text("Gaiola de anel", "Ring Cage"), description = text("Prende os inimigos: lentidão pesada e dano contínuo.", "Traps enemies: heavy slow and damage over time."), mods = { set("attack", "dot"), set("dotDuration", 4), set("slow", 0.5) } },
+		},
+	},
+	solartitan = {
+		id = "solartitan", rarity = "mythic", ability = "solarWrath",
+		name = text("Titã Solar", "Solar Titan"), role = text("Visão de calor e força suprema", "Heat vision and supreme strength"), cost = 800,
+		description = text("Voa sobre o campo e varre a linha inimiga com raios de calor.", "Flies over the field and sweeps the enemy line with heat rays."),
+		damage = 50, range = 32, interval = 1.3, color = { 70, 140, 255 }, attack = "beam", damageType = "tech", air = true, beamWidth = 3,
+		branches = {
+			{ name = text("Visão de calor", "Heat Vision"), description = text("Raio largo que perfura a armadura e queima mais.", "A wide ray that pierces armor and burns harder."), mods = { set("beamWidth", 6), set("armorPierce", 0.5), mul("damage", 1.35) } },
+			{ name = text("Sopro gélido", "Freezing Breath"), description = text("Sopro que congela em área e desacelera forte.", "A breath that freezes an area and slows hard."), mods = { set("attack", "splash"), set("splash", 12), set("slow", 0.45) } },
+		},
+	},
+	speedster = {
+		id = "speedster", rarity = "legendary", ability = "superSpeed",
+		name = text("Velocista Rubro", "Crimson Speedster"), role = text("Golpes ultrarrápidos", "Ultra-fast strikes"), cost = 560,
+		description = text("Uma rajada de golpes tão veloz que parece um só; ótimo contra voadores e alvos ágeis.", "A flurry of strikes so fast it looks like one; great against flyers and agile targets."),
+		damage = 11, range = 24, interval = 0.18, color = { 236, 58, 58 }, attack = "chain", damageType = "physical", air = true, chain = 2,
+		branches = {
+			{ name = text("Rastro de luz", "Light Trail"), description = text("Cada golpe salta por vários inimigos.", "Each strike leaps through several enemies."), mods = { set("chain", 5) } },
+			{ name = text("Barreira do som", "Sound Barrier"), description = text("Ainda mais rápido, perfurando a armadura.", "Faster still, piercing armor."), mods = { mul("interval", 0.6), set("armorPierce", 0.3) } },
+		},
+	},
+	amazon = {
+		id = "amazon", rarity = "epic", ability = "truthLasso",
+		name = text("Amazona Dourada", "Golden Amazon"), role = text("Laço da verdade e espada", "Lasso of truth and sword"), cost = 420,
+		description = text("O laço dourado revela camuflados e marca alvos enquanto o escudo ricocheteia.", "The golden lasso reveals hidden enemies and marks targets while the shield ricochets."),
+		damage = 18, range = 24, interval = 0.9, color = { 244, 190, 60 }, attack = "chain", damageType = "physical", air = false, chain = 3, reveal = true, mark = 0.1,
+		branches = {
+			{ name = text("Espada divina", "Divine Sword"), description = text("Muito mais dano, perfurando a armadura.", "Far more damage, piercing armor."), mods = { mul("damage", 1.5), set("armorPierce", 0.4) } },
+			{ name = text("Laço da verdade", "Truth Lasso"), description = text("Marca mais forte, alcance maior e mais ricochetes.", "A stronger mark, more range and more ricochets."), mods = { set("mark", 0.25), add("range", 6), set("chain", 5) } },
+		},
+	},
+	seaking = {
+		id = "seaking", rarity = "epic", ability = "tidalWave",
+		name = text("Rei dos Mares", "Sea King"), role = text("Marés que atrasam e empurram", "Tides that slow and push"), cost = 430,
+		description = text("Ondas atingem uma área e freiam o avanço dos infectados.", "Waves hit an area and brake the infected's advance."),
+		damage = 19, range = 25, interval = 1.4, color = { 40, 170, 214 }, attack = "splash", damageType = "magic", air = false, splash = 8, slow = 0.25,
+		branches = {
+			{ name = text("Tridente real", "Royal Trident"), description = text("Muito mais dano, e fere chefes.", "Far more damage, and it wounds bosses."), mods = { mul("damage", 1.6), set("bossDamage", 0.4) } },
+			{ name = text("Maremoto", "Tidal Surge"), description = text("Ondas gigantes e lentidão forte.", "Giant waves and a heavy slow."), mods = { set("splash", 14), set("slow", 0.5) } },
+		},
+	},
+}
+for _, id in ipairs({ "capmen", "amazon", "seaking", "emerald", "speedster", "solartitan" }) do
+	Catalog.Heroes[id] = league[id]
+	table.insert(Catalog.HeroOrder, id)
+end
+Catalog.Abilities.indestructible = ability("indestructible", "barrier", "self", 80, { power = 30, duration = 12, unit = "hp", color = { 226, 70, 56 },
+	extras = { { kind = "heal", power = 8 } } },
+	text("Indestrutível", "Unbreakable"), text("Um escudo absorve {power} de dano ao núcleo por {duration} s e o núcleo recupera {e1.power} de vida.", "A shield absorbs {power} core damage for {duration} s and the core recovers {e1.power} health."))
+Catalog.Abilities.emeraldConstruct = ability("emeraldConstruct", "stun", "area", 80, { duration = 3, radius = 36, unit = "pct", color = { 48, 220, 110 }, ultimate = true,
+	extras = { { kind = "pull", power = 10 }, { kind = "weaken", power = 0.3, duration = 7 } } },
+	text("Construção Esmeralda", "Emerald Construct"), text("ULTIMATE: uma gaiola de energia paralisa por {duration} s em {radius} studs, puxa os inimigos {e1.power} studs para trás e derrete {e2.power}% da armadura. Chefes resistem.", "ULTIMATE: an energy cage stuns for {duration} s within {radius} studs, drags enemies back {e1.power} studs and melts {e2.power}% of their armor. Bosses resist."))
+Catalog.Abilities.solarWrath = ability("solarWrath", "blast", "area", 85, { power = 0.5, radius = 55, unit = "pct", color = { 255, 90, 60 }, ultimate = true,
+	extras = { { kind = "stun", duration = 2 }, { kind = "burn", power = 0.3, duration = 5 } } },
+	text("Fúria Solar", "Solar Wrath"), text("ULTIMATE: uma explosão de calor varre {radius} studs: {power}% da vida máxima de cada inimigo, atordoa por {e1.duration} s e queima {e2.power}% em {e2.duration} s. Chefes sofrem bem menos.", "ULTIMATE: a burst of heat sweeps {radius} studs: {power}% of each enemy's max health, stuns for {e1.duration} s and burns {e2.power}% over {e2.duration} s. Bosses take far less."))
+Catalog.Abilities.superSpeed = ability("superSpeed", "rally", "self", 80, { power = 0.4, duration = 10, stat = "speed", unit = "pct", color = { 236, 58, 58 }, ultimate = true,
+	extras = { { kind = "slow", power = 0.5, duration = 6, radius = 200 } } },
+	text("Supervelocidade", "Super Speed"), text("ULTIMATE: o mundo desacelera para a sua equipe. Todas as suas torres atacam {power}% mais rápido por {duration} s e todos os inimigos andam {e1.power}% mais devagar por {e1.duration} s.", "ULTIMATE: the world slows down for your team. All your towers attack {power}% faster for {duration} s and every enemy moves {e1.power}% slower for {e1.duration} s."))
+Catalog.Abilities.truthLasso = ability("truthLasso", "reveal", "area", 60, { power = 0.3, duration = 10, radius = 40, unit = "pct", color = { 244, 190, 60 },
+	extras = { { kind = "weaken", power = 0.3, duration = 8 } } },
+	text("Laço da Verdade", "Lasso of Truth"), text("Revela camuflados e faz alvos sofrerem +{power}% de dano por {duration} s em {radius} studs, e derrete {e1.power}% da armadura.", "Reveals hidden enemies and makes targets take +{power}% damage for {duration} s within {radius} studs, and melts {e1.power}% of their armor."))
+Catalog.Abilities.tidalWave = ability("tidalWave", "pull", "area", 70, { power = 30, radius = 45, unit = "studs", color = { 40, 170, 214 },
+	extras = { { kind = "slow", power = 0.5, duration = 5 } } },
+	text("Maremoto", "Tidal Wave"), text("Uma onda empurra os inimigos {power} studs para trás em {radius} studs e os desacelera em {e1.power}% depois. Chefes não saem do lugar.", "A wave drives enemies back {power} studs within {radius} studs, then slows them {e1.power}%. Bosses hold their ground."))
+for _, id in ipairs({ "indestructible", "emeraldConstruct", "solarWrath", "superSpeed", "truthLasso", "tidalWave" }) do table.insert(Catalog.AbilityOrder, id) end
+
 -- Personal outposts support the shared core. Income is match Gold, never
 -- lobby Gold. Each has five match-only levels, bought with match Gold.
 Catalog.BaseOrder={"outpost","workshop","garden","bunker","arsenal","barracks","reactor","citadel","carrier","sanctum","worldtree"}
@@ -855,7 +952,7 @@ Catalog.Products = {
 		-- Once per account: an epic hero and Gold. Bought again (a second
 		-- prompt racing the first), it is paid in Gold instead of the hero.
 		starterPack = { id = 0, price = 99, gold = 5000, heroId = "hulk", repeatGold = 2500, name = text("Pacote Inicial", "Starter Pack"),
-			description = text("Uma vez por conta: Pedregulho (épico) + 5.000 de Ouro.", "Once per account: Boulder (epic) + 5,000 Gold.") },
+			description = text("Uma vez por conta: Gigante Furioso (épico) + 5.000 de Ouro.", "Once per account: Raging Giant (epic) + 5,000 Gold.") },
 	},
 	-- One product per purchasable hero, priced by rarity. The two starter
 	-- heroes are free and never sold.

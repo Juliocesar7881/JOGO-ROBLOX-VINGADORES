@@ -587,6 +587,12 @@ function Match:_attack(tower, stats)
 			enemy.dot={untilTime=self.elapsed+(stats.dotDuration or 3),damage=stats.damage*0.2,tower=tower,stats=stats,nextTick=self.elapsed+1}
 		end
 		self:_damage(enemy,stats.damage*(1+boost),tower,stats)
+		-- A punch with weight: the enemy is shoved back along the road, at most once
+		-- every 0.8 s so a fast puncher never pins it in place, and never a boss.
+		if (stats.knockback or 0)>0 and enemy.hp>0 and not enemy.def.boss and (enemy.knockUntil or 0)<=self.elapsed then
+			enemy.progress=math.max(0,enemy.progress-stats.knockback)
+			enemy.knockUntil=self.elapsed+0.8
+		end
 	end
 	local c=self.catalog.Heroes[tower.heroId].color
 	-- The figure's own chest when the world knows it; otherwise the old heights.
@@ -656,10 +662,24 @@ function Match:_hazardStep(dt)
 	state.center = nil
 end
 
+-- A tower that cannot be stunned, or that stands within the steadying aura of
+-- one that can hold the line for its allies.
+function Match:_stunProof(tower)
+	local own=self:_baseStats(tower)
+	if own.stunProof then return true end
+	for _,ally in pairs(self.towers) do
+		if ally.id~=tower.id then
+			local stats=self:_baseStats(ally)
+			if (stats.stunAura or 0)>0 and distanceXZ(ally.position,tower.position)<=stats.stunAura then return true end
+		end
+	end
+	return false
+end
+
 function Match:_stunTowers(center, radius, seconds)
 	local ids={}
 	for _,t in pairs(self.towers) do
-		if distanceXZ(t.position,center)<radius then t.stunnedUntil=self.elapsed+seconds table.insert(ids,t.id) end
+		if distanceXZ(t.position,center)<radius and not self:_stunProof(t) then t.stunnedUntil=self.elapsed+seconds table.insert(ids,t.id) end
 	end
 	if #ids>0 then self:_fx({kind="TowersStunned",towerIds=ids,duration=seconds}) end
 end
