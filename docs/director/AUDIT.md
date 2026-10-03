@@ -60,3 +60,28 @@ e a leitura do código. Notas 0–5; "TTD" é a referência. Honesta de propósi
 4. **Produtos de Robux** — dono aceita os termos; o diretor cria o resto.
 
 Tudo que não depende disso virou fila: ver `BACKLOG.md`, seção M12.
+
+# Revisão crítica — 03/10/2026 (depois do feedback do dono)
+
+Mesma régua 0–5, mesma honestidade. O que mudou desde a revisão de 02/10:
+
+| Área | Antes | Agora | Por quê |
+|---|---|---|---|
+| Lobby | 4 | **4,5** | Árvores com copa e textura, canteiros de verdade, funcionários da agência articulados que respiram, brasões desenhados nas mesas (sem emoji). Ainda é um hub de ilhas pequeno: sem sala de coleção. |
+| Primeiros 60 s | 4 | **4** | Igual; falta só ver com um novato real. |
+| Partida (leitura) | 4 | **4,5** | Ficha do comandante (talentos, base, cartas), inspetor de inimigo, ícones desenhados no lugar de emoji, tela final sem rolagem. |
+| Combate (sensação) | 3,5 | **4** | Heróis novos com mecânica própria (minas, empurrão, cura que desgasta), inimigos que mexem na partida (Gosmento racha, Sabotador paralisa torres), corrida e pulo duplo no lobby e nas partidas. |
+| Variedade de heróis | 4 | **4,5** | 43 heróis; 7 jogam de forma inédita. Balanço corrigido: dois líderes de cura chegavam a 63 ondas (vs ~22). |
+| Progressão | 4 | **4,5** | Árvore de talentos compacta e legível (favo de ícones), ímã global no fim da trilha de Fortuna; abertura de baú e página do herói com o herói em movimento. |
+| Monetização | 3 | **3** | Loja com MELHOR VALOR / MAIS POPULAR e Ouro por R$; produtos reais ainda dependem dos termos do Creator Hub. |
+| Áudio | 2 | **3,5** | 27 sons originais no jogo (26 tocam; a trilha de batalha aguarda moderação e o lobby a cobre). Nota presa em 3,5 porque ninguém ouviu o jogo ainda: mixagem e qualidade musical só com ouvido humano. |
+| Celular | 3 | **3** | Layouts testados em 9 telas e em inglês, botão de correr nativo do Roblox; nada tocado num aparelho real. |
+| Marca/IP | 2 | **2** | Inalterado: decisão do dono. |
+| Social/retenção | 3 | **3** | Inalterado. |
+
+## O que ainda trava uma nota 5
+1. Aparelho real (toque, desempenho, teleporte) e ouvidos humanos para o áudio.
+2. Termos do Creator Hub: produtos de Robux (7 heróis + passe + VIP) e ícone/miniaturas da experiência.
+3. Decisão de IP dos visuais.
+4. Um grupo de jogadores reais para o ritmo dos primeiros minutos e o equilíbrio do competitivo.
+
