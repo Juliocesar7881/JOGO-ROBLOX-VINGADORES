@@ -80,9 +80,14 @@ function Inspect:_refresh(record)
 end
 
 function Inspect:Step(dt)
-	if not self.card or self.pinned then return end
-	local record = self.ctx.effects.enemies[self.id]
+	if not self.card then return end
 	local state = self.ctx.state()
+	-- Even a pinned card (the screen review) goes when the match is over.
+	if self.pinned then
+		if not state or state.phase == "Lobby" or state.phase == "Results" then self:Hide() end
+		return
+	end
+	local record = self.ctx.effects.enemies[self.id]
 	self.left -= dt
 	if not record or self.left <= 0 or not state or state.phase == "Lobby" or state.phase == "Results" then
 		self:Hide()
