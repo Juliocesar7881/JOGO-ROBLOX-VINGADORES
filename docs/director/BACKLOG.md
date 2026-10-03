@@ -66,6 +66,8 @@ novos entram na seção certa com a evidência (captura, teste, minuto do TTD).
 - [x] M7.1 (03/10: os 27 WAVs enviados pelo Gerenciador de ativos do Studio com `tools/studio_upload_audio.py`; IDs em `assets/audio/uploads.json` e `Config.Audio`; 26 tocam, `battle` aguarda a moderação do Roblox e enquanto isso a música do lobby cobre) Enviar WAVs; IDs no `Config.Audio`.
   - Notas 01/10: Chrome desconectado e Creator Hub parado nos termos; `CreateAssetAsync` indisponível no Studio 0.741 (ver LOG 18:20). Ferramenta pronta: `tools/studio_file_dialog.ps1` (responde ao diálogo Import File). Ordem de importância: click, place, upgrade, wave, chest, collect, victory, defeat, boss, ability, levelUp, open, breach, shot*, depois música (lobby, battle) e ambientes.
 
+- [ ] M7.2 Conferir a trilha `battle` (ID 138426860300125): em 03/10 respondia `AssetDelivery403Moderated` (moderação do Roblox pendente ou negada). Como conferir: partida de teste (`studio_review.py --keep-playing live`) e um `Sound` com esse ID + `ContentProvider:PreloadAsync` (ver LOG 03/10 01:20). Se ainda falhar 24 h depois, regenerar a trilha com outra semente/andamento (`tools/generate_audio.py`), atualizar `assets/audio/manifest.json` e reenviar com `python tools/studio_upload_audio.py --window-handle <hwnd> battle` (abrir Janela > Gerenciador de ativos e a fila de importação antes), atualizando `assets/audio/uploads.json` e `Config.Audio.battle`.
+
 ## M8 — Primeiros 5 minutos
 - [x] M8.1 Novato: um botão "COMEÇAR TREINO", treino 12 ondas, baú grátis guiado.
 
