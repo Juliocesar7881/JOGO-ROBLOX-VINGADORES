@@ -1160,7 +1160,7 @@ local function renderMatch()
 	if state.match and state.match.cardMode then
 		refs.cardsButton = UI.secondary(abilities, T("CARTAS", "CARDS"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = C.violet})
 	end
-	refs.autoSkipToggle = UI.secondary(abilities, "AUTO", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 12 + cd, Font = Enum.Font.GothamBlack})
+	refs.autoSkipToggle = UI.secondary(abilities, "AUTO\nOFF", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11 + cd, Font = Enum.Font.GothamBlack})
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
 	UI.list(cards, 7, true)
@@ -1220,7 +1220,7 @@ updateMatch = function()
 		end
 	end
 	if refs.autoSkipToggle then
-		refs.autoSkipToggle.Text = match.autoSkip and "AUTO ✓" or "AUTO"
+		refs.autoSkipToggle.Text = "AUTO\n" .. (match.autoSkip and "ON" or "OFF")
 		refs.autoSkipToggle.BackgroundColor3 = match.autoSkip and C.green or C.card
 		refs.autoSkipToggle.TextColor3 = match.autoSkip and C.background or C.text
 	end

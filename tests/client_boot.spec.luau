@@ -1239,7 +1239,7 @@ local function session(screen)
 		check(asked("SetAutoSkip"), tag .. ": pressing AUTO asks the server")
 		push(matchSnapshot(profile, "Wave", { speed = 2, speedVote = 2, speedVotes = 1, autoSkip = true }))
 		check(string.find(named(gui, "SpeedToggle").Text, "2x", 1, true) ~= nil, tag .. ": the 2x button shows 2x once the server says so")
-		check(string.find(named(gui, "AutoSkipToggle").Text, "✓", 1, true) ~= nil, tag .. ": auto-skip shows it is on")
+		check(string.find(named(gui, "AutoSkipToggle").Text, "ON", 1, true) ~= nil, tag .. ": auto-skip shows it is on")
 		push(matchSnapshot(profile, "Wave", { speed = 1, speedVote = 2, speedVotes = 1, partySize = 2, autoSkip = false }))
 		check(string.find(named(gui, "SpeedToggle").Text, "1/2", 1, true) ~= nil,
 			tag .. ": in a duo the toggle shows the vote still waiting, got " .. named(gui, "SpeedToggle").Text)

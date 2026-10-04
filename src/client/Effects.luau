@@ -651,6 +651,105 @@ function Effects:_groundImpact(position, color, radius)
 	if effect then effect.growFrom, effect.growTo = radius, radius * 2 end
 end
 
+-- A column of light standing on the ground that narrows as it fades.
+function Effects:_column(position, tint, height, width, duration, fade)
+	local effect = self:_effect(Vector3.new(height, width, width), CFrame.new(position + Vector3.new(0, height / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2), tint, duration, Enum.PartType.Cylinder, fade or 0.45)
+	if effect then effect.growFrom, effect.growTo = width, width * 0.3 end
+	return effect
+end
+
+-- A flat ring on the ground that swells (or, with from > to, closes in).
+function Effects:_ring(position, tint, from, to, duration, thickness)
+	local center = Vector3.new(position.X, 0.22, position.Z)
+	local effect = self:_effect(Vector3.new(thickness or 0.2, from, from), CFrame.new(center) * CFrame.Angles(0, 0, math.pi / 2), tint, duration, Enum.PartType.Cylinder, 0.3)
+	if effect then effect.growFrom, effect.growTo = from, to end
+	return effect
+end
+
+-- A see-through bubble that swells over the spot.
+function Effects:_dome(position, tint, radius, duration)
+	local effect = self:_effect(Vector3.one * radius, CFrame.new(position + Vector3.new(0, 1, 0)), tint, duration, Enum.PartType.Ball, 0.7)
+	if effect then effect.ballFrom, effect.ballTo = radius * 0.5, radius * 2 end
+	return effect
+end
+
+-- A bolt from the sky to a point, in three jagged pieces.
+function Effects:_bolt(point, tint, width)
+	local top = point + Vector3.new(0, 18, 0)
+	local previous = top
+	for step = 1, 3 do
+		local stop = step == 3 and point or (top:Lerp(point, step / 3) + Vector3.new(((step * 37 + self.shotSerial * 13) % 7 - 3) * 0.5, 0, ((step * 53 + self.shotSerial * 7) % 7 - 3) * 0.5))
+		self:_line(previous, stop, tint:Lerp(Color3.new(1, 1, 1), 0.5), width, 0.28)
+		previous = stop
+	end
+	self:_impact(point + Vector3.new(0, 0.6, 0), tint, width * 5)
+end
+
+-- One signature per kind of power, from the shared pool of short primitives: a
+-- ring, a column, a dome, streaks. Each power costs a handful of parts, and none
+-- of them is drawn under reduced effects.
+function Effects:_abilityVisual(kind, position, radius, tint)
+	self.shotSerial += 1
+	local ground = Vector3.new(position.X, 0.3, position.Z)
+	local function around(count, scale, build)
+		for index = 1, count do
+			local angle = index * math.pi * 2 / count + self.shotSerial * 0.3
+			build(ground + Vector3.new(math.cos(angle) * radius * scale, 0, math.sin(angle) * radius * scale), angle)
+		end
+	end
+	if kind == "blast" or kind == "smite" or kind == "execute" then
+		self:_column(ground, tint:Lerp(Color3.new(1, 1, 1), 0.35), 30, radius * 0.7, 0.5)
+		self:_ring(ground, tint, radius * 0.4, radius * 2.2, 0.45, 0.3)
+		self:_ring(ground, tint:Lerp(Color3.new(1, 1, 1), 0.5), radius * 0.2, radius * 1.4, 0.3, 0.2)
+		self:_groundImpact(position, tint, radius)
+		self:_impact(position + Vector3.new(0, 2, 0), tint, radius * 0.7)
+		self:_sparks(ground + Vector3.new(0, 1, 0), tint, 8, radius * 1.1)
+	elseif kind == "heal" or kind == "barrier" or kind == "rally" or kind == "shield" then
+		self:_dome(ground, tint, radius, 0.7)
+		for index = 1, 3 do
+			self:_effect(Vector3.new(0.12, radius * 1.5, radius * 1.5), CFrame.new(ground + Vector3.new(0, index * 2, 0)) * CFrame.Angles(0, 0, math.pi / 2), tint, 0.5, Enum.PartType.Cylinder, 0.8)
+		end
+		around(6, 0.7, function(at)
+			local streak = self:_effect(Vector3.new(0.14, 0.14, 1.6), CFrame.lookAt(at, at + Vector3.new(0, 1, 0)), tint:Lerp(Color3.new(1, 1, 1), 0.4), 0.7, nil, 0.2)
+			if streak then streak.from, streak.to, streak.arrow = at, at + Vector3.new(0, 7, 0), true end
+		end)
+	elseif kind == "slow" then
+		self:_ring(ground, tint, radius * 0.5, radius * 2, 0.7, 0.2)
+		around(8, 0.7, function(at) self:_line(at, at + Vector3.new(0, 4.5, 0), tint:Lerp(Color3.new(1, 1, 1), 0.45), 0.4, 0.9) end)
+		around(8, 0.35, function(at) self:_line(at, at + Vector3.new(0, 2.6, 0), tint, 0.3, 0.9) end)
+	elseif kind == "stun" or kind == "chain" then
+		self:_ring(ground, tint, radius * 0.4, radius * 2, 0.35, 0.2)
+		around(4, 0.6, function(at) self:_bolt(at, tint, 0.22) end)
+	elseif kind == "reveal" then
+		self:_ring(ground, tint, radius * 0.4, radius * 2.2, 0.6, 0.18)
+		self:_ring(ground, tint:Lerp(Color3.new(1, 1, 1), 0.5), radius * 1.2, radius * 2.6, 0.8, 0.14)
+		self:_column(ground, tint, 12, radius * 0.4, 0.6, 0.7)
+	elseif kind == "pull" or kind == "push" then
+		local inward = kind == "pull"
+		self:_ring(ground, tint, inward and radius * 2.2 or radius * 0.4, inward and radius * 0.4 or radius * 2.2, 0.5, 0.25)
+		around(8, 1, function(at)
+			local a, b = at + Vector3.new(0, 0.8, 0), ground + Vector3.new(0, 0.8, 0)
+			local from, to = inward and a or b, inward and b or a
+			local streak = self:_effect(Vector3.new(0.18, 0.18, 2.2), CFrame.lookAt(from, to), tint, 0.5, nil, 0.15)
+			if streak then streak.from, streak.to, streak.arrow = from, to, true end
+		end)
+	elseif kind == "burn" then
+		self:_ring(ground, tint, radius * 0.5, radius * 1.8, 0.5, 0.2)
+		around(7, 0.6, function(at) self:_column(at, Color3.fromRGB(255, 150, 60), 5 + (self.shotSerial % 3), 1.7, 0.7, 0.4) end)
+	elseif kind == "weaken" then
+		self:_ring(ground, tint, radius * 2.4, radius * 0.4, 0.6, 0.3)
+		self:_dome(ground, tint:Lerp(Color3.new(0, 0, 0), 0.35), radius, 0.7)
+	elseif kind == "frenzy" then
+		self:_ring(ground, tint, radius * 0.3, radius * 1.6, 0.3, 0.2)
+		self:_ring(ground, tint:Lerp(Color3.new(1, 1, 1), 0.4), radius * 0.3, radius * 2.2, 0.5, 0.2)
+		self:_sparks(ground + Vector3.new(0, 1, 0), tint, 6, radius)
+	else
+		self:_ring(ground, tint, radius * 0.4, radius * 2, 0.5, 0.2)
+		self:_column(ground, tint, 16, radius * 0.5, 0.5)
+		self:_sparks(ground + Vector3.new(0, 1, 0), tint, 6, radius)
+	end
+end
+
 -- The full-screen beat of an ultimate (only this client's view): saturation and
 -- brightness fall, then recover over about a second.
 function Effects:_ultimateGrade(tint)
@@ -1128,29 +1227,12 @@ function Effects:Handle(event)
 		if event.ultimate and not lowFX then self:_ultimateGrade(tint) end
 		if typeof(event.position)=="Vector3" then
 			self:Handle({kind="Pulse",position=event.position,color=event.color,radius=math.max(event.radius or 0,5),duration=math.clamp(event.duration or 0.5,0.5,6)})
-			if not lowFX then
-				local radius=math.max(event.radius or 0,5)
-				if kind=="blast" or kind=="smite" or kind=="execute" then
-					self:_groundImpact(event.position,tint,radius)
-					self:_impact(event.position+Vector3.new(0,2,0),tint,4)
-				elseif kind=="heal" or kind=="barrier" or kind=="rally" then
-					for i=1,3 do
-						self:_effect(Vector3.new(0.12,radius*1.5,radius*1.5),CFrame.new(event.position+Vector3.new(0,i*2,0))*CFrame.Angles(0,0,math.pi/2),tint,0.45,Enum.PartType.Cylinder,0.8)
-					end
-				end
-				for i=1,6 do
-					local a=i*math.pi/3
-					local at=event.position+Vector3.new(math.cos(a)*radius*0.65,0.5,math.sin(a)*radius*0.65)
-					if kind=="slow" or kind=="stun" or kind=="reveal" then
-						self:_line(event.position+Vector3.new(0,0.5,0),at,tint,0.1,0.7)
-					else self:_line(at+Vector3.new(0,12,0),at,tint,0.17,0.35) end
-				end
-			end
+			if not lowFX then self:_abilityVisual(kind,event.position,math.max(event.radius or 0,5),tint) end
 		end
 		if event.ultimate and typeof(event.position)=="Vector3" then self:_ultimateBurst(event,tint,lowFX) end
 		for i,point in ipairs(event.points or {}) do
 			if i>(lowFX and 2 or 12) then break end
-			if typeof(point)=="Vector3" then self:_line(point+Vector3.new(0,15,0),point,UI.color(event.color),0.3,0.4) end
+			if typeof(point)=="Vector3" then self:_bolt(point,UI.color(event.color),0.26) end
 		end
 		if self.audio then self.audio:Cue("ability",0.35) end
 		return
