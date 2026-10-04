@@ -70,7 +70,7 @@ function CardArt.rows(Rules, def, owned, T, copies)
 		end
 	end
 	local instant = def.instant or {}
-	if instant.energy then table.insert(rows, { icon = "bank", color = GOLD, label = T("OURO DA PARTIDA", "MATCH GOLD"), text = "+" .. instant.energy, good = true }) end
+	if instant.energy then table.insert(rows, { icon = "bank", color = GOLD, label = T("OURO", "GOLD"), text = "+" .. instant.energy, good = true }) end
 	if instant.heal then table.insert(rows, { icon = "heart", color = RED, label = T("VIDA DA BASE", "BASE HEALTH"), text = "+" .. instant.heal, good = true }) end
 	if instant.maxHealth then table.insert(rows, { icon = "heart", color = RED, label = T("VIDA MÁXIMA", "MAX HEALTH"), text = "+" .. instant.maxHealth, good = true }) end
 	if instant.gamble then table.insert(rows, { icon = "dice", color = CREAM, label = T("50% GANHA / 50% PERDE", "50% WIN / 50% LOSE"), text = "+600 / -200", good = true, mixed = true }) end

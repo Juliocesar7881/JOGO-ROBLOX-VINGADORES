@@ -3258,7 +3258,7 @@ function World:BuildHeroTower(lobby)
 	title.TextColor3, title.Text, title.Parent = HQ.gold, "TORRE DOS HERÓIS", gui
 	title:SetAttribute("LobbyTextPT", "TORRE DOS HERÓIS"); title:SetAttribute("LobbyTextEN", "HEROES TOWER")
 	-- The Robux kiosks' title floats over the left row of stands.
-	Kit.floatText(model, "StarkShopTitle", V(HUB.X - 27, GROUND_Y + 12.5, HUB.Z + LAYOUT.kioskDz), "LOJA DE FERRO", "IRON SHOP", HQ.gold, 26)
+	Kit.floatText(model, "StarkShopTitle", V(HUB.X - 27, GROUND_Y + 20, HUB.Z + LAYOUT.kioskDz), "LOJA DE FERRO", "IRON SHOP", HQ.gold, 26)
 	return model
 end
 
@@ -3356,6 +3356,9 @@ function World:BuildServiceDesks(lobby)
 			text:SetAttribute("LobbyTextEN", '<font color="#8fd07a">MISSIONS</font>\n<font size="17" color="#b8cdd8">TAP OR PRESS E</font>')
 			text.Text = text:GetAttribute("LobbyTextPT")
 		else
+			-- The hall of fame is rich text: a gold title, a small subtitle and one
+			-- coloured line per place (see UpdateLeaderboardBoard).
+			text.RichText = true
 			self.leaderboardText = text
 		end
 	end
@@ -4241,12 +4244,15 @@ end
 -- rather than trying to be personal to whoever is looking at it.
 function World:UpdateLeaderboardBoard(rows, mapName)
 	if not self.leaderboardText then return end
-	local lines = { "SALÃO DA FAMA", upper(mapName or "MANHATTAN") .. " • SOLO" }
+	local lines = { '<font color="#FFC440">SALÃO DA FAMA</font>', '<font color="#9FD8FF">' .. upper(mapName or "MANHATTAN") .. " • SOLO</font>" }
+	local MEDALS = { "#FFC440", "#D8E0EA", "#E09A5B", "#8FE0A8", "#8FE0A8" }
 	for index, row in ipairs(rows or {}) do
 		if index > 5 then break end
-		table.insert(lines, string.format("#%d  %s — %d", row.rank, row.name or tostring(row.userId), row.waves))
+		-- A name is shown as text, never as rich-text markup.
+		local shown = string.gsub(tostring(row.name or row.userId), "[<>&]", "")
+		table.insert(lines, string.format('<font color="%s">#%d  %s — %d</font>', MEDALS[index] or "#FFFFFF", row.rank, shown, row.waves))
 	end
-	if #(rows or {}) == 0 then table.insert(lines, "Seja o primeiro a deixar sua marca.") end
+	if #(rows or {}) == 0 then table.insert(lines, '<font color="#B8CDD8">Seja o primeiro a deixar sua marca.</font>') end
 	self.leaderboardText.Text = table.concat(lines, "\n")
 end
 
