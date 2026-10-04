@@ -5,6 +5,7 @@
 -- only shows them, and points at the one thing a match does allow, upgrading
 -- the base with the match's own Gold. Pure presentation: nothing here asks the
 -- server for anything.
+local CardArt = require(script.Parent:WaitForChild("CardArt"))
 local Sheet = {}
 Sheet.__index = Sheet
 
@@ -57,7 +58,7 @@ function Sheet:_tabs()
 	local tabs = {
 		{ id = "talents", label = T("TALENTOS", "TALENTS") },
 	}
-	if match and match.cardMode and #(match.cards or {}) > 0 then table.insert(tabs, { id = "cards", label = T("CARTAS", "CARDS") }) end
+	if match and match.cardMode then table.insert(tabs, { id = "cards", label = T("CARTAS", "CARDS") }) end
 	return tabs
 end
 
@@ -117,7 +118,7 @@ end
 
 function Sheet:_cardsTab(body, match)
 	local ctx = self.ctx
-	local UI, C, T, L, Catalog = ctx.UI, ctx.C, ctx.T, ctx.L, ctx.Catalog
+	local UI, C, T, L, Catalog, Rules = ctx.UI, ctx.C, ctx.T, ctx.L, ctx.Catalog, ctx.Rules
 	-- match.cards lists one id per stack: tally them.
 	local counts, ids = {}, {}
 	for _, id in ipairs(match.cards or {}) do
@@ -127,13 +128,29 @@ function Sheet:_cardsTab(body, match)
 		end
 	end
 	table.sort(ids)
-	UI.label(body, T("Cartas escolhidas nesta partida.", "Cards picked in this match."), { Size = UDim2.new(1, -8, 0, 24), TextSize = 13, TextColor3 = C.muted, ZIndex = 48 })
+	if #ids == 0 then
+		UI.label(body, T("Nenhuma carta ainda. Você escolhe uma a cada 5 ondas.", "No cards yet. You pick one every 5 waves."), { Name = "NoCardsYet", Size = UDim2.new(1, -8, 0, 54), TextSize = 17, TextColor3 = C.muted, TextWrapped = true, ZIndex = 48 })
+		return
+	end
+	-- Totals first: what the whole deck does to you, green or red.
+	UI.label(body, T("SEU TOTAL", "YOUR TOTAL"), { Size = UDim2.new(1, -8, 0, 28), TextSize = 20, Font = UI.Fonts.display, TextColor3 = C.gold, ZIndex = 48 })
+	local totals = UI.frame(body, { Name = "CardTotals", Size = UDim2.new(1, -8, 0, 10), BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.Y })
+	UI.list(totals, 5)
+	CardArt.totalRows(UI, Rules, T, totals, match.cards, 32, 17, 20, 0)
+	UI.label(body, T("CARTAS ESCOLHIDAS", "CARDS TAKEN"), { Size = UDim2.new(1, -8, 0, 32), TextSize = 20, Font = UI.Fonts.display, TextColor3 = C.gold, ZIndex = 48 })
 	for _, id in ipairs(ids) do
 		local def = Catalog.Cards[id]
 		local count = counts[id]
-		local row = UI.roundFrame(body, { Name = "SheetCard_" .. id, Size = UDim2.new(1, -8, 0, 62), BackgroundColor3 = C.card, ZIndex = 48 })
-		UI.label(row, L(def.name) .. (count > 1 and ("  ×" .. count) or ""), { Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 0, 24), TextSize = 16, Font = UI.Fonts.display, TextColor3 = C.gold, ZIndex = 49 })
-		UI.label(row, L(def.description), { Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 28), TextSize = 12, TextWrapped = true, TextColor3 = C.text, ZIndex = 49 })
+		local rarity = Catalog.Rarities[def.rarity]
+		local tint = rarity and UI.color(rarity.color) or C.violet
+		local rows = CardArt.rows(Rules, def, {}, T, count)
+		local height = 70 + math.max(0, #rows - 1) * 34
+		local row = UI.roundFrame(body, { Name = "SheetCard_" .. id, Size = UDim2.new(1, -8, 0, height), BackgroundColor3 = tint:Lerp(C.card, 0.8), ZIndex = 48 }, tint)
+		CardArt.medallion(UI, row, def, tint, 54, { Position = UDim2.fromOffset(10, 8), ZIndex = 49 })
+		UI.label(row, L(def.name) .. (count > 1 and ("  ×" .. count) or ""), { Position = UDim2.fromOffset(74, 6), Size = UDim2.new(1, -86, 0, 28), TextSize = 20, Font = UI.Fonts.display, TextColor3 = tint:Lerp(C.text, 0.4), ZIndex = 49 })
+		for index, effect in ipairs(rows) do
+			CardArt.chip(UI, row, effect, 220, 30, 15, 49).Position = UDim2.fromOffset(74, 36 + (index - 1) * 34)
+		end
 	end
 end
 

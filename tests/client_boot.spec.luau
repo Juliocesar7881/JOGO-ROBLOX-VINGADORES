@@ -1170,15 +1170,20 @@ local function session(screen)
 
 	step("2x speed and auto-skip sit in the action band and send votes", function()
 		local speed, auto = named(gui, "SpeedToggle"), named(gui, "AutoSkipToggle")
-		check(speed ~= nil and shown(speed, gui) and string.find(speed.Text, "1x", 1, true) ~= nil,
-			tag .. ": the speed toggle is visible and starts at 1x, got " .. tostring(speed and speed.Text))
+		check(speed ~= nil and shown(speed, gui) and string.find(speed.Text, "2x", 1, true) ~= nil,
+			tag .. ": the 2x button is visible, got " .. tostring(speed and speed.Text))
+		local three = named(gui, "Speed3Toggle")
+		check(three ~= nil and shown(three, gui) and string.find(three.Text, "3x", 1, true) ~= nil, tag .. ": 3x is a button of its own")
+		check(string.find(three.Text, "PASSE", 1, true) ~= nil, tag .. ": without the pass the 3x button says it needs one")
+		clickNamed("Speed3Toggle")
+		check(not asked("SetSpeed"), tag .. ": 3x without the pass never asks the server for 3x")
 		check(auto ~= nil and shown(auto, gui), tag .. ": the auto-skip toggle is visible")
 		clickNamed("SpeedToggle")
 		check(asked("SetSpeed"), tag .. ": pressing 2x asks the server")
 		clickNamed("AutoSkipToggle")
 		check(asked("SetAutoSkip"), tag .. ": pressing AUTO asks the server")
 		push(matchSnapshot(profile, "Wave", { speed = 2, speedVote = 2, speedVotes = 1, autoSkip = true }))
-		check(string.find(named(gui, "SpeedToggle").Text, "2x", 1, true) ~= nil, tag .. ": the toggle shows 2x once the server says so")
+		check(string.find(named(gui, "SpeedToggle").Text, "2x", 1, true) ~= nil, tag .. ": the 2x button shows 2x once the server says so")
 		check(string.find(named(gui, "AutoSkipToggle").Text, "✓", 1, true) ~= nil, tag .. ": auto-skip shows it is on")
 		push(matchSnapshot(profile, "Wave", { speed = 1, speedVote = 2, speedVotes = 1, partySize = 2, autoSkip = false }))
 		check(string.find(named(gui, "SpeedToggle").Text, "1/2", 1, true) ~= nil,
@@ -1769,6 +1774,39 @@ local function session(screen)
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, KeyCode = Enum.KeyCode.Unknown, Position = v3(5, 5, 0) }, false)
 		flush()
 		check(asked("CastSkill"), tag .. ": leader area ability is cast on the click, without a confirmation")
+	end)
+
+	-- A card reads like a card: a medallion, one bar per effect with the number
+	-- green when it helps and red when it costs, and your running totals in a
+	-- corner; the cards have a button of their own.
+	step("cards have a medallion, green and red numbers, totals and a button", function()
+		local function same(a, b) return a ~= nil and math.abs(a.R - b.R) + math.abs(a.G - b.G) + math.abs(a.B - b.B) < 0.01 end
+		local deck = { cardMode = true, cards = { "sharpen", "sharpen" }, cardOffers = { "glassCannon", "sharpen", "supplyDrop" } }
+		push(lobbySnapshot(profile))
+		push(matchSnapshot(profile, "Preparing", deck))
+		check(named(gui, "CardsButton") ~= nil and shown(named(gui, "CardsButton"), gui), tag .. ": the cards mode has a CARDS button")
+		local cardCard = named(overlays, "Card_glassCannon")
+		check(cardCard ~= nil, tag .. ": an offered card is drawn as a card")
+		check(cardCard ~= nil and named(cardCard, "CardMedallion") ~= nil, tag .. ": with a medallion")
+		-- Glass Cannon: +35% damage (green), -15% range (red).
+		local greens, reds = 0, 0
+		for _, item in ipairs(cardCard and cardCard:GetDescendants() or {}) do
+			if item.Name == "EffectValue" then
+				if string.sub(item.Text, 1, 1) == "+" then greens += 1; check(same(item.TextColor3, UILayout.Colors.green), tag .. ": a gain is green") end
+				if string.sub(item.Text, 1, 1) == "-" then reds += 1; check(same(item.TextColor3, UILayout.Colors.red), tag .. ": a cost is red") end
+			end
+		end
+		check(greens >= 1 and reds >= 1, tag .. ": Glass Cannon shows a green gain and a red cost, got " .. greens .. "/" .. reds)
+		-- Two Sharpened Edges already make x1.21: the corner panel shows it.
+		local total = named(gui, "CardTotal_damage")
+		check(total ~= nil and string.find(textOf(total), "x1.21", 1, true) ~= nil, tag .. ": the corner panel shows the compounded total x1.21")
+		-- Taking a card with a cost turns that total red once it falls below 1x.
+		push(matchSnapshot(profile, "Preparing", { cardMode = true, cards = { "glassCannon", "glassCannon", "glassCannon" }, cardOffers = {} }))
+		local rangeTotal = named(gui, "CardTotal_range")
+		check(rangeTotal ~= nil and same(named(rangeTotal, "TotalValue").TextColor3, UILayout.Colors.red), tag .. ": a total below 1x is red")
+		push(matchSnapshot(profile, "Preparing", { cardMode = true, cards = {}, cardOffers = {} }))
+		check(named(gui, "CardStats") == nil, tag .. ": no cards, no corner panel")
+		push(matchSnapshot(profile, "Preparing"))
 	end)
 
 	step("every FX event the client handles", function()

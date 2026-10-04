@@ -110,7 +110,7 @@ local function describe(r) return string.format("(%d,%d %dx%d)", r.x, r.y, r.w, 
 --==============================================================================
 print("--- match hud ---")
 for _, screen in ipairs(SCREENS) do
-	for _, loadout in ipairs({ { skills = 2, vip = true }, { skills = 1, vip = false }, { skills = 0, vip = false } }) do
+	for _, loadout in ipairs({ { skills = 2, vip = true, cards = true }, { skills = 1, vip = false }, { skills = 0, vip = false } }) do
 		local L = UI.matchLayout(screen.w, screen.h, loadout)
 		local tag = screen.name .. " " .. screen.w .. "x" .. screen.h .. " [" .. loadout.skills .. (loadout.vip and "+vip" or "") .. "]"
 		local named = {

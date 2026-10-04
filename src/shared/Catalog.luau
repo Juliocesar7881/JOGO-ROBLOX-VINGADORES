@@ -43,6 +43,20 @@ Catalog.RarityOrder = { "common", "rare", "epic", "legendary", "mythic" }
 -- star adds `damage` to that hero's towers on top of mastery and talents.
 -- After the last star a duplicate only pays its Gold and mastery.
 Catalog.Stars = { max = 5, damage = 0.03 }
+-- Hero cards (the Clash-style ladder). A duplicate hero from a chest also pays
+-- cards for that hero; spending cards and Gold raises its rank, with no top.
+-- Every rank lifts damage, attack speed and range a little (`base`), and gives
+-- `pointsPerRank` points the player puts into whichever of the three they like
+-- (`point` each). Cost of rank n -> n+1: ceil(firstCost * growth^(n-1)) cards
+-- and goldPerRank * n Gold.
+Catalog.MaxChestsAtOnce = 50
+Catalog.HeroCards = {
+	copiesPerDuplicate = { common = 3, rare = 2, epic = 2, legendary = 1, mythic = 1 },
+	firstCost = 2, growth = 1.5, goldPerRank = 100, pointsPerRank = 1,
+	base = { damage = 0.04, speed = 0.02, range = 0.01 },
+	point = { damage = 0.03, speed = 0.02, range = 0.015 },
+	stats = { "damage", "speed", "range" },
+}
 -- The season pass: XP from matches and missions climbs 30 levels in a season
 -- (Config.SeasonDays, 60 by default). The free track pays Gold and a few
 -- chests; the premium track (the "season" pass) pays more of both and a title.

@@ -956,6 +956,16 @@ do
 	check(duo:Speed() == 2, "a teammate who left does not hold the speed hostage")
 	duo:Finish(false)
 	check(duo:Speed() == 1, "a finished match is never fast-forwarded")
+	-- 3x belongs to the pass: its owner sets the whole duo to 3x without asking.
+	local pair = MatchService.new(Config, Catalog, Rules, Waves, newProfiles(byUser[7101], byUser), newWorld(), newRemotes({}), function() end)
+	check(pair:Start({ first, second }, "manhattan", "normal", "duo-three"), "a second duo starts")
+	byUser[7101].passes = byUser[7101].passes or {}
+	byUser[7101].passes.speed3 = true
+	check(pair:Handle(first, "SetSpeed", { speed = 3 }) and pair:Speed() == 3, "the 3x pass owner runs the duo at 3x alone")
+	check(not pair:Handle(second, "SetSpeed", { speed = 3 }), "a teammate without the pass cannot choose 3x")
+	pair:Handle(first, "SetSpeed", { speed = 1 })
+	check(pair:Speed() == 1, "the owner can go back to 1x")
+	byUser[7101].passes.speed3 = nil
 end
 
 print("--- slot one decides ---")

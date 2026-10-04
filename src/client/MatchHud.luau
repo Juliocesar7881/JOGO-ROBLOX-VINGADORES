@@ -2,6 +2,7 @@
 -- small: the selected tower's panel, the upgrade boards over your towers, the
 -- card choice, the base upgrade and the results screen. Every number shown
 -- is one the server sent; every button is an intent through ctx.act.
+local CardArt = require(script.Parent:WaitForChild("CardArt"))
 local MatchHud = {}
 
 function MatchHud.new(ctx)
@@ -172,49 +173,96 @@ function MatchHud.new(ctx)
 
 	-- Stacked cards on a tall portrait screen, three across everywhere else, and
 	-- always sized to the screen's real height so every CHOOSE button is on it.
+	-- A card reads like a game card: a round medallion drawn from what it does,
+	-- the name, and one bar per effect with its number in green (you gain) or
+	-- red (you pay), then the total each stat would reach.
 	local function protocolModal(offers)
 		if ctx.refs().protocolPanel then ctx.refs().protocolPanel:Destroy(); ctx.refs().protocolPanel = nil end
 		if #offers == 0 then return end
 		local size = screenSize()
 		local P = UI.protocolLayout(size.X, size.Y)
-		local veil = UI.frame(overlays, {BackgroundColor3 = C.background, BackgroundTransparency = 0.22, Size = UDim2.fromScale(1, 1), ZIndex = 51, Active = true})
+		local veil = UI.frame(overlays, {BackgroundColor3 = C.background, BackgroundTransparency = 0.12, Size = UDim2.fromScale(1, 1), ZIndex = 51, Active = true})
 		ctx.refs().protocolPanel = veil
-		local panel = UI.roundFrame(veil, {Position = at(P.panel), Size = dims(P.panel), ZIndex = 52}, C.green)
-		UI.label(panel, T("ESCOLHA SUA CARTA", "CHOOSE YOUR CARD"), {Position = UDim2.fromOffset(20, 14), Size = UDim2.new(1, -40, 0, 30), TextColor3 = C.green, Font = Enum.Font.GothamBold, TextSize = P.class.compact and 18 or 21, ZIndex = 53})
-		UI.label(panel, T("Escolha um bônus para esta partida.", "Choose a bonus for this match."), {Position = UDim2.fromOffset(20, 48), Size = UDim2.new(1, -40, 0, 24), TextColor3 = C.muted, TextSize = 13, ZIndex = 53})
+		local panel = UI.roundFrame(veil, {Position = at(P.panel), Size = dims(P.panel), ZIndex = 52}, C.gold)
+		local short = P.class.short
+		UI.label(panel, T("ESCOLHA SUA CARTA", "CHOOSE YOUR CARD"), {Position = UDim2.fromOffset(20, short and 6 or 12), Size = UDim2.new(1, -40, 0, short and 28 or 38), TextColor3 = C.gold, Font = UI.Fonts.display, TextSize = short and 22 or (P.class.compact and 26 or 32), ZIndex = 53})
+		UI.label(panel, T("O jogo segue em velocidade normal enquanto você escolhe.", "The game runs at normal speed while you choose."), {Position = UDim2.fromOffset(20, short and 34 or 52), Size = UDim2.new(1, -40, 0, 22), TextColor3 = C.muted, TextSize = short and 12 or 15, ZIndex = 53})
+		local owned = (ctx.state().match and ctx.state().match.cards) or {}
 		for index, id in ipairs(offers) do
 			local def = Catalog.Cards[id]
 			local cardRect = P.cards[index]
 			if not def or not cardRect then continue end
-			local rarity=Catalog.Rarities[def.rarity]
-			local tint=rarity and UI.color(rarity.color) or C.green
-			local card = UI.roundFrame(panel, {Position = at(cardRect, P.panel), Size = dims(cardRect), BackgroundColor3 = tint:Lerp(C.card,0.88), ZIndex = 53},tint)
-			UI.shade(card,30)
-			UI.frame(card,{Position=UDim2.fromOffset(0,6),Size=UDim2.new(0,3,1,-12),BackgroundColor3=tint,ZIndex=54})
-			UI.label(card, L(def.name), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 24), Font = Enum.Font.GothamBold, TextSize = P.class.compact and 13 or 15, TextWrapped = true, ZIndex = 54})
-			-- Side by side, a card has room for a big glyph of what it does and a
-			-- readable description; stacked on a phone it keeps the compact rows.
-			local desc = P.descriptions[index]
-			local descSize = 12
-			if not P.stacked then
-				local effects, instant = def.effects or {}, def.instant or {}
-				local glyph, glyphColor = "cards", C.violet
-				if instant.energy or effects.killGold or effects.energyIncome then glyph, glyphColor = "coin", C.gold
-				elseif instant.heal or instant.maxHealth then glyph, glyphColor = "heart", C.red
-				elseif instant.gamble then glyph, glyphColor = "dice", C.cream
-				elseif effects.damage or effects.bossDamage or effects.airDamage or effects.stealthDamage or effects.pierce then glyph, glyphColor = "star", C.coral
-				elseif effects.speed then glyph, glyphColor = "bolt", C.gold
-				elseif effects.range or effects.supportRange or effects.area then glyph, glyphColor = "target", C.green
-				elseif effects.cooldown or effects.abilityPower then glyph, glyphColor = "sparkle", C.cream
-				elseif effects.discount then glyph, glyphColor = "tag", C.gold end
-				local glyphHolder = UI.frame(card, {Name = "CardGlyph", Position = at(desc, cardRect), Size = UDim2.fromOffset(desc.w, 52), BackgroundTransparency = 1, ZIndex = 54})
-				UI.icon(glyphHolder, glyph, glyphColor, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(44, 44), ZIndex = 55})
-				desc = { x = desc.x, y = desc.y + 54, w = desc.w, h = desc.h - 54 }
-				descSize = 16
+			local rarity = Catalog.Rarities[def.rarity]
+			local tint = rarity and UI.color(rarity.color) or C.green
+			local card = UI.roundFrame(panel, {Name = "Card_" .. id, Position = at(cardRect, P.panel), Size = dims(cardRect), BackgroundColor3 = tint:Lerp(C.card, 0.82), ZIndex = 53}, tint)
+			UI.shade(card, 90, 0.28)
+			local buttonRect = P.buttons[index]
+			local rows = CardArt.rows(Rules, def, owned, T)
+			local function chipsAt(x, y, width, room, chipH, textSize)
+				local count = 0
+				for _, row in ipairs(rows) do
+					if y + chipH > room then break end
+					CardArt.chip(UI, card, row, width, chipH, textSize, 55).Position = UDim2.fromOffset(x, y)
+					y += chipH + 5
+					count += 1
+				end
+				return y, count
 			end
-			UI.label(card, L(def.description), {Position = at(desc, cardRect), Size = dims(desc), TextSize = descSize, TextColor3 = P.stacked and C.muted or C.text, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, TextXAlignment = P.stacked and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center, ZIndex = 54})
-			UI.button(card, T("ESCOLHER", "CHOOSE").." • "..Catalog.Upper(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(P.buttons[index], cardRect), Size = dims(P.buttons[index]), BackgroundColor3=tint, TextSize = P.stacked and 12 or 14, ZIndex = 54})
+			local nameText = L(def.name)
+			if P.stacked then
+				-- Medallion left, name and bars to its right.
+				local medal = math.min(78, cardRect.h - 64)
+				CardArt.medallion(UI, card, def, tint, medal, {Position = UDim2.fromOffset(10, 8), ZIndex = 54})
+				UI.label(card, nameText, {Position = UDim2.fromOffset(medal + 22, 6), Size = UDim2.new(1, -medal - 32, 0, 26), Font = UI.Fonts.display, TextSize = 19, TextColor3 = tint:Lerp(C.text, 0.4), ZIndex = 54})
+				chipsAt(medal + 22, 32, cardRect.w - medal - 32, cardRect.h - 58, 22, 13)
+			else
+				local medal = short and 54 or math.min(96, math.floor(cardRect.h * 0.27))
+				CardArt.medallion(UI, card, def, tint, medal, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, short and 6 or 10), ZIndex = 54})
+				local nameY = (short and 6 or 10) + medal + 4
+				UI.label(card, nameText, {Position = UDim2.fromOffset(8, nameY), Size = UDim2.new(1, -16, 0, short and 22 or 30), Font = UI.Fonts.display, TextSize = short and 16 or 22, TextColor3 = tint:Lerp(C.text, 0.4), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
+				local chipH = short and 24 or 34
+				local y = nameY + (short and 24 or 34)
+				local nextY, drawn = chipsAt(10, y, cardRect.w - 20, buttonRect.y - cardRect.y - 4, chipH, short and 14 or 17)
+				local first = rows[1]
+				if first and first.now and drawn > 0 and nextY + 20 <= buttonRect.y - cardRect.y then
+					local after = first.after
+					UI.label(card, T("TOTAL ", "TOTAL ") .. CardArt.times(first.now - 1) .. "  →  " .. CardArt.times(after - 1), {Name = "CardTotalLine", Position = UDim2.fromOffset(8, nextY), Size = UDim2.new(1, -16, 0, 20), TextSize = short and 12 or 15, Font = UI.Fonts.bold, TextColor3 = after >= 1 and C.green or C.red, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
+					nextY += 22
+				end
+				-- The description fills what is left, when there is room for it.
+				local room = buttonRect.y - cardRect.y - 4 - nextY
+				if not short and room >= 36 then
+					UI.label(card, L(def.description), {Position = UDim2.fromOffset(10, nextY), Size = UDim2.new(1, -20, 0, room), TextSize = 14, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
+				end
+			end
+			UI.button(card, T("ESCOLHER", "CHOOSE").." • "..Catalog.Upper(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(buttonRect, cardRect), Size = dims(buttonRect), BackgroundColor3 = tint, TextSize = P.stacked and 15 or 17, ZIndex = 54})
 		end
+	end
+
+	-- The running totals of the cards taken, kept in a corner while a cards-mode
+	-- match is on: green at 1x or above, red below. Rebuilt when the deck grows.
+	local function cardStats(match)
+		local existing = main:FindFirstChild("CardStats")
+		local cards = match and match.cardMode and match.cards or {}
+		local signature = table.concat(cards, ",")
+		if #cards == 0 then
+			if existing then existing:Destroy() end
+			ctx.refs().cardStatsKey = nil
+			return
+		end
+		if existing and ctx.refs().cardStatsKey == signature then return end
+		if existing then existing:Destroy() end
+		ctx.refs().cardStatsKey = signature
+		local layout = ctx.refs().layout or currentMatchLayout()
+		local compact = sizeClass().compact
+		local rowH, textSize = compact and 22 or 28, compact and 13 or 16
+		local width = compact and 138 or 190
+		local top = layout.waveInfo.y + layout.waveInfo.h + 8
+		local room = math.max(rowH, layout.actionTop - 8 - top - 4)
+		local maxRows = math.max(1, math.floor((room + 4) / (rowH + 4)))
+		local holder = UI.frame(main, {Name = "CardStats", BackgroundTransparency = 1, Position = UDim2.fromOffset(layout.waveInfo.x, top), Size = UDim2.fromOffset(width, room)})
+		UI.list(holder, 4)
+		CardArt.totalRows(UI, Rules, T, holder, cards, rowH, textSize, maxRows, width)
 	end
 
 	local function openBaseUpgrade()
@@ -377,7 +425,7 @@ function MatchHud.new(ctx)
 	return {
 		towerStatsText = towerStatsText, towerPanel = towerPanel,
 		clearUpgradeBoards = clearUpgradeBoards, updateUpgradeBoards = updateUpgradeBoards,
-		protocolModal = protocolModal, openBaseUpgrade = openBaseUpgrade, renderResults = renderResults,
+		protocolModal = protocolModal, cardStats = cardStats, openBaseUpgrade = openBaseUpgrade, renderResults = renderResults,
 	}
 end
 

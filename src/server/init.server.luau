@@ -574,9 +574,11 @@ local function route(player, action, payload)
 		if type(data) == "table" and type(data.gold) == "number" then
 			local result = data.result
 			if action == "OpenChest" and type(result) == "table" then
-				analytics:Custom(player, "ChestOpened", result.cost, result.chestId, result.rarity, result.heroId)
-				if not result.duplicate and result.heroId then
-					analytics:HeroUnlocked(player, tostring(result.heroId), data.level, minutesPlayed(player))
+				for _, opened in ipairs(result.batch or { result }) do
+					analytics:Custom(player, "ChestOpened", opened.cost, opened.chestId, opened.rarity, opened.heroId)
+					if not opened.duplicate and opened.heroId then
+						analytics:HeroUnlocked(player, tostring(opened.heroId), data.level, minutesPlayed(player))
+					end
 				end
 			elseif action == "UpgradeAbility" and type(result) == "table" then
 				analytics:Custom(player, "AbilityUpgraded", result.rank, result.heroId, result.cost)

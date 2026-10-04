@@ -401,15 +401,54 @@ end
 --==============================================================================
 -- Permanent bonuses are capped so that no amount of progression outgrows the
 -- game: 15% damage, 10% attack speed, 10% range.
+-- The hero-card ladder (Catalog.HeroCards). Rank 1 is a new hero; there is no
+-- last rank. Each rank after the first adds the base bonus to all three stats
+-- and one point to spend on damage, attack speed or range.
+function Rules.CardRankCost(rank)
+	local cards = Catalog.HeroCards
+	rank = math.max(1, math.floor(number(rank, 1)))
+	return { copies = math.ceil(cards.firstCost * cards.growth ^ (rank - 1) - 1e-9), gold = cards.goldPerRank * rank }
+end
+
+function Rules.CardPoints(rank)
+	return (math.max(1, math.floor(number(rank, 1))) - 1) * Catalog.HeroCards.pointsPerRank
+end
+
+-- A clean { damage, speed, range } of whole numbers whose sum fits the points
+-- the rank has earned, or nil when what was sent is not that.
+function Rules.CleanPoints(rank, alloc)
+	if type(alloc) ~= "table" then return nil end
+	local clean, sum = {}, 0
+	for _, key in ipairs(Catalog.HeroCards.stats) do
+		local value = alloc[key]
+		if value == nil then value = 0 end
+		if type(value) ~= "number" or value ~= value or value < 0 or value % 1 ~= 0 then return nil end
+		clean[key] = value
+		sum += value
+	end
+	if sum > Rules.CardPoints(rank) then return nil end
+	return clean
+end
+
+function Rules.CardBonus(rank, alloc)
+	local cards = Catalog.HeroCards
+	local steps = math.max(1, math.floor(number(rank, 1))) - 1
+	local clean = Rules.CleanPoints(rank, alloc) or { damage = 0, speed = 0, range = 0 }
+	local result = {}
+	for _, key in ipairs(cards.stats) do result[key] = steps * cards.base[key] + clean[key] * cards.point[key] end
+	return result
+end
+
 function Rules.PermanentModifiers(profile, heroId)
 	local mastery = profile and profile.heroes and profile.heroes[heroId]
 	local masteryLevel = Rules.MasteryLevel(if type(mastery) == "table" then mastery.xp else 0)
 	local talents = profile and profile.talents or {}
 	local stars = type(mastery) == "table" and math.clamp(math.floor(number(mastery.stars, 0)), 0, Catalog.Stars.max) or 0
+	local card = type(mastery) == "table" and Rules.CardBonus(mastery.rank, mastery.alloc) or { damage = 0, speed = 0, range = 0 }
 	return {
-		damageBonus = math.min(0.15, math.floor(masteryLevel / 2) * 0.01 + (talents.towerPower or 0) * 0.01) + stars * Catalog.Stars.damage,
-		rangeBonus = math.min(0.10, (masteryLevel - 1) * 0.002 + (talents.reach or 0) * 0.01),
-		attackSpeedBonus = math.min(0.10, (masteryLevel - 1) * 0.003),
+		damageBonus = math.min(0.15, math.floor(masteryLevel / 2) * 0.01 + (talents.towerPower or 0) * 0.01) + stars * Catalog.Stars.damage + card.damage,
+		rangeBonus = math.min(0.10, (masteryLevel - 1) * 0.002 + (talents.reach or 0) * 0.01) + card.range,
+		attackSpeedBonus = math.min(0.10, (masteryLevel - 1) * 0.003) + card.speed,
 	}
 end
 

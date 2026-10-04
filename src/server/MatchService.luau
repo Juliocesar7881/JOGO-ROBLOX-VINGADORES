@@ -78,16 +78,19 @@ function Match:Speed()
 	return self.speed or 1
 end
 
--- The match runs at the slowest speed anyone present chose: 2x when all
--- chose 2x or more, 3x (a pass) only when all chose 3x.
+-- 2x needs everyone present to agree. 3x belongs to the pass: a commander who
+-- owns it and chose 3x sets the whole match to 3x alone, with nobody's leave
+-- (SetSpeed refuses 3x to anyone without the pass).
 function Match:_refreshSpeed()
-	local slowest = nil
+	local slowest, three = nil, false
 	for _, p in pairs(self.participants) do
 		if not p.returned and not p.disconnectedAt then
-			slowest = math.min(slowest or 3, p.speedVote or 1)
+			local vote = p.speedVote or 1
+			slowest = math.min(slowest or 3, vote)
+			if vote >= 3 and p.profile.passes and p.profile.passes.speed3 then three = true end
 		end
 	end
-	self.speed = slowest or 1
+	self.speed = three and 3 or math.min(slowest or 1, 2)
 end
 
 -- Preparation ends early once everyone either pressed READY or has
@@ -1691,7 +1694,7 @@ function Match:Snapshot(player)
 		if e.def.boss and not e.rewardless then boss={id=e.id,name=e.def.name,hp=e.hp,maxHP=e.maxHP,phase=e.phase,hint=e.hint,final=e.final or nil} break end
 	end
 	local votes=0 for _ in pairs(self.skipVotes or {}) do votes+=1 end
-	local speedVotes=0 for _,other in pairs(self.participants) do if not other.returned and (other.speedVote or 1)>=(p.speedVote or 1) and (p.speedVote or 1)>1 then speedVotes+=1 end end
+	local speedVotes,speedPlayers=0,0 for _,other in pairs(self.participants) do if not other.returned then speedPlayers+=1 if (other.speedVote or 1)>=2 and (p.speedVote or 1)>1 then speedVotes+=1 end end end
 	-- The next boss wave, so the wave bar can count down to it.
 	local nextBoss
 	local total=self.rules.WaveCount(self.modeId,self.mapId)
@@ -1709,7 +1712,7 @@ function Match:Snapshot(player)
 		partySize=self.size,skipVotes=votes,nextBoss=nextBoss,threats=self.phase=="Preparing" and self.nextThreats or nil,
 		mutation=self.phase=="Preparing" and self.nextMutation or (self.phase=="Wave" and self.mutation or nil),
 			nextPaths=self.phase=="Preparing" and self.nextPaths or nil,newEntrance=self.phase=="Preparing" and self.newEntrance or nil,
-		speed=self:Speed(),speedVote=p.speedVote or 1,speedVotes=speedVotes,autoSkip=p.autoSkip==true,endVote=p.endVote==true,endVotes=endVotes},p.results
+		speed=self:Speed(),speedVote=p.speedVote or 1,speedVotes=speedVotes,speedPlayers=speedPlayers,autoSkip=p.autoSkip==true,endVote=p.endVote==true,endVotes=endVotes},p.results
 end
 
 return Match

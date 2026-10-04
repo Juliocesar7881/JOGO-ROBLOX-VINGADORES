@@ -295,6 +295,37 @@ function UI.icon(parent, kind, tint, properties)
 		shape(0.12, 0.22, 0.5, 0.66, -10, tint:Lerp(Color3.new(0, 0, 0), 0.2), 5)
 		shape(0.38, 0.12, 0.5, 0.66, 10, tint, 5)
 		shape(0.52, 0.3, 0.22, 0.22, 45, UI.Colors.background, 3)
+	elseif kind == "bow" then
+		-- A drawn bow: the curved limb, the string and an arrow across it.
+		shape(0.1, 0.1, 0.52, 0.8, 0, tint, 99)
+		shape(0.2, 0.18, 0.44, 0.64, 0, UI.Colors.background, 99)
+		shape(0.5, 0.1, 0.04, 0.8, 0, tint, 2)
+		shape(0.18, 0.47, 0.72, 0.07, 0, UI.Colors.text, 2)
+		shape(0.78, 0.4, 0.14, 0.2, 45, UI.Colors.text, 2)
+	elseif kind == "bank" then
+		-- A bank: pediment, four columns and a step.
+		shape(0.1, 0.12, 0.8, 0.2, 0, tint, 3)
+		shape(0.3, 0.04, 0.4, 0.16, 45, tint, 3)
+		for index = 0, 3 do shape(0.16 + index * 0.2, 0.34, 0.1, 0.4, 0, tint, 2) end
+		shape(0.08, 0.76, 0.84, 0.14, 0, tint, 3)
+	elseif kind == "ring" then
+		-- A range circle: a ring with a dot at its heart.
+		shape(0.06, 0.06, 0.88, 0.88, 0, tint, 99)
+		shape(0.17, 0.17, 0.66, 0.66, 0, UI.Colors.background, 99)
+		shape(0.4, 0.4, 0.2, 0.2, 0, tint, 99)
+	elseif kind == "wing" then
+		shape(0.1, 0.5, 0.5, 0.2, -28, tint, 6)
+		shape(0.3, 0.38, 0.52, 0.2, -12, tint, 6)
+		shape(0.42, 0.24, 0.48, 0.2, 6, tint, 6)
+	elseif kind == "eye" then
+		shape(0.06, 0.3, 0.88, 0.4, 0, tint, 99)
+		shape(0.34, 0.26, 0.32, 0.48, 0, UI.Colors.background, 99)
+		shape(0.42, 0.4, 0.16, 0.2, 0, tint, 99)
+	elseif kind == "skull" then
+		shape(0.18, 0.1, 0.64, 0.58, 0, tint, 99)
+		shape(0.3, 0.55, 0.4, 0.3, 0, tint, 5)
+		shape(0.28, 0.34, 0.16, 0.18, 0, UI.Colors.background, 99)
+		shape(0.56, 0.34, 0.16, 0.18, 0, UI.Colors.background, 99)
 	elseif kind == "gift" then
 		shape(0.14, 0.42, 0.72, 0.46, 0, tint, 4)
 		shape(0.08, 0.3, 0.84, 0.15, 0, tint, 3)
@@ -888,12 +919,14 @@ function UI.matchLayout(width, height, options)
 	local function bandWidth()
 		local w = count * skillW + math.max(0, count - 1) * 8
 		if options.vip then w += (count > 0 and 8 or 0) + saluteW end
-		return w + (w > 0 and 8 or 0) + 3 * controlW + 16
+		-- 2x, 3x, auto-skip, the sheet and, in the cards mode, the cards.
+		return w + (w > 0 and 8 or 0) + (options.cards and 5 or 4) * controlW + 16
 	end
 	-- On a narrow screen the band gives way a little at a time: the ability
 	-- first, then the salute, then the small controls (never under 44 wide).
-	local available = width - 2 * pad
-	for _, step in ipairs({ { "skill", 96 }, { "salute", 56 }, { "control", 44 } }) do
+	-- (On a phone on its side the five hero tiles share the row, and need 290.)
+	local available = width - 2 * pad - (class.short and 290 or 0)
+	for _, step in ipairs({ { "skill", 80 }, { "salute", 40 }, { "control", 36 } }) do
 		while bandWidth() > available do
 			if step[1] == "skill" and skillW > step[2] then skillW -= 2
 			elseif step[1] == "salute" and saluteW > step[2] then saluteW -= 2
@@ -977,13 +1010,13 @@ function UI.protocolLayout(width, height)
 	width, height = clampScreen(width, height)
 	local class = UI.sizeClass(width, height)
 	local stacked = class.narrow and height >= 480
-	local panelW = math.min(960, width - 36)
-	local headerH = 78
+	local panelW = math.min(1040, width - 36)
+	local headerH = class.short and 62 or 84
 	local panelH
 	if stacked then
 		panelH = math.min(height - 24, headerH + 3 * 142 + 2 * 10 + 14)
 	else
-		panelH = math.min(332, height - 24)
+		panelH = math.min(440, height - 24)
 	end
 	local panel = rect(math.floor((width - panelW) / 2), math.floor((height - panelH) / 2), panelW, panelH)
 	local cards, buttons, descriptions = {}, {}, {}

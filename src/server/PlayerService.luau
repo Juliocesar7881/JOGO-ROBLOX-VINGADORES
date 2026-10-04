@@ -21,7 +21,7 @@ local SCHEMA_VERSION = 1
 local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
-local ACTIONS = { BuyGuaranteed = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true,
+local ACTIONS = { BuyGuaranteed = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
 	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true, ClaimSeason = true,
 	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
@@ -152,6 +152,20 @@ local function normalize(raw, now, catalog)
 		hero.level = levelFor(hero.xp, 20, masteryThreshold)
 		hero.stars = math.clamp(math.floor(tonumber(hero.stars) or 0), 0, catalog.Stars.max)
 		hero.shiny = hero.shiny == true or nil
+		-- Hero cards: the rank has no top, spare copies are whole numbers, and the
+		-- points put into damage / speed / range never exceed what the rank earned.
+		hero.rank = math.max(1, math.floor(tonumber(hero.rank) or 1))
+		hero.copies = math.max(0, math.floor(tonumber(hero.copies) or 0))
+		local earned, spent, alloc = (hero.rank - 1) * catalog.HeroCards.pointsPerRank, 0, {}
+		for _, key in ipairs(catalog.HeroCards.stats) do
+			local value = type(hero.alloc) == "table" and hero.alloc[key] or 0
+			value = (type(value) == "number" and value == value and value >= 0) and math.floor(value) or 0
+			alloc[key] = value
+			spent += value
+		end
+		-- More points than the rank earned means the record is wrong: start over.
+		if spent > earned then alloc = { damage = 0, speed = 0, range = 0 } end
+		hero.alloc = alloc
 		local rank = profile.abilities[id]
 		if not integer(rank, 1, max) then profile.abilities[id] = 1 end
 	end
@@ -541,12 +555,15 @@ function PlayerService:_grantHero(profile, heroId, now, options)
 		local owned = profile.heroes[heroId]
 		owned.xp += mastery
 		owned.level = levelFor(owned.xp, 20, masteryThreshold)
-		-- A duplicate is also a star, until the hero has them all.
+		-- A duplicate is also a star, until the hero has them all, and cards for
+		-- the hero's rank ladder.
 		local before = math.clamp(math.floor(tonumber(owned.stars) or 0), 0, self.catalog.Stars.max)
 		owned.stars = math.min(self.catalog.Stars.max, before + 1)
-		return true, { gold = refund, mastery = mastery, stars = owned.stars, starGained = owned.stars > before }
+		local cards = self.catalog.HeroCards.copiesPerDuplicate[hero.rarity] or 1
+		owned.copies = (owned.copies or 0) + cards
+		return true, { gold = refund, mastery = mastery, stars = owned.stars, starGained = owned.stars > before, cards = cards, copies = owned.copies, rank = owned.rank or 1 }
 	end
-	profile.heroes[heroId] = { xp = 0, level = 1, stars = 0 }
+	profile.heroes[heroId] = { xp = 0, level = 1, stars = 0, rank = 1, copies = 0, alloc = { damage = 0, speed = 0, range = 0 } }
 	profile.abilities[heroId] = 1
 	if #profile.loadout < MAX_LOADOUT then table.insert(profile.loadout, heroId) end
 	if tableCount(profile.heroes) >= #self.catalog.HeroOrder then achievement(profile, "allHeroes", "Coleção completa", "Full collection", now) end
@@ -584,7 +601,8 @@ function PlayerService:_openChest(profile, chestId, rolls, now)
 	end
 	if profile.stats.chests == 1 then achievement(profile, "firstChest", "Primeiro baú", "First chest", now) end
 	return { chestId = chestId, heroId = outcome.heroId, baseId = outcome.baseId, rarity = outcome.rarity, duplicate = duplicate,
-		refundGold = refund.gold, refundMastery = refund.mastery, stars = refund.stars, starGained = refund.starGained, shiny = shiny, pity = outcome.pity, cost = chest.cost }
+		refundGold = refund.gold, refundMastery = refund.mastery, stars = refund.stars, starGained = refund.starGained, cards = refund.cards, copies = refund.copies, rank = refund.rank,
+		shiny = shiny, pity = outcome.pity, cost = chest.cost }
 end
 
 -- Pays a reward table ({ gold, xp, chest, title }) into the profile.
@@ -758,6 +776,17 @@ function PlayerService:Handle(player, action, payload, inLobby)
 	-- A chest's two random numbers are drawn once, here. UpdateAsync may run the
 	-- callback below several times, and every run must reach the same hero.
 	local rolls = CHEST_ACTIONS[action] and { self.random:NextNumber(), self.random:NextNumber(), self.random:NextNumber() } or nil
+	-- Several chests in one request: the count is a whole number from 1 to the
+	-- cap, and every chest gets its own three numbers drawn here, up front.
+	local openCount, rollSets = 1, nil
+	if action == "OpenChest" and payload.count ~= nil then
+		if not integer(payload.count, 1, self.catalog.MaxChestsAtOnce) then return true, false, "Quantidade de baús inválida. / Invalid chest count." end
+		openCount = payload.count
+		if openCount > 1 then
+			rollSets = {}
+			for index = 1, openCount do rollSets[index] = { self.random:NextNumber(), self.random:NextNumber(), self.random:NextNumber() } end
+		end
+	end
 	local ok, result = self:_transaction(player, function(profile, now, current)
 		if action == "UpgradeTalent" then
 			local node = type(payload.talentId) == "string" and self.catalog.Talents[payload.talentId]
@@ -791,9 +820,39 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			local chest = type(payload.chestId) == "string" and self.catalog.Chests[payload.chestId]
 			if not chest then return false, "Baú inválido. / Invalid chest." end
 			if profile.gold < chest.cost then return false, "Ouro insuficiente. / Not enough Gold." end
-			profile.gold -= chest.cost
+			-- Opening several at once: the count was checked before the draw, every
+			-- chest has its own committed rolls, and the Gold is taken in one piece.
+			local count = openCount
+			if profile.gold < chest.cost * count then return false, "Ouro insuficiente. / Not enough Gold." end
+			profile.gold -= chest.cost * count
 			-- The client never supplies or sees a roll, only the committed result.
-			return true, self:_openChest(profile, payload.chestId, rolls, now)
+			if count == 1 then return true, self:_openChest(profile, payload.chestId, rolls, now) end
+			local batch = {}
+			for index = 1, count do table.insert(batch, self:_openChest(profile, payload.chestId, rollSets[index], now)) end
+			local last = copy(batch[#batch])
+			last.batch, last.count, last.cost = batch, count, chest.cost * count
+			return true, last
+		elseif action == "RankUpHero" then
+			local id = type(payload.heroId) == "string" and payload.heroId
+			local owned = id and profile.heroes[id]
+			if not owned then return false, "Herói não encontrado. / Hero not found." end
+			if payload.expectedRank ~= owned.rank then return false, "A carta mudou. Tente de novo. / The card changed; try again." end
+			local cost = self.rules.CardRankCost(owned.rank)
+			if (owned.copies or 0) < cost.copies then return false, "Faltam cartas deste herói. / Not enough cards for this hero." end
+			if profile.gold < cost.gold then return false, "Ouro insuficiente. / Not enough Gold." end
+			owned.copies -= cost.copies
+			profile.gold -= cost.gold
+			owned.rank += 1
+			return true, { heroId = id, rank = owned.rank, copies = owned.copies, points = self.rules.CardPoints(owned.rank), cost = cost }
+		elseif action == "SetHeroPoints" then
+			local id = type(payload.heroId) == "string" and payload.heroId
+			local owned = id and profile.heroes[id]
+			if not owned then return false, "Herói não encontrado. / Hero not found." end
+			-- Refused, never clamped: more points than the rank earned is a bad request.
+			local clean = self.rules.CleanPoints(owned.rank, payload)
+			if not clean then return false, "Pontos inválidos. / Invalid points." end
+			owned.alloc = clean
+			return true, { heroId = id, alloc = clean }
 		elseif action == "ClaimFreeChest" then
 			local state, config = profile.rewards, self.catalog.Rewards.freeChest
 			if now < state.freeChestAt then return false, "O baú grátis ainda não está pronto. / The free chest is not ready yet." end
@@ -919,7 +978,7 @@ function PlayerService:Handle(player, action, payload, inLobby)
 	local snapshot = ok and self:Snapshot(player) or nil
 	-- A chest or an ability upgrade also reports what just happened, so the
 	-- client can play the reveal instead of guessing from a diff.
-	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility" or action == "RedeemCode" or action:sub(1, 5) == "Claim") then snapshot.result = result end
+	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility" or action == "RankUpHero" or action == "SetHeroPoints" or action == "RedeemCode" or action:sub(1, 5) == "Claim") then snapshot.result = result end
 	return true, ok, ok and snapshot or result
 end
 

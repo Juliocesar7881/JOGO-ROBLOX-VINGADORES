@@ -1052,4 +1052,91 @@ do
 	check(not Rules.DifficultyUnlocked(localOnly:Get(climber), "manhattan", "hard"), "other maps stay on Normal")
 end
 
+-- Hero cards (the Clash-style ladder) and opening several chests at once.
+-- A function of its own: the file already holds close to Luau's 200 locals.
+(function()
+	local fan = player(91)
+	localOnly:Load(fan)
+	localOnly:Award(fan, "cards:gold", { gold = 20000 })
+	local goldNow = localOnly:Get(fan).gold
+	-- Several chests in one request: one price, one committed result per chest.
+	localOnly.random = scriptedRolls(0, 0, 0, 0, 0, 0, 0, 0, 0)
+	local _, badCount = localOnly:Handle(fan, "OpenChest", { chestId = "rare", count = 0 }, true)
+	check(not badCount and localOnly:Get(fan).gold == goldNow, "A count of zero is refused")
+	local _, hugeCount = localOnly:Handle(fan, "OpenChest", { chestId = "rare", count = Catalog.MaxChestsAtOnce + 1 }, true)
+	check(not hugeCount and localOnly:Get(fan).gold == goldNow, "More than the cap is refused, never clamped")
+	local _, floatCount = localOnly:Handle(fan, "OpenChest", { chestId = "rare", count = 2.5 }, true)
+	check(not floatCount and localOnly:Get(fan).gold == goldNow, "A fractional count is refused")
+	local _, pricey = localOnly:Handle(fan, "OpenChest", { chestId = "legendary", count = 40 }, true)
+	check(not pricey and localOnly:Get(fan).gold == goldNow, "Forty legendary chests need all forty prices")
+	local _, batchOk, batch = localOnly:Handle(fan, "OpenChest", { chestId = "rare", count = 3 }, true)
+	check(batchOk and batch.result.count == 3 and #batch.result.batch == 3, "Three chests come back as three results, got " .. tostring(batchOk))
+	local refunds = 0
+	for _, opened in ipairs(batch.result.batch) do refunds += opened.refundGold or 0 end
+	check(batch.gold == goldNow - 3 * Catalog.Chests.rare.cost + refunds and batch.result.cost == 3 * Catalog.Chests.rare.cost, "The price is three chests' worth, taken once (duplicates refund their Gold)")
+	check(batch.stats.chests == 3, "Every chest of the batch is counted")
+	-- A duplicate hero pays cards for its rank ladder.
+	local heroId = batch.result.batch[1].heroId
+	check(batch.heroes[heroId] and batch.heroes[heroId].rank == 1 and (batch.heroes[heroId].copies or 0) >= 0, "A new hero starts at rank 1")
+	local stored = localOnly.memoryProfiles.p_91.heroes[heroId]
+	stored.copies = 0
+	localOnly.random = scriptedRolls(0, 0, 0)
+	local before = localOnly:Get(fan).heroes
+	-- Force a duplicate by owning every common hero first.
+	for _, id in ipairs(Catalog.HeroOrder) do
+		if Catalog.Heroes[id].rarity == "common" and not localOnly.memoryProfiles.p_91.heroes[id] then
+			localOnly.memoryProfiles.p_91.heroes[id] = { xp = 0, level = 1, stars = 0, rank = 1, copies = 0, alloc = { damage = 0, speed = 0, range = 0 } }
+			localOnly.memoryProfiles.p_91.abilities[id] = 1
+		end
+	end
+	for _, owned in pairs(localOnly.memoryProfiles.p_91.heroes) do owned.copies = 0 end
+	localOnly.random = scriptedRolls(0, 0, 0)
+	local _, dupOk, dup = localOnly:Handle(fan, "OpenChest", { chestId = "rare" }, true)
+	check(dupOk and dup.result.duplicate == true and dup.result.cards == Catalog.HeroCards.copiesPerDuplicate.common, "A duplicate pays the cards its rarity is worth")
+	local dupHero = dup.result.heroId
+	check(dup.heroes[dupHero].copies == dup.result.cards, "The cards are kept on the hero: " .. tostring(dupHero) .. " has " .. tostring(dup.heroes[dupHero].copies) .. ", result " .. tostring(dup.result.cards) .. " copies " .. tostring(dup.result.copies))
+	-- Rank up: cards and Gold, no top.
+	local rankNeed = Rules.CardRankCost(1)
+	check(rankNeed.copies == 2 and rankNeed.gold == 100, "Rank 1 -> 2 costs 2 cards and 100 Gold")
+	check(Rules.CardRankCost(2).copies == 3 and Rules.CardRankCost(3).copies == 5 and Rules.CardRankCost(10).copies > Rules.CardRankCost(9).copies, "Each rank costs more cards than the one before")
+	local _, wrongRank = localOnly:Handle(fan, "RankUpHero", { heroId = dupHero, expectedRank = 5 }, true)
+	check(not wrongRank, "A stale rank is refused")
+	localOnly.memoryProfiles.p_91.heroes[dupHero].copies = 1
+	local goldBefore = localOnly:Get(fan).gold
+	local _, shortCards = localOnly:Handle(fan, "RankUpHero", { heroId = dupHero, expectedRank = 1 }, true)
+	check(not shortCards and localOnly:Get(fan).gold == goldBefore, "One card is not enough for rank 2")
+	localOnly.memoryProfiles.p_91.heroes[dupHero].copies = 5
+	local _, rankOk, ranked = localOnly:Handle(fan, "RankUpHero", { heroId = dupHero, expectedRank = 1 }, true)
+	check(rankOk and ranked.result.rank == 2 and ranked.heroes[dupHero].rank == 2 and ranked.heroes[dupHero].copies == 3 and ranked.gold == goldBefore - 100, "Ranking up spends 2 cards and 100 Gold")
+	check(ranked.result.points == 1, "Rank 2 earns one point")
+	-- Points go to damage, speed and range, never more than the rank earned.
+	local _, tooMany = localOnly:Handle(fan, "SetHeroPoints", { heroId = dupHero, damage = 1, speed = 1, range = 0 }, true)
+	check(not tooMany, "Two points at rank 2 is refused")
+	local _, negative = localOnly:Handle(fan, "SetHeroPoints", { heroId = dupHero, damage = -1, speed = 2, range = 0 }, true)
+	check(not negative, "A negative point is refused")
+	local _, fractional = localOnly:Handle(fan, "SetHeroPoints", { heroId = dupHero, damage = 0.5 }, true)
+	check(not fractional, "A fractional point is refused")
+	local _, pointsOk, pointed = localOnly:Handle(fan, "SetHeroPoints", { heroId = dupHero, damage = 0, speed = 1, range = 0 }, true)
+	check(pointsOk and pointed.heroes[dupHero].alloc.speed == 1, "The point goes where the player chose")
+	local mods = Rules.PermanentModifiers(localOnly.memoryProfiles.p_91, dupHero)
+	local same = clone(localOnly.memoryProfiles.p_91.heroes[dupHero])
+	same.rank, same.alloc = 1, nil
+	local plain = Rules.PermanentModifiers({ heroes = { [dupHero] = same }, talents = {} }, dupHero)
+	check(math.abs(mods.damageBonus - plain.damageBonus - Catalog.HeroCards.base.damage) < 1e-9, "Rank 2 adds the base damage bonus")
+	check(math.abs(mods.attackSpeedBonus - plain.attackSpeedBonus - Catalog.HeroCards.base.speed - Catalog.HeroCards.point.speed) < 1e-9, "and the point adds attack speed")
+	check(math.abs(mods.rangeBonus - plain.rangeBonus - Catalog.HeroCards.base.range) < 1e-9, "every rank lifts all three stats")
+	-- A damaged record never keeps points it did not earn (checked on the
+	-- datastore-backed service, which reads the saved record back on load).
+	local keeper = player(92)
+	service:Load(keeper)
+	check(stores.Tests.values.p_92.heroes.ironman ~= nil, "a new account starts with its first hero")
+	stores.Tests.values.p_92.heroes.ironman.rank = 3
+	stores.Tests.values.p_92.heroes.ironman.alloc = { damage = 99, speed = 99, range = 99 }
+	service:Release(keeper)
+	service:Load(keeper)
+	local healed = stores.Tests.values.p_92.heroes.ironman
+	check(service:Get(keeper).heroes.ironman.rank == 3, "The rank is kept")
+	check(service:Get(keeper).heroes.ironman.alloc.damage == 0 and service:Get(keeper).heroes.ironman.alloc.speed == 0, "Points beyond the rank are discarded on load")
+end)()
+
 print("PASS PlayerService: " .. checks .. " assertions (real module, mocked Roblox persistence and purchases)")

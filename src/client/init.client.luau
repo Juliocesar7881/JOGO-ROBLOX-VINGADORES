@@ -958,13 +958,31 @@ end
 
 -- 2x and auto-skip are votes the server counts; the settings write only
 -- remembers the choice for the next match. Neither ever changes a rule here.
+-- Two buttons: 2x (a vote the whole group must share) and 3x (the pass: its
+-- owner sets it alone; anyone else is offered the pass). Pressing the speed
+-- already chosen goes back to 1x.
+local function chooseSpeed(wanted)
+	if not activeMatch() then return end
+	if wanted == 3 and not (profile().passes and profile().passes.speed3) then
+		local pass = Config.Products and Config.Products.Passes and Config.Products.Passes.speed3
+		if pass and (pass.id or 0) > 0 then
+			local ok = pcall(function() MarketplaceService:PromptGamePassPurchase(player, pass.id) end)
+			if ok then return end
+		end
+		showToast(T("O 3x é um passe: veja na LOJA ROBUX.", "3x is a pass: see the ROBUX SHOP."), false)
+		return
+	end
+	local current = state.match.speedVote or 1
+	local target = current == wanted and 1 or wanted
+	act("SetSpeed", {speed = target}, function() audio:Cue("wave", 0.1) end)
+	act("Settings", {fastForward = target == 2})
+end
+-- The F key still cycles 1x -> 2x -> 3x (with the pass) -> 1x.
 local function toggleSpeed()
 	if not activeMatch() then return end
-	-- 1x -> 2x -> 3x (with the pass) -> 1x.
 	local current = state.match.speedVote or 1
-	local wanted = current == 1 and 2 or (current == 2 and profile().passes and profile().passes.speed3) and 3 or 1
-	act("SetSpeed", {speed = wanted}, function() audio:Cue("wave", 0.1) end)
-	act("Settings", {fastForward = wanted == 2})
+	local owns3 = profile().passes and profile().passes.speed3
+	chooseSpeed(current == 1 and 2 or (current == 2 and owns3) and 3 or current)
 end
 
 local function toggleAutoSkip()
@@ -1023,7 +1041,7 @@ kit.priorityOrder = {"First", "Last", "Strongest", "Nearest"}
 
 local function currentMatchLayout()
 	local size = screenSize()
-	return UI.matchLayout(size.X, size.Y, {skills = 1, vip = profile().passes ~= nil and profile().passes.vip == true})
+	return UI.matchLayout(size.X, size.Y, {skills = 1, vip = profile().passes ~= nil and profile().passes.vip == true, cards = state ~= nil and state.match ~= nil and state.match.cardMode == true})
 end
 
 local function closeTowerPanel()
@@ -1126,9 +1144,17 @@ local function renderMatch()
 			if humanoid then pcall(function() humanoid:PlayEmote("wave") end) end
 		end, {LayoutOrder = 3, Size = UDim2.fromOffset(layout.saluteW, layout.buttonH), TextColor3 = C.gold, TextSize = 12})
 	end
-	refs.speedToggle = UI.secondary(abilities, "1x", toggleSpeed, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 13, Font = Enum.Font.GothamBlack})
-	refs.sheetButton = UI.secondary(abilities, T("FICHA", "SHEET"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11, Font = Enum.Font.GothamBlack})
-	refs.autoSkipToggle = UI.secondary(abilities, "AUTO", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 12, Font = Enum.Font.GothamBlack})
+	-- Narrow bands (a phone) get smaller letters so every label still fits.
+	refs.controlDelta = layout.controlW >= 52 and 0 or (layout.controlW >= 44 and -2 or -4)
+	local cd = refs.controlDelta
+	refs.speedToggle = UI.secondary(abilities, "2x", function() chooseSpeed(2) end, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 15 + cd, Font = Enum.Font.GothamBlack})
+	refs.speed3Toggle = UI.secondary(abilities, "3x", function() chooseSpeed(3) end, {Name = "Speed3Toggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 15 + cd, Font = Enum.Font.GothamBlack})
+	refs.sheetButton = UI.secondary(abilities, T("FICHA", "SHEET"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 7, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11 + cd, Font = Enum.Font.GothamBlack})
+	-- The cards have a button of their own, in the cards mode only.
+	if state.match and state.match.cardMode then
+		refs.cardsButton = UI.secondary(abilities, T("CARTAS", "CARDS"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = C.violet})
+	end
+	refs.autoSkipToggle = UI.secondary(abilities, "AUTO", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 12 + cd, Font = Enum.Font.GothamBlack})
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
 	UI.list(cards, 7, true)
@@ -1170,13 +1196,22 @@ updateMatch = function()
 	if refs.speedToggle then
 		local speed, vote = match.speed or 1, match.speedVote or 1
 		local party = match.partySize or 1
-		-- In a group, a faster speed starts only when everyone asked for it;
-		-- show who is waiting.
-		local label = speed >= 3 and "▶▶▶ 3x" or speed == 2 and "▶▶ 2x" or "▶ 1x"
-		if vote > speed and party > 1 then label = tostring(vote) .. "x " .. tostring(match.speedVotes or 1) .. "/" .. tostring(party) end
+		-- 2x in a group starts only when everyone asked for it: show how many did.
+		local on2 = vote == 2
+		local label = "2x"
+		if on2 and party > 1 and speed < 2 then label = "2x\n" .. tostring(match.speedVotes or 1) .. "/" .. tostring(match.speedPlayers or party) end
 		refs.speedToggle.Text = label
-		refs.speedToggle.BackgroundColor3 = speed > 1 and C.gold or (vote > 1 and C.gold:Lerp(C.card, 0.6) or C.card)
-		refs.speedToggle.TextColor3 = speed > 1 and C.background or C.text
+		refs.speedToggle.BackgroundColor3 = on2 and (speed >= 2 and C.gold or C.gold:Lerp(C.card, 0.55)) or C.card
+		refs.speedToggle.TextColor3 = on2 and speed >= 2 and C.background or C.text
+		-- 3x: lit when running, violet with a lock until the pass is owned.
+		local owns3 = profile().passes and profile().passes.speed3
+		if refs.speed3Toggle then
+			local on3 = speed >= 3
+			refs.speed3Toggle.Text = owns3 and "3x" or "3x\n" .. T("PASSE", "PASS")
+			refs.speed3Toggle.TextSize = (owns3 and 15 or 11) + (refs.controlDelta or 0)
+			refs.speed3Toggle.BackgroundColor3 = on3 and C.gold or (owns3 and C.card or C.violet:Lerp(C.card, 0.45))
+			refs.speed3Toggle.TextColor3 = on3 and C.background or C.text
+		end
 	end
 	if refs.autoSkipToggle then
 		refs.autoSkipToggle.Text = match.autoSkip and "AUTO ✓" or "AUTO"
@@ -1263,6 +1298,7 @@ updateMatch = function()
 	local offers = match.cardOffers or {}
 	local signature = table.concat(offers, ":")
 	if refs.protocolSignature ~= signature then refs.protocolSignature = signature; matchHud.protocolModal(offers) end
+	matchHud.cardStats(match)
 end
 
 render = function()
