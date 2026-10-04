@@ -84,6 +84,7 @@ function Panels.new(ctx)
 			local stars=math.clamp(owned.stars or 0,0,Catalog.Stars.max)
 			local rowY=short and 98 or 182
 			UI.label(info,T("MAESTRIA ","MASTERY ")..owned.level.."/20",{Position=UDim2.fromOffset(0,rowY),Size=UDim2.new(0.55,0,0,20),TextSize=13,Font=UI.Fonts.display,TextColor3=C.violet})
+			if not short then UI.label(info,T("CARTA NV ","CARD LV ")..(owned.rank or 1).."  •  "..(owned.copies or 0)..T(" cartas"," cards"),{Name="HeroCardSummary",Position=UDim2.fromOffset(208,152),Size=UDim2.new(1,-208,0,26),TextSize=15,Font=UI.Fonts.display,TextColor3=C.green}) end
 			UI.label(info,string.rep("★",stars)..string.rep("☆",Catalog.Stars.max-stars),{Name="HeroStars",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,rowY-2),Size=UDim2.new(0.45,0,0,24),TextSize=17,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Right})
 		end
 		local function drawActions()

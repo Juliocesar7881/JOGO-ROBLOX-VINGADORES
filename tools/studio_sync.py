@@ -28,6 +28,7 @@ STUDIO_WINDOW = 0
 CONTAINERS = {
     "shared": '(function() local p=game:GetService("ReplicatedStorage"); local c=p:FindFirstChild("DoomShared"); if not c then c=Instance.new("Folder"); c.Name="DoomShared"; c.Parent=p end; return c end)()',
     "server": '(function() local p=game:GetService("ServerScriptService"); local c=p:FindFirstChild("DoomServer"); if not c then c=Instance.new("Script"); c.Name="DoomServer"; c.Parent=p end; return c end)()',
+    "first": '(function() local p=game:GetService("ReplicatedFirst"); local c=p:FindFirstChild("DoomLoader"); if not c then c=Instance.new("LocalScript"); c.Name="DoomLoader"; c.Parent=p end; return c end)()',
     "client": '(function() local p=game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts"); local c=p:FindFirstChild("DoomClient"); if not c then c=Instance.new("LocalScript"); c.Name="DoomClient"; c.Parent=p end; return c end)()',
 }
 

@@ -22,7 +22,7 @@ Review.STAGES = {
 	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium", "premiumgold",
 	"quests", "leaderboard", "settings", "rewards", "boarding",
 	"preparing", "wave", "sheet", "sheetbase", "enemycard", "enemycardboss", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
-	"reveal", "revealbase", "revealcommon",
+	"reveal", "revealbase", "revealcommon", "reel", "herocard",
 }
 
 local MATCH_STAGES = { preparing = true, wave = true, sheet = true, sheetbase = true, enemycard = true, enemycardboss = true, tower = true, cards = true, finalboss = true, baseupgrade = true }
@@ -214,7 +214,22 @@ function Review.start(api)
 			end
 			api.setState(snapshot)
 			api.render()
-			if stage == "reveal" or stage == "revealbase" or stage == "revealcommon" then
+			if stage == "reel" then
+				-- Three chests in a row: the case-style reel, then the prize cards.
+				local picks = {}
+				for _, id in ipairs(Catalog.HeroOrder) do
+					if #picks < 3 then table.insert(picks, { heroId = id, rarity = Catalog.Heroes[id].rarity, duplicate = #picks == 1, refundGold = 150, refundMastery = 60, cards = 3, cost = 1000 }) end
+				end
+				local fillers = {}
+				for _, id in ipairs(Catalog.HeroOrder) do table.insert(fillers, { id = id, rarity = Catalog.Heroes[id].rarity, chance = 1 }) end
+				api.celebrate:Reel(picks, "rare", { fillers = fillers })
+			elseif stage == "herocard" then
+				local id = p.loadout[1]
+				p.heroes[id] = { level = 3, xp = 300, stars = 2, rank = 3, copies = 6, alloc = { damage = 1, speed = 0, range = 0 } }
+				api.setState({ phase = "Lobby", role = "Standalone", profile = p, players = actors() })
+				api.render()
+				api.openContext("hero", { heroId = id, hud = true })
+			elseif stage == "reveal" or stage == "revealbase" or stage == "revealcommon" then
 				local legendary, common
 				for _, id in ipairs(Catalog.HeroOrder) do
 					local rarity = Catalog.Heroes[id].rarity

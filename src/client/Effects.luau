@@ -608,6 +608,43 @@ function Effects:_impact(position, color, diameter)
 	if effect then effect.ballFrom, effect.ballTo = diameter, diameter * 1.9 end
 end
 
+-- The flash at a muzzle: a pale ball that swells and fades in a tenth of a second.
+function Effects:_muzzle(position, color, size)
+	local flash = self:_effect(Vector3.one * size, CFrame.new(position), color:Lerp(Color3.new(1, 1, 1), 0.55), 0.11, Enum.PartType.Ball, 0.25)
+	if flash then flash.ballFrom, flash.ballTo = size, size * 2.2 end
+end
+
+-- Short streaks thrown outward from a point.
+function Effects:_sparks(position, color, count, reach)
+	for index = 1, count do
+		local angle = index * math.pi * 2 / count + self.shotSerial * 0.7
+		local offset = Vector3.new(math.cos(angle), 0.35, math.sin(angle))
+		local spark = self:_effect(Vector3.new(0.12, 0.12, 0.5), CFrame.lookAt(position, position + offset), color, 0.22, nil, 0.1)
+		if spark then spark.from, spark.to, spark.arc, spark.arrow = position, position + offset * reach, 0.6, true end
+	end
+end
+
+-- Where a shot lands: a swelling flash, a ring on the ground and sparks.
+function Effects:_burst(position, color, size)
+	self:_impact(position, color:Lerp(Color3.new(1, 1, 1), 0.45), size * 1.6)
+	self:_groundImpact(position, color, size * 4)
+	self:_sparks(position, color, 4, size * 2.4)
+end
+
+-- A real laser: a wide soft glow, a coloured body and a white-hot core, with a
+-- flash at the muzzle and a burst where it lands.
+function Effects:_laser(from, to, color, width, duration)
+	duration = duration or 0.2
+	local length = (to - from).Magnitude
+	if length < 0.05 then return end
+	local middle = CFrame.lookAt((from + to) / 2, to)
+	self:_effect(Vector3.new(width * 3.2, width * 3.2, length), middle, color, duration, nil, 0.72)
+	self:_effect(Vector3.new(width * 1.6, width * 1.6, length), middle, color, duration, nil, 0.25)
+	self:_effect(Vector3.new(width * 0.55, width * 0.55, length), middle, Color3.new(1, 1, 1), duration * 0.85, nil, 0)
+	self:_muzzle(from, color, width * 3)
+	self:_burst(to, color, width * 2)
+end
+
 function Effects:_groundImpact(position, color, radius)
 	local center = Vector3.new(position.X, 0.18, position.Z)
 	local effect = self:_effect(Vector3.new(0.09, radius, radius), CFrame.new(center) * CFrame.Angles(0, 0, math.pi / 2), color, 0.28, Enum.PartType.Cylinder, 0.78)
@@ -861,18 +898,17 @@ function Effects:_heroShot(event, lowFX)
 			self:_effect(Vector3.new(0.35, 0.35, 0.09), CFrame.new(target + offset) * CFrame.Angles(0, 0, angle), Color3.fromRGB(255, 196, 112), 0.32)
 		end
 	elseif heroId == "vision" or heroId=="cyclops" or heroId=="nova" then
-		self:_line(from, target, heroId=="cyclops" and Color3.fromRGB(255,80,90) or Color3.fromRGB(252, 205, 99), 0.36, 0.22)
-		self:_line(from, target, white, 0.1, 0.13)
+		self:_laser(from, target, heroId=="cyclops" and Color3.fromRGB(255,80,90) or Color3.fromRGB(252, 205, 99), 0.3, 0.24)
 	elseif heroId == "widow" then
-		self:_line(from, target, Color3.fromRGB(240, 87, 99), 0.1, 0.11)
-		self:_impact(target, Color3.fromRGB(255, 165, 138), 0.4)
+		self:_laser(from, target, Color3.fromRGB(240, 87, 99), 0.1, 0.14)
 	elseif heroId == "falcon" then
 		local swoop = self:_effect(Vector3.new(0.6, 0.15, 0.15), CFrame.new(from), Color3.fromRGB(255, 150, 110), 0.22, nil, 0.15)
 		if swoop then swoop.from, swoop.to, swoop.arc = from, target, 2.5 end
 		self:_impact(target, Color3.fromRGB(255, 150, 110), 0.35)
 	elseif heroId == "bucky" or heroId=="deadpool" then
-		self:_line(from, target, Color3.fromRGB(200, 208, 216), 0.06, 0.09)
-		self:_impact(target, Color3.fromRGB(160, 170, 180), 0.3)
+		self:_muzzle(from, Color3.fromRGB(255, 214, 120), 0.5)
+		self:_line(from, target, Color3.fromRGB(255, 236, 190), 0.07, 0.1)
+		self:_burst(target, Color3.fromRGB(200, 208, 216), 0.3)
 	elseif heroId == "wasp" then
 		local previous = from
 		local side = delta.Unit:Cross(Vector3.new(0, 1, 0))
@@ -901,8 +937,8 @@ function Effects:_heroShot(event, lowFX)
 		self:_groundImpact(target, Color3.fromRGB(255, 140, 60), 5.5)
 	elseif heroId == "starlord" then
 		local side = delta.Unit:Cross(Vector3.new(0, 1, 0)) * 0.5
-		self:_line(from + side, target + side, Color3.fromRGB(255, 120, 90), 0.07, 0.1)
-		self:_line(from - side, target - side, Color3.fromRGB(120, 200, 255), 0.07, 0.1)
+		self:_laser(from + side, target + side, Color3.fromRGB(255, 120, 90), 0.09, 0.14)
+		self:_laser(from - side, target - side, Color3.fromRGB(120, 200, 255), 0.09, 0.14)
 	elseif heroId == "groot" then
 		self:_line(from, target, Color3.fromRGB(110, 85, 55), 0.28, 0.18)
 		self:_groundImpact(target, Color3.fromRGB(130, 100, 62), 3.5)
@@ -915,12 +951,9 @@ function Effects:_heroShot(event, lowFX)
 		end
 		self:_groundImpact(target, Color3.fromRGB(255, 90, 20), 4)
 	elseif heroId == "captainmarvel" then
-		self:_line(from, target, Color3.fromRGB(255, 220, 140), 0.4, 0.2)
-		self:_line(from, target, white, 0.14, 0.12)
-		self:_impact(target, Color3.fromRGB(255, 230, 160), 0.6)
+		self:_laser(from, target, Color3.fromRGB(255, 220, 140), 0.34, 0.24)
 	elseif heroId == "silversurfer" then
-		self:_line(from, target, Color3.fromRGB(210, 225, 245), 0.16, 0.16)
-		self:_impact(target, Color3.fromRGB(190, 210, 230), 0.45)
+		self:_laser(from, target, Color3.fromRGB(210, 225, 245), 0.16, 0.2)
 	elseif heroId == "capmen" then
 		-- A punch with weight: a shockwave ring on the ground and the enemy's
 		-- impact flash, in the hero's own red.
@@ -939,9 +972,7 @@ function Effects:_heroShot(event, lowFX)
 		self:_groundImpact(target, Color3.fromRGB(70, 255, 140), 4.5)
 		self:_line(from, target, Color3.fromRGB(110, 255, 160), 0.1, 0.16)
 	elseif heroId == "solartitan" then
-		self:_line(from, target, Color3.fromRGB(255, 70, 50), 0.34, 0.2)
-		self:_line(from, target, Color3.fromRGB(255, 220, 200), 0.1, 0.12)
-		self:_impact(target, Color3.fromRGB(255, 120, 80), 0.8)
+		self:_laser(from, target, Color3.fromRGB(255, 70, 50), 0.34, 0.24)
 	elseif heroId == "speedster" then
 		-- Many jabs in one blink: a fan of short yellow streaks around the target.
 		for index = -2, 2 do
@@ -963,8 +994,7 @@ function Effects:_heroShot(event, lowFX)
 	else
 		-- Repulsors remain pale blue even though Iron Man's suit is red.
 		local tint = heroId == "ironman" and Color3.fromRGB(136, 225, 255) or color
-		self:_line(from, target, tint, 0.23, 0.16)
-		self:_impact(target, tint, 0.65)
+		self:_laser(from, target, tint, 0.2, 0.2)
 	end
 end
 

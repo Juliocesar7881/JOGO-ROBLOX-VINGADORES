@@ -245,6 +245,9 @@ def build_tree(role: str, root: Path = ROOT, art_root: Path | None = None) -> ET
     item(remotes, "RemoteFunction", "Request")
     item(remotes, "RemoteEvent", "State")
     item(remotes, "RemoteEvent", "FX")
+    # The game's own loading screen runs before the world has arrived.
+    replicated_first, _ = item(tree, "ReplicatedFirst", "ReplicatedFirst")
+    loader = source_container(replicated_first, "DoomLoader", "first")
     server_service, _ = item(tree, "ServerScriptService", "ServerScriptService")
     server = source_container(server_service, "DoomServer", "server")
     starter, starter_properties = item(tree, "StarterPlayer", "StarterPlayer")
@@ -261,7 +264,7 @@ def build_tree(role: str, root: Path = ROOT, art_root: Path | None = None) -> ET
     prop(chat_properties, "token", "ChatVersion", 1)
     prop(chat_properties, "bool", "CreateDefaultTextChannels", True)
     prop(chat_properties, "bool", "CreateDefaultCommands", True)
-    containers = {"shared": shared, "server": server, "client": client}
+    containers = {"shared": shared, "server": server, "client": client, "first": loader}
     folders: dict[tuple[str, ...], ET.Element] = {}
 
     for path in paths:

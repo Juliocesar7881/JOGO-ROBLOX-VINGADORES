@@ -31,7 +31,10 @@ MATCH = read("server/MatchService.luau")
 PROFILES = read("server/PlayerService.luau")
 CATALOG = read("shared/Catalog.luau")
 CONFIG = read("shared/Config.luau")
-ALL_SOURCES = {path.name: path.read_text(encoding="utf-8-sig") for path in SRC.rglob("*.luau")}
+ALL_SOURCES: dict[str, str] = {}
+for _path in sorted(SRC.rglob("*.luau")):
+    # Two areas each have an init.client.luau (the interface and the loader).
+    ALL_SOURCES[_path.name] = ALL_SOURCES.get(_path.name, "") + "\n" + _path.read_text(encoding="utf-8-sig")
 
 SERVER_MODULES = (
     "PlayerService", "WorldBuilder", "MatchService", "PartyService",
@@ -205,6 +208,27 @@ class ContractTests(unittest.TestCase):
     def test_shutdown_drains_rewards_before_releasing_profiles(self):
         tail = BOOTSTRAP[BOOTSTRAP.index("game:BindToClose"):]
         self.assertLess(tail.index("match:Drain"), tail.index("profiles:Shutdown"))
+
+
+class LoadingScreenContract(unittest.TestCase):
+    """The game's own loading screen (ReplicatedFirst) covers a cold join."""
+
+    def test_the_loader_replaces_the_default_screen_and_always_leaves(self):
+        loader = read("first/init.client.luau")
+        self.assertIn("RemoveDefaultLoadingScreen", loader)
+        self.assertIn('GetAttribute("DoomReady")', loader, "It must wait for the interface to say it is ready")
+        self.assertIn("deadline", loader, "It must leave on its own if the interface never reports")
+        self.assertIn("gui:Destroy()", loader)
+
+    def test_the_interface_reports_ready_on_the_first_profile(self):
+        client = read("client/init.client.luau")
+        self.assertIn('SetAttribute("DoomReady", true)', client)
+
+    def test_every_place_build_carries_the_loader(self):
+        build = (ROOT / "tools" / "build.py").read_text(encoding="utf-8")
+        self.assertIn('"ReplicatedFirst"', build)
+        for manifest in ("default.project.json", "lobby.project.json", "match.project.json"):
+            self.assertIn('"src/first"', (ROOT / manifest).read_text(encoding="utf-8"), manifest)
 
 
 if __name__ == "__main__":

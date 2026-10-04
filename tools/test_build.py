@@ -88,7 +88,7 @@ class NativePlaceTests(unittest.TestCase):
         for filename, role in (("default.project.json", "Standalone"), ("lobby.project.json", "Lobby"), ("match.project.json", "Match")):
             project = json.loads((build.ROOT / filename).read_text(encoding="utf-8"))
             self.assertEqual(project["tree"]["Workspace"]["$attributes"]["DoomRole"], role)
-            for area in ("shared", "server", "client"):
+            for area in ("shared", "server", "client", "first"):
                 self.assertTrue((build.ROOT / "src" / area).is_dir())
 
 

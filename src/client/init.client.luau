@@ -1410,6 +1410,12 @@ end
 
 local function applyState(nextState)
 	if type(nextState) ~= "table" then return end
+	-- The first snapshot with a profile means the interface is ready: the loading
+	-- screen in ReplicatedFirst (src/first) may leave.
+	if not kit.readySignalled and nextState.profile then
+		kit.readySignalled = true
+		pcall(function() player:SetAttribute("DoomReady", true) end)
+	end
 	local previousPhase = state and state.phase
 	local previousLevel = state and state.profile and state.profile.level
 	local previousGold = state and state.profile and state.profile.gold
