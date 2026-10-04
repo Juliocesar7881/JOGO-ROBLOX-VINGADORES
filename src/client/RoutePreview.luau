@@ -94,7 +94,7 @@ function RoutePreview:ShowWay(target, text)
 	marker.Adornee, marker.Parent = anchor, anchor
 	local label = Instance.new("TextLabel")
 	label.Size, label.BackgroundTransparency, label.Text, label.TextScaled = UDim2.fromScale(1, 1), 1, text, true
-	label.Font, label.TextColor3, label.TextStrokeTransparency = Enum.Font.FredokaOne, tint, 0.2
+	label.Font, label.TextColor3, label.TextStrokeTransparency = Enum.Font.GothamBlack, tint, 0.2
 	label.Parent = marker
 	self.way = { anchor = anchor, attachment = from, target = target, age = 0 }
 	return true

@@ -549,13 +549,15 @@ local function session(screen)
 		local tree, node
 		for _, item in ipairs(gui:GetDescendants()) do
 			if item.Name == "TalentTree" then tree = item end
-			if item.Name == "UpgradeTalent_roundGold" then node = item end
+			if item.Name == "TalentNode_roundGold" then node = item end
 		end
 		check(tree ~= nil, tag .. ": talent branches render")
 		check(#offscreen(main, SCREEN) == 0, tag .. ": talent panel stays within viewport")
-		check(node ~= nil, tag .. ": fortune root has an upgrade button")
+		check(node ~= nil, tag .. ": fortune root is a tappable hexagon")
+		check(named(gui, "Talent_roundGold") == nil and countNamed(gui, "UpgradeTalent_roundGold") == 0, tag .. ": no card or button ever opens below the tree")
+		check(named(gui, "TalentInfo") ~= nil and string.find(named(gui, "TalentInfo").Text, "Agora", 1, true) ~= nil, tag .. ": one line above the icons says what the talent does")
 		if node then node.Activated:Fire(); flush() end
-		check(asked("UpgradeTalent"),tag .. ": investing sends server intent")
+		check(asked("UpgradeTalent"),tag .. ": tapping a hexagon spends the point through the server")
 		click("Redistribuir pontos")
 		check(not asked("ResetTalents"),tag .. ": reset first asks confirmation")
 		click("Confirmar redistribuição")
@@ -578,12 +580,13 @@ local function session(screen)
 		local treeFrame = named(gui, "TalentTree")
 		local mapFrame = treeFrame and named(treeFrame, "TalentMap")
 		check(mapFrame ~= nil and mapFrame.Size.X.Offset <= 340, tag .. ": the honeycomb is compact, " .. tostring(mapFrame and mapFrame.Size.X.Offset) .. " px wide")
+		local function spent() local n = 0; for _, name in ipairs(actions) do if name == "UpgradeTalent" then n += 1 end end; return n end
+		local spentBefore = spent()
 		clickNamed("TalentNode_killGold")
-		check(named(gui, "Talent_killGold") ~= nil, tag .. ": tapping a hexagon shows its card")
-		local nowNext = named(gui, "TalentNowNext")
-		check(nowNext and string.find(nowNext.Text, "Próximo", 1, true) ~= nil, tag .. ": the card shows now and next values, got " .. tostring(nowNext and nowNext.Text))
-		local locked = named(gui, "UpgradeTalent_killGold")
-		check(locked and locked.Active == false, tag .. ": a talent whose parent is too low cannot be bought")
+		check(named(gui, "Talent_killGold") == nil, tag .. ": tapping a hexagon opens no card below")
+		local info = named(gui, "TalentInfo")
+		check(info and string.find(info.Text, "Próximo", 1, true) ~= nil and string.find(info.Text, "Requer", 1, true) ~= nil, tag .. ": the line above says now, next and what it requires, got " .. tostring(info and info.Text))
+		check(spent() == spentBefore, tag .. ": a talent whose parent is too low cannot be bought")
 		clickNamed("CloseContext")
 		push(lobbySnapshot(veteranProfile()))
 	end)
@@ -650,6 +653,19 @@ local function session(screen)
 		check(named(gui,"BoardRetry")==nil and named(gui,"BoardFailed")==nil,tag..": retrying clears the failure")
 		fx({kind="OpenPanel",panel="premium"})
 		check(#offscreen(main,SCREEN)==0,tag..": category navigation stays on screen")
+		-- Everything on sale can be inspected before it is paid for.
+		clickNamed("PremiumTabs_pass")
+		clickNamed("ProductInfo_training")
+		local details=named(gui,"ProductDetails_training")
+		check(details~=nil and string.find(textOf(details),Catalog.Products.Passes.training.description.pt,1,true)~=nil,tag..": a pass shows what it gives before it is bought")
+		clickNamed("PremiumTabs_hero")
+		local anyHero
+		for key in pairs(Catalog.Products.Heroes) do if not (profile and profile.heroes and profile.heroes[key]) then anyHero=anyHero or key end end
+		if anyHero and named(gui,"ProductInfo_"..anyHero) then
+			clickNamed("ProductInfo_"..anyHero)
+			local hero=named(gui,"ProductDetails_"..anyHero)
+			check(hero~=nil and named(hero,"InfoStat_1")~=nil and named(hero,"InfoStat_3")~=nil,tag..": a hero on sale shows damage, range and speed before it is bought")
+		end
 	end)
 
 	step("base collection, chest and battle upgrade",function()
@@ -739,16 +755,31 @@ local function session(screen)
 			clickNamed("OpenChest_rare")
 			clickNamed("ConfirmChest_rare")
 		end
+		local function reel() return overlays:FindFirstChild("ChestReel") end
+		-- A chest opens like a case: a strip of prizes slows to a stop on the
+		-- one the server drew; a tap lands it, a second tap goes on.
+		local function throughReel()
+			clickNamed("RevealSkip")
+			clickNamed("RevealSkip")
+			frames(1 / 30, 3)
+		end
 		chestResult = { chestId = "rare", heroId = "thor", rarity = "legendary", duplicate = false, refundGold = 0, refundMastery = 0 }
 		openRare()
+		local strip = reel()
+		check(strip ~= nil, tag .. ": confirming a chest opens the full-screen reel")
+		check(strip ~= nil and countNamed(strip, "ReelTile") == 46 and named(strip, "ReelMarker") ~= nil, tag .. ": a strip of prizes passes a marker")
+		frames(1 / 30, 15)
+		local track = strip and named(strip, "ReelTrack")
+		check(track ~= nil and track.Position.X.Offset < -100, tag .. ": the strip rushes past the marker")
+		clickNamed("RevealSkip")
+		check(strip and named(strip, "ReelPrize").Text == Catalog.Upper(Catalog.Heroes.thor.name.pt), tag .. ": it stops on the hero the server granted, got " .. tostring(strip and named(strip, "ReelPrize").Text))
+		clickNamed("RevealSkip")
+		frames(1 / 30, 3)
+		check(reel() == nil, tag .. ": a second tap moves on from the reel")
 		local stage = reveal()
-		check(stage ~= nil, tag .. ": confirming a chest opens the full-screen reveal")
+		check(stage ~= nil, tag .. ": then the prize card opens")
 		local card = stage and named(stage, "RevealHeroCard")
-		check(card ~= nil and card.Visible == false, tag .. ": the hero stays hidden while the chest charges")
-		frames(1 / 30, 25)
-		local tier = stage and named(stage, "TierLabel")
-		check(tier ~= nil and tier.Text ~= "", tag .. ": the chest climbs through rarity names while it charges")
-		check(not named(stage, "RevealContinue").Visible, tag .. ": no way out before the prize is shown")
+		check(card ~= nil and card.Visible == false, tag .. ": the hero stays hidden while the chest opens")
 		-- The hero is not a photograph: it leaps out of the chest and keeps moving.
 		local function findRoot(node)
 			for _, child in ipairs(node:GetChildren()) do
@@ -784,21 +815,25 @@ local function session(screen)
 		check(countNamed(gui, "ChestResult") == 1, tag .. ": the panel keeps the result card afterwards")
 
 		-- A duplicate plays through on its own and says what it turned into.
-		chestResult = { chestId = "rare", heroId = "falcon", rarity = "common", duplicate = true, refundGold = 150, refundMastery = 60 }
+		chestResult = { chestId = "rare", heroId = "falcon", rarity = "common", duplicate = true, refundGold = 150, refundMastery = 60, cards = 3 }
 		openRare()
+		throughReel()
 		frames(1 / 30, 90)
 		stage = reveal()
 		check(stage ~= nil and named(stage, "RevealContinue").Visible, tag .. ": left alone, the reveal finishes by itself")
 		check(stage and string.find(named(stage, "RevealStatus").Text, "150", 1, true) ~= nil, tag .. ": a duplicate shows the Gold it became")
+		check(stage and string.find(named(stage, "RevealStatus").Text, "+3 CARTAS", 1, true) ~= nil, tag .. ": and the cards it paid for the hero's ladder")
 		clickNamed("RevealContinue")
 		chestResult = { chestId = "rare", heroId = "falcon", rarity = "common", duplicate = true, refundGold = 150, refundMastery = 60, starGained = true, stars = 2 }
 		openRare()
+		throughReel()
 		frames(1 / 30, 90)
 		stage = reveal()
 		check(stage and string.find(named(stage, "RevealStatus").Text, "+1 ★ (2/5)", 1, true) ~= nil, tag .. ": a duplicate that gains a star says so")
 		clickNamed("RevealContinue")
 		chestResult = { chestId = "rare", heroId = "falcon", rarity = "common", duplicate = false, refundGold = 0, refundMastery = 0, shiny = true }
 		openRare()
+		throughReel()
 		frames(1 / 30, 90)
 		stage = reveal()
 		check(stage and string.find(named(stage, "RevealStatus").Text, "BRILHANTE", 1, true) ~= nil, tag .. ": a shiny pull is announced")
@@ -811,12 +846,26 @@ local function session(screen)
 		chestResult = { chestId = "rare", heroId = "widow", rarity = "rare", duplicate = false, refundGold = 0, refundMastery = 0 }
 		frames(1 / 30, 100) -- the previous reveal's confetti has landed
 		openRare()
+		throughReel()
 		frames(1 / 30, 25)
 		stage = reveal()
 		check(stage ~= nil and named(stage, "RevealHeroCard").Visible, tag .. ": with reduced effects the hero shows in under a second")
 		check(countNamed(overlays, "Confetti") == 0, tag .. ": reduced effects throws no confetti")
 		clickNamed("RevealContinue")
+		-- Several at once: the quantity buttons, then one reel per chest and a summary.
+		push(lobbySnapshot(veteranProfile({ gold = 9000 })))
+		fx({ kind = "OpenPanel", panel = "chests" })
+		clickNamed("ChestCountPlus")
+		clickNamed("ChestCountPlus")
+		check(string.find(named(gui, "ChestCount").Text, "x3", 1, true) ~= nil, tag .. ": the quantity buttons count up, got " .. named(gui, "ChestCount").Text)
+		clickNamed("ChestCountMax")
+		check(string.find(named(gui, "ChestCount").Text, "x9", 1, true) ~= nil, tag .. ": MAX is the most the Gold pays for (9,000 Gold = 9 chests)")
+		clickNamed("ChestCountMinus")
+		clickNamed("OpenChest_rare")
+		clickNamed("ConfirmChest_rare")
+		check(asked("OpenChest"), tag .. ": several chests go out as one request")
 		chestResult = nil
+		push(lobbySnapshot(veteranProfile()))
 		push(lobbySnapshot(veteranProfile()))
 		click("×")
 	end)
@@ -865,7 +914,13 @@ local function session(screen)
 		clickNamed("FormationHero_spiderman")
 		check(actionPayloads.SetLoadout.heroes[1]=="spiderman",tag..": collection directly sends the chosen leader")
 		check(actionPayloads.SetLoadout.heroes[2]=="ironman",tag..": changing leader preserves previous squad members")
+		-- A hero in the collection (down here) offers two choices; one in the team (up there) leaves at a tap.
 		clickNamed("FormationHero_ironman")
+		check(named(gui,"HeroChoice")~=nil and named(gui,"ChoiceTeam")~=nil and named(gui,"ChoiceInfo")~=nil,tag..": a tap in the collection offers: put in the team, or see the info")
+		clickNamed("SquadSlot_2")
+		check(actionPayloads.SetLoadout~=nil and #actionPayloads.SetLoadout.heroes<=1,tag..": a tap on a hero in the team takes it out of the team")
+		clickNamed("FormationHero_ironman")
+		clickNamed("ChoiceInfo")
 		check(named(gui,"MakeLeader_ironman")~=nil,tag..": hero details open on power and squad actions")
 		clickNamed("HeroDetail_defense")
 		check(named(gui,"HeroStat_1") and named(gui,"HeroBranch_2") and named(gui,"HeroTargets"),tag..": hero details explain stats, targets and specialization paths")
@@ -1807,6 +1862,32 @@ local function session(screen)
 		push(matchSnapshot(profile, "Preparing", { cardMode = true, cards = {}, cardOffers = {} }))
 		check(named(gui, "CardStats") == nil, tag .. ": no cards, no corner panel")
 		push(matchSnapshot(profile, "Preparing"))
+	end)
+
+	-- The hero's card (the Clash-style ladder): cards from duplicates plus Gold
+	-- raise its level with no top; each level brings a point for damage, attack
+	-- speed or range.
+	step("the hero page carries the card ladder", function()
+		local ranked = veteranProfile({ gold = 5000 })
+		ranked.heroes.ironman = { xp = 300, level = 3, stars = 2, rank = 3, copies = 6, alloc = { damage = 1, speed = 0, range = 0 } }
+		push(lobbySnapshot(ranked))
+		fx({ kind = "OpenPanel", panel = "hero", heroId = "ironman", hud = true })
+		check(named(gui, "HeroCardLadder") ~= nil, tag .. ": an owned hero shows its card")
+		check(string.find(named(gui, "HeroCardRank").Text, "3", 1, true) ~= nil, tag .. ": with its level")
+		check(string.find(named(gui, "HeroCardCopies").Text, "6 / 5", 1, true) ~= nil, tag .. ": and the cards it has against the cards the next level needs (6 / 5)")
+		check(string.find(named(gui, "HeroCardPoints").Text, "1", 1, true) ~= nil, tag .. ": rank 3 earned 2 points, 1 spent, 1 free")
+		clickNamed("RankUpHero_ironman")
+		check(asked("RankUpHero"), tag .. ": levelling the card asks the server")
+		clickNamed("HeroPointPlus_range")
+		check(asked("SetHeroPoints"), tag .. ": spending a point asks the server")
+		check(string.find(named(gui, "HeroCardBonus_damage").Text, "+11%", 1, true) ~= nil, tag .. ": damage shows base 8% plus one point 3%, got " .. named(gui, "HeroCardBonus_damage").Text)
+		-- Too few cards: the button is dead and says what is missing.
+		ranked.heroes.ironman.copies = 1
+		push(lobbySnapshot(ranked))
+		fx({ kind = "OpenPanel", panel = "hero", heroId = "ironman", hud = true })
+		check(string.find(named(gui, "HeroCardHint").Text, "Faltam", 1, true) ~= nil, tag .. ": a missing card is named")
+		push(lobbySnapshot(veteranProfile()))
+		click("×")
 	end)
 
 	step("every FX event the client handles", function()

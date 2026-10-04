@@ -518,7 +518,7 @@ function Match:_baseStats(tower, preview)
 end
 
 local function statLine(stats)
-	return { damage = stats.damage, range = stats.range, rate = stats.rate }
+	return { damage = stats.damage, range = stats.range, rate = stats.rate, slow = stats.slow, splash = stats.splash }
 end
 
 -- The upgrade the tower's owner would buy next: one line below level 4, the
@@ -1677,7 +1677,7 @@ function Match:Snapshot(player)
 		local stats=self:_towerStats(t)
 		local preview=t.ownerId==player.UserId and self:_upgradePreview(t) or nil
 		table.insert(towers,{id=t.id,heroId=t.heroId,ownerId=t.ownerId,position=t.position,level=t.level,branch=t.branch,
-			priority=t.priority,invested=t.invested,damage=stats.damage,range=stats.range,rate=stats.rate,upgradeCost=stats.upgradeCost,
+			priority=t.priority,invested=t.invested,damage=stats.damage,range=stats.range,rate=stats.rate,slow=stats.slow,splash=stats.splash,upgradeCost=stats.upgradeCost,
 			base=preview and statLine(self:_baseStats(t)) or nil,next=preview and preview.next or nil,branches=preview and preview.branches or nil,
 			stunned=(t.stunnedUntil or 0)>self.elapsed and math.ceil((t.stunnedUntil-self.elapsed)*10)/10 or nil})
 	end

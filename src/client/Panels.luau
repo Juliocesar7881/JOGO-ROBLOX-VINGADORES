@@ -112,17 +112,51 @@ function Panels.new(ctx)
 		end
 		UI.label(body,def.air and T("ACERTA INIMIGOS NO CHÃO E VOANDO","HITS GROUND AND FLYING ENEMIES") or T("ACERTA SÓ INIMIGOS NO CHÃO","HITS GROUND ENEMIES ONLY"),{Name="HeroTargets",Size=UDim2.new(1,-6,0,26),TextColor3=def.air and C.green or C.coral,Font=UI.Fonts.display,TextSize=15,TextWrapped=true})
 		-- What sets this hero apart from the rest, one line each.
-		local traits={}
-		if (def.knockback or 0)>0 then table.insert(traits,"• "..T("Cada soco empurra o inimigo para trás","Every punch shoves the enemy back")) end
-		if def.stunProof then table.insert(traits,"• "..T("Nunca é paralisado","Can never be stunned")) end
-		if (def.stunAura or 0)>0 then table.insert(traits,"• "..T("No nível 5, ele protege os aliados da paralisia","At level 5 he shields allies from stuns")) end
-		if def.attack=="mine" then table.insert(traits,"• "..T("Planta até "..tostring(def.mineMax or 0).." minas na estrada; explodem em área","Lays up to "..tostring(def.mineMax or 0).." mines on the road; they blast an area")) end
-		if def.reveal then table.insert(traits,"• "..T("Revela inimigos camuflados","Reveals hidden enemies")) end
-		if (def.slow or 0)>0 then table.insert(traits,"• "..T("Desacelera quem acerta","Slows what it hits")) end
-		if def.support then table.insert(traits,"• "..T("Fortalece as torres ao redor","Strengthens the towers around it")) end
-		for _,trait in ipairs(traits) do UI.label(body,trait,{Name="HeroTrait",Size=UDim2.new(1,-6,0,24),TextColor3=C.cream,Font=UI.Fonts.display,TextSize=14}) end
-		if def.pickup then UI.label(body,"• "..T("Puxa o Ouro que cai perto dela","Pulls in Gold that lands nearby"),{Size=UDim2.new(1,-6,0,24),TextColor3=C.gold,Font=UI.Fonts.display,TextSize=14}) end
+		for _,trait in ipairs(UI.heroTraits(def,T)) do UI.label(body,"• "..trait,{Name="HeroTrait",Size=UDim2.new(1,-6,0,26),TextColor3=C.cream,Font=UI.Fonts.display,TextSize=16,TextWrapped=true}) end
 		if not short then drawActions() end
+		-- The hero's card: duplicates from chests are cards; cards and Gold raise
+		-- its level with no top, and every level brings a point to put into
+		-- damage, attack speed or range.
+		if owned then
+			local rank=owned.rank or 1
+			local need=Rules.CardRankCost(rank)
+			local copies=owned.copies or 0
+			local alloc=owned.alloc or {damage=0,speed=0,range=0}
+			local earned=Rules.CardPoints(rank)
+			local spent=(alloc.damage or 0)+(alloc.speed or 0)+(alloc.range or 0)
+			local free=earned-spent
+			local ladder=UI.roundFrame(body,{Name="HeroCardLadder",Size=UDim2.new(1,-6,0,318),BackgroundColor3=tint:Lerp(C.panel,0.75)},tint)
+			UI.label(ladder,T("CARTA DO HERÓI","HERO CARD"),{Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-130,0,32),TextSize=24,Font=UI.Fonts.display,TextColor3=C.gold})
+			UI.chip(ladder,T("NÍVEL ","LEVEL ")..rank,tint,{Name="HeroCardRank",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,10),Size=UDim2.fromOffset(104,30),TextSize=17})
+			local fill=UI.bar(ladder,C.green,UDim2.fromOffset(12,48),UDim2.new(1,-24,0,22))
+			fill.Size=UDim2.fromScale(math.clamp(copies/math.max(1,need.copies),0,1),1)
+			UI.label(ladder,copies.." / "..need.copies..T(" cartas"," cards"),{Name="HeroCardCopies",Position=UDim2.fromOffset(12,48),Size=UDim2.new(1,-24,0,22),TextSize=16,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			local can=copies>=need.copies and (p.gold or 0)>=need.gold
+			local rankUp=UI.button(ladder,T("EVOLUIR CARTA • ","LEVEL UP CARD • ")..number(need.gold)..T(" Ouro"," Gold"),function()
+				act("RankUpHero",{heroId=id,expectedRank=rank},function() audio:Cue("upgrade") end)
+			end,{Name="RankUpHero_"..id,Position=UDim2.fromOffset(12,78),Size=UDim2.new(1,-24,0,52),BackgroundColor3=C.green,TextSize=19})
+			if not can then UI.disabled(rankUp) end
+			local missing=copies<need.copies and (T("Faltam ","You need ")..(need.copies-copies)..T(" cartas: repetidos dos baús viram cartas."," more cards: duplicates from chests become cards.")) or ((p.gold or 0)<need.gold and (T("Faltam ","You need ")..number(need.gold-(p.gold or 0))..T(" Ouro."," more Gold.")) or T("Pronto para evoluir!","Ready to level up!"))
+			UI.label(ladder,missing,{Name="HeroCardHint",Position=UDim2.fromOffset(12,132),Size=UDim2.new(1,-24,0,22),TextSize=14,TextColor3=can and C.green or C.muted,TextWrapped=true})
+			UI.label(ladder,T("PONTOS PARA GASTAR: ","POINTS TO SPEND: ")..free,{Name="HeroCardPoints",Position=UDim2.fromOffset(12,158),Size=UDim2.new(1,-24,0,28),TextSize=18,Font=UI.Fonts.display,TextColor3=free>0 and C.gold or C.muted})
+			local bonus=Rules.CardBonus(rank,alloc)
+			for index,entry in ipairs({{"damage",T("DANO","DAMAGE"),"sword"},{"speed",T("VELOCIDADE","ATTACK SPEED"),"bow"},{"range",T("ALCANCE","RANGE"),"ring"}}) do
+				local y=190+(index-1)*42
+				UI.icon(ladder,entry[3],C.cream,{Position=UDim2.fromOffset(12,y+3),Size=UDim2.fromOffset(32,32)})
+				UI.label(ladder,entry[2],{Position=UDim2.fromOffset(52,y),Size=UDim2.new(0.34,0,0,38),TextSize=15,Font=UI.Fonts.bold})
+				UI.label(ladder,"+"..math.floor(bonus[entry[1]]*100+0.5).."%",{Name="HeroCardBonus_"..entry[1],Position=UDim2.new(0.38,0,0,y),Size=UDim2.new(0.2,0,0,38),TextSize=19,Font=UI.Fonts.display,TextColor3=C.green,TextXAlignment=Enum.TextXAlignment.Center})
+				local function change(delta)
+					local nextPoints={damage=alloc.damage or 0,speed=alloc.speed or 0,range=alloc.range or 0}
+					nextPoints[entry[1]]=math.max(0,nextPoints[entry[1]]+delta)
+					act("SetHeroPoints",{heroId=id,damage=nextPoints.damage,speed=nextPoints.speed,range=nextPoints.range})
+				end
+				local minus=UI.button(ladder,"-",function() change(-1) end,{Name="HeroPointMinus_"..entry[1],AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-96,0,y),Size=UDim2.fromOffset(44,38),BackgroundColor3=C.card,TextSize=24})
+				UI.label(ladder,tostring(alloc[entry[1]] or 0),{Name="HeroPointValue_"..entry[1],AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-52,0,y),Size=UDim2.fromOffset(40,38),TextSize=20,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+				local plus=UI.button(ladder,"+",function() change(1) end,{Name="HeroPointPlus_"..entry[1],AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,y),Size=UDim2.fromOffset(44,38),BackgroundColor3=C.green,TextSize=24})
+				if (alloc[entry[1]] or 0)<=0 then UI.disabled(minus) end
+				if free<=0 then UI.disabled(plus) end
+			end
+		end
 		local tabs=UI.row(body,44)
 		for index,tab in ipairs({{id="power",label=T("PODER","POWER")},{id="defense",label=T("CAMINHOS","PATHS")}}) do
 			UI.button(tabs,tab.label,function() kit.heroDetailTab=tab.id; renderContext() end,{Name="HeroDetail_"..tab.id,Position=UDim2.new((index-1)/2,0,0,0),Size=UDim2.new(0.5,-6,0,44),TextSize=16,BackgroundColor3=kit.heroDetailTab==tab.id and tint or C.card})
@@ -263,25 +297,46 @@ function Panels.new(ctx)
 			UI.list(purchaseParent,8)
 			galleryHeight=stageHeight-34
 		end
-		local eligible=(p.gold or 0)>=chest.cost and not p.paidRandomRestricted
+		-- How many to open at once: from one to the most the Gold pays for.
+		local maxCount=math.clamp(math.floor((p.gold or 0)/math.max(1,chest.cost)),1,Catalog.MaxChestsAtOnce)
+		local count=math.clamp(kit.chestCount or 1,1,maxCount)
+		kit.chestCount=count
+		local eligible=(p.gold or 0)>=chest.cost*count and not p.paidRandomRestricted
 		local color=UI.color(chest.color)
 		local id=kit.selectedChest
 		local confirming=kit.confirmChest==id
 		local function openChest()
 			if pending.OpenChest then return end
 			pending.OpenChest=true; kit.confirmChest=nil; renderContext()
+			local wanted=count
 			task.spawn(function()
-				local response=request("OpenChest",{chestId=id}); pending.OpenChest=nil
+				local response=request("OpenChest",{chestId=id,count=wanted>1 and wanted or nil}); pending.OpenChest=nil
 				if response and response.ok then
 					lastChestResult=response.data and response.data.result
-					if lastChestResult then celebrate:Chest(lastChestResult,id) end
+					if lastChestResult then
+						-- Every chest gets its own reel, one after the other.
+						celebrate:Reel(lastChestResult.batch or {lastChestResult},id,{fillers=outcomes})
+					end
 				end
 				if ctx.contextPanel() and ctx.contextPanel().kind=="chests" then renderContext() end
 			end)
 		end
+		local function setCount(value)
+			kit.chestCount=math.clamp(value,1,maxCount); kit.confirmChest=nil; renderContext()
+		end
+		local function quantityRow(parent,y,rowH)
+			local row=UI.frame(parent,{Name="ChestQuantity",Position=UDim2.fromOffset(10,y),Size=UDim2.new(1,-20,0,rowH),BackgroundTransparency=1})
+			UI.button(row,"-",function() setCount(count-1) end,{Name="ChestCountMinus",Size=UDim2.new(0.18,-4,1,0),BackgroundColor3=C.card,TextSize=26})
+			UI.label(row,"x"..count,{Name="ChestCount",Position=UDim2.fromScale(0.18,0),Size=UDim2.new(0.34,0,1,0),TextSize=26,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Center})
+			UI.button(row,"+",function() setCount(count+1) end,{Name="ChestCountPlus",Position=UDim2.fromScale(0.52,0),Size=UDim2.new(0.18,-4,1,0),BackgroundColor3=C.card,TextSize=26})
+			UI.button(row,T("MÁX ","MAX ")..maxCount,function() setCount(maxCount) end,{Name="ChestCountMax",Position=UDim2.fromScale(0.7,0),Size=UDim2.new(0.3,0,1,0),BackgroundColor3=C.violet,TextSize=16})
+			if maxCount<=1 then for _,item in ipairs(row:GetChildren()) do if item:IsA("TextButton") then UI.disabled(item) end end end
+		end
+		local priceText=count>1 and ("x"..count.." • "..number(chest.cost*count)..T(" Ouro"," Gold")) or (number(chest.cost)..T(" Ouro"," Gold"))
 		if not wide then
 			-- One row: chest, name and balance, then the action on the right.
-			local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,74),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
+			local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirming and 74 or 128),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
+			if not confirming then quantityRow(purchase,76,42) end
 			UI.illustration(purchase,"crate",color,{Position=UDim2.fromOffset(6,8),Size=UDim2.fromOffset(62,56)})
 			UI.label(purchase,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(74,8),Size=UDim2.new(0.5,-78,0,24),TextSize=16,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
 			UI.label(purchase,number(p.gold)..T(" Ouro"," Gold"),{Name="SummonBalance",Position=UDim2.fromOffset(74,32),Size=UDim2.new(0.5,-78,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.gold})
@@ -295,12 +350,13 @@ function Panels.new(ctx)
 				if not eligible then UI.disabled(confirm) end
 				UI.secondary(purchase,T("VOLTAR","BACK"),function() kit.confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.8,0,0,8),Size=UDim2.new(0.2,-8,0,58),TextSize=13})
 			else
-				local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR\n","SUMMON\n")..number(chest.cost)..T(" Ouro"," Gold"),function() kit.confirmChest=id; renderContext() end,
+				local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR\n","SUMMON\n")..priceText,function() kit.confirmChest=id; renderContext() end,
 					{Name="OpenChest_"..id,Position=UDim2.new(0.5,0,0,8),Size=UDim2.new(0.5,-8,0,58),BackgroundColor3=C.green,TextSize=17})
 				if not eligible or pending.OpenChest then UI.disabled(button) end
 			end
 		else
-			local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirming and 196 or 176),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
+			local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirming and 196 or 236),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
+			if not confirming then quantityRow(purchase,100,46) end
 			UI.illustration(purchase,"crate",color,{Position=UDim2.fromOffset(10,8),Size=UDim2.fromOffset(92,82)})
 			UI.label(purchase,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(110,10),Size=UDim2.new(1,-120,0,32),TextSize=22,Font=UI.Fonts.display,TextWrapped=true})
 			UI.label(purchase,T("Você tem ","You have ")..number(p.gold)..T(" Ouro"," Gold"),{Name="SummonBalance",Position=UDim2.fromOffset(110,44),Size=UDim2.new(1,-120,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold})
@@ -312,17 +368,17 @@ function Panels.new(ctx)
 				fill.Size=UDim2.fromScale(math.clamp(count/chest.pity.after,0,1),1)
 			end
 			if confirming then
-				UI.label(purchase,T("Sobra: ","Left: ")..number((p.gold or 0)-chest.cost)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(12,100),Size=UDim2.new(1,-24,0,26),TextSize=15,Font=UI.Fonts.display})
+				UI.label(purchase,(count>1 and ("x"..count.."  •  ") or "")..T("Sobra: ","Left: ")..number((p.gold or 0)-chest.cost*count)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(12,100),Size=UDim2.new(1,-24,0,26),TextSize=15,Font=UI.Fonts.display})
 				local confirm=UI.button(purchase,T("CONFIRMAR!","CONFIRM!"),openChest,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(10,132),Size=UDim2.new(0.6,-14,0,54),BackgroundColor3=C.green,TextSize=19})
 				if not eligible then UI.disabled(confirm) end
 				UI.secondary(purchase,T("VOLTAR","BACK"),function() kit.confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.6,0,0,132),Size=UDim2.new(0.4,-10,0,54),TextSize=16})
 			else
-				local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR • ","SUMMON • ")..number(chest.cost)..T(" Ouro"," Gold"),function() kit.confirmChest=id; renderContext() end,
-					{Name="OpenChest_"..id,Position=UDim2.fromOffset(10,108),Size=UDim2.new(1,-20,0,58),BackgroundColor3=C.green,TextSize=21})
+				local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR • ","SUMMON • ")..priceText,function() kit.confirmChest=id; renderContext() end,
+					{Name="OpenChest_"..id,Position=UDim2.fromOffset(10,160),Size=UDim2.new(1,-20,0,64),BackgroundColor3=C.green,TextSize=22})
 				if not eligible or pending.OpenChest then UI.disabled(button) end
 			end
 		end
-		if not eligible and not p.paidRandomRestricted then smallText(purchaseParent,T("Faltam ","You need ")..number(chest.cost-(p.gold or 0))..T(" Ouro: jogue partidas e pegue os prêmios."," Gold: play matches and claim gifts."),0,36) end
+		if not eligible and not p.paidRandomRestricted then smallText(purchaseParent,T("Faltam ","You need ")..number(chest.cost*count-(p.gold or 0))..T(" Ouro: jogue partidas e pegue os prêmios."," Gold: play matches and claim gifts."),0,36) end
 
 		local caption=UI.frame(galleryParent,{Name="SummonOddsCaption",Size=UDim2.new(1,-6,0,30),BackgroundTransparency=1})
 		UI.label(caption,T("PODE VIR NESTE BAÚ","IN THIS CHEST"),{Size=UDim2.new(1,0,1,0),TextSize=20,Font=UI.Fonts.display,TextColor3=C.cream})
@@ -452,6 +508,37 @@ function Panels.new(ctx)
 					if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
 				end,{Name="Buy_"..cacheKey,Position=UDim2.new(0,left,1,-buttonH-(slim and 6 or 10)),Size=UDim2.new(1,-left-12,0,buttonH),BackgroundColor3=owned and C.card or C.green,TextSize=slim and 16 or 17})
 				if owned or (not ready and info~="retry") then UI.disabled(buy) end
+				-- Everything can be inspected before it is paid for.
+				local open=kit.shopInfo==cacheKey
+				UI.button(row,open and "×" or "i",function() kit.shopInfo=open and nil or cacheKey; renderContext() end,{Name="ProductInfo_"..key,AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,slim and 4 or 8),Size=UDim2.fromOffset(slim and 38 or 44,slim and 38 or 44),BackgroundColor3=open and C.red or C.blue,TextSize=22})
+				if open then
+					local details=UI.roundFrame(body,{Name="ProductDetails_"..key,Size=UDim2.new(1,-6,0,10),BackgroundColor3=C.background,AutomaticSize=Enum.AutomaticSize.Y},tint)
+					UI.padding(details,12)
+					UI.list(details,8)
+					if group.kind=="hero" then
+						local hero=Catalog.Heroes[key]
+						UI.label(details,L(hero.description),{Name="InfoText",Size=UDim2.new(1,0,0,44),TextSize=16,TextWrapped=true,TextTruncate=Enum.TextTruncate.None,TextColor3=C.muted})
+						local stats=UI.row(details,74)
+						local perSecond=hero.interval>0 and 1/hero.interval or 0
+						for index,entry in ipairs({{T("DANO","DAMAGE"),tostring(hero.damage)},{T("ALCANCE","RANGE"),tostring(hero.range)},{T("ATAQUES/S","HITS/S"),string.format("%.1f",perSecond)}}) do
+							local cell=UI.roundFrame(stats,{Name="InfoStat_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-8,1,-4),BackgroundColor3=tint:Lerp(C.panel,0.7)},tint)
+							UI.label(cell,entry[1],{Position=UDim2.fromOffset(6,4),Size=UDim2.new(1,-12,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center})
+							UI.label(cell,entry[2],{Position=UDim2.fromOffset(6,26),Size=UDim2.new(1,-12,0,40),TextSize=30,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+						end
+						UI.label(details,hero.air and T("ACERTA INIMIGOS NO CHÃO E VOANDO","HITS GROUND AND FLYING ENEMIES") or T("ACERTA SÓ INIMIGOS NO CHÃO","HITS GROUND ENEMIES ONLY"),{Size=UDim2.new(1,0,0,24),TextSize=15,Font=UI.Fonts.display,TextColor3=hero.air and C.green or C.coral})
+						for _,trait in ipairs(UI.heroTraits(hero,T)) do UI.label(details,"• "..trait,{Size=UDim2.new(1,0,0,24),TextSize=15,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None}) end
+						local ability=Catalog.Abilities[hero.ability]
+						if ability then
+							UI.label(details,"★ "..L(ability.name),{Size=UDim2.new(1,0,0,26),TextSize=18,Font=UI.Fonts.display,TextColor3=C.gold})
+							UI.label(details,Rules.AbilityText(ability,1,ctx.language()),{Size=UDim2.new(1,0,0,44),TextSize=15,TextWrapped=true,TextTruncate=Enum.TextTruncate.None,TextColor3=C.muted})
+						end
+						for index,branch in ipairs(hero.branches or {}) do
+							UI.label(details,index..". "..L(branch.name).." — "..L(branch.description),{Size=UDim2.new(1,0,0,40),TextSize=14,TextWrapped=true,TextTruncate=Enum.TextTruncate.None,TextColor3=C.text})
+						end
+					else
+						UI.label(details,def.description and L(def.description) or (isGold and (T("Você recebe ","You get ")..UI.format(def.gold)..T(" Ouro para gastar em baús."," Gold to spend on chests.")) or ""),{Name="InfoText",Size=UDim2.new(1,0,0,60),TextSize=17,TextWrapped=true,TextTruncate=Enum.TextTruncate.None})
+					end
+				end
 			end
 		end
 		fetchProducts()
@@ -785,7 +872,12 @@ function Panels.new(ctx)
 			local tile=UI.secondary(lineup,"",function()
 				if slot==1 then kit.inventoryView.leaderPick=not kit.inventoryView.leaderPick; inventoryFilter="owned"; kit.inventoryView.rarity="all"; renderContext()
 				elseif id and kit.inventoryView.leaderPick then makeLeader(id,function() kit.inventoryView.leaderPick=false; renderContext() end)
-				elseif id then openContext("hero",{heroId=id}) else inventoryFilter="owned"; renderContext(); showToast(T("Toque num herói abaixo e depois em Adicionar à equipe.","Tap a hero below, then Equip hero.")) end
+				elseif id then
+					-- A tap on a hero in the team (up here) takes it out of the team.
+					local list=copy(p.loadout); table.remove(list,table.find(list,id))
+					kit.inventoryView.choice=nil
+					act("SetLoadout",{heroes=list},function() showToast(T(heroName(id).." saiu da equipe.",heroName(id).." left the team.")) end)
+				else inventoryFilter="owned"; renderContext(); showToast(T("Toque num herói abaixo e escolha Colocar na equipe.","Tap a hero below and choose Add to team.")) end
 			end,{Name="SquadSlot_"..slot,Position=UDim2.new((slot-1)/5,0,0,0),Size=UDim2.new(0.2,-6,0,104),BackgroundColor3=slot==1 and C.gold:Lerp(C.panel,0.45) or C.card})
 			if slot==1 then UI.stroke(tile,C.gold,3) end
 			if id then heroPortrait(tile,id,{Position=UDim2.fromOffset(4,4),Size=UDim2.new(1,-8,1,-8)})
@@ -805,6 +897,25 @@ function Panels.new(ctx)
 			UI.button(power,T("TROCAR LÍDER","CHANGE LEADER"),function()
 				kit.inventoryView.leaderPick=true; inventoryFilter="owned"; kit.inventoryView.rarity="all"; renderContext()
 			end,{Name="ChangeLeader",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,2),Size=UDim2.fromOffset(140,44),BackgroundColor3=C.gold,TextSize=15})
+		end
+		-- The two choices for the hero just tapped in the collection.
+		local choice=kit.inventoryView.choice
+		if choice and (p.heroes or {})[choice] then
+			local def=Catalog.Heroes[choice]
+			local tint=UI.color(Catalog.Rarities[def.rarity].color)
+			local inTeam=contains(p.loadout,choice)
+			local pick=UI.roundFrame(body,{Name="HeroChoice",Size=UDim2.new(1,-6,0,wide and 96 or 150),BackgroundColor3=tint:Lerp(C.panel,0.7)},tint)
+			heroPortrait(pick,choice,{Position=UDim2.fromOffset(6,6),Size=UDim2.fromOffset(wide and 84 or 76,wide and 84 or 76)})
+			UI.label(pick,heroName(choice),{Position=UDim2.fromOffset(wide and 98 or 90,6),Size=UDim2.new(1,-(wide and 160 or 150),0,34),TextSize=22,Font=UI.Fonts.display,TextColor3=tint:Lerp(C.text,0.4)})
+			UI.secondary(pick,"×",function() kit.inventoryView.choice=nil; renderContext() end,{Name="CloseHeroChoice",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-6,0,6),Size=UDim2.fromOffset(44,44),TextSize=24})
+			local buttonsY=wide and 48 or 90
+			UI.button(pick,inTeam and T("TIRAR DA EQUIPE","REMOVE FROM TEAM") or T("+ COLOCAR NA EQUIPE","+ ADD TO TEAM"),function()
+				local list=copy(p.loadout); local old=table.find(list,choice)
+				if old then table.remove(list,old) elseif #list<5 then table.insert(list,choice) else showToast(T("A equipe tem 5 heróis. Toque num herói da equipe, lá em cima, para tirá-lo.","Team full. Tap a hero in the team, up top, to take it out."),true); return end
+				kit.inventoryView.choice=nil
+				act("SetLoadout",{heroes=list})
+			end,{Name="ChoiceTeam",Position=wide and UDim2.fromOffset(98,buttonsY) or UDim2.fromOffset(6,buttonsY),Size=wide and UDim2.new(0.5,-52,0,44) or UDim2.new(0.5,-9,0,52),BackgroundColor3=inTeam and C.card or C.green,TextSize=wide and 15 or 14})
+			UI.button(pick,T("INFORMAÇÕES","INFO"),function() kit.inventoryView.choice=nil; openContext("hero",{heroId=choice}) end,{Name="ChoiceInfo",AnchorPoint=Vector2.new(1,0),Position=wide and UDim2.new(1,-6,0,buttonsY) or UDim2.new(1,-6,0,buttonsY),Size=wide and UDim2.new(0.5,-52,0,44) or UDim2.new(0.5,-9,0,52),BackgroundColor3=C.blue,TextSize=wide and 15 or 14})
 		end
 		local owned=0
 		for _,id in ipairs(Catalog.HeroOrder) do if (p.heroes or {})[id] then owned+=1 end end
@@ -853,7 +964,9 @@ function Panels.new(ctx)
 			if stars>0 then UI.label(card,string.rep("★",stars),{Name="CollectionStars",Position=UDim2.new(0,8,1,-64),Size=UDim2.new(0.6,0,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.gold}) end
 			UI.label(card,heroName(id),{Name="HeroName",Position=UDim2.new(0,6,1,-36),Size=UDim2.new(1,-12,0,32),Font=UI.Fonts.display,TextSize=cellW<150 and 13 or 16,TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Center})
 			UI.button(card,"",function()
-				if kit.inventoryView.leaderPick and mine then makeLeader(id,function() kit.inventoryView.leaderPick=false; renderContext() end) else openContext("hero",{heroId=id}) end
+				if kit.inventoryView.leaderPick and mine then makeLeader(id,function() kit.inventoryView.leaderPick=false; renderContext() end)
+				elseif mine then kit.inventoryView.choice=id; renderContext()
+				else openContext("hero",{heroId=id}) end
 			end,{Name="FormationHero_"..id,Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=4})
 		end
 	end
@@ -917,7 +1030,7 @@ function Panels.new(ctx)
 		-- Pointy-top hexagons in a honeycomb: rows are the tiers of every branch,
 		-- each row shifted half a hexagon from the one above, so they interlock.
 		-- A phone on its side has little height: smaller hexagons there.
-		local R = UI.sizeClass(screenSize().X, screenSize().Y).short and 34 or 46
+		local R = UI.sizeClass(screenSize().X, screenSize().Y).short and 34 or 50
 		local GAP = 5
 		local stepX = 1.732 * R + GAP
 		local stepY = 1.5 * R + GAP * 0.87
@@ -949,11 +1062,35 @@ function Panels.new(ctx)
 			end
 			talentSelected = talentSelected or Catalog.TalentBranches[1].nodes[1]
 		end
-		local canvasH = math.min(mapH + 4, options.canvasHeight or math.clamp(screenSize().Y - 330, 220, 430))
+		-- In the lobby the tree is only icons: one line above them says what the
+		-- chosen talent does, a tap on a hexagon spends the point, and nothing
+		-- opens below.
+		local info
+		if not readOnly then
+			info = UI.label(body, "", {Name = "TalentInfo", Size = UDim2.new(1, -6, 0, 62), TextSize = 17, Font = UI.Fonts.bold, TextWrapped = true, RichText = true, TextTruncate = Enum.TextTruncate.None, TextYAlignment = Enum.TextYAlignment.Top, TextXAlignment = Enum.TextXAlignment.Center})
+		end
+		local canvasH = math.min(mapH + 4, options.canvasHeight or math.clamp(screenSize().Y - 330, 220, 470))
 		local canvas = UI.scroll(body, {Name = "TalentTree", Size = UDim2.new(1, -6, 0, canvasH), ScrollingDirection = Enum.ScrollingDirection.Y,
 			AutomaticCanvasSize = Enum.AutomaticSize.None, CanvasSize = UDim2.fromOffset(0, mapH),
-			BackgroundTransparency = 0.45, BackgroundColor3 = C.ink, ScrollBarThickness = 6})
-		UI.corner(canvas, 14)
+			BackgroundTransparency = readOnly and 0.45 or 1, BackgroundColor3 = C.ink, ScrollBarThickness = 6})
+		if readOnly then UI.corner(canvas, 14) end
+		local function describe(id)
+			local def = Catalog.Talents[id]
+			local rank, open = ranks[id] or 0, available(id)
+			local unit = def.unit == "%" and "%" or (def.unit == "HP" and " HP" or (def.unit == "gold" and T(" Ouro", " Gold") or ""))
+			local function value(r)
+				if def.flag then return r > 0 and T("ATIVO", "ACTIVE") or T("inativo", "inactive") end
+				return (r > 0 and "+" or "") .. tostring(r * def.effect) .. unit
+			end
+			local text = '<font color="#FFD23F">' .. L(def.name) .. "  " .. rank .. "/" .. def.maxRank .. "</font>  " .. L(def.description) .. "\n"
+			if rank >= def.maxRank then text ..= T("Agora: ", "Now: ") .. value(rank) .. T("  •  nível máximo", "  •  max level")
+			else text ..= T("Agora: ", "Now: ") .. value(rank) .. "  →  " .. T("Próximo: ", "Next: ") .. value(rank + 1) end
+			if not open then
+				local parentDef = def.parent and Catalog.Talents[def.parent]
+				if parentDef then text ..= '\n<font color="#FF4D5E">' .. T("Requer ", "Requires ") .. L(parentDef.name) .. " " .. def.requiredRank .. "/" .. parentDef.maxRank .. "</font>" end
+			end
+			return text
+		end
 		-- The honeycomb sits in the middle of the canvas.
 		local map = UI.frame(canvas, {Name = "TalentMap", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.fromOffset(mapW, mapH), BackgroundTransparency = 1})
 		-- Hexagons: the UI has no polygons, so three bars turned 30/90/150 degrees
@@ -986,11 +1123,24 @@ function Panels.new(ctx)
 				local word = UI.label(map, def.short and L(def.short) or "", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y + R * 0.46), Size = UDim2.fromOffset(R * 1.5, 14), TextScaled = true, Font = UI.Fonts.display, TextColor3 = rank > 0 and C.cream or C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 5})
 				UI.create("UITextSizeConstraint", {MaxTextSize = 12, MinTextSize = 7}, word)
 				local badge = UI.chip(map, maxed and "MAX" or (rank .. "/" .. def.maxRank), maxed and C.gold or (rank > 0 and C.cream or C.muted), {Name = "TalentRank_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y - R + 6), Size = UDim2.fromOffset(44, 16), TextSize = 10, ZIndex = 7})
-				UI.button(map, "", function() talentSelected = id; rerender() end, {Name = "TalentNode_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y), Size = UDim2.fromOffset(R * 1.732, R * 1.9), BackgroundTransparency = 1, ZIndex = 8})
+				local node = UI.button(map, "", function()
+					talentSelected = id
+					if not readOnly and open and rank < def.maxRank and points >= 1 then
+						act("UpgradeTalent", {talentId = id, expectedRank = rank}, function() audio:Cue("upgrade"); showToast(L(def.name) .. "  " .. (rank + 1) .. "/" .. def.maxRank) end)
+					elseif not readOnly and rank < def.maxRank and open and points < 1 then
+						showToast(T("Sem pontos: cada nível novo dá 1 ponto.", "No points: every new level gives 1 point."), true)
+						rerender()
+					else
+						rerender()
+					end
+				end, {Name = "TalentNode_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at.X, at.Y), Size = UDim2.fromOffset(R * 1.732, R * 1.9), BackgroundTransparency = 1, ZIndex = 8})
+				if info then pcall(function() node.MouseEnter:Connect(function() info.Text = describe(id) end) end) end
 			end
 		end
+		if info then info.Text = describe(talentSelected) end
 		-- The chosen talent's card: exactly what one more point does, and why not.
-		do
+		-- Only the match sheet (read-only) shows it; the lobby tree never opens a window.
+		if readOnly then
 			local id = talentSelected
 			local def = Catalog.Talents[id]
 			local branchTint = C.violet

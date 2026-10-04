@@ -939,6 +939,9 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 		placed += 1
 		if countClass(model, "BasePart") < 5 then table.insert(missing, heroId .. ":thin") end
 		if model:GetAttribute("HeroId") ~= heroId then table.insert(missing, heroId .. ":attr") end
+		-- A click on the hero itself must land on the tower: an invisible, queryable box as tall as the figure.
+		local hitbox = model:FindFirstChild("TowerHitbox")
+		if not hitbox or hitbox.CanQuery ~= true or hitbox.Transparency ~= 1 or hitbox:GetAttribute("TowerId") ~= "t" .. heroId or hitbox.Size.Y < 4 then table.insert(missing, heroId .. ":hitbox") end
 		local upgraded = pcall(function() world:UpgradeTower(model, 5, 1, 20) end)
 		if not upgraded then table.insert(missing, heroId .. ":upgrade") end
 		-- A maxed hero is meant to look different from a fresh one.

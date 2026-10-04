@@ -475,7 +475,13 @@ renderContext = function()
 	if contextPanel.kind=="chests" and Catalog.Chests[kit.selectedChest].kind=="base" then tint=C.green end
 	if not panel then panel=UI.roundFrame(main,{Name="ContextPanel",BackgroundColor3=C.panel,Active=true}) end
 	panel.Position,panel.Size=at(slot),dims(slot)
-	UI.stroke(panel,tint:Lerp(Color3.new(1,1,1),0.35),3)
+	local border=UI.stroke(panel,tint:Lerp(Color3.new(1,1,1),0.35),3)
+	-- The talent tree has no window: only the hexagons float over the lobby.
+	local bare=contextPanel.kind=="talents"
+	panel.BackgroundTransparency=bare and 1 or 0
+	border.Transparency=bare and 1 or 0
+	local shade=panel:FindFirstChildOfClass("UIGradient")
+	if shade then shade.Enabled=not bare end
 	if reuse then
 		for _,child in ipairs(panel:GetChildren()) do
 			if child~=body and not child:IsA("UIComponent") then child:Destroy() end

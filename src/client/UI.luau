@@ -23,7 +23,7 @@ UI.Colors = {
 
 -- One bubbly display face for titles, numbers and buttons; Gotham stays for
 -- small running text, where legibility matters more than personality.
-UI.Fonts = { display = Enum.Font.FredokaOne, bold = Enum.Font.GothamBold, body = Enum.Font.Gotham }
+UI.Fonts = { display = Enum.Font.GothamBlack, bold = Enum.Font.GothamBold, body = Enum.Font.Gotham }
 
 UI.Themes = {
 	guide = {color=UI.Colors.gold, icon="guide"}, maps = {color=UI.Colors.gold, icon="bolt"},
@@ -858,7 +858,7 @@ local function rect(x, y, w, h)
 end
 
 -- Heights the tower panel's content actually needs in each arrangement.
-UI.TOWER_TALL_HEIGHT = 226
+UI.TOWER_TALL_HEIGHT = 350
 UI.TOWER_WIDE_HEIGHT = 132
 
 local function clampScreen(width, height)
@@ -995,7 +995,7 @@ function UI.matchLayout(width, height, options)
 		local towerTop = bannerY + bossH + gap
 		local towerBottom = layout.actionTop - gap
 		local tall = towerBottom - towerTop >= UI.TOWER_TALL_HEIGHT
-		local towerW = tall and math.min(292, width - 2 * pad) or math.min(420, width - 2 * pad)
+		local towerW = tall and math.min(340, width - 2 * pad) or math.min(420, width - 2 * pad)
 		local towerH = tall and UI.TOWER_TALL_HEIGHT or math.min(UI.TOWER_WIDE_HEIGHT, towerBottom - towerTop)
 		layout.tower = rect(width - pad - towerW, towerBottom - towerH, towerW, towerH)
 		layout.towerVariant = tall and "tall" or "wide"
@@ -1113,6 +1113,26 @@ function UI.contextLayout(width, height, options)
 	slot.modal = modal
 	slot.class = hud.class
 	return slot
+end
+
+-- What sets a hero apart, one line each (no bullets). `slow` is the slow the
+-- tower really has now, when it is a tower.
+function UI.heroTraits(def, T, slow)
+	local traits = {}
+	local function add(pt, en) table.insert(traits, T(pt, en)) end
+	local slowNow = slow or def.slow or 0
+	if slowNow > 0 then add("Desacelera os inimigos em " .. math.floor(slowNow * 100 + 0.5) .. "% e evolui com o nível", "Slows enemies by " .. math.floor(slowNow * 100 + 0.5) .. "% and grows with level") end
+	if (def.knockback or 0) > 0 then add("Cada soco empurra o inimigo para trás", "Every punch shoves the enemy back") end
+	if def.stunProof then add("Nunca é paralisado", "Can never be stunned") end
+	if (def.stunAura or 0) > 0 then add("No nível 5, protege os aliados da paralisia", "At level 5 shields allies from stuns") end
+	if def.attack == "mine" then add("Planta até " .. tostring(def.mineMax or 0) .. " minas na estrada; explodem em área", "Lays up to " .. tostring(def.mineMax or 0) .. " mines on the road; they blast an area") end
+	if def.reveal then add("Revela inimigos camuflados", "Reveals hidden enemies") end
+	if def.support then add("Fortalece as torres ao redor", "Strengthens the towers around it") end
+	if def.pickup then add("Puxa o Ouro que cai perto dela", "Pulls in Gold that lands nearby") end
+	if def.attack == "splash" then add("Acerta vários inimigos de uma vez (área)", "Hits several enemies at once (area)") end
+	if def.attack == "chain" then add("O ataque salta entre inimigos", "The attack jumps between enemies") end
+	if def.attack == "beam" then add("Raio contínuo que atravessa a fila", "A beam that pierces the line") end
+	return traits
 end
 
 function UI.percent(value, language)

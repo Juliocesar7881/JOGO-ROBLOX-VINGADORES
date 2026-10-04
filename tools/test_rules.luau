@@ -803,6 +803,15 @@ do
 	check(counts.epic > 0, "Epic cards do appear")
 end
 
+-- A slowing hero slows harder with every level.
+do
+	local one = Rules.TowerStats("iceman", 1).slow
+	local four = Rules.TowerStats("iceman", 4).slow
+	approx(one, Catalog.Heroes.iceman.slow, "Level 1 slows by the hero's base")
+	check(four > one and four <= 0.75, "Level 4 slows harder, never past 75%")
+	approx(Rules.TowerStats("ironman", 4).slow, 0, "A hero that does not slow never starts")
+end
+
 do
 	local totals = Rules.CardTotals({ "sharpen", "sharpen", "glassCannon", "supplyDrop" })
 	approx(totals.damage, 1.10 * 1.10 * 1.35 - 1, "Card damage compounds: each copy multiplies the total")
