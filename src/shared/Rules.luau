@@ -44,16 +44,18 @@ function Rules.TalentPointsEarned(level)
 	return math.clamp(math.floor(number(level, 1)), 1, 50) - 1
 end
 
+-- There is no design limit on towers: a commander fields as many heroes (of any
+-- mix, any number of copies) as their Gold allows. This ceiling only keeps one
+-- account from flooding a server (a tower is a rig, a projectile source and a
+-- sync record); nobody reaches it by spending Gold.
+Rules.SafetyTowerCeiling = 150
 function Rules.TowerLimit(size)
-	return ({ 16, 12, 10, 8 })[math.clamp(math.floor(number(size, 1)), 1, 4)]
+	return Rules.SafetyTowerCeiling
 end
 
--- How many towers of one hero a commander may field: rarer heroes are
--- stronger, so fewer copies (and a squad has to mix).
+-- Copies of one hero are not limited either; the ceiling above is the only cap.
 function Rules.HeroLimit(heroId)
-	local hero = Catalog.Heroes[heroId]
-	local rarity = hero and Catalog.Rarities[hero.rarity]
-	return rarity and rarity.placeLimit or 8
+	return Rules.SafetyTowerCeiling
 end
 
 --==============================================================================
@@ -799,12 +801,20 @@ function Rules.CardWave(modeId, wave)
 end
 
 -- The sum of every stacked card's stat changes.
+-- Cards compound instead of adding: every copy multiplies what is already
+-- there. Two +10% cards make x1.21 (+21%); a -10% card taken afterwards cuts
+-- 10% of that larger number (x1.089), never a flat 10 points. The result is
+-- still a bonus fraction per stat (x1.21 is 0.21), so every consumer reads it
+-- exactly as before.
 function Rules.CardTotals(owned)
-	local totals = {}
+	local factors = {}
 	for _, id in ipairs(owned or {}) do
 		local card = Catalog.Cards[id]
-		for key, value in pairs(card and card.effects or {}) do totals[key] = (totals[key] or 0) + value end
+		for key, value in pairs(card and card.effects or {}) do factors[key] = (factors[key] or 1) * (1 + value) end
 	end
+	local totals = {}
+	-- Rounded to nine places so 1.08 - 1 stays exactly 0.08 (a price is floored).
+	for key, factor in pairs(factors) do totals[key] = math.floor((factor - 1) * 1e9 + 0.5) / 1e9 end
 	return totals
 end
 

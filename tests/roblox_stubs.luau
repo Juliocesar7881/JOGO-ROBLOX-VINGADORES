@@ -583,6 +583,7 @@ local SERVICES = {
 		end,
 	},
 	RunService = { IsStudio = function() return false end, IsServer = function() return true end },
+	ProximityPromptService = { PromptTriggered = newSignal() },
 	PhysicsService = {
 		IsCollisionGroupRegistered = function() return true end,
 		RegisterCollisionGroup = function() end,

@@ -664,10 +664,19 @@ local function session(screen)
 		check(countNamed(gui,"ChestOdds_workshop")==1 and countNamed(gui,"ChestOdds_ironman")==0,tag..": base chest displays actual base pool")
 		check(named(gui,"ContextTitle").Text=="INVOCAR BASES",tag..": entering the base shop changes its title immediately")
 		push(matchSnapshot(p,"Preparing",{base={id="workshop",level=1,stats=Rules.BaseStats("workshop",1),wall=0},cash=1000}))
-		local open=named(gui,"OpenBaseUpgrade"); if open then open.Activated:Fire(); flush() end
-		check(countNamed(gui,"ConfirmBaseUpgrade")==1,tag..": core bar opens upgrade comparison")
+		-- The base is upgraded at the agent beside it: its prompt opens the window,
+		-- another commander's agent does not.
+		local function agentPrompt(owner) return { GetAttribute = function(_, key) if key == "BaseOwnerId" then return owner end end } end
+		services.ProximityPromptService.PromptTriggered:Fire(agentPrompt(ALLY_ID)); flush()
+		check(countNamed(gui,"ConfirmBaseUpgrade")==0,tag..": another commander's agent does not open your base")
+		services.ProximityPromptService.PromptTriggered:Fire(agentPrompt(LOCAL_ID)); flush()
+		check(countNamed(gui,"ConfirmBaseUpgrade")==1,tag..": the base agent opens the upgrade comparison")
 		local upgrade=named(gui,"ConfirmBaseUpgrade"); if upgrade then upgrade.Activated:Fire(); flush() end
 		check(asked("UpgradeBase"),tag..": base upgrade uses server intent")
+		-- Upgrading does not close the window: it redraws at the new level.
+		push(matchSnapshot(p,"Preparing",{base={id="workshop",level=2,stats=Rules.BaseStats("workshop",2),wall=0},cash=1000}))
+		check(countNamed(gui,"ConfirmBaseUpgrade")==1 and string.find(textOf(named(gui,"BaseUpgrade")), "2 / 5", 1, true)~=nil,tag..": the base window stays open and shows the new level")
+		named(gui,"BaseUpgrade"):Destroy()
 		push(lobbySnapshot(veteranProfile())); fx({kind="OpenPanel",panel="chests",chestId="rare"})
 	end)
 
@@ -1232,8 +1241,8 @@ local function session(screen)
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.One, Position = v3(0, 0, 0) }, false)
 		flush()
 		rayHit = { Instance = workspace:FindFirstChild("DoomWorld").BuildZones.BuildGround, Position = v3(70, 0, -60) }
-		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, KeyCode = Enum.KeyCode.Unknown, Position = v3(SCREEN.w / 2, SCREEN.h / 2, 0) }, false)
-		flush()
+		-- Hovering the ground previews the spot (a click would already place).
+		frames(1 / 30, 3)
 		-- While placing, the ground that refuses a tower is tinted, from the
 		-- very rule the server applies: every tinted spot really is refused.
 		local visuals = workspace:FindFirstChild("DoomClientVisuals")
@@ -1260,8 +1269,10 @@ local function session(screen)
 		check(circles == #towers(), tag .. ": placing rings every tower's footprint, got " .. circles)
 		check(edges == 4, tag .. ": placing outlines the buildable area")
 		check(#wrong == 0, tag .. ": every tinted spot is one the server refuses: " .. table.concat(wrong, ", "))
-		click("CONFIRMAR")
-		check(asked("PlaceTower"), tag .. ": confirming sends PlaceTower")
+		-- There is no confirmation step: the click that picks a legal spot places.
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, KeyCode = Enum.KeyCode.Unknown, Position = v3(SCREEN.w / 2, SCREEN.h / 2, 0) }, false)
+		flush()
+		check(asked("PlaceTower"), tag .. ": clicking a legal spot sends PlaceTower at once")
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Escape, Position = v3(0, 0, 0) }, false)
 		flush()
 		local leftover = 0
@@ -1271,8 +1282,8 @@ local function session(screen)
 		check(leftover == 0, tag .. ": leaving placement clears the tint, " .. leftover .. " left")
 	end)
 
-	-- Touch: a tap in the world pins the spot, CONFIRM places it, and a tap the
-	-- interface already used (processed) never moves anything.
+	-- Touch: a tap in the world places on the spot, and a tap the interface
+	-- already used (processed) never moves anything.
 	step("placing a tower with a touch tap", function()
 		local function placed()
 			local count = 0
@@ -1286,12 +1297,10 @@ local function session(screen)
 		rayHit = { Instance = workspace:FindFirstChild("DoomWorld").BuildZones.BuildGround, Position = v3(70, 0, -60) }
 		input.TouchTapInWorld:Fire(Vector2.new(SCREEN.w / 2, SCREEN.h / 2), true)
 		flush()
-		check(findButton(playerGui.DoomsdayUI, "CONFIRMAR") == nil, tag .. ": a tap the interface already used does not pin a spot")
+		check(placed() == before, tag .. ": a tap the interface already used places nothing")
 		input.TouchTapInWorld:Fire(Vector2.new(SCREEN.w / 2, SCREEN.h / 2), false)
 		flush()
-		check(placed() == before, tag .. ": a tap only pins the spot, it does not place")
-		click("CONFIRMAR")
-		check(placed() == before + 1, tag .. ": confirming a tapped spot sends PlaceTower")
+		check(placed() == before + 1, tag .. ": tapping a legal spot places the tower at once")
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Escape, Position = v3(0, 0, 0) }, false)
 		flush()
 		input.TouchEnabled = false
@@ -1453,7 +1462,7 @@ local function session(screen)
 		check(named(gui, "CommanderSheet") == nil, tag .. ": the sheet starts closed")
 		clickNamed("SheetButton")
 		check(named(gui, "CommanderSheet") ~= nil, tag .. ": the sheet opens in the middle of a match")
-		check(named(gui, "SheetTab_talents") ~= nil and named(gui, "SheetTab_base") ~= nil and named(gui, "SheetTab_cards") == nil, tag .. ": tabs: talents and base, no cards outside the cards mode")
+		check(named(gui, "SheetTab_talents") ~= nil and named(gui, "SheetTab_base") == nil and named(gui, "SheetTab_cards") == nil, tag .. ": tabs: talents only, no base (the agent upgrades it) and no cards outside the cards mode")
 		check(named(gui, "TalentReadOnlyNote") ~= nil, tag .. ": the talents say they only change in the lobby")
 		check(named(gui, "TalentNode_roundGold") ~= nil and named(gui, "TalentNode_globalMagnet") ~= nil, tag .. ": the whole tree is drawn, capstone included")
 		check(countNamed(gui, "UpgradeTalent_roundGold") == 0 and named(gui, "TalentOverview") == nil, tag .. ": nothing can be spent in a match")
@@ -1462,13 +1471,7 @@ local function session(screen)
 		local card = named(gui, "Talent_globalMagnet")
 		check(card ~= nil and string.find(named(card, "TalentNowNext").Text, "inativo", 1, true) ~= nil, tag .. ": a talent card says whether the capstone is active, got " .. tostring(card and named(card, "TalentNowNext").Text))
 		check(card ~= nil and named(card, "UpgradeTalent_globalMagnet") == nil, tag .. ": the card has no upgrade button")
-		clickNamed("SheetTab_base")
-		check(string.find(named(gui, "SheetBaseName").Text, Catalog.Bases.outpost.name.pt, 1, true) ~= nil, tag .. ": the base tab names the active base")
-		check(string.find(named(gui, "SheetBaseName").Text, "2 / 5", 1, true) ~= nil, tag .. ": and its level")
-		check(named(gui, "SheetBaseNote") ~= nil, tag .. ": and says it only changes in the lobby")
-		clickNamed("SheetUpgradeBase")
-		check(named(gui, "CommanderSheet") == nil and named(gui, "BaseUpgrade") ~= nil, tag .. ": the upgrade button hands over to the base upgrade, closing the sheet")
-		named(gui, "BaseUpgrade"):Destroy()
+		clickNamed("CloseSheet")
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.C }, false)
 		check(named(gui, "CommanderSheet") ~= nil, tag .. ": the C key opens the sheet")
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.C }, false)
@@ -1481,12 +1484,8 @@ local function session(screen)
 		check(named(gui, "SheetCard_sharpen") ~= nil and string.find(textOf(named(gui, "SheetCard_sharpen")), "×2", 1, true) ~= nil and named(gui, "SheetCard_income") ~= nil, tag .. ": each picked card is listed with its stacks")
 		clickNamed("CloseSheet")
 		check(named(gui, "CommanderSheet") == nil, tag .. ": the close button closes the sheet")
-		-- The sheet follows the match: a base upgrade refreshes it, the end of the match closes it.
+		-- The sheet follows the match: the end of the match closes it.
 		clickNamed("SheetButton")
-		clickNamed("SheetTab_base")
-		push(matchSnapshot(sheetProfile, "Wave", { base = { id = "outpost", level = 3, stats = Rules.BaseStats("outpost", 3), wall = 0 }, cardMode = true, cards = { "sharpen", "sharpen", "income" } }))
-		frames(1 / 30, 2)
-		check(named(gui, "CommanderSheet") ~= nil and named(gui, "SheetBaseName") ~= nil and string.find(named(gui, "SheetBaseName").Text, "3 / 5", 1, true) ~= nil, tag .. ": a base upgrade refreshes the open sheet, got " .. tostring(named(gui, "CommanderSheet") ~= nil) .. " / " .. tostring(named(gui, "SheetBaseName") and named(gui, "SheetBaseName").Text))
 		push(resultsSnapshot(sheetProfile))
 		frames(1 / 30, 2)
 		check(named(gui, "CommanderSheet") == nil, tag .. ": the sheet closes when the match ends")
@@ -1555,15 +1554,10 @@ local function session(screen)
 		check(string.find(lesson(), "herói", 1, true) ~= nil or string.find(lesson(), "hero", 1, true) ~= nil, tag .. ": the first lesson is placing a hero, got " .. lesson())
 		check(named(gui, "TutorialPointer") ~= nil, tag .. ": a pointer sits over the hero card")
 		check(named(workspace, "TutorialArrow") ~= nil, tag .. ": an arrow marks a legal spot beside the road")
-		-- Picking the hero changes the lesson to the spot; pinning it, to CONFIRM.
+		-- Picking the hero changes the lesson to the spot.
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.One, Position = v3(0, 0, 0) }, false)
 		frames(1 / 30, 3)
 		check(string.find(lesson(), "ponto", 1, true) ~= nil or string.find(lesson(), "spot", 1, true) ~= nil, tag .. ": with the hero picked the lesson points at the spot, got " .. lesson())
-		rayHit = { Position = v3(-28, 0, -40), Instance = workspace }
-		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, Position = v3(400, 300, 0) }, false)
-		frames(1 / 30, 3)
-		check(string.find(lesson(), "CONFIRM", 1, true) ~= nil, tag .. ": with the spot pinned the lesson is to confirm, got " .. lesson())
-		rayHit = nil
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Escape, Position = v3(0, 0, 0) }, false)
 		frames(1 / 30, 2)
 		idle.towers = { mine(1) }
@@ -1774,8 +1768,7 @@ local function session(screen)
 		rayHit = { Instance = workspace:FindFirstChild("DoomWorld").Towers:GetChildren()[1]:FindFirstChild("UpperTorso", true), Position = v3(0, 0, 0) }
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, KeyCode = Enum.KeyCode.Unknown, Position = v3(5, 5, 0) }, false)
 		flush()
-		click("CONFIRMAR")
-		check(asked("CastSkill"), tag .. ": leader area ability is cast after confirmation")
+		check(asked("CastSkill"), tag .. ": leader area ability is cast on the click, without a confirmation")
 	end)
 
 	step("every FX event the client handles", function()

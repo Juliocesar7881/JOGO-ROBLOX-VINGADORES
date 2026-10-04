@@ -141,7 +141,9 @@ equal(Rules.MasteryLevel(1e10), 20, "Mastery cap")
 equal(Rules.LevelFromXP(0 / 0), 1, "Reject NaN experience")
 equal(Rules.LevelFromXP(-40), 1, "Nonnegative experience")
 check(not Rules.IsFinite(math.huge), "Reject infinite numbers")
-for size, limit in { 16, 12, 10, 8 } do equal(Rules.TowerLimit(size), limit, "Per-player tower cap") end
+for size = 1, 4 do equal(Rules.TowerLimit(size), Rules.SafetyTowerCeiling, "Towers are only capped by the anti-flood ceiling") end
+check(Rules.SafetyTowerCeiling >= 100, "the anti-flood ceiling is far above anything Gold can buy")
+equal(Rules.HeroLimit("ironman"), Rules.SafetyTowerCeiling, "copies of a hero are not limited")
 
 -- Permanent bonuses are capped no matter how much progression stacks up.
 local maxed = Rules.PermanentModifiers({ heroes = { ironman = { xp = 1e9 } }, talents = { towerPower = 5, reach = 5 } }, "ironman")
@@ -803,9 +805,11 @@ end
 
 do
 	local totals = Rules.CardTotals({ "sharpen", "sharpen", "glassCannon", "supplyDrop" })
-	approx(totals.damage, 0.10 + 0.10 + 0.35, "Card damage stacks")
+	approx(totals.damage, 1.10 * 1.10 * 1.35 - 1, "Card damage compounds: each copy multiplies the total")
 	approx(totals.range, -0.15, "A card can cost you something")
 	equal(totals.energy, nil, "Instant cards add no stat")
+	approx(Rules.CardTotals({ "sharpen", "sharpen" }).damage, 0.21, "Two +10% cards make +21%")
+	approx(Rules.CardTotals({ "sharpen", "sharpen", "overclock" }).damage, 1.21 * 0.88 - 1, "A -12% card cuts 12% of the larger total, not a flat 12 points")
 	equal(next(Rules.CardTotals({})), nil, "No cards, no effects")
 	equal(next(Rules.CardTotals({ "notACard" })), nil, "Unknown cards are ignored")
 end

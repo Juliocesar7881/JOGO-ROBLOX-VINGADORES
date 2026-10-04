@@ -5510,7 +5510,7 @@ function World:Build(mapId)
 	World.TameNeon(self.Scenery)
 end
 
-function World:UpdateBase(index, base, core)
+function World:UpdateBase(index, base, core, ownerId)
 	local name="PlayerBase_"..index
 	local old=self.Scenery:FindFirstChild(name); if old then old:Destroy() end
 	local model=Instance.new("Model"); model.Name=name; model.Parent=self.Scenery
@@ -5548,6 +5548,27 @@ function World:UpdateBase(index, base, core)
 		end
 	end
 	label(building,def.name.pt.." • "..base.level.."/5",Vector3.new(0,6,0),tint)
+	-- The base agent: the only place a base is upgraded. Pressing E beside the
+	-- agent opens the upgrade (the client listens for the prompt); the server
+	-- still decides everything when the upgrade is requested.
+	do
+		local frame=CFrame.new(at+Vector3.new(3.1,1,3.5))*CFrame.Angles(0,math.pi,0)
+		local made=Figure.Agent(model,index)
+		for _,item in ipairs(made.model:GetDescendants()) do
+			if item:IsA("BasePart") then item.Anchored,item.CanCollide,item.CanQuery,item.CanTouch=true,false,false,false end
+		end
+		made.model.Name="BaseAgent"
+		made.model:PivotTo(frame)
+		local ring=part(model,"AgentRing",Vector3.new(0.15,4.6,4.6),CFrame.new(at+Vector3.new(3.1,1.1,3.5))*CFrame.Angles(0,0,math.pi/2),tint,Enum.Material.Neon)
+		ring.Shape,ring.CanCollide,ring.Transparency=Enum.PartType.Cylinder,false,0.35
+		local anchor=part(model,"AgentTrigger",Vector3.new(2.4,6.4,2.4),frame*CFrame.new(0,3.2,0),tint,Enum.Material.SmoothPlastic)
+		anchor.Transparency,anchor.CanCollide,anchor.CanQuery=1,false,false
+		local prompt=Instance.new("ProximityPrompt")
+		prompt.Name,prompt.ActionText,prompt.ObjectText="BaseUpgradePrompt","Evoluir base / Upgrade base","Agente da Base / Base Agent"
+		prompt.MaxActivationDistance,prompt.HoldDuration,prompt.RequiresLineOfSight=14,0,false
+		prompt:SetAttribute("BaseOwnerId",ownerId or 0)
+		prompt.Parent=anchor
+	end
 	World.TameNeon(model)
 	return at
 end

@@ -693,7 +693,7 @@ check(duo and #duo.riders == 2 and duo.host == false and duo.modeId == "normal",
 check(not request(ana, "ElevatorMap", { step = 1 }).ok, "only the first rider switches the sector")
 check(rideUntilDeparture(ana), "training starts for everyone aboard")
 check(latest(bia).match ~= nil and latest(bia).match.partySize == 2, "both commanders are in one match of size two")
-check(latest(ana).match.towerLimit == 12, "a duo gets the duo tower cap")
+check(latest(ana).match.towerLimit >= 100, "a duo has no tower limit beyond the anti-flood ceiling")
 frames(4)
 leave(bia)
 frames(3)

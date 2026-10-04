@@ -1045,7 +1045,7 @@ do
 		check(take(), "sharpen can be taken")
 		check(math.abs(stats().damage / before - (1 + perm + 0.10) / (1 + perm)) < 1e-9, "sharpen adds 10% damage and invalidates cached stats")
 		p.cardOffers = { "sharpen" }; match:Handle(player, "ChooseCard", { cardId = "sharpen" })
-		check(math.abs(stats().damage / before - (1 + perm + 0.20) / (1 + perm)) < 1e-9, "the same card stacks")
+		check(math.abs(stats().damage / before - (1 + perm + 0.21) / (1 + perm)) < 1e-9, "the same card compounds: two +10% make +21%")
 	end
 	do -- quickDraw / longSight
 		local match, player, p, take = withCard("quickDraw")
@@ -1970,15 +1970,13 @@ do
 	local match, player = stage({ wave = 45 })
 	match.participants[player.UserId].cash = 1e6
 	for _ = 1, 8 do place(match, player, "ironman") end
-	-- A common hero is capped at eight towers per commander.
-	local refused = 0
+	-- Copies of a hero are not limited: a ninth and a tenth are placed.
+	local extra = 0
 	for _, spot in ipairs(buildSpots(match.mapId)) do
-		local ok, reason = match:Handle(player, "PlaceTower", { heroId = "ironman", position = spot.point })
-		check(not ok, "a ninth tower of a common hero is refused")
-		if not ok and string.find(tostring(reason), Rules.BuildReasons.unitLimit.pt, 1, true) then refused += 1 end
-		break
+		if match:Handle(player, "PlaceTower", { heroId = "ironman", position = spot.point }) then extra += 1 end
+		if extra == 2 then break end
 	end
-	check(refused == 1, "the refusal names the per-hero limit")
+	check(extra == 2, "a ninth and tenth copy of a hero are accepted, got " .. extra)
 	for _ = 1, 4 do place(match, player, "hawkeye") end
 	local calls = 0
 	local original = Rules.TowerStats
@@ -1987,7 +1985,32 @@ do
 		for _, tower in pairs(match.towers) do match:_towerStats(tower) end
 	end
 	Rules.TowerStats = original
-	check(calls <= 12, "tower stats are cached: 1200 reads cost " .. calls .. " recomputations")
+	local fielded = 0
+	for _ in pairs(match.towers) do fielded += 1 end
+	check(calls <= fielded + 2, "tower stats are cached: 100 sweeps over " .. fielded .. " towers cost " .. calls .. " recomputations")
+end
+
+print("--- choosing a card is never rushed ---")
+do
+	local match, player = stage({ wave = 5 })
+	local me = match.participants[player.UserId]
+	match.running = true
+	me.speedVote = 2
+	match:_refreshSpeed()
+	check(match:Speed() == 2, "a solo player who asked for 2x gets it")
+	me.cardOffers = { next(Catalog.Cards) }
+	check(match:Speed() == 1, "with a card offer open the clock runs at normal speed")
+	me.cardOffers = {}
+	check(match:Speed() == 2, "and the vote applies again once the card is chosen")
+end
+
+print("--- enemies carry one player's health per commander ---")
+do
+	local solo = Waves.Generate("manhattan", "normal", 10, 1, 7, "normal")
+	for size, factor in pairs({ [2] = 2, [3] = 3, [4] = 5 }) do
+		local group = Waves.Generate("manhattan", "normal", 10, size, 7, "normal")
+		check(math.abs(group[1].hpMultiplier / solo[1].hpMultiplier - factor) < 1e-9, "a party of " .. size .. " fights enemies with " .. factor .. "x health")
+	end
 end
 
 print(string.format("%s match simulation: %d checks, %d failures",

@@ -101,3 +101,30 @@ Escolha pela régua: o pior eixo primeiro. Cada item cabe numa sessão.
 - [x] M12.6 (02/10: mapa do dia +25% de Ouro e XP na campanha, faixa no menu, no elevador e na tela final) Evento diário.
 - [x] M12.7 Áudio próprio (M7.1) — feito em 03/10 pelo Gerenciador de ativos do Studio (26 de 27 tocam; `battle` em moderação).
 - [!] M12.8 Decisão de IP dos visuais — do dono (ver AUDIT 02/10).
+
+## M13 — Feedback do dono, 03/10 (jogou com o amigo no Roblox normal)
+Pedido do dono, na ordem em que chegou. Ele quer: letras maiores, visual moderno de Roblox em tudo, informação antes de gastar, nada de janelinha escondida.
+- [x] M13.1 Colocar herói e usar poder de área SEM confirmação: o toque/clique no chão válido já posiciona (barra de baixo vira só dica + Cancelar).
+- [x] M13.2 Setas do tutorial (anel, trilha de chevrons) ficam no chão ao pular (usam o último chão pisado).
+- [x] M13.3 Faixa "Você tem Ouro para um baú!" some quando o Ouro acaba (a faixa só era refeita na renderização inteira).
+- [x] M13.4 Em grupo a vida dos inimigos vale 2x (dupla), 3x (trio), 5x (quatro): `Waves.partyScale`.
+- [x] M13.5 Sem limite de heróis (nem por herói nem por jogador): só um teto anti-inundação de 150 torres (`Rules.SafetyTowerCeiling`); a barra mostra "x2" em vez de "2/4".
+- [x] M13.6 Evoluir a base não fecha a janela (ela se redesenha com o nível novo e o próximo preço).
+- [x] M13.7 Agente da Base (figura articulada com anel dourado) ao lado da base de cada jogador: E abre SÓ a evolução da base; a aba BASE saiu da ficha e o texto de vida do HUD só avisa onde evoluir. Nome sem "S.H.I.E.L.D." (marca bloqueada em `ip_blocklist.json`).
+- [ ] M13.8 Tabela do herói que evolui: números de alcance, dano e cadência bem maiores, janela maior; descrição do que cada evolução faz ANTES de evoluir.
+- [ ] M13.9 Clicar no boneco do herói em jogo (não só no círculo do chão) abre o cartão; cartão mais informativo (efeito de cada herói: lentidão do Gelo Vivo, e como evolui).
+- [~] M13.10 (feito: o relógio vai a 1x enquanto alguém tem oferta de carta aberta; falta botão próprio e visual) Modo cartas: o tempo NÃO corre em 2x/3x enquanto escolhe a carta; botão próprio CARTAS (sai de FICHA); cartas informativas e bonitas; valores em verde (ganha) e vermelho (perde).
+- [ ] M13.11 Cartas estilo arena de LoL: ícone por tipo (círculo = alcance, banco = economia, espada = dano, arco = cadência...).
+- [~] M13.12 (feito: `Rules.CardTotals` multiplica; falta o painel de atributos no canto, verde >=1x e vermelho <1x) Cartas escalonam multiplicando (+10% duas vezes = +21%, -10% depois tira 10% do que já tem).
+- [ ] M13.13 Velocidade: botões 1x/2x separados do 3x; em dupla o 2x precisa dos dois; 3x pago vale sozinho; sem passe o 3x abre a compra; auto-pular com visual melhor.
+- [ ] M13.14 Janelinha de baixo ("defense income") da árvore NUNCA abre; toda evolução toca só no hexágono.
+- [ ] M13.15 Árvore de evolução sem janela: só os ícones navegáveis sobre o mundo.
+- [ ] M13.16 Equipe: clicar em cima do herói tira da equipe; clicar embaixo abre 2 opções (colocar na equipe / informações).
+- [ ] M13.17 Ícone próprio MINHAS BASES no HUD (sai de dentro de Heróis).
+- [ ] M13.18 Baús: animação de abertura igual à de caixa da Valve (fita de prêmios que roda e para); abrir vários em sequência; escolher de 1 até o máximo que o Ouro paga.
+- [ ] M13.19 Duplicata de herói vira CARTA (Clash Royale); cada carta evolui sem limite, aumenta tudo, e o jogador distribui pontos entre dano, cadência e alcance.
+- [ ] M13.20 Loja mostra status/informações de cada item antes de comprar.
+- [ ] M13.21 Heróis atiram de verdade: lasers, projéteis, raios e poderes por herói (hoje os ataques são feios).
+- [ ] M13.22 Primeira abertura do jogo fica com tela preta/carregando por muito tempo (investigar: pré-carga, terreno, tela de carregamento).
+- [ ] M13.23 HUD/IU inteira: letras maiores, formas arredondadas e modernas, lobby sem cara "quadrada".
+

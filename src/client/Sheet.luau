@@ -53,9 +53,9 @@ function Sheet:_tabs()
 	local ctx = self.ctx
 	local T = ctx.T
 	local match = ctx.state() and ctx.state().match
+	-- The base is upgraded at the base agent standing beside it, not here.
 	local tabs = {
 		{ id = "talents", label = T("TALENTOS", "TALENTS") },
-		{ id = "base", label = T("BASE", "BASE") },
 	}
 	if match and match.cardMode and #(match.cards or {}) > 0 then table.insert(tabs, { id = "cards", label = T("CARTAS", "CARDS") }) end
 	return tabs
@@ -110,42 +110,9 @@ function Sheet:_render()
 	if self.tab == "talents" then
 		local height = panel.AbsoluteSize.Y > 0 and panel.AbsoluteSize.Y or 540
 		ctx.buildTalents(body, { readOnly = true, rerender = function() self:_render() end, canvasHeight = math.clamp(height - 300, 170, 400) })
-	elseif self.tab == "base" then
-		self:_baseTab(body, match)
 	else
 		self:_cardsTab(body, match)
 	end
-end
-
-function Sheet:_baseTab(body, match)
-	local ctx = self.ctx
-	local UI, C, T, L, Catalog, Rules = ctx.UI, ctx.C, ctx.T, ctx.L, ctx.Catalog, ctx.Rules
-	local base = match.base
-	local def = base and Catalog.Bases[base.id]
-	if not def then
-		UI.label(body, T("Nenhuma base ativa nesta partida.", "No active base in this match."), { Size = UDim2.new(1, -8, 0, 40), TextSize = 14, TextColor3 = C.muted })
-		return
-	end
-	local stats = base.stats
-	local art = UI.row(body, 116)
-	UI.basePortrait(art, def, { Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(112, 112), ZIndex = 48 })
-	UI.label(art, L(def.name) .. "\n" .. T("MELHORIA ", "UPGRADE ") .. base.level .. " / 5", { Name = "SheetBaseName", Position = UDim2.fromOffset(122, 4), Size = UDim2.new(1, -132, 1, -8), TextSize = 18, Font = Enum.Font.GothamBlack, TextWrapped = true, ZIndex = 48 })
-	local function line(text, color, height)
-		UI.label(body, text, { Size = UDim2.new(1, -8, 0, height or 26), TextSize = 13, TextWrapped = true, TextColor3 = color or C.text, ZIndex = 48 })
-	end
-	line(L(def.description), C.muted, 46)
-	local size = math.max(1, match.partySize or 1)
-	line(T("RENDA POR ONDA: ", "INCOME PER WAVE: ") .. stats.income .. T(" Ouro", " Gold"), C.gold)
-	line(T("VIDA EXTRA DO NÚCLEO: ", "EXTRA CORE HP: ") .. math.floor(stats.hp / size), C.green)
-	if stats.damage > 0 then line(T("DANO: ", "DAMAGE: ") .. stats.damage .. T("  •  ALCANCE: ", "  •  RANGE: ") .. stats.range, C.coral) end
-	if stats.wall > 0 then line(T("BARRICADA: ", "BARRICADE: ") .. (base.wall or 0) .. "/" .. stats.wall .. T(" HP", " HP"), C.blue) end
-	if stats.soldier > 0 then line(T("SOLDADO: ", "SOLDIER: ") .. stats.soldier .. T(" HP, a cada ", " HP, every ") .. stats.interval .. " s", C.violet) end
-	UI.label(body, T("A base só muda no lobby. Aqui você pode evoluir o nível dela com o Ouro da partida.", "The base only changes in the lobby. Here you can raise its level with the match Gold."),
-		{ Name = "SheetBaseNote", Size = UDim2.new(1, -8, 0, 40), TextSize = 12, TextWrapped = true, TextColor3 = C.muted, ZIndex = 48 })
-	UI.button(body, base.level >= 5 and T("NÍVEL MÁXIMO", "MAXIMUM LEVEL") or T("EVOLUIR BASE", "UPGRADE BASE"), function()
-		self:Close()
-		ctx.openBaseUpgrade()
-	end, { Name = "SheetUpgradeBase", Size = UDim2.new(1, -8, 0, 46), TextSize = 14, BackgroundColor3 = C.green, ZIndex = 48 })
 end
 
 function Sheet:_cardsTab(body, match)

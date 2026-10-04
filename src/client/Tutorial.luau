@@ -179,10 +179,7 @@ function Tutorial:_matchStep(state)
 		local hero = loadout[1]
 		local card = hero and refs.heroCards and refs.heroCards[hero]
 		local picked, pinned = ctx.placement()
-		if picked and pinned and refs.confirm then
-			-- The spot is chosen: only CONFIRM is left.
-			return { id = "place1", number = 1, total = total, text = T("Agora aperte CONFIRMAR para posicionar", "Now press CONFIRM to place him"), gui = refs.confirm, side = "left" }
-		elseif picked then
+		if picked then
 			return { id = "place1", number = 1, total = total, text = T(clickWord(T) .. " no ponto marcado, perto da estrada", clickWord(T) .. " the marked spot beside the road"), world = self:_spot(match, positions) }
 		end
 		return {
@@ -229,9 +226,6 @@ function Tutorial:_matchStep(state)
 		local cost = ctx.Catalog.Heroes[hero] and ctx.Catalog.Heroes[hero].cost or 0
 		local affordable = (match.cash or 0) >= cost
 		local picked, pinned = ctx.placement()
-		if affordable and picked and pinned and refs.confirm then
-			return { id = "place2", number = 5, total = total, text = T("Aperte CONFIRMAR", "Press CONFIRM"), gui = refs.confirm, side = "left" }
-		end
 		return {
 			id = "place2", number = 5, total = total,
 			text = affordable and (picked and T(clickWord(T) .. " no ponto marcado", clickWord(T) .. " the marked spot") or T("Posicione um segundo herói", "Place a second hero"))
@@ -508,7 +502,17 @@ function Tutorial:Step(dt)
 	end
 	self:_ensureWorld(lowFX)
 	if not self.anchor.Parent then self.anchor.Parent = self.folder; self.ring.Parent = self.folder end
-	local ground = Vector3.new(world.X, (root and root.Position.Y - 2.6) or 1.5, world.Z)
+	-- The marks lie on the floor the player last stood on, so jumping never
+	-- lifts the ring or the chevrons off the ground.
+	if root then
+		local humanoid = root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
+		local standing = not humanoid or humanoid.FloorMaterial ~= Enum.Material.Air
+		if standing or not self.floorY then
+			local hip = humanoid and tonumber(humanoid.HipHeight)
+			self.floorY = root.Position.Y - (hip and (hip + root.Size.Y / 2) or 2.6)
+		end
+	end
+	local ground = Vector3.new(world.X, self.floorY or 1.5, world.Z)
 	self.anchor.CFrame = CFrame.new(world)
 	local bob = math.sin(self.clock * 5) * 1.2
 	self.anchor:FindFirstChildOfClass("BillboardGui").StudsOffsetWorldSpace = Vector3.new(0, 7 + bob, 0)

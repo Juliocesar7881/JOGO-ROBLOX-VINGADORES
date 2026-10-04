@@ -240,13 +240,15 @@ function MatchHud.new(ctx)
 		if stats.wall>0 then line(T("BARRICADA: ","BARRICADE: ")..(base.wall or 0).."/"..stats.wall.." → "..nextStats.wall..T(" HP • regenera após 5 s"," HP • regenerates after 5 s"),C.blue,40) end
 		if stats.soldier>0 then line(T("SOLDADO: ","SOLDIER: ")..stats.soldier.." → "..nextStats.soldier..T(" HP • a cada "," HP • every ")..stats.interval.." s",C.violet,40) end
 		local button=UI.button(body,base.level>=5 and T("NÍVEL MÁXIMO","MAXIMUM LEVEL") or T("EVOLUIR • ","UPGRADE • ")..stats.upgradeCost,function()
-			act("UpgradeBase",{expectedLevel=base.level},function() audio:Cue("upgrade"); shade:Destroy() end)
+			-- The window stays: it redraws with the new level and the next price.
+			act("UpgradeBase",{expectedLevel=base.level},function() audio:Cue("upgrade") end)
 		end,{Name="ConfirmBaseUpgrade",Size=UDim2.new(1,-8,0,48),TextSize=14,BackgroundColor3=C.green,ZIndex=48})
 		if base.level>=5 or (state.match.cash or 0)<stats.upgradeCost then UI.disabled(button) end
 		ctx.refs().refreshBaseModal=function()
 			if not shade.Parent then ctx.refs().refreshBaseModal=nil; return end
 			local current=ctx.state().match
-			if not current or not current.base or current.base.level~=base.level then shade:Destroy(); ctx.refs().refreshBaseModal=nil; return end
+			if not current or not current.base then shade:Destroy(); ctx.refs().refreshBaseModal=nil; return end
+			if current.base.level~=base.level then ctx.refs().refreshBaseModal=nil; openBaseUpgrade(); return end
 			local missing=math.max(0,stats.upgradeCost-(current.cash or 0))
 			if base.level>=5 then return end
 			button.Text=missing>0 and T("FALTAM ","NEED ")..number(missing) or T("EVOLUIR • ","UPGRADE • ")..stats.upgradeCost

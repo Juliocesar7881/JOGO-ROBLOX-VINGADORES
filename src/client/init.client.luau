@@ -775,19 +775,26 @@ renderLobby = function()
 	-- What to do next. A newcomer is taught by the arrows of Tutorial.luau; once
 	-- the training is done, a short strip names something worth doing now (a
 	-- chest to open, gifts waiting, talent points) and tapping it goes there.
-	local newcomer=not profile().tutorialComplete
-	local p=profile()
-	local suggestion
-	if not newcomer then
-		if canOpenChest() then
-			suggestion={T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."),function() routePreview.goShop() end}
-		elseif tonumber(p.rewards and p.rewards.claimable) and p.rewards.claimable>0 then
-			suggestion={T("Tem prêmios esperando por você!","You have gifts waiting!"),function() openContext("rewards",{hud=true}) end}
-		elseif (p.talentPoints or 0)>0 then
-			suggestion={T("Você tem pontos para gastar na EVOLUÇÃO.","You have points to spend on TALENTS."),function() openContext("talents",{}) end}
+	-- Rebuilt whenever the answer changes (spending the Gold removes the strip).
+	kit.suggestionKey=nil
+	kit.rebuildSuggestion=function(force)
+		if state.phase~="Lobby" then return end
+		local newcomer=not profile().tutorialComplete
+		local p=profile()
+		local suggestion,key
+		if not newcomer then
+			if canOpenChest() then
+				key,suggestion="chest",{T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."),function() routePreview.goShop() end}
+			elseif tonumber(p.rewards and p.rewards.claimable) and p.rewards.claimable>0 then
+				key,suggestion="gifts",{T("Tem prêmios esperando por você!","You have gifts waiting!"),function() openContext("rewards",{hud=true}) end}
+			elseif (p.talentPoints or 0)>0 then
+				key,suggestion="talents",{T("Você tem pontos para gastar na EVOLUÇÃO.","You have points to spend on TALENTS."),function() openContext("talents",{}) end}
+			end
 		end
-	end
-	if suggestion then
+		if not force and key==kit.suggestionKey and (key==nil or refs.firstVisitHint and refs.firstVisitHint.Parent) then return end
+		kit.suggestionKey=key
+		if refs.firstVisitHint then refs.firstVisitHint:Destroy(); refs.firstVisitHint=nil end
+		if not suggestion then return end
 		refs.firstVisitHint=UI.button(main,"",suggestion[2],{
 			Name="FirstVisitHint",Position=at(hud.hint),Size=dims(hud.hint),BackgroundColor3=C.ink,BackgroundTransparency=0.2,
 		})
@@ -797,6 +804,7 @@ renderLobby = function()
 		UI.label(hint,suggestion[1],{Name="GuideTip",Position=UDim2.fromOffset(16,0),Size=UDim2.new(1,-32,1,0),TextSize=compact and 14 or 16,Font=UI.Fonts.display,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None,TextXAlignment=Enum.TextXAlignment.Center})
 		refs.firstVisitHint.Visible=not state.elevator and contextPanel==nil
 	end
+	kit.rebuildSuggestion(true)
 
 	kit.elevatorSignature = nil
 	renderElevator()
@@ -845,18 +853,14 @@ kit.placementReason = nil
 local function positionValid(position)
 	if not state or not state.match or not selectedHero then return false, "bounds" end
 	local match = state.match
-	local towers, mine, same = {}, 0, 0
+	local towers, mine = {}, 0
 	for _, tower in ipairs(match.towers or {}) do
 		if typeof(tower.position) == "Vector3" then table.insert(towers, tower.position) end
-		if tower.ownerId == player.UserId then
-			mine += 1
-			if tower.heroId == selectedHero then same += 1 end
-		end
+		if tower.ownerId == player.UserId then mine += 1 end
 	end
 	local ok, reason = Rules.BuildCheck(match.mapId, position, towers, Config, match.blockers)
 	if not ok then return false, reason end
-	if mine >= (match.towerLimit or 16) then return false, "limit" end
-	if same >= Rules.HeroLimit(selectedHero) then return false, "unitLimit" end
+	if mine >= (match.towerLimit or Rules.SafetyTowerCeiling) then return false, "limit" end
 	local hero = Catalog.Heroes[selectedHero]
 	local discount = math.clamp(Rules.CardTotals(match.cards).discount or 0, 0, 0.5)
 	if hero and (match.cash or 0) < math.floor(hero.cost * (1 - discount)) then return false, "cash" end
@@ -917,7 +921,7 @@ local function updatePreview(position)
 	if refs.confirm then
 		refs.confirm.BackgroundColor3 = placementValid and C.green or C.red
 		local reason = kit.placementReason and Rules.BuildReasons[kit.placementReason]
-		refs.confirm.Text = placementValid and T("CONFIRMAR", "CONFIRM") or Catalog.Upper(reason and L(reason) or T("POSIÇÃO INVÁLIDA", "INVALID POSITION"))
+		refs.confirm.Text = placementValid and T("TOQUE NO CHÃO PARA POSICIONAR", "TAP THE GROUND TO PLACE") or Catalog.Upper(reason and L(reason) or T("POSIÇÃO INVÁLIDA", "INVALID POSITION"))
 	end
 	if refs.placement then refs.placement.Visible = true end
 end
@@ -928,10 +932,10 @@ local function chooseHero(id)
 	selectedTower, selectedHero = nil, id
 	if refs.towerPanel then refs.towerPanel.Visible = false end
 	if towerRing then towerRing:Destroy(); towerRing = nil end
-	refs.hint.Text = heroName(id) .. " • " .. T("Toque no chão e confirme a posição.", "Select a ground position and confirm.")
+	refs.hint.Text = heroName(id) .. " • " .. T("Toque no chão para posicionar.", "Tap the ground to place.")
 	refs.hint.Visible = true
 	refs.placement.Visible = true
-	refs.confirm.Text = T("SELECIONE O CHÃO", "SELECT GROUND")
+	refs.confirm.Text = T("TOQUE NO CHÃO PARA POSICIONAR", "TAP THE GROUND TO PLACE")
 	updateMatch()
 end
 
@@ -946,10 +950,10 @@ local function chooseSkill(id)
 	selectedSkill, selectedTower = id, nil
 	if refs.towerPanel then refs.towerPanel.Visible = false end
 	if towerRing then towerRing:Destroy(); towerRing = nil end
-	refs.hint.Text = L(Catalog.Abilities[id].name) .. " • " .. (ability.target == "tower" and T("Selecione uma torre sua.", "Select one of your towers.") or T("Selecione uma região e confirme.", "Select a region and confirm."))
+	refs.hint.Text = L(Catalog.Abilities[id].name) .. " • " .. (ability.target == "tower" and T("Selecione uma torre sua.", "Select one of your towers.") or T("Toque na região para usar o poder.", "Tap a region to use the power."))
 	refs.hint.Visible = true
 	refs.placement.Visible = true
-	refs.confirm.Text = T("SELECIONE UM ALVO", "SELECT A TARGET")
+	refs.confirm.Text = T("TOQUE NO ALVO", "TAP THE TARGET")
 end
 
 -- 2x and auto-skip are votes the server counts; the settings write only
@@ -971,9 +975,13 @@ local function toggleAutoSkip()
 end
 
 local function confirmPlacement()
+	-- One request at a time: a second tap before the reply must not buy twice.
+	if kit.placePendingAt and os.clock() - kit.placePendingAt < 0.6 then return end
 	if selectedHero and selectedPosition and placementValid then
 		local hero, position = selectedHero, selectedPosition
+		kit.placePendingAt = os.clock()
 		act("PlaceTower", {heroId = hero, position = position}, function(reply)
+			kit.placePendingAt = nil
 			audio:Cue("place", 0.05); clearPlacement()
 			effects:PlaceBurst(position, colorFor(hero))
 			-- The price the server actually charged, floating off the wallet.
@@ -983,7 +991,8 @@ local function confirmPlacement()
 		end)
 	elseif selectedSkill and selectedPosition and Catalog.Abilities[selectedSkill].target ~= "tower" then
 		local skill, position = selectedSkill, selectedPosition
-		act("CastSkill", {skillId = skill, position = position}, function() clearPlacement() end)
+		kit.placePendingAt = os.clock()
+		act("CastSkill", {skillId = skill, position = position}, function() kit.placePendingAt = nil; clearPlacement() end)
 	end
 end
 
@@ -1051,7 +1060,7 @@ local function renderMatch()
 	UI.stroke(top, C.ink, 3)
 	refs.wave = UI.label(top, "", {Position = at(layout.wave, topRect), Size = dims(layout.wave), TextSize = math.min(class.short and 20 or (compact and 23 or 30), layout.wave.h + 2), Font = UI.Fonts.display, TextColor3 = C.gold})
 	refs.map = UI.label(top, "", {Position = at(layout.map, topRect), Size = dims(layout.map), TextWrapped=class.narrow, TextSize = compact and 11 or 14, Font = UI.Fonts.display, TextColor3 = C.muted})
-	refs.hpText = UI.button(top, "", openBaseUpgrade, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
+	refs.hpText = UI.button(top, "", function() showToast(T("Evolua a base com o Agente ao lado dela (tecla E).", "Upgrade the base with the Agent beside it (E key)."), false) end, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
 	UI.outline(refs.hpText, 2)
 	refs.hp = UI.bar(top, C.green, at(layout.hpBar, topRect), dims(layout.hpBar))
 	UI.icon(top, "heart", C.red, {Name = "CoreHeart", Position = UDim2.fromOffset(layout.hpBar.x - topRect.x - 30, layout.hpBar.y - topRect.y - 7), Size = UDim2.fromOffset(28, layout.hpBar.h + 14)})
@@ -1194,7 +1203,7 @@ updateMatch = function()
 	-- A mutated wave says so, in front of everything else.
 	local mutationDef = match.mutation and Catalog.Mutations[match.mutation]
 	local mutationNote = mutationDef and (mutationDef.icon .. " " .. L(mutationDef.name) .. "  ") or ""
-	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("VEM AÍ: ", "COMING: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos     torres ", " enemies     towers ") .. towerCount .. "/" .. tostring(match.towerLimit or 16))
+	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("VEM AÍ: ", "COMING: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos     torres ", " enemies     towers ") .. towerCount)
 	local boss = match.boss
 	refs.boss.Visible = boss ~= nil
 	if boss then
@@ -1233,10 +1242,9 @@ updateMatch = function()
 		card.price.TextColor3 = (match.cash or 0) >= Catalog.Heroes[id].cost and C.gold or C.red
 		local placed = 0
 		for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId and tower.heroId == id then placed += 1 end end
-		local cap = Rules.HeroLimit(id)
 		card.count.Visible = placed > 0
-		card.count.Text = tostring(placed) .. "/" .. tostring(cap)
-		card.count.TextColor3 = placed >= cap and C.red or C.text
+		card.count.Text = "x" .. tostring(placed)
+		card.count.TextColor3 = C.text
 	end
 	matchHud.updateUpgradeBoards(match)
 	if routePreview:Update(state.phase, match, profile().settings and profile().settings.lowFX) then
@@ -1385,6 +1393,7 @@ local function applyState(nextState)
 			refs.rewardsBadge.Visible=claimable>0
 			refs.rewardsBadge.Text=tostring(math.min(claimable,9))
 		end
+		if kit.rebuildSuggestion then kit.rebuildSuggestion(false) end
 		local elevatorMoved = renderElevator()
 		if signature ~= lastProfileSignature or elevatorMoved then renderContext(); updateWorldCosmetics() end
 	elseif activeMatch() then updateMatch()
@@ -1468,7 +1477,16 @@ local function handleWorldPointer(position)
 	if not activeMatch() or refs.protocolPanel then return end
 	if selectedHero or (selectedSkill and Catalog.Abilities[selectedSkill].target ~= "tower") then
 		local hit = raycast(position, true)
-		if hit then updatePreview(hit.Position); placementPinned = true end
+		if hit then
+			updatePreview(hit.Position); placementPinned = true
+			-- No confirmation step: a valid spot is used on the same tap or click.
+			if selectedHero and not placementValid then
+				local reason = kit.placementReason and Rules.BuildReasons[kit.placementReason]
+				showToast(reason and L(reason) or T("Posição inválida.", "Invalid position."), true)
+			else
+				confirmPlacement()
+			end
+		end
 		return
 	end
 	local hit = raycast(position, false)
@@ -1507,6 +1525,15 @@ end)
 
 UserInputService.TouchTapInWorld:Connect(function(position, processed)
 	if not processed then handleWorldPointer(position) end
+end)
+
+-- The base agent standing beside each commander's base: pressing E (or tapping
+-- its prompt) opens that base's upgrade, the only place a base is upgraded.
+game:GetService("ProximityPromptService").PromptTriggered:Connect(function(prompt)
+	local owner = prompt:GetAttribute("BaseOwnerId")
+	if owner == nil or not activeMatch() then return end
+	if owner == player.UserId then openBaseUpgrade()
+	else showToast(T("Esta é a base de outro comandante.", "This is another commander's base."), true) end
 end)
 
 -- Pinging: in a squad, holding a finger on the ground (or pressing G over it)

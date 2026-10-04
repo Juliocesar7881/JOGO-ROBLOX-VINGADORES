@@ -69,7 +69,13 @@ end
 -- teammate; a solo player decides alone. The bootstrap multiplies its real
 -- frame time by this before stepping the simulation.
 function Match:Speed()
-	return self.running and self.speed or 1
+	if not self.running then return 1 end
+	-- Choosing a card is never rushed: while anyone present still has an offer
+	-- open, the clock runs at normal speed whatever was voted.
+	for _, p in pairs(self.participants) do
+		if not p.returned and not p.disconnectedAt and #p.cardOffers > 0 then return 1 end
+	end
+	return self.speed or 1
 end
 
 -- The match runs at the slowest speed anyone present chose: 2x when all
@@ -202,7 +208,7 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 		p.base.stats=self.rules.BaseStats(baseId,1); p.base.wall=p.base.stats.wall
 		local extra=math.floor(p.base.stats.hp/self.size)
 		self.maxBaseHP+=extra; self.baseHP+=extra
-		if self.world.UpdateBase then p.base.visualPosition=self.world:UpdateBase(p.index,p.base,self.corePosition) end
+		if self.world.UpdateBase then p.base.visualPosition=self.world:UpdateBase(p.index,p.base,self.corePosition,p.player.UserId) end
 		if self.world.UpdateBarrier then self.world:UpdateBarrier(p.index,p.base,self.routeCache,1) end
 		self:_fx({kind="Clear"},player)
 		self.world:MovePlayer(player,true,index)
@@ -1418,7 +1424,7 @@ function Match:Step(dt)
 	-- dt is match time; preparation and network sync run on real time, so 2x
 	-- speeds up the fighting without halving the time to build or to pick a
 	-- card, and without doubling the enemy updates sent to every client.
-	local realDt = dt / (self.speed or 1)
+	local realDt = dt / self:Speed()
 	self:_refreshSpeed()
 	self:_basesStep(dt)
 	if self.phase=="Preparing" then
@@ -1460,7 +1466,7 @@ function Match:Step(dt)
 		-- ch: a summoner's summons left. ri/pg/sp: road, distance along it and
 		-- speed per real second, so clients walk enemies smoothly between syncs
 		-- instead of hopping to each new position.
-		local timeScale=self.speed or 1
+		local timeScale=self:Speed()
 		for _,e in pairs(self.enemies) do
 			local boosted=e.boostUntil and e.boostUntil>self.elapsed
 			table.insert(enemies,{id=e.id,enemyId=e.enemyId,position=e.position,hp=e.hp,maxHP=e.maxHP,phase=e.phase,st=self:_statusOf(e),final=e.final or nil,
@@ -1568,7 +1574,7 @@ function Match:Handle(player,action,payload)
 		local added=math.floor(base.stats.hp/self.size)-math.floor(stats.hp/self.size)
 		self.maxBaseHP+=added; self.baseHP+=added
 		base.wall+=base.stats.wall-stats.wall
-		if self.world.UpdateBase then base.visualPosition=self.world:UpdateBase(p.index,base,self.corePosition) end
+		if self.world.UpdateBase then base.visualPosition=self.world:UpdateBase(p.index,base,self.corePosition,p.player.UserId) end
 		if self.world.UpdateBarrier then self.world:UpdateBarrier(p.index,base,self.routeCache,base.stats.wall>0 and base.wall/base.stats.wall or 1) end
 		self:_fx({kind="Pulse",position=self.corePosition,radius=12,color=Color3.fromRGB(unpack(self.catalog.Bases[base.id].color)),duration=0.5})
 		return true
