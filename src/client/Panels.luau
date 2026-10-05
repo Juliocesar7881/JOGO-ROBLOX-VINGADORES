@@ -834,13 +834,13 @@ function Panels.new(ctx)
 			local xpFill = UI.bar(seasonCard, C.violet, UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, 16))
 			xpFill.Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpNeed, 0, 1), 1)
 			UI.label(seasonCard, season.level >= season.maxLevel and T("Temporada completa!", "Season complete!") or (number(season.xpInto) .. " / " .. number(season.xpNeed) .. T(" XP para o próximo nível", " XP to the next level")),
-				{Name = "SeasonXp", Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -24, 0, 20), TextSize = 13, TextColor3 = C.muted})
+				{Name = "SeasonXp", Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -24, 0, 22), TextSize = 16, TextColor3 = C.muted})
 			local shown = math.min(#season.upcoming, 5)
 			for index = 1, shown do
 				local entry = season.upcoming[index]
 				local cell = UI.roundFrame(seasonCard, {Name = "SeasonLevel_" .. entry.level, Position = UDim2.new((index - 1) / shown, 6, 0, 58), Size = UDim2.new(1 / shown, -3, 0, 92),
 					BackgroundColor3 = entry.reached and C.gold:Lerp(C.card, 0.8) or C.background}, entry.reached and C.gold or C.stroke)
-				local function line(y, text, tint) UI.label(cell, text, {Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 20), TextSize = 14, Font = UI.Fonts.display, TextColor3 = tint, TextXAlignment = Enum.TextXAlignment.Center}) end
+				local function line(y, text, tint) UI.label(cell, text, {Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 20), TextSize = 16, Font = UI.Fonts.display, TextColor3 = tint, TextXAlignment = Enum.TextXAlignment.Center}) end
 				line(4, T("NV ", "LV ") .. entry.level, entry.reached and C.gold or C.muted)
 				line(26, entry.freeClaimed and "✓" or number(entry.free.gold), entry.freeClaimed and C.green or C.text)
 				local premiumText = (entry.premiumClaimed and "✓") or number(entry.premium.gold)
@@ -867,7 +867,7 @@ function Panels.new(ctx)
 		end
 
 		-- Login streak: a seven-day strip, the ready day highlighted.
-		UI.section(body, T("PRÊMIO DE CADA DIA", "EVERY DAY'S PRIZE"))
+		UI.section(body, T("Prêmio de cada dia", "Every day's prize"))
 		-- lastCompletedIndex is the slot most recently claimed (today's, if the
 		-- streak already paid out today; otherwise yesterday's). Everything up to
 		-- it is checked off, except the slot about to be claimed, which is next.
@@ -880,9 +880,9 @@ function Panels.new(ctx)
 			local done = not isNext and day <= lastCompletedIndex
 			local cell = UI.roundFrame(strip, {Name = "LoginDay_" .. day, Position = UDim2.new((day - 1) / cycle, 2, 0, 0), Size = UDim2.new(1 / cycle, -4, 1, 0),
 				BackgroundColor3 = isNext and C.gold:Lerp(C.card, 0.15) or C.card}, isNext and C.gold or C.stroke)
-			UI.label(cell, T("DIA ", "DAY ") .. day, {Position = UDim2.fromOffset(0, 6), Size = UDim2.new(1, 0, 0, 18), TextSize = 13, Font = UI.Fonts.display, TextColor3 = isNext and C.gold or C.muted, TextXAlignment = Enum.TextXAlignment.Center})
+			UI.label(cell, T("Dia ", "Day ") .. day, {Position = UDim2.fromOffset(0, 6), Size = UDim2.new(1, 0, 0, 20), TextSize = 16, Font = UI.Fonts.display, TextColor3 = isNext and C.gold or C.muted, TextXAlignment = Enum.TextXAlignment.Center})
 			if def.chest then UI.illustration(cell, "crate", C.pink, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 26), Size = UDim2.fromOffset(40, 36)})
-			else UI.label(cell, number(def.gold), {Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 0, 30), TextSize = 15, Font = UI.Fonts.display, TextColor3 = isNext and C.gold or C.text, TextXAlignment = Enum.TextXAlignment.Center}) end
+			else UI.label(cell, number(def.gold), {Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 0, 30), TextSize = 19, Font = UI.Fonts.display, TextColor3 = isNext and C.gold or C.text, TextXAlignment = Enum.TextXAlignment.Center}) end
 			if done then UI.label(cell, "✓", {Position = UDim2.fromOffset(0, 62), Size = UDim2.new(1, 0, 0, 24), TextSize = 22, Font = UI.Fonts.display, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center}) end
 		end
 		local claimLogin = UI.button(body, rewards.login.claimable and (T("RESGATAR DIA ", "CLAIM DAY ") .. rewards.login.nextIndex) or T("Volte amanhã", "Come back tomorrow"), function()
@@ -891,7 +891,7 @@ function Panels.new(ctx)
 		if not rewards.login.claimable then UI.disabled(claimLogin) end
 
 		-- Playtime gifts: how long you have played today, in one bar with markers.
-		UI.section(body, T("PRESENTES POR TEMPO DE JOGO", "GIFTS FOR PLAYING"))
+		UI.section(body, T("Presentes por tempo de jogo", "Gifts for playing"))
 		for _, gift in ipairs(rewards.playtime.gifts) do
 			local card = UI.roundFrame(body, {Name = "PlaytimeGift_" .. gift.index, Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
 			local progress = math.clamp(rewards.playtime.seconds / (gift.minutes * 60), 0, 1)
@@ -1447,6 +1447,20 @@ function Panels.new(ctx)
 			UI.button(first,T("JOGAR O TREINO • 12 ONDAS","PLAY TRAINING • 12 WAVES"),startTraining,{Name="FindTrainingPortal",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
 		end
 		local colors={manhattan=C.coral,gamma=C.green,asgard=C.gold,hydra=C.red,wakanda=C.violet,latveria=C.blue}
+		-- Destinations as picture cards, two side by side where the window is wide:
+		-- the real map photograph on top (or the drawn route), the name over it.
+		local screen=screenSize()
+		local width=UI.contextLayout(screen.X,screen.Y,{wide=true}).w-40
+		local columns=width>=640 and 2 or 1
+		local cellW=math.floor((width-(columns-1)*10)/columns)
+		local grid,placed
+		local function newGrid()
+			grid=UI.frame(body,{Name="DestinationGrid",Size=UDim2.new(1,-6,0,0),BackgroundTransparency=1,AutomaticSize=Enum.AutomaticSize.Y})
+			local layout=UI.create("UIGridLayout",{CellPadding=UDim2.fromOffset(10,10),CellSize=UDim2.fromOffset(cellW,272),SortOrder=Enum.SortOrder.LayoutOrder},grid)
+			placed=0
+			return layout
+		end
+		local photos=(ctx.Config and ctx.Config.MapImages) or {}
 		local lastDistrict
 		for _,id in ipairs(Catalog.DestinationOrder) do
 			local destination=Catalog.Destinations[id]
@@ -1464,33 +1478,51 @@ function Panels.new(ctx)
 				}
 				local heading=headings[district]
 				if heading then UI.section(body,heading[1],heading[2]) end
+				newGrid()
 			end
+			if not grid then newGrid() end
+			placed+=1
 			local allowed=Rules.ModeUnlocked(profile(),destination.modeId)
-			local card=UI.roundFrame(body,{Name="Destination_"..id,Size=UDim2.new(1,-6,0,178),BackgroundColor3=tint:Lerp(C.panel,0.88)},tint)
-			UI.mapArt(card,map,tint,{Position=UDim2.fromOffset(10,18),Size=UDim2.fromOffset(96,76)})
-			UI.label(card,L(map.name),{Position=UDim2.fromOffset(118,10),Size=UDim2.new(1,-132,0,42),TextSize=19,Font=Enum.Font.GothamBlack,TextColor3=tint,TextWrapped=true})
+			local card=UI.roundFrame(grid,{Name="Destination_"..id,LayoutOrder=placed,BackgroundColor3=UI.Skin.slot},tint)
+			UI.stroke(card,tint,3)
+			-- The picture: the photograph when one is configured, the drawn route otherwise.
+			local picture=UI.frame(card,{Name="DestinationPicture",Position=UDim2.fromOffset(8,8),Size=UDim2.new(1,-16,0,126),BackgroundColor3=tint:Lerp(C.ink,0.6),ClipsDescendants=true})
+			UI.corner(picture,12)
+			local photo=math.floor(tonumber(photos[destination.mapId]) or 0)
+			if photo>0 then
+				UI.create("ImageLabel",{Name="MapPhoto",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),Image="rbxassetid://"..photo,ScaleType=Enum.ScaleType.Crop},picture)
+				-- The roads as a small map in the corner, over the photograph.
+				local inset=UI.mapArt(picture,map,tint,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,8),Size=UDim2.fromOffset(96,76)})
+				UI.stroke(inset,Color3.new(1,1,1),2)
+			else
+				UI.mapArt(picture,map,tint,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(150,118)})
+			end
+			local shade=UI.frame(picture,{Name="PictureShade",AnchorPoint=Vector2.new(0,1),Position=UDim2.fromScale(0,1),Size=UDim2.new(1,0,0,46),BackgroundColor3=C.ink,BackgroundTransparency=0.25})
+			UI.create("UIGradient",{Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(1,0)}),Rotation=90},shade)
+			local title=UI.label(picture,L(map.name),{Name="DestinationName",Position=UDim2.new(0,10,1,-40),Size=UDim2.new(1,-20,0,36),TextSize=26,Font=UI.Fonts.display,TextColor3=Color3.new(1,1,1)})
+			UI.outline(title,3)
 			local waves=Rules.WaveCount(destination.modeId,destination.mapId)
-			UI.label(card,L(mode.name).." • "..(waves==0 and T("SEM FIM","ENDLESS") or tostring(waves).." "..T("ONDAS","WAVES")),{Position=UDim2.fromOffset(118,54),Size=UDim2.new(1,-132,0,24),TextSize=12,Font=Enum.Font.GothamBold,TextWrapped=true})
-			UI.label(card,allowed and L(map.description) or L(kit.modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(118,81),Size=UDim2.new(1,-132,0,40),TextSize=12,TextWrapped=true,TextColor3=C.muted})
+			UI.label(card,L(mode.name).."  •  "..(waves==0 and T("sem fim","endless") or tostring(waves).." "..T("ondas","waves")),{Position=UDim2.fromOffset(12,138),Size=UDim2.new(1,-24,0,24),TextSize=18,Font=UI.Fonts.display,TextColor3=tint:Lerp(Color3.new(1,1,1),0.3),TextWrapped=true})
+			UI.label(card,allowed and L(map.description) or L(kit.modeLockHints[destination.modeId]),{Position=UDim2.fromOffset(12,164),Size=UDim2.new(1,-24,0,44),TextSize=15,TextWrapped=true,TextTruncate=Enum.TextTruncate.AtEnd,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top})
 			local featured=ctx.state().featured
 			if featured and featured.mapId==destination.mapId and destination.modeId=="normal" then
 				-- The map of the day pays more: a ribbon on its card.
 				local ribbon=UI.label(card,"★ "..T("MAPA DO DIA","MAP OF THE DAY").."  +"..math.floor(featured.bonus*100+0.5).."%",{Name="FeaturedRibbon",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,-8),Size=UDim2.fromOffset(176,24),BackgroundTransparency=0,BackgroundColor3=C.gold,TextColor3=C.background,TextSize=12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=3})
 				UI.corner(ribbon,12)
 			end
-			local button=UI.button(card,allowed and T("ENCONTRAR PORTAL","FIND PORTAL") or T("AINDA BLOQUEADO","LOCKED FOR NOW"),function() routePreview.goPortal(id) end,{Name="FindPortal_"..id,Position=UDim2.fromOffset(12,126),Size=UDim2.new(1,-24,0,44),BackgroundColor3=allowed and C.green or tint,TextSize=17})
+			local button=UI.button(card,allowed and T("Encontrar portal","Find portal") or T("Ainda bloqueado","Locked for now"),function() routePreview.goPortal(id) end,{Name="FindPortal_"..id,Position=UDim2.new(0,10,1,-56),Size=UDim2.new(1,-20,0,46),BackgroundColor3=allowed and C.green or tint,TextSize=20})
 			if not allowed then
 				UI.disabled(button)
 				-- A lock sticker over the map art, like a locked level card.
-				local lock=UI.label(card,T("BLOQUEADO","LOCKED"),{Name="LockedPill",Position=UDim2.fromOffset(14,70),Size=UDim2.fromOffset(92,24),BackgroundTransparency=0,BackgroundColor3=C.ink,TextSize=12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+				local lock=UI.label(card,T("Bloqueado","Locked"),{Name="LockedPill",Position=UDim2.fromOffset(16,16),Size=UDim2.fromOffset(110,28),BackgroundTransparency=0,BackgroundColor3=C.ink,TextSize=15,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=3})
 				UI.corner(lock,12)
 				UI.stroke(lock,Color3.new(1,1,1),1.5)
 			end
 			if destination.modeId=="ranked" then
-				button.Size=UDim2.new(0.64,-18,0,44)
-				UI.secondary(card,T("PLACAR","LEADERBOARD"),function()
+				button.Size=UDim2.new(0.62,-16,0,46)
+				UI.secondary(card,T("Placar","Leaderboard"),function()
 					board.mode="ranked"; board.map=destination.mapId; openContext("leaderboard",{})
-				end,{Name="DestinationBoard_"..id,Position=UDim2.new(0.64,0,0,126),Size=UDim2.new(0.36,-12,0,44),TextSize=12})
+				end,{Name="DestinationBoard_"..id,Position=UDim2.new(0.62,0,1,-56),Size=UDim2.new(0.38,-10,0,46),TextSize=17})
 			end
 		end
 		if profile().tutorialComplete then
