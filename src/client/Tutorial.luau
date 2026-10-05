@@ -288,26 +288,33 @@ function Tutorial:_buildCard(step)
 	local ctx = self.ctx
 	local UI, C, T = ctx.UI, ctx.C, ctx.T
 	local inMatch = ctx.state() and ctx.state().phase ~= "Lobby"
+	-- The objective, like the big games' quest strip: a gold flag on the left,
+	-- the step's dots, the goal in big letters, the skip button on the right.
 	local card = UI.roundFrame(ctx.gui, {
 		Name = "TutorialCard", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, inMatch and 122 or 10),
-		Size = UDim2.new(1, -140, 0, step.shortcut and 74 or 52), BackgroundColor3 = C.background, ZIndex = 49,
+		Size = UDim2.new(1, -140, 0, step.shortcut and 84 or 62), BackgroundColor3 = C.background, ZIndex = 49,
 	}, C.green)
-	UI.create("UISizeConstraint", { MaxSize = Vector2.new(520, 90), MinSize = Vector2.new(260, 40) }, card)
+	UI.windowSkin(card, C.green)
+	UI.create("UISizeConstraint", { MaxSize = Vector2.new(600, 100), MinSize = Vector2.new(260, 46) }, card)
+	local flag = UI.frame(card, { Name = "TutorialFlag", Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(40, 40), BackgroundColor3 = C.gold, ZIndex = 50 })
+	UI.corner(flag, 20)
+	UI.stroke(flag, C.ink, 2.5)
+	UI.icon(flag, "star", C.ink, { Position = UDim2.fromOffset(7, 7), Size = UDim2.fromOffset(26, 26), ZIndex = 51 })
 	-- Progress dots: where you are in the lesson.
 	for index = 1, step.total do
 		local dot = UI.frame(card, {
-			Name = "TutorialDot_" .. index, Position = UDim2.new(0, 14 + (index - 1) * 16, 0, 9), Size = UDim2.fromOffset(10, 10),
+			Name = "TutorialDot_" .. index, Position = UDim2.new(0, 60 + (index - 1) * 18, 0, 9), Size = UDim2.fromOffset(12, 12),
 			BackgroundColor3 = index <= step.number and C.green or C.stroke, ZIndex = 50,
 		})
-		UI.corner(dot, 5)
+		UI.corner(dot, 6)
 	end
 	UI.label(card, step.text, {
-		Name = "TutorialText", Position = UDim2.fromOffset(14, 22), Size = UDim2.new(1, -28, 0, 26), TextSize = 16, Font = UI.Fonts.display,
+		Name = "TutorialText", Position = UDim2.fromOffset(60, 24), Size = UDim2.new(1, -72, 0, 30), TextSize = 20, Font = UI.Fonts.display,
 		TextColor3 = C.cream, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, ZIndex = 50,
 	})
 	if step.shortcut then
-		UI.secondary(card, T("PULAR A CAMINHADA ▶", "SKIP THE WALK ▶"), function() ctx.act("StartTraining", {}) end, {
-			Name = "TutorialShortcut", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -6), Size = UDim2.fromOffset(170, 24), TextSize = 12, ZIndex = 50,
+		UI.button(card, T("Pular a caminhada ▶", "Skip the walk ▶"), function() ctx.act("StartTraining", {}) end, {
+			Name = "TutorialShortcut", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -6), Size = UDim2.fromOffset(200, 28), TextSize = 15, BackgroundColor3 = C.blue, ZIndex = 50,
 		})
 	end
 	self.card = card
