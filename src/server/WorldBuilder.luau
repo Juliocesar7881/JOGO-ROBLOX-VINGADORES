@@ -2907,7 +2907,9 @@ end
 -- made solid.
 -- Props a player bumps into (the owner walked through lamp posts, desk legs and
 -- bushes): solid like the trunks and crystals.
-local SOLID_NAMES = { TreeTrunk = true, PalmTrunk = true, VibraniumCrystal = true, GiantCard = true, PodiumGlass = true, LampPole = true, DeskPost = true, Bush = true }
+local SOLID_NAMES = { TreeTrunk = true, PalmTrunk = true, VibraniumCrystal = true, GiantCard = true, PodiumGlass = true, LampPole = true, DeskPost = true, Bush = true,
+	-- The portal doors: their pillars and round frames stand behind the pads.
+	QueueGate = true, PortalFrame = true }
 function World.SolidifyProps(root)
 	local made = 0
 	local function within(item, name)

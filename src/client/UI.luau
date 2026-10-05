@@ -167,9 +167,8 @@ function UI.studs(host, height, width, z)
 	for row = 1, rows do
 		local y = rows == 1 and 0.5 or (row == 1 and 0.3 or 0.72)
 		for column = 1, columns do
-			local stud = UI.frame(layer, {Name = "Stud", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new((column - 0.5) / columns, 0, y, 0),
+			UI.frame(layer, {Name = "Stud", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new((column - 0.5) / columns, 0, y, 0),
 				Size = UDim2.fromOffset(size, size), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.87, Active = false, ZIndex = z})
-			UI.corner(stud, 3)
 		end
 	end
 	return layer
@@ -1153,8 +1152,8 @@ function UI.lobbyLayout(width, height, options)
 		navigation = rect(math.floor((width - navigationW) / 2), height - pad - navigationH, navigationW, navigationH)
 	end
 	local floor = column and height - pad or navigation.y - 8
-	local cardW = math.min(460, width - 2 * pad)
-	local cardH = class.short and 84 or 96
+	local cardW = math.min(class.compact and 460 or 600, width - 2 * pad)
+	local cardH = class.short and 84 or (class.compact and 96 or 112)
 	-- A campaign car adds its row of difficulties (Normal / Hard / Nightmare).
 	-- A short phone has no height to spare: there they take the riders' line.
 	if options and options.difficulty and not class.short then cardH += UI.difficultyRowH(class) + 6 end

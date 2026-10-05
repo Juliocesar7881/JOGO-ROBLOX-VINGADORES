@@ -1120,7 +1120,9 @@ local function session(screen)
 		local joined = table.concat(labels(), " | ")
 		check(string.find(joined, "2/4", 1, true) ~= nil and (ridingLayout.class.short or string.find(joined, "Ally", 1, true) ~= nil),
 			tag .. ": the card lists who is riding, got " .. joined)
-		check(string.find(joined, "MANHATTAN", 1, true) ~= nil, tag .. ": the card names the sector")
+		check(string.find(joined, "Manhattan", 1, true) ~= nil, tag .. ": the card names the sector")
+		local tip = named(gui, "FirstVisitHint")
+		check(tip == nil or tip.Visible == false, tag .. ": the tip strip steps aside while the queue card is up")
 		check(named(gui,"PortalChooseMap")==nil,tag..": fixed portal has no map switch")
 		for _, id in ipairs(Catalog.DifficultyOrder) do
 			local chip = named(card, "Difficulty_" .. id)

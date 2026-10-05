@@ -473,7 +473,7 @@ local function lobbyChrome(visible)
 	local tracker=main:FindFirstChild("QuestTracker")
 	if tracker then tracker.Visible=visible and contextPanel==nil end
 	local tip=main:FindFirstChild("FirstVisitHint")
-	if tip then tip.Visible=contextPanel==nil end
+	if tip then tip.Visible=contextPanel==nil and not (state and state.elevator) end
 end
 
 local function refreshNavigation()
@@ -702,6 +702,7 @@ renderElevator = function()
 	local tint = kit.modeTint[e.portalId] or C.green
 	local chipH = UI.difficultyRowH(hud.class)
 	local card = UI.roundFrame(main, {Name = "ElevatorCard", Position = at(r), Size = dims(r), BackgroundColor3 = C.background}, tint)
+	UI.windowSkin(card, tint)
 	refs.elevator = card
 	-- The plan before anyone is committed: map, mode, length, final boss and
 	-- what a win pays in lobby Gold.
@@ -717,19 +718,19 @@ renderElevator = function()
 		..((boss and waves>0) and ("  •  "..T("CHEFE: ","BOSS: ")..Catalog.Upper(L(boss.name))) or "").."  •  "..prize
 	-- A short phone's campaign card gives the riders' line to the difficulties.
 	if withDifficulty and hud.class.short then summary=tostring(#(e.riders or {})).."/"..tostring(e.max or 4).."  •  "..summary end
-	UI.label(card, Catalog.Upper(title), {Name="PortalDestination",Position = UDim2.fromOffset(14, 3), Size = UDim2.new(1, -90, 0, 22), TextWrapped=true,TextSize = compact and 12 or 15, Font = UI.Fonts.display, TextColor3 = tint})
-	UI.label(card, summary, {Name="PortalSummary",Position = UDim2.fromOffset(14, 25), Size = UDim2.new(1, -90, 0, 18), TextSize = compact and 10 or 12, Font = Enum.Font.GothamBold, TextColor3 = C.muted})
-	refs.elevatorCount = UI.label(card, elevatorCountText(), {Position = UDim2.new(1, -80, 0, 4), Size = UDim2.fromOffset(66, 40), TextSize = compact and 28 or 34, Font = Enum.Font.GothamBlack, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
-	local rowH = compact and 34 or 36
+	UI.label(card, title, {Name="PortalDestination",Position = UDim2.fromOffset(14, 4), Size = UDim2.new(1, -96, 0, compact and 22 or 28), TextWrapped=true,TextSize = compact and 16 or 22, Font = UI.Fonts.display, TextColor3 = tint:Lerp(Color3.new(1, 1, 1), 0.25)})
+	UI.label(card, summary, {Name="PortalSummary",Position = UDim2.fromOffset(14, compact and 26 or 32), Size = UDim2.new(1, -96, 0, compact and 18 or 22), TextSize = compact and 12 or 15, Font = UI.Fonts.display, TextColor3 = C.muted})
+	refs.elevatorCount = UI.label(card, elevatorCountText(), {Position = UDim2.new(1, -86, 0, 4), Size = UDim2.fromOffset(72, 44), TextSize = compact and 30 or 38, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
+	local rowH = compact and 34 or 40
 	local rowY = r.h - rowH - 8
 	local leaveW = compact and 76 or 92
-	local leave=UI.button(card, T("SAIR", "LEAVE"), function() act("ElevatorLeave", {}) end, {Name="ElevatorLeave",Position = UDim2.new(1, -(leaveW + 12), 0, rowY), Size = UDim2.fromOffset(leaveW, rowH), BackgroundColor3 = C.red, TextColor3 = C.text, TextSize = 13})
+	local leave=UI.button(card, T("SAIR", "LEAVE"), function() act("ElevatorLeave", {}) end, {Name="ElevatorLeave",Position = UDim2.new(1, -(leaveW + 12), 0, rowY), Size = UDim2.fromOffset(leaveW, rowH), BackgroundColor3 = C.red, TextColor3 = C.text, TextSize = compact and 14 or 17})
 	if e.departing then UI.disabled(leave) end
 	local statusRight = leaveW + 28
 	-- Whoever stepped on first may skip the rest of the countdown.
 	if e.host and not e.departing then
 		local startW = compact and 96 or 120
-		UI.button(card, T("COMEÇAR", "START"), function() act("ElevatorStart", {}) end, {Name = "ElevatorStartNow", Position = UDim2.new(1, -(leaveW + startW + 20), 0, rowY), Size = UDim2.fromOffset(startW, rowH), BackgroundColor3 = C.blue, TextSize = 13})
+		UI.button(card, T("COMEÇAR", "START"), function() act("ElevatorStart", {}) end, {Name = "ElevatorStartNow", Position = UDim2.new(1, -(leaveW + startW + 20), 0, rowY), Size = UDim2.fromOffset(startW, rowH), BackgroundColor3 = C.green, TextSize = compact and 14 or 17})
 		statusRight += startW + 8
 	end
 	-- Normal / Hard / Nightmare: the host picks, everyone sees the choice.
@@ -739,7 +740,7 @@ renderElevator = function()
 	if withDifficulty then
 		local rowW = inline and (r.w - 14 - statusRight) or (r.w - 28)
 		local chipW = math.floor((rowW - 2 * 6) / 3)
-		local chipY = inline and rowY or 46
+		local chipY = inline and rowY or (compact and 46 or 58)
 		if inline then chipH = rowH end
 		for index, id in ipairs(Catalog.DifficultyOrder) do
 			local def = Catalog.Difficulties[id]
@@ -752,7 +753,7 @@ renderElevator = function()
 				if not e.host then showToast(T("Só quem entrou primeiro escolhe a dificuldade.", "Only the first rider picks the difficulty."), true); return end
 				act("SetDifficulty", { difficultyId = id })
 			end, { Name = "Difficulty_" .. id, Position = UDim2.fromOffset(14 + (index - 1) * (chipW + 6), chipY), Size = UDim2.fromOffset(chipW, chipH),
-				BackgroundColor3 = chosen and color or C.card, TextColor3 = chosen and C.background or (open and color or C.muted), TextSize = compact and 11 or 13 })
+				BackgroundColor3 = chosen and color or C.card, TextColor3 = chosen and C.background or (open and color or C.muted), TextSize = compact and 12 or 15 })
 			if chosen then UI.stroke(chip, C.text, 2) end
 			if not open then
 				UI.icon(chip, "lock", C.muted, { Name = "DifficultyLock", Position = UDim2.new(0, 8, 0.5, -8), Size = UDim2.fromOffset(16, 16), ZIndex = (chip.ZIndex or 1) + 1 })
@@ -766,7 +767,7 @@ renderElevator = function()
 	if #names >= 2 then status ..= "  •  " .. T("GRUPO +", "PARTY +") .. math.floor((Rules.PartyBonus(#names) - 1) * 100 + 0.5) .. "%" end
 	status ..= "  •  " .. table.concat(names, ", ")
 	if inline then return true end
-	UI.label(card, status, {Position = UDim2.fromOffset(14, rowY), Size = UDim2.new(1, -(14 + statusRight), 0, rowH), TextSize = compact and 11 or 12, TextColor3 = C.muted})
+	UI.label(card, status, {Name = "PortalRiders", Position = UDim2.fromOffset(14, rowY), Size = UDim2.new(1, -(14 + statusRight), 0, rowH), TextSize = compact and 13 or 16, TextColor3 = C.cream, TextWrapped = true})
 	return true
 end
 
