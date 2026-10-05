@@ -368,7 +368,12 @@ function Tutorial:_edgeArrow(worldPoint)
 		local point, visible = camera:WorldToScreenPoint(worldPoint)
 		return point, visible
 	end)
-	local size = ctx.gui.AbsoluteSize
+	local size = ctx.UI.toLogical(ctx.gui.AbsoluteSize)
+	if ok and typeof(screen) == "Vector3" then
+		-- Roblox answers in real pixels; the arrow is placed in logical ones.
+		local flat = ctx.UI.toLogical(Vector2.new(screen.X, screen.Y))
+		screen = Vector3.new(flat.X, flat.Y, screen.Z)
+	end
 	if not ok or typeof(screen) ~= "Vector3" or size.X < 50 then
 		if self.edge then self.edge.Visible = false end
 		return
@@ -413,8 +418,9 @@ function Tutorial:_guiPointer(target)
 	end
 	local origin = ctx.gui.AbsolutePosition
 	local position, size = target.AbsolutePosition, target.AbsoluteSize
-	local x = (position and position.X or 0) - (origin and origin.X or 0) + (size and size.X or 0) / 2
-	local y = (position and position.Y or 0) - (origin and origin.Y or 0)
+	local scale = ctx.UI.screenScale or 1
+	local x = ((position and position.X or 0) - (origin and origin.X or 0) + (size and size.X or 0) / 2) / scale
+	local y = ((position and position.Y or 0) - (origin and origin.Y or 0)) / scale
 	local bob = math.sin(self.clock * 6) * 6
 	if self.step and self.step.side == "left" then
 		-- A wide button (READY) is pointed at from its left side, so the pointer
@@ -475,20 +481,22 @@ function Tutorial:Step(dt)
 		local inMatch = self.ctx.state() and self.ctx.state().phase ~= "Lobby"
 		-- In the lobby on a short phone the gold pill and the options button share the
 		-- top row with the card, so it drops one row lower there.
-		local screen = self.ctx.gui.AbsoluteSize
+		local screen = self.ctx.UI.toLogical(self.ctx.gui.AbsoluteSize)
 		local cardY = inMatch and 122 or ((screen and screen.Y < 500) and 62 or 10)
 		local target = step.gui
 		local origin, position, size = self.ctx.gui.AbsolutePosition, target and target.AbsolutePosition, target and target.AbsoluteSize
-		local cardHeight = self.card.AbsoluteSize and self.card.AbsoluteSize.Y or 52
+		local scale = self.ctx.UI.screenScale or 1
+		local cardHeight = self.card.AbsoluteSize and self.card.AbsoluteSize.Y / scale or 52
 		if origin and position and size and target.Visible ~= false then
-			local top, height = position.Y - origin.Y, size.Y
+			local top, height = (position.Y - origin.Y) / scale, size.Y / scale
 			if top < cardY + cardHeight + 6 and top + height > cardY - 6 then cardY = top + height + 10 end
 		end
 		self.card.Position = UDim2.new(0.5, 0, 0, cardY)
 		-- On a short phone screen an open panel fills the area the card uses;
 		-- the walk resumes when it closes.
 		local panelOpen = self.ctx.panelOpen and self.ctx.panelOpen()
-		self.card.Visible = not (panelOpen and not inMatch and screen and screen.Y < 500)
+		local covered = self.ctx.fullScreen and self.ctx.fullScreen()
+		self.card.Visible = not ((panelOpen and not inMatch and screen and screen.Y < 500) or covered)
 	end
 
 	local world = step.world

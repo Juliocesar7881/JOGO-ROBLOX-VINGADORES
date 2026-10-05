@@ -75,7 +75,7 @@ function Sheet:Open(tab)
 	local panel = UI.roundFrame(shade, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromOffset(math.min(520, screen.X - 24), math.min(600, screen.Y - 24)), BackgroundColor3 = C.background, ZIndex = 46 }, C.violet)
 	UI.label(panel, T("FICHA DO COMANDANTE", "COMMANDER SHEET"), { Position = UDim2.fromOffset(14, 10), Size = UDim2.new(1, -72, 0, 30), TextColor3 = C.violet, TextSize = 19, Font = Enum.Font.GothamBlack, ZIndex = 47 })
-	UI.button(panel, "×", function() self:Close() end, { Name = "CloseSheet", Position = UDim2.new(1, -50, 0, 6), Size = UDim2.fromOffset(44, 44), BackgroundColor3 = C.red, TextSize = 25, ZIndex = 47 })
+	UI.closeButton(panel, function() self:Close() end, { Name = "CloseSheet", Position = UDim2.new(1, -50, 0, 6), Size = UDim2.fromOffset(44, 44), TextSize = 25, ZIndex = 47 })
 	self.shade, self.panel = shade, panel
 	self:_render()
 end
@@ -95,7 +95,7 @@ function Sheet:_render()
 	local known = false
 	for _, tab in ipairs(tabs) do if tab.id == self.tab then known = true end end
 	if not known then self.tab = "talents" end
-	local width = panel.AbsoluteSize.X > 0 and panel.AbsoluteSize.X or 480
+	local width = panel.AbsoluteSize.X > 0 and UI.toLogical(panel.AbsoluteSize.X) or 480
 	local tabBar = UI.frame(panel, { Name = "SheetTabs", Position = UDim2.fromOffset(14, 50), Size = UDim2.new(1, -28, 0, 40), BackgroundTransparency = 1, ZIndex = 47 })
 	local tabW = math.floor((width - 28 - (#tabs - 1) * 6) / #tabs)
 	for index, tab in ipairs(tabs) do
@@ -109,7 +109,7 @@ function Sheet:_render()
 	UI.list(body, 10)
 	self.body = body
 	if self.tab == "talents" then
-		local height = panel.AbsoluteSize.Y > 0 and panel.AbsoluteSize.Y or 540
+		local height = panel.AbsoluteSize.Y > 0 and UI.toLogical(panel.AbsoluteSize.Y) or 540
 		ctx.buildTalents(body, { readOnly = true, rerender = function() self:_render() end, canvasHeight = math.clamp(height - 300, 170, 400) })
 	else
 		self:_cardsTab(body, match)

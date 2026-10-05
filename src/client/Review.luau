@@ -153,8 +153,12 @@ function Review.start(api)
 		local size = player:GetAttribute("DoomReviewSize")
 		local w, h
 		if type(size) == "string" then w, h = size:match("^(%d+)x(%d+)$") end
-		local dimension = w and UDim2.fromOffset(tonumber(w), tonumber(h)) or UDim2.fromScale(1, 1)
-		api.main.Size, api.overlays.Size = dimension, dimension
+		if api.setReviewSize then
+			api.setReviewSize(w and tonumber(w) or nil, h and tonumber(h) or nil)
+		else
+			local dimension = w and UDim2.fromOffset(tonumber(w), tonumber(h)) or UDim2.fromScale(1, 1)
+			api.main.Size, api.overlays.Size = dimension, dimension
+		end
 	end
 
 	-- Fixture screens never talk to the server: a pressed button only logs.

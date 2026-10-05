@@ -321,7 +321,11 @@ local function session(screen)
 	local camera = Instance.new("Camera")
 	camera.ViewportSize = Vector2.new(SCREEN.w, SCREEN.h + 58)
 	camera.CFrame = CFrame.new(0, 80, 60)
-	camera.ScreenPointToRay = function() return { Origin = v3(0, 80, 60), Direction = v3(0, -1, 0) } end
+	-- Every ray the client asks for is kept, with the space it was asked in:
+	-- the placement ghost must sit exactly under the pointer.
+	local rays = {}
+	camera.ScreenPointToRay = function(_, x, y) table.insert(rays, { space = "screen", x = x, y = y }) return { Origin = v3(0, 80, 60), Direction = v3(0, -1, 0) } end
+	camera.ViewportPointToRay = function(_, x, y) table.insert(rays, { space = "viewport", x = x, y = y }) return { Origin = v3(0, 80, 60), Direction = v3(0, -1, 0) } end
 	workspace.CurrentCamera = camera
 	local rayHit = nil
 	workspace.Raycast = function() return rayHit end
@@ -447,11 +451,18 @@ local function session(screen)
 		if rawget(child, "__class") == "Frame" and child.ZIndex == 50 then overlays = child end
 	end
 	check(asked("Sync"), tag .. ": the client asked for its first snapshot")
+	-- The HUD is laid out in logical pixels and drawn scaled (ScreenScale on the
+	-- root frame): a 1920 x 1022 window is a 1200 x 638 canvas drawn 1.6x.
+	local function view()
+		local scale = main and main:FindFirstChild("ScreenScale")
+		local factor = scale and scale.Scale or 1
+		return { w = math.floor(SCREEN.w / factor), h = math.floor(SCREEN.h / factor) }
+	end
 
 	--========================================================================
 	-- Lobby
 	--========================================================================
-	local lobbyLayout = UILayout.lobbyLayout(SCREEN.w, SCREEN.h)
+	local lobbyLayout = UILayout.lobbyLayout(view().w, view().h)
 	step("the lobby HUD lays out", function()
 		check(frameAt(main, lobbyLayout.pill) ~= nil, tag .. ": the gold pill sits where lobbyLayout puts it")
 		check(frameAt(main, lobbyLayout.squad) ~= nil, tag .. ": the squad button sits where lobbyLayout puts it")
@@ -460,7 +471,7 @@ local function session(screen)
 		-- The world is the menu: nothing else sits on screen when the lobby opens.
 		local visible = 0
 		for _, child in ipairs(main:GetChildren()) do
-			if child.Visible ~= false then visible += 1 end
+			if child.Visible ~= false and rawget(child, "__class") ~= "UIScale" then visible += 1 end
 		end
 		-- Wide screens add the side quest tracker; phones keep the view clear.
 		local tracker = main:FindFirstChild("QuestTracker")
@@ -468,7 +479,7 @@ local function session(screen)
 		if tracker then check(frameAt(main, lobbyLayout.tracker) ~= nil, tag .. ": the quest tracker sits where lobbyLayout puts it") end
 		local expected = tracker and 6 or 5
 		check(visible == expected, tag .. ": the idle lobby shows counters, play/settings, dock, guide and quests, got " .. visible .. " elements")
-		local bad = offscreen(main, SCREEN)
+		local bad = offscreen(main, view())
 		check(#bad == 0, tag .. ": every lobby element is on screen: " .. table.concat(bad, ", "))
 	end)
 
@@ -516,7 +527,7 @@ local function session(screen)
 		clickNamed("FirstVisitHint")
 		check(not contextOpen(),tag..": the shop suggestion sends the player walking, no chest menu")
 		check(named(gui,"RefugeWelcome")==nil and named(gui,"GuideLink_modes")==nil,tag..": there is no guide panel")
-		check(#offscreen(main,SCREEN)==0,tag..": the strip stays inside the usable screen")
+		check(#offscreen(main,view())==0,tag..": the strip stays inside the usable screen")
 	end)
 	step("a portal opens no menu", function()
 		fx({ kind = "OpenPanel", panel = "play", modeId = "normal" })
@@ -552,7 +563,7 @@ local function session(screen)
 			if item.Name == "TalentNode_roundGold" then node = item end
 		end
 		check(tree ~= nil, tag .. ": talent branches render")
-		check(#offscreen(main, SCREEN) == 0, tag .. ": talent panel stays within viewport")
+		check(#offscreen(main, view()) == 0, tag .. ": talent panel stays within viewport")
 		check(node ~= nil, tag .. ": fortune root is a tappable hexagon")
 		check(named(gui, "Talent_roundGold") == nil and countNamed(gui, "UpgradeTalent_roundGold") == 0, tag .. ": no card or button ever opens below the tree")
 		check(named(gui, "TalentInfo") ~= nil and string.find(named(gui, "TalentInfo").Text, "Agora", 1, true) ~= nil, tag .. ": one line above the icons says what the talent does")
@@ -579,7 +590,8 @@ local function session(screen)
 		-- The honeycomb is narrow enough for any panel: nothing to drag sideways.
 		local treeFrame = named(gui, "TalentTree")
 		local mapFrame = treeFrame and named(treeFrame, "TalentMap")
-		check(mapFrame ~= nil and mapFrame.Size.X.Offset <= 340, tag .. ": the honeycomb is compact, " .. tostring(mapFrame and mapFrame.Size.X.Offset) .. " px wide")
+		check(mapFrame ~= nil and mapFrame.Size.X.Offset <= view().w, tag .. ": the honeycomb fits the screen, " .. tostring(mapFrame and mapFrame.Size.X.Offset) .. " px wide")
+		check(named(gui, "TalentExit") ~= nil and named(gui, "TalentRoot") ~= nil, tag .. ": the full-screen tree has its Exit button and the commander's hexagon")
 		local function spent() local n = 0; for _, name in ipairs(actions) do if name == "UpgradeTalent" then n += 1 end end; return n end
 		local spentBefore = spent()
 		clickNamed("TalentNode_killGold")
@@ -606,7 +618,7 @@ local function session(screen)
 		check(countNamed(gui,"SummonSelect_rare")==1 and countNamed(gui,"OpenChest_rare")==1 and countNamed(gui,"SummonSelect_base_rare")==0,tag..": rare chest has a dedicated page")
 		local odds=named(gui,"SummonOdds")
 		local crates=named(gui,"SummonCrates")
-		if SCREEN.w>=1000 then
+		if view().w>=1000 then
 			local viewport=screenRect(named(gui,"ContextBody"),gui,SCREEN)
 			local gallery=screenRect(odds,gui,SCREEN)
 			local buy=screenRect(named(gui,"OpenChest_rare"),gui,SCREEN)
@@ -652,7 +664,7 @@ local function session(screen)
 		if again then again.Activated:Fire(); flush() end
 		check(named(gui,"BoardRetry")==nil and named(gui,"BoardFailed")==nil,tag..": retrying clears the failure")
 		fx({kind="OpenPanel",panel="premium"})
-		check(#offscreen(main,SCREEN)==0,tag..": category navigation stays on screen")
+		check(#offscreen(main,view())==0,tag..": category navigation stays on screen")
 		-- Everything on sale can be inspected before it is paid for.
 		clickNamed("PremiumTabs_pass")
 		clickNamed("ProductInfo_training")
@@ -678,7 +690,7 @@ local function session(screen)
 		fx({kind="OpenPanel",panel="chests",chestId="base_supply"})
 		check(countNamed(gui,"SummonSelect_base_supply")==1 and countNamed(gui,"OpenChest_base_supply")==1 and countNamed(gui,"SummonSelect_supply")==0,tag..": base chest selected independently of hero chests")
 		check(countNamed(gui,"ChestOdds_workshop")==1 and countNamed(gui,"ChestOdds_ironman")==0,tag..": base chest displays actual base pool")
-		check(named(gui,"ContextTitle").Text=="INVOCAR BASES",tag..": entering the base shop changes its title immediately")
+		check(named(gui,"ContextTitle").Text=="Invocar Bases",tag..": entering the base shop changes its title immediately")
 		push(matchSnapshot(p,"Preparing",{base={id="workshop",level=1,stats=Rules.BaseStats("workshop",1),wall=0},cash=1000}))
 		-- The base is upgraded at the agent beside it: its prompt opens the window,
 		-- another commander's agent does not.
@@ -724,7 +736,7 @@ local function session(screen)
 		fx({ kind = "OpenPanel", panel = "quests" })
 		click("Resgatar recompensa")
 		check(asked("ClaimQuest"), tag .. ": the mission board claims a finished quest")
-		click("×")
+		click("X")
 		check(not contextOpen(), tag .. ": the close button dismisses the panel")
 	end)
 
@@ -734,7 +746,7 @@ local function session(screen)
 		check(tip ~= nil and string.find(tip.Text, "INVOCAÇÃO", 1, true) ~= nil, tag .. ": 2,500 Gold sends the commander to the summon halls")
 		fx({kind="OpenPanel",panel="modes",hud=true})
 		check(named(gui, "FirstMission") == nil, tag .. ": a trained commander goes straight to the modes")
-		click("×")
+		click("X")
 	end)
 
 	step("earned Gold pops and floats up from the lobby counter", function()
@@ -867,7 +879,7 @@ local function session(screen)
 		chestResult = nil
 		push(lobbySnapshot(veteranProfile()))
 		push(lobbySnapshot(veteranProfile()))
-		click("×")
+		click("X")
 	end)
 
 	step("HUD affordances open their panels", function()
@@ -875,7 +887,7 @@ local function session(screen)
 		check(contextOpen(), tag .. ": the settings button opens a panel")
 		click("Ligado")
 		check(asked("Settings"), tag .. ": a settings toggle is sent to the server")
-		click("×")
+		click("X")
 		fx({kind="OpenPanel",panel="modes",hud=true})
 		check(contextOpen(), tag .. ": Play opens a clear choice of modes")
 		for _,id in ipairs(Catalog.DestinationOrder) do
@@ -890,7 +902,7 @@ local function session(screen)
 		check(not contextOpen(),tag..": finding a portal clears the screen to walk there")
 		clickNamed("ActiveBaseButton")
 		check(named(gui,"ActiveBaseSummary")~=nil,tag..": active base has a direct HUD entry")
-		click("×")
+		click("X")
 		clickNamed("Nav_inventory")
 		check(contextOpen(), tag .. ": Heroes opens the owned inventory")
 		-- One team, always: no saved formations to pick between.
@@ -954,7 +966,7 @@ local function session(screen)
 	step("daily rewards: badge, free chest, login streak, playtime and milestones", function()
 		-- The previous step leaves the inventory panel open, which hides the
 		-- dock on short screens; close it first so the gift tab is reachable.
-		click("×")
+		click("X")
 		check(not shown(named(gui, "RewardsBadge"), gui) or named(gui, "RewardsBadge").Visible == false,
 			tag .. ": no badge with nothing to claim")
 		local withRewards = veteranProfile({ rewards = rewardsFixture("ready") })
@@ -998,7 +1010,7 @@ local function session(screen)
 		check(countNamed(gui, "GroupReward") == 0, tag .. ": without a configured group there is no group card")
 		clickNamed("InviteFriends")
 		check(named(gui, "InviteFriends") ~= nil, tag .. ": inviting friends never breaks the panel, even where invites are unavailable")
-		click("×")
+		click("X")
 
 		-- Claiming eventually clears the badge, once the server reports nothing left.
 		push(lobbySnapshot(veteranProfile({ rewards = rewardsFixture("empty") })))
@@ -1030,11 +1042,11 @@ local function session(screen)
 		local body = named(gui, "ContextBody")
 		local panelRect, bodyRect = screenRect(context, gui, SCREEN), screenRect(body, gui, SCREEN)
 		check(panelRect ~= nil and panelRect.x >= 0 and panelRect.y >= 0
-			and panelRect.x + panelRect.w <= SCREEN.w and panelRect.y + panelRect.h <= SCREEN.h,
+			and panelRect.x + panelRect.w <= view().w and panelRect.y + panelRect.h <= view().h,
 			tag .. ": the actual context panel fits the usable screen")
 		check(bodyRect ~= nil and bodyRect.w >= 200 and bodyRect.h >= 65,
 			tag .. ": the panel keeps a positive, usable scrolling area")
-		local focused = UILayout.contextLayout(SCREEN.w, SCREEN.h, {}).modal
+		local focused = UILayout.contextLayout(view().w, view().h, {}).modal
 		for _, name in ipairs({"LobbyPill", "ActiveBaseButton", "SettingsButton", "LobbyNavigation"}) do
 			local element = named(gui, name)
 			check(element ~= nil and element.Visible == not focused,
@@ -1062,10 +1074,10 @@ local function session(screen)
 			portalId = "normal", modeId = "normal", mapId = "manhattan", carId="review-car", max = 4, remaining = 6, host = true,
 			riders = { { userId = LOCAL_ID, name = "Tester" }, { userId = ALLY_ID, name = "Ally" } },
 		}
-		click("×")
+		click("X")
 		push(riding)
 		-- A campaign car is taller: it carries the row of difficulties.
-		local ridingLayout = UILayout.lobbyLayout(SCREEN.w, SCREEN.h, { difficulty = true })
+		local ridingLayout = UILayout.lobbyLayout(view().w, view().h, { difficulty = true })
 		local card = frameAt(main, ridingLayout.elevator)
 		check(card ~= nil, tag .. ": the elevator card sits where lobbyLayout puts it")
 		check(named(gui,"LobbyNavigation").Visible == not lobbyLayout.class.short,
@@ -1113,9 +1125,9 @@ local function session(screen)
 		local close = named(gui, "CloseContext")
 		local closeRect = screenRect(close, gui, SCREEN)
 		check(closeRect ~= nil and closeRect.w >= 40 and closeRect.h >= 40
-			and closeRect.y >= 0 and closeRect.y + closeRect.h <= SCREEN.h,
+			and closeRect.y >= 0 and closeRect.y + closeRect.h <= view().h,
 			tag .. ": the panel close action stays reachable while boarding")
-		click("×")
+		click("X")
 		click("SAIR")
 		check(asked("ElevatorLeave"), tag .. ": Leave is sent to the server")
 		local guest = table.clone(riding)
@@ -1179,7 +1191,7 @@ local function session(screen)
 		-- A short phone screen has no room for the card beside an open panel.
 		frames(1 / 30, 2)
 		local openCard = named(gui, "TutorialCard")
-		check(openCard ~= nil and openCard.Visible == (SCREEN.h >= 500), tag .. ": the lesson card steps aside for an open panel only on a short screen (h " .. tostring(SCREEN.h) .. ")")
+		check(openCard ~= nil and openCard.Visible == (view().h >= 500), tag .. ": the lesson card steps aside for an open panel only on a short screen (h " .. tostring(view().h) .. ")")
 		clickNamed("FindTrainingPortal")
 		check(asked("StartTraining") and not asked("StartMatch"), tag .. ": the training button asks the server to board the training queue")
 		check(not contextOpen(),tag..": the play menu steps aside once training starts")
@@ -1189,12 +1201,12 @@ local function session(screen)
 	-- Match
 	--========================================================================
 	local profile = veteranProfile()
-	local layout = UILayout.matchLayout(SCREEN.w, SCREEN.h, { skills = 1, vip = true })
+	local layout = UILayout.matchLayout(view().w, view().h, { skills = 1, vip = true })
 	step("the match HUD lays out", function()
 		push(matchSnapshot(profile, "Preparing"))
 		check(frameAt(main, layout.top) ~= nil, tag .. ": the match top bar sits where matchLayout puts it")
 		check(frameAt(main, layout.heroCards) ~= nil, tag .. ": the hero card band sits where matchLayout puts it")
-		local bad = offscreen(main, SCREEN)
+		local bad = offscreen(main, view())
 		check(#bad == 0, tag .. ": every match element is on screen: " .. table.concat(bad, ", "))
 		click("PRONTO")
 		check(asked("SkipWave"), tag .. ": READY votes to skip preparation")
@@ -1243,7 +1255,7 @@ local function session(screen)
 		push(matchSnapshot(profile, "Wave", { speed = 1, speedVote = 2, speedVotes = 1, partySize = 2, autoSkip = false }))
 		check(string.find(named(gui, "SpeedToggle").Text, "1/2", 1, true) ~= nil,
 			tag .. ": in a duo the toggle shows the vote still waiting, got " .. named(gui, "SpeedToggle").Text)
-		local bad = offscreen(main, SCREEN)
+		local bad = offscreen(main, view())
 		check(#bad == 0, tag .. ": the action band still fits on screen with the new toggles: " .. table.concat(bad, ", "))
 		push(matchSnapshot(profile, "Preparing"))
 	end)
@@ -1302,7 +1314,18 @@ local function session(screen)
 		flush()
 		rayHit = { Instance = workspace:FindFirstChild("DoomWorld").BuildZones.BuildGround, Position = v3(70, 0, -60) }
 		-- Hovering the ground previews the spot (a click would already place).
+		table.clear(rays)
 		frames(1 / 30, 3)
+		-- The mouse location is in viewport pixels (top bar included), so the
+		-- hover must turn it into a ray as it is: ScreenPointToRay would add the
+		-- top bar again and put the ghost 58 px below the cursor.
+		local mouse = input:GetMouseLocation()
+		local aimed, offset = 0, {}
+		for _, ray in ipairs(rays) do
+			if ray.space == "viewport" and ray.x == mouse.X and ray.y == mouse.Y then aimed += 1 else table.insert(offset, ray.space .. " " .. ray.x .. "," .. ray.y) end
+		end
+		check(aimed > 0 and #offset == 0, tag .. ": the ghost follows the pointer exactly, got " .. aimed .. " aimed, off: " .. table.concat(offset, "; "))
+		check(named(gui, "PlacementHint") ~= nil and not named(gui, "PlacementHint"):IsA("TextButton"), tag .. ": the bar under the ghost is a hint, not a confirm button")
 		-- While placing, the ground that refuses a tower is tinted, from the
 		-- very rule the server applies: every tinted spot really is refused.
 		local visuals = workspace:FindFirstChild("DoomClientVisuals")
@@ -1333,6 +1356,15 @@ local function session(screen)
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, KeyCode = Enum.KeyCode.Unknown, Position = v3(SCREEN.w / 2, SCREEN.h / 2, 0) }, false)
 		flush()
 		check(asked("PlaceTower"), tag .. ": clicking a legal spot sends PlaceTower at once")
+		-- A quick right click drops the hero in hand; it is not placed.
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Two, Position = v3(0, 0, 0) }, false)
+		flush()
+		frames(1 / 30, 2)
+		check(countNamed(workspace, "HeroPlacementPreview") > 0, tag .. ": a second hotkey shows its ghost")
+		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton2, KeyCode = Enum.KeyCode.Unknown, Position = v3(0, 0, 0) }, false)
+		input.InputEnded:Fire({ UserInputType = Enum.UserInputType.MouseButton2, KeyCode = Enum.KeyCode.Unknown, Position = v3(0, 0, 0) }, false)
+		flush()
+		check(countNamed(workspace, "HeroPlacementPreview") == 0, tag .. ": a right click cancels the hero in hand")
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Escape, Position = v3(0, 0, 0) }, false)
 		flush()
 		local leftover = 0
@@ -1682,11 +1714,11 @@ local function session(screen)
 		fx({ kind = "OpenPanel", panel = "modes", hud = true })
 		check(contextOpen(), tag .. ": the play menu opens")
 		check(countNamed(gui, "FeaturedRibbon") == 1, tag .. ": exactly one campaign card carries the map-of-the-day ribbon, got " .. countNamed(gui, "FeaturedRibbon"))
-		click("×")
+		click("X")
 		push(lobbySnapshot(veteranProfile()))
 		fx({ kind = "OpenPanel", panel = "modes", hud = true })
 		check(countNamed(gui, "FeaturedRibbon") == 0, tag .. ": no ribbon without a featured map")
-		click("×")
+		click("X")
 		push(matchSnapshot(veteranProfile(), "Wave"))
 		frames(1 / 30, 2)
 	end)
@@ -1755,7 +1787,7 @@ local function session(screen)
 		check(second ~= nil and string.find(second.Text, "EVOLUIR", 1, true) ~= nil, tag .. ": a level-4 tower offers to evolve")
 		if second then second.Activated:Fire(); flush() end
 		check(frameAt(main, layout.tower) ~= nil, tag .. ": evolving opens the panel where the branch is chosen")
-		click("×")
+		click("X")
 		push(matchSnapshot(profile, "Preparing", { cash = 100 }))
 		first = board("t1") and board("t1"):FindFirstChildOfClass("TextButton")
 		check(first ~= nil and not green(first.BackgroundColor3), tag .. ": an upgrade the player cannot afford is not green")
@@ -1806,7 +1838,7 @@ local function session(screen)
 			cardOffers = { "sharpen", "quickDraw", "warChest" },
 		}))
 		check(frameAt(main, layout.boss) ~= nil, tag .. ": the boss banner sits in its slot")
-		local P = UILayout.protocolLayout(SCREEN.w, SCREEN.h)
+		local P = UILayout.protocolLayout(view().w, view().h)
 		local veil = overlays and overlays:GetChildren()[#overlays:GetChildren()]
 		check(veil ~= nil and frameAt(veil, P.panel) ~= nil, tag .. ": the protocol chooser sits where protocolLayout puts it")
 		local choices = 0
@@ -1815,7 +1847,7 @@ local function session(screen)
 				choices += 1
 				local r = screenRect(item, gui, SCREEN)
 				check(shown(item, gui) and r ~= nil and r.x >= 0 and r.y >= 0
-					and r.x + r.w <= SCREEN.w and r.y + r.h <= SCREEN.h and r.h >= 40,
+					and r.x + r.w <= view().w and r.y + r.h <= view().h and r.h >= 40,
 					tag .. ": every card choice remains visible and comfortably tappable")
 			end
 		end
@@ -1887,7 +1919,7 @@ local function session(screen)
 		fx({ kind = "OpenPanel", panel = "hero", heroId = "ironman", hud = true })
 		check(string.find(named(gui, "HeroCardHint").Text, "Faltam", 1, true) ~= nil, tag .. ": a missing card is named")
 		push(lobbySnapshot(veteranProfile()))
-		click("×")
+		click("X")
 	end)
 
 	step("every FX event the client handles", function()
@@ -2242,7 +2274,7 @@ local function session(screen)
 			tag .. ": return action remains outside the long rewards scroll")
 		local backRect, bodyRect = screenRect(back, gui, SCREEN), screenRect(body, gui, SCREEN)
 		check(backRect ~= nil and backRect.x >= 0 and backRect.y >= 0
-			and backRect.x + backRect.w <= SCREEN.w and backRect.y + backRect.h <= SCREEN.h and backRect.h >= 44,
+			and backRect.x + backRect.w <= view().w and backRect.y + backRect.h <= view().h and backRect.h >= 44,
 			tag .. ": returning to the lobby is reachable without scrolling the results")
 		check(backRect ~= nil and bodyRect ~= nil and bodyRect.y + bodyRect.h <= backRect.y,
 			tag .. ": the pinned return button has its own space below the reward scroll")
@@ -2269,7 +2301,7 @@ local function session(screen)
 		check(mvp ~= nil and mvp.Text == "Ally" and named(gui, "ResultTeam_2") ~= nil, tag .. ": the end screen names the MVP and lists the squad")
 		local again = named(gui, "ResultPlayAgain")
 		local againRect = again and screenRect(again, gui, SCREEN)
-		check(againRect ~= nil and againRect.y + againRect.h <= SCREEN.h and againRect.h >= 44, tag .. ": PLAY AGAIN sits beside the return button without scrolling")
+		check(againRect ~= nil and againRect.y + againRect.h <= view().h and againRect.h >= 44, tag .. ": PLAY AGAIN sits beside the return button without scrolling")
 		click("▶ JOGAR DE NOVO")
 		check(asked("PlayAgain"), tag .. ": the results screen offers to play the same map again")
 		click("LOBBY")
@@ -2310,7 +2342,7 @@ local function session(screen)
 		flush()
 		local fresh = UILayout.matchLayout(rotated.w, rotated.h, { skills = 1, vip = true })
 		check(frameAt(main, fresh.top) ~= nil, tag .. ": after a resize the top bar follows the new layout")
-		local bad = offscreen(main, SCREEN)
+		local bad = offscreen(main, view())
 		check(#bad == 0, tag .. ": after a resize everything is still on screen: " .. table.concat(bad, ", "))
 	end)
 

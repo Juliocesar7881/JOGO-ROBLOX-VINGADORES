@@ -128,3 +128,20 @@ Pedido do dono, na ordem em que chegou. Ele quer: letras maiores, visual moderno
 - [x] M13.22 (tela de carregamento do jogo em ReplicatedFirst, `src/first`: tira a tela padrão preta, mostra marca, barra e dicas até a interface avisar `DoomReady` ou 60 s; build, Rojo, sync e contrato cobrem) Primeira abertura do jogo fica com tela preta/carregando por muito tempo (investigar: pré-carga, terreno, tela de carregamento).
 - [x] M13.23 (fonte Gotham Black em lobby e HUD, painéis grandes e arredondados, placas do lobby com cantos redondos, botão AUTO com ON/OFF; o lobby já é praça circular com cercas e anéis) HUD/IU inteira: letras maiores, formas arredondadas e modernas, lobby sem cara quadrada.
 
+## M14 — Refazer a IU no padrão dos jogos de referência, 04/10 (dono dormindo: trabalhar sem parar)
+
+Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense de anime), ver memória ui-reference-style. Tudo grande, título com fonte arredondada, nada cortado, informação ao passar o mouse.
+
+- [ ] M14.1 Colocar herói: o fantasma fica EXATAMENTE sob o cursor (o preview usava GetMouseLocation com ScreenPointToRay: 58 px abaixo do cursor), clique esquerdo coloca na hora, clique inválido não prende o fantasma, botão direito/Esc cancela, a barra de baixo vira dica (não parece botão de confirmar). Ping com G também.
+- [ ] M14.2 Escala global da IU: HUD e painéis crescem com a tela (2560x1440 = 2x), layouts calculados num espaço lógico; testes de layout continuam passando.
+- [ ] M14.3 Linguagem visual nova nos primitivos (UI.luau): fonte arredondada em caixa normal (não TUDO MAIÚSCULO), contorno escuro grosso e sombra, botões e abas com textura de pinos, janelas com faixa de título inclinada, corpo escuro texturizado, X vermelho quadrado.
+- [ ] M14.4 Passar o mouse mostra informação: herói na barra da partida e na coleção (dano, alcance, velocidade, alvos, traços, poder, nível/cartas); talentos (nome, efeito, custo).
+- [ ] M14.5 Árvore de evolução estilo "pesquisa" do vídeo: tela cheia escura, hexágonos grandes com ícone, nome e custo, abre animada com som de encaixe de Lego, botão Sair embaixo, pontos no canto; no lobby e na partida.
+- [ ] M14.6 Equipe/Inventário estilo anime TD: grade de heróis (cor da raridade, estrelas, nível) + painel lateral (nome, nível, equipar/tirar, tabela Dano/Velocidade/Alcance, traços, poder, carta e evoluir).
+- [ ] M14.7 Invocação (baús) estilo banner: cartas altas com retrato, % e estrelas; botões grandes x1 e xN; nada cortado.
+- [ ] M14.8 Loja estilo tycoon: abas coloridas com ícone, itens em linhas grandes com imagem, nome, raridade, descrição e botões de preço; loja Robux em cartões coloridos com info antes de comprar.
+- [ ] M14.9 HUD da partida: barra de topo maior (onda, vida da base), barra de heróis maior com retratos e preço, botões de velocidade/auto bonitos, painel da torre com tabela grande e prévia da melhoria.
+- [ ] M14.10 Lobby: tudo que parece sólido tem colisão (o dono atravessou coisas "em certos mapas"); auditar lobby e mapas.
+- [ ] M14.11 Portais mais bonitos (anéis animados, prévia do mapa, nome legível), dentro da regra de brilho.
+- [ ] M14.12 Revisão completa no Studio em 2560x1440 e celular: nada cortado, nada sobreposto; conferir item a item a lista do dono de 03/10 (M13) no jogo de verdade.
+- [ ] M14.13 Publicar na Roblox depois de verde + revisão (o dono pediu manter o Studio e a Roblox atualizados).

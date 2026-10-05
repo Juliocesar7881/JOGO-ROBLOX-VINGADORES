@@ -76,7 +76,7 @@ end
 --==============================================================================
 function Celebrate:Confetti(count, originScale)
 	if self.lowFX() or count <= 0 then return end
-	local size = self.root.AbsoluteSize
+	local size = self.UI.toLogical(self.root.AbsoluteSize)
 	local width, height = math.max(size.X, 320), math.max(size.Y, 280)
 	originScale = originScale or 0.35
 	for _ = 1, math.min(count, 80) do
@@ -95,7 +95,7 @@ function Celebrate:Confetti(count, originScale)
 end
 
 function Celebrate:_stepConfetti(now)
-	local height = math.max(self.root.AbsoluteSize.Y, 280)
+	local height = math.max(self.UI.toLogical(self.root.AbsoluteSize).Y, 280)
 	for index = #self.confetti, 1, -1 do
 		local piece = self.confetti[index]
 		local t = now - piece.born
@@ -131,8 +131,10 @@ end
 -- "+150" rising from a HUD element and fading out.
 function Celebrate:Float(text, anchor, color)
 	if not anchor or not anchor.Parent then return end
-	local position = anchor.AbsolutePosition or Vector2.new(0, 0)
-	local size = anchor.AbsoluteSize or Vector2.new(0, 0)
+	local origin = self.root.AbsolutePosition or Vector2.new(0, 0)
+	local at = anchor.AbsolutePosition or origin
+	local position = self.UI.toLogical(Vector2.new(at.X - origin.X, at.Y - origin.Y))
+	local size = self.UI.toLogical(anchor.AbsoluteSize or Vector2.new(0, 0))
 	local label = self.UI.label(self.root, text, {
 		Name = "FloatingGain", AnchorPoint = Vector2.new(0.5, 1), ZIndex = 96,
 		Size = UDim2.fromOffset(160, 30), Font = Enum.Font.GothamBlack, TextSize = 20,
@@ -294,7 +296,7 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 	local root = UI.frame(self.root, { Name = "ChestReveal", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(8, 10, 30), BackgroundTransparency = 1, ZIndex = 80, Active = true })
 	local skip = UI.button(root, "", function() self:SkipReveal() end, { Name = "RevealSkip", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 81, AutoButtonColor = false })
 	local stage = UI.frame(root, { Name = "RevealStage", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.fromOffset(400, 400), BackgroundTransparency = 1, ZIndex = 82 })
-	local screen = self.root.AbsoluteSize
+	local screen = UI.toLogical(self.root.AbsoluteSize)
 	UI.create("UIScale", { Scale = math.clamp(math.min(screen.X, screen.Y) / 470, 0.55, 1.4) }, stage)
 
 	-- Light rays turn behind everything from the first frame, in the colour
@@ -521,7 +523,7 @@ function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, f
 	local root = UI.frame(self.root, { Name = "ChestReel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(8, 10, 30), BackgroundTransparency = 0.08, ZIndex = 80, Active = true })
 	UI.button(root, "", function() self:SkipReveal() end, { Name = "RevealSkip", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 81, AutoButtonColor = false })
 	local stage = UI.frame(root, { Name = "ReelStage", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.fromOffset(REEL_WIDTH, 380), BackgroundTransparency = 1, ZIndex = 82 })
-	local screen = self.root.AbsoluteSize
+	local screen = UI.toLogical(self.root.AbsoluteSize)
 	UI.create("UIScale", { Scale = math.clamp(math.min(screen.X / 960, screen.Y / 520), 0.5, 1.3) }, stage)
 	local title = self:_t(chest.name) .. (total > 1 and ("   " .. position .. "/" .. total) or "")
 	local titleLabel = UI.label(stage, Catalog.Upper(title), { Name = "ReelTitle", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 52), Font = Enum.Font.GothamBlack, TextSize = 36, TextColor3 = REEL_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
@@ -661,7 +663,7 @@ end
 function Celebrate:_summary(results, onClosed)
 	local UI = self.UI
 	local root = UI.frame(self.root, { Name = "ChestSummary", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(8, 10, 30), BackgroundTransparency = 0.08, ZIndex = 80, Active = true })
-	local screen = self.root.AbsoluteSize
+	local screen = UI.toLogical(self.root.AbsoluteSize)
 	local panelWidth = math.min(940, math.max(320, screen.X - 24))
 	local panel = UI.frame(root, { Name = "SummaryPanel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.48), Size = UDim2.fromOffset(panelWidth, math.min(560, math.max(300, screen.Y - 24))), BackgroundTransparency = 1, ZIndex = 82 })
 	local fresh, cards, gold = 0, 0, 0

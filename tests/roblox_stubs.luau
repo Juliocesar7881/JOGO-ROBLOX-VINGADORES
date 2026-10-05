@@ -53,16 +53,36 @@ function V3_METHODS:Lerp(other, t)
 end
 
 Vector3 = { new = v3, zero = v3(0, 0, 0), one = v3(1, 1, 1) }
-Vector2 = {
-	new = function(x, y)
-		return setmetatable({ X = x or 0, Y = y or 0 }, {
-			__index = function(self, key)
-				if key == "Magnitude" then return math.sqrt(self.X * self.X + self.Y * self.Y) end
-				return nil
-			end,
-		})
-	end,
-}
+-- Vector2 does the same maths as the engine's: + - * / and unary minus,
+-- Magnitude, Unit, Dot and Lerp, and the zero/one constants.
+local V2 = {}
+local V2_METHODS = {}
+local function v2(x, y) return setmetatable({ X = x or 0, Y = y or 0 }, V2) end
+V2.__index = function(self, key)
+	if key == "Magnitude" then return math.sqrt(self.X * self.X + self.Y * self.Y) end
+	if key == "Unit" then
+		local m = math.sqrt(self.X * self.X + self.Y * self.Y)
+		if m == 0 then return v2(0, 0) end
+		return v2(self.X / m, self.Y / m)
+	end
+	return V2_METHODS[key]
+end
+V2.__add = function(a, b) return v2(a.X + b.X, a.Y + b.Y) end
+V2.__sub = function(a, b) return v2(a.X - b.X, a.Y - b.Y) end
+V2.__unm = function(a) return v2(-a.X, -a.Y) end
+V2.__mul = function(a, b)
+	if type(a) == "number" then return v2(b.X * a, b.Y * a) end
+	if type(b) == "number" then return v2(a.X * b, a.Y * b) end
+	return v2(a.X * b.X, a.Y * b.Y)
+end
+V2.__div = function(a, b)
+	if type(b) == "number" then return v2(a.X / b, a.Y / b) end
+	return v2(a.X / b.X, a.Y / b.Y)
+end
+V2.__eq = function(a, b) return a.X == b.X and a.Y == b.Y end
+function V2_METHODS:Dot(other) return self.X * other.X + self.Y * other.Y end
+function V2_METHODS:Lerp(other, t) return v2(self.X + (other.X - self.X) * t, self.Y + (other.Y - self.Y) * t) end
+Vector2 = { new = v2, zero = v2(0, 0), one = v2(1, 1), xAxis = v2(1, 0), yAxis = v2(0, 1) }
 
 --==============================================================================
 -- CFrame: translation plus a 3x3 rotation, composed properly
@@ -231,6 +251,10 @@ local INHERITS = {
 	UIGridLayout = { "UIComponent", "UILayout" },
 	UIPadding = { "UIComponent" },
 	UISizeConstraint = { "UIComponent", "UIConstraint" },
+	UIAspectRatioConstraint = { "UIComponent", "UIConstraint" },
+	UITextSizeConstraint = { "UIComponent", "UIConstraint" },
+	UIScale = { "UIComponent" },
+	UIGradient = { "UIComponent" },
 }
 
 local INSTANCE = {}

@@ -99,15 +99,52 @@ local gui = UI.create("ScreenGui", {Name = "DoomsdayUI", ResetOnSpawn = false, Z
 local main = UI.frame(gui, {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1)})
 local overlays = UI.frame(gui, {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50})
 
+-- The interface is laid out on a logical canvas about 1150 x 640 and drawn
+-- scaled up to the real window, the way the big Roblox games grow with the
+-- screen: a 1440p monitor draws every panel, button and letter twice as big
+-- instead of leaving them tiny in the middle. Phones and small laptops keep
+-- scale 1 and their own compact layouts. Every layout below works in logical
+-- pixels; only screenSize() and UI.toLogical know about the scale.
+local DESIGN_W, DESIGN_H = 1150, 640
+local mainScale = UI.create("UIScale", {Name = "ScreenScale", Scale = 1}, main)
+local overlayScale = UI.create("UIScale", {Name = "ScreenScale", Scale = 1}, overlays)
+-- Hover tooltips (heroes, talents, shop items) live on the overlay layer.
+UI.tooltipLayer = overlays
+-- The usable screen in real pixels: the ScreenGui's own size (the window
+-- under Roblox's top bar), or the root frame's where a host has no such size.
+local function validSize(size)
+	local ok, good = pcall(function() return (tonumber(size.X) or 0) > 0 and (tonumber(size.Y) or 0) > 0 end)
+	return ok and good
+end
+local function physicalSize()
+	local ok, size = pcall(function() return gui.AbsoluteSize end)
+	if ok and size ~= nil and validSize(size) then return size end
+	size = main.AbsoluteSize
+	if size ~= nil and validSize(size) then return size end
+	local camera = workspace.CurrentCamera
+	local view = camera and camera.ViewportSize or Vector2.new(1280, 720)
+	local inset = GuiService:GetGuiInset()
+	return Vector2.new(view.X, view.Y - inset.Y)
+end
+local function applyScreenScale()
+	local size = physicalSize()
+	local scale = kit.reviewSize and 1 or math.clamp(math.min(size.X / DESIGN_W, size.Y / DESIGN_H), 1, 4)
+	scale = math.floor(scale * 100 + 0.5) / 100
+	UI.screenScale = scale
+	mainScale.Scale, overlayScale.Scale = scale, scale
+	local dimension = kit.reviewSize and UDim2.fromOffset(kit.reviewSize.X, kit.reviewSize.Y) or UDim2.fromScale(1 / scale, 1 / scale)
+	main.Size, overlays.Size = dimension, dimension
+	return scale
+end
+
 -- Every HUD is laid out from the usable screen: the viewport minus Roblox's
 -- topbar and the device's safe area, which is exactly main's AbsoluteSize.
 -- Before the first layout pass that is still zero, so fall back to the
 -- viewport minus the reported inset.
 local function screenSize()
-	local size = main.AbsoluteSize
-	if size.X > 0 and size.Y > 0 then return size end
-	local camera, inset = viewport(), GuiService:GetGuiInset()
-	return Vector2.new(camera.X, camera.Y - inset.Y)
+	if kit.reviewSize then return kit.reviewSize end
+	local size, scale = physicalSize(), UI.screenScale or 1
+	return Vector2.new(math.floor(size.X / scale), math.floor(size.Y / scale))
 end
 local function sizeClass()
 	local size = screenSize()
@@ -469,54 +506,61 @@ renderContext = function()
 	if not reuse and panel then panel:Destroy(); panel=nil; body=nil end
 	local size = screenSize()
 	local slot=UI.contextLayout(size.X,size.Y,{wide=contextPanel.kind=="talents" or contextPanel.kind=="chests",elevator=state.elevator~=nil,difficulty=state.elevator~=nil and state.elevator.modeId=="normal"})
+	-- The talent tree takes the whole screen, like the big games' research trees.
+	if contextPanel.kind=="talents" then slot={x=0,y=0,w=size.X,h=size.Y,modal=true,class=slot.class} end
 	lobbyChrome(not slot.modal)
 	local theme=UI.Themes[contextPanel.kind] or UI.Themes.inventory
 	local tint=theme.color
 	if contextPanel.kind=="chests" and Catalog.Chests[kit.selectedChest].kind=="base" then tint=C.green end
 	if not panel then panel=UI.roundFrame(main,{Name="ContextPanel",BackgroundColor3=C.panel,Active=true}) end
 	panel.Position,panel.Size=at(slot),dims(slot)
-	local border=UI.stroke(panel,tint:Lerp(Color3.new(1,1,1),0.35),3)
-	-- The talent tree has no window: only the hexagons float over the lobby.
+	-- The reference games' window: a dark body inside a thick colour frame,
+	-- a slanted title ribbon sticking out of the top-left corner and a square
+	-- red X on the top-right. The talent tree has no window at all.
 	local bare=contextPanel.kind=="talents"
+	local border=UI.windowSkin(panel,tint)
 	panel.BackgroundTransparency=bare and 1 or 0
 	border.Transparency=bare and 1 or 0
 	local shade=panel:FindFirstChildOfClass("UIGradient")
 	if shade then shade.Enabled=not bare end
+	if panel:FindFirstChild("Sheen") then panel.Sheen.Visible=not bare end
 	if reuse then
 		for _,child in ipairs(panel:GetChildren()) do
-			if child~=body and not child:IsA("UIComponent") then child:Destroy() end
+			if child~=body and child.Name~="Sheen" and not child:IsA("UIComponent") then child:Destroy() end
 		end
 	end
-	-- Header: a band in the screen's colour, the title in big outlined
-	-- letters tilted like a sticker, and a round red close button.
-	local band=UI.frame(panel,{Name="TitleRibbon",Position=UDim2.fromOffset(0,0),Size=UDim2.new(1,0,0,60),BackgroundColor3=tint,Active=false})
-	UI.corner(band,18)
-	UI.candy(band)
-	UI.stroke(band,C.ink,3)
-	local gloss=UI.frame(band,{Name="Shine",Position=UDim2.new(0,64,0,6),Size=UDim2.new(1,-128,0.26,0),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.78,Active=false})
-	UI.corner(gloss,8)
 	refs.context = panel
 	if not reuse then menuBlur(true) end
 	panel:SetAttribute("ContextKind",contextPanel.kind)
-	local titles = {hero = T("GALERIA DE HERÓIS", "HERO GALLERY"), skill = T("TREINAMENTO", "TRAINING"), shop = T("SUPRIMENTOS", "SUPPLIES"), quests = T("CENTRAL DE MISSÕES", "MISSION BOARD"), leaderboard = T("LENDAS DA RESISTÊNCIA", "RESISTANCE LEGENDS"), squad = T("FORMAÇÃO TÁTICA", "TACTICAL FORMATION"), settings = T("OPÇÕES", "SETTINGS")}
-	titles.talents = T("ÁRVORE DE EVOLUÇÃO", "TALENT TREE")
-	titles.maps = T("ESCOLHA SEU MAPA", "CHOOSE YOUR MAP")
-	titles.bases=T("MINHA BASE","MY BASE")
-	titles.chests=Catalog.Chests[kit.selectedChest].kind=="base" and T("INVOCAR BASES","SUMMON BASES") or T("INVOCAR HERÓIS","SUMMON HEROES"); titles.premium=T("LOJA ROBUX","ROBUX SHOP"); titles.inventory=T("INVENTÁRIO","INVENTORY")
-	titles.inventory=T("MEUS HERÓIS","MY HEROES"); titles.modes=T("ENCONTRE SEU PORTAL","FIND YOUR PORTAL"); titles.rewards=T("PRÊMIOS DIÁRIOS","DAILY REWARDS")
-	-- A round medal and the close button sit on the corners like stickers.
-	local medal=UI.frame(panel,{Name="TitleMedal",Position=UDim2.fromOffset(-6,-6),Size=UDim2.fromOffset(62,62),BackgroundColor3=C.ink,Active=false,ZIndex=3})
-	UI.corner(medal,31)
-	UI.stroke(medal,Color3.new(1,1,1),3)
-	UI.illustration(medal,theme.icon,tint,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(46,46),ZIndex=3})
-	UI.label(panel, titles[contextPanel.kind] or "DOOMSDAY", {Name="ContextTitle",Position = UDim2.fromOffset(66, 6), Size = UDim2.new(1, -128, 0, 48), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = size.X < 560 and 22 or 28, Rotation = 0})
-	local close=UI.button(panel, "×", closeContext, {Name="CloseContext",Position = UDim2.new(1, -46, 0, -6), Size = UDim2.fromOffset(52, 52), TextSize = 34,BackgroundColor3=C.red,ZIndex=3})
-	close:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(0,26)
+	local titles = {hero = T("Galeria de Heróis", "Hero Gallery"), skill = T("Treinamento", "Training"), shop = T("Suprimentos", "Supplies"), quests = T("Missões", "Missions"), leaderboard = T("Lendas da Resistência", "Resistance Legends"), squad = T("Minha Equipe", "My Squad"), settings = T("Opções", "Settings")}
+	titles.talents = T("Árvore de Evolução", "Talent Tree")
+	titles.maps = T("Escolha seu Mapa", "Choose Your Map")
+	titles.bases=T("Minhas Bases","My Bases")
+	titles.chests=Catalog.Chests[kit.selectedChest].kind=="base" and T("Invocar Bases","Summon Bases") or T("Invocar Heróis","Summon Heroes"); titles.premium=T("Loja Robux","Robux Shop")
+	titles.inventory=T("Meus Heróis","My Heroes"); titles.modes=T("Portais","Portals"); titles.rewards=T("Prêmios Diários","Daily Rewards")
+	local narrow=size.X<560
+	local ribbonH=narrow and 46 or 56
+	local ribbonW=math.min(slot.w-70,narrow and 300 or 470)
+	-- Ribbon and X stick out above the window, but never above the screen.
+	local lift=math.clamp(slot.y-2,0,14)
+	local ribbon,title=UI.titleRibbon(panel,titles[contextPanel.kind] or "Doomsday",tint,{Name="TitleRibbon",TitleName="ContextTitle",Position=UDim2.fromOffset(-10,-lift),
+		width=ribbonW,height=ribbonH,TextSize=narrow and 25 or 32,textInset=ribbonH-14,ZIndex=3})
+	-- The screen's own symbol on a dark disc at the ribbon's left end.
+	local medal=UI.frame(ribbon,{Name="TitleMedal",Position=UDim2.fromOffset(math.floor(ribbonH*0.32),math.floor(ribbonH*0.12)),Size=UDim2.fromOffset(ribbonH-12,ribbonH-12),BackgroundColor3=C.ink,Active=false,ZIndex=5})
+	UI.corner(medal,ribbonH)
+	UI.stroke(medal,Color3.new(1,1,1),2.5)
+	UI.illustration(medal,theme.icon,tint,{Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,1,-10),ZIndex=5})
+	title.Visible=not bare
+	ribbon.Visible=not bare
+	local close=UI.closeButton(panel,closeContext,{Name="CloseContext",Position=bare and UDim2.new(1,narrow and -58 or -70,0,10) or UDim2.new(1,-40,0,-lift),Size=UDim2.fromOffset(narrow and 46 or 54,narrow and 46 or 54),TextSize=narrow and 26 or 30,ZIndex=6})
 	if not body then
-		body=UI.scroll(panel,{Name="ContextBody",Position=UDim2.fromOffset(14,70),Size=UDim2.new(1,-28,1,-82),ScrollBarImageColor3=tint})
+		body=UI.scroll(panel,{Name="ContextBody",Position=UDim2.fromOffset(16,54),Size=UDim2.new(1,-32,1,-68),ScrollBarImageColor3=tint,ScrollBarThickness=8})
 		UI.list(body,10)
 	end
 	body.ScrollBarImageColor3=tint
+	if bare then
+		body.Position,body.Size=UDim2.fromOffset(0,0),UDim2.fromScale(1,1)
+	end
 	-- A refresh from the server rebuilds the rows, never the reader's place in
 	-- the list: remember the scroll and put it back once the rows exist.
 	local keepScroll=reuse and body.CanvasPosition or nil
@@ -553,7 +597,11 @@ local anchorPosition = lobbyWorld.anchorPosition
 updateWorldCosmetics = lobbyWorld.update
 
 openContext = function(kind, data)
-	if not contextPanel or contextPanel.kind ~= kind then audio:Cue("open", 0.2) end
+	if not contextPanel or contextPanel.kind ~= kind then
+		audio:Cue("open", 0.2)
+		-- The tree builds itself hexagon by hexagon the first time it opens.
+		if kind == "talents" then kit.talentAnimate = true end
+	end
 	if kind=="hero" then kit.heroDetailTab="power" end
 	if kind~="inventory" and kind~="squad" then kit.inventoryView.leaderPick=false end
 	data = data or {}
@@ -881,10 +929,15 @@ local function effectiveRange(heroId)
 	return stats.range
 end
 
-local function raycast(screenPosition, groundOnly)
+-- Every world pick works in viewport pixels (the whole window, Roblox's top
+-- bar included): that is what GetMouseLocation and the touch events report,
+-- and ViewportPointToRay reads them as they are. ScreenPointToRay would add
+-- the top bar a second time and aim 36-58 px below the pointer, which is how
+-- the placement ghost used to float under the cursor instead of on it.
+local function raycast(viewportPosition, groundOnly)
 	local camera = workspace.CurrentCamera
 	if not camera then return nil end
-	local ray = camera:ScreenPointToRay(screenPosition.X, screenPosition.Y)
+	local ray = camera:ViewportPointToRay(viewportPosition.X, viewportPosition.Y)
 	local params = RaycastParams.new()
 	local world = workspace:FindFirstChild("DoomWorld")
 	if groundOnly and world and world:FindFirstChild("BuildZones") then
@@ -925,9 +978,10 @@ local function updatePreview(position)
 		end
 	end
 	if refs.confirm then
-		refs.confirm.BackgroundColor3 = placementValid and C.green or C.red
+		refs.confirm.BackgroundColor3 = placementValid and C.background or Color3.fromRGB(110, 30, 44)
 		local reason = kit.placementReason and Rules.BuildReasons[kit.placementReason]
-		refs.confirm.Text = placementValid and T("TOQUE NO CHÃO PARA POSICIONAR", "TAP THE GROUND TO PLACE") or Catalog.Upper(reason and L(reason) or T("POSIÇÃO INVÁLIDA", "INVALID POSITION"))
+		refs.confirm.Text = placementValid and (UserInputService.TouchEnabled and T("Toque no chão para colocar", "Tap the ground to place") or T("Clique para colocar  •  botão direito cancela", "Click to place  •  right click cancels"))
+			or (reason and L(reason) or T("Aqui não dá", "Not here"))
 	end
 	if refs.placement then refs.placement.Visible = true end
 end
@@ -938,10 +992,10 @@ local function chooseHero(id)
 	selectedTower, selectedHero = nil, id
 	if refs.towerPanel then refs.towerPanel.Visible = false end
 	if towerRing then towerRing:Destroy(); towerRing = nil end
-	refs.hint.Text = heroName(id) .. " • " .. T("Toque no chão para posicionar.", "Tap the ground to place.")
+	refs.hint.Text = heroName(id) .. " • " .. (UserInputService.TouchEnabled and T("toque no chão para colocar", "tap the ground to place") or T("clique no chão para colocar", "click the ground to place"))
 	refs.hint.Visible = true
 	refs.placement.Visible = true
-	refs.confirm.Text = T("TOQUE NO CHÃO PARA POSICIONAR", "TAP THE GROUND TO PLACE")
+	refs.confirm.Text = UserInputService.TouchEnabled and T("Toque no chão para colocar", "Tap the ground to place") or T("Clique para colocar  •  botão direito cancela", "Click to place  •  right click cancels")
 	updateMatch()
 end
 
@@ -959,7 +1013,7 @@ local function chooseSkill(id)
 	refs.hint.Text = L(Catalog.Abilities[id].name) .. " • " .. (ability.target == "tower" and T("Selecione uma torre sua.", "Select one of your towers.") or T("Toque na região para usar o poder.", "Tap a region to use the power."))
 	refs.hint.Visible = true
 	refs.placement.Visible = true
-	refs.confirm.Text = T("TOQUE NO ALVO", "TAP THE TARGET")
+	refs.confirm.Text = UserInputService.TouchEnabled and T("Toque no alvo", "Tap the target") or T("Clique no alvo  •  botão direito cancela", "Click the target  •  right click cancels")
 end
 
 -- 2x and auto-skip are votes the server counts; the settings write only
@@ -1123,7 +1177,9 @@ local function renderMatch()
 	refs.hint = UI.label(main, "", {Position = at(layout.hint), Size = dims(layout.hint), TextColor3 = C.green, TextSize = compact and 13 or 15, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
 	surface(refs.hint,C.green)
 	refs.placement = UI.roundFrame(main, {Position = at(layout.placement), Size = dims(layout.placement), Visible = false})
-	refs.confirm = UI.button(refs.placement, T("CONFIRMAR", "CONFIRM"), confirmPlacement, {Position = UDim2.fromOffset(6, 6), Size = UDim2.new(0.65, -9, 1, -12), TextSize = 17})
+	-- A hint, not a button: the click on the ground is what places.
+	refs.confirm = UI.label(refs.placement, T("Clique no chão para colocar", "Click the ground to place"), {Name = "PlacementHint", Position = UDim2.fromOffset(6, 6), Size = UDim2.new(0.65, -9, 1, -12), TextSize = 16, Font = UI.Fonts.display, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = C.background})
+	UI.corner(refs.confirm, 12)
 	UI.button(refs.placement, T("Cancelar", "Cancel"), clearPlacement, {Position = UDim2.new(0.65, 2, 0, 6), Size = UDim2.new(0.35, -8, 1, -12), BackgroundColor3 = C.red, TextSize = 15})
 	local abilities = UI.frame(main, {BackgroundTransparency = 1, Position = at(layout.abilities), Size = dims(layout.abilities)})
 	UI.list(abilities, 8, true)
@@ -1521,12 +1577,14 @@ fxRemote.OnClientEvent:Connect(function(event)
 	end
 end)
 
-local function handleWorldPointer(position)
+local function handleWorldPointer(position, touch)
 	if not activeMatch() or refs.protocolPanel then return end
 	if selectedHero or (selectedSkill and Catalog.Abilities[selectedSkill].target ~= "tower") then
 		local hit = raycast(position, true)
 		if hit then
-			updatePreview(hit.Position); placementPinned = true
+			-- A touch has no hover, so the ghost stays where the finger was; a
+			-- mouse keeps following the pointer after a refused spot.
+			updatePreview(hit.Position); placementPinned = touch == true
 			-- No confirmation step: a valid spot is used on the same tap or click.
 			if selectedHero and not placementValid then
 				local reason = kit.placementReason and Rules.BuildReasons[kit.placementReason]
@@ -1559,7 +1617,10 @@ end
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed or UserInputService:GetFocusedTextBox() then return end
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then handleWorldPointer(Vector2.new(input.Position.X, input.Position.Y))
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then handleWorldPointer(UserInputService:GetMouseLocation(), false)
+	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+		-- Remembered so a quick right click cancels while a right drag still turns the camera.
+		kit.rightDown = {at = os.clock(), where = UserInputService:GetMouseLocation()}
 	elseif input.KeyCode == Enum.KeyCode.Escape then clearPlacement()
 	elseif activeMatch() then
 		local keys = {Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five}
@@ -1572,7 +1633,17 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 UserInputService.TouchTapInWorld:Connect(function(position, processed)
-	if not processed then handleWorldPointer(position) end
+	if not processed then handleWorldPointer(position, true) end
+end)
+
+-- A short right click (not a camera drag) drops the hero or power in hand.
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType ~= Enum.UserInputType.MouseButton2 or not kit.rightDown then return end
+	local down = kit.rightDown
+	kit.rightDown = nil
+	local now = UserInputService:GetMouseLocation()
+	local moved = math.abs(now.X - down.where.X) + math.abs(now.Y - down.where.Y)
+	if os.clock() - down.at < 0.35 and moved < 8 and (selectedHero or selectedSkill) then clearPlacement() end
 end)
 
 -- The base agent standing beside each commander's base: pressing E (or tapping
@@ -1686,6 +1757,8 @@ kit.tutorial = require(script:WaitForChild("Tutorial")).new({
 	-- Which hero is being placed, and whether its spot is already pinned.
 	placement = function() return selectedHero, placementPinned end,
 	panelOpen = function() return contextPanel ~= nil end,
+	-- A screen that covers everything (the talent tree) hides the lesson card.
+	fullScreen = function() return contextPanel ~= nil and contextPanel.kind == "talents" end,
 })
 kit.movement = require(script:WaitForChild("Movement")).new({
 	player = player, input = UserInputService, gui = overlays, UI = UI, C = C, T = T, config = Catalog.Movement, folder = effects.folder,
@@ -1763,6 +1836,7 @@ local function queueRelayout()
 	kit.resizeQueued = true
 	task.delay(0.2, function()
 		kit.resizeQueued = false
+		applyScreenScale()
 		local key = screenKey()
 		if key == layoutKind then return end
 		layoutKind = key
@@ -1776,7 +1850,9 @@ local function watchCamera()
 end
 workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(watchCamera)
 main:GetPropertyChangedSignal("AbsoluteSize"):Connect(queueRelayout)
+pcall(function() gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(queueRelayout) end)
 watchCamera()
+applyScreenScale()
 render()
 
 task.spawn(function()
@@ -1805,6 +1881,11 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		openContext = function(kind, data) openContext(kind, data) end,
 		hold = function(fn) reviewHold = fn end,
 		fire = function(event) effects:Handle(event) end,
+		-- Draw the HUD in a fixed phone-sized area (nil = the whole window, scaled).
+		setReviewSize = function(width, height)
+			kit.reviewSize = width and Vector2.new(width, height) or nil
+			applyScreenScale()
+		end,
 		slowEffects = function(scale) effects.reviewSlow = scale end,
 		openSheet = function(tab) kit.sheet:Open(tab) end,
 		inspectEnemy = function(enemyId, hp)

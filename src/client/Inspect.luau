@@ -34,7 +34,7 @@ function Inspect:Show(key, record, pinned)
 	local UI, C, T, L = ctx.UI, ctx.C, ctx.T, ctx.L
 	local def = record.def
 	self:Hide()
-	local screen = ctx.gui.AbsoluteSize
+	local screen = UI.toLogical(ctx.gui.AbsoluteSize)
 	local short = screen and screen.Y < 500
 	local card = UI.roundFrame(ctx.gui, {
 		Name = "EnemyCard", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, short and -74 or -112),

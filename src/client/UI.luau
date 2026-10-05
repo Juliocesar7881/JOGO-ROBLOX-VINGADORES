@@ -21,9 +21,20 @@ UI.Colors = {
 	cream = Color3.fromRGB(255, 241, 204),
 }
 
--- One bubbly display face for titles, numbers and buttons; Gotham stays for
--- small running text, where legibility matters more than personality.
-UI.Fonts = { display = Enum.Font.GothamBlack, bold = Enum.Font.GothamBold, body = Enum.Font.Gotham }
+-- The top Roblox games' look (the owner's two reference recordings): one round,
+-- chunky display face for titles, numbers and buttons, outlined in black; a
+-- clean modern sans (Builder Sans, Roblox's own) for running text.
+UI.Fonts = { display = Enum.Font.FredokaOne, bold = Enum.Font.BuilderSansExtraBold, body = Enum.Font.BuilderSansBold }
+
+-- The window skin of those games: dark bodies, a colour frame, slots a shade
+-- darker, and text in white on everything.
+UI.Skin = {
+	body = Color3.fromRGB(30, 32, 50),
+	bodyTop = Color3.fromRGB(42, 46, 74),
+	slot = Color3.fromRGB(20, 22, 36),
+	slotLine = Color3.fromRGB(64, 70, 104),
+	tooltip = Color3.fromRGB(14, 15, 24),
+}
 
 UI.Themes = {
 	guide = {color=UI.Colors.gold, icon="guide"}, maps = {color=UI.Colors.gold, icon="bolt"},
@@ -34,6 +45,17 @@ UI.Themes = {
 	quests = {color=UI.Colors.coral, icon="star"}, leaderboard = {color=UI.Colors.gold, icon="trophy"},
 	settings = {color=UI.Colors.blue, icon="bolt"}, bases={color=UI.Colors.green,icon="heart"},
 }
+
+-- The HUD is drawn on a scaled canvas (init.client sets this): the sizes and
+-- positions Roblox reports (AbsoluteSize, AbsolutePosition, WorldToScreenPoint)
+-- are real pixels, while every Position/Size offset is a logical pixel.
+UI.screenScale = 1
+function UI.toLogical(value)
+	local scale = UI.screenScale or 1
+	if type(value) == "number" then return value / scale end
+	if value == nil then return nil end
+	return Vector2.new(value.X / scale, value.Y / scale)
+end
 
 function UI.create(className, properties, parent)
 	local instance = Instance.new(className)
@@ -102,7 +124,8 @@ function UI.roundFrame(parent, properties, color)
 	return frame
 end
 
-local DISPLAY_FONTS = { [Enum.Font.GothamBlack] = true, [Enum.Font.FredokaOne] = true }
+local DISPLAY_FONTS = { [Enum.Font.GothamBlack] = true, [Enum.Font.FredokaOne] = true, [Enum.Font.LuckiestGuy] = true }
+local TEXT_FONTS = { [Enum.Font.Gotham] = "body", [Enum.Font.GothamMedium] = "body", [Enum.Font.GothamSemibold] = "bold", [Enum.Font.GothamBold] = "bold", [Enum.Font.SourceSans] = "body", [Enum.Font.SourceSansBold] = "bold" }
 
 function UI.label(parent, text, properties)
 	local defaults = {
@@ -115,7 +138,7 @@ function UI.label(parent, text, properties)
 	-- Display text becomes the bubbly face with a black outline, unless it is
 	-- dark text printed on a light surface (then an outline would smear it).
 	local display = DISPLAY_FONTS[defaults.Font]
-	if display then defaults.Font = UI.Fonts.display end
+	if display then defaults.Font = UI.Fonts.display elseif TEXT_FONTS[defaults.Font] then defaults.Font = UI.Fonts[TEXT_FONTS[defaults.Font]] end
 	local label = UI.create("TextLabel", defaults, parent)
 	local color = defaults.TextColor3
 	local bright = typeof(color) ~= "Color3" or (color.R + color.G + color.B) > 1.2
@@ -153,6 +176,10 @@ function UI.button(parent, text, callback, properties)
 		-- so it must stay above the letters, never across them.
 		local shine = UI.frame(button, {Name = "Shine", Position = UDim2.new(0, 7, 0, 3), Size = UDim2.new(1, -14, 0.18, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.84, Active = false, ZIndex = button.ZIndex})
 		UI.corner(shine, 8)
+		-- A thin light rim just inside the dark border: the raised, glossy edge.
+		local bevel = UI.frame(button, {Name = "Bevel", Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 1, -4), BackgroundTransparency = 1, Active = false, ZIndex = button.ZIndex})
+		UI.corner(bevel, 12)
+		UI.create("UIStroke", {Name = "BevelLine", Color = Color3.new(1, 1, 1), Thickness = 1.5, Transparency = 0.62, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, bevel)
 		UI.outline(button, (defaults.TextSize or 15) >= 18 and 3 or 2)
 	end
 	if callback then button.Activated:Connect(callback) end
@@ -1186,6 +1213,188 @@ function UI.basePortrait(parent, def, properties)
 		block(0.79,0.13,0.19,0.19,UI.Colors.coral)
 	end
 	return root
+end
+
+--==============================================================================
+-- The reference window skin: slanted title ribbon, square red X, coloured tabs,
+-- tooltips that follow the mouse. Everything is flat shapes: no image assets.
+--==============================================================================
+
+-- A parallelogram: an axis-aligned clip with a tall frame turned inside it,
+-- so its two long edges become the slanted ends ("/ text /").
+function UI.parallelogram(parent, color, properties)
+	local slant = math.rad(16)
+	local clip = UI.frame(parent, {Name = "Parallelogram", BackgroundTransparency = 1, ClipsDescendants = true, Active = false})
+	for key, value in pairs(properties or {}) do clip[key] = value end
+	local height = clip.Size.Y.Offset > 0 and clip.Size.Y.Offset or 56
+	local inner = UI.frame(clip, {Name = "Fill", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, -math.floor(height * math.tan(slant) + 0.5), 0, height * 4), Rotation = math.deg(slant), BackgroundColor3 = color, Active = false, ZIndex = clip.ZIndex})
+	return clip, inner
+end
+
+-- The title tab of a window, sticking out of its top-left corner: a darker
+-- copy behind for depth, a black outline, the colour, a gloss on the top half
+-- and the title in big round outlined letters.
+function UI.titleRibbon(parent, text, tint, properties)
+	properties = properties or {}
+	local width, height = properties.width or 380, properties.height or 58
+	local z = properties.ZIndex or 3
+	local root = UI.frame(parent, {Name = properties.Name or "TitleRibbon", BackgroundTransparency = 1, Position = properties.Position or UDim2.fromOffset(-10, -18),
+		Size = UDim2.fromOffset(width, height), Active = false, ZIndex = z})
+	UI.parallelogram(root, tint:Lerp(Color3.new(0, 0, 0), 0.55), {Name = "RibbonDepth", Position = UDim2.fromOffset(10, 8), Size = UDim2.fromOffset(width, height), ZIndex = z})
+	UI.parallelogram(root, UI.Colors.ink, {Name = "RibbonOutline", Position = UDim2.fromOffset(-3, -3), Size = UDim2.fromOffset(width + 6, height + 6), ZIndex = z})
+	local _, fill = UI.parallelogram(root, tint, {Name = "RibbonFill", Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(width, height), ZIndex = z})
+	UI.create("UIGradient", {Color = ColorSequence.new(tint:Lerp(Color3.new(1, 1, 1), 0.22), tint:Lerp(Color3.new(0, 0, 0), 0.18)), Rotation = 90}, fill)
+	local _, gloss = UI.parallelogram(root, Color3.new(1, 1, 1), {Name = "RibbonGloss", Position = UDim2.fromOffset(6, 4), Size = UDim2.fromOffset(width - 12, math.floor(height * 0.34)), ZIndex = z})
+	gloss.BackgroundTransparency = 0.78
+	local title = UI.label(root, text, {Name = properties.TitleName or "RibbonTitle", Position = UDim2.fromOffset(math.floor(height * 0.42) + (properties.textInset or 0), 0),
+		Size = UDim2.new(1, -math.floor(height * 0.9) - (properties.textInset or 0), 1, -2), Font = UI.Fonts.display, TextSize = properties.TextSize or 32,
+		TextColor3 = UI.Colors.text, TextXAlignment = Enum.TextXAlignment.Left, TextScaled = false, ZIndex = z + 1})
+	UI.outline(title, 3)
+	return root, title
+end
+
+-- The square red X of the reference windows.
+function UI.closeButton(parent, callback, properties)
+	local button = UI.button(parent, "X", callback, {Name = "Close", BackgroundColor3 = UI.Colors.red, TextSize = 30, Size = UDim2.fromOffset(52, 52), ZIndex = 4})
+	for key, value in pairs(properties or {}) do button[key] = value end
+	local corner = button:FindFirstChildOfClass("UICorner")
+	if corner then corner.CornerRadius = UDim.new(0, 12) end
+	UI.stroke(button, UI.Colors.ink, 3.5)
+	return button
+end
+
+-- A dark window body with the colour frame and a soft diagonal sheen.
+function UI.windowSkin(frame, tint)
+	frame.BackgroundColor3 = UI.Skin.body
+	frame.BackgroundTransparency = 0
+	local gradient = frame:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient", {}, frame)
+	gradient.Color = ColorSequence.new(UI.Skin.bodyTop, UI.Skin.body)
+	gradient.Rotation = 90
+	gradient.Enabled = true
+	local border = UI.stroke(frame, tint:Lerp(Color3.new(1, 1, 1), 0.18), 4)
+	local corner = frame:FindFirstChildOfClass("UICorner")
+	if corner then corner.CornerRadius = UDim.new(0, 18) end
+	local sheen = frame:FindFirstChild("Sheen") or UI.frame(frame, {Name = "Sheen", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true, Active = false})
+	UI.clear(sheen)
+	for index = 0, 2 do
+		UI.frame(sheen, {Name = "Stripe", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.62 + index * 0.13, 0.5),
+			Size = UDim2.new(0, 34 + index * 22, 2.4, 0), Rotation = 24, BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.955, Active = false})
+	end
+	return border
+end
+
+-- A coloured tab with its own icon, the selected one raised and outlined white.
+function UI.tab(parent, text, color, icon, selected, callback, properties)
+	local button = UI.button(parent, "", callback, {BackgroundColor3 = selected and color or color:Lerp(UI.Skin.body, 0.45), TextSize = 17})
+	for key, value in pairs(properties or {}) do button[key] = value end
+	UI.stroke(button, selected and Color3.new(1, 1, 1) or UI.Colors.ink, selected and 3 or 2.5)
+	local iconSize = math.min(30, math.max(18, (button.Size.Y.Offset > 0 and button.Size.Y.Offset or 44) - 16))
+	local hasIcon = icon ~= nil
+	if hasIcon then
+		UI.icon(button, icon, Color3.new(1, 1, 1), {Name = "TabIcon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(iconSize, iconSize), ZIndex = button.ZIndex + 1})
+	end
+	local label = UI.label(button, text, {Name = "TabText", Position = UDim2.fromOffset(hasIcon and iconSize + 14 or 6, 0), Size = UDim2.new(1, hasIcon and -(iconSize + 20) or -12, 1, 0),
+		Font = UI.Fonts.display, TextSize = button.TextSize, TextXAlignment = hasIcon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center,
+		TextColor3 = selected and UI.Colors.text or UI.Colors.text:Lerp(UI.Skin.body, 0.15), TextScaled = false, ZIndex = button.ZIndex + 1})
+	UI.outline(label, 2)
+	button.Text = text
+	button.TextTransparency = 1
+	return button
+end
+
+-- A small trait/tag pill (the anime game's blue tags).
+function UI.pill(parent, text, color, properties)
+	local pill = UI.label(parent, text, {Name = "Pill", BackgroundTransparency = 0, BackgroundColor3 = color or UI.Colors.blue, Font = UI.Fonts.display, TextSize = 15,
+		TextXAlignment = Enum.TextXAlignment.Center, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 28), TextTruncate = Enum.TextTruncate.None})
+	for key, value in pairs(properties or {}) do pill[key] = value end
+	UI.corner(pill, 8)
+	UI.stroke(pill, UI.Colors.ink, 2)
+	UI.create("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}, pill)
+	return pill
+end
+
+-- The "Damage / SPA / Range" table: a row of headers over a row of big values.
+function UI.statTable(parent, entries, properties)
+	local root = UI.frame(parent, {Name = "StatTable", BackgroundColor3 = UI.Skin.slot, Size = UDim2.new(1, 0, 0, 82)})
+	for key, value in pairs(properties or {}) do root[key] = value end
+	UI.corner(root, 12)
+	UI.stroke(root, UI.Skin.slotLine, 2)
+	local count = math.max(1, #entries)
+	for index, entry in ipairs(entries) do
+		local cell = UI.frame(root, {Name = "Stat_" .. (entry.key or index), BackgroundTransparency = 1, Position = UDim2.fromScale((index - 1) / count, 0), Size = UDim2.fromScale(1 / count, 1)})
+		UI.label(cell, entry.label, {Name = "Header", Position = UDim2.fromOffset(4, 6), Size = UDim2.new(1, -8, 0.42, -6), Font = UI.Fonts.display, TextSize = entry.headerSize or 18,
+			TextColor3 = UI.Colors.muted, TextXAlignment = Enum.TextXAlignment.Center})
+		local value = UI.label(cell, entry.value, {Name = "Value", Position = UDim2.new(0, 4, 0.42, 0), Size = UDim2.new(1, -8, 0.58, -6), Font = UI.Fonts.display, TextSize = entry.valueSize or 26,
+			TextColor3 = entry.color or UI.Colors.text, TextXAlignment = Enum.TextXAlignment.Center, RichText = entry.rich == true})
+		if entry.rich then value.RichText = true end
+		if index > 1 then UI.frame(cell, {Name = "Divider", Position = UDim2.new(0, 0, 0.16, 0), Size = UDim2.new(0, 2, 0.68, 0), BackgroundColor3 = UI.Skin.slotLine, BackgroundTransparency = 0.3}) end
+	end
+	return root
+end
+
+--==============================================================================
+-- Tooltips: hovering a hero, a talent or a shop item shows what it is now.
+-- One box at a time, in the overlay layer, following the mouse and kept on
+-- screen. The controller sets UI.tooltipLayer (its overlay frame).
+--==============================================================================
+UI.tooltipLayer = nil
+local tooltip = { owner = nil, frame = nil, connection = nil }
+
+function UI.hideTooltip(owner)
+	if owner ~= nil and tooltip.owner ~= owner then return end
+	if tooltip.connection then tooltip.connection:Disconnect() end
+	if tooltip.frame then tooltip.frame:Destroy() end
+	tooltip.owner, tooltip.frame, tooltip.connection = nil, nil, nil
+end
+
+-- A tooltip body: a title, lines, and coloured value rows, added by `build`.
+function UI.tooltipTitle(body, text, color)
+	return UI.label(body, text, {Name = "TipTitle", Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 24, TextColor3 = color or UI.Colors.text, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 1})
+end
+function UI.tooltipLine(body, text, color, order, size)
+	return UI.label(body, text, {Name = "TipLine", Size = UDim2.new(1, 0, 0, 20), TextSize = size or 16, TextColor3 = color or UI.Colors.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order or 5, RichText = true})
+end
+
+function UI.hover(target, build, width)
+	if not target or not target.MouseEnter then return end
+	target.MouseEnter:Connect(function()
+		local layer = UI.tooltipLayer
+		if not layer or not target.Parent then return end
+		UI.hideTooltip()
+		local box = UI.frame(layer, {Name = "Tooltip", BackgroundColor3 = UI.Skin.tooltip, BackgroundTransparency = 0.04, Size = UDim2.fromOffset(width or 300, 0),
+			AutomaticSize = Enum.AutomaticSize.Y, ZIndex = 120, Active = false})
+		UI.corner(box, 12)
+		UI.stroke(box, Color3.fromRGB(236, 238, 250), 2)
+		UI.padding(box, 12)
+		local list = UI.list(box, 4)
+		list.SortOrder = Enum.SortOrder.LayoutOrder
+		local ok = pcall(build, box)
+		if not ok then box:Destroy(); return end
+		for _, item in ipairs(box:GetDescendants()) do
+			if item:IsA("GuiObject") then item.ZIndex = 121 end
+		end
+		tooltip.owner, tooltip.frame = target, box
+		local okServices, input = pcall(game.GetService, game, "UserInputService")
+		local _, guiService = pcall(game.GetService, game, "GuiService")
+		local _, run = pcall(game.GetService, game, "RunService")
+		local function follow()
+			if not target.Parent or not box.Parent then UI.hideTooltip(target); return end
+			if not okServices or not input then return end
+			local mouse = input:GetMouseLocation()
+			local inset = guiService and guiService:GetGuiInset() or Vector2.new(0, 0)
+			local scale = UI.screenScale or 1
+			local x, y = (mouse.X - inset.X) / scale + 18, (mouse.Y - inset.Y) / scale + 18
+			local layerSize = UI.toLogical(layer.AbsoluteSize) or Vector2.new(1280, 720)
+			local boxSize = UI.toLogical(box.AbsoluteSize) or Vector2.new(width or 300, 120)
+			if x + boxSize.X > layerSize.X - 8 then x = x - boxSize.X - 30 end
+			if y + boxSize.Y > layerSize.Y - 8 then y = math.max(8, layerSize.Y - 8 - boxSize.Y) end
+			box.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
+		end
+		follow()
+		if run and run.RenderStepped then tooltip.connection = run.RenderStepped:Connect(follow) end
+	end)
+	target.MouseLeave:Connect(function() UI.hideTooltip(target) end)
 end
 
 return UI
