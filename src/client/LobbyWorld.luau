@@ -197,6 +197,9 @@ function LobbyWorld.new(ctx)
 				if child:IsA("SurfaceGui") and child.Name == "PortalSwirl" and child.Parent then
 					local swirl = child:FindFirstChild("Swirl")
 					if swirl then table.insert(lobbyProps, {part = child.Parent, swirl = swirl, spin = 0, angle = 0, speed = 110 + (child.Parent.Position.X % 7) * 8}) end
+					-- The outer arcs turn the other way, slower: the vortex looks deep.
+					local outer = child:FindFirstChild("SwirlOuter")
+					if outer then table.insert(lobbyProps, {part = child.Parent, swirl = outer, spin = 0, angle = 0, speed = -(60 + (child.Parent.Position.Z % 5) * 6)}) end
 				end
 				if child:IsA("BasePart") then
 					local spin, bob, sway = child:GetAttribute("Spin"), child:GetAttribute("Bob"), child:GetAttribute("Sway")

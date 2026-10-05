@@ -1588,6 +1588,17 @@ local function staticFigure(parent, heroId, hero, origin, scale)
 		if item:IsA("BasePart") then item.Anchored, item.CanCollide, item.CanQuery, item.CanTouch = true, false, false, false end
 	end
 	model:PivotTo(origin)
+	-- The figure's parts breathe (client side) and never collide, so one plain
+	-- invisible block stands in for the body: nobody walks through a statue.
+	local ok, frame, size = pcall(function() return model:GetBoundingBox() end)
+	if ok and frame and size then
+		local blocker = Instance.new("Part")
+		blocker.Name, blocker.Anchored, blocker.CanCollide, blocker.CanQuery, blocker.CanTouch = "FigureBlocker", true, true, false, false
+		blocker.Transparency, blocker.CastShadow = 1, false
+		blocker.Size = Vector3.new(math.max(1.5, size.X * 0.6), size.Y, math.max(1.5, size.Z * 0.6))
+		blocker.CFrame = frame
+		blocker.Parent = model
+	end
 	return model
 end
 
@@ -2559,38 +2570,90 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 	local zones={}
 	for slot=1,3 do
 		local dx=(slot-2)*10.2
-		local pad=part(model,slot==1 and "Pad" or "Pad"..slot,Vector3.new(8.4,0.18,8.4),at(dx,0.58,0.4),tint,Enum.Material.Neon)
-		pad.Transparency=0.25; pad.CanCollide=false
-		artPart(model,"PadFrame",Vector3.new(9.4,0.2,9.4),at(dx,0.52,0.4),HQ.trim,Enum.Material.SmoothPlastic)
+		-- The pad: a round landing ring in the destination's colour around a dark
+		-- core, with chevrons pointing into the door, so it reads "step in here".
+		local pad=part(model,slot==1 and "Pad" or "Pad"..slot,Vector3.new(0.18,8.4,8.4),at(dx,0.58,0.4)*CFrame.Angles(0,0,math.pi/2),tint,Enum.Material.Neon)
+		pad.Shape=Enum.PartType.Cylinder
+		pad.Transparency=0.3; pad.CanCollide=false
+		local padFrame=artPart(model,"PadFrame",Vector3.new(0.2,9.6,9.6),at(dx,0.5,0.4)*CFrame.Angles(0,0,math.pi/2),HQ.trim,Enum.Material.SmoothPlastic)
+		padFrame.Shape=Enum.PartType.Cylinder
+		local padCore=artPart(model,"PadCore",Vector3.new(0.24,6.8,6.8),at(dx,0.6,0.4)*CFrame.Angles(0,0,math.pi/2),HQ.navy,Enum.Material.SmoothPlastic)
+		padCore.Shape=Enum.PartType.Cylinder
+		-- One big chevron (the lobby keeps a part budget for phones).
+		local lean=math.rad(40)
+		for _,side in ipairs({-1,1}) do
+			artPart(model,"PadArrow",Vector3.new(0.42,0.08,2.6),at(dx+side*math.sin(lean)*1.3,0.74,-0.9+math.cos(lean)*1.3)*CFrame.Angles(0,side*lean,0),tint,Enum.Material.Neon)
+		end
 		local queueId=slot==1 and portalId or portalId..":"..slot
 		pad:SetAttribute("QueueId",queueId)
 		for _,side in ipairs({-1,1}) do
 			artPart(model,"QueueRail",Vector3.new(0.35,1.6,8.7),at(dx+side*4.9,1.3,0.4),HQ.steel,Enum.Material.Metal)
-			artPart(model,"QueueGate",Vector3.new(0.6,7.5,0.9),at(dx+side*3.4,4.25,-3.8),HQ.navy,Enum.Material.Metal)
-			artPart(model,"QueueGateLight",Vector3.new(0.18,6,0.2),at(dx+side*3.05,4.4,-3.3),tint,Enum.Material.Neon)
+			-- Two pillars hold the round door and the queue sign above it.
+			artPart(model,"QueueGate",Vector3.new(0.7,10.4,0.8),at(dx+side*4.55,5.6,-3.8),HQ.navy,Enum.Material.Metal)
 		end
-		artPart(model,"QueueLintel",Vector3.new(7.4,0.6,0.9),at(dx,8.1,-3.8),tint,Enum.Material.Neon)
-		local door=at(dx,4.35,-3.8)*CFrame.Angles(0,math.pi/2,0)
-		local rim=artPart(model,"PortalRim",Vector3.new(0.3,6.3,6.3),door,tint:Lerp(Color3.new(1,1,1),0.25),Enum.Material.Neon)
+		-- The door: a thick round frame, a coloured rim, and inside it a deep,
+		-- dark well with a galaxy of light turning in it (PortalSwirl, turned by
+		-- the client). No particles: the lobby keeps emitters to a handful.
+		local door=at(dx,4.7,-3.8)*CFrame.Angles(0,math.pi/2,0)
+		local frame=artPart(model,"PortalFrame",Vector3.new(0.9,7.7,7.7),door,HQ.navy,Enum.Material.Metal)
+		frame.Shape=Enum.PartType.Cylinder
+		frame.CastShadow=true
+		for stud=0,3 do
+			local angle=stud*math.pi/2+math.pi/4
+			Kit.blob(model,"PortalStud",Vector3.new(0.5,0.5,0.5),at(dx+math.cos(angle)*3.55,4.7+math.sin(angle)*3.55,-3.32),HQ.gold,Enum.Material.Metal)
+		end
+		local rim=artPart(model,"PortalRim",Vector3.new(0.96,6.9,6.9),door,tint,Enum.Material.Neon)
 		rim.Shape=Enum.PartType.Cylinder
-		local membrane=artPart(model,"PortalMembrane",Vector3.new(0.34,5.7,5.7),door,tint:Lerp(HQ.ink,0.45),Enum.Material.SmoothPlastic)
+		-- Deep space with a hint of the destination colour: never brown or grey.
+		local well=Color3.fromRGB(16,12,38):Lerp(tint,0.18)
+		local membrane=artPart(model,"PortalMembrane",Vector3.new(1.02,6.3,6.3),door,well,Enum.Material.SmoothPlastic)
 		membrane.Shape=Enum.PartType.Cylinder
-		-- The vortex: a pinwheel of light drawn on a clear pane in front of
-		-- the membrane; the client turns it (PortalSwirl).
-		local pane=artPart(model,"PortalPane",Vector3.new(5.7,5.7,0.05),at(dx,4.35,-3.55),tint,Enum.Material.SmoothPlastic)
+		local pane=artPart(model,"PortalPane",Vector3.new(6.3,6.3,0.05),at(dx,4.7,-3.25),tint,Enum.Material.SmoothPlastic)
 		pane.Transparency=1
 		local gui=Instance.new("SurfaceGui")
-		gui.Name,gui.Face,gui.LightInfluence,gui.CanvasSize=  "PortalSwirl",Enum.NormalId.Back,0,Vector2.new(256,256)
+		gui.Name,gui.Face,gui.LightInfluence,gui.CanvasSize="PortalSwirl",Enum.NormalId.Back,0,Vector2.new(256,256)
 		gui.SizingMode,gui.Parent=Enum.SurfaceGuiSizingMode.FixedSize,pane
+		-- Depth: rings of the well, each a shade lighter towards the middle.
+		for layer=1,4 do
+			local scale=1-layer*0.17
+			circle(gui,0.5,0.5,scale,scale,well:Lerp(tint,layer*0.09),0.1).Name="WellLayer"
+		end
+		-- Two layers that turn against each other: three curved arms of light
+		-- (the galaxy) and broken outer arcs.
 		local swirl=frame2d(gui,UDim2.fromScale(0.5,0.5),UDim2.fromScale(1,1),tint,UDim.new(0.5,0),0,1)
 		swirl.Name="Swirl"
-		for arm=0,5 do
-			local bar=box(swirl,0.5+math.cos(math.rad(arm*60))*0.2,0.5+math.sin(math.rad(arm*60))*0.2,0.14,0.52,tint:Lerp(HQ.white,arm%2==0 and 0.55 or 0.15),arm*60+40,0.5,0.25)
-			bar.Name="SwirlArm"
+		-- Each arm is a chain of short rounded strokes laid along a spiral, so it
+		-- reads as one curved swoosh that narrows and brightens into the centre.
+		local steps,turn,reach,shrink=14,math.rad(300),0.46,0.84
+		for arm=0,2 do
+			for step=1,steps do
+				local t=(step-0.5)/steps
+				local angle=math.rad(arm*120)+t*turn
+				local radius=reach*(1-t*shrink)
+				local dr,dtheta=-reach*shrink,turn
+				local tx=dr*math.cos(angle)-radius*math.sin(angle)*dtheta
+				local ty=dr*math.sin(angle)+radius*math.cos(angle)*dtheta
+				local length=math.sqrt(tx*tx+ty*ty)/steps*1.35
+				local width=0.075*(1-t*0.55)
+				local bar=frame2d(swirl,UDim2.fromScale(0.5+math.cos(angle)*radius,0.5+math.sin(angle)*radius),UDim2.fromScale(length,width),
+					tint:Lerp(HQ.white,0.2+t*0.7),UDim.new(0.5,0),math.deg(math.atan2(ty,tx)),0.05+(1-t)*0.3)
+				bar.Name="SwirlArm"
+			end
 		end
-		local ring=circle(swirl,0.5,0.5,0.72,0.72,tint,1)
-		stroke(ring,tint:Lerp(HQ.white,0.4),6)
-		local core=circle(gui,0.5,0.5,0.3,0.3,HQ.white,0.15)
+		local outer=frame2d(gui,UDim2.fromScale(0.5,0.5),UDim2.fromScale(1,1),tint,UDim.new(0.5,0),0,1)
+		outer.Name="SwirlOuter"
+		for index=1,3 do
+			local ring=circle(outer,0.5,0.5,1.02-index*0.12,1.02-index*0.12,tint,1)
+			local line=stroke(ring,tint:Lerp(HQ.white,0.25+index*0.12),7-index)
+			-- A fading arc, not a closed ring: it reads as motion when it turns.
+			local fade=Instance.new("UIGradient")
+			fade.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.45,0.05),NumberSequenceKeypoint.new(0.55,1),NumberSequenceKeypoint.new(1,1)})
+			fade.Rotation=index*110
+			fade.Parent=line
+		end
+		local glow=circle(gui,0.5,0.5,0.36,0.36,tint:Lerp(HQ.white,0.5),0.7)
+		glow.Name="SwirlGlow"
+		local core=circle(gui,0.5,0.5,0.22,0.22,HQ.white,0.15)
 		core.Name="SwirlCore"
 		local sign=part(model,"QueueSign"..slot,Vector3.new(8.3,2.5,0.25),at(dx,10,-3.8)*CFrame.Angles(0,math.pi,0),HQ.ink)
 		local gui=Instance.new("SurfaceGui"); gui.Name="QueueBoard"; gui.Face=Enum.NormalId.Front; gui.LightInfluence=0
@@ -2598,7 +2661,7 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 		stationText(gui,"QueueTitle","FILA "..slot,"QUEUE "..slot,UDim2.fromScale(0,0),UDim2.fromScale(1,0.36),ART.pearl,20)
 		local status=stationText(gui,"QueueStatus","0/4  •  ENTRE","0/4  •  STEP IN",UDim2.fromScale(0,0.36),UDim2.fromScale(1,0.62),tint,26)
 		zones[queueId]={destinationId=portalId,slot=slot,center=at(dx,4,0.4).Position,
-			size=Vector3.new(8.4,8,8.4),exit=at(dx,4,10).Position,pad=pad,label=status,tint=tint,membrane=membrane,core=core}
+			size=Vector3.new(8.4,8,8.4),exit=at(dx,4,10).Position,pad=pad,label=status,tint=tint,membrane=membrane,core=core,well=well}
 	end
 	return model,zones
 end
@@ -2842,7 +2905,9 @@ end
 -- Light strips, glass panes you see through, floor markings, foliage and
 -- everything high above the ground stay passable. Returns how many parts it
 -- made solid.
-local SOLID_NAMES = { TreeTrunk = true, PalmTrunk = true, VibraniumCrystal = true, GiantCard = true, PodiumGlass = true }
+-- Props a player bumps into (the owner walked through lamp posts, desk legs and
+-- bushes): solid like the trunks and crystals.
+local SOLID_NAMES = { TreeTrunk = true, PalmTrunk = true, VibraniumCrystal = true, GiantCard = true, PodiumGlass = true, LampPole = true, DeskPost = true, Bush = true }
 function World.SolidifyProps(root)
 	local made = 0
 	local function within(item, name)
@@ -4194,7 +4259,7 @@ function World:UpdatePortalQueues(snapshot)
 			zone.label.TextColor3=state.count>=4 and Color3.fromRGB(255,119,103) or zone.tint
 			zone.pad.Color=state.count>=4 and Color3.fromRGB(255,119,103) or zone.tint
 			-- A queue with riders glows white-hot in its door; a full one turns red.
-			if zone.membrane then zone.membrane.Color=state.count>=4 and Color3.fromRGB(255,119,103) or zone.tint end
+			if zone.membrane then zone.membrane.Color=state.count>=4 and Color3.fromRGB(150,52,60) or (zone.well or zone.tint) end
 			if zone.core then zone.core.BackgroundTransparency=state.departing and 0 or state.count>0 and 0.05 or 0.15 end
 		end
 	end
@@ -5569,7 +5634,8 @@ function World:UpdateBase(index, base, core, ownerId)
 		local ring=part(model,"AgentRing",Vector3.new(0.15,4.6,4.6),CFrame.new(at+Vector3.new(3.1,1.1,3.5))*CFrame.Angles(0,0,math.pi/2),tint,Enum.Material.Neon)
 		ring.Shape,ring.CanCollide,ring.Transparency=Enum.PartType.Cylinder,false,0.35
 		local anchor=part(model,"AgentTrigger",Vector3.new(2.4,6.4,2.4),frame*CFrame.new(0,3.2,0),tint,Enum.Material.SmoothPlastic)
-		anchor.Transparency,anchor.CanCollide,anchor.CanQuery=1,false,false
+		-- Invisible but solid: the agent is a person, not a hologram to walk through.
+		anchor.Transparency,anchor.CanCollide,anchor.CanQuery=1,true,false
 		local prompt=Instance.new("ProximityPrompt")
 		prompt.Name,prompt.ActionText,prompt.ObjectText="BaseUpgradePrompt","Evoluir base / Upgrade base","Agente da Base / Base Agent"
 		prompt.MaxActivationDistance,prompt.HoldDuration,prompt.RequiresLineOfSight=14,0,false

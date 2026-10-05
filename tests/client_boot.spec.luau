@@ -631,14 +631,14 @@ local function session(screen)
 		clickNamed("SummonSelect_rare")
 		check(named(gui,"SummonOdds").CanvasPosition.Y==128 and named(gui,"SummonCrates").CanvasPosition.X==14,tag..": each summon catalogue retains its scroll when changing crates")
 		fx({kind="OpenPanel",panel="premium"})
-		click("PASSES")
+		click("Passes")
 		check(countNamed(gui,"PremiumTabs_pass")==1,tag..": premium pass tab stays accessible")
 		-- A price that never answered offers a retry; one that is not on sale says so.
 		-- Prices are fetched one by one; wait for the whole list.
 		frames(0.5, 20)
 		local retry=named(gui,"Buy_pass:training")
 		check(retry~=nil and retry.Text=="Tentar de novo",tag..": a price with no answer offers a retry, got "..tostring(retry and retry.Text))
-		click("OURO")
+		click("Ouro")
 		local unsold=named(gui,"Buy_product:gold1000")
 		check(unsold~=nil and unsold.Text=="Indisponível",tag..": a product that is not configured reads unavailable")
 		-- The Gold packs rank themselves: the biggest pack is the best deal and
@@ -647,7 +647,7 @@ local function session(screen)
 		check(named(gui,"Badge_gold30000").Text=="MELHOR VALOR" and named(gui,"Badge_gold5000").Text=="MAIS POPULAR",tag..": the badges read best value and most popular")
 		local valueLine=named(gui,"Value_gold12000")
 		check(valueLine~=nil and string.find(valueLine.Text,"20",1,true)~=nil,tag..": a pack states its Gold per Robux, got "..tostring(valueLine and valueLine.Text))
-		click("PASSES")
+		click("Passes")
 		retry=named(gui,"Buy_pass:training")
 		collectorPrice=true
 		if retry then retry.Activated:Fire(); flush() end
@@ -729,7 +729,7 @@ local function session(screen)
 			end
 			return false
 		end
-		check(shows("MAESTRIA ") and shows("RANK 1/"), tag .. ": the hero page names mastery and ability rank apart")
+		check(shows("Maestria ") and shows("Rank 1/"), tag .. ": the hero page names mastery and ability rank apart")
 		check(not shows("Nível do herói"), tag .. ": the hero page no longer calls mastery a level")
 		click("SUBIR PARA RANK")
 		check(asked("UpgradeAbility"),tag .. ": leader ability upgrades through server")

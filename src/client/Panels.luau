@@ -41,6 +41,73 @@ function Panels.new(ctx)
 		act("SetLoadout",{heroes=list},callback)
 	end
 
+	-- How a hero is now for this commander: level-one tower stats with mastery,
+	-- stars, cards and talents applied (what it will really do when placed).
+	local function heroNow(id)
+		local p = profile()
+		local mods = (p.heroes or {})[id] and Rules.PermanentModifiers(p, id) or {}
+		local ok, stats = pcall(Rules.TowerStats, id, 1, nil, mods)
+		if not ok then
+			local def = Catalog.Heroes[id]
+			stats = { damage = def.damage, range = def.range, interval = def.interval, slow = def.slow or 0 }
+		end
+		return stats
+	end
+	local function fmt(value)
+		value = tonumber(value) or 0
+		if math.abs(value - math.floor(value + 0.5)) < 0.05 then return tostring(math.floor(value + 0.5)) end
+		return string.format("%.1f", value)
+	end
+	-- The tooltip every hero shows on hover (collection, team, hotbar, summon odds).
+	local function heroTooltip(box, id)
+		local def = Catalog.Heroes[id]
+		if not def then return end
+		local p = profile()
+		local mine = (p.heroes or {})[id]
+		local rarity = Catalog.Rarities[def.rarity]
+		local tint = UI.color(rarity.color)
+		local stats = heroNow(id)
+		UI.tooltipTitle(box, L(def.name), tint:Lerp(Color3.new(1, 1, 1), 0.25))
+		local status = L(rarity.name)
+		if mine then status ..= T("  •  Maestria ", "  •  Mastery ") .. tostring(mine.level or 1) .. T("  •  Carta nv ", "  •  Card lv ") .. tostring(mine.rank or 1) else status ..= T("  •  Você ainda não tem", "  •  Not owned yet") end
+		UI.tooltipLine(box, status, C.muted, 2, 15)
+		local perSecond = (stats.interval or 0) > 0 and 1 / stats.interval or 0
+		UI.tooltipLine(box, T("Dano ", "Damage ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.damage) .. "</b></font>   " .. T("Alcance ", "Range ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.range) .. "</b></font>   "
+			.. T("Ataques/s ", "Hits/s ") .. '<font color="#FFFFFF"><b>' .. string.format("%.1f", perSecond) .. "</b></font>", C.muted, 3, 17)
+		UI.tooltipLine(box, def.air and T("Acerta inimigos no chão e voando", "Hits ground and flying enemies") or T("Acerta só inimigos no chão", "Hits ground enemies only"), def.air and C.green or C.coral, 4, 15)
+		for index, trait in ipairs(UI.heroTraits(def, T, stats.slow)) do UI.tooltipLine(box, "• " .. trait, C.cream, 4 + index, 15) end
+		local ability = def.ability and Catalog.Abilities[def.ability]
+		if ability then UI.tooltipLine(box, T("Poder de líder: ", "Leader power: ") .. L(ability.name), C.gold, 20, 15) end
+		UI.tooltipLine(box, number(def.cost) .. T(" Ouro para colocar na partida", " Gold to place in battle"), C.gold:Lerp(C.text, 0.3), 21, 14)
+	end
+	kit.heroTooltip = heroTooltip
+
+	-- A collection tile like the big games' inventories: the hero on its rarity
+	-- colour, its stars on a gold badge and its level, nothing else to read.
+	local function heroTile(parent, id, properties, onClick)
+		local p = profile()
+		local def = Catalog.Heroes[id]
+		local mine = (p.heroes or {})[id]
+		local tint = UI.color(Catalog.Rarities[def.rarity].color)
+		local tile = UI.frame(parent, {BackgroundColor3 = mine and tint or tint:Lerp(C.ink, 0.55)})
+		for key, value in pairs(properties or {}) do tile[key] = value end
+		UI.corner(tile, 14)
+		UI.stroke(tile, C.ink, 3)
+		UI.create("UIGradient", {Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 150)), Rotation = 90}, tile)
+		-- Light rays behind the hero, like a card that shines.
+		local rays = UI.frame(tile, {Name = "Rays", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true})
+		for index = 0, 3 do
+			UI.frame(rays, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.new(0.16, 0, 1.6, 0), Rotation = index * 45, BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.88})
+		end
+		heroPortrait(tile, id, {Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8)})
+		if not mine then
+			local shade = UI.frame(tile, {Name = "NotOwned", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.5})
+			UI.corner(shade, 14)
+			UI.icon(shade, "lock", C.cream, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.fromOffset(30, 30)})
+		end
+		return tile, mine, tint
+	end
+
 	kit.heroDetailTab ="power"
 	-- One hero, big: the figure on its rarity stage, name, price and mastery,
 	-- three stat tiles, then either the leader power or the two tower paths.
@@ -52,11 +119,11 @@ function Panels.new(ctx)
 		local owned = (p.heroes or {})[id]
 		local rarity = Catalog.Rarities[def.rarity]
 		local tint = UI.color(rarity.color)
-		UI.secondary(body,T("‹ VOLTAR","‹ BACK"),function() openContext("inventory",{hud=true}) end,{Name="BackToInventory",Size=UDim2.fromOffset(120,40),TextSize=15})
+		UI.secondary(body,T("‹ Voltar","‹ Back"),function() openContext("inventory",{hud=true}) end,{Name="BackToInventory",Size=UDim2.fromOffset(130,42),TextSize=18,BackgroundColor3=UI.Skin.bodyTop})
 		-- On a short screen the actions come right under a smaller showcase: the
 		-- panel opens on what you can do, and the numbers wait below.
 		local short = UI.sizeClass(screenSize().X, screenSize().Y).short
-		local showcase = UI.row(body, short and 132 or 210)
+		local showcase = UI.row(body, short and 140 or 236)
 		UI.portraitStage(showcase,tint,{Name="HeroStage",Size=UDim2.new(0.42,0,1,0)})
 		-- The hero is alive on its stage: it breathes, shows its move every few
 		-- seconds and again whenever the portrait is tapped. Reduced effects keeps
@@ -76,16 +143,16 @@ function Panels.new(ctx)
 			heroPortrait(showcase,id,portraitProperties)
 		end
 		local info=UI.frame(showcase,{Position=UDim2.new(0.42,12,0,0),Size=UDim2.new(0.58,-12,1,0),BackgroundTransparency=1})
-		UI.chip(info,Catalog.Upper(L(rarity.name)),tint,{Size=UDim2.fromOffset(110,24),TextSize=13})
-		UI.label(info,((owned and owned.shiny) and "◆ " or "")..L(def.name),{Name="HeroTitle",Position=UDim2.fromOffset(0,28),Size=UDim2.new(1,0,0,short and 36 or 66),TextSize=short and 24 or 28,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
-		if not short then UI.label(info,L(def.description),{Position=UDim2.fromOffset(0,96),Size=UDim2.new(1,0,0,52),TextSize=14,TextWrapped=true,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top}) end
-		UI.chip(info,number(def.cost)..T(" Ouro na partida"," Gold in battle"),C.gold:Lerp(C.panel,0.3),{Position=UDim2.fromOffset(0,short and 68 or 152),Size=UDim2.fromOffset(200,26),TextSize=13})
+		UI.pill(info,L(rarity.name),tint:Lerp(C.ink,0.2),{TextSize=16,Size=UDim2.fromOffset(0,28)})
+		UI.label(info,((owned and owned.shiny) and "◆ " or "")..L(def.name),{Name="HeroTitle",Position=UDim2.fromOffset(0,32),Size=UDim2.new(1,0,0,short and 36 or 44),TextSize=short and 26 or 34,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
+		if not short then UI.label(info,L(def.description),{Position=UDim2.fromOffset(0,80),Size=UDim2.new(1,0,0,62),TextSize=17,TextWrapped=true,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top}) end
+		UI.chip(info,number(def.cost)..T(" Ouro na partida"," Gold in battle"),C.ink,{Position=UDim2.fromOffset(0,short and 72 or 150),Size=UDim2.fromOffset(230,30),TextSize=17,TextColor3=C.gold})
 		if owned then
 			local stars=math.clamp(owned.stars or 0,0,Catalog.Stars.max)
-			local rowY=short and 98 or 182
-			UI.label(info,T("MAESTRIA ","MASTERY ")..owned.level.."/20",{Position=UDim2.fromOffset(0,rowY),Size=UDim2.new(0.55,0,0,20),TextSize=13,Font=UI.Fonts.display,TextColor3=C.violet})
-			if not short then UI.label(info,T("CARTA NV ","CARD LV ")..(owned.rank or 1).."  •  "..(owned.copies or 0)..T(" cartas"," cards"),{Name="HeroCardSummary",Position=UDim2.fromOffset(208,152),Size=UDim2.new(1,-208,0,26),TextSize=15,Font=UI.Fonts.display,TextColor3=C.green}) end
-			UI.label(info,string.rep("★",stars)..string.rep("☆",Catalog.Stars.max-stars),{Name="HeroStars",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,rowY-2),Size=UDim2.new(0.45,0,0,24),TextSize=17,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Right})
+			local rowY=short and 106 or 190
+			UI.label(info,T("Maestria ","Mastery ")..owned.level.."/20",{Position=UDim2.fromOffset(0,rowY),Size=UDim2.new(0.5,0,0,24),TextSize=17,Font=UI.Fonts.display,TextColor3=C.violet:Lerp(Color3.new(1,1,1),0.25)})
+			if not short then UI.label(info,T("Carta nv ","Card lv ")..(owned.rank or 1).."  •  "..(owned.copies or 0)..T(" cartas"," cards"),{Name="HeroCardSummary",Position=UDim2.fromOffset(238,153),Size=UDim2.new(1,-238,0,26),TextSize=17,Font=UI.Fonts.display,TextColor3=C.green}) end
+			UI.label(info,string.rep("★",stars)..string.rep("☆",Catalog.Stars.max-stars),{Name="HeroStars",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,rowY-2),Size=UDim2.new(0.5,0,0,28),TextSize=22,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Right})
 		end
 		local function drawActions()
 			if owned then
@@ -104,16 +171,22 @@ function Panels.new(ctx)
 		end
 		if short then drawActions() end
 		-- Three numbers anyone can compare: hit, reach, speed.
-		local stats=UI.row(body,78)
-		local perSecond=def.interval>0 and 1/def.interval or 0
-		for index,entry in ipairs({{"",T("DANO","DAMAGE"),tostring(def.damage)},{"",T("ALCANCE","RANGE"),tostring(def.range)},{"",T("ATAQUES/S","HITS/S"),string.format("%.1f",perSecond)}}) do
-			local card=UI.roundFrame(stats,{Name="HeroStat_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-8,1,-4),BackgroundColor3=tint:Lerp(C.panel,0.7)},tint)
-			UI.label(card,entry[2],{Position=UDim2.fromOffset(8,6),Size=UDim2.new(1,-16,0,20),TextSize=12,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center})
-			UI.label(card,entry[3],{Position=UDim2.fromOffset(8,28),Size=UDim2.new(1,-16,0,38),TextSize=28,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+		-- The three numbers as they are now for this commander (mastery, stars,
+		-- card and talents included), big enough to compare at a glance.
+		local stats=UI.row(body,92)
+		local nowStats=heroNow(id)
+		local perSecond=(nowStats.interval or 0)>0 and 1/nowStats.interval or 0
+		for index,entry in ipairs({{"",T("Dano","Damage"),fmt(nowStats.damage)},{"",T("Alcance","Range"),fmt(nowStats.range)},{"",T("Ataques/s","Hits/s"),string.format("%.1f",perSecond)}}) do
+			local card=UI.frame(stats,{Name="HeroStat_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-8,1,-4),BackgroundColor3=UI.Skin.slot})
+			UI.corner(card,14)
+			UI.stroke(card,tint,2.5)
+			UI.label(card,entry[2],{Position=UDim2.fromOffset(8,8),Size=UDim2.new(1,-16,0,24),TextSize=18,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center})
+			local value=UI.label(card,entry[3],{Position=UDim2.fromOffset(8,34),Size=UDim2.new(1,-16,0,46),TextSize=36,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			UI.outline(value,3)
 		end
-		UI.label(body,def.air and T("ACERTA INIMIGOS NO CHÃO E VOANDO","HITS GROUND AND FLYING ENEMIES") or T("ACERTA SÓ INIMIGOS NO CHÃO","HITS GROUND ENEMIES ONLY"),{Name="HeroTargets",Size=UDim2.new(1,-6,0,26),TextColor3=def.air and C.green or C.coral,Font=UI.Fonts.display,TextSize=15,TextWrapped=true})
+		UI.label(body,def.air and T("Acerta inimigos no chão e voando","Hits ground and flying enemies") or T("Acerta só inimigos no chão","Hits ground enemies only"),{Name="HeroTargets",Size=UDim2.new(1,-6,0,28),TextColor3=def.air and C.green or C.coral,Font=UI.Fonts.display,TextSize=19,TextWrapped=true})
 		-- What sets this hero apart from the rest, one line each.
-		for _,trait in ipairs(UI.heroTraits(def,T)) do UI.label(body,"• "..trait,{Name="HeroTrait",Size=UDim2.new(1,-6,0,26),TextColor3=C.cream,Font=UI.Fonts.display,TextSize=16,TextWrapped=true}) end
+		for _,trait in ipairs(UI.heroTraits(def,T,nowStats.slow)) do UI.label(body,"• "..trait,{Name="HeroTrait",Size=UDim2.new(1,-6,0,28),TextColor3=C.cream,Font=UI.Fonts.display,TextSize=18,TextWrapped=true}) end
 		if not short then drawActions() end
 		-- The hero's card: duplicates from chests are cards; cards and Gold raise
 		-- its level with no top, and every level brings a point to put into
@@ -126,8 +199,8 @@ function Panels.new(ctx)
 			local earned=Rules.CardPoints(rank)
 			local spent=(alloc.damage or 0)+(alloc.speed or 0)+(alloc.range or 0)
 			local free=earned-spent
-			local ladder=UI.roundFrame(body,{Name="HeroCardLadder",Size=UDim2.new(1,-6,0,318),BackgroundColor3=tint:Lerp(C.panel,0.75)},tint)
-			UI.label(ladder,T("CARTA DO HERÓI","HERO CARD"),{Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-130,0,32),TextSize=24,Font=UI.Fonts.display,TextColor3=C.gold})
+			local ladder=UI.roundFrame(body,{Name="HeroCardLadder",Size=UDim2.new(1,-6,0,318),BackgroundColor3=UI.Skin.slot},tint)
+			UI.label(ladder,T("Carta do herói","Hero card"),{Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-130,0,32),TextSize=26,Font=UI.Fonts.display,TextColor3=C.gold})
 			UI.chip(ladder,T("NÍVEL ","LEVEL ")..rank,tint,{Name="HeroCardRank",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,10),Size=UDim2.fromOffset(104,30),TextSize=17})
 			local fill=UI.bar(ladder,C.green,UDim2.fromOffset(12,48),UDim2.new(1,-24,0,22))
 			fill.Size=UDim2.fromScale(math.clamp(copies/math.max(1,need.copies),0,1),1)
@@ -144,7 +217,7 @@ function Panels.new(ctx)
 			for index,entry in ipairs({{"damage",T("DANO","DAMAGE"),"sword"},{"speed",T("VELOCIDADE","ATTACK SPEED"),"bow"},{"range",T("ALCANCE","RANGE"),"ring"}}) do
 				local y=190+(index-1)*42
 				UI.icon(ladder,entry[3],C.cream,{Position=UDim2.fromOffset(12,y+3),Size=UDim2.fromOffset(32,32)})
-				UI.label(ladder,entry[2],{Position=UDim2.fromOffset(52,y),Size=UDim2.new(0.34,0,0,38),TextSize=15,Font=UI.Fonts.bold})
+				UI.label(ladder,entry[2],{Position=UDim2.fromOffset(52,y),Size=UDim2.new(0.34,0,0,38),TextSize=17,Font=UI.Fonts.display})
 				UI.label(ladder,"+"..math.floor(bonus[entry[1]]*100+0.5).."%",{Name="HeroCardBonus_"..entry[1],Position=UDim2.new(0.38,0,0,y),Size=UDim2.new(0.2,0,0,38),TextSize=19,Font=UI.Fonts.display,TextColor3=C.green,TextXAlignment=Enum.TextXAlignment.Center})
 				local function change(delta)
 					local nextPoints={damage=alloc.damage or 0,speed=alloc.speed or 0,range=alloc.range or 0}
@@ -158,27 +231,28 @@ function Panels.new(ctx)
 				if free<=0 then UI.disabled(plus) end
 			end
 		end
-		local tabs=UI.row(body,44)
-		for index,tab in ipairs({{id="power",label=T("PODER","POWER")},{id="defense",label=T("CAMINHOS","PATHS")}}) do
-			UI.button(tabs,tab.label,function() kit.heroDetailTab=tab.id; renderContext() end,{Name="HeroDetail_"..tab.id,Position=UDim2.new((index-1)/2,0,0,0),Size=UDim2.new(0.5,-6,0,44),TextSize=16,BackgroundColor3=kit.heroDetailTab==tab.id and tint or C.card})
+		local tabs=UI.row(body,50)
+		for index,tab in ipairs({{id="power",label=T("Poder de líder","Leader power"),icon="star",color=C.gold},{id="defense",label=T("Especializações","Specializations"),icon="sword",color=C.blue}}) do
+			UI.tab(tabs,tab.label,tab.color,tab.icon,kit.heroDetailTab==tab.id,function() kit.heroDetailTab=tab.id; renderContext() end,{Name="HeroDetail_"..tab.id,Position=UDim2.new((index-1)/2,0,0,0),Size=UDim2.new(0.5,-6,0,48),TextSize=19})
 		end
 		if kit.heroDetailTab=="defense" then
 			-- The tower's two specializations, chosen at its last upgrade.
 			for index,branch in ipairs(def.branches or {}) do
-				local card=UI.roundFrame(body,{Name="HeroBranch_"..index,Size=UDim2.new(1,-6,0,86),BackgroundColor3=C.card},tint)
-				UI.label(card,tostring(index),{Position=UDim2.fromOffset(10,8),Size=UDim2.fromOffset(34,34),TextColor3=tint,TextSize=30,Font=UI.Fonts.display})
-				UI.label(card,L(branch.name),{Position=UDim2.fromOffset(50,6),Size=UDim2.new(1,-60,0,30),TextWrapped=true,TextSize=18,Font=UI.Fonts.display})
-				UI.label(card,L(branch.description),{Position=UDim2.fromOffset(12,40),Size=UDim2.new(1,-24,0,40),TextWrapped=true,TextSize=13,TextColor3=C.muted})
+				local card=UI.roundFrame(body,{Name="HeroBranch_"..index,Size=UDim2.new(1,-6,0,96),BackgroundColor3=UI.Skin.slot},index==1 and C.green or C.blue)
+				UI.label(card,tostring(index),{Position=UDim2.fromOffset(12,8),Size=UDim2.fromOffset(36,36),TextColor3=index==1 and C.green or C.blue,TextSize=34,Font=UI.Fonts.display})
+				UI.label(card,L(branch.name),{Position=UDim2.fromOffset(54,8),Size=UDim2.new(1,-64,0,32),TextWrapped=true,TextSize=22,Font=UI.Fonts.display})
+				UI.label(card,L(branch.description),{Position=UDim2.fromOffset(14,44),Size=UDim2.new(1,-28,0,46),TextWrapped=true,TextSize=16,TextColor3=C.cream})
 			end
 			return
 		end
 		-- The leader power: what it does now, its rank as pips, and the next rank.
 		local ability=Catalog.Abilities[def.ability]
 		local rank=(p.abilities or {})[id] or 1
-		local power=UI.roundFrame(body,{Name="LeaderPowerCard",Size=UDim2.new(1,-6,0,112),BackgroundColor3=tint:Lerp(C.panel,0.75)},tint)
-		UI.label(power,"★ "..L(ability.name),{Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-110,0,30),TextSize=20,Font=UI.Fonts.display,TextColor3=C.gold})
-		UI.chip(power,"RANK "..rank.."/"..Catalog.AbilityRanks.max,C.gold,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,8),Size=UDim2.fromOffset(86,24),TextSize=13})
-		UI.label(power,Rules.AbilityText(ability,rank,ctx.language()),{Position=UDim2.fromOffset(12,38),Size=UDim2.new(1,-24,0,46),TextSize=13,TextWrapped=true})
+		local power=UI.roundFrame(body,{Name="LeaderPowerCard",Size=UDim2.new(1,-6,0,132),BackgroundColor3=UI.Skin.slot},C.gold)
+		UI.icon(power,"star",C.gold,{Position=UDim2.fromOffset(12,8),Size=UDim2.fromOffset(30,30)})
+		UI.label(power,L(ability.name),{Position=UDim2.fromOffset(48,6),Size=UDim2.new(1,-150,0,34),TextSize=24,Font=UI.Fonts.display,TextColor3=C.gold})
+		UI.chip(power,T("Rank ","Rank ")..rank.."/"..Catalog.AbilityRanks.max,C.gold:Lerp(C.ink,0.3),{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,8),Size=UDim2.fromOffset(100,30),TextSize=16})
+		UI.label(power,Rules.AbilityText(ability,rank,ctx.language()),{Position=UDim2.fromOffset(12,44),Size=UDim2.new(1,-24,0,60),TextSize=16,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
 		for level=1,Catalog.AbilityRanks.max do
 			local pip=UI.frame(power,{Name="AbilityProgress_"..level,Position=UDim2.new((level-1)/Catalog.AbilityRanks.max,12,1,-20),Size=UDim2.new(1/Catalog.AbilityRanks.max,-16,0,10),BackgroundColor3=level<=rank and C.gold or C.background})
 			UI.corner(pip,5)
@@ -455,7 +529,7 @@ function Panels.new(ctx)
 
 	local function contextPremium(body)
 	 starterOffer(body)
-	 categoryTabs(body,"PremiumTabs",{{id="hero",label=T("HERÓIS","HEROES")},{id="pass",label=T("PASSES","PASSES")},{id="product",label=T("OURO","GOLD")}},premiumCategory,function(id) premiumCategory=id; renderContext() end)
+	 categoryTabs(body,"PremiumTabs",{{id="hero",label=T("Heróis","Heroes"),icon="hero",color=C.coral},{id="pass",label=T("Passes","Passes"),icon="star",color=C.blue},{id="product",label=T("Ouro","Gold"),icon="coin",color=C.gold}},premiumCategory,function(id) premiumCategory=id; renderContext() end)
 		for _,group in ipairs({{kind="hero",items=Catalog.Products.Heroes},{kind="pass",items=Catalog.Products.Passes},{kind="product",items=Catalog.Products.Consumables}}) do
 			if group.kind~=premiumCategory then continue end
 			-- Cheapest first; the starter pack has its own banner above.
@@ -486,10 +560,12 @@ function Panels.new(ctx)
 				local tint=group.kind=="hero" and UI.color(Catalog.Rarities[Catalog.Heroes[key].rarity].color) or group.kind=="pass" and C.green or C.gold
 				-- A short phone screen gets a slimmer row, so more than one product shows.
 				local slim=UI.sizeClass(screenSize().X,screenSize().Y).short
-				local rowH,artW,buttonH=slim and 92 or 118,slim and 72 or 100,slim and 36 or 46
+				local rowH,artW,buttonH=slim and 96 or 150,slim and 74 or 118,slim and 38 or 50
 				local topY=slim and 5 or 10
-				local row=UI.roundFrame(body,{Name="Product_"..key,Size=UDim2.new(1,-6,0,rowH),BackgroundColor3=tint:Lerp(C.panel,0.6)},tint)
-				UI.candy(row)
+				local row=UI.roundFrame(body,{Name="Product_"..key,Size=UDim2.new(1,-6,0,rowH),BackgroundColor3=UI.Skin.slot},tint)
+				UI.stroke(row,tint,3)
+				local light=row:FindFirstChildOfClass("UIGradient")
+				if light then light.Color=ColorSequence.new(tint:Lerp(Color3.new(1,1,1),0.1),UI.Skin.slot); light.Rotation=0; light.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.55),NumberSequenceKeypoint.new(0.6,0.85),NumberSequenceKeypoint.new(1,0.95)}) end
 				local left=artW+18
 				local art=UI.portraitStage(row,tint,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(artW,rowH-16)})
 				if group.kind=="hero" then heroPortrait(row,key,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(artW,rowH-16)})
@@ -509,7 +585,19 @@ function Panels.new(ctx)
 						UI.label(row,T("≈ ","≈ ")..UI.format(math.floor(def.gold/price+0.5))..T(" Ouro por R$"," Gold per R$"),{Name="Value_"..key,Position=UDim2.fromOffset(left+used,topY),Size=UDim2.new(1,-left-used-12,0,20),TextSize=13,TextColor3=C.cream})
 					end
 				end
-				UI.label(row,L(def.name),{Position=UDim2.fromOffset(left,(group.kind=="hero" or isGold) and (slim and 25 or 32) or (slim and 8 or 12)),Size=UDim2.new(1,-left-12,0,slim and 22 or 30),TextWrapped=true,Font=UI.Fonts.display,TextSize=slim and 17 or 20})
+				local nameY=(group.kind=="hero" or isGold) and (slim and 25 or 32) or (slim and 8 or 12)
+				UI.label(row,L(def.name),{Name="ProductName",Position=UDim2.fromOffset(left,nameY),Size=UDim2.new(1,-left-64,0,slim and 22 or 30),TextWrapped=true,Font=UI.Fonts.display,TextSize=slim and 19 or 24})
+				-- One line says what it is: a hero's numbers, a pass's or a pack's effect.
+				if not slim then
+					local line=""
+					if group.kind=="hero" then
+						local hero=Catalog.Heroes[key]
+						local perSecond=hero.interval>0 and 1/hero.interval or 0
+						line=T("Dano ","Damage ")..tostring(hero.damage).."  •  "..T("Alcance ","Range ")..tostring(hero.range).."  •  "..string.format("%.1f",perSecond)..T(" ataques/s"," hits/s")
+					elseif def.description then line=L(def.description)
+					elseif isGold then line=T("Ouro para abrir baús de heróis e bases","Gold to open hero and base chests") end
+					if line~="" then UI.label(row,line,{Name="ProductLine",Position=UDim2.fromOffset(left,nameY+30),Size=UDim2.new(1,-left-64,0,22),TextSize=16,TextColor3=C.muted,TextTruncate=Enum.TextTruncate.AtEnd}) end
+				end
 				local cacheKey=group.kind..":"..key
 				local ready=type(info)=="table"
 				local label=owned and T("✓ JÁ É SEU","✓ YOURS") or ready and ("R$ "..tostring(info.price))
@@ -519,7 +607,7 @@ function Panels.new(ctx)
 					if not ready or owned then return end
 					local ok=pcall(function() if group.kind=="pass" then MarketplaceService:PromptGamePassPurchase(player,info.id) else MarketplaceService:PromptProductPurchase(player,info.id) end end)
 					if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
-				end,{Name="Buy_"..cacheKey,Position=UDim2.new(0,left,1,-buttonH-(slim and 6 or 10)),Size=UDim2.new(1,-left-12,0,buttonH),BackgroundColor3=owned and C.card or C.green,TextSize=slim and 16 or 17})
+				end,{Name="Buy_"..cacheKey,Position=UDim2.new(0,left,1,-buttonH-(slim and 6 or 10)),Size=UDim2.new(1,-left-12,0,buttonH),BackgroundColor3=owned and C.card or C.green,TextSize=slim and 17 or 21})
 				if owned or (not ready and info~="retry") then UI.disabled(buy) end
 				-- Everything can be inspected before it is paid for.
 				local open=kit.shopInfo==cacheKey
@@ -869,73 +957,6 @@ function Panels.new(ctx)
 	-- The team and the collection on one screen: five slots and the base on
 	-- top (the leader crowned), then big hero cards. Tap a card to see the hero;
 	-- the only filters are the owned/all tabs and one row of rarity chips.
-	-- How a hero is now for this commander: level-one tower stats with mastery,
-	-- stars, cards and talents applied (what it will really do when placed).
-	local function heroNow(id)
-		local p = profile()
-		local mods = (p.heroes or {})[id] and Rules.PermanentModifiers(p, id) or {}
-		local ok, stats = pcall(Rules.TowerStats, id, 1, nil, mods)
-		if not ok then
-			local def = Catalog.Heroes[id]
-			stats = { damage = def.damage, range = def.range, interval = def.interval, slow = def.slow or 0 }
-		end
-		return stats
-	end
-	local function fmt(value)
-		value = tonumber(value) or 0
-		if math.abs(value - math.floor(value + 0.5)) < 0.05 then return tostring(math.floor(value + 0.5)) end
-		return string.format("%.1f", value)
-	end
-	-- The tooltip every hero shows on hover (collection, team, hotbar, summon odds).
-	local function heroTooltip(box, id)
-		local def = Catalog.Heroes[id]
-		if not def then return end
-		local p = profile()
-		local mine = (p.heroes or {})[id]
-		local rarity = Catalog.Rarities[def.rarity]
-		local tint = UI.color(rarity.color)
-		local stats = heroNow(id)
-		UI.tooltipTitle(box, L(def.name), tint:Lerp(Color3.new(1, 1, 1), 0.25))
-		local status = L(rarity.name)
-		if mine then status ..= T("  •  Maestria ", "  •  Mastery ") .. tostring(mine.level or 1) .. T("  •  Carta nv ", "  •  Card lv ") .. tostring(mine.rank or 1) else status ..= T("  •  Você ainda não tem", "  •  Not owned yet") end
-		UI.tooltipLine(box, status, C.muted, 2, 15)
-		local perSecond = (stats.interval or 0) > 0 and 1 / stats.interval or 0
-		UI.tooltipLine(box, T("Dano ", "Damage ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.damage) .. "</b></font>   " .. T("Alcance ", "Range ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.range) .. "</b></font>   "
-			.. T("Ataques/s ", "Hits/s ") .. '<font color="#FFFFFF"><b>' .. string.format("%.1f", perSecond) .. "</b></font>", C.muted, 3, 17)
-		UI.tooltipLine(box, def.air and T("Acerta inimigos no chão e voando", "Hits ground and flying enemies") or T("Acerta só inimigos no chão", "Hits ground enemies only"), def.air and C.green or C.coral, 4, 15)
-		for index, trait in ipairs(UI.heroTraits(def, T, stats.slow)) do UI.tooltipLine(box, "• " .. trait, C.cream, 4 + index, 15) end
-		local ability = def.ability and Catalog.Abilities[def.ability]
-		if ability then UI.tooltipLine(box, T("Poder de líder: ", "Leader power: ") .. L(ability.name), C.gold, 20, 15) end
-		UI.tooltipLine(box, number(def.cost) .. T(" Ouro para colocar na partida", " Gold to place in battle"), C.gold:Lerp(C.text, 0.3), 21, 14)
-	end
-	kit.heroTooltip = heroTooltip
-
-	-- A collection tile like the big games' inventories: the hero on its rarity
-	-- colour, its stars on a gold badge and its level, nothing else to read.
-	local function heroTile(parent, id, properties, onClick)
-		local p = profile()
-		local def = Catalog.Heroes[id]
-		local mine = (p.heroes or {})[id]
-		local tint = UI.color(Catalog.Rarities[def.rarity].color)
-		local tile = UI.frame(parent, {BackgroundColor3 = mine and tint or tint:Lerp(C.ink, 0.55)})
-		for key, value in pairs(properties or {}) do tile[key] = value end
-		UI.corner(tile, 14)
-		UI.stroke(tile, C.ink, 3)
-		UI.create("UIGradient", {Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 150)), Rotation = 90}, tile)
-		-- Light rays behind the hero, like a card that shines.
-		local rays = UI.frame(tile, {Name = "Rays", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true})
-		for index = 0, 3 do
-			UI.frame(rays, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.new(0.16, 0, 1.6, 0), Rotation = index * 45, BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.88})
-		end
-		heroPortrait(tile, id, {Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8)})
-		if not mine then
-			local shade = UI.frame(tile, {Name = "NotOwned", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.5})
-			UI.corner(shade, 14)
-			UI.icon(shade, "lock", C.cream, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.fromOffset(30, 30)})
-		end
-		return tile, mine, tint
-	end
-
 	local function contextSquad(body)
 		local p=profile()
 		local screen=screenSize()
