@@ -761,11 +761,11 @@ function Panels.new(ctx)
 		if board.data and board.data.rows then
 			for _, entry in ipairs(board.data.rows) do
 				local entryRow = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 56), BackgroundColor3 = entry.userId == player.UserId and Color3.fromRGB(24, 54, 49) or C.card})
-				UI.label(entryRow, "#" .. tostring(entry.rank), {Position = UDim2.fromOffset(12, 10), Size = UDim2.fromOffset(49, 30), Font = Enum.Font.GothamBold, TextColor3 = C.gold})
+				UI.label(entryRow, "#" .. tostring(entry.rank), {Position = UDim2.fromOffset(12, 10), Size = UDim2.fromOffset(49, 30), Font = Enum.Font.BuilderSansExtraBold, TextColor3 = C.gold})
 				local tier=Rules.RankForWaves(entry.waves)
 				local title=(entry.name or tostring(entry.userId))..(board.mode=="ranked" and ("\n"..(ctx.language()=="en" and tier.en or tier.pt)) or "")
 				UI.label(entryRow, title, {Position = UDim2.fromOffset(65, 6), Size = UDim2.new(1, -145, 0, 42), TextSize = 12, TextWrapped=true})
-				UI.label(entryRow, tostring(entry.waves), {Position = UDim2.new(1, -72, 0, 10), Size = UDim2.fromOffset(58, 30), TextXAlignment = Enum.TextXAlignment.Right, Font = Enum.Font.GothamBold, TextColor3 = C.green})
+				UI.label(entryRow, tostring(entry.waves), {Position = UDim2.new(1, -72, 0, 10), Size = UDim2.fromOffset(58, 30), TextXAlignment = Enum.TextXAlignment.Right, Font = Enum.Font.BuilderSansExtraBold, TextColor3 = C.green})
 			end
 			if #board.data.rows == 0 then UI.label(body, T("Seja o primeiro a deixar sua marca neste setor.", "Be the first to set a record in this sector."), {Size = UDim2.new(1, -6, 0, 50), TextWrapped = true, TextColor3 = C.muted}) end
 		elseif board.failed then
@@ -808,7 +808,7 @@ function Panels.new(ctx)
 			local r = lastRewardResult.chest
 			local row = UI.roundFrame(body, {Name = "RewardChestResult", Size = UDim2.new(1, -6, 0, 100), BackgroundColor3 = C.card}, UI.color(Catalog.Rarities[r.rarity].color))
 			heroPortrait(row, r.heroId, {Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(72, 92)})
-			UI.label(row, heroName(r.heroId), {Position = UDim2.fromOffset(84, 10), Size = UDim2.new(1, -96, 0, 30), Font = Enum.Font.GothamBlack, TextSize = 16, TextWrapped = true})
+			UI.label(row, heroName(r.heroId), {Position = UDim2.fromOffset(84, 10), Size = UDim2.new(1, -96, 0, 30), Font = Enum.Font.FredokaOne, TextSize = 16, TextWrapped = true})
 			UI.label(row, r.duplicate and T("Repetido: virou Ouro e maestria", "Duplicate: turned into Gold and mastery") or T("NOVO HERÓI!", "NEW HERO!"), {Position = UDim2.fromOffset(84, 44), Size = UDim2.new(1, -96, 0, 40), TextSize = 12, TextWrapped = true, TextColor3 = C.gold})
 		end
 
@@ -924,7 +924,7 @@ function Panels.new(ctx)
 		local codeBox = UI.create("TextBox", {
 			Name = "CodeInput", Position = UDim2.fromOffset(10, 8), Size = UDim2.new(1, -128, 0, 44), BackgroundColor3 = C.background,
 			Text = "", PlaceholderText = T("Digite o código", "Type the code"), ClearTextOnFocus = false,
-			Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = C.text, PlaceholderColor3 = C.muted,
+			Font = Enum.Font.BuilderSansExtraBold, TextSize = 16, TextColor3 = C.text, PlaceholderColor3 = C.muted,
 		}, codeRow)
 		UI.corner(codeBox, 10)
 		UI.button(codeRow, T("USAR", "REDEEM"), function()
@@ -938,7 +938,7 @@ function Panels.new(ctx)
 		if (tonumber(Config.GroupId) or 0) > 0 then
 			local group = rewards.group or {}
 			local groupCard = UI.roundFrame(body, {Name = "GroupReward", Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
-			UI.label(groupCard, T("Entre no grupo do jogo", "Join the game's group"), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -130, 0, 24), Font = Enum.Font.GothamBold, TextSize = 14})
+			UI.label(groupCard, T("Entre no grupo do jogo", "Join the game's group"), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -130, 0, 24), Font = Enum.Font.BuilderSansExtraBold, TextSize = 14})
 			UI.label(groupCard, "+" .. number(group.gold or 0) .. T(" Ouro, uma vez", " Gold, once"), {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -130, 0, 20), TextSize = 12, TextColor3 = C.muted})
 			local claimGroup = UI.button(groupCard, group.claimed and T("RESGATADO", "CLAIMED") or T("RESGATAR", "CLAIM"), function()
 				act("ClaimGroupReward", {}, function(snapshot) rewardGiven(snapshot and snapshot.result) end)
@@ -1443,7 +1443,7 @@ function Panels.new(ctx)
 		UI.section(body,T("ESCOLHA SEU DESTINO","CHOOSE YOUR DESTINATION"),T("Cada portal tem seu mapa e seu modo. Para jogar com amigos, entrem no mesmo portal.","Each portal has its own map and mode. To play with friends, enter the same portal."))
 		if not profile().tutorialComplete then
 			local first=UI.roundFrame(body,{Name="FirstMission",Size=UDim2.new(1,-6,0,168),BackgroundColor3=C.gold:Lerp(C.panel,0.78)},C.gold)
-			UI.label(first,T("COMECE AQUI!","START HERE!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,36),TextSize=26,Font=Enum.Font.GothamBlack,TextColor3=C.gold})
+			UI.label(first,T("COMECE AQUI!","START HERE!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,36),TextSize=26,Font=Enum.Font.FredokaOne,TextColor3=C.gold})
 			UI.label(first,T("Aprenda em 12 ondas e ganhe 1.000 Ouro na primeira vitória.","Learn in 12 waves and earn 1,000 Gold on your first victory."),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
 			UI.button(first,T("JOGAR O TREINO • 12 ONDAS","PLAY TRAINING • 12 WAVES"),startTraining,{Name="FindTrainingPortal",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
 		end

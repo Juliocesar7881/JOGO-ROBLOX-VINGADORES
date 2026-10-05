@@ -71,7 +71,7 @@ function Nameplates:Refresh()
 				gui.Parent = head
 				local label = UI.label(gui, "", {
 					Size = UDim2.fromScale(1, 0.62), TextScaled = false, TextSize = 14,
-					Font = Enum.Font.GothamBold, TextColor3 = UI.Colors.gold,
+					Font = Enum.Font.BuilderSansExtraBold, TextColor3 = UI.Colors.gold,
 					TextXAlignment = Enum.TextXAlignment.Center, TextStrokeTransparency = 0.5,
 				})
 				local rank = UI.label(gui, "", {

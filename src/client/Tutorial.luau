@@ -326,12 +326,12 @@ function Tutorial:_ensureWorld(lowFX)
 	gui.Adornee, gui.Parent = anchor, anchor
 	local arrow = Instance.new("TextLabel")
 	arrow.Name, arrow.Size, arrow.BackgroundTransparency, arrow.Text = "Arrow", UDim2.new(1, 0, 0, 92), 1, "▼"
-	arrow.Font, arrow.TextScaled, arrow.TextColor3, arrow.TextStrokeTransparency = Enum.Font.GothamBlack, true, C.green, 0
+	arrow.Font, arrow.TextScaled, arrow.TextColor3, arrow.TextStrokeTransparency = Enum.Font.FredokaOne, true, C.green, 0
 	arrow.TextStrokeColor3 = Color3.fromRGB(10, 40, 20)
 	arrow.Parent = gui
 	local distance = Instance.new("TextLabel")
 	distance.Name, distance.Position, distance.Size, distance.BackgroundTransparency = "Distance", UDim2.fromOffset(0, 90), UDim2.new(1, 0, 0, 28), 1
-	distance.Font, distance.TextSize, distance.TextColor3, distance.TextStrokeTransparency = Enum.Font.GothamBlack, 22, C.cream, 0.2
+	distance.Font, distance.TextSize, distance.TextColor3, distance.TextStrokeTransparency = Enum.Font.FredokaOne, 22, C.cream, 0.2
 	distance.Text = ""
 	distance.Parent = gui
 	self.anchor, self.arrowLabel, self.distanceLabel = anchor, arrow, distance

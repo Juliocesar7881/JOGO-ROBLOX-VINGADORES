@@ -440,13 +440,13 @@ function MatchHud.new(ctx)
 		local celebration=UI.row(content,short and 44 or 64)
 		local emblemSize=short and 36 or 48
 		UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.fromOffset(2,short and 4 or 12),Size=UDim2.fromOffset(emblemSize,emblemSize)})
-		UI.label(celebration, result.ended and T("RECORDE GUARDADO!", "RECORD SAVED!") or victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("VAMOS TENTAR DE NOVO?", "LET'S TRY AGAIN!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.GothamBlack, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
+		UI.label(celebration, result.ended and T("RECORDE GUARDADO!", "RECORD SAVED!") or victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("VAMOS TENTAR DE NOVO?", "LET'S TRY AGAIN!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.FredokaOne, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
 		UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal", result.difficultyId), {Size = UDim2.new(1, -6, 0, short and 20 or 28), TextColor3 = C.muted, TextSize = short and 14 or 17, TextXAlignment = Enum.TextXAlignment.Center})
 		if (tonumber(result.featured) or 1) > 1 then
-			UI.label(content, "★ " .. T("MAPA DO DIA +", "MAP OF THE DAY +") .. math.floor((result.featured - 1) * 100 + 0.5) .. "%", {Name = "ResultFeatured", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
+			UI.label(content, "★ " .. T("MAPA DO DIA +", "MAP OF THE DAY +") .. math.floor((result.featured - 1) * 100 + 0.5) .. "%", {Name = "ResultFeatured", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
 		end
 		if (tonumber(result.party) or 1) > 1 then
-			UI.label(content, "★ " .. T("BÔNUS DE GRUPO +", "PARTY BONUS +") .. math.floor((result.party - 1) * 100 + 0.5) .. "%", {Name = "ResultParty", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
+			UI.label(content, "★ " .. T("BÔNUS DE GRUPO +", "PARTY BONUS +") .. math.floor((result.party - 1) * 100 + 0.5) .. "%", {Name = "ResultParty", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
 		end
 		-- Core rewards stay together and appear before the optional detailed history,
 		-- including on short screens where three large rows needed several scrolls.
@@ -456,7 +456,7 @@ function MatchHud.new(ctx)
 			local tile=UI.roundFrame(rewards,{Name="Reward_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-6,1,0),BackgroundColor3=UI.Skin.slot},reward[3])
 			UI.stroke(tile,reward[3],2.5)
 			UI.label(tile,reward[1],{Position=UDim2.fromOffset(4,6),Size=UDim2.new(1,-8,0,22),TextSize=17,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center,Font=UI.Fonts.display})
-			UI.label(tile,reward[2],{Name="RewardValue_"..index,Position=UDim2.fromOffset(4,28),Size=UDim2.new(1,-8,1,-32),TextSize=mobile() and 24 or 32,TextColor3=reward[3],TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.GothamBlack})
+			UI.label(tile,reward[2],{Name="RewardValue_"..index,Position=UDim2.fromOffset(4,28),Size=UDim2.new(1,-8,1,-32),TextSize=mobile() and 24 or 32,TextColor3=reward[3],TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.FredokaOne})
 		end
 		if not kit.resultsCelebrated then
 			-- Once per results screen: a re-render while rewards finish saving must

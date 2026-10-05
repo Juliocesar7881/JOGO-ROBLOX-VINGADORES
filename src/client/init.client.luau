@@ -280,7 +280,7 @@ local function smallText(parent, text, y, h)
 end
 
 local function heading(parent, text, y, tint)
-	return UI.label(parent, text, {Position = UDim2.fromOffset(14, y or 12), Size = UDim2.new(1, -28, 0, 26), TextSize = 17, Font = Enum.Font.GothamBold, TextColor3 = tint or C.text})
+	return UI.label(parent, text, {Position = UDim2.fromOffset(14, y or 12), Size = UDim2.new(1, -28, 0, 26), TextSize = 17, Font = Enum.Font.BuilderSansExtraBold, TextColor3 = tint or C.text})
 end
 
 local function profileSignature()
@@ -1222,14 +1222,14 @@ local function renderMatch()
 	-- Narrow bands (a phone) get smaller letters so every label still fits.
 	refs.controlDelta = layout.controlW >= 52 and 0 or (layout.controlW >= 44 and -2 or -4)
 	local cd = refs.controlDelta
-	refs.speedToggle = UI.secondary(abilities, "2x", function() chooseSpeed(2) end, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 19 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = UI.Skin.bodyTop})
-	refs.speed3Toggle = UI.secondary(abilities, "3x", function() chooseSpeed(3) end, {Name = "Speed3Toggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 19 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = UI.Skin.bodyTop})
-	refs.sheetButton = UI.secondary(abilities, T("Ficha", "Sheet"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 7, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 14 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.speedToggle = UI.secondary(abilities, "2x", function() chooseSpeed(2) end, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 19 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.speed3Toggle = UI.secondary(abilities, "3x", function() chooseSpeed(3) end, {Name = "Speed3Toggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 19 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.sheetButton = UI.secondary(abilities, T("Ficha", "Sheet"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 7, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 14 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
 	-- The cards have a button of their own, in the cards mode only.
 	if state.match and state.match.cardMode then
-		refs.cardsButton = UI.secondary(abilities, T("Cartas", "Cards"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 14 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = C.violet})
+		refs.cardsButton = UI.secondary(abilities, T("Cartas", "Cards"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 14 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = C.violet})
 	end
-	refs.autoSkipToggle = UI.secondary(abilities, "AUTO\nOFF", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 13 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.autoSkipToggle = UI.secondary(abilities, "AUTO\nOFF", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 13 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	UI.windowSkin(bottom, C.gold)
 	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
@@ -1731,11 +1731,11 @@ local function updateAfkBanner()
 	end
 	if not kit.afkBanner then
 		kit.afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(math.min(460, screenSize().X - 24), 58), BackgroundColor3 = C.background}, C.gold)
-		kit.afkTitle = UI.label(kit.afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 28), TextSize = 18, Font = Enum.Font.GothamBlack, TextXAlignment = Enum.TextXAlignment.Center})
+		kit.afkTitle = UI.label(kit.afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 28), TextSize = 18, Font = Enum.Font.FredokaOne, TextXAlignment = Enum.TextXAlignment.Center})
 		-- The dedicated AFK place, when the game has one configured.
 		afk.travel = UI.button(kit.afkBanner, T("SERVIDOR AFK", "AFK SERVER"), function() act("EnterAfkServer", {}) end, {Name = "AfkServerGo", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -104, 0.5, 0), Size = UDim2.fromOffset(120, 44), BackgroundColor3 = C.violet, TextSize = 12, Visible = false})
 		UI.button(kit.afkBanner, T("ECONOMIA", "SAVER"), function() setAfkEco(true) end, {Name = "AfkEcoOn", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(92, 44), BackgroundColor3 = C.blue, TextSize = 13})
-		kit.afkDetail = UI.label(kit.afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
+		kit.afkDetail = UI.label(kit.afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.BuilderSansExtraBold, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
 	end
 	local tint = UI.color(farm.color)
 	kit.afkBanner.Visible = true

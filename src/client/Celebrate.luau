@@ -137,7 +137,7 @@ function Celebrate:Float(text, anchor, color)
 	local size = self.UI.toLogical(anchor.AbsoluteSize or Vector2.new(0, 0))
 	local label = self.UI.label(self.root, text, {
 		Name = "FloatingGain", AnchorPoint = Vector2.new(0.5, 1), ZIndex = 96,
-		Size = UDim2.fromOffset(160, 30), Font = Enum.Font.GothamBlack, TextSize = 20,
+		Size = UDim2.fromOffset(160, 30), Font = Enum.Font.FredokaOne, TextSize = 20,
 		TextColor3 = color or Color3.fromRGB(255, 206, 82), TextXAlignment = Enum.TextXAlignment.Center,
 		TextStrokeTransparency = 0.35,
 	})
@@ -191,12 +191,12 @@ function Celebrate:Banner(title, subtitle, tint, options)
 	local scale = self.UI.create("UIScale", { Scale = 0.2 }, banner)
 	local titleLabel = self.UI.label(banner, self:_t(title), {
 		Name = "BannerTitle", Size = UDim2.new(1, -20, 0, big and 52 or 36), Position = UDim2.fromOffset(10, big and 6 or 3),
-		Font = Enum.Font.GothamBlack, TextSize = big and 36 or 24, TextColor3 = tint:Lerp(WHITE, 0.35), TextScaled = true,
+		Font = Enum.Font.FredokaOne, TextSize = big and 36 or 24, TextColor3 = tint:Lerp(WHITE, 0.35), TextScaled = true,
 		TextXAlignment = Enum.TextXAlignment.Center, TextStrokeTransparency = 0.2, ZIndex = 91,
 	})
 	local subtitleLabel = subtitle and self.UI.label(banner, self:_t(subtitle), {
 		Name = "BannerSubtitle", Size = UDim2.new(1, -20, 0, big and 26 or 20), Position = UDim2.new(0, 10, 1, big and -32 or -24),
-		Font = Enum.Font.GothamBold, TextSize = big and 17 or 13, TextColor3 = WHITE,
+		Font = Enum.Font.BuilderSansExtraBold, TextSize = big and 17 or 13, TextColor3 = WHITE,
 		TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91,
 	}) or nil
 	self.banner = banner
@@ -332,7 +332,7 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 	end
 	pose(CFrame.new(0, 8, 0), 0)
 
-	local tierLabel = UI.label(stage, "", { Name = "TierLabel", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.86), Size = UDim2.fromOffset(380, 48), Font = Enum.Font.GothamBlack, TextSize = 34, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 89 })
+	local tierLabel = UI.label(stage, "", { Name = "TierLabel", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.86), Size = UDim2.fromOffset(380, 48), Font = Enum.Font.FredokaOne, TextSize = 34, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 89 })
 	UI.outline(tierLabel, 3)
 
 	-- The prize card.
@@ -342,9 +342,9 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 	UI.create("UIGradient", { Color = ColorSequence.new(finalTint:Lerp(WHITE, 0.15), finalTint:Lerp(BLACK, 0.55)), Rotation = 90 }, card)
 	local cardScale = UI.create("UIScale", { Scale = 0 }, card)
 	local stars = string.rep("★", tierIndex)
-	local rarityLabel = UI.label(card, Catalog.Upper(self:_t(rarity.name)) .. "!", { Name = "RevealRarity", Position = UDim2.fromOffset(10, 8), Size = UDim2.new(1, -20, 0, 36), Font = Enum.Font.GothamBlack, TextSize = 30, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
+	local rarityLabel = UI.label(card, Catalog.Upper(self:_t(rarity.name)) .. "!", { Name = "RevealRarity", Position = UDim2.fromOffset(10, 8), Size = UDim2.new(1, -20, 0, 36), Font = Enum.Font.FredokaOne, TextSize = 30, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
 	UI.outline(rarityLabel, 3)
-	local starLabel = UI.label(card, stars, { Name = "RevealStars", Position = UDim2.fromOffset(10, 42), Size = UDim2.new(1, -20, 0, 22), TextSize = 20, Font = Enum.Font.GothamBlack, TextColor3 = CHEST_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
+	local starLabel = UI.label(card, stars, { Name = "RevealStars", Position = UDim2.fromOffset(10, 42), Size = UDim2.new(1, -20, 0, 22), TextSize = 20, Font = Enum.Font.FredokaOne, TextColor3 = CHEST_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
 	UI.outline(starLabel, 2)
 	local stageArt = UI.frame(card, { Name = "RevealArtStage", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 68), Size = UDim2.fromOffset(236, 190), BackgroundColor3 = BLACK, BackgroundTransparency = 0.7, ZIndex = 91 })
 	UI.corner(stageArt, 18)
@@ -362,7 +362,7 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 		end
 		if not performer then pcall(self.portrait, card, result.heroId, portraitProperties) end
 	end
-	local nameLabel = UI.label(card, self:_t(hero.name), { Name = "RevealName", Position = UDim2.fromOffset(10, 262), Size = UDim2.new(1, -20, 0, 38), Font = Enum.Font.GothamBlack, TextSize = 28, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, TextScaled = true, ZIndex = 91 })
+	local nameLabel = UI.label(card, self:_t(hero.name), { Name = "RevealName", Position = UDim2.fromOffset(10, 262), Size = UDim2.new(1, -20, 0, 38), Font = Enum.Font.FredokaOne, TextSize = 28, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, TextScaled = true, ZIndex = 91 })
 	UI.outline(nameLabel, 3)
 	local cardsPart = (result.cards or 0) > 0 and ("+" .. tostring(result.cards)) or nil
 	local statusText = result.duplicate
@@ -370,7 +370,7 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 			en = (cardsPart and (cardsPart .. (result.cards == 1 and " CARD  •  " or " CARDS  •  ")) or "") .. (result.starGained and ("+1 ★ (" .. tostring(result.stars or 1) .. "/5)  •  ") or "") .. "+" .. tostring(result.refundGold or 0) .. " Gold" })
 		or self:_t({ pt = "NOVO HERÓI!", en = "NEW HERO!" })
 	if result.shiny then statusText = self:_t({ pt = "◆ BRILHANTE!  ", en = "◆ SHINY!  " }) .. statusText end
-	local status = UI.label(card, statusText, { Name = "RevealStatus", Position = UDim2.fromOffset(10, 302), Size = UDim2.new(1, -20, 0, 48), Font = Enum.Font.GothamBlack, TextSize = result.duplicate and 14 or 26, TextWrapped = true, TextColor3 = result.duplicate and CHEST_GOLD or Color3.fromRGB(150, 255, 120), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
+	local status = UI.label(card, statusText, { Name = "RevealStatus", Position = UDim2.fromOffset(10, 302), Size = UDim2.new(1, -20, 0, 48), Font = Enum.Font.FredokaOne, TextSize = result.duplicate and 14 or 26, TextWrapped = true, TextColor3 = result.duplicate and CHEST_GOLD or Color3.fromRGB(150, 255, 120), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
 	UI.outline(status, 2.5)
 	if result.baseId then status.Text = result.duplicate and ("+" .. tostring(result.refundGold or 0) .. self:_t({ pt = " Ouro • base repetida", en = " Gold • duplicate base" })) or self:_t({ pt = "NOVA BASE!", en = "NEW BASE!" }) end
 	local statusScale = UI.create("UIScale", { Scale = 1 }, status)
@@ -526,7 +526,7 @@ function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, f
 	local screen = UI.toLogical(self.root.AbsoluteSize)
 	UI.create("UIScale", { Scale = math.clamp(math.min(screen.X / 960, screen.Y / 520), 0.5, 1.3) }, stage)
 	local title = self:_t(chest.name) .. (total > 1 and ("   " .. position .. "/" .. total) or "")
-	local titleLabel = UI.label(stage, Catalog.Upper(title), { Name = "ReelTitle", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 52), Font = Enum.Font.GothamBlack, TextSize = 36, TextColor3 = REEL_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
+	local titleLabel = UI.label(stage, Catalog.Upper(title), { Name = "ReelTitle", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 52), Font = Enum.Font.FredokaOne, TextSize = 36, TextColor3 = REEL_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
 	UI.outline(titleLabel, 3)
 	local window = UI.frame(stage, { Name = "ReelWindow", Position = UDim2.fromOffset(0, 72), Size = UDim2.fromOffset(REEL_WIDTH, 196), BackgroundColor3 = REEL_INK, ClipsDescendants = true, ZIndex = 83 })
 	UI.corner(window, 14)
@@ -548,7 +548,7 @@ function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, f
 		UI.corner(frame, 12)
 		UI.create("UIGradient", { Color = ColorSequence.new(tint:Lerp(WHITE, 0.1), tint:Lerp(BLACK, 0.45)), Rotation = 90 }, frame)
 		UI.frame(frame, { Name = "RarityBar", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 8), BackgroundColor3 = tint, ZIndex = 87 })
-		local nameText = UI.label(frame, self:_t(def.name), { Name = "TileName", Position = UDim2.new(0, 4, 1, -44), Size = UDim2.new(1, -8, 0, 34), Font = Enum.Font.GothamBlack, TextSize = 15, TextWrapped = true, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 88 })
+		local nameText = UI.label(frame, self:_t(def.name), { Name = "TileName", Position = UDim2.new(0, 4, 1, -44), Size = UDim2.new(1, -8, 0, 34), Font = Enum.Font.FredokaOne, TextSize = 15, TextWrapped = true, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 88 })
 		UI.outline(nameText, 1.5)
 		tiles[index] = { frame = frame, id = id, isBase = Catalog.Bases[id] ~= nil, def = def, art = nil }
 	end
@@ -576,7 +576,7 @@ function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, f
 		UI.create("UIGradient", { Transparency = NumberSequence.new(left and 0 or 1, left and 1 or 0), Rotation = 0 }, fade)
 	end
 	local hint = UI.label(stage, self:_t({ pt = "TOQUE PARA PULAR", en = "TAP TO SKIP" }), { Name = "ReelHint", Position = UDim2.fromOffset(0, 290), Size = UDim2.new(1, 0, 0, 30), TextSize = 18, Font = UI.Fonts.bold, TextColor3 = Color3.fromRGB(206, 218, 255), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
-	local nameLabel = UI.label(stage, "", { Name = "ReelPrize", Position = UDim2.fromOffset(0, 286), Size = UDim2.new(1, 0, 0, 52), Font = Enum.Font.GothamBlack, TextSize = 38, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
+	local nameLabel = UI.label(stage, "", { Name = "ReelPrize", Position = UDim2.fromOffset(0, 286), Size = UDim2.new(1, 0, 0, 52), Font = Enum.Font.FredokaOne, TextSize = 38, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
 	UI.outline(nameLabel, 3)
 	if flow and total > 1 then
 		UI.button(root, self:_t({ pt = "PULAR TUDO", en = "SKIP ALL" }), function() flow.skipAll() end, { Name = "ReelSkipAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(180, 52), BackgroundColor3 = Color3.fromRGB(255, 77, 94), TextSize = 18, ZIndex = 95 })
@@ -672,7 +672,7 @@ function Celebrate:_summary(results, onClosed)
 		cards += r.cards or 0
 		gold += r.refundGold or 0
 	end
-	local titleLabel = UI.label(panel, self:_t({ pt = "RESULTADO", en = "RESULTS" }), { Name = "SummaryTitle", Size = UDim2.new(1, 0, 0, 48), Font = Enum.Font.GothamBlack, TextSize = 38, TextColor3 = REEL_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 83 })
+	local titleLabel = UI.label(panel, self:_t({ pt = "RESULTADO", en = "RESULTS" }), { Name = "SummaryTitle", Size = UDim2.new(1, 0, 0, 48), Font = Enum.Font.FredokaOne, TextSize = 38, TextColor3 = REEL_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 83 })
 	UI.outline(titleLabel, 3)
 	UI.label(panel, self:_t({ pt = tostring(fresh) .. " novos  •  +" .. tostring(cards) .. " cartas  •  +" .. tostring(gold) .. " Ouro", en = tostring(fresh) .. " new  •  +" .. tostring(cards) .. " cards  •  +" .. tostring(gold) .. " Gold" }), { Name = "SummaryTotals", Position = UDim2.fromOffset(0, 50), Size = UDim2.new(1, 0, 0, 34), TextSize = 22, Font = UI.Fonts.bold, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 83 })
 	local grid = UI.scroll(panel, { Name = "SummaryGrid", Position = UDim2.fromOffset(0, 92), Size = UDim2.new(1, 0, 1, -170), ZIndex = 83 })
@@ -691,7 +691,7 @@ function Celebrate:_summary(results, onClosed)
 		elseif self.portrait then
 			pcall(self.portrait, tile, r.heroId, { Position = UDim2.fromOffset(8, 6), Size = UDim2.new(1, -16, 1, -62), BackgroundTransparency = 1, ZIndex = 85 })
 		end
-		local nameText = UI.label(tile, self:_t(def.name), { Position = UDim2.new(0, 4, 1, -54), Size = UDim2.new(1, -8, 0, 24), Font = Enum.Font.GothamBlack, TextSize = 14, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 86 })
+		local nameText = UI.label(tile, self:_t(def.name), { Position = UDim2.new(0, 4, 1, -54), Size = UDim2.new(1, -8, 0, 24), Font = Enum.Font.FredokaOne, TextSize = 14, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 86 })
 		UI.outline(nameText, 1.5)
 		local note
 		if not r.duplicate then

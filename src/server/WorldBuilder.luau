@@ -41,7 +41,7 @@ local function wallSign(parent,name,cf,size,title,subtitle,tint)
 	local function text(value,y,h,color,fontSize)
 		local t=Instance.new("TextLabel")
 		t.Name=y==34 and "Title" or "Subtitle"
-		t.BackgroundTransparency,t.Text,t.Font=1,value,Enum.Font.GothamBlack
+		t.BackgroundTransparency,t.Text,t.Font=1,value,Enum.Font.FredokaOne
 		t.Position,t.Size=UDim2.new(0.04,0,0,y),UDim2.new(0.92,0,0,h)
 		t.TextColor3,t.TextSize,t.Parent=color,fontSize,gui
 	end
@@ -63,7 +63,7 @@ local function label(parent, text, offset, color, size, maxDistance)
 	gui.AlwaysOnTop, gui.MaxDistance, gui.Parent = false, maxDistance or 170, parent
 	local t = Instance.new("TextLabel")
 	t.Size, t.BackgroundTransparency, t.Text = UDim2.fromScale(1, 1), 1, text
-	t.Font, t.TextSize, t.TextColor3 = Enum.Font.GothamBold, 17, color or Color3.fromRGB(223, 235, 241)
+	t.Font, t.TextSize, t.TextColor3 = Enum.Font.BuilderSansExtraBold, 17, color or Color3.fromRGB(223, 235, 241)
 	t.TextStrokeTransparency, t.TextWrapped, t.Parent = 0.45, true, gui
 	return t
 end
@@ -2234,7 +2234,7 @@ function SignArt.moon(host, tint)
 	circle(host, 0.58, 0.44, 0.46, 0.76, tint)
 	for _, spec in ipairs({ { 0.74, 0.3, 0.16 }, { 0.84, 0.18, 0.12 }, { 0.92, 0.08, 0.08 } }) do
 		local z = Instance.new("TextLabel")
-		z.BackgroundTransparency, z.Text, z.Font, z.TextScaled = 1, "Z", Enum.Font.GothamBlack, true
+		z.BackgroundTransparency, z.Text, z.Font, z.TextScaled = 1, "Z", Enum.Font.FredokaOne, true
 		z.AnchorPoint, z.Position, z.Size, z.TextColor3 = Vector2.new(0.5, 0.5), UDim2.fromScale(spec[1], spec[2]), UDim2.fromScale(spec[3], spec[3] * 1.4), HQ.white
 		z.Parent = host
 	end
@@ -2296,7 +2296,7 @@ function Kit.sign(parent, name, cf, width, height, spec)
 	if spec.art and SignArt[spec.art] then SignArt[spec.art](artHost, accent) end
 	for i = 1, 4 do SignArt.sparkle(sky, 0.06 + i * 0.2, 0.12 + (i % 2) * 0.72, 0.05, HQ.white) end
 	local title = Instance.new("TextLabel")
-	title.Name, title.BackgroundTransparency, title.Font, title.TextScaled = "Title", 1, Enum.Font.GothamBlack, true
+	title.Name, title.BackgroundTransparency, title.Font, title.TextScaled = "Title", 1, Enum.Font.FredokaOne, true
 	title.AnchorPoint, title.Position, title.Size = Vector2.new(0.5, 0.5), UDim2.fromScale(spec.titleX or 0.5, spec.titleY or 0.42), UDim2.fromScale(spec.titleW or 0.9, spec.titleH or 0.46)
 	title.TextColor3, title.Text, title.Parent = HQ.white, spec.title[1], sky
 	title:SetAttribute("LobbyTextPT", spec.title[1]); title:SetAttribute("LobbyTextEN", spec.title[2])
@@ -2306,7 +2306,7 @@ function Kit.sign(parent, name, cf, width, height, spec)
 		local ribbon = box(sky, spec.titleX or 0.5, 0.84, 0.72, 0.2, accent, 0, 0.5)
 		stroke(ribbon, HQ.ink, 3)
 		local sub = Instance.new("TextLabel")
-		sub.Name, sub.BackgroundTransparency, sub.Font, sub.TextScaled = "Subtitle", 1, Enum.Font.GothamBlack, true
+		sub.Name, sub.BackgroundTransparency, sub.Font, sub.TextScaled = "Subtitle", 1, Enum.Font.FredokaOne, true
 		sub.AnchorPoint, sub.Position, sub.Size = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.92, 0.78)
 		sub.TextColor3, sub.Text, sub.Parent = HQ.white, spec.subtitle[1], ribbon
 		sub:SetAttribute("LobbyTextPT", spec.subtitle[1]); sub:SetAttribute("LobbyTextEN", spec.subtitle[2])
@@ -2325,7 +2325,7 @@ function Kit.floatText(parent, name, position, pt, en, color, width)
 	gui.Name, gui.Size, gui.LightInfluence, gui.MaxDistance = "Title", UDim2.fromScale(width, width * 0.2), 0, 360
 	gui.AlwaysOnTop, gui.Parent = false, anchor
 	local text = Instance.new("TextLabel")
-	text.Name, text.BackgroundTransparency, text.Size, text.Font, text.TextScaled = "Text", 1, UDim2.fromScale(1, 1), Enum.Font.GothamBlack, true
+	text.Name, text.BackgroundTransparency, text.Size, text.Font, text.TextScaled = "Text", 1, UDim2.fromScale(1, 1), Enum.Font.FredokaOne, true
 	text.TextColor3, text.Text, text.Parent = HQ.white, pt, gui
 	text:SetAttribute("LobbyTextPT", pt); text:SetAttribute("LobbyTextEN", en)
 	gradient(text, HQ.white, color)
@@ -2457,7 +2457,7 @@ local PORTAL_COLORS={manhattan={255,164,112},gamma={135,235,113},asgard={255,206
 local function stationText(parent, name, pt, en, position, size, tint, fontSize)
 	local text=Instance.new("TextLabel")
 	text.Name,text.BackgroundTransparency,text.Position,text.Size=name,1,position,size
-	text.Font,text.TextColor3,text.TextSize=Enum.Font.GothamBlack,tint,fontSize
+	text.Font,text.TextColor3,text.TextSize=Enum.Font.FredokaOne,tint,fontSize
 	text.TextWrapped,text.TextStrokeTransparency,text.Text= true,0.35,pt
 	text:SetAttribute("LobbyTextPT",pt); text:SetAttribute("LobbyTextEN",en)
 	text.Parent=parent
@@ -2561,7 +2561,7 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 		surface.MapPicture.Visible=false
 	end
 	local title=stationText(surface,"MapTitle",map.name.pt,map.name.en,UDim2.fromScale(0.02,0.24),UDim2.fromScale(0.96,0.35),Color3.new(1,1,1),64)
-	title.Font,title.TextStrokeTransparency=Enum.Font.GothamBlack,0
+	title.Font,title.TextStrokeTransparency=Enum.Font.FredokaOne,0
 	local waves=destination.modeId=="normal" and campaignWaves[map.id] or mode.waves
 	local suffix=waves==0 and "INFINITO" or tostring(waves).." ONDAS"
 	local suffixEN=waves==0 and "ENDLESS" or tostring(waves).." WAVES"
@@ -2683,11 +2683,18 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 	part(model,"BackWall",Vector3.new(28,16,1.2),at(0,8,-10.5),HQ.navy,Enum.Material.Metal).CastShadow=true
 	for _,side in ipairs({-1,1}) do
 		part(model,"HallWall",Vector3.new(1.2,16,22),at(side*13.4,8,0),HQ.steel,Enum.Material.Metal).CastShadow=true
-		part(model,"FrontWing",Vector3.new(7.5,15,1.3),at(side*9.6,7.8,10),HQ.navy,Enum.Material.Metal)
+		-- Round towers frame the door, each with a dome: the hall reads as a
+		-- castle of the summons, not a box.
+		local towerBase=at(side*9.6,0,10).Position
+		Kit.column(model,"FrontTower",towerBase,15.4,7.2,HQ.navy,Enum.Material.Metal,true).CastShadow=true
+		Kit.blob(model,"TowerDome",Vector3.new(7.8,5,7.8),CFrame.new(towerBase+Vector3.new(0,15.6,0)),tint:Lerp(HQ.navy,0.25),Enum.Material.SmoothPlastic)
 		artPart(model,"SummonTrim",Vector3.new(0.3,13,0.3),at(side*6,7.3,10.8),tint,Enum.Material.Neon)
-		artPart(model,"EnergyConduit",Vector3.new(0.26,9,0.3),at(side*12,8,10.8),secondary,Enum.Material.Neon)
+		artPart(model,"EnergyConduit",Vector3.new(0.3,9,0.3),at(side*9.6,8,13.65),secondary,Enum.Material.Neon)
 	end
 	part(model,"Roof",Vector3.new(29,1,23),at(0,16.5,0),HQ.trim,Enum.Material.SmoothPlastic).CastShadow=true
+	-- The roof's front edge is rolled, not cut square.
+	local rolled=Kit.block(model,"RoofRoll",Vector3.new(19,2.2,2.2),at(0,16.5,11.3),HQ.trim,Enum.Material.SmoothPlastic)
+	rolled.Shape=Enum.PartType.Cylinder
 	artPart(model,"RoofGlow",Vector3.new(29.3,0.3,23.3),at(0,15.9,0),tint,Enum.Material.Neon)
 	part(model,"EntranceLintel",Vector3.new(13,4,1.4),at(0,14,10),HQ.navy,Enum.Material.Metal)
 	Kit.sign(model,"SummonHeader",at(0,21.2,9.6)*CFrame.Angles(0,math.pi,0),22,6.4,{
@@ -2803,7 +2810,7 @@ local function buildBoard(lobby, x, z, boardId, titleText, openPanel)
 	surface.CanvasSize = Vector2.new(288, 180)
 	local text = Instance.new("TextLabel")
 	text.Size, text.BackgroundTransparency = UDim2.fromScale(1, 1), 1
-	text.Font, text.TextColor3, text.TextScaled = Enum.Font.GothamBold, Color3.fromRGB(230, 240, 244), true
+	text.Font, text.TextColor3, text.TextScaled = Enum.Font.BuilderSansExtraBold, Color3.fromRGB(230, 240, 244), true
 	text.Text, text.TextWrapped, text.Parent = titleText, true, surface
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= board then p.CanCollide = false end end
 	board.CanCollide = false
@@ -3178,7 +3185,7 @@ function World:BuildHeroesHub(lobby)
 		gui.Name, gui.Face, gui.LightInfluence = "GateSign", Enum.NormalId.Front, 0
 		gui.SizingMode, gui.PixelsPerStud, gui.Parent = Enum.SurfaceGuiSizingMode.PixelsPerStud, 24, lintel
 		local text = Instance.new("TextLabel")
-		text.Name, text.BackgroundTransparency, text.Size, text.Font, text.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.GothamBlack, true
+		text.Name, text.BackgroundTransparency, text.Size, text.Font, text.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.FredokaOne, true
 		text.TextColor3, text.Text, text.Parent = gate.color:Lerp(HQ.white, 0.4), gate.pt, gui
 		text:SetAttribute("LobbyTextPT", gate.pt); text:SetAttribute("LobbyTextEN", gate.en)
 		local back = gui:Clone()
@@ -3322,7 +3329,7 @@ function World:BuildHeroTower(lobby)
 	gui.Name, gui.Face, gui.LightInfluence = "Nameplate", Enum.NormalId.Front, 0
 	gui.SizingMode, gui.PixelsPerStud, gui.Parent = Enum.SurfaceGuiSizingMode.PixelsPerStud, 30, nameplate
 	local title = Instance.new("TextLabel")
-	title.Name, title.BackgroundTransparency, title.Size, title.Font, title.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.GothamBlack, true
+	title.Name, title.BackgroundTransparency, title.Size, title.Font, title.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.FredokaOne, true
 	title.TextColor3, title.Text, title.Parent = HQ.gold, "TORRE DOS HERÓIS", gui
 	title:SetAttribute("LobbyTextPT", "TORRE DOS HERÓIS"); title:SetAttribute("LobbyTextEN", "HEROES TOWER")
 	-- The Robux kiosks' title floats over the left row of stands.
@@ -3348,7 +3355,7 @@ function World:BuildHeroStatues(lobby)
 		gui.Name, gui.Face, gui.LightInfluence = "Plaque", Enum.NormalId.Back, 0
 		gui.SizingMode, gui.PixelsPerStud, gui.Parent = Enum.SurfaceGuiSizingMode.PixelsPerStud, 40, plaque
 		local text = Instance.new("TextLabel")
-		text.Name, text.BackgroundTransparency, text.Size, text.Font, text.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.GothamBlack, true
+		text.Name, text.BackgroundTransparency, text.Size, text.Font, text.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.FredokaOne, true
 		text.TextColor3, text.Text, text.Parent = HQ.navy, upper(hero.name.pt), gui
 		text:SetAttribute("LobbyTextPT", upper(hero.name.pt)); text:SetAttribute("LobbyTextEN", upper(hero.name.en))
 		local figure = Instance.new("Model")
@@ -3508,7 +3515,7 @@ function World:BuildArena(lobby, hq)
 	gui.SizingMode, gui.CanvasSize, gui.Parent = Enum.SurfaceGuiSizingMode.FixedSize, Vector2.new(1120, 400), panel
 	local title = Instance.new("TextLabel")
 	title.Name, title.BackgroundTransparency, title.Size = "Title", 1, UDim2.new(1, 0, 0, 70)
-	title.Font, title.TextSize, title.TextColor3, title.Text = Enum.Font.GothamBlack, 50, orange, "ARENA COMPETITIVA • PLACAR SOLO"
+	title.Font, title.TextSize, title.TextColor3, title.Text = Enum.Font.FredokaOne, 50, orange, "ARENA COMPETITIVA • PLACAR SOLO"
 	title.Parent = gui
 	title:SetAttribute("LobbyTextPT", "ARENA COMPETITIVA • PLACAR SOLO"); title:SetAttribute("LobbyTextEN", "COMPETITIVE ARENA • SOLO LEADERBOARD")
 	self.arenaColumns = {}
@@ -3524,11 +3531,11 @@ function World:BuildArena(lobby, hq)
 		column.Position, column.Size = UDim2.new((i - 1) / #maps, 8, 0, 76), UDim2.new(1 / #maps, -16, 1, -84)
 		column.Parent = gui
 		local head = Instance.new("TextLabel")
-		head.BackgroundTransparency, head.Size, head.Font, head.TextSize = 1, UDim2.new(1, 0, 0, 44), Enum.Font.GothamBlack, 34
+		head.BackgroundTransparency, head.Size, head.Font, head.TextSize = 1, UDim2.new(1, 0, 0, 44), Enum.Font.FredokaOne, 34
 		head.TextColor3, head.Text, head.Parent = rgb(PORTAL_COLORS[mapId] or map.color), upper(map.name.pt), column
 		local rows = Instance.new("TextLabel")
 		rows.Name, rows.BackgroundTransparency, rows.Position, rows.Size = "Rows", 1, UDim2.fromOffset(0, 50), UDim2.new(1, 0, 1, -50)
-		rows.Font, rows.TextSize, rows.TextColor3 = Enum.Font.GothamBold, 26, Color3.fromRGB(230, 240, 244)
+		rows.Font, rows.TextSize, rows.TextColor3 = Enum.Font.BuilderSansExtraBold, 26, Color3.fromRGB(230, 240, 244)
 		rows.TextXAlignment, rows.TextYAlignment, rows.Text = Enum.TextXAlignment.Left, Enum.TextYAlignment.Top, "Carregando…"
 		rows.Parent = column
 		table.insert(self.arenaColumns, { mapId = mapId, label = rows })
@@ -4071,7 +4078,7 @@ function World:BuildHeroCameos(hq)
 		local head = model and model:FindFirstChild("Head", true)
 		if head then
 			local name = label(head, upper(hero.name.pt), V(0, 2.4, 0), rgb(hero.color):Lerp(HQ.white, 0.55), 200, 70)
-			name.Font, name.TextSize = Enum.Font.GothamBlack, 20
+			name.Font, name.TextSize = Enum.Font.FredokaOne, 20
 			name:SetAttribute("LobbyTextPT", upper(hero.name.pt)); name:SetAttribute("LobbyTextEN", upper(hero.name.en))
 		end
 	end
@@ -5122,7 +5129,7 @@ function FACADES.city(folder, theme, rng, face, width, height, depth)
 		gui.LightInfluence, gui.Brightness, gui.Parent = 0, 1.6, panel
 		local text = Instance.new("TextLabel")
 		text.Name, text.BackgroundTransparency, text.Size = "Brand", 1, UDim2.fromScale(0.92, 0.8)
-		text.Position, text.Text, text.Font = UDim2.fromScale(0.04, 0.1), brand[1], Enum.Font.GothamBlack
+		text.Position, text.Text, text.Font = UDim2.fromScale(0.04, 0.1), brand[1], Enum.Font.FredokaOne
 		text.TextScaled, text.TextColor3 = true, tint:Lerp(Color3.new(1, 1, 1), 0.3)
 		text.TextStrokeColor3, text.TextStrokeTransparency, text.Parent = Color3.fromRGB(8, 8, 12), 0.2, gui
 	end
@@ -5751,7 +5758,7 @@ function World:MakeTower(id, heroId, position, ownerId)
 	model.PrimaryPart, model.Parent = base, self.Towers
 	self:ClearClutter(position, 2.9)
 	local title = label(head, hero.name.pt, Vector3.new(0, 2, 0), color:Lerp(Color3.new(1, 1, 1), 0.75), 145, 55)
-	title.Font, title.TextSize = Enum.Font.GothamBlack, 15
+	title.Font, title.TextSize = Enum.Font.FredokaOne, 15
 	title.TextStrokeColor3, title.TextStrokeTransparency = Color3.fromRGB(12, 13, 20), 0
 	return model
 end

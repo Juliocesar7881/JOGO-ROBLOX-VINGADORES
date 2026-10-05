@@ -64,7 +64,7 @@ function LobbyWorld.new(ctx)
 			billboard.Name, billboard.Size = "LockHint", UDim2.fromOffset(220, 50)
 			billboard.StudsOffset, billboard.MaxDistance = Vector3.new(0, size.Y / 2 + 2, 0), 36
 			billboard.Adornee, billboard.Parent = model.PrimaryPart, model
-			UI.label(billboard, T("BLOQUEADO: ", "LOCKED: ") .. (hint or ""), {Size = UDim2.fromScale(1, 1), TextColor3 = C.red, TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = true})
+			UI.label(billboard, T("BLOQUEADO: ", "LOCKED: ") .. (hint or ""), {Size = UDim2.fromScale(1, 1), TextColor3 = C.red, TextSize = 12, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = true})
 			return
 		end
 		if not existing then return end
