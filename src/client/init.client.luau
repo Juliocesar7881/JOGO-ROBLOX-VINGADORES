@@ -1238,7 +1238,8 @@ local function renderMatch()
 		local id = (profile().loadout or {})[index]
 		if id and Catalog.Heroes[id] then
 			local button, price, line, count = heroCard(cards, id, index, layout.cardW, layout.heroCards.h - 14, function() chooseHero(id) end)
-			refs.heroCards[id] = {button = button, price = price, line = line, count = count}
+			local border = button:FindFirstChild("Border")
+			refs.heroCards[id] = {button = button, price = price, line = line, count = count, border = border, borderColor = border and border.Color, borderThickness = border and border.Thickness}
 		else
 			-- An empty slot is a quiet tile with a plus: heroes are equipped in
 			-- the lobby, and a phone tile has no room to say so.
@@ -1349,6 +1350,11 @@ updateMatch = function()
 		local tint = rarity and UI.color(rarity.color) or colorFor(id)
 		card.button.BackgroundColor3 = tint:Lerp(C.background, selected and 0.1 or 0.45)
 		card.line.BackgroundTransparency = selected and 0 or 1
+		-- The hero in hand wears a thick white frame on the bar.
+		if card.border then
+			card.border.Color = selected and Color3.new(1, 1, 1) or card.borderColor
+			card.border.Thickness = selected and 4.5 or card.borderThickness
+		end
 		card.price.TextColor3 = (match.cash or 0) >= Catalog.Heroes[id].cost and C.gold or C.red
 		local placed = 0
 		for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId and tower.heroId == id then placed += 1 end end
@@ -1891,6 +1897,7 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		applyState = applyState,
 		render = function() render() end,
 		selectTower = selectTower,
+		chooseHero = chooseHero,
 		openBaseUpgrade = openBaseUpgrade,
 		openContext = function(kind, data) openContext(kind, data) end,
 		hold = function(fn) reviewHold = fn end,
