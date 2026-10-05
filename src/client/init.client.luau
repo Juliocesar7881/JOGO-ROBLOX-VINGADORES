@@ -1210,7 +1210,24 @@ local function renderMatch()
 		local button = UI.secondary(abilities, "", function() chooseSkill(id) end, {Name="LeaderPower",LayoutOrder = index, Size = UDim2.fromOffset(layout.skillW, layout.buttonH), TextSize = compact and 12 or 14, TextTruncate = Enum.TextTruncate.AtEnd})
 		UI.stroke(button, tint, abilityInfo.ultimate and 3 or 1.5)
 		local meter = UI.bar(button, tint, UDim2.new(0, 7, 1, -5), UDim2.new(1, -14, 0, 2))
-		refs.abilityButtons[id] = {button = button, index = index, meter = meter, tint = tint,
+		-- The leader's face on the left (a dark shade climbs down it while the
+		-- power recharges), the power's name and state beside it. The button
+		-- keeps the words in its Text; a caption draws them.
+		local face = layout.buttonH - 12
+		local host = UI.frame(button, {Name = "LeaderFace", Position = UDim2.fromOffset(6, 5), Size = UDim2.fromOffset(face, face), BackgroundColor3 = tint:Lerp(C.ink, 0.35), ClipsDescendants = true, Active = false})
+		UI.corner(host, 10)
+		UI.stroke(host, C.ink, 2)
+		heroPortrait(host, abilityInfo.heroId, {Size = UDim2.fromScale(1, 1)})
+		local shade = UI.frame(host, {Name = "CooldownShade", Size = UDim2.fromScale(1, 0), BackgroundColor3 = C.ink, BackgroundTransparency = 0.3, Active = false, ZIndex = 5})
+		local caption = UI.label(button, "", {Name = "PowerCaption", Position = UDim2.fromOffset(face + 12, 2), Size = UDim2.new(1, -(face + 16), 1, -8), Font = UI.Fonts.display,
+			TextScaled = true, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left})
+		UI.create("UITextSizeConstraint", {MaxTextSize = compact and 14 or 17, MinTextSize = 8}, caption)
+		button.TextTransparency = 1
+		local ghost = button:FindFirstChild("TextOutline")
+		if ghost then ghost:Destroy() end
+		button:GetPropertyChangedSignal("Text"):Connect(function() caption.Text = button.Text end)
+		button:GetPropertyChangedSignal("TextColor3"):Connect(function() caption.TextColor3 = button.TextColor3 end)
+		refs.abilityButtons[id] = {button = button, index = index, meter = meter, tint = tint, shade = shade, caption = caption,
 			name = (def and L(def.name) or T("Poder do líder", "Leader power")), ultimate = abilityInfo.ultimate}
 	end
 	if profile().passes and profile().passes.vip then
@@ -1343,7 +1360,10 @@ updateMatch = function()
 		-- Ready: white outlined letters on the hero's colour, readable at a glance.
 		record.button.TextColor3 = remaining > 0 and C.muted or C.text
 		record.button.BackgroundColor3=remaining>0 and C.card or record.tint:Lerp(C.panel,0.45)
-		record.meter.Size = UDim2.fromScale(1 - math.clamp(remaining / math.max(match.ability and match.ability.cooldownTotal or 1, 1), 0, 1), 1)
+		local waiting = math.clamp(remaining / math.max(match.ability and match.ability.cooldownTotal or 1, 1), 0, 1)
+		record.meter.Size = UDim2.fromScale(1 - waiting, 1)
+		if record.shade then record.shade.Size = UDim2.fromScale(1, waiting) end
+		if record.caption then record.caption.Text, record.caption.TextColor3 = record.button.Text, record.button.TextColor3 end
 	end
 	for id, card in pairs(refs.heroCards or {}) do
 		local selected = selectedHero == id
