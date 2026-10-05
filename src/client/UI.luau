@@ -152,6 +152,34 @@ local function isDark(color)
 	return typeof(color) == "Color3" and (color.R + color.G + color.B) < 0.75
 end
 
+-- The reference games' button texture: two rows of small raised squares
+-- (studs) across the face, faint, behind the words. Drawn from flat frames,
+-- clipped to the button, so it needs no image asset.
+local STUD_COLUMNS = 22
+function UI.studs(host, height, width, z)
+	local rows = height >= 36 and 2 or 1
+	local size = math.clamp(math.floor(height * 0.2), 5, 11)
+	local columns = width and math.clamp(math.floor(width / (size * 2.1)), 2, 24) or STUD_COLUMNS
+	local layer = UI.frame(host, {Name = "Studs", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true, Active = false, ZIndex = z})
+	UI.corner(layer, 12)
+	for row = 1, rows do
+		local y = rows == 1 and 0.5 or (row == 1 and 0.3 or 0.72)
+		for column = 1, columns do
+			local stud = UI.frame(layer, {Name = "Stud", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new((column - 0.5) / columns, 0, y, 0),
+				Size = UDim2.fromOffset(size, size), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.87, Active = false, ZIndex = z})
+			UI.corner(stud, 3)
+		end
+	end
+	return layer
+end
+
+-- The words of a textured button live in a child label above its studs; the
+-- button keeps its Text (what tests, readers and other code look for) and
+-- every later change to it is copied across.
+local CAPTION_PROPERTIES = { "Text", "TextColor3", "TextSize", "Font", "TextXAlignment", "TextYAlignment", "TextScaled", "TextWrapped", "RichText", "TextTruncate", "LineHeight" }
+local CAPTION_MIRROR = {}
+for _, name in ipairs(CAPTION_PROPERTIES) do CAPTION_MIRROR[name] = true end
+
 -- Candy buttons: saturated fill, thick dark border, a glossy highlight on the
 -- top half and white outlined text. Invisible hit areas stay invisible.
 function UI.button(parent, text, callback, properties)
@@ -180,7 +208,26 @@ function UI.button(parent, text, callback, properties)
 		local bevel = UI.frame(button, {Name = "Bevel", Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 1, -4), BackgroundTransparency = 1, Active = false, ZIndex = button.ZIndex})
 		UI.corner(bevel, 12)
 		UI.create("UIStroke", {Name = "BevelLine", Color = Color3.new(1, 1, 1), Thickness = 1.5, Transparency = 0.62, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, bevel)
-		UI.outline(button, (defaults.TextSize or 15) >= 18 and 3 or 2)
+		local size = defaults.Size
+		local function offsetOf(axis)
+			local ok, value = pcall(function() return size[axis].Scale == 0 and size[axis].Offset or nil end)
+			return ok and value or nil
+		end
+		local height, width = offsetOf("Y") or 44, offsetOf("X")
+		if text ~= "" and height >= 30 then
+			-- Studs behind the words, the words in a caption on top.
+			UI.studs(button, height, width, button.ZIndex)
+			local caption = UI.create("TextLabel", {Name = "Caption", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Active = false, ZIndex = button.ZIndex}, button)
+			for _, name in ipairs(CAPTION_PROPERTIES) do pcall(function() caption[name] = button[name] end) end
+			UI.create("UIPadding", {PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6)}, caption)
+			UI.outline(caption, (defaults.TextSize or 15) >= 18 and 3 or 2)
+			button.TextTransparency = 1
+			button.Changed:Connect(function(property)
+				if CAPTION_MIRROR[property] then pcall(function() caption[property] = button[property] end) end
+			end)
+		else
+			UI.outline(button, (defaults.TextSize or 15) >= 18 and 3 or 2)
+		end
 	end
 	if callback then button.Activated:Connect(callback) end
 	-- Every press clicks (the controller wires UI.onPress to its audio).
@@ -1298,6 +1345,8 @@ function UI.tab(parent, text, color, icon, selected, callback, properties)
 	local button = UI.button(parent, "", callback, {BackgroundColor3 = selected and color or color:Lerp(UI.Skin.body, 0.45), TextSize = 17})
 	for key, value in pairs(properties or {}) do button[key] = value end
 	UI.stroke(button, selected and Color3.new(1, 1, 1) or UI.Colors.ink, selected and 3 or 2.5)
+	local tabSize = button.Size
+	UI.studs(button, tabSize.Y.Scale == 0 and tabSize.Y.Offset or 44, tabSize.X.Scale == 0 and tabSize.X.Offset or nil, button.ZIndex)
 	local iconSize = math.min(30, math.max(18, (button.Size.Y.Offset > 0 and button.Size.Y.Offset or 44) - 16))
 	local hasIcon = icon ~= nil
 	if hasIcon then
