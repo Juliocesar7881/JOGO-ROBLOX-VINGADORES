@@ -365,24 +365,37 @@ function MatchHud.new(ctx)
 		local nextStats=Rules.BaseStats(base.id,math.min(5,base.level+1))
 		local screen=screenSize()
 		local shade=UI.frame(overlays,{Name="BaseUpgrade",Size=UDim2.fromScale(1,1),BackgroundColor3=C.background,BackgroundTransparency=0.25,Active=true,ZIndex=45})
-		local panel=UI.roundFrame(shade,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(math.min(420,screen.X-24),math.min(486,screen.Y-24)),BackgroundColor3=C.background,ZIndex=46},C.green)
-		UI.label(panel,T("EVOLUIR BASE","UPGRADE BASE"),{Position=UDim2.fromOffset(14,12),Size=UDim2.new(1,-72,0,30),TextColor3=C.green,TextSize=19,Font=Enum.Font.GothamBlack,ZIndex=47})
+		local panel=UI.roundFrame(shade,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(math.min(520,screen.X-24),math.min(470,screen.Y-24)),BackgroundColor3=C.background,ZIndex=46},C.green)
+		UI.windowSkin(panel,C.green)
+		UI.label(panel,T("Evoluir base","Upgrade base"),{Position=UDim2.fromOffset(16,8),Size=UDim2.new(1,-76,0,36),TextColor3=C.green,TextSize=27,Font=UI.Fonts.display,ZIndex=47})
 		UI.closeButton(panel,function() shade:Destroy() end,{Position=UDim2.new(1,-50,0,6),Size=UDim2.fromOffset(44,44),TextSize=25,ZIndex=47})
-		local body=UI.scroll(panel,{Position=UDim2.fromOffset(14,58),Size=UDim2.new(1,-28,1,-70),ZIndex=47}); UI.list(body,10)
-		local art=UI.row(body,106); art.ZIndex=47
-		UI.basePortrait(art,def,{Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(104,104),ZIndex=48})
-		UI.label(art,L(def.name).."\n"..T("MELHORIA ","UPGRADE ")..base.level.." / 5",{Position=UDim2.fromOffset(114,4),Size=UDim2.new(1,-124,1,-8),TextSize=18,Font=Enum.Font.GothamBlack,TextWrapped=true,ZIndex=48})
-		local function line(text,color,height) UI.label(body,text,{Size=UDim2.new(1,-8,0,height or 28),TextSize=13,TextWrapped=true,TextColor3=color or C.text,ZIndex=48}) end
-		line(L(def.description),C.muted,46)
-		line(T("RENDA POR ONDA: ","INCOME PER WAVE: ")..stats.income.." → "..nextStats.income..T(" Ouro"," Gold"),C.gold)
-		line(T("VIDA EXTRA DO NÚCLEO: ","EXTRA CORE HP: ")..math.floor(stats.hp/(state.match.partySize or 1)).." → "..math.floor(nextStats.hp/(state.match.partySize or 1)),C.green)
-		if stats.damage>0 then line(T("DANO: ","DAMAGE: ")..stats.damage.." → "..nextStats.damage..T(" • ALCANCE: "," • RANGE: ")..stats.range.." → "..nextStats.range,C.coral) end
-		if stats.wall>0 then line(T("BARRICADA: ","BARRICADE: ")..(base.wall or 0).."/"..stats.wall.." → "..nextStats.wall..T(" HP • regenera após 5 s"," HP • regenerates after 5 s"),C.blue,40) end
-		if stats.soldier>0 then line(T("SOLDADO: ","SOLDIER: ")..stats.soldier.." → "..nextStats.soldier..T(" HP • a cada "," HP • every ")..stats.interval.." s",C.violet,40) end
-		local button=UI.button(body,base.level>=5 and T("NÍVEL MÁXIMO","MAXIMUM LEVEL") or T("EVOLUIR • ","UPGRADE • ")..stats.upgradeCost,function()
+		local body=UI.scroll(panel,{Position=UDim2.fromOffset(16,54),Size=UDim2.new(1,-32,1,-66),ZIndex=47,ScrollBarThickness=8}); UI.list(body,10)
+		local art=UI.row(body,112); art.ZIndex=47
+		local stage=UI.frame(art,{Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(112,112),BackgroundColor3=C.green:Lerp(C.ink,0.55),ZIndex=47})
+		UI.corner(stage,14)
+		UI.basePortrait(stage,def,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(104,104),ZIndex=48})
+		UI.label(art,L(def.name),{Position=UDim2.fromOffset(124,4),Size=UDim2.new(1,-130,0,34),TextSize=25,Font=UI.Fonts.display,TextWrapped=true,ZIndex=48})
+		-- The level as five pips, like a tower's.
+		for pip=1,5 do
+			local lit=pip<=base.level
+			local mark=UI.frame(art,{Name="BasePip"..pip,Position=UDim2.fromOffset(124+(pip-1)*30,46),Size=UDim2.fromOffset(26,12),BackgroundColor3=lit and C.gold or UI.Skin.slotLine,ZIndex=48})
+			UI.corner(mark,6)
+			UI.stroke(mark,C.ink,1.5)
+		end
+		UI.label(art,T("Melhoria ","Upgrade ")..base.level.." / 5",{Position=UDim2.fromOffset(124,64),Size=UDim2.new(1,-130,0,26),TextSize=19,Font=UI.Fonts.display,TextColor3=C.muted,ZIndex=48})
+		local function line(text,color,height) UI.label(body,text,{Size=UDim2.new(1,-8,0,height or 30),TextSize=17,Font=UI.Fonts.display,TextWrapped=true,TextColor3=color or C.text,ZIndex=48,RichText=true}) end
+		UI.label(body,L(def.description),{Size=UDim2.new(1,-8,0,48),TextSize=16,TextWrapped=true,TextColor3=C.muted,ZIndex=48})
+		-- Each line reads now -> after the upgrade, the new value in green.
+		local function arrow(a,b) return tostring(a)..'  <font color="#58E04F">→ '..tostring(b)..'</font>' end
+		line(T("Renda por onda: ","Income per wave: ")..arrow(stats.income,nextStats.income)..T(" Ouro"," Gold"),C.gold)
+		line(T("Vida extra do núcleo: ","Extra core HP: ")..arrow(math.floor(stats.hp/(state.match.partySize or 1)),math.floor(nextStats.hp/(state.match.partySize or 1))),C.cream)
+		if stats.damage>0 then line(T("Dano: ","Damage: ")..arrow(stats.damage,nextStats.damage)..T("  •  Alcance: ","  •  Range: ")..arrow(stats.range,nextStats.range),C.coral,44) end
+		if stats.wall>0 then line(T("Barricada: ","Barricade: ")..(base.wall or 0).."/"..arrow(stats.wall,nextStats.wall)..T(" vida • volta após 5 s"," HP • regrows after 5 s"),C.blue,44) end
+		if stats.soldier>0 then line(T("Soldado: ","Soldier: ")..arrow(stats.soldier,nextStats.soldier)..T(" vida • a cada "," HP • every ")..stats.interval.." s",C.violet,44) end
+		local button=UI.button(body,base.level>=5 and T("Nível máximo","Maximum level") or T("Evoluir • ","Upgrade • ")..stats.upgradeCost,function()
 			-- The window stays: it redraws with the new level and the next price.
 			act("UpgradeBase",{expectedLevel=base.level},function() audio:Cue("upgrade") end)
-		end,{Name="ConfirmBaseUpgrade",Size=UDim2.new(1,-8,0,48),TextSize=14,BackgroundColor3=C.green,ZIndex=48})
+		end,{Name="ConfirmBaseUpgrade",Size=UDim2.new(1,-8,0,56),TextSize=22,BackgroundColor3=C.green,ZIndex=48})
 		if base.level>=5 or (state.match.cash or 0)<stats.upgradeCost then UI.disabled(button) end
 		ctx.refs().refreshBaseModal=function()
 			if not shade.Parent then ctx.refs().refreshBaseModal=nil; return end
@@ -391,12 +404,12 @@ function MatchHud.new(ctx)
 			if current.base.level~=base.level then ctx.refs().refreshBaseModal=nil; openBaseUpgrade(); return end
 			local missing=math.max(0,stats.upgradeCost-(current.cash or 0))
 			if base.level>=5 then return end
-			button.Text=missing>0 and T("FALTAM ","NEED ")..number(missing) or T("EVOLUIR • ","UPGRADE • ")..stats.upgradeCost
+			button.Text=missing>0 and T("Faltam ","Need ")..number(missing)..T(" Ouro"," Gold") or T("Evoluir • ","Upgrade • ")..stats.upgradeCost
 			if missing>0 then UI.disabled(button)
 			else button.Active=true; button.AutoButtonColor=true; button.BackgroundColor3=C.green; button.TextColor3=C.background end
 		end
 		ctx.refs().refreshBaseModal()
-		line(T("Usa o Ouro desta partida. O Ouro do lobby nunca é gasto aqui. Renda exige contribuição na onda.","Uses this match's Gold. Lobby Gold is never spent here. Income requires contribution to the wave."),C.muted,48)
+		UI.label(body,T("Usa o Ouro desta partida. O Ouro do lobby nunca é gasto aqui. Renda exige contribuição na onda.","Uses this match's Gold. Lobby Gold is never spent here. Income requires contribution to the wave."),{Size=UDim2.new(1,-8,0,48),TextSize=15,TextWrapped=true,TextColor3=C.muted,ZIndex=48})
 	end
 
 	local function renderResults()
