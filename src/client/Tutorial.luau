@@ -308,10 +308,11 @@ function Tutorial:_buildCard(step)
 		})
 		UI.corner(dot, 6)
 	end
-	UI.label(card, step.text, {
-		Name = "TutorialText", Position = UDim2.fromOffset(60, 24), Size = UDim2.new(1, -72, 0, 30), TextSize = 20, Font = UI.Fonts.display,
+	-- The goal shrinks to fit a narrow card instead of losing its last words.
+	UI.fit(UI.label(card, step.text, {
+		Name = "TutorialText", Position = UDim2.fromOffset(60, 24), Size = UDim2.new(1, -72, 0, step.shortcut and 30 or 34), TextSize = 20, Font = UI.Fonts.display,
 		TextColor3 = C.cream, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, ZIndex = 50,
-	})
+	}), 12)
 	if step.shortcut then
 		UI.button(card, T("Pular a caminhada ▶", "Skip the walk ▶"), function() ctx.act("StartTraining", {}) end, {
 			Name = "TutorialShortcut", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -6), Size = UDim2.fromOffset(200, 28), TextSize = 15, BackgroundColor3 = C.blue, ZIndex = 50,

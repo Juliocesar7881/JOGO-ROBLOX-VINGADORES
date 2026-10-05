@@ -276,7 +276,7 @@ function MatchHud.new(ctx)
 		UI.windowSkin(panel, C.gold)
 		local short = P.class.short
 		UI.label(panel, T("Escolha sua carta", "Choose your card"), {Position = UDim2.fromOffset(20, short and 6 or 12), Size = UDim2.new(1, -40, 0, short and 28 or 38), TextColor3 = C.gold, Font = UI.Fonts.display, TextSize = short and 24 or (P.class.compact and 28 or 36), ZIndex = 53})
-		UI.label(panel, T("O jogo segue em velocidade normal enquanto você escolhe.", "The game runs at normal speed while you choose."), {Position = UDim2.fromOffset(20, short and 34 or 52), Size = UDim2.new(1, -40, 0, 22), TextColor3 = C.muted, TextSize = short and 12 or 15, ZIndex = 53})
+		UI.fit(UI.label(panel, T("O jogo segue em velocidade normal enquanto você escolhe.", "The game runs at normal speed while you choose."), {Name = "CardsNote", Position = UDim2.fromOffset(20, short and 34 or 52), Size = UDim2.new(1, -40, 0, 22), TextColor3 = C.muted, TextSize = short and 12 or 15, TextWrapped = true, ZIndex = 53}), 9)
 		local owned = (ctx.state().match and ctx.state().match.cards) or {}
 		for index, id in ipairs(offers) do
 			local def = Catalog.Cards[id]
@@ -375,7 +375,7 @@ function MatchHud.new(ctx)
 		local stage=UI.frame(art,{Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(112,112),BackgroundColor3=C.green:Lerp(C.ink,0.55),ZIndex=47})
 		UI.corner(stage,14)
 		UI.basePortrait(stage,def,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(104,104),ZIndex=48})
-		UI.label(art,L(def.name),{Position=UDim2.fromOffset(124,4),Size=UDim2.new(1,-130,0,34),TextSize=25,Font=UI.Fonts.display,TextWrapped=true,ZIndex=48})
+		UI.fit(UI.label(art,L(def.name),{Name="BaseUpgradeName",Position=UDim2.fromOffset(124,4),Size=UDim2.new(1,-130,0,34),TextSize=25,Font=UI.Fonts.display,TextWrapped=true,ZIndex=48}),13)
 		-- The level as five pips, like a tower's.
 		for pip=1,5 do
 			local lit=pip<=base.level
@@ -482,13 +482,13 @@ function MatchHud.new(ctx)
 			UI.stroke(card,C.gold,3)
 			UI.label(card,"★ MVP",{Position=UDim2.fromOffset(12,4),Size=UDim2.new(0,100,1,-8),TextSize=short and 22 or 28,Font=UI.Fonts.display,TextColor3=C.gold})
 			UI.label(card,mine and T("Você!","You!") or tostring(mvp.name),{Name="MvpName",Position=UDim2.fromOffset(112,4),Size=UDim2.new(1,-122,0.5,-2),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-			UI.label(card,T("Dano ","Dmg ")..number(mvp.damage).."   "..T("Abates ","Kills ")..number(mvp.kills).."   "..T("Ouro ","Gold ")..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,112,0.5,0),Size=UDim2.new(1,-122,0.5,-4),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextColor3=C.cream})
+			UI.fit(UI.label(card,T("Dano ","Dmg ")..number(mvp.damage).."   "..T("Abates ","Kills ")..number(mvp.kills).."   "..T("Ouro ","Gold ")..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,112,0.5,0),Size=UDim2.new(1,-122,0.5,-4),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextColor3=C.cream}),9)
 			for index=2,#team do
 				local entry=team[index]
 				local row=UI.row(content,short and 28 or 34)
 				row.Name="ResultTeam_"..index
 				UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Size=UDim2.new(0.5,0,1,0),TextSize=18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-				UI.label(row,T("Dano ","Dmg ")..number(entry.damage).."   "..T("Abates ","Kills ")..number(entry.kills),{Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,0,1,0),TextSize=17,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right})
+				UI.fit(UI.label(row,T("Dano ","Dmg ")..number(entry.damage).."   "..T("Abates ","Kills ")..number(entry.kills),{Name="TeamStats",Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,0,1,0),TextSize=17,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right}),9)
 			end
 		end
 		if result.modeId=="ranked" then

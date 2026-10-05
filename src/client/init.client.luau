@@ -130,8 +130,11 @@ local function applyScreenScale()
 	local size = physicalSize()
 	local scale = kit.reviewSize and 1 or math.clamp(math.min(size.X / DESIGN_W, size.Y / DESIGN_H), 1, 4)
 	scale = math.floor(scale * 100 + 0.5) / 100
+	local changed = scale ~= UI.screenScale
 	UI.screenScale = scale
 	mainScale.Scale, overlayScale.Scale = scale, scale
+	-- Shrink-to-fit text is limited in real pixels: follow the new scale.
+	if changed then UI.rescaleTextLimits(main); UI.rescaleTextLimits(overlays) end
 	local dimension = kit.reviewSize and UDim2.fromOffset(kit.reviewSize.X, kit.reviewSize.Y) or UDim2.fromScale(1 / scale, 1 / scale)
 	main.Size, overlays.Size = dimension, dimension
 	return scale
@@ -214,7 +217,7 @@ showToast = function(message, bad)
 	end
 	UI.icon(toast, bad and "lock" or "star", bad and C.red or C.gold, {Position = UDim2.new(0, 14, 0.5, -14), Size = UDim2.fromOffset(28, 28), ZIndex = 61})
 	local words = UI.label(toast, L(shown), {Name = "ToastText", Position = UDim2.fromOffset(52, 4), Size = UDim2.new(1, -66, 1, -8), TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextScaled = true, Font = UI.Fonts.display, ZIndex = 61})
-	UI.create("UITextSizeConstraint", {MaxTextSize = 19, MinTextSize = 11}, words)
+	UI.textLimit(words, 19, 11)
 	toast.Active=false
 	welcomePanel(toast)
 	task.delay(4.5, function() if toast.Parent then toast:Destroy() end end)
@@ -1224,7 +1227,7 @@ local function renderMatch()
 		local shade = UI.frame(host, {Name = "CooldownShade", Size = UDim2.fromScale(1, 0), BackgroundColor3 = C.ink, BackgroundTransparency = 0.3, Active = false, ZIndex = 5})
 		local caption = UI.label(button, "", {Name = "PowerCaption", Position = UDim2.fromOffset(face + 12, 2), Size = UDim2.new(1, -(face + 16), 1, -8), Font = UI.Fonts.display,
 			TextScaled = true, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left})
-		UI.create("UITextSizeConstraint", {MaxTextSize = compact and 14 or 17, MinTextSize = 8}, caption)
+		UI.textLimit(caption, compact and 14 or 17, 8)
 		button.TextTransparency = 1
 		local ghost = button:FindFirstChild("TextOutline")
 		if ghost then ghost:Destroy() end
@@ -1242,14 +1245,14 @@ local function renderMatch()
 	-- Narrow bands (a phone) get smaller letters so every label still fits.
 	refs.controlDelta = layout.controlW >= 52 and 0 or (layout.controlW >= 44 and -2 or -4)
 	local cd = refs.controlDelta
-	refs.speedToggle = UI.secondary(abilities, "2x", function() chooseSpeed(2) end, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 19 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
-	refs.speed3Toggle = UI.secondary(abilities, "3x", function() chooseSpeed(3) end, {Name = "Speed3Toggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 19 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
-	refs.sheetButton = UI.secondary(abilities, T("Ficha", "Sheet"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 7, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 14 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.speedToggle = UI.secondary(abilities, "2x", function() chooseSpeed(2) end, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 22 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.speed3Toggle = UI.secondary(abilities, "3x", function() chooseSpeed(3) end, {Name = "Speed3Toggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 22 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.sheetButton = UI.secondary(abilities, T("Ficha", "Sheet"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 7, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 17 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
 	-- The cards have a button of their own, in the cards mode only.
 	if state.match and state.match.cardMode then
-		refs.cardsButton = UI.secondary(abilities, T("Cartas", "Cards"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 14 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = C.violet})
+		refs.cardsButton = UI.secondary(abilities, T("Cartas", "Cards"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 17 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = C.violet})
 	end
-	refs.autoSkipToggle = UI.secondary(abilities, "AUTO\nOFF", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 13 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.autoSkipToggle = UI.secondary(abilities, "AUTO\nOFF", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 16 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	UI.windowSkin(bottom, C.gold)
 	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
@@ -1299,21 +1302,21 @@ updateMatch = function()
 		if on2 and party > 1 and speed < 2 then label = "2x\n" .. tostring(match.speedVotes or 1) .. "/" .. tostring(match.speedPlayers or party) end
 		refs.speedToggle.Text = label
 		refs.speedToggle.BackgroundColor3 = on2 and (speed >= 2 and C.gold or C.gold:Lerp(C.card, 0.55)) or UI.Skin.bodyTop
-		refs.speedToggle.TextColor3 = on2 and speed >= 2 and C.background or C.text
+		refs.speedToggle.TextColor3 = C.text
 		-- 3x: lit when running, violet with a lock until the pass is owned.
 		local owns3 = profile().passes and profile().passes.speed3
 		if refs.speed3Toggle then
 			local on3 = speed >= 3
 			refs.speed3Toggle.Text = owns3 and "3x" or "3x\n" .. T("Passe", "Pass")
-			refs.speed3Toggle.TextSize = (owns3 and 15 or 11) + (refs.controlDelta or 0)
+			refs.speed3Toggle.TextSize = (owns3 and 22 or 15) + (refs.controlDelta or 0)
 			refs.speed3Toggle.BackgroundColor3 = on3 and C.gold or (owns3 and UI.Skin.bodyTop or C.violet:Lerp(C.card, 0.45))
-			refs.speed3Toggle.TextColor3 = on3 and C.background or C.text
+			refs.speed3Toggle.TextColor3 = C.text
 		end
 	end
 	if refs.autoSkipToggle then
 		refs.autoSkipToggle.Text = "AUTO\n" .. (match.autoSkip and "ON" or "OFF")
 		refs.autoSkipToggle.BackgroundColor3 = match.autoSkip and C.green or UI.Skin.bodyTop
-		refs.autoSkipToggle.TextColor3 = match.autoSkip and C.background or C.text
+		refs.autoSkipToggle.TextColor3 = C.text
 	end
 	refs.skip.Visible = state.phase == "Preparing"
 	if refs.endVote then

@@ -146,7 +146,9 @@ function Panels.new(ctx)
 		UI.pill(info,L(rarity.name),tint:Lerp(C.ink,0.2),{TextSize=16,Size=UDim2.fromOffset(0,28)})
 		UI.label(info,((owned and owned.shiny) and "◆ " or "")..L(def.name),{Name="HeroTitle",Position=UDim2.fromOffset(0,32),Size=UDim2.new(1,0,0,short and 36 or 44),TextSize=short and 26 or 34,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
 		if not short then UI.label(info,L(def.description),{Position=UDim2.fromOffset(0,80),Size=UDim2.new(1,0,0,62),TextSize=17,TextWrapped=true,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top}) end
-		UI.chip(info,number(def.cost)..T(" Ouro na partida"," Gold in battle"),C.ink,{Position=UDim2.fromOffset(0,short and 72 or 150),Size=UDim2.fromOffset(230,30),TextSize=17,TextColor3=C.gold})
+		local price=UI.chip(info,number(def.cost)..T(" Ouro na partida"," Gold in battle"),C.ink,{Name="HeroPrice",Position=UDim2.fromOffset(0,short and 72 or 150),Size=UDim2.new(1,0,0,30),TextSize=17,TextColor3=C.gold})
+		UI.create("UISizeConstraint",{MaxSize=Vector2.new(230,30)},price)
+		UI.fit(price,11)
 		if owned then
 			local stars=math.clamp(owned.stars or 0,0,Catalog.Stars.max)
 			local rowY=short and 106 or 190
@@ -476,7 +478,7 @@ function Panels.new(ctx)
 			UI.outline(odds,2.5)
 			if not mine then UI.chip(card,T("Novo","New"),C.green,{Name="ChestNew",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,24),Size=UDim2.fromOffset(44,18),TextSize=12}) end
 			local name=UI.label(card,L(catalog[outcome.id].name),{Position=UDim2.fromOffset(4,92),Size=UDim2.new(1,-8,0,28),TextScaled=true,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
-			UI.create("UITextSizeConstraint",{MaxTextSize=15,MinTextSize=9},name)
+			UI.textLimit(name,15,9)
 			UI.outline(name,2)
 			if not isBase then UI.hover(card,function(box) if kit.heroTooltip then kit.heroTooltip(box,outcome.id) end end,320) end
 		end
@@ -1038,7 +1040,7 @@ function Panels.new(ctx)
 				Name="HeroRarity_"..id,Position=UDim2.new((index-1)/#options,0,0,0),Size=UDim2.new(1/#options,-6,0,38),TextSize=(width<520 or wide) and 13 or 16,
 				BackgroundColor3=active and tint or tint:Lerp(UI.Skin.body,0.62),TextWrapped=false,TextScaled=width<520})
 			local words=chip:FindFirstChild("Caption")
-			if words and width<520 then UI.create("UITextSizeConstraint",{MaxTextSize=13,MinTextSize=7},words) end
+			if words and width<520 then UI.textLimit(words,13,7) end
 			if active then UI.stroke(chip,Color3.new(1,1,1),3) end
 		end
 		local entries=UI.collectionEntries(Catalog,p,{query="",rarity=kit.inventoryView.rarity,sort="collection",ownership=inventoryFilter},ctx.language())
@@ -1141,16 +1143,19 @@ function Panels.new(ctx)
 		}
 		-- One row per option, like the big games' settings: the name on the left,
 		-- a switch on the right (green when on).
+		local screen = screenSize()
+		local narrow = UI.contextLayout(screen.X, screen.Y, {wide = true}).w - 40 < 420
 		for _, option in ipairs(options) do
 			local card = UI.roundFrame(body, {Name = "Setting_" .. option.key, Size = UDim2.new(1, -6, 0, 66), BackgroundColor3 = UI.Skin.slot}, UI.Skin.slotLine)
-			UI.label(card, option.title, {Position = UDim2.fromOffset(16, 0), Size = UDim2.new(1, -250, 1, 0), TextSize = 21, Font = UI.Fonts.display, TextWrapped = true})
+			local name = UI.label(card, option.title, {Position = UDim2.fromOffset(16, 4), Size = narrow and UDim2.new(0.56, -24, 1, -8) or UDim2.new(1, -250, 1, -8), TextSize = 21, Font = UI.Fonts.display, TextWrapped = true})
+			UI.fit(name, 12)
 			local on = option.value == T("Ligado", "On")
 			local off = option.value == T("Desligado", "Off")
 			UI.button(card, option.value, function()
 				local update = {}
 				update[option.key] = option.next
 				act("Settings", update)
-			end, {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), Size = UDim2.fromOffset(220, 46), TextSize = 19,
+			end, {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), Size = narrow and UDim2.new(0.44, -6, 0, 46) or UDim2.fromOffset(220, 46), TextSize = 19,
 				BackgroundColor3 = on and C.green or (off and C.card or C.blue)})
 		end
 		UI.section(body, T("Controles", "Controls"))
@@ -1330,8 +1335,8 @@ function Panels.new(ctx)
 		hexagon(root, "RootRim", R * 1.06 - 3, Color3.fromRGB(150, 98, 20), 4)
 		hexagon(root, "RootFace", R * 0.9, C.gold, 4)
 		local caption = UI.label(root, T("Nível", "Level"), {Name = "RootCaption", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.33), Size = UDim2.fromOffset(R * 1.4, R * 0.36), Font = UI.Fonts.display, TextScaled = true, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 6})
-		UI.create("UITextSizeConstraint", {MaxTextSize = math.max(10, math.floor(R * 0.3)), MinTextSize = 7}, caption)
-		UI.label(root, tostring(p.level or 1), {Name = "RootLevel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.6), Size = UDim2.fromOffset(R * 1.4, R * 0.7), Font = UI.Fonts.display, TextSize = math.max(18, math.floor(R * 0.62)), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 6})
+		UI.textLimit(caption, math.max(10, math.floor(R * 0.3)), 7)
+		UI.fit(UI.label(root, tostring(p.level or 1), {Name = "RootLevel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.6), Size = UDim2.fromOffset(R * 1.4, R * 0.7), Font = UI.Fonts.display, TextSize = math.max(18, math.floor(R * 0.62)), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 6}), 8)
 		if animate then popIn(root, 0, 0) end
 
 		-- The branch names, once each, at the outer end of their branch.
@@ -1394,7 +1399,7 @@ function Panels.new(ctx)
 				end
 				local word = UI.label(node, def.short and L(def.short) or L(def.name), {Name = "TalentWord", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.645), Size = UDim2.fromOffset(R * 1.36, math.max(11, R * 0.27)),
 					TextScaled = true, Font = UI.Fonts.display, TextColor3 = open and Color3.new(1, 1, 1) or Color3.fromRGB(130, 134, 150), TextXAlignment = Enum.TextXAlignment.Center, Visible = not small, ZIndex = 7})
-				UI.create("UITextSizeConstraint", {MaxTextSize = math.max(11, math.floor(R * 0.27)), MinTextSize = 8}, word)
+				UI.textLimit(word, math.max(11, math.floor(R * 0.27)), 8)
 				local badge = UI.chip(node, maxed and "MAX" or (rank .. "/" .. def.maxRank), maxed and C.gold or (rank > 0 and tint:Lerp(C.ink, 0.2) or Color3.fromRGB(48, 52, 72)), {Name = "TalentRank_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, small and 0.2 or 0.215),
 					Size = UDim2.fromOffset(math.max(small and 30 or 40, R * 0.82), math.max(small and 14 or 17, R * 0.27)), TextSize = math.max(small and 9 or 11, math.floor(R * 0.22)), ZIndex = 9})
 				if buyable then
@@ -1558,19 +1563,21 @@ function Panels.new(ctx)
 		local activeId=profile().equippedBase or "outpost"
 		local active=Catalog.Bases[activeId] or Catalog.Bases.outpost
 		local activeStats=Rules.BaseStats(activeId,1)
+		local screen=screenSize()
+		local width=UI.contextLayout(screen.X,screen.Y,{wide=true}).w-40
+		local narrow=width<420
 		-- The base in use, big, with what it gives and where it is upgraded.
-		local summary=UI.roundFrame(body,{Name="ActiveBaseSummary",Size=UDim2.new(1,-6,0,150),BackgroundColor3=UI.Skin.slot},C.green)
+		local summary=UI.roundFrame(body,{Name="ActiveBaseSummary",Size=UDim2.new(1,-6,0,narrow and 196 or 150),BackgroundColor3=UI.Skin.slot},C.green)
 		UI.stroke(summary,C.green,3)
-		UI.basePortrait(summary,active,{Position=UDim2.fromOffset(10,12),Size=UDim2.fromOffset(110,118)})
-		UI.pill(summary,T("Base ativa","Active base"),C.green:Lerp(C.ink,0.2),{Position=UDim2.fromOffset(132,12),TextSize=15})
-		UI.label(summary,L(active.name),{Position=UDim2.fromOffset(132,44),Size=UDim2.new(1,-144,0,34),TextWrapped=true,TextSize=26,Font=UI.Fonts.display})
-		UI.label(summary,"+"..activeStats.income..T(" Ouro por onda  •  "," Gold per wave  •  ")..activeStats.hp..T(" de vida"," HP"),{Position=UDim2.fromOffset(132,80),Size=UDim2.new(1,-144,0,24),TextSize=18,Font=UI.Fonts.display,TextColor3=C.gold})
-		UI.label(summary,T("Entra na sua próxima partida. Evolua com o Agente da Base ao lado dela (tecla E).","Deploys in your next match. Upgrade it with the Base Agent beside it (E key)."),{Position=UDim2.fromOffset(132,106),Size=UDim2.new(1,-144,0,40),TextWrapped=true,TextSize=15,TextColor3=C.muted})
+		UI.basePortrait(summary,active,{Position=UDim2.fromOffset(10,12),Size=UDim2.fromOffset(narrow and 92 or 110,narrow and 100 or 118)})
+		local textX=narrow and 112 or 132
+		UI.pill(summary,T("Base ativa","Active base"),C.green:Lerp(C.ink,0.2),{Position=UDim2.fromOffset(textX,12),TextSize=15})
+		UI.fit(UI.label(summary,L(active.name),{Name="ActiveBaseName",Position=UDim2.fromOffset(textX,44),Size=UDim2.new(1,-textX-12,0,34),TextWrapped=true,TextSize=26,Font=UI.Fonts.display}),14)
+		UI.fit(UI.label(summary,"+"..activeStats.income..T(" Ouro por onda"," Gold per wave")..(activeStats.hp>0 and ("  •  +"..activeStats.hp..T(" de vida"," HP")) or ""),{Name="ActiveBaseIncome",Position=UDim2.fromOffset(textX,80),Size=UDim2.new(1,-textX-12,0,narrow and 36 or 24),TextWrapped=narrow,TextSize=18,Font=UI.Fonts.display,TextColor3=C.gold}),11)
+		UI.fit(UI.label(summary,T("Entra na sua próxima partida. Evolua com o Agente da Base ao lado dela (tecla E).","Deploys in your next match. Upgrade it with the Base Agent beside it (E key)."),{Name="ActiveBaseHow",Position=narrow and UDim2.fromOffset(12,124) or UDim2.fromOffset(132,106),Size=narrow and UDim2.new(1,-24,0,62) or UDim2.new(1,-144,0,40),TextWrapped=true,TextSize=15,TextColor3=C.muted}),11)
 
 		UI.button(body,T("Ir à loja de bases","Go to the base shop"),function() routePreview.goShop("base_rare") end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=20})
 		-- Every base as a tile: picture, name, rarity, what it gives, one button.
-		local screen=screenSize()
-		local width=UI.contextLayout(screen.X,screen.Y,{wide=true}).w-40
 		local columns=width>=640 and 3 or (width>=420 and 2 or 1)
 		local cellW=math.floor((width-(columns-1)*10)/columns)
 		local cellH=286
@@ -1593,7 +1600,7 @@ function Panels.new(ctx)
 			UI.label(row,L(def.name),{Position=UDim2.fromOffset(12,116),Size=UDim2.new(1,-24,0,30),TextSize=21,TextWrapped=true,Font=UI.Fonts.display})
 			UI.label(row,L(Catalog.Rarities[def.rarity].name),{Position=UDim2.fromOffset(12,144),Size=UDim2.new(1,-24,0,20),TextSize=15,Font=UI.Fonts.display,TextColor3=tint:Lerp(Color3.new(1,1,1),0.35)})
 			UI.label(row,L(def.description),{Position=UDim2.fromOffset(12,166),Size=UDim2.new(1,-24,0,40),TextSize=14,TextWrapped=true,TextTruncate=Enum.TextTruncate.AtEnd,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top})
-			UI.label(row,"+"..stats.income..T(" Ouro/onda  •  +"," Gold/wave  •  +")..stats.hp..T(" vida*"," HP*"),{Position=UDim2.fromOffset(12,206),Size=UDim2.new(1,-24,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold})
+			UI.label(row,"+"..stats.income..T(" Ouro/onda"," Gold/wave")..(stats.hp>0 and ("  •  +"..stats.hp..T(" vida*"," HP*")) or ""),{Position=UDim2.fromOffset(12,206),Size=UDim2.new(1,-24,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold})
 			local button=UI.button(row,equipped and T("Base ativa","Active base") or owned and T("Ativar base","Activate base") or T("Encontrar nos baús","Find in chests"),function()
 				if owned then act("EquipBase",{baseId=id},function() showToast(T("Base ativada! Ela aparecerá na próxima partida.","Base activated! It will deploy in your next match.")) end) else routePreview.goShop("base_rare") end
 			end,{Name="EquipBase_"..id,Position=UDim2.new(0,10,1,-54),Size=UDim2.new(1,-20,0,44),BackgroundColor3=equipped and C.green or (owned and C.blue or C.card),TextSize=18})

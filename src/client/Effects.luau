@@ -1606,10 +1606,12 @@ function Effects:Step(dt)
 					landed = Motion.Walk(enemy, enemy.rig, enemy.gait, enemy.walked, enemy.scale, stopped, self.clock)
 					enemy.walked = 0
 				end
-				-- A heavy walker's footfalls raise dust: a small, budgeted ring.
-				if landed and (family == "brute" or enemy.def.id == "abomination") and self.dustBudget < 8 then
+				-- A heavy walker's footfalls raise dust: a small, budgeted ring. A
+				-- boss's step is felt too: the camera trembles a hair when it is close.
+				if landed and (family == "brute" or enemy.def.id == "abomination" or enemy.def.boss) and self.dustBudget < 8 then
 					self.dustBudget += 1
-					self:_groundImpact(enemy.position, Color3.fromRGB(150, 128, 98), 1.4 * enemy.scale)
+					self:_groundImpact(enemy.position, Color3.fromRGB(150, 128, 98), (enemy.def.boss and 2.2 or 1.4) * enemy.scale)
+					if enemy.def.boss and eye and (eye - enemy.position).Magnitude < 80 then self:Shake(0.1) end
 				end
 				enemy.animated = true
 			elseif enemy.animated then
@@ -1621,12 +1623,13 @@ function Effects:Step(dt)
 			-- Reset them once when lowFX changes, so legs never freeze mid-stride.
 			local phase = self.clock * (enemy.def.speed or 7) * 0.85 + enemy.phase
 			local stopped = settings.lowFX or (enemy.statusFlags or 0)%2==1
-			-- A brute's footfalls raise dust: a small, budgeted ring on the road.
-			if family == "brute" and not stopped and not settings.lowFX then
+			-- A brute's (or a boss's) footfalls raise dust: a small, budgeted ring on the road.
+			if (family == "brute" or enemy.def.boss) and not stopped and not settings.lowFX then
 				local stride = math.floor(phase / math.pi)
 				if enemy.lastStep and stride ~= enemy.lastStep and self.dustBudget < 8 then
 					self.dustBudget += 1
-					self:_groundImpact(enemy.position, Color3.fromRGB(150, 128, 98), 1.4 * enemy.scale)
+					self:_groundImpact(enemy.position, Color3.fromRGB(150, 128, 98), (enemy.def.boss and 2.2 or 1.4) * enemy.scale)
+					if enemy.def.boss and eye and (eye - enemy.position).Magnitude < 80 then self:Shake(0.1) end
 				end
 				enemy.lastStep = stride
 			end

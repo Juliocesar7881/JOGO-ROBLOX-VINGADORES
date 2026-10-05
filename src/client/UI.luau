@@ -75,6 +75,36 @@ function UI.toLogical(value)
 	return Vector2.new(value.X / scale, value.Y / scale)
 end
 
+-- Text that shrinks to fit (TextScaled) is measured after the screen scale,
+-- in real pixels: a UITextSizeConstraint's limits do not grow with UIScale the
+-- way TextSize does, so a limit written as 21 drew 21-pixel letters on a
+-- monitor where every other 21 is 34. Every such limit is made here, in
+-- logical pixels, and converted with the scale in force; UI.rescaleTextLimits
+-- converts them again when the scale changes.
+local function realTextSize(value)
+	return math.clamp(math.floor((tonumber(value) or 1) * (UI.screenScale or 1) + 0.5), 1, 100)
+end
+function UI.setTextLimit(constraint, maxSize, minSize)
+	minSize = math.min(minSize or 1, maxSize)
+	constraint:SetAttribute("LogicalMax", maxSize)
+	constraint:SetAttribute("LogicalMin", minSize)
+	constraint.MaxTextSize, constraint.MinTextSize = realTextSize(maxSize), realTextSize(minSize)
+	return constraint
+end
+function UI.textLimit(target, maxSize, minSize, name)
+	local constraint = UI.create("UITextSizeConstraint", {Name = name or "TextLimit"}, target)
+	return UI.setTextLimit(constraint, maxSize, minSize)
+end
+function UI.rescaleTextLimits(root)
+	if not root then return end
+	for _, item in ipairs(root:GetDescendants()) do
+		if item:IsA("UITextSizeConstraint") then
+			local maxSize = item:GetAttribute("LogicalMax")
+			if maxSize then item.MaxTextSize, item.MinTextSize = realTextSize(maxSize), realTextSize(item:GetAttribute("LogicalMin") or 1) end
+		end
+	end
+end
+
 function UI.create(className, properties, parent)
 	local instance = Instance.new(className)
 	for key, value in pairs(properties or {}) do
@@ -239,8 +269,14 @@ function UI.button(parent, text, callback, properties)
 			for _, name in ipairs(CAPTION_PROPERTIES) do pcall(function() caption[name] = button[name] end) end
 			UI.create("UIPadding", {PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6)}, caption)
 			UI.outline(caption, (defaults.TextSize or 15) >= 18 and 3 or 2)
+			-- The words shrink to fit a narrow button (a phone, a long language)
+			-- instead of spilling out of it, never past the size they were given.
+			caption.TextScaled = true
+			local fit = UI.textLimit(caption, button.TextSize, 10, "CaptionFit")
 			button.TextTransparency = 1
 			button.Changed:Connect(function(property)
+				if property == "TextScaled" then return end
+				if property == "TextSize" then UI.setTextLimit(fit, button.TextSize, 10) end
 				if CAPTION_MIRROR[property] then pcall(function() caption[property] = button[property] end) end
 			end)
 		else
@@ -266,6 +302,14 @@ function UI.button(parent, text, callback, properties)
 	button.MouseEnter:Connect(function() if button.Active ~= false then squash(1.05, 0.12) end end)
 	button.MouseLeave:Connect(function() squash(1, 0.15) end)
 	return button
+end
+
+-- Shrinks a label's words to fit its box (a narrow window, a long name),
+-- never past the size it was given and never below minSize.
+function UI.fit(label, minSize)
+	label.TextScaled = true
+	UI.textLimit(label, label.TextSize, minSize or 10, "TextFit")
+	return label
 end
 
 function UI.secondary(parent, text, callback, properties)
@@ -1374,7 +1418,7 @@ function UI.tab(parent, text, color, icon, selected, callback, properties)
 		Font = UI.Fonts.display, TextSize = button.TextSize, TextXAlignment = hasIcon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center,
 		TextColor3 = selected and UI.Colors.text or UI.Colors.text:Lerp(UI.Skin.body, 0.15), TextScaled = true, TextTruncate = Enum.TextTruncate.None, ZIndex = (button.ZIndex or 1) + 1})
 	-- Shrinks to fit a narrow tab (a phone held upright), never past the set size.
-	UI.create("UITextSizeConstraint", {MaxTextSize = button.TextSize, MinTextSize = 9}, label)
+	UI.textLimit(label, button.TextSize, 9)
 	UI.outline(label, 2)
 	-- The button keeps the words (tests and screen readers find it by them) but
 	-- draws none: its own text outline would show through as a ghost.
