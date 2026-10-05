@@ -1335,7 +1335,7 @@ updateMatch = function()
 	-- A mutated wave says so, in front of everything else.
 	local mutationDef = match.mutation and Catalog.Mutations[match.mutation]
 	local mutationNote = mutationDef and (mutationDef.icon .. " " .. L(mutationDef.name) .. "  ") or ""
-	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("Vem aí: ", "Coming: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos     torres ", " enemies     towers ") .. towerCount)
+	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("Vem aí: ", "Coming: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos na estrada  •  ", " enemies on the road  •  ") .. towerCount .. (towerCount == 1 and T(" herói em campo", " hero on the field") or T(" heróis em campo", " heroes on the field")))
 	local boss = match.boss
 	refs.boss.Visible = boss ~= nil
 	if boss then
