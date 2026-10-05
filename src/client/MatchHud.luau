@@ -272,8 +272,9 @@ function MatchHud.new(ctx)
 		local veil = UI.frame(overlays, {BackgroundColor3 = C.background, BackgroundTransparency = 0.12, Size = UDim2.fromScale(1, 1), ZIndex = 51, Active = true})
 		ctx.refs().protocolPanel = veil
 		local panel = UI.roundFrame(veil, {Position = at(P.panel), Size = dims(P.panel), ZIndex = 52}, C.gold)
+		UI.windowSkin(panel, C.gold)
 		local short = P.class.short
-		UI.label(panel, T("ESCOLHA SUA CARTA", "CHOOSE YOUR CARD"), {Position = UDim2.fromOffset(20, short and 6 or 12), Size = UDim2.new(1, -40, 0, short and 28 or 38), TextColor3 = C.gold, Font = UI.Fonts.display, TextSize = short and 22 or (P.class.compact and 26 or 32), ZIndex = 53})
+		UI.label(panel, T("Escolha sua carta", "Choose your card"), {Position = UDim2.fromOffset(20, short and 6 or 12), Size = UDim2.new(1, -40, 0, short and 28 or 38), TextColor3 = C.gold, Font = UI.Fonts.display, TextSize = short and 24 or (P.class.compact and 28 or 36), ZIndex = 53})
 		UI.label(panel, T("O jogo segue em velocidade normal enquanto você escolhe.", "The game runs at normal speed while you choose."), {Position = UDim2.fromOffset(20, short and 34 or 52), Size = UDim2.new(1, -40, 0, 22), TextColor3 = C.muted, TextSize = short and 12 or 15, ZIndex = 53})
 		local owned = (ctx.state().match and ctx.state().match.cards) or {}
 		for index, id in ipairs(offers) do
@@ -282,8 +283,11 @@ function MatchHud.new(ctx)
 			if not def or not cardRect then continue end
 			local rarity = Catalog.Rarities[def.rarity]
 			local tint = rarity and UI.color(rarity.color) or C.green
-			local card = UI.roundFrame(panel, {Name = "Card_" .. id, Position = at(cardRect, P.panel), Size = dims(cardRect), BackgroundColor3 = tint:Lerp(C.card, 0.82), ZIndex = 53}, tint)
-			UI.shade(card, 90, 0.28)
+			-- A game card: dark face, the rarity's colour around it and lighting its top.
+			local card = UI.roundFrame(panel, {Name = "Card_" .. id, Position = at(cardRect, P.panel), Size = dims(cardRect), BackgroundColor3 = UI.Skin.slot, ZIndex = 53}, tint)
+			UI.stroke(card, tint, 3.5)
+			local light = card:FindFirstChildOfClass("UIGradient")
+			if light then light.Color = ColorSequence.new(tint:Lerp(Color3.new(1, 1, 1), 0.1), UI.Skin.slot); light.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(0.45, 0.92), NumberSequenceKeypoint.new(1, 1)}) end
 			local buttonRect = P.buttons[index]
 			local rows = CardArt.rows(Rules, def, owned, T)
 			local function chipsAt(x, y, width, room, chipH, textSize)
@@ -323,7 +327,7 @@ function MatchHud.new(ctx)
 					UI.label(card, L(def.description), {Position = UDim2.fromOffset(10, nextY), Size = UDim2.new(1, -20, 0, room), TextSize = 14, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
 				end
 			end
-			UI.button(card, T("ESCOLHER", "CHOOSE").." • "..Catalog.Upper(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(buttonRect, cardRect), Size = dims(buttonRect), BackgroundColor3 = tint, TextSize = P.stacked and 15 or 17, ZIndex = 54})
+			UI.button(card, T("ESCOLHER", "CHOOSE").." • "..(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(buttonRect, cardRect), Size = dims(buttonRect), BackgroundColor3 = tint, TextSize = P.stacked and 17 or 21, ZIndex = 54})
 		end
 	end
 
@@ -399,20 +403,24 @@ function MatchHud.new(ctx)
 		local result = ctx.state().results or {}
 		local victory = result.victory == true or result.ended == true
 		local veil = UI.frame(main, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.12})
-		local panel = UI.roundFrame(veil, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -32, 1, -50), BackgroundColor3 = C.panel}, victory and C.green or C.red)
-		UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 720)}, panel)
-		local content = UI.scroll(panel, {Name="ResultBody",Position = UDim2.fromOffset(20, 18), Size = UDim2.new(1, -40, 1, -98)})
-		UI.frame(panel,{Position=UDim2.new(0,18,1,-75),Size=UDim2.new(1,-36,0,1),BackgroundColor3=C.stroke})
+		local panel = UI.roundFrame(veil, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 8), Size = UDim2.new(1, -32, 1, -60), BackgroundColor3 = C.panel}, victory and C.green or C.red)
+		UI.create("UISizeConstraint", {MaxSize = Vector2.new(640, 720)}, panel)
+		UI.windowSkin(panel, victory and C.green or C.blue)
+		-- The window's title tab, like every other screen: victory green, retry blue.
+		UI.titleRibbon(panel, result.ended and T("Recorde!", "Record!") or victory and T("Vitória!", "Victory!") or T("Fim de jogo", "Game over"), victory and C.green or C.blue,
+			{Name = "ResultRibbon", Position = UDim2.fromOffset(-10, -14), width = 320, height = 54, TextSize = 32, ZIndex = 3})
+		local content = UI.scroll(panel, {Name="ResultBody",Position = UDim2.fromOffset(20, 48), Size = UDim2.new(1, -40, 1, -128), ScrollBarThickness = 8})
+		UI.frame(panel,{Position=UDim2.new(0,18,1,-75),Size=UDim2.new(1,-36,0,2),BackgroundColor3=UI.Skin.slotLine})
 		-- Like the genre's best: one tap runs the same map again; going back to
 		-- base is the quieter choice. Training always returns to the lobby.
 		if result.modeId=="tutorial" then
-			UI.button(panel,T("VOLTAR À BASE","RETURN TO BASE"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(1,-36,0,48),TextSize=15})
+			UI.button(panel,T("Voltar ao lobby","Back to the lobby"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(1,-36,0,52),TextSize=22})
 		else
 			local waiting=result.again==true
-			local again=UI.button(panel,waiting and (T("ESPERANDO ","WAITING ")..tostring(result.againVotes or 1).."/"..tostring(result.againTotal or 1)) or T("▶ JOGAR DE NOVO","▶ PLAY AGAIN"),
-				function() act("PlayAgain",{}) end,{Name="ResultPlayAgain",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(0.62,-24,0,48),BackgroundColor3=C.green,TextSize=16})
+			local again=UI.button(panel,waiting and (T("Esperando ","Waiting ")..tostring(result.againVotes or 1).."/"..tostring(result.againTotal or 1)) or T("▶ Jogar de novo","▶ Play again"),
+				function() act("PlayAgain",{}) end,{Name="ResultPlayAgain",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(0.62,-24,0,52),BackgroundColor3=C.green,TextSize=22})
 			if waiting then UI.disabled(again) end
-			UI.secondary(panel,T("LOBBY","LOBBY"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0.62,0,1,-64),Size=UDim2.new(0.38,-18,0,48),TextSize=15})
+			UI.secondary(panel,T("Lobby","Lobby"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0.62,0,1,-64),Size=UDim2.new(0.38,-18,0,52),TextSize=20,BackgroundColor3=UI.Skin.bodyTop})
 		end
 		UI.list(content, 8)
 		local short=sizeClass().short
@@ -420,7 +428,7 @@ function MatchHud.new(ctx)
 		local emblemSize=short and 36 or 48
 		UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.fromOffset(2,short and 4 or 12),Size=UDim2.fromOffset(emblemSize,emblemSize)})
 		UI.label(celebration, result.ended and T("RECORDE GUARDADO!", "RECORD SAVED!") or victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("VAMOS TENTAR DE NOVO?", "LET'S TRY AGAIN!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.GothamBlack, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
-		UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal", result.difficultyId), {Size = UDim2.new(1, -6, 0, short and 18 or 26), TextColor3 = C.muted, TextSize = short and 11 or 13, TextXAlignment = Enum.TextXAlignment.Center})
+		UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal", result.difficultyId), {Size = UDim2.new(1, -6, 0, short and 20 or 28), TextColor3 = C.muted, TextSize = short and 14 or 17, TextXAlignment = Enum.TextXAlignment.Center})
 		if (tonumber(result.featured) or 1) > 1 then
 			UI.label(content, "★ " .. T("MAPA DO DIA +", "MAP OF THE DAY +") .. math.floor((result.featured - 1) * 100 + 0.5) .. "%", {Name = "ResultFeatured", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center})
 		end
@@ -429,12 +437,13 @@ function MatchHud.new(ctx)
 		end
 		-- Core rewards stay together and appear before the optional detailed history,
 		-- including on short screens where three large rows needed several scrolls.
-		local rewards=UI.row(content,short and 64 or 82)
+		local rewards=UI.row(content,short and 70 or 92)
 		rewards.Name="ResultRewards"
 		for index,reward in ipairs({{T("ONDAS", "WAVES"), tostring(result.waves or 0), C.green}, {T("OURO", "GOLD"), "+" .. number(result.gold or 0), C.gold}, {"XP", "+" .. number(result.xp or 0), C.blue}}) do
-			local tile=UI.roundFrame(rewards,{Name="Reward_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-6,1,0),BackgroundColor3=reward[3]:Lerp(C.card,0.9)},reward[3]:Lerp(C.stroke,0.5))
-			UI.label(tile,reward[1],{Position=UDim2.fromOffset(4,6),Size=UDim2.new(1,-8,0,18),TextSize=12,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.GothamBold})
-			UI.label(tile,reward[2],{Name="RewardValue_"..index,Position=UDim2.fromOffset(4,26),Size=UDim2.new(1,-8,1,-32),TextSize=mobile() and 19 or 24,TextColor3=reward[3],TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.GothamBlack})
+			local tile=UI.roundFrame(rewards,{Name="Reward_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-6,1,0),BackgroundColor3=UI.Skin.slot},reward[3])
+			UI.stroke(tile,reward[3],2.5)
+			UI.label(tile,reward[1],{Position=UDim2.fromOffset(4,6),Size=UDim2.new(1,-8,0,22),TextSize=17,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center,Font=UI.Fonts.display})
+			UI.label(tile,reward[2],{Name="RewardValue_"..index,Position=UDim2.fromOffset(4,28),Size=UDim2.new(1,-8,1,-32),TextSize=mobile() and 24 or 32,TextColor3=reward[3],TextXAlignment=Enum.TextXAlignment.Center,Font=Enum.Font.GothamBlack})
 		end
 		if not kit.resultsCelebrated then
 			-- Once per results screen: a re-render while rewards finish saving must
@@ -455,42 +464,44 @@ function MatchHud.new(ctx)
 		if #team>0 then
 			local mvp=team[1]
 			local mine=mvp.userId==player.UserId
-			local card=UI.roundFrame(content,{Name="ResultMvp",Size=UDim2.new(1,-6,0,short and 54 or 66),BackgroundColor3=C.gold:Lerp(C.panel,0.72)},C.gold)
-			UI.label(card,"★ MVP",{Position=UDim2.fromOffset(12,4),Size=UDim2.new(0,90,1,-8),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextColor3=C.gold})
-			UI.label(card,mine and T("VOCÊ!","YOU!") or tostring(mvp.name),{Name="MvpName",Position=UDim2.fromOffset(102,4),Size=UDim2.new(1,-112,0.5,-2),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-			UI.label(card,T("DANO ","DMG ")..number(mvp.damage).."   "..T("ABATES ","KILLS ")..number(mvp.kills).."   "..T("OURO ","GOLD ")..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,102,0.5,0),Size=UDim2.new(1,-112,0.5,-4),TextSize=short and 13 or 15,Font=UI.Fonts.display,TextColor3=C.cream})
+			local card=UI.roundFrame(content,{Name="ResultMvp",Size=UDim2.new(1,-6,0,short and 60 or 76),BackgroundColor3=UI.Skin.slot},C.gold)
+			UI.stroke(card,C.gold,3)
+			UI.label(card,"★ MVP",{Position=UDim2.fromOffset(12,4),Size=UDim2.new(0,100,1,-8),TextSize=short and 22 or 28,Font=UI.Fonts.display,TextColor3=C.gold})
+			UI.label(card,mine and T("Você!","You!") or tostring(mvp.name),{Name="MvpName",Position=UDim2.fromOffset(112,4),Size=UDim2.new(1,-122,0.5,-2),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
+			UI.label(card,T("Dano ","Dmg ")..number(mvp.damage).."   "..T("Abates ","Kills ")..number(mvp.kills).."   "..T("Ouro ","Gold ")..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,112,0.5,0),Size=UDim2.new(1,-122,0.5,-4),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextColor3=C.cream})
 			for index=2,#team do
 				local entry=team[index]
-				local row=UI.row(content,short and 26 or 30)
+				local row=UI.row(content,short and 28 or 34)
 				row.Name="ResultTeam_"..index
-				UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Size=UDim2.new(0.5,0,1,0),TextSize=14,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-				UI.label(row,T("DANO ","DMG ")..number(entry.damage).."   "..T("ABATES ","KILLS ")..number(entry.kills),{Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,0,1,0),TextSize=14,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right})
+				UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Size=UDim2.new(0.5,0,1,0),TextSize=18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
+				UI.label(row,T("Dano ","Dmg ")..number(entry.damage).."   "..T("Abates ","Kills ")..number(entry.kills),{Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,0,1,0),TextSize=17,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right})
 			end
 		end
 		if result.modeId=="ranked" then
 			local tier=Rules.RankForWaves(result.waves)
-			local rankRow=UI.row(content,42)
+			local rankRow=UI.row(content,54)
 			rankRow.Name="ResultRank"
-			UI.label(rankRow,"RANK: "..(ctx.language()=="en" and tier.en or tier.pt),{Size=UDim2.new(1,-6,0,24),Font=UI.Fonts.display,TextSize=18,TextColor3=C.gold})
-			UI.label(rankRow,T("Seu melhor resultado fica no placar da temporada.","Your best result stays on the seasonal leaderboard."),{Position=UDim2.fromOffset(0,25),Size=UDim2.new(1,-6,0,16),TextSize=12,TextColor3=C.muted})
+			UI.label(rankRow,"Rank: "..(ctx.language()=="en" and tier.en or tier.pt),{Size=UDim2.new(1,-6,0,28),Font=UI.Fonts.display,TextSize=22,TextColor3=C.gold})
+			UI.label(rankRow,T("Seu melhor resultado fica no placar da temporada.","Your best result stays on the seasonal leaderboard."),{Position=UDim2.fromOffset(0,30),Size=UDim2.new(1,-6,0,22),TextSize=15,TextColor3=C.muted})
 		end
 		local earnedPoints = math.max(0, (profile().level or 1) - (result.startLevel or profile().level or 1))
-		local evolution = UI.roundFrame(content, {Name = "ResultEvolution", Size = UDim2.new(1, -6, 0, 78), BackgroundColor3 = C.gold:Lerp(C.background, 0.88)}, C.gold)
-		UI.label(evolution, T("COMANDANTE • NÍVEL ", "COMMANDER • LEVEL ") .. tostring(profile().level or 1), {Position = UDim2.fromOffset(12, 10), Size = UDim2.new(1, -24, 0, 24), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.gold})
-		UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. T(" ponto(s) para sua árvore!", " point(s) for your talent tree!")) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -24, 0, 24), TextWrapped = true, TextSize = 13})
-		local xpTrack = UI.frame(evolution, {Position = UDim2.fromOffset(12, 64), Size = UDim2.new(1, -24, 0, 5), BackgroundColor3 = C.stroke})
+		local evolution = UI.roundFrame(content, {Name = "ResultEvolution", Size = UDim2.new(1, -6, 0, 90), BackgroundColor3 = UI.Skin.slot}, C.gold)
+		UI.label(evolution, T("Comandante • nível ", "Commander • level ") .. tostring(profile().level or 1), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 28), Font = UI.Fonts.display, TextSize = 20, TextColor3 = C.gold})
+		UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. T(" ponto(s) para sua árvore!", " point(s) for your talent tree!")) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 26), TextWrapped = true, TextSize = 16})
+		local xpTrack = UI.frame(evolution, {Position = UDim2.fromOffset(12, 72), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
+		UI.corner(xpTrack, 4)
 		UI.frame(xpTrack, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.gold})
 		-- The season pass: where this match's XP took it, and whether a claim waits.
 		local season = profile().seasonStatus
 		if season then
-			local seasonCard = UI.roundFrame(content, {Name = "ResultSeason", Size = UDim2.new(1, -6, 0, 68), BackgroundColor3 = C.violet:Lerp(C.background, 0.86)}, C.violet)
-			UI.label(seasonCard, T("TEMPORADA • NÍVEL ", "SEASON • LEVEL ") .. tostring(season.level) .. "/" .. tostring(season.maxLevel), {Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 0, 22), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.violet})
+			local seasonCard = UI.roundFrame(content, {Name = "ResultSeason", Size = UDim2.new(1, -6, 0, 76), BackgroundColor3 = UI.Skin.slot}, C.violet)
+			UI.label(seasonCard, T("Temporada • nível ", "Season • level ") .. tostring(season.level) .. "/" .. tostring(season.maxLevel), {Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 0, 26), Font = UI.Fonts.display, TextSize = 19, TextColor3 = C.violet:Lerp(Color3.new(1, 1, 1), 0.25)})
 			local seasonTrack = UI.frame(seasonCard, {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
 			UI.corner(seasonTrack, 4)
 			local seasonFill = UI.frame(seasonTrack, {Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpNeed, 0, 1), 1), BackgroundColor3 = C.violet})
 			UI.corner(seasonFill, 4)
 			UI.label(seasonCard, season.claimable > 0 and (tostring(season.claimable) .. T(" prêmio(s) esperando em PRÊMIOS!", " reward(s) waiting in GIFTS!")) or (number(season.xpInto) .. " / " .. number(season.xpNeed) .. " XP"),
-				{Name = "ResultSeasonHint", Position = UDim2.fromOffset(12, 43), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextColor3 = season.claimable > 0 and C.gold or C.muted})
+				{Name = "ResultSeasonHint", Position = UDim2.fromOffset(12, 46), Size = UDim2.new(1, -24, 0, 24), TextSize = 16, Font = UI.Fonts.display, TextColor3 = season.claimable > 0 and C.gold or C.muted})
 		end
 		local gains = {}
 		for heroId, earned in pairs(result.mastery or {}) do
@@ -498,12 +509,12 @@ function MatchHud.new(ctx)
 		end
 		table.sort(gains, function(a, b) return a.xp > b.xp end)
 		if #gains > 0 then
-			local card = UI.roundFrame(content, {Size = UDim2.new(1, -6, 0, 34 + #gains * 26), BackgroundColor3 = C.card})
-			UI.label(card, T("SEUS HERÓIS APRENDERAM!", "YOUR HEROES GREW!"), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 20), TextSize = 12, TextColor3 = C.muted, Font = Enum.Font.GothamBold})
+			local card = UI.roundFrame(content, {Size = UDim2.new(1, -6, 0, 40 + #gains * 30), BackgroundColor3 = UI.Skin.slot}, UI.Skin.slotLine)
+			UI.label(card, T("Seus heróis aprenderam!", "Your heroes grew!"), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 24), TextSize = 18, TextColor3 = C.cream, Font = UI.Fonts.display})
 			for index, gain in ipairs(gains) do
-				local y = 30 + (index - 1) * 26
-				UI.label(card, heroName(gain.id), {Position = UDim2.fromOffset(12, y), Size = UDim2.new(0.62, -12, 0, 22), TextSize = 13, TextColor3 = colorFor(gain.id)})
-				UI.label(card, "+" .. number(gain.xp) .. " XP", {Position = UDim2.new(0.62, 0, 0, y), Size = UDim2.new(0.38, -12, 0, 22), TextSize = 13, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right})
+				local y = 36 + (index - 1) * 30
+				UI.label(card, heroName(gain.id), {Position = UDim2.fromOffset(12, y), Size = UDim2.new(0.62, -12, 0, 26), TextSize = 17, Font = UI.Fonts.display, TextColor3 = colorFor(gain.id):Lerp(Color3.new(1, 1, 1), 0.3)})
+				UI.label(card, "+" .. number(gain.xp) .. " XP", {Position = UDim2.new(0.62, 0, 0, y), Size = UDim2.new(0.38, -12, 0, 26), TextSize = 17, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Right})
 			end
 		end
 		UI.label(content,T("Próximo objetivo: evolua a habilidade do líder ou recrute nos baús.","Next goal: upgrade your leader ability or recruit from chests."),{Size=UDim2.new(1,-6,0,36),TextWrapped=true,TextColor3=C.muted,TextSize=13})
