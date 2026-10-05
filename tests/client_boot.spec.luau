@@ -1812,10 +1812,14 @@ local function session(screen)
 			if type(item.Text) == "string" and string.find(item.Text, "Melhoria 2/5", 1, true) then upgradeLine = true end
 		end
 		check(upgradeLine, tag .. ": a tower's in-match upgrade reads as Melhoria, not a level")
+		-- The tall panel has a table (now, and the next value in green); a phone's
+		-- strip keeps one line of text. Both read as before -> after.
 		local stats = named(gui, "TowerStats")
-		check(stats ~= nil and string.find(stats.Text, "→ 38", 1, true) ~= nil and string.find(stats.Text, "→ 30.6", 1, true) ~= nil,
-			tag .. ": the panel shows damage and range as before -> after, got " .. tostring(stats and stats.Text))
-		click("MELHORAR")
+		local nextDamage, nextRange = named(gui, "TowerNext_damage"), named(gui, "TowerNext_range")
+		local shownStats = stats and stats.Text or ((nextDamage and nextDamage.Text or "") .. " | " .. (nextRange and nextRange.Text or ""))
+		check(string.find(shownStats, "→ 38", 1, true) ~= nil and string.find(shownStats, "→ 30.6", 1, true) ~= nil,
+			tag .. ": the panel shows damage and range as before -> after, got " .. tostring(shownStats))
+		click("Melhorar")
 		check(asked("UpgradeTower"), tag .. ": the upgrade button reaches the server")
 		click("Alvo:")
 		check(asked("SetPriority"), tag .. ": targeting cycles")

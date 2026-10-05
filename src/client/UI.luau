@@ -885,7 +885,7 @@ local function rect(x, y, w, h)
 end
 
 -- Heights the tower panel's content actually needs in each arrangement.
-UI.TOWER_TALL_HEIGHT = 350
+UI.TOWER_TALL_HEIGHT = 360
 UI.TOWER_WIDE_HEIGHT = 132
 
 local function clampScreen(width, height)
@@ -1009,7 +1009,11 @@ function UI.matchLayout(width, height, options)
 		layout.towerVariant = "wide"
 	else
 		local skipW = math.min(208, width - 2 * pad)
-		local bossW = math.min(560, width - 2 * pad)
+		-- The boss banner stays in the middle, narrow enough to leave the right
+		-- column to the tower panel.
+		local columnW = math.min(330, width - 2 * pad)
+		local bossW = math.max(280, math.min(520, width - 2 * (columnW + pad + 10)))
+		bossW = math.min(bossW, width - 2 * pad)
 		layout.skip = rect(math.floor((width - skipW) / 2), bannerY, skipW, 48)
 		layout.boss = rect(math.floor((width - bossW) / 2), bannerY, bossW, bossH)
 		local placementW = math.min(430, width - 2 * pad)
@@ -1019,12 +1023,16 @@ function UI.matchLayout(width, height, options)
 			layout.placement = rect(math.floor((width - placementW) / 2), layout.actionTop - 8 - placementH, placementW, placementH)
 		end
 		layout.hint = rect(layout.placement.x, layout.placement.y - 4 - hintH, layout.placement.w, hintH)
-		local towerTop = bannerY + bossH + gap
+		-- The tower panel takes the right-hand column from the status row down to
+		-- the action band; only where the boss banner reaches that column does it
+		-- start below the banner.
+		local towerTop = bannerY
+		if layout.boss.x + layout.boss.w > width - pad - columnW then towerTop = bannerY + bossH + gap end
 		local towerBottom = layout.actionTop - gap
 		local tall = towerBottom - towerTop >= UI.TOWER_TALL_HEIGHT
-		local towerW = tall and math.min(340, width - 2 * pad) or math.min(420, width - 2 * pad)
-		local towerH = tall and UI.TOWER_TALL_HEIGHT or math.min(UI.TOWER_WIDE_HEIGHT, towerBottom - towerTop)
-		layout.tower = rect(width - pad - towerW, towerBottom - towerH, towerW, towerH)
+		local towerW = tall and columnW or math.min(420, width - 2 * pad)
+		local towerH = tall and math.min(towerBottom - towerTop, 400) or math.min(UI.TOWER_WIDE_HEIGHT, towerBottom - towerTop)
+		layout.tower = rect(width - pad - towerW, tall and towerTop or towerBottom - towerH, towerW, towerH)
 		layout.towerVariant = tall and "tall" or "wide"
 	end
 	return layout

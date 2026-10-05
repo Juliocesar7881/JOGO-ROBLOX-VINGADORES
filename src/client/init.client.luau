@@ -367,14 +367,16 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 	local tint = rarity and UI.color(rarity.color) or colorFor(id)
 	local button = UI.secondary(parent, "", callback, {
 		Name = "HeroCard_" .. id, LayoutOrder = index,
-		Size = UDim2.fromOffset(width, height), BackgroundColor3 = tint:Lerp(C.background, equipped and 0.25 or 0.45),
+		Size = UDim2.fromOffset(width, height), BackgroundColor3 = tint:Lerp(C.background, equipped and 0.1 or 0.3),
 	})
+	local light = button:FindFirstChildOfClass("UIGradient")
+	if light then light.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(120, 120, 130)) end
 	UI.stroke(button, index == 1 and C.gold or tint, index == 1 and 3.5 or 2.5)
 	heroPortrait(button, id, {Position = UDim2.fromOffset(2, 1), Size = UDim2.new(1, -4, 1, -14)})
 	local priceH = height < 62 and 17 or 20
-	local price = UI.label(button, tostring(def.cost), {Name = "EnergyCost", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2),
-		Size = UDim2.new(1, -6, 0, priceH), BackgroundTransparency = 0.15, BackgroundColor3 = C.background, TextColor3 = C.gold,
-		TextSize = height < 62 and 12 or 14, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
+	local price = UI.label(button, tostring(def.cost), {Name = "EnergyCost", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -3),
+		Size = UDim2.new(1, -8, 0, priceH), BackgroundTransparency = 0.05, BackgroundColor3 = C.ink, TextColor3 = C.gold,
+		TextSize = height < 62 and 13 or 16, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
 	UI.corner(price, 8)
 	local badge = UI.label(button, index == 1 and "★" or tostring(index), {Name = "SlotNumber", Position = UDim2.fromOffset(3, 3), Size = UDim2.fromOffset(18, 18),
 		BackgroundColor3 = index == 1 and C.gold or C.background, BackgroundTransparency = 0.05, TextSize = 12,
@@ -1125,7 +1127,7 @@ local matchHud = MatchHud.new({
 	refs = function() return refs end,
 	T = T, L = L, number = number, player = player, act = act, audio = audio, celebrate = celebrate,
 	main = main, overlays = overlays, at = at, dims = dims, screenSize = screenSize, sizeClass = sizeClass, mobile = mobile,
-	heroName = heroName, colorFor = colorFor, mapName = mapName, modeName = modeName, profile = profile,
+	heroName = heroName, colorFor = colorFor, mapName = mapName, modeName = modeName, profile = profile, heroPortrait = heroPortrait,
 	activeMatch = activeMatch, levelProgress = levelProgress, welcomePanel = welcomePanel,
 	currentMatchLayout = currentMatchLayout, closeTowerPanel = closeTowerPanel, selectTower = selectTower,
 })
@@ -1140,20 +1142,23 @@ local function renderMatch()
 	local class = layout.class
 	local compact = class.compact
 	local topRect = layout.top
-	local top = UI.roundFrame(main, {Position = at(topRect), Size = dims(topRect), BackgroundColor3 = C.panel, BackgroundTransparency = 0.1})
-	UI.stroke(top, C.ink, 3)
+	local top = UI.roundFrame(main, {Position = at(topRect), Size = dims(topRect), BackgroundColor3 = C.panel})
+	UI.windowSkin(top, C.blue)
+	top.BackgroundTransparency = 0.06
 	refs.wave = UI.label(top, "", {Position = at(layout.wave, topRect), Size = dims(layout.wave), TextSize = math.min(class.short and 20 or (compact and 23 or 30), layout.wave.h + 2), Font = UI.Fonts.display, TextColor3 = C.gold})
 	refs.map = UI.label(top, "", {Position = at(layout.map, topRect), Size = dims(layout.map), TextWrapped=class.narrow, TextSize = compact and 11 or 14, Font = UI.Fonts.display, TextColor3 = C.muted})
 	refs.hpText = UI.button(top, "", function() showToast(T("Evolua a base com o Agente ao lado dela (tecla E).", "Upgrade the base with the Agent beside it (E key)."), false) end, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
 	UI.outline(refs.hpText, 2)
 	refs.hp = UI.bar(top, C.green, at(layout.hpBar, topRect), dims(layout.hpBar))
 	UI.icon(top, "heart", C.red, {Name = "CoreHeart", Position = UDim2.fromOffset(layout.hpBar.x - topRect.x - 30, layout.hpBar.y - topRect.y - 7), Size = UDim2.fromOffset(28, layout.hpBar.h + 14)})
-	refs.matchGold = UI.label(main, "", {Position = at(layout.gold), Size = dims(layout.gold), TextSize = compact and 15 or 18, TextColor3 = C.cream, Font = UI.Fonts.display, TextXAlignment = class.narrow and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right})
-	refs.energy = UI.label(main, "", {Position = at(layout.energy), Size = dims(layout.energy), TextColor3 = C.gold, Font = UI.Fonts.display, TextSize = compact and 18 or 24, TextXAlignment = class.narrow and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left})
+	refs.matchGold = UI.label(main, "", {Position = at(layout.gold), Size = dims(layout.gold), TextSize = compact and 16 or 20, TextColor3 = C.cream, Font = UI.Fonts.display, TextXAlignment = class.narrow and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right})
+	refs.energy = UI.label(main, "", {Position = at(layout.energy), Size = dims(layout.energy), TextColor3 = C.gold, Font = UI.Fonts.display, TextSize = compact and 20 or 26, TextXAlignment = class.narrow and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left})
 	surface(refs.matchGold,C.violet)
 	surface(refs.energy,C.gold)
-	refs.matchGold.BackgroundColor3,refs.matchGold.BackgroundTransparency=C.violet:Lerp(C.ink,0.55),0.1
-	refs.energy.BackgroundColor3,refs.energy.TextColor3,refs.energy.BackgroundTransparency=C.gold:Lerp(C.ink,0.62),C.gold,0.05
+	refs.matchGold.BackgroundColor3,refs.matchGold.BackgroundTransparency=UI.Skin.slot,0.06
+	refs.energy.BackgroundColor3,refs.energy.TextColor3,refs.energy.BackgroundTransparency=UI.Skin.slot,C.gold,0.04
+	UI.stroke(refs.matchGold,C.violet,2.5)
+	UI.stroke(refs.energy,C.gold,2.5)
 	refs.energy.TextXAlignment=Enum.TextXAlignment.Center
 	-- A drawn coin and trophy instead of emoji: they stay sharp and match the game's own art.
 	do
@@ -1164,8 +1169,8 @@ local function renderMatch()
 	end
 	refs.matchGold.TextXAlignment=Enum.TextXAlignment.Center
 	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 14 or 17, Font = UI.Fonts.display, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Center})
-	surface(refs.waveInfo,C.stroke)
-	refs.waveInfo.BackgroundColor3,refs.waveInfo.BackgroundTransparency=C.panel,0.15
+	surface(refs.waveInfo,UI.Skin.slotLine)
+	refs.waveInfo.BackgroundColor3,refs.waveInfo.BackgroundTransparency=UI.Skin.slot,0.1
 	refs.skip = UI.button(main, T("PRONTO", "READY"), function() act("SkipWave", {}) end, {Position = at(layout.skip), Size = dims(layout.skip), BackgroundColor3 = C.green, TextSize = 18})
 	-- Competitive only: everyone agreeing between waves ends the run and keeps the record.
 	refs.endVote = UI.button(main, T("ENCERRAR PARTIDA", "END RUN"), function()
@@ -1176,8 +1181,9 @@ local function renderMatch()
 	-- when a boss is on the road), never over the wave and core readouts.
 	refs.toastTop = (layout.waveInfo.y or 0) + (layout.waveInfo.h or 0) + 6
 	refs.toastBossTop = (bossRect.y or 0) + (bossRect.h or 0) + 6
-	refs.boss = UI.roundFrame(main, {Position = at(bossRect), Size = dims(bossRect), BackgroundColor3 = Color3.fromRGB(66,30,44), Visible = false}, C.red)
-	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 2), Size = UDim2.new(1, -24, 0, 24), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Center})
+	refs.boss = UI.roundFrame(main, {Position = at(bossRect), Size = dims(bossRect), BackgroundColor3 = Color3.fromRGB(56,20,34), Visible = false}, C.red)
+	UI.stroke(refs.boss, C.red, 3)
+	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 2), Size = UDim2.new(1, -24, 0, 24), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Center})
 	refs.bossHP = UI.bar(refs.boss, C.red, UDim2.fromOffset(12, 26), UDim2.new(1, -24, 0, 12))
 	refs.bossHint = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 37), Size = UDim2.new(1, -24, 0, bossRect.h - 41), TextColor3 = C.muted, TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center})
 	refs.hint = UI.label(main, "", {Position = at(layout.hint), Size = dims(layout.hint), TextColor3 = C.green, TextSize = compact and 13 or 15, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
@@ -1207,7 +1213,7 @@ local function renderMatch()
 			name = (def and L(def.name) or T("PODER DO LÍDER", "LEADER POWER")), ultimate = abilityInfo.ultimate}
 	end
 	if profile().passes and profile().passes.vip then
-		UI.secondary(abilities, "✦ " .. T("Saudação", "Salute"), function()
+		UI.secondary(abilities, T("Saudação", "Salute"), function()
 			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 			if humanoid then pcall(function() humanoid:PlayEmote("wave") end) end
 		end, {LayoutOrder = 3, Size = UDim2.fromOffset(layout.saluteW, layout.buttonH), TextColor3 = C.gold, TextSize = 12})
@@ -1215,15 +1221,16 @@ local function renderMatch()
 	-- Narrow bands (a phone) get smaller letters so every label still fits.
 	refs.controlDelta = layout.controlW >= 52 and 0 or (layout.controlW >= 44 and -2 or -4)
 	local cd = refs.controlDelta
-	refs.speedToggle = UI.secondary(abilities, "2x", function() chooseSpeed(2) end, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 15 + cd, Font = Enum.Font.GothamBlack})
-	refs.speed3Toggle = UI.secondary(abilities, "3x", function() chooseSpeed(3) end, {Name = "Speed3Toggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 15 + cd, Font = Enum.Font.GothamBlack})
-	refs.sheetButton = UI.secondary(abilities, T("FICHA", "SHEET"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 7, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11 + cd, Font = Enum.Font.GothamBlack})
+	refs.speedToggle = UI.secondary(abilities, "2x", function() chooseSpeed(2) end, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 19 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.speed3Toggle = UI.secondary(abilities, "3x", function() chooseSpeed(3) end, {Name = "Speed3Toggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 19 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = UI.Skin.bodyTop})
+	refs.sheetButton = UI.secondary(abilities, T("Ficha", "Sheet"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 7, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 14 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = UI.Skin.bodyTop})
 	-- The cards have a button of their own, in the cards mode only.
 	if state.match and state.match.cardMode then
-		refs.cardsButton = UI.secondary(abilities, T("CARTAS", "CARDS"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = C.violet})
+		refs.cardsButton = UI.secondary(abilities, T("Cartas", "Cards"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 14 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = C.violet})
 	end
-	refs.autoSkipToggle = UI.secondary(abilities, "AUTO\nOFF", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 11 + cd, Font = Enum.Font.GothamBlack})
+	refs.autoSkipToggle = UI.secondary(abilities, "AUTO\nOFF", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 13 + cd, Font = Enum.Font.GothamBlack, BackgroundColor3 = UI.Skin.bodyTop})
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
+	UI.windowSkin(bottom, C.gold)
 	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
 	UI.list(cards, 7, true)
 	refs.heroCards = {}
@@ -1269,7 +1276,7 @@ updateMatch = function()
 		local label = "2x"
 		if on2 and party > 1 and speed < 2 then label = "2x\n" .. tostring(match.speedVotes or 1) .. "/" .. tostring(match.speedPlayers or party) end
 		refs.speedToggle.Text = label
-		refs.speedToggle.BackgroundColor3 = on2 and (speed >= 2 and C.gold or C.gold:Lerp(C.card, 0.55)) or C.card
+		refs.speedToggle.BackgroundColor3 = on2 and (speed >= 2 and C.gold or C.gold:Lerp(C.card, 0.55)) or UI.Skin.bodyTop
 		refs.speedToggle.TextColor3 = on2 and speed >= 2 and C.background or C.text
 		-- 3x: lit when running, violet with a lock until the pass is owned.
 		local owns3 = profile().passes and profile().passes.speed3
@@ -1277,13 +1284,13 @@ updateMatch = function()
 			local on3 = speed >= 3
 			refs.speed3Toggle.Text = owns3 and "3x" or "3x\n" .. T("PASSE", "PASS")
 			refs.speed3Toggle.TextSize = (owns3 and 15 or 11) + (refs.controlDelta or 0)
-			refs.speed3Toggle.BackgroundColor3 = on3 and C.gold or (owns3 and C.card or C.violet:Lerp(C.card, 0.45))
+			refs.speed3Toggle.BackgroundColor3 = on3 and C.gold or (owns3 and UI.Skin.bodyTop or C.violet:Lerp(C.card, 0.45))
 			refs.speed3Toggle.TextColor3 = on3 and C.background or C.text
 		end
 	end
 	if refs.autoSkipToggle then
 		refs.autoSkipToggle.Text = "AUTO\n" .. (match.autoSkip and "ON" or "OFF")
-		refs.autoSkipToggle.BackgroundColor3 = match.autoSkip and C.green or C.card
+		refs.autoSkipToggle.BackgroundColor3 = match.autoSkip and C.green or UI.Skin.bodyTop
 		refs.autoSkipToggle.TextColor3 = match.autoSkip and C.background or C.text
 	end
 	refs.skip.Visible = state.phase == "Preparing"
@@ -1359,7 +1366,8 @@ updateMatch = function()
 		else
 			local key = tostring(tower.id) .. ":" .. tostring(tower.level) .. ":" .. tostring(tower.priority)
 			if refs.towerKey ~= key then refs.towerKey = key; matchHud.towerPanel(tower) end
-			if refs.towerStats then refs.towerStats.Text = matchHud.towerStatsText(tower, refs.towerWide) end
+			if refs.towerRefresh then refs.towerRefresh(tower)
+			elseif refs.towerStats then refs.towerStats.Text = matchHud.towerStatsText(tower, refs.towerWide) end
 			if typeof(tower.position) == "Vector3" then towerRing = rangeRing(towerRing, tower.position, tower.range or 20, colorFor(tower.heroId)) end
 		end
 	end

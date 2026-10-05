@@ -53,12 +53,13 @@ function MatchHud.new(ctx)
 		local slot, wide = layout.tower, layout.towerVariant == "wide"
 		local w = slot.w
 		local panel = UI.roundFrame(main, {Position = at(slot), Size = dims(slot), BackgroundColor3 = C.background})
-		ctx.refs().towerPanel, ctx.refs().towerWide = panel, wide
+		UI.windowSkin(panel, UI.color(Catalog.Rarities[Catalog.Heroes[tower.heroId].rarity].color))
+		ctx.refs().towerPanel, ctx.refs().towerWide, ctx.refs().towerRefresh = panel, wide, nil
 		local def = Catalog.Heroes[tower.heroId]
 		local own = tower.ownerId == player.UserId
 		local half = math.floor((w - 30) / 2)
 		local levelText = T("Melhoria ", "Upgrade ") .. tostring(tower.level) .. "/5" .. (tower.branch and "  •  " .. L(def.branches[tower.branch].name) or "")
-		UI.closeButton(panel, closeTowerPanel, {Name="CloseTower",Position = UDim2.fromOffset(w - 46, 4), Size = UDim2.fromOffset(40, 40), TextSize = 24})
+		UI.closeButton(panel, closeTowerPanel, {Name="CloseTower",Position = UDim2.fromOffset(w - (wide and 46 or 52), wide and 4 or 10), Size = UDim2.fromOffset(wide and 40 or 42, wide and 40 or 42), TextSize = 24})
 		local actionY, actionH, rowY, rowH
 		-- Every stat reads as now -> after (the server's preview of the next
 		-- upgrade), in text a thumb-length away can still read.
@@ -69,16 +70,87 @@ function MatchHud.new(ctx)
 			ctx.refs().towerStats = UI.label(panel, "", {Name = "TowerStats", Position = UDim2.fromOffset(12, 29), Size = UDim2.fromOffset(w - 24, 18), TextSize = 13, Font = UI.Fonts.display, RichText = true, TextTruncate = Enum.TextTruncate.AtEnd})
 			actionY, actionH, rowY, rowH = 50, 40, 94, 34
 		else
-			UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 8), Size = UDim2.fromOffset(w - 58, 30), TextSize = 24, Font = UI.Fonts.display, TextColor3 = colorFor(tower.heroId), TextTruncate = Enum.TextTruncate.AtEnd})
-			UI.label(panel, levelText, {Position = UDim2.fromOffset(12, 38), Size = UDim2.fromOffset(w - 24, 20), TextSize = 15, Font = UI.Fonts.bold, TextColor3 = C.muted, TextTruncate = Enum.TextTruncate.AtEnd})
-			ctx.refs().towerStats = UI.label(panel, "", {Name = "TowerStats", Position = UDim2.fromOffset(12, 62), Size = UDim2.fromOffset(w - 24, 112), TextSize = 19, Font = UI.Fonts.display, RichText = true, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.08})
-			-- What sets this hero apart, from the same list the hero page uses.
-			local traits = UI.heroTraits(def, T, tower.slow)
-			if #traits > 0 then
-				UI.label(panel, table.concat(traits, "\n"), {Name = "TowerTraits", Position = UDim2.fromOffset(12, 176), Size = UDim2.fromOffset(w - 24, 34), TextSize = 13, TextColor3 = C.cream, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top})
+			-- The tall panel, like the big games' unit cards: the hero on its rarity
+			-- colour, the name, the upgrade level as five pips, then a table of the
+			-- three numbers that matter with the next upgrade's value in green.
+			local tint = UI.color(Catalog.Rarities[def.rarity].color)
+			local face = UI.frame(panel, {Name = "TowerPortrait", Position = UDim2.fromOffset(12, 12), Size = UDim2.fromOffset(70, 70), BackgroundColor3 = tint})
+			UI.corner(face, 12)
+			UI.stroke(face, C.ink, 2.5)
+			UI.create("UIGradient", {Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(140, 140, 150)), Rotation = 90}, face)
+			if ctx.heroPortrait then ctx.heroPortrait(face, tower.heroId, {Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6)}) end
+			UI.label(panel, heroName(tower.heroId), {Name = "TowerName", Position = UDim2.fromOffset(92, 10), Size = UDim2.fromOffset(w - 148, 32), TextSize = 25, Font = UI.Fonts.display, TextColor3 = colorFor(tower.heroId):Lerp(Color3.new(1, 1, 1), 0.3), TextScaled = false, TextTruncate = Enum.TextTruncate.AtEnd})
+			UI.label(panel, levelText, {Name = "TowerLevel", Position = UDim2.fromOffset(92, 42), Size = UDim2.fromOffset(w - 104, 20), TextSize = 15, Font = UI.Fonts.display, TextColor3 = C.muted, TextTruncate = Enum.TextTruncate.AtEnd})
+			for pip = 1, 5 do
+				local lit = pip <= (tower.level or 1)
+				local mark = UI.frame(panel, {Name = "LevelPip" .. pip, Position = UDim2.fromOffset(92 + (pip - 1) * 26, 66), Size = UDim2.fromOffset(22, 10), BackgroundColor3 = lit and (pip == 5 and C.violet or C.gold) or UI.Skin.slotLine})
+				UI.corner(mark, 5)
+				UI.stroke(mark, C.ink, 1.5)
 			end
-			actionY, actionH = 214, (tower.level == 4) and 84 or 54
-			rowY, rowH = actionY + actionH + 8, 44
+			-- The table: header, value now, and the value after the next upgrade.
+			local grid = UI.frame(panel, {Name = "TowerTable", Position = UDim2.fromOffset(12, 92), Size = UDim2.fromOffset(w - 24, 96), BackgroundColor3 = UI.Skin.slot})
+			UI.corner(grid, 12)
+			UI.stroke(grid, UI.Skin.slotLine, 2)
+			local cells = {}
+			for index, key in ipairs({ "damage", "range", "rate" }) do
+				local cell = UI.frame(grid, {Name = "TowerStat_" .. key, BackgroundTransparency = 1, Position = UDim2.fromScale((index - 1) / 3, 0), Size = UDim2.fromScale(1 / 3, 1)})
+				if index > 1 then UI.frame(cell, {Position = UDim2.new(0, 0, 0.14, 0), Size = UDim2.new(0, 2, 0.72, 0), BackgroundColor3 = UI.Skin.slotLine}) end
+				UI.label(cell, ({ T("Dano", "Damage"), T("Alcance", "Range"), T("Ataques/s", "Hits/s") })[index], {Position = UDim2.fromOffset(4, 6), Size = UDim2.new(1, -8, 0, 20), TextSize = 16, Font = UI.Fonts.display, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
+				local value = UI.label(cell, "", {Name = "TowerNow_" .. key, Position = UDim2.fromOffset(4, 28), Size = UDim2.new(1, -8, 0, 32), TextSize = 28, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
+				UI.outline(value, 2.5)
+				local after = UI.label(cell, "", {Name = "TowerNext_" .. key, Position = UDim2.fromOffset(2, 64), Size = UDim2.new(1, -4, 0, 24), TextSize = 16, Font = UI.Fonts.display, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center, TextScaled = false})
+				cells[key] = { value = value, after = after }
+			end
+			-- Slow, area and the like as pills under the table, with their next value.
+			local extras = UI.frame(panel, {Name = "TowerExtras", Position = UDim2.fromOffset(12, 196), Size = UDim2.fromOffset(w - 24, 30), BackgroundTransparency = 1})
+			UI.list(extras, 6, true)
+			local function refresh(current)
+				local now, nextStats = current.base or current, current.next
+				local function whole(v) return number(math.floor((v or 0) + 0.5)) end
+				local function tenth(v) return string.format("%.1f", v or 0) end
+				local function rate(v) return string.format("%.2f", v or 0) end
+				local damageAfter = nextStats and nextStats.damage * ((current.damage or 0) / math.max(0.001, now.damage or 1))
+				local rateAfter = nextStats and nextStats.rate * ((current.rate or 0) / math.max(0.001, now.rate or 1))
+				local rows = { damage = { current.damage, damageAfter, whole }, range = { current.range, nextStats and nextStats.range, tenth }, rate = { current.rate, rateAfter, rate } }
+				for key, row in pairs(rows) do
+					local a, b, format = row[1] or 0, row[2], row[3]
+					cells[key].value.Text = format(a)
+					if b and math.abs(b - a) > 0.001 then
+						local gain = a > 0 and math.floor((b / a - 1) * 100 + 0.5) or 0
+						cells[key].after.Text = "→ " .. format(b) .. (gain ~= 0 and string.format("  (%+d%%)", gain) or "")
+						cells[key].after.TextColor3 = b >= a and C.green or C.red
+					else
+						cells[key].after.Text = (current.level or 1) >= 5 and T("máximo", "max") or ""
+						cells[key].after.TextColor3 = C.muted
+					end
+				end
+				UI.clear(extras)
+				UI.list(extras, 6, true)
+				local function percent(v) return math.floor((v or 0) * 100 + 0.5) .. "%" end
+				if (current.slow or 0) > 0 then
+					local nextSlow = nextStats and nextStats.slow
+					UI.pill(extras, T("Lentidão ", "Slow ") .. percent(current.slow) .. ((nextSlow and nextSlow > current.slow + 0.001) and ("  → " .. percent(nextSlow)) or ""), Color3.fromRGB(70, 150, 230), {TextSize = 14, Size = UDim2.fromOffset(0, 26)})
+				end
+				if (current.splash or 0) > 0 then UI.pill(extras, T("Área ", "Area ") .. tenth(current.splash), C.coral:Lerp(C.ink, 0.15), {TextSize = 14, Size = UDim2.fromOffset(0, 26)}) end
+				UI.pill(extras, def.air and T("Chão e ar", "Ground + air") or T("Só chão", "Ground only"), def.air and C.green:Lerp(C.ink, 0.25) or C.coral:Lerp(C.ink, 0.25), {TextSize = 14, Size = UDim2.fromOffset(0, 26)})
+			end
+			refresh(tower)
+			ctx.refs().towerRefresh = refresh
+			local traits = UI.heroTraits(def, T, tower.slow)
+			local traitLabel
+			if #traits > 0 then
+				traitLabel = UI.label(panel, table.concat(traits, "  •  "), {Name = "TowerTraits", Position = UDim2.fromOffset(12, 232), Size = UDim2.fromOffset(w - 24, 36), TextSize = 14, TextColor3 = C.cream, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top})
+			end
+			rowH = 44
+			rowY = slot.h - 12 - rowH
+			actionH = (tower.level == 4) and 96 or 56
+			actionY = rowY - 8 - actionH
+			-- A short column keeps what matters: the buttons first, then the
+			-- pills, then the trait line (the specializations explain themselves).
+			if traitLabel and 232 + 36 > actionY - 4 then
+				if 232 + 20 <= actionY - 4 then traitLabel.Size, traitLabel.TextSize = UDim2.fromOffset(w - 24, 20), 13 else traitLabel.Visible = false end
+			end
+			if 196 + 30 > actionY - 4 then extras.Visible = false end
 		end
 		local function note(text)
 			UI.label(panel, text, {Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, (own and rowY - 6 or slot.h - 6) - actionY), TextSize = wide and 12 or 15, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextYAlignment = Enum.TextYAlignment.Top})
@@ -88,7 +160,7 @@ function MatchHud.new(ctx)
 			return
 		end
 		if tower.level < 4 then
-			local upgrade = UI.button(panel, T("MELHORAR  •  ", "UPGRADE  •  ") .. number(tower.upgradeCost), function() act("UpgradeTower", {towerId = tower.id}) end, {Name = "TowerUpgrade", Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = wide and 15 or 21, BackgroundColor3 = C.green})
+			local upgrade = UI.button(panel, T("Melhorar  •  ", "Upgrade  •  ") .. number(tower.upgradeCost), function() act("UpgradeTower", {towerId = tower.id}) end, {Name = "TowerUpgrade", Position = UDim2.fromOffset(12, actionY), Size = UDim2.fromOffset(w - 24, actionH), TextSize = wide and 16 or 24, BackgroundColor3 = C.green})
 			local match = ctx.state().match
 			if (match and match.cash or 0) < (tower.upgradeCost or 0) then upgrade.BackgroundColor3 = C.card end
 		elseif tower.level == 4 then
@@ -96,9 +168,9 @@ function MatchHud.new(ctx)
 			for branch = 1, 2 do
 				local after = tower.branches and tower.branches[branch]
 				local label = L(def.branches[branch].name) .. "\n" .. (after and (T("DANO ", "DMG ") .. number(math.floor(after.damage + 0.5)) .. "  •  ") or "") .. number(tower.upgradeCost)
-				local choose = UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Name = "TowerBranch" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY), Size = UDim2.fromOffset(half, wide and actionH or 44), TextSize = wide and 11 or 13, TextWrapped = true, BackgroundColor3 = branch == 1 and C.green or C.blue})
+				local choose = UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Name = "TowerBranch" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY), Size = UDim2.fromOffset(half, wide and actionH or 48), TextSize = wide and 11 or 14, TextWrapped = true, BackgroundColor3 = branch == 1 and C.green or C.blue})
 				if not wide then
-					UI.label(panel, L(def.branches[branch].description), {Name = "BranchInfo" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY + 46), Size = UDim2.fromOffset(half, 38), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top})
+					UI.label(panel, L(def.branches[branch].description), {Name = "BranchInfo" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY + 52), Size = UDim2.fromOffset(half, 44), TextSize = 13, TextColor3 = C.cream, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top})
 				end
 			end
 		else
@@ -107,10 +179,10 @@ function MatchHud.new(ctx)
 		UI.secondary(panel, T("Alvo: ", "Target: ") .. L(kit.priorityNames[tower.priority] or tower.priority), function()
 			local index = table.find(kit.priorityOrder, tower.priority) or 1
 			act("SetPriority", {towerId = tower.id, priority = kit.priorityOrder[index % #kit.priorityOrder + 1]})
-		end, {Position = UDim2.fromOffset(12, rowY), Size = UDim2.fromOffset(half, rowH), TextSize = wide and 12 or 15})
+		end, {Position = UDim2.fromOffset(12, rowY), Size = UDim2.fromOffset(half, rowH), TextSize = wide and 12 or 16})
 		UI.secondary(panel, T("Vender • ", "Sell • ") .. number(math.floor((tower.invested or 0) * 0.7)), function()
 			act("SellTower", {towerId = tower.id}, closeTowerPanel)
-		end, {Position = UDim2.fromOffset(18 + half, rowY), Size = UDim2.fromOffset(half, rowH), TextColor3 = C.red, TextSize = wide and 12 or 15})
+		end, {Position = UDim2.fromOffset(18 + half, rowY), Size = UDim2.fromOffset(half, rowH), BackgroundColor3 = C.red:Lerp(UI.Skin.body, 0.35), TextSize = wide and 12 or 16})
 	end
 
 	-- Every tower you own carries its next upgrade above it, in the world: tap
