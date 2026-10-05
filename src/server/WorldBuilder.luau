@@ -2272,8 +2272,9 @@ function Kit.sign(parent, name, cf, width, height, spec)
 	local gui = Instance.new("SurfaceGui")
 	gui.Name, gui.Face, gui.LightInfluence = "Artwork", Enum.NormalId.Front, 0
 	gui.SizingMode, gui.PixelsPerStud, gui.Parent = Enum.SurfaceGuiSizingMode.PixelsPerStud, 22, face
-	local sky = frame2d(gui, UDim2.fromScale(0.5, 0.5), UDim2.fromScale(1, 1), HQ.white)
-	sky.Name = "Sky"
+	-- Rounded corners: a sign reads as a screen, not a slab.
+	local sky = frame2d(gui, UDim2.fromScale(0.5, 0.5), UDim2.fromScale(1, 1), HQ.white, UDim.new(0, 30))
+	sky.Name, sky.ClipsDescendants = "Sky", true
 	gradient(sky, spec.top or Color3.fromRGB(70, 170, 255), spec.bottom or Color3.fromRGB(34, 60, 150))
 	-- Sunburst rays from behind the title.
 	for i = 0, 5 do

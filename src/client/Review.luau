@@ -8,6 +8,8 @@
 --   DoomReviewSize = "667x375"    draw the HUD in a phone-sized area ("" = full)
 --   DoomReviewLanguage = "en"     fixture language (default pt)
 --   DoomReviewFocus = "tower"     camera on the first tower ("" = normal camera)
+--   DoomReviewFx = "lasers"|"powers"  fire the attack or power effects in a loop for
+--                                 seven seconds in front of the camera (no match needed)
 --   DoomReviewHideUI = true       hide the game's own interface (marketing shots)
 --   DoomReviewHideChrome = true   hide only Roblox's own buttons and chat
 --   DoomReviewServer = "start manhattan normal" | "spawn lizard,zombie" |
@@ -302,6 +304,51 @@ function Review.start(api)
 		else
 			camera.CameraType = Enum.CameraType.Custom
 		end
+	end)
+	-- DoomReviewFx: the attack and power visuals, fired over and over in front of
+	-- the camera, because in a real fight a shot lasts a fifth of a second.
+	player:GetAttributeChangedSignal("DoomReviewFx"):Connect(function()
+		local scene = player:GetAttribute("DoomReviewFx")
+		if type(scene) ~= "string" or scene == "" then return end
+		local camera = workspace.CurrentCamera
+		local look = camera.CFrame.LookVector
+		local reach = look.Y < -0.05 and (camera.CFrame.Position.Y / -look.Y) or 40
+		local center = camera.CFrame.Position + look * math.min(reach, 80)
+		center = Vector3.new(center.X, 0.3, center.Z)
+		local right = camera.CFrame.RightVector * Vector3.new(1, 0, 1)
+		right = right.Magnitude > 0.01 and right.Unit or Vector3.xAxis
+		local forward = Vector3.new(look.X, 0, look.Z)
+		forward = forward.Magnitude > 0.01 and forward.Unit or Vector3.zAxis
+		api.slowEffects(0.2)
+		task.spawn(function()
+			local finish = os.clock() + 7
+			local round = 0
+			while os.clock() < finish and player:GetAttribute("DoomReviewFx") == scene do
+				round += 1
+				if scene == "lasers" then
+					local ids = { "ironman", "vision", "cyclops", "starlord", "captainmarvel", "widow", "solartitan", "silversurfer", "bucky" }
+					for index, id in ipairs(ids) do
+						local def = Catalog.Heroes[id]
+						if def then
+							local from = center + right * ((index - 5) * 6) + Vector3.new(0, 4, 0)
+							local to = from + forward * 22 - Vector3.new(0, 3.2, 0)
+							api.fire({ kind = "Shot", heroId = id, from = from, to = to, color = Color3.fromRGB(def.color[1], def.color[2], def.color[3]), towerId = "review" })
+						end
+					end
+				else
+					local kinds = { "blast", "heal", "slow", "stun", "reveal", "pull", "push", "burn", "weaken", "frenzy" }
+					for index, kind in ipairs(kinds) do
+						local spot = center + right * (((index - 1) % 5 - 2) * 26) + forward * (index > 5 and 22 or -8)
+						api.fire({ kind = "Ability", abilityKind = kind, heroId = "ironman", ownerId = 0, position = spot, radius = 9, duration = 1,
+							color = ({ blast = { 255, 130, 60 }, heal = { 110, 235, 150 }, slow = { 130, 210, 255 }, stun = { 255, 230, 90 }, reveal = { 190, 150, 255 },
+								pull = { 150, 120, 255 }, push = { 120, 200, 255 }, burn = { 255, 110, 40 }, weaken = { 150, 60, 200 }, frenzy = { 255, 90, 120 } })[kind] })
+					end
+				end
+				task.wait(scene == "lasers" and 0.3 or 1)
+			end
+			api.slowEffects(nil)
+		end)
+		print("DOOM_REVIEW_FX", scene)
 	end)
 	player:GetAttributeChangedSignal("DoomReviewServer"):Connect(function()
 		local line = player:GetAttribute("DoomReviewServer")

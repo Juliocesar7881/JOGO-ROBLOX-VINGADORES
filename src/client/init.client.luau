@@ -1804,6 +1804,8 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		openBaseUpgrade = openBaseUpgrade,
 		openContext = function(kind, data) openContext(kind, data) end,
 		hold = function(fn) reviewHold = fn end,
+		fire = function(event) effects:Handle(event) end,
+		slowEffects = function(scale) effects.reviewSlow = scale end,
 		openSheet = function(tab) kit.sheet:Open(tab) end,
 		inspectEnemy = function(enemyId, hp)
 			local def = Catalog.Enemies[enemyId]

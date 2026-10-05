@@ -592,6 +592,8 @@ function Effects:_effect(size, frame, color, duration, shape, fade)
 	visual.Material, visual.Transparency = Enum.Material.Neon, fade or 0.12
 	local warning = visual:FindFirstChild("Warning")
 	if warning then warning.Enabled = false end
+	local ringGui = visual:FindFirstChild("RingGui")
+	if ringGui then ringGui.Enabled = false end
 	visual.Parent = self.folder
 	local effect = {part = visual, born = self.clock, expires = self.clock + duration, fade = fade or 0.12}
 	table.insert(self.shots, effect)
@@ -638,8 +640,8 @@ function Effects:_laser(from, to, color, width, duration)
 	local length = (to - from).Magnitude
 	if length < 0.05 then return end
 	local middle = CFrame.lookAt((from + to) / 2, to)
-	self:_effect(Vector3.new(width * 3.2, width * 3.2, length), middle, color, duration, nil, 0.72)
-	self:_effect(Vector3.new(width * 1.6, width * 1.6, length), middle, color, duration, nil, 0.25)
+	self:_effect(Vector3.new(width * 3.4, width * 3.4, length), middle, color, duration, nil, 0.6)
+	self:_effect(Vector3.new(width * 1.7, width * 1.7, length), middle, color, duration, nil, 0.12)
 	self:_effect(Vector3.new(width * 0.55, width * 0.55, length), middle, Color3.new(1, 1, 1), duration * 0.85, nil, 0)
 	self:_muzzle(from, color, width * 3)
 	self:_burst(to, color, width * 2)
@@ -658,11 +660,33 @@ function Effects:_column(position, tint, height, width, duration, fade)
 	return effect
 end
 
--- A flat ring on the ground that swells (or, with from > to, closes in).
-function Effects:_ring(position, tint, from, to, duration, thickness)
-	local center = Vector3.new(position.X, 0.22, position.Z)
-	local effect = self:_effect(Vector3.new(thickness or 0.2, from, from), CFrame.new(center) * CFrame.Angles(0, 0, math.pi / 2), tint, duration, Enum.PartType.Cylinder, 0.3)
-	if effect then effect.growFrom, effect.growTo = from, to end
+-- A flat ring on the ground that swells (or, with from > to, closes in): a
+-- faint disc with a bright rim drawn on its top face, so it reads as a shockwave
+-- and not as a stain on the floor. The rim fades as the ring ages.
+function Effects:_ring(position, tint, from, to, duration)
+	local center = Vector3.new(position.X, 0.24, position.Z)
+	local effect = self:_effect(Vector3.new(0.12, from, from), CFrame.new(center) * CFrame.Angles(0, 0, math.pi / 2), tint, duration, Enum.PartType.Cylinder, 0.84)
+	if not effect then return nil end
+	effect.growFrom, effect.growTo = from, to
+	local gui = effect.part:FindFirstChild("RingGui")
+	if not gui then
+		gui = Instance.new("SurfaceGui")
+		gui.Name, gui.Face, gui.SizingMode, gui.CanvasSize, gui.LightInfluence = "RingGui", Enum.NormalId.Right, Enum.SurfaceGuiSizingMode.FixedSize, Vector2.new(256, 256), 0
+		gui.Parent = effect.part
+		local frame = Instance.new("Frame")
+		frame.Name, frame.BackgroundTransparency, frame.Size = "Ring", 1, UDim2.fromScale(1, 1)
+		frame.Parent = gui
+		local round = Instance.new("UICorner")
+		round.CornerRadius = UDim.new(0.5, 0)
+		round.Parent = frame
+		local line = Instance.new("UIStroke")
+		line.Name, line.Thickness = "Line", 16
+		line.Parent = frame
+	end
+	gui.Enabled = true
+	local line = gui.Ring.Line
+	line.Color, line.Transparency = tint:Lerp(Color3.new(1, 1, 1), 0.3), 0
+	effect.stroke = line
 	return effect
 end
 
@@ -699,8 +723,8 @@ function Effects:_abilityVisual(kind, position, radius, tint)
 	end
 	if kind == "blast" or kind == "smite" or kind == "execute" then
 		self:_column(ground, tint:Lerp(Color3.new(1, 1, 1), 0.35), 30, radius * 0.7, 0.5)
-		self:_ring(ground, tint, radius * 0.4, radius * 2.2, 0.45, 0.3)
-		self:_ring(ground, tint:Lerp(Color3.new(1, 1, 1), 0.5), radius * 0.2, radius * 1.4, 0.3, 0.2)
+		self:_ring(ground, tint, radius * 0.4, radius * 2.2, 0.45)
+		self:_ring(ground, tint:Lerp(Color3.new(1, 1, 1), 0.5), radius * 0.2, radius * 1.4, 0.3)
 		self:_groundImpact(position, tint, radius)
 		self:_impact(position + Vector3.new(0, 2, 0), tint, radius * 0.7)
 		self:_sparks(ground + Vector3.new(0, 1, 0), tint, 8, radius * 1.1)
@@ -714,19 +738,19 @@ function Effects:_abilityVisual(kind, position, radius, tint)
 			if streak then streak.from, streak.to, streak.arrow = at, at + Vector3.new(0, 7, 0), true end
 		end)
 	elseif kind == "slow" then
-		self:_ring(ground, tint, radius * 0.5, radius * 2, 0.7, 0.2)
+		self:_ring(ground, tint, radius * 0.5, radius * 2, 0.7)
 		around(8, 0.7, function(at) self:_line(at, at + Vector3.new(0, 4.5, 0), tint:Lerp(Color3.new(1, 1, 1), 0.45), 0.4, 0.9) end)
 		around(8, 0.35, function(at) self:_line(at, at + Vector3.new(0, 2.6, 0), tint, 0.3, 0.9) end)
 	elseif kind == "stun" or kind == "chain" then
-		self:_ring(ground, tint, radius * 0.4, radius * 2, 0.35, 0.2)
+		self:_ring(ground, tint, radius * 0.4, radius * 2, 0.35)
 		around(4, 0.6, function(at) self:_bolt(at, tint, 0.22) end)
 	elseif kind == "reveal" then
-		self:_ring(ground, tint, radius * 0.4, radius * 2.2, 0.6, 0.18)
-		self:_ring(ground, tint:Lerp(Color3.new(1, 1, 1), 0.5), radius * 1.2, radius * 2.6, 0.8, 0.14)
+		self:_ring(ground, tint, radius * 0.4, radius * 2.2, 0.6)
+		self:_ring(ground, tint:Lerp(Color3.new(1, 1, 1), 0.5), radius * 1.2, radius * 2.6, 0.8)
 		self:_column(ground, tint, 12, radius * 0.4, 0.6, 0.7)
 	elseif kind == "pull" or kind == "push" then
 		local inward = kind == "pull"
-		self:_ring(ground, tint, inward and radius * 2.2 or radius * 0.4, inward and radius * 0.4 or radius * 2.2, 0.5, 0.25)
+		self:_ring(ground, tint, inward and radius * 2.2 or radius * 0.4, inward and radius * 0.4 or radius * 2.2, 0.5)
 		around(8, 1, function(at)
 			local a, b = at + Vector3.new(0, 0.8, 0), ground + Vector3.new(0, 0.8, 0)
 			local from, to = inward and a or b, inward and b or a
@@ -734,17 +758,17 @@ function Effects:_abilityVisual(kind, position, radius, tint)
 			if streak then streak.from, streak.to, streak.arrow = from, to, true end
 		end)
 	elseif kind == "burn" then
-		self:_ring(ground, tint, radius * 0.5, radius * 1.8, 0.5, 0.2)
+		self:_ring(ground, tint, radius * 0.5, radius * 1.8, 0.5)
 		around(7, 0.6, function(at) self:_column(at, Color3.fromRGB(255, 150, 60), 5 + (self.shotSerial % 3), 1.7, 0.7, 0.4) end)
 	elseif kind == "weaken" then
-		self:_ring(ground, tint, radius * 2.4, radius * 0.4, 0.6, 0.3)
+		self:_ring(ground, tint, radius * 2.4, radius * 0.4, 0.6)
 		self:_dome(ground, tint:Lerp(Color3.new(0, 0, 0), 0.35), radius, 0.7)
 	elseif kind == "frenzy" then
-		self:_ring(ground, tint, radius * 0.3, radius * 1.6, 0.3, 0.2)
-		self:_ring(ground, tint:Lerp(Color3.new(1, 1, 1), 0.4), radius * 0.3, radius * 2.2, 0.5, 0.2)
+		self:_ring(ground, tint, radius * 0.3, radius * 1.6, 0.3)
+		self:_ring(ground, tint:Lerp(Color3.new(1, 1, 1), 0.4), radius * 0.3, radius * 2.2, 0.5)
 		self:_sparks(ground + Vector3.new(0, 1, 0), tint, 6, radius)
 	else
-		self:_ring(ground, tint, radius * 0.4, radius * 2, 0.5, 0.2)
+		self:_ring(ground, tint, radius * 0.4, radius * 2, 0.5)
 		self:_column(ground, tint, 16, radius * 0.5, 0.5)
 		self:_sparks(ground + Vector3.new(0, 1, 0), tint, 6, radius)
 	end
@@ -1480,7 +1504,8 @@ function Effects:Step(dt)
 		record.model:PivotTo(pivot)
 		for _,leg in ipairs(record.legs) do leg.part.CFrame=pivot*leg.base*CFrame.Angles(lowAllyFX and 0 or math.sin(self.clock*10+leg.side*math.pi/2)*0.4,0,0) end
 	end
-	self.clock += dt
+	-- Studio review only (Review.luau): effects played in slow motion so a still can catch one.
+	self.clock += dt * (self.reviewSlow or 1)
 	-- Squad markers fade after four seconds.
 	for index = #(self.pings or {}), 1, -1 do
 		local entry = self.pings[index]
@@ -1634,6 +1659,7 @@ function Effects:Step(dt)
 				local fadeLife = effect.telegraph and math.max(0, (life - 0.78) / 0.22) or life
 				effect.part.Transparency = effect.fade + (1 - effect.fade) * fadeLife
 			end
+			if effect.stroke then effect.stroke.Transparency = math.clamp(life * life, 0, 1) end
 			if effect.growFrom then
 				local width = effect.growFrom + (effect.growTo - effect.growFrom) * life
 				effect.part.Size = Vector3.new(effect.part.Size.X, width, width)

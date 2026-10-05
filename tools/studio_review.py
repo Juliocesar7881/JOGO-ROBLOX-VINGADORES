@@ -17,6 +17,7 @@ captures the window with PrintWindow and presses Stop. Scenes:
     snap               capture what is on screen now (an animation in flight) without starting a scene
     focus:tower        camera on the first tower (focus: alone resets it)
     focus:cam:x,y,z,tx,ty,tz   camera at (x,y,z) looking at (tx,ty,tz), e.g. in the lobby
+    fx:lasers|powers   fire the attack or power visuals in a loop for seven seconds, then snap
     hideui:on|off      hide (or show) the game's own interface, for clean marketing shots
     hidechrome:on|off  hide only Roblox's own buttons and chat
 
@@ -213,6 +214,11 @@ def main() -> int:
             label = re.sub(r"[^a-z0-9]+", "-", scene.lower()).strip("-")
             if scene.startswith("focus:"):
                 command(f'{player}:SetAttribute("DoomReviewFocus", "{scene[6:]}")', f"DOOM_FOCUS_{int(time.time())}_{index}")
+                continue
+            if scene.startswith("fx:"):
+                # Attack and power visuals fired in a loop for seven seconds (see Review.luau).
+                command(f'{player}:SetAttribute("DoomReviewFx", "") task.wait() {player}:SetAttribute("DoomReviewFx", "{scene[3:]}") task.wait(1.1)',
+                        f"DOOM_FX_{int(time.time())}_{index}", 60)
                 continue
             if scene.startswith("wait:"):
                 time.sleep(float(scene[5:]))
