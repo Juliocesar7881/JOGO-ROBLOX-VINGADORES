@@ -78,6 +78,13 @@ local function buildArtEnemy(def, template)
 	UI.corner(hp, 3)
 	local status = UI.label(billboard, "", {Name="Status", Position=UDim2.new(0.5,-75,0,-19), Size=UDim2.fromOffset(150,17),
 		TextSize=11, TextColor3=UI.Colors.gold, TextStrokeTransparency=0.25, Visible=false})
+	-- Health bars and status words grow with the screen, like the HUD.
+	local grow = UI.screenScale or 1
+	if grow > 1.01 then
+		billboard.Size = UDim2.fromOffset(math.floor(billboard.Size.X.Offset * grow), math.floor(billboard.Size.Y.Offset * grow))
+		status.Position, status.Size = UDim2.new(0.5, -75 * grow, 0, -19 * grow), UDim2.fromOffset(150 * grow, 17 * grow)
+		status.TextSize = math.floor(11 * grow)
+	end
 	local record = {
 		model = model, bar = hp, status = status, scale = scale, def = def, lastHP = nil, art = true,
 		legs = nil, arms = {}, wings = {}, legHeight = 0, pieces = pieces, billboard = billboard,
@@ -171,6 +178,13 @@ local function buildRigEnemy(def, template)
 	UI.corner(hp, 3)
 	local status = UI.label(billboard, "", {Name="Status", Position=UDim2.new(0.5,-75,0,-19), Size=UDim2.fromOffset(150,17),
 		TextSize=11, TextColor3=UI.Colors.gold, TextStrokeTransparency=0.25, Visible=false})
+	-- Health bars and status words grow with the screen, like the HUD.
+	local grow = UI.screenScale or 1
+	if grow > 1.01 then
+		billboard.Size = UDim2.fromOffset(math.floor(billboard.Size.X.Offset * grow), math.floor(billboard.Size.Y.Offset * grow))
+		status.Position, status.Size = UDim2.new(0.5, -75 * grow, 0, -19 * grow), UDim2.fromOffset(150 * grow, 17 * grow)
+		status.TextSize = math.floor(11 * grow)
+	end
 	local groundShadow
 	if def.air then
 		groundShadow = part(model, Vector3.new(0.05, 2.6 * scale, 2.6 * scale), Color3.new(0, 0, 0))
@@ -571,13 +585,14 @@ function Effects:_popup(position, amount, color, prefix, size)
 		anchor = part(self.folder, Vector3.new(0.2, 0.2, 0.2), Color3.new(), Enum.Material.SmoothPlastic)
 		anchor.Transparency = 1
 		local billboard = Instance.new("BillboardGui")
-		billboard.Size, billboard.AlwaysOnTop, billboard.MaxDistance = UDim2.fromOffset(140, 48), true, 160
+		local grow = math.max(1, UI.screenScale or 1)
+		billboard.Size, billboard.AlwaysOnTop, billboard.MaxDistance = UDim2.fromOffset(140 * grow, 48 * grow), true, 160
 		billboard.Parent = anchor
 		label = UI.label(billboard, "", {Size = UDim2.fromScale(1, 1), Font = UI.Fonts.display, TextSize = 18, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(24, 18, 30), TextXAlignment = Enum.TextXAlignment.Center})
 	end
 	size = size or 18
 	label.Text, label.TextColor3, label.TextTransparency, label.TextStrokeTransparency = (prefix or "-") .. UI.format(math.max(1, math.floor(amount))), color, 0, 0
-	label.TextSize = math.floor(size * 1.5)
+	label.TextSize = math.floor(size * 1.5 * math.max(1, UI.screenScale or 1))
 	anchor.CFrame = CFrame.new(position + Vector3.new(math.random(-8, 8) * 0.1, 1, 0))
 	table.insert(self.popups, {anchor = anchor, label = label, born = self.clock, size = size, drift = math.random(-10, 10) * 0.12, expires = self.clock + 0.85})
 end
@@ -1698,7 +1713,7 @@ function Effects:Step(dt)
 			popup.anchor.CFrame += Vector3.new((popup.drift or 0) * dt, dt * 2.2, 0)
 			-- Pop: it appears half again bigger and settles within 0.12 s.
 			local age = self.clock - (popup.born or self.clock)
-			local size = popup.size or 18
+			local size = (popup.size or 18) * math.max(1, UI.screenScale or 1)
 			popup.label.TextSize = math.floor(size * (1 + 0.5 * math.max(0, 1 - age / 0.12)))
 			local remaining = popup.expires - self.clock
 			popup.label.TextTransparency = remaining < 0.25 and (1 - remaining / 0.25) or 0

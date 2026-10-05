@@ -225,7 +225,7 @@ function MatchHud.new(ctx)
 					local figure = anchor.Parent and anchor.Parent:FindFirstChild("HeroFigure")
 					local height = figure and tonumber(figure:GetAttribute("FigureHeight")) or 6.5
 					local gui = Instance.new("BillboardGui")
-					gui.Name, gui.Size, gui.AlwaysOnTop, gui.Active = "Upgrade_" .. id, UDim2.fromOffset(128, 34), true, true
+					gui.Name, gui.Size, gui.AlwaysOnTop, gui.Active = "Upgrade_" .. id, UDim2.fromOffset(150, 40), true, true
 					gui.StudsOffset, gui.MaxDistance, gui.ResetOnSpawn = Vector3.new(0, height + 2.6, 0), 200, false
 					gui.Adornee = anchor
 					board = {gui = gui}
@@ -233,8 +233,9 @@ function MatchHud.new(ctx)
 						local current = board.tower
 						if not current then return end
 						if (current.level or 1) >= 4 then selectTower(current.id) else act("UpgradeTower", {towerId = current.id}) end
-					end, {Size = UDim2.fromScale(1, 1), TextSize = 13})
+					end, {Size = UDim2.fromScale(1, 1), TextSize = 16})
 					UI.stroke(board.button, C.background, 2)
+					UI.scaleBillboard(gui)
 					gui.Parent = player:WaitForChild("PlayerGui")
 					upgradeBoards[id] = board
 				end

@@ -47,6 +47,23 @@ UI.Themes = {
 	settings = {color=UI.Colors.blue, icon="bolt"}, bases={color=UI.Colors.green,icon="heart"},
 }
 
+-- Pixel-sized world labels (BillboardGui) grow with the screen like the HUD:
+-- their size and every text inside follow UI.screenScale. Call once, after the
+-- contents exist.
+function UI.scaleBillboard(gui)
+	local scale = UI.screenScale or 1
+	if scale <= 1.01 or not gui then return gui end
+	local size = gui.Size
+	if size.X.Scale == 0 and size.Y.Scale == 0 then
+		gui.Size = UDim2.fromOffset(math.floor(size.X.Offset * scale), math.floor(size.Y.Offset * scale))
+	end
+	for _, item in ipairs(gui:GetDescendants()) do
+		if item:IsA("TextLabel") or item:IsA("TextButton") then item.TextSize = math.floor(item.TextSize * scale) end
+		if item:IsA("UIStroke") then item.Thickness = item.Thickness * math.min(scale, 1.6) end
+	end
+	return gui
+end
+
 -- The HUD is drawn on a scaled canvas (init.client sets this): the sizes and
 -- positions Roblox reports (AbsoluteSize, AbsolutePosition, WorldToScreenPoint)
 -- are real pixels, while every Position/Size offset is a logical pixel.
