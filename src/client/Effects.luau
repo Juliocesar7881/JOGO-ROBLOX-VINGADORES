@@ -987,6 +987,7 @@ function Effects:_heroShot(event, lowFX)
 		end
 	elseif heroId == "hulk" or heroId == "antman" or heroId=="beast" then
 		self:_groundImpact(target, color, heroId == "hulk" and 5 or 3.5)
+		self:_ring(target, color:Lerp(Color3.new(1, 1, 1), 0.3), 1.5, heroId == "hulk" and 11 or 7, 0.32)
 		for index = 0, 2 do
 			local angle = index * math.pi * 2 / 3 + self.shotSerial
 			local offset = Vector3.new(math.cos(angle), 0, math.sin(angle))
@@ -1004,6 +1005,7 @@ function Effects:_heroShot(event, lowFX)
 		local card=self:_effect(Vector3.new(0.7,1,0.1),CFrame.new(from),color,0.25,nil,0.1)
 		if card then card.from,card.to,card.arc=from,target,1.4 end
 		self:_groundImpact(target,color,2)
+		self:_sparks(target,color,5,1.6)
 	elseif heroId=="iceman" then
 		self:_line(from,target,color,0.2,0.2)
 		for index=-1,1 do self:_effect(Vector3.new(0.3,1.5,0.3),CFrame.new(target+Vector3.new(index*0.8,-0.4,0))*CFrame.Angles(0,0,index*0.2),color,0.35,nil,0.15) end
@@ -1013,6 +1015,7 @@ function Effects:_heroShot(event, lowFX)
 		local bolt = self:_effect(Vector3.one * 0.65, CFrame.new(from), Color3.fromRGB(255, 85, 131), 0.22, Enum.PartType.Ball, 0.1)
 		if bolt then bolt.from, bolt.to, bolt.arc = from, target, 2 end
 		self:_groundImpact(target, Color3.fromRGB(204, 57, 105), 3)
+		self:_ring(target, Color3.fromRGB(255, 90, 150), 1, 6, 0.3)
 	elseif heroId == "strange" then
 		self:_line(from, target, Color3.fromRGB(255, 181, 91), 0.13, 0.2)
 		for index = 0, 2 do
@@ -1044,6 +1047,8 @@ function Effects:_heroShot(event, lowFX)
 		local shell = self:_effect(Vector3.one * 0.3, CFrame.new(from), Color3.fromRGB(200, 160, 90), 0.3, Enum.PartType.Ball, 0.1)
 		if shell then shell.from, shell.to, shell.arc = from, target, 4 end
 		self:_groundImpact(target, Color3.fromRGB(255, 150, 60), 4)
+		self:_muzzle(from, Color3.fromRGB(255, 200, 120), 0.6)
+		self:_burst(target, Color3.fromRGB(255, 150, 60), 0.6)
 	elseif heroId == "daredevil" then
 		self:_line(target + Vector3.new(-0.9, 0.9, 0), target + Vector3.new(0.9, -0.9, 0), Color3.fromRGB(220, 50, 60), 0.09, 0.16)
 		self:_line(target + Vector3.new(0.9, 0.9, 0), target + Vector3.new(-0.9, -0.9, 0), Color3.fromRGB(220, 50, 60), 0.09, 0.16)
@@ -1058,6 +1063,8 @@ function Effects:_heroShot(event, lowFX)
 		local missile = self:_effect(Vector3.new(0.22, 0.22, 1.6), CFrame.lookAt(from, target), Color3.fromRGB(180, 190, 200), 0.2)
 		if missile then missile.from, missile.to = from, target end
 		self:_groundImpact(target, Color3.fromRGB(255, 140, 60), 5.5)
+		self:_muzzle(from, Color3.fromRGB(255, 200, 120), 0.7)
+		self:_ring(target, Color3.fromRGB(255, 160, 70), 1.5, 10, 0.35)
 	elseif heroId == "starlord" then
 		local side = delta.Unit:Cross(Vector3.new(0, 1, 0)) * 0.5
 		self:_laser(from + side, target + side, Color3.fromRGB(255, 120, 90), 0.09, 0.14)
@@ -1073,6 +1080,7 @@ function Effects:_heroShot(event, lowFX)
 			previous = point
 		end
 		self:_groundImpact(target, Color3.fromRGB(255, 90, 20), 4)
+		self:_column(Vector3.new(target.X, 0.3, target.Z), Color3.fromRGB(255, 120, 40), 4, 1.2, 0.35, 0.4)
 	elseif heroId == "captainmarvel" then
 		self:_laser(from, target, Color3.fromRGB(255, 220, 140), 0.34, 0.24)
 	elseif heroId == "silversurfer" then
@@ -1081,6 +1089,7 @@ function Effects:_heroShot(event, lowFX)
 		-- A punch with weight: a shockwave ring on the ground and the enemy's
 		-- impact flash, in the hero's own red.
 		self:_groundImpact(target, color, 4)
+		self:_ring(target, Color3.fromRGB(255, 190, 120), 1.5, 8, 0.3)
 		self:_impact(target, Color3.fromRGB(255, 190, 120), 0.7)
 		for index = 0, 2 do
 			local angle = index * math.pi * 2 / 3 + self.shotSerial
@@ -1110,6 +1119,7 @@ function Effects:_heroShot(event, lowFX)
 		self:_impact(target, Color3.fromRGB(255, 230, 140), 0.45)
 	elseif heroId == "seaking" then
 		self:_groundImpact(target, color, 5)
+		self:_ring(target, Color3.fromRGB(110, 225, 240), 1.5, 9, 0.4)
 		for index = -1, 1 do
 			self:_effect(Vector3.new(0.4, 1.6, 0.4), CFrame.new(target + Vector3.new(index * 0.9, -0.2, 0)) * CFrame.Angles(0, 0, index * 0.25), Color3.fromRGB(110, 225, 240), 0.35, nil, 0.2)
 		end

@@ -331,8 +331,9 @@ function Review.start(api)
 			local round = 0
 			while os.clock() < finish and player:GetAttribute("DoomReviewFx") == scene do
 				round += 1
-				if scene == "lasers" then
-					local ids = { "ironman", "vision", "cyclops", "starlord", "captainmarvel", "widow", "solartitan", "silversurfer", "bucky" }
+				if scene == "lasers" or scene == "melee" then
+					local ids = scene == "melee" and { "hulk", "rocket", "warmachine", "ghostrider", "capmen", "seaking", "wanda", "gambit", "beast" }
+						or { "ironman", "vision", "cyclops", "starlord", "captainmarvel", "widow", "solartitan", "silversurfer", "bucky" }
 					for index, id in ipairs(ids) do
 						local def = Catalog.Heroes[id]
 						if def then
@@ -350,7 +351,7 @@ function Review.start(api)
 								pull = { 150, 120, 255 }, push = { 120, 200, 255 }, burn = { 255, 110, 40 }, weaken = { 150, 60, 200 }, frenzy = { 255, 90, 120 } })[kind] })
 					end
 				end
-				task.wait(scene == "lasers" and 0.3 or 1)
+				task.wait(scene == "powers" and 1 or 0.3)
 			end
 			api.slowEffects(nil)
 		end)

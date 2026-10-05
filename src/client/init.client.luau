@@ -1668,6 +1668,15 @@ end)
 
 -- The base agent standing beside each commander's base: pressing E (or tapping
 -- its prompt) opens that base's upgrade, the only place a base is upgraded.
+-- A prompt that carries both languages is shown in this player's only.
+pcall(function()
+	game:GetService("ProximityPromptService").PromptShown:Connect(function(prompt)
+		local suffix = language == "en" and "EN" or "PT"
+		local action, object = prompt:GetAttribute("Action" .. suffix), prompt:GetAttribute("Object" .. suffix)
+		if action then prompt.ActionText = action end
+		if object then prompt.ObjectText = object end
+	end)
+end)
 game:GetService("ProximityPromptService").PromptTriggered:Connect(function(prompt)
 	local owner = prompt:GetAttribute("BaseOwnerId")
 	if owner == nil or not activeMatch() then return end

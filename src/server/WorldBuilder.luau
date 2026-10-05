@@ -5646,6 +5646,9 @@ function World:UpdateBase(index, base, core, ownerId)
 		anchor.Transparency,anchor.CanCollide,anchor.CanQuery=1,true,false
 		local prompt=Instance.new("ProximityPrompt")
 		prompt.Name,prompt.ActionText,prompt.ObjectText="BaseUpgradePrompt","Evoluir base / Upgrade base","Agente da Base / Base Agent"
+		-- Each client shows the prompt in its own language (see init.client, PromptShown).
+		prompt:SetAttribute("ActionPT","Evoluir base"); prompt:SetAttribute("ActionEN","Upgrade base")
+		prompt:SetAttribute("ObjectPT","Agente da Base"); prompt:SetAttribute("ObjectEN","Base Agent")
 		prompt.MaxActivationDistance,prompt.HoldDuration,prompt.RequiresLineOfSight=14,0,false
 		prompt:SetAttribute("BaseOwnerId",ownerId or 0)
 		prompt.Parent=anchor
