@@ -3370,16 +3370,24 @@ function World:BuildServiceDesks(lobby)
 	local scene = Instance.new("Model")
 	scene.Name, scene.Parent = "HubServices", lobby
 	local function localized(target, pt, en) target:SetAttribute("LobbyTextPT", pt); target:SetAttribute("LobbyTextEN", en) end
+	-- A rounded booth, not a box: a counter with round ends (a capsule), round
+	-- posts and a shell-shaped canopy, all in the service's colour.
 	local function kiosk(center, facing, color)
 		local frame = CFrame.new(center) * CFrame.Angles(0, facing, 0)
-		Kit.block(scene, "DeskBody", V(9, 2.6, 3.2), frame * CFrame.new(0, 1.3 + GROUND_Y, 0), HQ.navy, Enum.Material.Metal, true)
-		Kit.block(scene, "DeskTop", V(9.6, 0.4, 3.8), frame * CFrame.new(0, 2.8 + GROUND_Y, 0), HQ.trim, Enum.Material.SmoothPlastic, true)
-		Kit.block(scene, "DeskStripe", V(8.4, 0.4, 0.2), frame * CFrame.new(0, 1.9 + GROUND_Y, 1.7), color, Enum.Material.Neon)
+		Kit.block(scene, "DeskBody", V(6, 2.6, 3.2), frame * CFrame.new(0, 1.3 + GROUND_Y, 0), HQ.navy, Enum.Material.Metal, true)
+		Kit.block(scene, "DeskTop", V(6.4, 0.4, 3.8), frame * CFrame.new(0, 2.8 + GROUND_Y, 0), HQ.trim, Enum.Material.SmoothPlastic, true)
 		for _, side in ipairs({ -1, 1 }) do
-			Kit.block(scene, "DeskPost", V(0.6, 9, 0.6), frame * CFrame.new(side * 4.6, 4.5 + GROUND_Y, -1.6), HQ.steel, Enum.Material.Metal)
+			local ending = (frame * CFrame.new(side * 3, 0, 0)).Position
+			Kit.column(scene, "DeskEnd", V(ending.X, GROUND_Y, ending.Z), 2.6, 3.2, HQ.navy, Enum.Material.Metal, true)
+			Kit.disc(scene, "DeskTopEnd", V(ending.X, 2.8 + GROUND_Y, ending.Z), 3.8, 0.4, HQ.trim, Enum.Material.SmoothPlastic, true)
+			local post = (frame * CFrame.new(side * 4.6, 0, -1.6)).Position
+			Kit.column(scene, "DeskPost", V(post.X, GROUND_Y, post.Z), 9, 0.7, HQ.steel, Enum.Material.Metal)
+			Kit.blob(scene, "DeskPostCap", V(1.1, 1.1, 1.1), CFrame.new(post.X, 9.1 + GROUND_Y, post.Z), HQ.gold, Enum.Material.Metal)
 		end
-		Kit.block(scene, "DeskCanopy", V(11, 0.6, 5), frame * CFrame.new(0, 9.2 + GROUND_Y, -0.2) * CFrame.Angles(-0.12, 0, 0), color:Lerp(HQ.navy, 0.35), Enum.Material.SmoothPlastic)
-		Kit.block(scene, "DeskCanopyGlow", V(11.2, 0.25, 0.3), frame * CFrame.new(0, 8.95 + GROUND_Y, 2.2), color, Enum.Material.Neon)
+		Kit.block(scene, "DeskStripe", V(6, 0.4, 0.2), frame * CFrame.new(0, 1.9 + GROUND_Y, 1.7), color, Enum.Material.Neon)
+		-- The canopy: a flattened half-shell with a coloured rim underneath.
+		Kit.blob(scene, "DeskCanopy", V(12, 2.2, 6), frame * CFrame.new(0, 9.4 + GROUND_Y, -0.2), color:Lerp(HQ.navy, 0.35), Enum.Material.SmoothPlastic)
+		Kit.blob(scene, "DeskCanopyGlow", V(12.4, 0.5, 6.4), frame * CFrame.new(0, 9.0 + GROUND_Y, -0.2), color, Enum.Material.Neon)
 		return frame
 	end
 	-- A coat of arms floats and bobs over every desk, readable from the plaza:
