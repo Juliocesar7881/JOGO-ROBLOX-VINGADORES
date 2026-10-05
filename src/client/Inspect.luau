@@ -40,6 +40,7 @@ function Inspect:Show(key, record, pinned)
 		Name = "EnemyCard", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, short and -74 or -112),
 		Size = UDim2.new(1, -32, 0, short and 86 or 100), ZIndex = 58, Active = false,
 	}, def.boss and C.red or C.stroke)
+	UI.windowSkin(card, def.boss and C.red or C.coral)
 	UI.create("UISizeConstraint", { MaxSize = Vector2.new(440, 120) }, card)
 	local name = UI.label(card, L(def.name), { Name = "EnemyName", Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -150, 0, 24),
 		Font = UI.Fonts.display, TextSize = 19, TextColor3 = def.boss and C.gold or C.cream, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 59 })

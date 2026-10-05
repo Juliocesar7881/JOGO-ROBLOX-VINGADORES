@@ -73,8 +73,9 @@ function Sheet:Open(tab)
 	local screen = ctx.screenSize()
 	local shade = UI.frame(ctx.overlays, { Name = "CommanderSheet", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.25, Active = true, ZIndex = 45 })
 	local panel = UI.roundFrame(shade, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(math.min(520, screen.X - 24), math.min(600, screen.Y - 24)), BackgroundColor3 = C.background, ZIndex = 46 }, C.violet)
-	UI.label(panel, T("FICHA DO COMANDANTE", "COMMANDER SHEET"), { Position = UDim2.fromOffset(14, 10), Size = UDim2.new(1, -72, 0, 30), TextColor3 = C.violet, TextSize = 19, Font = Enum.Font.GothamBlack, ZIndex = 47 })
+		Size = UDim2.fromOffset(math.min(560, screen.X - 24), math.min(620, screen.Y - 24)), BackgroundColor3 = C.background, ZIndex = 46 }, C.violet)
+	UI.windowSkin(panel, C.violet)
+	UI.label(panel, T("Ficha do comandante", "Commander sheet"), { Position = UDim2.fromOffset(16, 8), Size = UDim2.new(1, -76, 0, 34), TextColor3 = C.violet:Lerp(Color3.new(1, 1, 1), 0.3), TextSize = 26, Font = UI.Fonts.display, ZIndex = 47 })
 	UI.closeButton(panel, function() self:Close() end, { Name = "CloseSheet", Position = UDim2.new(1, -50, 0, 6), Size = UDim2.fromOffset(44, 44), TextSize = 25, ZIndex = 47 })
 	self.shade, self.panel = shade, panel
 	self:_render()

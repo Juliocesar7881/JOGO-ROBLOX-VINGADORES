@@ -156,11 +156,12 @@ end
 -- The reference games' button texture: two rows of small raised squares
 -- (studs) across the face, faint, behind the words. Drawn from flat frames,
 -- clipped to the button, so it needs no image asset.
-local STUD_COLUMNS = 22
+-- Kept to a few dozen frames per button: panels are rebuilt on every refresh.
+local STUD_COLUMNS = 16
 function UI.studs(host, height, width, z)
-	local rows = height >= 36 and 2 or 1
+	local rows = height >= 46 and 2 or 1
 	local size = math.clamp(math.floor(height * 0.2), 5, 11)
-	local columns = width and math.clamp(math.floor(width / (size * 2.1)), 2, 24) or STUD_COLUMNS
+	local columns = width and math.clamp(math.floor(width / (size * 2.3)), 2, 16) or STUD_COLUMNS
 	local layer = UI.frame(host, {Name = "Studs", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true, Active = false, ZIndex = z})
 	UI.corner(layer, 12)
 	for row = 1, rows do
