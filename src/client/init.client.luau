@@ -256,7 +256,7 @@ function routePreview.goShop(chestId)
 	local stand = lobby and lobby:FindFirstChild("Chest_" .. (chestId or "rare"))
 	local pad = stand and (stand:FindFirstChild("ShopEntryPad") or stand.PrimaryPart)
 	closeContext()
-	if pad and routePreview:ShowWay(pad.Position, T("LOJA • PISE AQUI", "SHOP • STEP HERE")) then
+	if pad and routePreview:ShowWay(pad.Position, T("Loja • pise aqui", "Shop • step here")) then
 		showToast(T("Siga a luz até a LOJA: lá você compra baús de heróis e de bases.", "Follow the light to the SHOP: buy hero and base chests there."))
 	else
 		showToast(T("Os baús ficam na LOJA do Mercado, na praça.", "Chests are sold at the Market SHOP on the plaza."))
@@ -270,7 +270,7 @@ function routePreview.goPortal(destinationId)
 	local pad=station and station:FindFirstChild("Pad")
 	closeContext()
 	local position=pad and pad.Position or Vector3.new(destination.x,1,destination.z)
-	routePreview:ShowWay(position,T("PORTAL • ENTRE NA FILA","PORTAL • JOIN A QUEUE"))
+	routePreview:ShowWay(position,T("Portal • entre na fila","Portal • join a queue"))
 	showToast(T("Siga a luz. Cada fila aceita até 4 pessoas.","Follow the light. Each queue holds up to 4 players."))
 end
 local buildOverlay = BuildOverlay.new(effects.folder, Catalog, Rules, Config, C)
@@ -706,7 +706,7 @@ renderElevator = function()
 	refs.elevator = card
 	-- The plan before anyone is committed: map, mode, length, final boss and
 	-- what a win pays in lobby Gold.
-	local title=mapName(e.mapId).." • "..T("FILA ","QUEUE ")..tostring(e.slot or 1)
+	local title=mapName(e.mapId).." • "..T("Fila ","Queue ")..tostring(e.slot or 1)
 	local waves=Rules.WaveCount(e.modeId,e.mapId)
 	local map=Catalog.Maps[e.mapId]
 	local boss=map and Catalog.Enemies[e.modeId=="tutorial" and "lizard" or map.bossId]
@@ -714,8 +714,8 @@ renderElevator = function()
 	-- The map of the day pays more.
 	local featured=state.featured
 	if featured and featured.mapId==e.mapId and e.modeId=="normal" then prize=prize.."  ★ +"..math.floor(featured.bonus*100+0.5).."%" end
-	local summary=(waves==0 and T("SEM FIM","ENDLESS") or (tostring(waves).." "..T("ONDAS","WAVES")))
-		..((boss and waves>0) and ("  •  "..T("CHEFE: ","BOSS: ")..Catalog.Upper(L(boss.name))) or "").."  •  "..prize
+	local summary=(waves==0 and T("Sem fim","Endless") or (tostring(waves).." "..T("Ondas","Waves")))
+		..((boss and waves>0) and ("  •  "..T("Chefe: ","Boss: ")..Catalog.Upper(L(boss.name))) or "").."  •  "..prize
 	-- A short phone's campaign card gives the riders' line to the difficulties.
 	if withDifficulty and hud.class.short then summary=tostring(#(e.riders or {})).."/"..tostring(e.max or 4).."  •  "..summary end
 	UI.label(card, title, {Name="PortalDestination",Position = UDim2.fromOffset(14, 4), Size = UDim2.new(1, -96, 0, compact and 22 or 28), TextWrapped=true,TextSize = compact and 16 or 22, Font = UI.Fonts.display, TextColor3 = tint:Lerp(Color3.new(1, 1, 1), 0.25)})
@@ -724,13 +724,13 @@ renderElevator = function()
 	local rowH = compact and 34 or 40
 	local rowY = r.h - rowH - 8
 	local leaveW = compact and 76 or 92
-	local leave=UI.button(card, T("SAIR", "LEAVE"), function() act("ElevatorLeave", {}) end, {Name="ElevatorLeave",Position = UDim2.new(1, -(leaveW + 12), 0, rowY), Size = UDim2.fromOffset(leaveW, rowH), BackgroundColor3 = C.red, TextColor3 = C.text, TextSize = compact and 14 or 17})
+	local leave=UI.button(card, T("Sair", "Leave"), function() act("ElevatorLeave", {}) end, {Name="ElevatorLeave",Position = UDim2.new(1, -(leaveW + 12), 0, rowY), Size = UDim2.fromOffset(leaveW, rowH), BackgroundColor3 = C.red, TextColor3 = C.text, TextSize = compact and 14 or 17})
 	if e.departing then UI.disabled(leave) end
 	local statusRight = leaveW + 28
 	-- Whoever stepped on first may skip the rest of the countdown.
 	if e.host and not e.departing then
 		local startW = compact and 96 or 120
-		UI.button(card, T("COMEÇAR", "START"), function() act("ElevatorStart", {}) end, {Name = "ElevatorStartNow", Position = UDim2.new(1, -(leaveW + startW + 20), 0, rowY), Size = UDim2.fromOffset(startW, rowH), BackgroundColor3 = C.green, TextSize = compact and 14 or 17})
+		UI.button(card, T("Começar", "Start"), function() act("ElevatorStart", {}) end, {Name = "ElevatorStartNow", Position = UDim2.new(1, -(leaveW + startW + 20), 0, rowY), Size = UDim2.fromOffset(startW, rowH), BackgroundColor3 = C.green, TextSize = compact and 14 or 17})
 		statusRight += startW + 8
 	end
 	-- Normal / Hard / Nightmare: the host picks, everyone sees the choice.
@@ -764,7 +764,7 @@ renderElevator = function()
 	for _, rider in ipairs(e.riders or {}) do table.insert(names, rider.name) end
 	local status = tostring(#names) .. "/" .. tostring(e.max or 4) .. "  " .. T("jogadores", "players")
 	-- Playing together pays: the server applies this to everyone's Gold and XP.
-	if #names >= 2 then status ..= "  •  " .. T("GRUPO +", "PARTY +") .. math.floor((Rules.PartyBonus(#names) - 1) * 100 + 0.5) .. "%" end
+	if #names >= 2 then status ..= "  •  " .. T("Grupo +", "Party +") .. math.floor((Rules.PartyBonus(#names) - 1) * 100 + 0.5) .. "%" end
 	status ..= "  •  " .. table.concat(names, ", ")
 	if inline then return true end
 	UI.label(card, status, {Name = "PortalRiders", Position = UDim2.fromOffset(14, rowY), Size = UDim2.new(1, -(14 + statusRight), 0, rowH), TextSize = compact and 13 or 16, TextColor3 = C.cream, TextWrapped = true})
@@ -794,10 +794,10 @@ renderLobby = function()
 	UI.button(pill, "", function() openContext("talents", {}) end, {Name = "OpenTalentTree", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1})
 	-- Round corner buttons: the equipped base (its own little picture) and settings.
 	local equipped = Catalog.Bases[profile().equippedBase or "outpost"] or Catalog.Bases.outpost
-	UI.roundIcon(main, "ActiveBaseButton", T("BASE", "BASE"), C.green, function(disc)
+	UI.roundIcon(main, "ActiveBaseButton", T("Base", "Base"), C.green, function(disc)
 		UI.basePortrait(disc, equipped, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.54), Size = UDim2.fromScale(0.74, 0.6)})
 	end, function() openContext("bases", {}) end, {Position = at(hud.squad), Size = dims(hud.squad)})
-	UI.roundIcon(main, "SettingsButton", T("OPÇÕES", "SETTINGS"), C.blue, "gear", function() openContext("settings", {}) end, {Position = at(hud.settings), Size = dims(hud.settings)})
+	UI.roundIcon(main, "SettingsButton", T("Opções", "Settings"), C.blue, "gear", function() openContext("settings", {}) end, {Position = at(hud.settings), Size = dims(hud.settings)})
 
 	-- The big round buttons: a column on the left of wide screens, a dock at
 	-- the bottom of phones. Each carries a count bubble when something waits.
@@ -810,11 +810,11 @@ renderLobby = function()
 		return ready
 	end
 	local nav={
-		{"inventory",T("HERÓIS","HEROES"),C.coral,"hero"},
-		{"talents",T("EVOLUÇÃO","TALENTS"),C.violet,"star",function() return profile().talentPoints or 0 end},
-		{"premium",T("LOJA","SHOP"),C.green,"shop"},
-		{"rewards",T("PRÊMIOS","GIFTS"),C.pink,"gift",function() return tonumber(profile().rewards and profile().rewards.claimable) or 0 end},
-		{"quests",T("MISSÕES","QUESTS"),C.gold,"scroll",readyQuests},
+		{"inventory",T("Heróis","Heroes"),C.coral,"hero"},
+		{"talents",T("Evolução","Talents"),C.violet,"star",function() return profile().talentPoints or 0 end},
+		{"premium",T("Loja","Shop"),C.green,"shop"},
+		{"rewards",T("Prêmios","Gifts"),C.pink,"gift",function() return tonumber(profile().rewards and profile().rewards.claimable) or 0 end},
+		{"quests",T("Missões","Quests"),C.gold,"scroll",readyQuests},
 	}
 	refs.navigation={}
 	refs.rewardsBadge=nil
@@ -1172,9 +1172,9 @@ local function renderMatch()
 	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 14 or 17, Font = UI.Fonts.display, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Center})
 	surface(refs.waveInfo,UI.Skin.slotLine)
 	refs.waveInfo.BackgroundColor3,refs.waveInfo.BackgroundTransparency=UI.Skin.slot,0.1
-	refs.skip = UI.button(main, T("PRONTO", "READY"), function() act("SkipWave", {}) end, {Position = at(layout.skip), Size = dims(layout.skip), BackgroundColor3 = C.green, TextSize = 18})
+	refs.skip = UI.button(main, T("Pronto", "Ready"), function() act("SkipWave", {}) end, {Position = at(layout.skip), Size = dims(layout.skip), BackgroundColor3 = C.green, TextSize = 18})
 	-- Competitive only: everyone agreeing between waves ends the run and keeps the record.
-	refs.endVote = UI.button(main, T("ENCERRAR PARTIDA", "END RUN"), function()
+	refs.endVote = UI.button(main, T("Encerrar partida", "End run"), function()
 		act("VoteEnd", {on = not (state.match and state.match.endVote)})
 	end, {Name = "VoteEndRun", Position = UDim2.fromOffset(layout.skip.x, layout.skip.y + layout.skip.h + 6), Size = UDim2.fromOffset(layout.skip.w, 40), BackgroundColor3 = C.red, TextSize = 14, Visible = false})
 	local bossRect = layout.boss
@@ -1211,7 +1211,7 @@ local function renderMatch()
 		UI.stroke(button, tint, abilityInfo.ultimate and 3 or 1.5)
 		local meter = UI.bar(button, tint, UDim2.new(0, 7, 1, -5), UDim2.new(1, -14, 0, 2))
 		refs.abilityButtons[id] = {button = button, index = index, meter = meter, tint = tint,
-			name = (def and L(def.name) or T("PODER DO LÍDER", "LEADER POWER")), ultimate = abilityInfo.ultimate}
+			name = (def and L(def.name) or T("Poder do líder", "Leader power")), ultimate = abilityInfo.ultimate}
 	end
 	if profile().passes and profile().passes.vip then
 		UI.secondary(abilities, T("Saudação", "Salute"), function()
@@ -1255,11 +1255,11 @@ updateMatch = function()
 	if refs.refreshBaseModal then refs.refreshBaseModal() end
 	if not state or not state.match or not refs.wave then return end
 	local match = state.match
-	refs.wave.Text = T("ONDA ", "WAVE ") .. tostring(match.wave or 0) .. (match.totalWaves == 0 and " / ∞" or " / " .. tostring(match.totalWaves or 50))
+	refs.wave.Text = T("Onda ", "Wave ") .. tostring(match.wave or 0) .. (match.totalWaves == 0 and " / ∞" or " / " .. tostring(match.totalWaves or 50))
 	refs.map.Text = mapName(match.mapId) .. "  /  " .. modeName(match.modeId, match.difficultyId)
 	-- One line: a second one used to fall behind the health bar.
 	refs.hpText.Text = "BASE " .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  +" .. math.ceil(match.shield) or "")
-		.. (refs.layout and refs.layout.class.narrow and "  ▲" or T("   ▲ EVOLUIR", "   ▲ UPGRADE"))
+		.. (refs.layout and refs.layout.class.narrow and "  ▲" or T("   ▲ Evoluir", "   ▲ Upgrade"))
 	refs.hp.Size = UDim2.fromScale(math.clamp((match.baseHP or 0) / (match.maxBaseHP or 100), 0, 1), 1)
 	refs.hp.BackgroundColor3 = (match.baseHP or 0)/math.max(1,match.maxBaseHP or 100) > 0.3 and C.green or C.red
 	-- Lobby Gold this run has banked so far: a reward, not money to spend.
@@ -1284,7 +1284,7 @@ updateMatch = function()
 		local owns3 = profile().passes and profile().passes.speed3
 		if refs.speed3Toggle then
 			local on3 = speed >= 3
-			refs.speed3Toggle.Text = owns3 and "3x" or "3x\n" .. T("PASSE", "PASS")
+			refs.speed3Toggle.Text = owns3 and "3x" or "3x\n" .. T("Passe", "Pass")
 			refs.speed3Toggle.TextSize = (owns3 and 15 or 11) + (refs.controlDelta or 0)
 			refs.speed3Toggle.BackgroundColor3 = on3 and C.gold or (owns3 and UI.Skin.bodyTop or C.violet:Lerp(C.card, 0.45))
 			refs.speed3Toggle.TextColor3 = on3 and C.background or C.text
@@ -1300,10 +1300,10 @@ updateMatch = function()
 		local canEnd = match.modeId == "ranked" and state.phase == "Preparing" and (match.completedWaves or 0) >= 1
 		refs.endVote.Visible = canEnd
 		if canEnd then
-			refs.endVote.Text = (match.endVote and T("✓ ENCERRAR", "✓ END RUN") or T("ENCERRAR PARTIDA", "END RUN")) .. "  " .. tostring(match.endVotes or 0) .. "/" .. tostring(match.partySize or 1)
+			refs.endVote.Text = (match.endVote and T("✓ Encerrar", "✓ End run") or T("Encerrar partida", "End run")) .. "  " .. tostring(match.endVotes or 0) .. "/" .. tostring(match.partySize or 1)
 		end
 	end
-	refs.skip.Text = T("PRONTO", "READY") .. "  •  " .. tostring(math.max(0, math.ceil(match.prepRemaining or 0))) .. "s" .. (match.skipVotes and "  (" .. tostring(match.skipVotes) .. "/" .. tostring(#(state.players or {})) .. ")" or "")
+	refs.skip.Text = T("Pronto", "Ready") .. "  •  " .. tostring(math.max(0, math.ceil(match.prepRemaining or 0))) .. "s" .. (match.skipVotes and "  (" .. tostring(match.skipVotes) .. "/" .. tostring(#(state.players or {})) .. ")" or "")
 	local threatNames = {}
 	for _, id in ipairs(match.threats or match.nextThreats or {}) do
 		local def = Catalog.Enemies[id]
@@ -1311,15 +1311,15 @@ updateMatch = function()
 	end
 	-- A boss within three waves is announced while there is time to prepare.
 	local bossAhead = state.phase == "Preparing" and match.nextBoss and (match.nextBoss - (match.wave or 0)) or nil
-	local bossNote = bossAhead and bossAhead >= 1 and bossAhead <= 3 and ("   ▲ " .. (bossAhead == 1 and T("CHEFE NA PRÓXIMA ONDA!", "BOSS NEXT WAVE!") or (T("CHEFE EM ", "BOSS IN ") .. bossAhead .. T(" ONDAS", " WAVES")))) or ""
+	local bossNote = bossAhead and bossAhead >= 1 and bossAhead <= 3 and ("   ▲ " .. (bossAhead == 1 and T("Chefe na próxima onda!", "Boss next wave!") or (T("Chefe em ", "Boss in ") .. bossAhead .. T(" ondas", " waves")))) or ""
 	-- A mutated wave says so, in front of everything else.
 	local mutationDef = match.mutation and Catalog.Mutations[match.mutation]
 	local mutationNote = mutationDef and (mutationDef.icon .. " " .. L(mutationDef.name) .. "  ") or ""
-	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("VEM AÍ: ", "COMING: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos     torres ", " enemies     towers ") .. towerCount)
+	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("Vem aí: ", "Coming: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos     torres ", " enemies     towers ") .. towerCount)
 	local boss = match.boss
 	refs.boss.Visible = boss ~= nil
 	if boss then
-		refs.bossName.Text = (boss.final and T("CHEFE FINAL • ","FINAL BOSS • ") or "")..L(boss.name)
+		refs.bossName.Text = (boss.final and T("Chefe final • ","Final boss • ") or "")..L(boss.name)
 		refs.bossName.TextSize=mobile() and 15 or 20
 		refs.bossHP.Size = UDim2.fromScale(math.clamp((boss.hp or 0) / math.max(boss.maxHP or 1, 1), 0, 1), 1)
 		refs.bossHint.Text = L(boss.hint)
@@ -1339,7 +1339,7 @@ updateMatch = function()
 		record.cooling = remaining > 0
 		local shortcut = UserInputService.TouchEnabled and "" or "Q  "
 		local label = (record.ultimate and "★ " or "")..record.name
-		record.button.Text = shortcut..label.."\n"..(remaining>0 and (T("Recarrega em ","Ready in ")..math.ceil(remaining).."s") or state.phase=="Preparing" and T("Na próxima onda","Next wave") or T("PRONTO!","READY!"))
+		record.button.Text = shortcut..label.."\n"..(remaining>0 and (T("Recarrega em ","Ready in ")..math.ceil(remaining).."s") or state.phase=="Preparing" and T("Na próxima onda","Next wave") or T("Pronto!","Ready!"))
 		-- Ready: white outlined letters on the hero's colour, readable at a glance.
 		record.button.TextColor3 = remaining > 0 and C.muted or C.text
 		record.button.BackgroundColor3=remaining>0 and C.card or record.tint:Lerp(C.panel,0.45)
@@ -1406,9 +1406,9 @@ render = function()
 		UI.create("UIGradient", {Color = ColorSequence.new(C.background:Lerp(C.violet, 0.5), C.background), Rotation = 90}, splash)
 		local card = UI.frame(splash, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.new(1, -40, 0, 260), BackgroundTransparency = 1, ZIndex = 81})
 		UI.create("UISizeConstraint", {MaxSize = Vector2.new(560, 280)}, card)
-		UI.label(card, T("MULTIVERSO", "MULTIVERSE"), {Name = "SplashKicker", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 24, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
+		UI.label(card, T("Multiverso", "Multiverse"), {Name = "SplashKicker", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 24, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
 		UI.label(card, "DOOMSDAY", {Name = "SplashTitle", Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 78), Font = UI.Fonts.display, TextSize = 66, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
-		UI.label(card, T("ÚLTIMA DEFESA", "LAST STAND"), {Position = UDim2.fromOffset(0, 108), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 22, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
+		UI.label(card, T("Última defesa", "Last stand"), {Position = UDim2.fromOffset(0, 108), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 22, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
 		local track = UI.frame(card, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 158), Size = UDim2.new(0.7, 0, 0, 10), BackgroundColor3 = C.ink, ClipsDescendants = true, ZIndex = 82})
 		UI.corner(track, 5)
 		local slider = UI.frame(track, {Name = "SplashBar", Position = UDim2.fromScale(-0.4, 0), Size = UDim2.fromScale(0.4, 1), BackgroundColor3 = C.green, ZIndex = 83})
@@ -1713,10 +1713,10 @@ local function setAfkEco(on)
 	pcall(function() RunService:Set3dRenderingEnabled(not on) end)
 	if on and not afk.screen then
 		afk.screen = UI.frame(overlays, {Name = "AfkScreen", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.02, Active = true, ZIndex = 60})
-		UI.label(afk.screen, T("FARM AFK", "AFK FARM"), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 0), Size = UDim2.fromOffset(420, 56), TextSize = 40, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 61})
+		UI.label(afk.screen, T("Farm AFK", "AFK farm"), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 0), Size = UDim2.fromOffset(420, 56), TextSize = 40, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 61})
 		afk.text = UI.label(afk.screen, "", {Name = "AfkScreenStats", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 70), Size = UDim2.fromOffset(460, 150), TextSize = 20, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 61})
-		UI.button(afk.screen, T("MOSTRAR O JOGO", "SHOW THE GAME"), function() setAfkEco(false) end, {Name = "AfkEcoOff", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, -115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.blue, TextSize = 16, ZIndex = 61})
-		UI.button(afk.screen, T("VOLTAR AO LOBBY", "BACK TO LOBBY"), function() setAfkEco(false); act("LeaveAfk", {}) end, {Name = "AfkLeave", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.red, TextSize = 16, ZIndex = 61})
+		UI.button(afk.screen, T("Mostrar o jogo", "Show the game"), function() setAfkEco(false) end, {Name = "AfkEcoOff", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, -115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.blue, TextSize = 16, ZIndex = 61})
+		UI.button(afk.screen, T("Voltar ao lobby", "Back to lobby"), function() setAfkEco(false); act("LeaveAfk", {}) end, {Name = "AfkLeave", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.red, TextSize = 16, ZIndex = 61})
 	elseif not on and afk.screen then
 		afk.screen:Destroy(); afk.screen, afk.text = nil, nil
 	end
@@ -1733,8 +1733,8 @@ local function updateAfkBanner()
 		kit.afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(math.min(460, screenSize().X - 24), 58), BackgroundColor3 = C.background}, C.gold)
 		kit.afkTitle = UI.label(kit.afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 28), TextSize = 18, Font = Enum.Font.FredokaOne, TextXAlignment = Enum.TextXAlignment.Center})
 		-- The dedicated AFK place, when the game has one configured.
-		afk.travel = UI.button(kit.afkBanner, T("SERVIDOR AFK", "AFK SERVER"), function() act("EnterAfkServer", {}) end, {Name = "AfkServerGo", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -104, 0.5, 0), Size = UDim2.fromOffset(120, 44), BackgroundColor3 = C.violet, TextSize = 12, Visible = false})
-		UI.button(kit.afkBanner, T("ECONOMIA", "SAVER"), function() setAfkEco(true) end, {Name = "AfkEcoOn", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(92, 44), BackgroundColor3 = C.blue, TextSize = 13})
+		afk.travel = UI.button(kit.afkBanner, T("Servidor AFK", "AFK server"), function() act("EnterAfkServer", {}) end, {Name = "AfkServerGo", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -104, 0.5, 0), Size = UDim2.fromOffset(120, 44), BackgroundColor3 = C.violet, TextSize = 12, Visible = false})
+		UI.button(kit.afkBanner, T("Economia", "Saver"), function() setAfkEco(true) end, {Name = "AfkEcoOn", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(92, 44), BackgroundColor3 = C.blue, TextSize = 13})
 		kit.afkDetail = UI.label(kit.afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.BuilderSansExtraBold, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
 	end
 	local tint = UI.color(farm.color)

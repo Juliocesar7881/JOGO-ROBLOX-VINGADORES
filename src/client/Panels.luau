@@ -156,17 +156,17 @@ function Panels.new(ctx)
 		end
 		local function drawActions()
 			if owned then
-				UI.button(body,(p.loadout or {})[1]==id and T("★ É O SEU LÍDER","★ YOUR LEADER") or T("★ USAR COMO LÍDER","★ MAKE LEADER"),function()
+				UI.button(body,(p.loadout or {})[1]==id and T("★ É o seu líder","★ Your leader") or T("★ Usar como líder","★ Make leader"),function()
 					makeLeader(id)
 				end,{Name="MakeLeader_"..id,Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=18})
-				UI.secondary(body,contains(p.loadout,id) and T("TIRAR DA EQUIPE","REMOVE FROM TEAM") or T("+ COLOCAR NA EQUIPE","+ ADD TO TEAM"),function()
+				UI.secondary(body,contains(p.loadout,id) and T("Tirar da equipe","Remove from team") or T("+ Colocar na equipe","+ Add to team"),function()
 					local list=copy(p.loadout); local old=table.find(list,id)
 					if old then table.remove(list,old) elseif #list<5 then table.insert(list,id) else showToast(T("A equipe tem 5 heróis. Tire um primeiro.","Team full. Remove a hero first."),true); return end
 					act("SetLoadout",{heroes=list})
 				end,{Size=UDim2.new(1,-6,0,46),TextSize=16,BackgroundColor3=contains(p.loadout,id) and C.card or C.green})
 			else
-				UI.button(body,T("GANHE NA INVOCAÇÃO","GET IT AT THE SUMMON HALLS"),function() routePreview.goShop() end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=17})
-				UI.secondary(body,T("COMPRAR COM ROBUX","BUY WITH ROBUX"),function() openContext("premium",{hud=true}) end,{Size=UDim2.new(1,-6,0,44),TextSize=15})
+				UI.button(body,T("Ganhe na invocação","Get it at the summon halls"),function() routePreview.goShop() end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=17})
+				UI.secondary(body,T("Comprar com Robux","Buy with Robux"),function() openContext("premium",{hud=true}) end,{Size=UDim2.new(1,-6,0,44),TextSize=15})
 			end
 		end
 		if short then drawActions() end
@@ -201,20 +201,20 @@ function Panels.new(ctx)
 			local free=earned-spent
 			local ladder=UI.roundFrame(body,{Name="HeroCardLadder",Size=UDim2.new(1,-6,0,318),BackgroundColor3=UI.Skin.slot},tint)
 			UI.label(ladder,T("Carta do herói","Hero card"),{Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-130,0,32),TextSize=26,Font=UI.Fonts.display,TextColor3=C.gold})
-			UI.chip(ladder,T("NÍVEL ","LEVEL ")..rank,tint,{Name="HeroCardRank",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,10),Size=UDim2.fromOffset(104,30),TextSize=17})
+			UI.chip(ladder,T("Nível ","Level ")..rank,tint,{Name="HeroCardRank",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,10),Size=UDim2.fromOffset(104,30),TextSize=17})
 			local fill=UI.bar(ladder,C.green,UDim2.fromOffset(12,48),UDim2.new(1,-24,0,22))
 			fill.Size=UDim2.fromScale(math.clamp(copies/math.max(1,need.copies),0,1),1)
 			UI.label(ladder,copies.." / "..need.copies..T(" cartas"," cards"),{Name="HeroCardCopies",Position=UDim2.fromOffset(12,48),Size=UDim2.new(1,-24,0,22),TextSize=16,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 			local can=copies>=need.copies and (p.gold or 0)>=need.gold
-			local rankUp=UI.button(ladder,T("EVOLUIR CARTA • ","LEVEL UP CARD • ")..number(need.gold)..T(" Ouro"," Gold"),function()
+			local rankUp=UI.button(ladder,T("Evoluir carta • ","Level up card • ")..number(need.gold)..T(" Ouro"," Gold"),function()
 				act("RankUpHero",{heroId=id,expectedRank=rank},function() audio:Cue("upgrade") end)
 			end,{Name="RankUpHero_"..id,Position=UDim2.fromOffset(12,78),Size=UDim2.new(1,-24,0,52),BackgroundColor3=C.green,TextSize=19})
 			if not can then UI.disabled(rankUp) end
 			local missing=copies<need.copies and (T("Faltam ","You need ")..(need.copies-copies)..T(" cartas: repetidos dos baús viram cartas."," more cards: duplicates from chests become cards.")) or ((p.gold or 0)<need.gold and (T("Faltam ","You need ")..number(need.gold-(p.gold or 0))..T(" Ouro."," more Gold.")) or T("Pronto para evoluir!","Ready to level up!"))
 			UI.label(ladder,missing,{Name="HeroCardHint",Position=UDim2.fromOffset(12,132),Size=UDim2.new(1,-24,0,22),TextSize=14,TextColor3=can and C.green or C.muted,TextWrapped=true})
-			UI.label(ladder,T("PONTOS PARA GASTAR: ","POINTS TO SPEND: ")..free,{Name="HeroCardPoints",Position=UDim2.fromOffset(12,158),Size=UDim2.new(1,-24,0,28),TextSize=18,Font=UI.Fonts.display,TextColor3=free>0 and C.gold or C.muted})
+			UI.label(ladder,T("Pontos para gastar: ","Points to spend: ")..free,{Name="HeroCardPoints",Position=UDim2.fromOffset(12,158),Size=UDim2.new(1,-24,0,28),TextSize=18,Font=UI.Fonts.display,TextColor3=free>0 and C.gold or C.muted})
 			local bonus=Rules.CardBonus(rank,alloc)
-			for index,entry in ipairs({{"damage",T("DANO","DAMAGE"),"sword"},{"speed",T("VELOCIDADE","ATTACK SPEED"),"bow"},{"range",T("ALCANCE","RANGE"),"ring"}}) do
+			for index,entry in ipairs({{"damage",T("Dano","Damage"),"sword"},{"speed",T("Velocidade","Attack speed"),"bow"},{"range",T("Alcance","Range"),"ring"}}) do
 				local y=190+(index-1)*42
 				UI.icon(ladder,entry[3],C.cream,{Position=UDim2.fromOffset(12,y+3),Size=UDim2.fromOffset(32,32)})
 				UI.label(ladder,entry[2],{Position=UDim2.fromOffset(52,y),Size=UDim2.new(0.34,0,0,38),TextSize=17,Font=UI.Fonts.display})
@@ -260,7 +260,7 @@ function Panels.new(ctx)
 		if not owned then return end
 		local offer=Rules.AbilityUpgrade(def,rank)
 		if offer then
-			local buy=UI.button(body,T("SUBIR PARA RANK ","UPGRADE TO RANK ")..(rank+1).." • "..number(offer.cost)..T(" Ouro"," Gold"),function()
+			local buy=UI.button(body,T("Subir para rank ","Upgrade to rank ")..(rank+1).." • "..number(offer.cost)..T(" Ouro"," Gold"),function()
 				act("UpgradeAbility",{heroId=id,expectedRank=rank},function() audio:Cue("upgrade") end)
 			end,{Name="UpgradeAbility_"..id,Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.green,TextSize=17})
 			if owned.level<offer.mastery or (p.gold or 0)<offer.cost then UI.disabled(buy) end
@@ -270,7 +270,7 @@ function Panels.new(ctx)
 				smallText(body,T("Faltam ","You need ")..number(offer.cost-(p.gold or 0))..T(" Ouro."," more Gold."),0,28)
 			end
 		else
-			UI.label(body,T("PODER NO RANK MÁXIMO!","POWER AT MAX RANK!"),{Size=UDim2.new(1,-6,0,32),TextColor3=C.gold,Font=UI.Fonts.display,TextSize=18})
+			UI.label(body,T("Poder no rank máximo!","Power at max rank!"),{Size=UDim2.new(1,-6,0,32),TextColor3=C.gold,Font=UI.Fonts.display,TextSize=18})
 		end
 	end
 
@@ -317,11 +317,11 @@ function Panels.new(ctx)
 			local color=UI.color(Catalog.Rarities[r.rarity].color)
 			local card=UI.roundFrame(body,{Name="ChestResult",Size=UDim2.new(1,-6,0,112),BackgroundColor3=color:Lerp(C.panel,0.7)},color)
 			portrait(card,id,{Position=UDim2.fromOffset(6,6),Size=UDim2.fromOffset(92,100)})
-			UI.label(card,T("VOCÊ GANHOU: ","YOU GOT: ")..L(catalog[id].name),{Position=UDim2.fromOffset(106,6),Size=UDim2.new(1,-116,0,30),TextSize=18,Font=UI.Fonts.display,TextWrapped=true})
-			local message=r.duplicate and (T("Repetido: +","Duplicate: +")..number(r.refundGold)..T(" Ouro"," Gold")) or T("NOVO NA COLEÇÃO!","NEW IN YOUR COLLECTION!")
+			UI.label(card,T("Você ganhou: ","You got: ")..L(catalog[id].name),{Position=UDim2.fromOffset(106,6),Size=UDim2.new(1,-116,0,30),TextSize=18,Font=UI.Fonts.display,TextWrapped=true})
+			local message=r.duplicate and (T("Repetido: +","Duplicate: +")..number(r.refundGold)..T(" Ouro"," Gold")) or T("Novo na coleção!","New in your collection!")
 			UI.label(card,message,{Position=UDim2.fromOffset(106,36),Size=UDim2.new(1,-116,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=color})
 			local active=isBase and p.equippedBase==id
-			local button=UI.button(card,active and T("BASE ATIVA","ACTIVE BASE") or isBase and T("ATIVAR ESTA BASE","ACTIVATE THIS BASE") or T("VER HERÓI","VIEW HERO"),function()
+			local button=UI.button(card,active and T("Base ativa","Active base") or isBase and T("Ativar esta base","Activate this base") or T("Ver herói","View hero"),function()
 				if isBase then act("EquipBase",{baseId=id},function() showToast(T("Base ativada para a próxima partida!","Base activated for your next match!")) end)
 				else openContext("hero",{heroId=id}) end
 			end,{Name="SummonEquipResult",Position=UDim2.fromOffset(106,60),Size=UDim2.new(1,-116,0,44),BackgroundColor3=C.green,TextSize=15})
@@ -406,7 +406,7 @@ function Panels.new(ctx)
 			UI.button(row,"-",function() setCount(count-1) end,{Name="ChestCountMinus",Size=UDim2.new(0.18,-4,1,0),BackgroundColor3=C.card,TextSize=26})
 			UI.label(row,"x"..count,{Name="ChestCount",Position=UDim2.fromScale(0.18,0),Size=UDim2.new(0.34,0,1,0),TextSize=26,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Center})
 			UI.button(row,"+",function() setCount(count+1) end,{Name="ChestCountPlus",Position=UDim2.fromScale(0.52,0),Size=UDim2.new(0.18,-4,1,0),BackgroundColor3=C.card,TextSize=26})
-			UI.button(row,T("MÁX ","MAX ")..maxCount,function() setCount(maxCount) end,{Name="ChestCountMax",Position=UDim2.fromScale(0.7,0),Size=UDim2.new(0.3,0,1,0),BackgroundColor3=C.violet,TextSize=16})
+			UI.button(row,T("Máx ","Max ")..maxCount,function() setCount(maxCount) end,{Name="ChestCountMax",Position=UDim2.fromScale(0.7,0),Size=UDim2.new(0.3,0,1,0),BackgroundColor3=C.violet,TextSize=16})
 			if maxCount<=1 then for _,item in ipairs(row:GetChildren()) do if item:IsA("TextButton") then UI.disabled(item) end end end
 		end
 		local priceText=count>1 and ("x"..count.." • "..number(chest.cost*count)..T(" Ouro"," Gold")) or (number(chest.cost)..T(" Ouro"," Gold"))
@@ -423,11 +423,11 @@ function Panels.new(ctx)
 				fill.Size=UDim2.fromScale(math.clamp(count/chest.pity.after,0,1),1)
 			end
 			if confirming then
-				local confirm=UI.button(purchase,T("CONFIRMAR!","CONFIRM!"),openChest,{Name="ConfirmChest_"..id,Position=UDim2.new(0.5,0,0,8),Size=UDim2.new(0.3,-6,0,58),BackgroundColor3=C.green,TextSize=16})
+				local confirm=UI.button(purchase,T("Confirmar!","Confirm!"),openChest,{Name="ConfirmChest_"..id,Position=UDim2.new(0.5,0,0,8),Size=UDim2.new(0.3,-6,0,58),BackgroundColor3=C.green,TextSize=16})
 				if not eligible then UI.disabled(confirm) end
-				UI.secondary(purchase,T("VOLTAR","BACK"),function() kit.confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.8,0,0,8),Size=UDim2.new(0.2,-8,0,58),TextSize=13})
+				UI.secondary(purchase,T("Voltar","Back"),function() kit.confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.8,0,0,8),Size=UDim2.new(0.2,-8,0,58),TextSize=13})
 			else
-				local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR\n","SUMMON\n")..priceText,function() kit.confirmChest=id; renderContext() end,
+				local button=UI.button(purchase,pending.OpenChest and T("Invocando…","Summoning…") or T("Invocar\n","Summon\n")..priceText,function() kit.confirmChest=id; renderContext() end,
 					{Name="OpenChest_"..id,Position=UDim2.new(0.5,0,0,8),Size=UDim2.new(0.5,-8,0,58),BackgroundColor3=C.green,TextSize=17})
 				if not eligible or pending.OpenChest then UI.disabled(button) end
 			end
@@ -440,17 +440,17 @@ function Panels.new(ctx)
 			if chest.pity then
 				-- The guarantee as a bar that fills.
 				local count=(p.pity or {})[id] or 0
-				UI.label(purchase,forced and T("★ GARANTIA ATIVA!","★ GUARANTEE ACTIVE!") or (T("Garantia ","Guarantee ")..L(Catalog.Rarities[chest.pity.minimum].name).."+ "..count.."/"..chest.pity.after),{Position=UDim2.fromOffset(110,68),Size=UDim2.new(1,-120,0,18),TextSize=12,Font=UI.Fonts.display,TextColor3=forced and C.gold or C.muted})
+				UI.label(purchase,forced and T("★ Garantia ativa!","★ Guarantee active!") or (T("Garantia ","Guarantee ")..L(Catalog.Rarities[chest.pity.minimum].name).."+ "..count.."/"..chest.pity.after),{Position=UDim2.fromOffset(110,68),Size=UDim2.new(1,-120,0,18),TextSize=12,Font=UI.Fonts.display,TextColor3=forced and C.gold or C.muted})
 				local fill=UI.bar(purchase,C.gold,UDim2.fromOffset(110,88),UDim2.new(1,-122,0,8))
 				fill.Size=UDim2.fromScale(math.clamp(count/chest.pity.after,0,1),1)
 			end
 			if confirming then
 				UI.label(purchase,(count>1 and ("x"..count.."  •  ") or "")..T("Sobra: ","Left: ")..number((p.gold or 0)-chest.cost*count)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(12,100),Size=UDim2.new(1,-24,0,26),TextSize=15,Font=UI.Fonts.display})
-				local confirm=UI.button(purchase,T("CONFIRMAR!","CONFIRM!"),openChest,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(10,132),Size=UDim2.new(0.6,-14,0,54),BackgroundColor3=C.green,TextSize=19})
+				local confirm=UI.button(purchase,T("Confirmar!","Confirm!"),openChest,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(10,132),Size=UDim2.new(0.6,-14,0,54),BackgroundColor3=C.green,TextSize=19})
 				if not eligible then UI.disabled(confirm) end
-				UI.secondary(purchase,T("VOLTAR","BACK"),function() kit.confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.6,0,0,132),Size=UDim2.new(0.4,-10,0,54),TextSize=16})
+				UI.secondary(purchase,T("Voltar","Back"),function() kit.confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.6,0,0,132),Size=UDim2.new(0.4,-10,0,54),TextSize=16})
 			else
-				local button=UI.button(purchase,pending.OpenChest and T("INVOCANDO…","SUMMONING…") or T("INVOCAR • ","SUMMON • ")..priceText,function() kit.confirmChest=id; renderContext() end,
+				local button=UI.button(purchase,pending.OpenChest and T("Invocando…","Summoning…") or T("Invocar • ","Summon • ")..priceText,function() kit.confirmChest=id; renderContext() end,
 					{Name="OpenChest_"..id,Position=UDim2.fromOffset(10,160),Size=UDim2.new(1,-20,0,64),BackgroundColor3=C.green,TextSize=22})
 				if not eligible or pending.OpenChest then UI.disabled(button) end
 			end
@@ -458,7 +458,7 @@ function Panels.new(ctx)
 		if not eligible and not p.paidRandomRestricted then smallText(purchaseParent,T("Faltam ","You need ")..number(chest.cost*count-(p.gold or 0))..T(" Ouro: jogue partidas e pegue os prêmios."," Gold: play matches and claim gifts."),0,36) end
 
 		local caption=UI.frame(galleryParent,{Name="SummonOddsCaption",Size=UDim2.new(1,-6,0,30),BackgroundTransparency=1})
-		UI.label(caption,T("PODE VIR NESTE BAÚ","IN THIS CHEST"),{Size=UDim2.new(1,0,1,0),TextSize=20,Font=UI.Fonts.display,TextColor3=C.cream})
+		UI.label(caption,T("Pode vir neste baú","In this chest"),{Size=UDim2.new(1,0,1,0),TextSize=20,Font=UI.Fonts.display,TextColor3=C.cream})
 		local cols=wide and 3 or math.max(2,math.floor(width/145))
 		local gallery=UI.scroll(galleryParent,{Name="SummonOdds",Position=UDim2.fromOffset(0,32),Size=UDim2.new(1,-6,0,galleryHeight),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,math.ceil(#outcomes/cols)*128),ScrollBarThickness=5,ScrollBarImageColor3=tint})
 		gallery:SetAttribute("SummonChestId",kit.selectedChest)
@@ -483,7 +483,7 @@ function Panels.new(ctx)
 		smallText(body,isBase and T("Base repetida vira Ouro.","A duplicate base becomes Gold.") or T("Herói repetido vira Ouro e maestria. Heróis novos têm prioridade.","A duplicate hero becomes Gold and mastery. New heroes come first."),0,30)
 		resultCard()
 		if p.paidRandomRestricted then
-			UI.section(body,T("ESCOLHA GARANTIDA","GUARANTEED CHOICE"),T("Esta conta compra sem sorteio: escolha exatamente o que receber.","This account buys without a draw: choose exactly what you get."))
+			UI.section(body,T("Escolha garantida","Guaranteed choice"),T("Esta conta compra sem sorteio: escolha exatamente o que receber.","This account buys without a draw: choose exactly what you get."))
 			for _,itemId in ipairs(isBase and Catalog.BaseOrder or Catalog.HeroOrder) do
 				if owned[itemId] then continue end
 				local price=Rules.GuaranteedPrice(itemId); if not price then continue end
@@ -511,7 +511,7 @@ function Panels.new(ctx)
 		if UI.sizeClass(screenSize().X,screenSize().Y).short then
 			local slim=UI.roundFrame(body,{Name="StarterPack",Size=UDim2.new(1,-6,0,72),BackgroundColor3=C.gold:Lerp(C.panel,0.45)},C.gold)
 			UI.candy(slim)
-			UI.label(slim,Catalog.Upper(L(pack.name)).."  •  "..T("SÓ UMA VEZ","ONE TIME ONLY"),{Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-170,0,24),Font=UI.Fonts.display,TextSize=16,TextColor3=C.gold})
+			UI.label(slim,Catalog.Upper(L(pack.name)).."  •  "..T("Só uma vez","One time only"),{Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-170,0,24),Font=UI.Fonts.display,TextSize=16,TextColor3=C.gold})
 			UI.label(slim,L(Catalog.Heroes[pack.heroId].name).." + "..UI.format(pack.gold)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(12,32),Size=UDim2.new(1,-170,0,34),TextWrapped=true,TextSize=13})
 			local fast=UI.button(slim,ready and ("R$ "..tostring(info.price)) or T("Carregando…","Loading…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(1,-150,0,14),Size=UDim2.fromOffset(138,44),BackgroundColor3=C.green,TextSize=16})
 			if not ready then UI.disabled(fast) end
@@ -520,7 +520,7 @@ function Panels.new(ctx)
 		local row=UI.roundFrame(body,{Name="StarterPack",Size=UDim2.new(1,-6,0,132),BackgroundColor3=C.gold:Lerp(C.panel,0.45)},C.gold)
 		UI.candy(row)
 		heroPortrait(row,pack.heroId,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(104,116)})
-		UI.chip(row,T("SÓ UMA VEZ","ONE TIME ONLY"),C.red,{Position=UDim2.fromOffset(120,10),Size=UDim2.fromOffset(120,22),TextSize=12})
+		UI.chip(row,T("Só uma vez","One time only"),C.red,{Position=UDim2.fromOffset(120,10),Size=UDim2.fromOffset(120,22),TextSize=12})
 		UI.label(row,Catalog.Upper(L(pack.name)),{Position=UDim2.fromOffset(120,34),Size=UDim2.new(1,-130,0,28),Font=UI.Fonts.display,TextSize=22,TextColor3=C.gold})
 		UI.label(row,L(Catalog.Heroes[pack.heroId].name).." + "..UI.format(pack.gold)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(120,60),Size=UDim2.new(1,-130,0,22),Font=UI.Fonts.display,TextSize=16})
 		local buy=UI.button(row,ready and ("R$ "..tostring(info.price)) or T("Carregando preço…","Loading price…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(0,120,1,-46),Size=UDim2.new(1,-132,0,40),BackgroundColor3=C.green,TextSize=17})
@@ -573,7 +573,7 @@ function Panels.new(ctx)
 				if group.kind=="hero" then UI.chip(row,Catalog.Upper(L(Catalog.Rarities[Catalog.Heroes[key].rarity].name)),tint,{Position=UDim2.fromOffset(left,topY),Size=UDim2.fromOffset(96,20),TextSize=12}) end
 				local isGold=group.kind=="product" and def.gold~=nil
 				if isGold then
-					local badge=key==bestGold and {T("MELHOR VALOR","BEST VALUE"),C.green} or def.popular and {T("MAIS POPULAR","MOST POPULAR"),C.coral} or nil
+					local badge=key==bestGold and {T("Melhor valor","Best value"),C.green} or def.popular and {T("Mais popular","Most popular"),C.coral} or nil
 					local used=0
 					if badge then
 						UI.chip(row,badge[1],badge[2],{Name="Badge_"..key,Position=UDim2.fromOffset(left,topY),Size=UDim2.fromOffset(122,20),TextSize=12})
@@ -600,7 +600,7 @@ function Panels.new(ctx)
 				end
 				local cacheKey=group.kind..":"..key
 				local ready=type(info)=="table"
-				local label=owned and T("✓ JÁ É SEU","✓ YOURS") or ready and ("R$ "..tostring(info.price))
+				local label=owned and T("✓ Já é seu","✓ Yours") or ready and ("R$ "..tostring(info.price))
 					or info=="retry" and T("Tentar de novo","Try again") or info==nil and T("Carregando preço…","Loading price…") or T("Indisponível","Unavailable")
 				local buy=UI.button(row,label,function()
 					if info=="retry" and not owned then productInfo[cacheKey]=nil; fetchProducts(); renderContext(); return end
@@ -621,12 +621,12 @@ function Panels.new(ctx)
 						UI.label(details,L(hero.description),{Name="InfoText",Size=UDim2.new(1,0,0,44),TextSize=16,TextWrapped=true,TextTruncate=Enum.TextTruncate.None,TextColor3=C.muted})
 						local stats=UI.row(details,74)
 						local perSecond=hero.interval>0 and 1/hero.interval or 0
-						for index,entry in ipairs({{T("DANO","DAMAGE"),tostring(hero.damage)},{T("ALCANCE","RANGE"),tostring(hero.range)},{T("ATAQUES/S","HITS/S"),string.format("%.1f",perSecond)}}) do
+						for index,entry in ipairs({{T("Dano","Damage"),tostring(hero.damage)},{T("Alcance","Range"),tostring(hero.range)},{T("Ataques/s","Hits/s"),string.format("%.1f",perSecond)}}) do
 							local cell=UI.roundFrame(stats,{Name="InfoStat_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-8,1,-4),BackgroundColor3=tint:Lerp(C.panel,0.7)},tint)
 							UI.label(cell,entry[1],{Position=UDim2.fromOffset(6,4),Size=UDim2.new(1,-12,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center})
 							UI.label(cell,entry[2],{Position=UDim2.fromOffset(6,26),Size=UDim2.new(1,-12,0,40),TextSize=30,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 						end
-						UI.label(details,hero.air and T("ACERTA INIMIGOS NO CHÃO E VOANDO","HITS GROUND AND FLYING ENEMIES") or T("ACERTA SÓ INIMIGOS NO CHÃO","HITS GROUND ENEMIES ONLY"),{Size=UDim2.new(1,0,0,24),TextSize=15,Font=UI.Fonts.display,TextColor3=hero.air and C.green or C.coral})
+						UI.label(details,hero.air and T("Acerta inimigos no chão e voando","Hits ground and flying enemies") or T("Acerta só inimigos no chão","Hits ground enemies only"),{Size=UDim2.new(1,0,0,24),TextSize=15,Font=UI.Fonts.display,TextColor3=hero.air and C.green or C.coral})
 						for _,trait in ipairs(UI.heroTraits(hero,T)) do UI.label(details,"• "..trait,{Size=UDim2.new(1,0,0,24),TextSize=15,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None}) end
 						local ability=Catalog.Abilities[hero.ability]
 						if ability then
@@ -745,7 +745,7 @@ function Panels.new(ctx)
 	 board.mode="ranked"
 	 if board.mode=="ranked" then
 	  local rank=Rules.RankForWaves(board.data and board.data.personal or 0)
-	  UI.section(body,T("SEU RANK: ","YOUR RANK: ")..(ctx.language()=="en" and rank.en or rank.pt),T("Bronze 10 • Prata 20 • Ouro 30 • Diamante 40 • Lenda 50 ondas","Bronze 10 • Silver 20 • Gold 30 • Diamond 40 • Legend 50 waves"))
+	  UI.section(body,T("Seu rank: ","Your rank: ")..(ctx.language()=="en" and rank.en or rank.pt),T("Bronze 10 • Prata 20 • Ouro 30 • Diamante 40 • Lenda 50 ondas","Bronze 10 • Silver 20 • Gold 30 • Diamond 40 • Legend 50 waves"))
 	 end
 		UI.section(body, T("Lendas da resistência", "Legends of the resistance"), T("Evolução real da conta • temporadas de 60 dias.", "Real account progression • 60-day seasons."))
 		local controls = UI.row(body, 46)
@@ -771,7 +771,7 @@ function Panels.new(ctx)
 		elseif board.failed then
 			-- Failure is a state with a way out, not an endless "loading".
 			UI.label(body, T("Não foi possível carregar o placar agora.", "The leaderboard could not be loaded right now."), {Name = "BoardFailed", Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.red})
-			UI.button(body, T("TENTAR NOVAMENTE", "TRY AGAIN"), function() board.data = nil; loadBoard(); renderContext() end, {Name = "BoardRetry", Size = UDim2.new(1, -6, 0, 48), BackgroundColor3 = C.gold, TextSize = 14})
+			UI.button(body, T("Tentar novamente", "Try again"), function() board.data = nil; loadBoard(); renderContext() end, {Name = "BoardRetry", Size = UDim2.new(1, -6, 0, 48), BackgroundColor3 = C.gold, TextSize = 14})
 		else UI.label(body, T("Carregando placar…", "Loading leaderboard…"), {TextColor3 = C.muted}) end
 		UI.secondary(body, T("Atualizar placar", "Refresh leaderboard"), loadBoard, {Size = UDim2.new(1, -6, 0, 40)})
 	end
@@ -809,16 +809,16 @@ function Panels.new(ctx)
 			local row = UI.roundFrame(body, {Name = "RewardChestResult", Size = UDim2.new(1, -6, 0, 100), BackgroundColor3 = C.card}, UI.color(Catalog.Rarities[r.rarity].color))
 			heroPortrait(row, r.heroId, {Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(72, 92)})
 			UI.label(row, heroName(r.heroId), {Position = UDim2.fromOffset(84, 10), Size = UDim2.new(1, -96, 0, 30), Font = Enum.Font.FredokaOne, TextSize = 16, TextWrapped = true})
-			UI.label(row, r.duplicate and T("Repetido: virou Ouro e maestria", "Duplicate: turned into Gold and mastery") or T("NOVO HERÓI!", "NEW HERO!"), {Position = UDim2.fromOffset(84, 44), Size = UDim2.new(1, -96, 0, 40), TextSize = 12, TextWrapped = true, TextColor3 = C.gold})
+			UI.label(row, r.duplicate and T("Repetido: virou Ouro e maestria", "Duplicate: turned into Gold and mastery") or T("Novo herói!", "New hero!"), {Position = UDim2.fromOffset(84, 44), Size = UDim2.new(1, -96, 0, 40), TextSize = 12, TextWrapped = true, TextColor3 = C.gold})
 		end
 
 		-- Free chest: opens on the spot, then makes you wait.
 		local chest = rewards.freeChest
 		local freeCard = UI.roundFrame(body, {Name = "FreeChestCard", Size = UDim2.new(1, -6, 0, 104), BackgroundColor3 = chest.ready and C.gold:Lerp(C.panel, 0.55) or C.card}, chest.ready and C.gold or C.stroke)
 		UI.illustration(freeCard, "crate", chest.ready and C.gold or C.muted, {Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(92, 82)})
-		UI.label(freeCard, T("BAÚ GRÁTIS", "FREE CHEST"), {Position = UDim2.fromOffset(112, 14), Size = UDim2.new(1, -250, 0, 32), Font = UI.Fonts.display, TextSize = 24})
+		UI.label(freeCard, T("Baú grátis", "Free chest"), {Position = UDim2.fromOffset(112, 14), Size = UDim2.new(1, -250, 0, 32), Font = UI.Fonts.display, TextSize = 24})
 		UI.label(freeCard, chest.ready and T("Pronto para abrir!", "Ready to open!") or (T("Volta em ", "Back in ") .. math.floor(chest.remaining / 3600) .. "h " .. math.floor((chest.remaining % 3600) / 60) .. "m"), {Position = UDim2.fromOffset(112, 50), Size = UDim2.new(1, -250, 0, 26), TextSize = 16, Font = UI.Fonts.display, TextColor3 = chest.ready and C.cream or C.muted})
-		local claimFree = UI.button(freeCard, T("ABRIR!", "OPEN!"), function()
+		local claimFree = UI.button(freeCard, T("Abrir!", "Open!"), function()
 			act("ClaimFreeChest", {}, function(snapshot) rewardGiven(snapshot.result) end)
 		end, {Name = "ClaimFreeChest", Position = UDim2.new(1, -130, 0.5, -28), Size = UDim2.fromOffset(118, 56), BackgroundColor3 = C.green, TextSize = 20})
 		if not chest.ready then UI.disabled(claimFree) end
@@ -828,7 +828,7 @@ function Panels.new(ctx)
 		local season = profile().seasonStatus
 		if season then
 			local theme = season.theme and (" • " .. L(season.theme.name)) or ""
-			UI.section(body, T("TEMPORADA ", "SEASON ") .. tostring(season.id or "") .. theme, T("Nível ", "Level ") .. season.level .. "/" .. season.maxLevel
+			UI.section(body, T("Temporada ", "Season ") .. tostring(season.id or "") .. theme, T("Nível ", "Level ") .. season.level .. "/" .. season.maxLevel
 				.. (season.endsAt and (T("  •  termina em ", "  •  ends in ") .. math.max(0, math.ceil((season.endsAt - os.time()) / 86400)) .. T(" dias", " days")) or ""))
 			local seasonCard = UI.roundFrame(body, {Name = "SeasonCard", Size = UDim2.new(1, -6, 0, season.owned and 196 or 252), BackgroundColor3 = C.card}, season.claimable > 0 and C.gold or C.stroke)
 			local xpFill = UI.bar(seasonCard, C.violet, UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, 16))
@@ -845,10 +845,10 @@ function Panels.new(ctx)
 				line(26, entry.freeClaimed and "✓" or number(entry.free.gold), entry.freeClaimed and C.green or C.text)
 				local premiumText = (entry.premiumClaimed and "✓") or number(entry.premium.gold)
 				line(48, premiumText, entry.premiumClaimed and C.green or (season.owned and C.cream or C.muted))
-				local marks = ((entry.free.chest or entry.premium.chest) and T("BAÚ", "CHEST") or "") .. (entry.premium.title and ((entry.free.chest or entry.premium.chest) and " + " or "") .. T("TÍTULO", "TITLE") or "")
+				local marks = ((entry.free.chest or entry.premium.chest) and T("Baú", "Chest") or "") .. (entry.premium.title and ((entry.free.chest or entry.premium.chest) and " + " or "") .. T("Título", "Title") or "")
 				if marks ~= "" then line(68, marks, C.pink) end
 			end
-			local claimSeason = UI.button(seasonCard, season.claimable > 0 and (T("RESGATAR ", "CLAIM ") .. season.claimable .. T(" PRÊMIO(S)", " REWARD(S)")) or T("Jogue para subir de nível", "Play to level up"), function()
+			local claimSeason = UI.button(seasonCard, season.claimable > 0 and (T("Resgatar ", "Claim ") .. season.claimable .. T(" prêmio(s)", " reward(s)")) or T("Jogue para subir de nível", "Play to level up"), function()
 				act("ClaimSeason", {}, function(snapshot)
 					local paid = snapshot and snapshot.result
 					rewardGiven(paid)
@@ -861,7 +861,7 @@ function Panels.new(ctx)
 			end, {Name = "ClaimSeason", Position = UDim2.fromOffset(12, 158), Size = UDim2.new(1, -24, 0, 48), BackgroundColor3 = season.claimable > 0 and C.green or C.card, TextSize = 16})
 			if season.claimable == 0 then UI.disabled(claimSeason) end
 			if not season.owned then
-				UI.button(seasonCard, T("LIBERAR TRILHA PREMIUM", "UNLOCK THE PREMIUM TRACK"), function() openContext("shop", {shopKind = "pass"}) end,
+				UI.button(seasonCard, T("Liberar trilha premium", "Unlock the premium track"), function() openContext("shop", {shopKind = "pass"}) end,
 					{Name = "SeasonUnlock", Position = UDim2.fromOffset(12, 210), Size = UDim2.new(1, -24, 0, 36), BackgroundColor3 = C.violet, TextSize = 14})
 			end
 		end
@@ -885,7 +885,7 @@ function Panels.new(ctx)
 			else UI.label(cell, number(def.gold), {Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 0, 30), TextSize = 19, Font = UI.Fonts.display, TextColor3 = isNext and C.gold or C.text, TextXAlignment = Enum.TextXAlignment.Center}) end
 			if done then UI.label(cell, "✓", {Position = UDim2.fromOffset(0, 62), Size = UDim2.new(1, 0, 0, 24), TextSize = 22, Font = UI.Fonts.display, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center}) end
 		end
-		local claimLogin = UI.button(body, rewards.login.claimable and (T("RESGATAR DIA ", "CLAIM DAY ") .. rewards.login.nextIndex) or T("Volte amanhã", "Come back tomorrow"), function()
+		local claimLogin = UI.button(body, rewards.login.claimable and (T("Resgatar dia ", "Claim day ") .. rewards.login.nextIndex) or T("Volte amanhã", "Come back tomorrow"), function()
 			act("ClaimLogin", {}, function(snapshot) rewardGiven(snapshot.result) end)
 		end, {Name = "ClaimLogin", Size = UDim2.new(1, -6, 0, 52), BackgroundColor3 = C.gold, TextSize = 19})
 		if not rewards.login.claimable then UI.disabled(claimLogin) end
@@ -898,20 +898,20 @@ function Panels.new(ctx)
 			local fill = UI.bar(card, gift.claimed and C.muted or C.green, UDim2.fromOffset(12, 10), UDim2.new(1, -130, 0, 8))
 			fill.Size = UDim2.fromScale(progress, 1)
 			UI.label(card, gift.minutes .. " min", {Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -130, 0, 30), TextSize = 16, Font = UI.Fonts.display, TextColor3 = gift.ready and C.green or C.muted})
-			local claim = UI.button(card, gift.claimed and T("RESGATADO", "CLAIMED") or (gift.chest and T("BAÚ", "CHEST") or ("+" .. number(gift.gold))), function()
+			local claim = UI.button(card, gift.claimed and T("Resgatado", "Claimed") or (gift.chest and T("Baú", "Chest") or ("+" .. number(gift.gold))), function()
 				act("ClaimPlaytime", {index = gift.index}, function(snapshot) rewardGiven(snapshot.result) end)
 			end, {Name = "ClaimPlaytime_" .. gift.index, Position = UDim2.new(1, -108, 0, 8), Size = UDim2.fromOffset(96, 44), BackgroundColor3 = gift.ready and C.green or C.card, TextSize = 15})
 			if not gift.ready then UI.disabled(claim) end
 		end
 
 		-- Collection milestones: how many different heroes the account owns.
-		UI.section(body, T("COLECIONE HERÓIS • ", "COLLECT HEROES • ") .. rewards.collection.owned .. "/" .. #Catalog.HeroOrder)
+		UI.section(body, T("Colecione heróis • ", "Collect heroes • ") .. rewards.collection.owned .. "/" .. #Catalog.HeroOrder)
 		for _, milestone in ipairs(rewards.collection.milestones) do
 			local card = UI.roundFrame(body, {Name = "Milestone_" .. milestone.index, Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
 			UI.label(card, milestone.count .. T(" heróis", " heroes"), {Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -130, 0, 26), Font = UI.Fonts.display, TextSize = 17})
 			local sub = "+" .. number(milestone.gold) .. T(" Ouro", " Gold") .. (milestone.title and T("  •  título", "  •  title") or "")
 			UI.label(card, sub, {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -130, 0, 22), TextSize = 14, Font = UI.Fonts.display, TextColor3 = C.gold})
-			local claim = UI.button(card, milestone.claimed and T("RESGATADO", "CLAIMED") or T("RESGATAR", "CLAIM"), function()
+			local claim = UI.button(card, milestone.claimed and T("Resgatado", "Claimed") or T("Resgatar", "Claim"), function()
 				act("ClaimMilestone", {index = milestone.index}, function(snapshot) rewardGiven(snapshot.result) end)
 			end, {Name = "ClaimMilestone_" .. milestone.index, Position = UDim2.new(1, -108, 0, 10), Size = UDim2.fromOffset(96, 40), BackgroundColor3 = milestone.ready and C.gold or C.card, TextSize = 12})
 			if milestone.claimed or not milestone.ready then UI.disabled(claim) end
@@ -919,7 +919,7 @@ function Panels.new(ctx)
 
 		-- Codes, the group and friends: the ways a YouTuber, a Discord or a friend
 		-- brings someone in. The server checks every code and the group membership.
-		UI.section(body, T("CÓDIGOS", "CODES"))
+		UI.section(body, T("Códigos", "Codes"))
 		local codeRow = UI.roundFrame(body, {Name = "CodeRow", Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
 		local codeBox = UI.create("TextBox", {
 			Name = "CodeInput", Position = UDim2.fromOffset(10, 8), Size = UDim2.new(1, -128, 0, 44), BackgroundColor3 = C.background,
@@ -927,7 +927,7 @@ function Panels.new(ctx)
 			Font = Enum.Font.BuilderSansExtraBold, TextSize = 16, TextColor3 = C.text, PlaceholderColor3 = C.muted,
 		}, codeRow)
 		UI.corner(codeBox, 10)
-		UI.button(codeRow, T("USAR", "REDEEM"), function()
+		UI.button(codeRow, T("Usar", "Redeem"), function()
 			local typed = codeBox.Text or ""
 			if typed == "" then showToast(T("Digite um código primeiro.", "Type a code first."), true) return end
 			act("RedeemCode", {code = typed}, function(snapshot)
@@ -940,12 +940,12 @@ function Panels.new(ctx)
 			local groupCard = UI.roundFrame(body, {Name = "GroupReward", Size = UDim2.new(1, -6, 0, 60), BackgroundColor3 = C.card})
 			UI.label(groupCard, T("Entre no grupo do jogo", "Join the game's group"), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -130, 0, 24), Font = Enum.Font.BuilderSansExtraBold, TextSize = 14})
 			UI.label(groupCard, "+" .. number(group.gold or 0) .. T(" Ouro, uma vez", " Gold, once"), {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -130, 0, 20), TextSize = 12, TextColor3 = C.muted})
-			local claimGroup = UI.button(groupCard, group.claimed and T("RESGATADO", "CLAIMED") or T("RESGATAR", "CLAIM"), function()
+			local claimGroup = UI.button(groupCard, group.claimed and T("Resgatado", "Claimed") or T("Resgatar", "Claim"), function()
 				act("ClaimGroupReward", {}, function(snapshot) rewardGiven(snapshot and snapshot.result) end)
 			end, {Name = "ClaimGroupReward", Position = UDim2.new(1, -110, 0, 8), Size = UDim2.fromOffset(100, 44), BackgroundColor3 = C.gold, TextSize = 12})
 			if group.claimed then UI.disabled(claimGroup) end
 		end
-		UI.button(body, T("CONVIDAR AMIGOS", "INVITE FRIENDS"), function()
+		UI.button(body, T("Convidar amigos", "Invite friends"), function()
 			-- Roblox's own invite sheet: it decides who can be invited and how.
 			local ok = pcall(function()
 				local social = game:GetService("SocialService")
@@ -1194,7 +1194,7 @@ function Panels.new(ctx)
 		return def.unit == "%" and "%" or (def.unit == "HP" and " HP" or (def.unit == "gold" and T(" Ouro", " Gold") or ""))
 	end
 	local function talentValue(def, r)
-		if def.flag then return r > 0 and T("ATIVO", "ACTIVE") or T("inativo", "inactive") end
+		if def.flag then return r > 0 and T("Ativo", "Active") or T("inativo", "inactive") end
 		return (r > 0 and "+" or "") .. tostring(r * def.effect) .. talentUnit(def)
 	end
 	local function buildTalents(body, options)
@@ -1440,12 +1440,12 @@ function Panels.new(ctx)
 	local function contextTalents(body) buildTalents(body, nil) end
 
 	local function contextModes(body)
-		UI.section(body,T("ESCOLHA SEU DESTINO","CHOOSE YOUR DESTINATION"),T("Cada portal tem seu mapa e seu modo. Para jogar com amigos, entrem no mesmo portal.","Each portal has its own map and mode. To play with friends, enter the same portal."))
+		UI.section(body,T("Escolha seu destino","Choose your destination"),T("Cada portal tem seu mapa e seu modo. Para jogar com amigos, entrem no mesmo portal.","Each portal has its own map and mode. To play with friends, enter the same portal."))
 		if not profile().tutorialComplete then
 			local first=UI.roundFrame(body,{Name="FirstMission",Size=UDim2.new(1,-6,0,168),BackgroundColor3=C.gold:Lerp(C.panel,0.78)},C.gold)
-			UI.label(first,T("COMECE AQUI!","START HERE!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,36),TextSize=26,Font=Enum.Font.FredokaOne,TextColor3=C.gold})
+			UI.label(first,T("Comece aqui!","Start here!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,36),TextSize=26,Font=Enum.Font.FredokaOne,TextColor3=C.gold})
 			UI.label(first,T("Aprenda em 12 ondas e ganhe 1.000 Ouro na primeira vitória.","Learn in 12 waves and earn 1,000 Gold on your first victory."),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
-			UI.button(first,T("JOGAR O TREINO • 12 ONDAS","PLAY TRAINING • 12 WAVES"),startTraining,{Name="FindTrainingPortal",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
+			UI.button(first,T("Jogar o treino • 12 ondas","Play training • 12 waves"),startTraining,{Name="FindTrainingPortal",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
 		end
 		local colors={manhattan=C.coral,gamma=C.green,asgard=C.gold,hydra=C.red,wakanda=C.violet,latveria=C.blue}
 		-- Destinations as picture cards, two side by side where the window is wide:
@@ -1472,10 +1472,10 @@ function Panels.new(ctx)
 			if district~=lastDistrict then
 				lastDistrict=district
 				local headings={
-					center={T("CAMPANHA","CAMPAIGN"),T("Os três portais do centro do refúgio. Comece por aqui!","The three portals in the middle of the refuge. Start here!")},
-					expedition={T("EXPEDIÇÕES","EXPEDITIONS"),T("Campanhas mais longas nas ilhas: Selva de Cristal e Ponte Celeste na ilha oeste, a final, Cidadela do Tirano (70 ondas), na ilha leste.","Longer campaigns on the islands: Crystal Jungle and Sky Bridge on the west island, the finale, Tyrant's Citadel (70 waves), on the east island.")},
-					arena={T("ARENA COMPETITIVA","COMPETITIVE ARENA"),T("Três portais vizinhos. Cada mapa tem seu placar e exige uma estratégia diferente.","Three neighboring portals. Each map has its own leaderboard and calls for a different strategy.")},
-					special={T("TREINO E CARTAS","TRAINING & CARDS"),T("Na ilha norte: o treino de 12 ondas e o roguelike de cartas.","On the north island: the 12-wave training and the card roguelike.")},
+					center={T("Campanha","Campaign"),T("Os três portais do centro do refúgio. Comece por aqui!","The three portals in the middle of the refuge. Start here!")},
+					expedition={T("Expedições","Expeditions"),T("Campanhas mais longas nas ilhas: Selva de Cristal e Ponte Celeste na ilha oeste, a final, Cidadela do Tirano (70 ondas), na ilha leste.","Longer campaigns on the islands: Crystal Jungle and Sky Bridge on the west island, the finale, Tyrant's Citadel (70 waves), on the east island.")},
+					arena={T("Arena competitiva","Competitive arena"),T("Três portais vizinhos. Cada mapa tem seu placar e exige uma estratégia diferente.","Three neighboring portals. Each map has its own leaderboard and calls for a different strategy.")},
+					special={T("Treino e cartas","Training & cards"),T("Na ilha norte: o treino de 12 ondas e o roguelike de cartas.","On the north island: the 12-wave training and the card roguelike.")},
 				}
 				local heading=headings[district]
 				if heading then UI.section(body,heading[1],heading[2]) end
@@ -1508,7 +1508,7 @@ function Panels.new(ctx)
 			local featured=ctx.state().featured
 			if featured and featured.mapId==destination.mapId and destination.modeId=="normal" then
 				-- The map of the day pays more: a ribbon on its card.
-				local ribbon=UI.label(card,"★ "..T("MAPA DO DIA","MAP OF THE DAY").."  +"..math.floor(featured.bonus*100+0.5).."%",{Name="FeaturedRibbon",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,-8),Size=UDim2.fromOffset(176,24),BackgroundTransparency=0,BackgroundColor3=C.gold,TextColor3=C.background,TextSize=12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=3})
+				local ribbon=UI.label(card,"★ "..T("Mapa do dia","Map of the day").."  +"..math.floor(featured.bonus*100+0.5).."%",{Name="FeaturedRibbon",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,-8),Size=UDim2.fromOffset(176,24),BackgroundTransparency=0,BackgroundColor3=C.gold,TextColor3=C.background,TextSize=12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=3})
 				UI.corner(ribbon,12)
 			end
 			local button=UI.button(card,allowed and T("Encontrar portal","Find portal") or T("Ainda bloqueado","Locked for now"),function() routePreview.goPortal(id) end,{Name="FindPortal_"..id,Position=UDim2.new(0,10,1,-56),Size=UDim2.new(1,-20,0,46),BackgroundColor3=allowed and C.green or tint,TextSize=20})
@@ -1527,7 +1527,7 @@ function Panels.new(ctx)
 			end
 		end
 		if profile().tutorialComplete then
-			UI.secondary(body,T("TREINAR DE NOVO • 12 ONDAS","TRAIN AGAIN • 12 WAVES"),startTraining,{Size=UDim2.new(1,-6,0,44)})
+			UI.secondary(body,T("Treinar de novo • 12 ondas","Train again • 12 waves"),startTraining,{Size=UDim2.new(1,-6,0,44)})
 		end
 	end
 

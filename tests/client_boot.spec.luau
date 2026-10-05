@@ -644,7 +644,7 @@ local function session(screen)
 		-- The Gold packs rank themselves: the biggest pack is the best deal and
 		-- the mid pack is the one most people take; each pack states Gold per R$.
 		check(named(gui,"Badge_gold30000")~=nil and named(gui,"Badge_gold5000")~=nil and named(gui,"Badge_gold1000")==nil and named(gui,"Badge_gold12000")==nil,tag..": only the best-value and the most-popular Gold pack wear a badge")
-		check(named(gui,"Badge_gold30000").Text=="MELHOR VALOR" and named(gui,"Badge_gold5000").Text=="MAIS POPULAR",tag..": the badges read best value and most popular")
+		check(named(gui,"Badge_gold30000").Text=="Melhor valor" and named(gui,"Badge_gold5000").Text=="Mais popular",tag..": the badges read best value and most popular")
 		local valueLine=named(gui,"Value_gold12000")
 		check(valueLine~=nil and string.find(valueLine.Text,"20",1,true)~=nil,tag..": a pack states its Gold per Robux, got "..tostring(valueLine and valueLine.Text))
 		click("Passes")
@@ -719,7 +719,7 @@ local function session(screen)
 		clickNamed("ConfirmChest_rare")
 		check(asked("OpenChest"),tag .. ": chest sends server recruitment intent")
 		fx({kind="OpenPanel",panel="hero",heroId="spiderman"})
-		click("+ COLOCAR NA EQUIPE")
+		click("+ Colocar na equipe")
 		check(asked("SetLoadout"),tag .. ": owned hero can be equipped")
 		fx({kind="OpenPanel",panel="hero",heroId="ironman"})
 		-- Mastery, ability rank, account level and tower upgrade each have their own word.
@@ -731,7 +731,7 @@ local function session(screen)
 		end
 		check(shows("Maestria ") and shows("Rank 1/"), tag .. ": the hero page names mastery and ability rank apart")
 		check(not shows("Nível do herói"), tag .. ": the hero page no longer calls mastery a level")
-		click("SUBIR PARA RANK")
+		click("Subir para rank")
 		check(asked("UpgradeAbility"),tag .. ": leader ability upgrades through server")
 		fx({ kind = "OpenPanel", panel = "quests" })
 		click("Resgatar recompensa")
@@ -883,7 +883,7 @@ local function session(screen)
 	end)
 
 	step("HUD affordances open their panels", function()
-		click("OPÇÕES")
+		click("Opções")
 		check(contextOpen(), tag .. ": the settings button opens a panel")
 		click("Ligado")
 		check(asked("Settings"), tag .. ": a settings toggle is sent to the server")
@@ -1149,7 +1149,7 @@ local function session(screen)
 			and closeRect.y >= 0 and closeRect.y + closeRect.h <= view().h,
 			tag .. ": the panel close action stays reachable while boarding")
 		click("X")
-		click("SAIR")
+		click("Sair")
 		check(asked("ElevatorLeave"), tag .. ": Leave is sent to the server")
 		local guest = table.clone(riding)
 		guest.elevator = table.clone(riding.elevator)
@@ -1229,7 +1229,7 @@ local function session(screen)
 		check(frameAt(main, layout.heroCards) ~= nil, tag .. ": the hero card band sits where matchLayout puts it")
 		local bad = offscreen(main, view())
 		check(#bad == 0, tag .. ": every match element is on screen: " .. table.concat(bad, ", "))
-		click("PRONTO")
+		click("Pronto")
 		check(asked("SkipWave"), tag .. ": READY votes to skip preparation")
 	end)
 
@@ -1262,7 +1262,7 @@ local function session(screen)
 			tag .. ": the 2x button is visible, got " .. tostring(speed and speed.Text))
 		local three = named(gui, "Speed3Toggle")
 		check(three ~= nil and shown(three, gui) and string.find(three.Text, "3x", 1, true) ~= nil, tag .. ": 3x is a button of its own")
-		check(string.find(three.Text, "PASSE", 1, true) ~= nil, tag .. ": without the pass the 3x button says it needs one")
+		check(string.find(three.Text, "Passe", 1, true) ~= nil, tag .. ": without the pass the 3x button says it needs one")
 		clickNamed("Speed3Toggle")
 		check(not asked("SetSpeed"), tag .. ": 3x without the pass never asks the server for 3x")
 		check(auto ~= nil and shown(auto, gui), tag .. ": the auto-skip toggle is visible")
@@ -1314,7 +1314,7 @@ local function session(screen)
 		push(matchSnapshot(profile, "Preparing", { completedWaves = 8, wave = 8, nextBoss = 10 }))
 		local warned = false
 		for _, item in ipairs(gui:GetDescendants()) do
-			if type(item.Text) == "string" and string.find(item.Text, "CHEFE EM 2 ONDAS", 1, true) then warned = true end
+			if type(item.Text) == "string" and string.find(item.Text, "Chefe em 2 ondas", 1, true) then warned = true end
 		end
 		check(warned, tag .. ": preparation warns of a boss two waves away")
 	end)
@@ -1805,7 +1805,7 @@ local function session(screen)
 		for index = before + 1, #actions do if actions[index] == "UpgradeTower" then sent = true end end
 		check(sent, tag .. ": tapping it sends UpgradeTower")
 		local second = board("t2") and board("t2"):FindFirstChildOfClass("TextButton")
-		check(second ~= nil and string.find(second.Text, "EVOLUIR", 1, true) ~= nil, tag .. ": a level-4 tower offers to evolve")
+		check(second ~= nil and string.find(second.Text, "Evoluir", 1, true) ~= nil, tag .. ": a level-4 tower offers to evolve")
 		if second then second.Activated:Fire(); flush() end
 		check(frameAt(main, layout.tower) ~= nil, tag .. ": evolving opens the panel where the branch is chosen")
 		click("X")
@@ -1847,7 +1847,7 @@ local function session(screen)
 		check(selectTower("t2") ~= nil, tag .. ": a level 4 tower offers both specializations")
 		check(findButton(gui, "Precisão absoluta") ~= nil and findButton(gui, "Flechas explosivas") ~= nil, tag .. ": both branch buttons are shown")
 		local branchOne = named(gui, "TowerBranch1")
-		check(branchOne ~= nil and string.find(branchOne.Text, "DANO 96", 1, true) ~= nil, tag .. ": each specialization shows the damage it gives, got " .. tostring(branchOne and branchOne.Text))
+		check(branchOne ~= nil and string.find(branchOne.Text, "Dano 96", 1, true) ~= nil, tag .. ": each specialization shows the damage it gives, got " .. tostring(branchOne and branchOne.Text))
 		check(selectTower("t3") ~= nil, tag .. ": a maxed tower shows its specialization")
 		check(selectTower("t4") ~= nil, tag .. ": an ally's tower opens read-only")
 		check(findButton(gui, "Vender") == nil, tag .. ": an ally's tower cannot be sold from here")
@@ -1868,7 +1868,7 @@ local function session(screen)
 		check(veil ~= nil and frameAt(veil, P.panel) ~= nil, tag .. ": the protocol chooser sits where protocolLayout puts it")
 		local choices = 0
 		for _, item in ipairs(veil and veil:GetDescendants() or {}) do
-			if rawget(item, "__class") == "TextButton" and string.find(item.Text or "", "ESCOLHER", 1, true) == 1 then
+			if rawget(item, "__class") == "TextButton" and string.find(item.Text or "", "Escolher", 1, true) == 1 then
 				choices += 1
 				local r = screenRect(item, gui, SCREEN)
 				check(shown(item, gui) and r ~= nil and r.x >= 0 and r.y >= 0
@@ -1877,7 +1877,7 @@ local function session(screen)
 			end
 		end
 		check(choices == 3, tag .. ": all three offered cards have visible choices")
-		click("ESCOLHER")
+		click("Escolher")
 		check(asked("ChooseCard"), tag .. ": a protocol can be chosen")
 		push(matchSnapshot(profile, "Wave", { enemies = 12, cardOffers = {} }))
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Q, Position = v3(0, 0, 0) }, false)
@@ -2338,7 +2338,7 @@ local function session(screen)
 		local english = veteranProfile()
 		english.settings.language = "en"
 		push(lobbySnapshot(english))
-		check(findButton(gui, "SETTINGS") ~= nil, tag .. ": the HUD speaks English after the switch")
+		check(findButton(gui, "Settings") ~= nil, tag .. ": the HUD speaks English after the switch")
 		local village=workspace:FindFirstChild("DoomLobby")
 		local desk=village:FindFirstChild("Board_maps").PrimaryPart
 		check(desk.Board:FindFirstChildOfClass("TextLabel").Text:find("CHOOSE MAP",1,true)~=nil,
@@ -2356,7 +2356,7 @@ local function session(screen)
 		push(lobbySnapshot(english))
 		check(status.Text=="4/4 • FULL",tag..": changing occupancy preserves the selected language")
 		push(matchSnapshot(english, "Preparing"))
-		check(findButton(gui, "READY") ~= nil, tag .. ": the match HUD speaks English too")
+		check(findButton(gui, "Ready") ~= nil, tag .. ": the match HUD speaks English too")
 	end)
 
 	step("rotating the device re-lays the HUD out", function()

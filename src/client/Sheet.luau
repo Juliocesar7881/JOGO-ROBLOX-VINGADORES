@@ -56,9 +56,9 @@ function Sheet:_tabs()
 	local match = ctx.state() and ctx.state().match
 	-- The base is upgraded at the base agent standing beside it, not here.
 	local tabs = {
-		{ id = "talents", label = T("TALENTOS", "TALENTS") },
+		{ id = "talents", label = T("Talentos", "Talents") },
 	}
-	if match and match.cardMode then table.insert(tabs, { id = "cards", label = T("CARTAS", "CARDS") }) end
+	if match and match.cardMode then table.insert(tabs, { id = "cards", label = T("Cartas", "Cards") }) end
 	return tabs
 end
 
@@ -134,11 +134,11 @@ function Sheet:_cardsTab(body, match)
 		return
 	end
 	-- Totals first: what the whole deck does to you, green or red.
-	UI.label(body, T("SEU TOTAL", "YOUR TOTAL"), { Size = UDim2.new(1, -8, 0, 28), TextSize = 20, Font = UI.Fonts.display, TextColor3 = C.gold, ZIndex = 48 })
+	UI.label(body, T("Seu total", "Your total"), { Size = UDim2.new(1, -8, 0, 28), TextSize = 20, Font = UI.Fonts.display, TextColor3 = C.gold, ZIndex = 48 })
 	local totals = UI.frame(body, { Name = "CardTotals", Size = UDim2.new(1, -8, 0, 10), BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.Y })
 	UI.list(totals, 5)
 	CardArt.totalRows(UI, Rules, T, totals, match.cards, 32, 17, 20, 0)
-	UI.label(body, T("CARTAS ESCOLHIDAS", "CARDS TAKEN"), { Size = UDim2.new(1, -8, 0, 32), TextSize = 20, Font = UI.Fonts.display, TextColor3 = C.gold, ZIndex = 48 })
+	UI.label(body, T("Cartas escolhidas", "Cards taken"), { Size = UDim2.new(1, -8, 0, 32), TextSize = 20, Font = UI.Fonts.display, TextColor3 = C.gold, ZIndex = 48 })
 	for _, id in ipairs(ids) do
 		local def = Catalog.Cards[id]
 		local count = counts[id]

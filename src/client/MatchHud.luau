@@ -36,12 +36,12 @@ function MatchHud.new(ctx)
 		local damageAfter = nextStats and nextStats.damage * ((tower.damage or 0) / math.max(0.001, now.damage or 1))
 		local rateAfter = nextStats and nextStats.rate * ((tower.rate or 0) / math.max(0.001, now.rate or 1))
 		local lines = {
-			line(T("DANO", "DMG"), tower.damage, damageAfter, whole, true),
-			line(T("ALCANCE", "RANGE"), tower.range, nextStats and nextStats.range, tenth, true),
-			line(T("VEL.", "RATE"), tower.rate, rateAfter, rate, true),
+			line(T("Dano", "Dmg"), tower.damage, damageAfter, whole, true),
+			line(T("Alcance", "Range"), tower.range, nextStats and nextStats.range, tenth, true),
+			line(T("Vel.", "Rate"), tower.rate, rateAfter, rate, true),
 		}
-		if (tower.slow or 0) > 0 then table.insert(lines, line(T("LENTIDÃO", "SLOW"), tower.slow, nextStats and nextStats.slow, percent, false)) end
-		if (tower.splash or 0) > 0 then table.insert(lines, line(T("ÁREA", "AREA"), tower.splash, nextStats and nextStats.splash, tenth, false)) end
+		if (tower.slow or 0) > 0 then table.insert(lines, line(T("Lentidão", "Slow"), tower.slow, nextStats and nextStats.slow, percent, false)) end
+		if (tower.splash or 0) > 0 then table.insert(lines, line(T("Área", "Area"), tower.splash, nextStats and nextStats.splash, tenth, false)) end
 		local hero = Catalog.Heroes[tower.heroId]
 		if hero and hero.pickup then table.insert(lines, hero.pickup) end
 		return table.concat(lines, wide and "    " or "\n")
@@ -167,7 +167,7 @@ function MatchHud.new(ctx)
 			-- Two specializations side by side: each says what it does and what it will hit for.
 			for branch = 1, 2 do
 				local after = tower.branches and tower.branches[branch]
-				local label = L(def.branches[branch].name) .. "\n" .. (after and (T("DANO ", "DMG ") .. number(math.floor(after.damage + 0.5)) .. "  •  ") or "") .. number(tower.upgradeCost)
+				local label = L(def.branches[branch].name) .. "\n" .. (after and (T("Dano ", "Dmg ") .. number(math.floor(after.damage + 0.5)) .. "  •  ") or "") .. number(tower.upgradeCost)
 				local choose = UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Name = "TowerBranch" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY), Size = UDim2.fromOffset(half, wide and actionH or 48), TextSize = wide and 11 or 14, TextWrapped = true, BackgroundColor3 = branch == 1 and C.green or C.blue})
 				if not wide then
 					UI.label(panel, L(def.branches[branch].description), {Name = "BranchInfo" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY + 52), Size = UDim2.fromOffset(half, 44), TextSize = 13, TextColor3 = C.cream, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top})
@@ -246,7 +246,7 @@ function MatchHud.new(ctx)
 				local cost = tower.upgradeCost or 0
 				local affordable = (match.cash or 0) >= cost
 				local nextLevel = (tower.level or 1) + 1
-				board.button.Text = (nextLevel == 5 and ("★ " .. T("EVOLUIR", "EVOLVE")) or ("▲ " .. tostring(nextLevel) .. "/5")) .. "  " .. number(cost)
+				board.button.Text = (nextLevel == 5 and ("★ " .. T("Evoluir", "Evolve")) or ("▲ " .. tostring(nextLevel) .. "/5")) .. "  " .. number(cost)
 				board.button.BackgroundColor3 = affordable and C.green or C.card
 				-- Light text on green: dark text under the dark outline read as blots.
 				board.button.TextColor3 = affordable and C.text or C.muted
@@ -319,7 +319,7 @@ function MatchHud.new(ctx)
 				local first = rows[1]
 				if first and first.now and drawn > 0 and nextY + 20 <= buttonRect.y - cardRect.y then
 					local after = first.after
-					UI.label(card, T("TOTAL ", "TOTAL ") .. CardArt.times(first.now - 1) .. "  →  " .. CardArt.times(after - 1), {Name = "CardTotalLine", Position = UDim2.fromOffset(8, nextY), Size = UDim2.new(1, -16, 0, 20), TextSize = short and 12 or 15, Font = UI.Fonts.bold, TextColor3 = after >= 1 and C.green or C.red, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
+					UI.label(card, T("Total ", "Total ") .. CardArt.times(first.now - 1) .. "  →  " .. CardArt.times(after - 1), {Name = "CardTotalLine", Position = UDim2.fromOffset(8, nextY), Size = UDim2.new(1, -16, 0, 20), TextSize = short and 12 or 15, Font = UI.Fonts.bold, TextColor3 = after >= 1 and C.green or C.red, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
 					nextY += 22
 				end
 				-- The description fills what is left, when there is room for it.
@@ -328,7 +328,7 @@ function MatchHud.new(ctx)
 					UI.label(card, L(def.description), {Position = UDim2.fromOffset(10, nextY), Size = UDim2.new(1, -20, 0, room), TextSize = 14, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
 				end
 			end
-			UI.button(card, T("ESCOLHER", "CHOOSE").." • "..(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(buttonRect, cardRect), Size = dims(buttonRect), BackgroundColor3 = tint, TextSize = short and 14 or (P.stacked and 17 or 21), TextWrapped = false, TextScaled = short, ZIndex = 54})
+			UI.button(card, T("Escolher", "Choose").." • "..(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(buttonRect, cardRect), Size = dims(buttonRect), BackgroundColor3 = tint, TextSize = short and 14 or (P.stacked and 17 or 21), TextWrapped = false, TextScaled = short, ZIndex = 54})
 		end
 	end
 
@@ -441,19 +441,19 @@ function MatchHud.new(ctx)
 		local celebration=UI.row(content,short and 44 or 64)
 		local emblemSize=short and 36 or 48
 		UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.fromOffset(2,short and 4 or 12),Size=UDim2.fromOffset(emblemSize,emblemSize)})
-		UI.label(celebration, result.ended and T("RECORDE GUARDADO!", "RECORD SAVED!") or victory and T("VOCÊS CONSEGUIRAM!", "YOU DID IT!") or T("VAMOS TENTAR DE NOVO?", "LET'S TRY AGAIN!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.FredokaOne, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
+		UI.label(celebration, result.ended and T("Recorde guardado!", "Record saved!") or victory and T("Vocês conseguiram!", "You did it!") or T("Vamos tentar de novo?", "Let's try again!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.FredokaOne, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
 		UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal", result.difficultyId), {Size = UDim2.new(1, -6, 0, short and 20 or 28), TextColor3 = C.muted, TextSize = short and 14 or 17, TextXAlignment = Enum.TextXAlignment.Center})
 		if (tonumber(result.featured) or 1) > 1 then
-			UI.label(content, "★ " .. T("MAPA DO DIA +", "MAP OF THE DAY +") .. math.floor((result.featured - 1) * 100 + 0.5) .. "%", {Name = "ResultFeatured", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
+			UI.label(content, "★ " .. T("Mapa do dia +", "Map of the day +") .. math.floor((result.featured - 1) * 100 + 0.5) .. "%", {Name = "ResultFeatured", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
 		end
 		if (tonumber(result.party) or 1) > 1 then
-			UI.label(content, "★ " .. T("BÔNUS DE GRUPO +", "PARTY BONUS +") .. math.floor((result.party - 1) * 100 + 0.5) .. "%", {Name = "ResultParty", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
+			UI.label(content, "★ " .. T("Bônus de grupo +", "Party bonus +") .. math.floor((result.party - 1) * 100 + 0.5) .. "%", {Name = "ResultParty", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
 		end
 		-- Core rewards stay together and appear before the optional detailed history,
 		-- including on short screens where three large rows needed several scrolls.
 		local rewards=UI.row(content,short and 70 or 92)
 		rewards.Name="ResultRewards"
-		for index,reward in ipairs({{T("ONDAS", "WAVES"), tostring(result.waves or 0), C.green}, {T("OURO", "GOLD"), "+" .. number(result.gold or 0), C.gold}, {"XP", "+" .. number(result.xp or 0), C.blue}}) do
+		for index,reward in ipairs({{T("Ondas", "Waves"), tostring(result.waves or 0), C.green}, {T("Ouro", "Gold"), "+" .. number(result.gold or 0), C.gold}, {"XP", "+" .. number(result.xp or 0), C.blue}}) do
 			local tile=UI.roundFrame(rewards,{Name="Reward_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-6,1,0),BackgroundColor3=UI.Skin.slot},reward[3])
 			UI.stroke(tile,reward[3],2.5)
 			UI.label(tile,reward[1],{Position=UDim2.fromOffset(4,6),Size=UDim2.new(1,-8,0,22),TextSize=17,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center,Font=UI.Fonts.display})
