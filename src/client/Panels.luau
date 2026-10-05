@@ -478,7 +478,7 @@ function Panels.new(ctx)
 			UI.outline(odds,2.5)
 			if not mine then UI.chip(card,T("Novo","New"),C.green,{Name="ChestNew",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,24),Size=UDim2.fromOffset(44,18),TextSize=12}) end
 			local name=UI.label(card,L(catalog[outcome.id].name),{Position=UDim2.fromOffset(4,92),Size=UDim2.new(1,-8,0,28),TextScaled=true,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
-			UI.textLimit(name,15,9)
+			UI.textLimit(name,15,7)
 			UI.outline(name,2)
 			if not isBase then UI.hover(card,function(box) if kit.heroTooltip then kit.heroTooltip(box,outcome.id) end end,320) end
 		end

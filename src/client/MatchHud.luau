@@ -488,7 +488,7 @@ function MatchHud.new(ctx)
 				local row=UI.row(content,short and 28 or 34)
 				row.Name="ResultTeam_"..index
 				UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Size=UDim2.new(0.5,0,1,0),TextSize=18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-				UI.fit(UI.label(row,T("Dano ","Dmg ")..number(entry.damage).."   "..T("Abates ","Kills ")..number(entry.kills),{Name="TeamStats",Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,0,1,0),TextSize=17,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right}),9)
+				UI.fit(UI.label(row,T("Dano ","Dmg ")..number(entry.damage).."   "..T("Abates ","Kills ")..number(entry.kills),{Name="TeamStats",Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,-12,1,0),TextSize=17,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right}),9)
 			end
 		end
 		if result.modeId=="ranked" then
