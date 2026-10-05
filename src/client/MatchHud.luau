@@ -327,7 +327,7 @@ function MatchHud.new(ctx)
 					UI.label(card, L(def.description), {Position = UDim2.fromOffset(10, nextY), Size = UDim2.new(1, -20, 0, room), TextSize = 14, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
 				end
 			end
-			UI.button(card, T("ESCOLHER", "CHOOSE").." • "..(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(buttonRect, cardRect), Size = dims(buttonRect), BackgroundColor3 = tint, TextSize = P.stacked and 17 or 21, ZIndex = 54})
+			UI.button(card, T("ESCOLHER", "CHOOSE").." • "..(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(buttonRect, cardRect), Size = dims(buttonRect), BackgroundColor3 = tint, TextSize = short and 14 or (P.stacked and 17 or 21), TextWrapped = false, TextScaled = short, ZIndex = 54})
 		end
 	end
 

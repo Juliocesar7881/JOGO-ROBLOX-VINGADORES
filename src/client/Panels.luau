@@ -1281,6 +1281,11 @@ function Panels.new(ctx)
 		local bought = kit.talentBought
 		kit.talentBought = nil
 		local tweens = game:GetService("TweenService")
+		-- A plastic brick snapping into place: two quick clicks, a hair apart.
+		local function snap()
+			audio:Cue("click", 0)
+			task.delay(0.045, function() audio:Cue("click", 0) end)
+		end
 		local function popIn(button, delay, fromScale)
 			local scale = button:FindFirstChild("PressScale")
 			if not scale then return end
@@ -1288,7 +1293,7 @@ function Panels.new(ctx)
 			task.delay(delay, function()
 				if not button.Parent then return end
 				-- Each hexagon clicks into place like a building brick.
-				if fromScale < 1 then audio:Cue("click", 0.03) end
+				if fromScale < 1 then snap() end
 				pcall(function() tweens:Create(scale, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end)
 			end)
 		end
@@ -1337,7 +1342,7 @@ function Panels.new(ctx)
 					elseif points < 1 then
 						showToast(T("Sem pontos: cada nível novo dá 1 ponto.", "No points: every new level gives 1 point."), true)
 					else
-						audio:Cue("click", 0.03)
+						snap()
 						act("UpgradeTalent", {talentId = id, expectedRank = rank}, function()
 							kit.talentBought = id
 							audio:Cue("upgrade")
