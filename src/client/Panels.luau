@@ -1307,7 +1307,8 @@ function Panels.new(ctx)
 		hexagon(root, "RootRing", R * 1.06, C.cream, 4)
 		hexagon(root, "RootRim", R * 1.06 - 3, Color3.fromRGB(150, 98, 20), 4)
 		hexagon(root, "RootFace", R * 0.9, C.gold, 4)
-		UI.label(root, T("Nível", "Level"), {Name = "RootCaption", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.33), Size = UDim2.fromOffset(R * 1.4, R * 0.36), Font = UI.Fonts.display, TextSize = math.max(12, math.floor(R * 0.3)), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 6})
+		local caption = UI.label(root, T("Nível", "Level"), {Name = "RootCaption", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.33), Size = UDim2.fromOffset(R * 1.4, R * 0.36), Font = UI.Fonts.display, TextScaled = true, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 6})
+		UI.create("UITextSizeConstraint", {MaxTextSize = math.max(10, math.floor(R * 0.3)), MinTextSize = 7}, caption)
 		UI.label(root, tostring(p.level or 1), {Name = "RootLevel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.6), Size = UDim2.fromOffset(R * 1.4, R * 0.7), Font = UI.Fonts.display, TextSize = math.max(18, math.floor(R * 0.62)), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 6})
 		if animate then popIn(root, 0, 0) end
 

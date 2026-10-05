@@ -36,7 +36,7 @@ gradient.Parent = cover
 
 local function label(text, y, height, size, color)
 	local made = Instance.new("TextLabel")
-	made.BackgroundTransparency, made.Text, made.Font, made.TextSize = 1, text, Enum.Font.GothamBlack, size
+	made.BackgroundTransparency, made.Text, made.Font, made.TextSize = 1, text, Enum.Font.FredokaOne, size
 	made.TextColor3, made.TextXAlignment = color, Enum.TextXAlignment.Center
 	made.AnchorPoint, made.Position, made.Size = Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0.5, y), UDim2.new(1, -40, 0, height)
 	made.TextWrapped = true
@@ -65,7 +65,7 @@ sliderRound.CornerRadius = UDim.new(0, 7)
 sliderRound.Parent = slider
 
 local status = label(T("Preparando o refúgio…", "Preparing the refuge…"), 56, 28, 18, CREAM)
-status.Font = Enum.Font.GothamBold
+status.Font = Enum.Font.BuilderSansBold
 local TIPS = {
 	{ "Toque no chão para posicionar um herói: sem confirmação.", "Tap the ground to place a hero: no confirmation." },
 	{ "Repetidos dos baús viram cartas para evoluir seus heróis sem limite.", "Duplicates from chests become cards that level your heroes with no cap." },
@@ -74,7 +74,7 @@ local TIPS = {
 	{ "Shift para correr e pulo duplo para chegar mais rápido aos portais.", "Shift to run and a double jump to reach the portals faster." },
 }
 local tip = label("", 96, 48, 16, Color3.fromRGB(206, 218, 255))
-tip.Font = Enum.Font.Gotham
+tip.Font = Enum.Font.BuilderSansBold
 tip.TextColor3 = Color3.fromRGB(206, 218, 255)
 
 local started = os.clock()

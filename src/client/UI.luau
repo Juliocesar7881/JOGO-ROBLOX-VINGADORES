@@ -1370,11 +1370,17 @@ end
 -- A small trait/tag pill (the anime game's blue tags).
 function UI.pill(parent, text, color, properties)
 	local pill = UI.label(parent, text, {Name = "Pill", BackgroundTransparency = 0, BackgroundColor3 = color or UI.Colors.blue, Font = UI.Fonts.display, TextSize = 15,
-		TextXAlignment = Enum.TextXAlignment.Center, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 28), TextTruncate = Enum.TextTruncate.None})
+		TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromOffset(0, 28), TextTruncate = Enum.TextTruncate.None})
 	for key, value in pairs(properties or {}) do pill[key] = value end
+	-- Exactly as wide as its words (measured), plus room on both sides.
+	local width = #text * pill.TextSize * 0.56
+	pcall(function()
+		width = game:GetService("TextService"):GetTextSize(text, pill.TextSize, pill.Font, Vector2.new(2000, 200)).X
+	end)
+	local height = pill.Size.Y.Offset > 0 and pill.Size.Y.Offset or 28
+	pill.Size = UDim2.fromOffset(math.ceil(width) + 24, height)
 	UI.corner(pill, 8)
 	UI.stroke(pill, UI.Colors.ink, 2)
-	UI.create("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}, pill)
 	return pill
 end
 
