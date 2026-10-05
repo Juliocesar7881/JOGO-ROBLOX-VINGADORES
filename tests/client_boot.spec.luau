@@ -921,6 +921,25 @@ local function session(screen)
 		clickNamed("InventoryTabs_owned")
 		local rows=named(gui,"HeroGallery"):GetChildren()
 		check(#rows>0 and named(gui,"HeroGallery").Size.Y.Offset>=0,tag..": owned heroes fill the gallery")
+		-- Hovering a hero shows what it does now; leaving it takes the box away.
+		local hoverTarget = named(gui, "FormationHero_ironman")
+		check(hoverTarget ~= nil, tag .. ": the collection card has a hover target")
+		if hoverTarget then
+			hoverTarget.MouseEnter:Fire()
+			flush()
+			local tip = named(gui, "Tooltip")
+			local tipTitle = tip and named(tip, "TipTitle")
+			check(tip ~= nil and tipTitle ~= nil and tipTitle.Text == Catalog.Heroes.ironman.name.pt, tag .. ": hovering a hero opens a tooltip with its name")
+			local lines = {}
+			for _, item in ipairs(tip and tip:GetDescendants() or {}) do
+				if item.Name == "TipLine" then table.insert(lines, item.Text) end
+			end
+			local joined = table.concat(lines, " | ")
+			check(string.find(joined, "Dano", 1, true) ~= nil and string.find(joined, "Alcance", 1, true) ~= nil, tag .. ": the tooltip lists damage and range, got " .. joined)
+			hoverTarget.MouseLeave:Fire()
+			flush()
+			check(named(gui, "Tooltip") == nil, tag .. ": leaving the card closes the tooltip")
+		end
 		clickNamed("SquadSlot_1")
 		check(named(gui,"CancelLeaderPick")~=nil,tag..": highlighted first slot opens leader selection")
 		clickNamed("FormationHero_spiderman")
