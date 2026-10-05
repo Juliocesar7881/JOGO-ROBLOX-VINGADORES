@@ -1131,7 +1131,8 @@ function UI.contextLayout(width, height, options)
 	local pad = hud.class.compact and 10 or 14
 	local modal = hud.class.short
 	local top = modal and pad or hud.contextTop
-	local bottom = options.elevator and hud.elevator.y - 8 or modal and height - pad or hud.contextBottom
+	-- With the menu column on the left, a window may use the screen down to its bottom edge.
+	local bottom = options.elevator and hud.elevator.y - 8 or modal and height - pad or (hud.column and height - pad or hud.contextBottom)
 	local maxWidth = options.wide and 900 or 690
 	-- A panel never slides under the left column of big buttons.
 	local margin = hud.column and not modal and hud.navigation.x + hud.navigation.w + 8 or pad
@@ -1292,14 +1293,18 @@ function UI.tab(parent, text, color, icon, selected, callback, properties)
 	local iconSize = math.min(30, math.max(18, (button.Size.Y.Offset > 0 and button.Size.Y.Offset or 44) - 16))
 	local hasIcon = icon ~= nil
 	if hasIcon then
-		UI.icon(button, icon, Color3.new(1, 1, 1), {Name = "TabIcon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(iconSize, iconSize), ZIndex = button.ZIndex + 1})
+		UI.icon(button, icon, Color3.new(1, 1, 1), {Name = "TabIcon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(iconSize, iconSize), ZIndex = (button.ZIndex or 1) + 1})
 	end
 	local label = UI.label(button, text, {Name = "TabText", Position = UDim2.fromOffset(hasIcon and iconSize + 14 or 6, 0), Size = UDim2.new(1, hasIcon and -(iconSize + 20) or -12, 1, 0),
 		Font = UI.Fonts.display, TextSize = button.TextSize, TextXAlignment = hasIcon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center,
-		TextColor3 = selected and UI.Colors.text or UI.Colors.text:Lerp(UI.Skin.body, 0.15), TextScaled = false, ZIndex = button.ZIndex + 1})
+		TextColor3 = selected and UI.Colors.text or UI.Colors.text:Lerp(UI.Skin.body, 0.15), TextScaled = false, ZIndex = (button.ZIndex or 1) + 1})
 	UI.outline(label, 2)
+	-- The button keeps the words (tests and screen readers find it by them) but
+	-- draws none: its own text outline would show through as a ghost.
 	button.Text = text
 	button.TextTransparency = 1
+	local ghost = button:FindFirstChild("TextOutline")
+	if ghost then ghost:Destroy() end
 	return button
 end
 

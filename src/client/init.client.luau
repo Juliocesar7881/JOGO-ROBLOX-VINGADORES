@@ -384,6 +384,8 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 		BackgroundColor3 = C.background, BackgroundTransparency = 0.2, TextSize = 12, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
 	UI.corner(count, 8)
 	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 6, 1, -3), Size = UDim2.new(1, -12, 0, 3), BackgroundColor3 = C.gold, BackgroundTransparency = equipped and 0 or 1})
+	-- Hovering a slot tells what the hero does now: damage, range, speed, traits.
+	UI.hover(button, function(box) if kit.heroTooltip then kit.heroTooltip(box, id) end end, 320)
 	return button, price, line, count
 end
 
@@ -465,9 +467,11 @@ local function lobbyChrome(visible)
 			item.Visible=visible and not (name=="LobbyNavigation" and state and state.elevator and UI.sizeClass(size.X,size.Y).short)
 		end
 	end
-	-- The side tracker yields to any open panel, modal or not.
+	-- The side tracker and the tip strip yield to any open panel, modal or not.
 	local tracker=main:FindFirstChild("QuestTracker")
 	if tracker then tracker.Visible=visible and contextPanel==nil end
+	local tip=main:FindFirstChild("FirstVisitHint")
+	if tip then tip.Visible=contextPanel==nil end
 end
 
 local function refreshNavigation()
@@ -505,7 +509,9 @@ renderContext = function()
 	kit.contextRefreshPending=false
 	if not reuse and panel then panel:Destroy(); panel=nil; body=nil end
 	local size = screenSize()
-	local slot=UI.contextLayout(size.X,size.Y,{wide=contextPanel.kind=="talents" or contextPanel.kind=="chests",elevator=state.elevator~=nil,difficulty=state.elevator~=nil and state.elevator.modeId=="normal"})
+	-- Screens with a grid and a detail beside it get the wide window.
+	local wideKinds={talents=true,chests=true,squad=true,inventory=true,hero=true,premium=true,shop=true,bases=true,rewards=true,modes=true,maps=true}
+	local slot=UI.contextLayout(size.X,size.Y,{wide=wideKinds[contextPanel.kind]==true,elevator=state.elevator~=nil,difficulty=state.elevator~=nil and state.elevator.modeId=="normal"})
 	-- The talent tree takes the whole screen, like the big games' research trees.
 	if contextPanel.kind=="talents" then slot={x=0,y=0,w=size.X,h=size.Y,modal=true,class=slot.class} end
 	lobbyChrome(not slot.modal)

@@ -200,16 +200,17 @@ function Panels.new(ctx)
 		end
 	end
 
+	-- Tabs like the reference shops: each its own colour and icon, the open one
+	-- bright with a white rim, the others a shade darker.
+	local TAB_COLORS={C.coral,C.blue,C.green,C.gold,C.violet,C.pink}
 	local function categoryTabs(body, name, options, selected, onSelect)
-	 local row=UI.row(body,44)
-	 row.Name=name
-	 for index,option in ipairs(options) do
-	  UI.button(row,option.label,function() onSelect(option.id) end,{
-	   Name=name.."_"..option.id,Position=UDim2.new((index-1)/#options,0,0,0),
-	   Size=UDim2.new(1/#options,-6,0,44),TextSize=16,
-	   BackgroundColor3=selected==option.id and C.gold or C.card,
-	   TextColor3=selected==option.id and C.background or C.text})
-	 end
+		local row=UI.row(body,50)
+		row.Name=name
+		for index,option in ipairs(options) do
+			UI.tab(row,option.label,option.color or TAB_COLORS[(index-1)%#TAB_COLORS+1],option.icon,selected==option.id,function() onSelect(option.id) end,{
+				Name=name.."_"..option.id,Position=UDim2.new((index-1)/#options,0,0,0),
+				Size=UDim2.new(1/#options,-8,0,48),TextSize=#options>3 and 16 or 19})
+		end
 	end
 
 	local lastChestResult
@@ -268,11 +269,12 @@ function Panels.new(ctx)
 			local def=Catalog.Chests[id]; local chosen=id==kit.selectedChest
 			local color=UI.color(def.color)
 			local tile=UI.button(selector,"",function() kit.selectedChest=id; kit.confirmChest=nil; renderContext() end,
-				{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+3,chosen and 2 or 8),Size=UDim2.fromOffset(tileWidth-8,tileH),BackgroundColor3=chosen and color:Lerp(C.panel,0.25) or color:Lerp(C.panel,0.72)})
-			if chosen then UI.stroke(tile,Color3.new(1,1,1),3) end
-			UI.illustration(tile,"crate",color,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=wide and UDim2.fromOffset(58,52) or UDim2.fromOffset(46,40)})
-			UI.label(tile,L(def.name),{Position=UDim2.fromOffset(4,wide and 56 or 44),Size=UDim2.new(1,-8,0,wide and 30 or 24),TextWrapped=true,TextSize=wide and 13 or 12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
-			UI.label(tile,number(def.cost),{Position=UDim2.new(0,4,1,-26),Size=UDim2.new(1,-8,0,22),TextColor3=C.gold,TextSize=16,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+				{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+3,chosen and 2 or 8),Size=UDim2.fromOffset(tileWidth-8,tileH),BackgroundColor3=chosen and color:Lerp(UI.Skin.body,0.15) or color:Lerp(UI.Skin.body,0.7)})
+			UI.stroke(tile,chosen and Color3.new(1,1,1) or C.ink,chosen and 3.5 or 2.5)
+			UI.illustration(tile,"crate",color,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=wide and UDim2.fromOffset(62,54) or UDim2.fromOffset(46,40)})
+			UI.label(tile,L(def.name),{Position=UDim2.fromOffset(4,wide and 58 or 44),Size=UDim2.new(1,-8,0,wide and 24 or 22),TextWrapped=true,TextSize=wide and 15 or 12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			local price=UI.chip(tile,number(def.cost),C.ink,{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-5),Size=UDim2.new(1,-18,0,wide and 24 or 22),TextSize=wide and 16 or 14,TextColor3=C.gold})
+			price.Name="ChestPrice"
 		end
 
 		local forced=chest.pity and ((p.pity or {})[kit.selectedChest] or 0)+1>=chest.pity.after
@@ -389,10 +391,20 @@ function Panels.new(ctx)
 		gallery.CanvasPosition=scrolls.odds or Vector2.new(0,0)
 		for i,outcome in ipairs(outcomes) do
 			local rarityColor=UI.color(Catalog.Rarities[outcome.rarity].color)
-			local card=UI.roundFrame(gallery,{Name="ChestHero_"..outcome.id,Position=UDim2.new(((i-1)%cols)/cols,2,0,math.floor((i-1)/cols)*128),Size=UDim2.new(1/cols,-6,0,122),BackgroundColor3=rarityColor:Lerp(C.panel,0.6)},rarityColor)
-			portrait(card,outcome.id,{Position=UDim2.fromOffset(4,4),Size=UDim2.new(1,-8,0,78)})
-			UI.chip(card,UI.percent(outcome.chance,ctx.language()),rarityColor,{Name="ChestOdds_"..outcome.id,AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-6,0,6),Size=UDim2.fromOffset(58,22),TextSize=12})
-			UI.label(card,L(catalog[outcome.id].name),{Position=UDim2.fromOffset(6,84),Size=UDim2.new(1,-12,0,34),TextWrapped=true,TextSize=13,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			local mine=owned[outcome.id]
+			local card=UI.frame(gallery,{Name="ChestHero_"..outcome.id,Position=UDim2.new(((i-1)%cols)/cols,2,0,math.floor((i-1)/cols)*128),Size=UDim2.new(1/cols,-6,0,122),BackgroundColor3=rarityColor})
+			UI.corner(card,12)
+			UI.stroke(card,mine and C.ink or Color3.new(1,1,1),mine and 2.5 or 3)
+			UI.create("UIGradient",{Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromRGB(120,120,130)),Rotation=90},card)
+			portrait(card,outcome.id,{Position=UDim2.fromOffset(4,22),Size=UDim2.new(1,-8,0,70)})
+			-- The chance on top, big; NEW for what the account does not own yet.
+			local odds=UI.label(card,UI.percent(outcome.chance,ctx.language()),{Name="ChestOdds_"..outcome.id,Position=UDim2.fromOffset(4,2),Size=UDim2.new(1,-8,0,22),TextSize=19,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			UI.outline(odds,2.5)
+			if not mine then UI.chip(card,T("Novo","New"),C.green,{Name="ChestNew",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,24),Size=UDim2.fromOffset(44,18),TextSize=12}) end
+			local name=UI.label(card,L(catalog[outcome.id].name),{Position=UDim2.fromOffset(4,92),Size=UDim2.new(1,-8,0,28),TextScaled=true,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			UI.create("UITextSizeConstraint",{MaxTextSize=15,MinTextSize=9},name)
+			UI.outline(name,2)
+			if not isBase then UI.hover(card,function(box) if kit.heroTooltip then kit.heroTooltip(box,outcome.id) end end,320) end
 		end
 		smallText(body,isBase and T("Base repetida vira Ouro.","A duplicate base becomes Gold.") or T("Herói repetido vira Ouro e maestria. Heróis novos têm prioridade.","A duplicate hero becomes Gold and mastery. New heroes come first."),0,30)
 		resultCard()
@@ -857,19 +869,90 @@ function Panels.new(ctx)
 	-- The team and the collection on one screen: five slots and the base on
 	-- top (the leader crowned), then big hero cards. Tap a card to see the hero;
 	-- the only filters are the owned/all tabs and one row of rarity chips.
+	-- How a hero is now for this commander: level-one tower stats with mastery,
+	-- stars, cards and talents applied (what it will really do when placed).
+	local function heroNow(id)
+		local p = profile()
+		local mods = (p.heroes or {})[id] and Rules.PermanentModifiers(p, id) or {}
+		local ok, stats = pcall(Rules.TowerStats, id, 1, nil, mods)
+		if not ok then
+			local def = Catalog.Heroes[id]
+			stats = { damage = def.damage, range = def.range, interval = def.interval, slow = def.slow or 0 }
+		end
+		return stats
+	end
+	local function fmt(value)
+		value = tonumber(value) or 0
+		if math.abs(value - math.floor(value + 0.5)) < 0.05 then return tostring(math.floor(value + 0.5)) end
+		return string.format("%.1f", value)
+	end
+	-- The tooltip every hero shows on hover (collection, team, hotbar, summon odds).
+	local function heroTooltip(box, id)
+		local def = Catalog.Heroes[id]
+		if not def then return end
+		local p = profile()
+		local mine = (p.heroes or {})[id]
+		local rarity = Catalog.Rarities[def.rarity]
+		local tint = UI.color(rarity.color)
+		local stats = heroNow(id)
+		UI.tooltipTitle(box, L(def.name), tint:Lerp(Color3.new(1, 1, 1), 0.25))
+		local status = L(rarity.name)
+		if mine then status ..= T("  •  Maestria ", "  •  Mastery ") .. tostring(mine.level or 1) .. T("  •  Carta nv ", "  •  Card lv ") .. tostring(mine.rank or 1) else status ..= T("  •  Você ainda não tem", "  •  Not owned yet") end
+		UI.tooltipLine(box, status, C.muted, 2, 15)
+		local perSecond = (stats.interval or 0) > 0 and 1 / stats.interval or 0
+		UI.tooltipLine(box, T("Dano ", "Damage ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.damage) .. "</b></font>   " .. T("Alcance ", "Range ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.range) .. "</b></font>   "
+			.. T("Ataques/s ", "Hits/s ") .. '<font color="#FFFFFF"><b>' .. string.format("%.1f", perSecond) .. "</b></font>", C.muted, 3, 17)
+		UI.tooltipLine(box, def.air and T("Acerta inimigos no chão e voando", "Hits ground and flying enemies") or T("Acerta só inimigos no chão", "Hits ground enemies only"), def.air and C.green or C.coral, 4, 15)
+		for index, trait in ipairs(UI.heroTraits(def, T, stats.slow)) do UI.tooltipLine(box, "• " .. trait, C.cream, 4 + index, 15) end
+		local ability = def.ability and Catalog.Abilities[def.ability]
+		if ability then UI.tooltipLine(box, T("Poder de líder: ", "Leader power: ") .. L(ability.name), C.gold, 20, 15) end
+		UI.tooltipLine(box, number(def.cost) .. T(" Ouro para colocar na partida", " Gold to place in battle"), C.gold:Lerp(C.text, 0.3), 21, 14)
+	end
+	kit.heroTooltip = heroTooltip
+
+	-- A collection tile like the big games' inventories: the hero on its rarity
+	-- colour, its stars on a gold badge and its level, nothing else to read.
+	local function heroTile(parent, id, properties, onClick)
+		local p = profile()
+		local def = Catalog.Heroes[id]
+		local mine = (p.heroes or {})[id]
+		local tint = UI.color(Catalog.Rarities[def.rarity].color)
+		local tile = UI.frame(parent, {BackgroundColor3 = mine and tint or tint:Lerp(C.ink, 0.55)})
+		for key, value in pairs(properties or {}) do tile[key] = value end
+		UI.corner(tile, 14)
+		UI.stroke(tile, C.ink, 3)
+		UI.create("UIGradient", {Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 150)), Rotation = 90}, tile)
+		-- Light rays behind the hero, like a card that shines.
+		local rays = UI.frame(tile, {Name = "Rays", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true})
+		for index = 0, 3 do
+			UI.frame(rays, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.new(0.16, 0, 1.6, 0), Rotation = index * 45, BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.88})
+		end
+		heroPortrait(tile, id, {Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8)})
+		if not mine then
+			local shade = UI.frame(tile, {Name = "NotOwned", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.5})
+			UI.corner(shade, 14)
+			UI.icon(shade, "lock", C.cream, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.fromOffset(30, 30)})
+		end
+		return tile, mine, tint
+	end
+
 	local function contextSquad(body)
 		local p=profile()
 		local screen=screenSize()
-		local width=UI.contextLayout(screen.X,screen.Y).w-34
-		local wide=width>=500
-		local team=UI.row(body,wide and 104 or 190)
-		local lineup=UI.frame(team,{Name="SquadSlots",Size=wide and UDim2.new(0.76,0,0,104) or UDim2.new(1,0,0,104),BackgroundTransparency=1})
+		local width=UI.contextLayout(screen.X,screen.Y,{wide=true}).w-40
+		local wide=width>=640
+		-- The team: five slots (the first one leads) and the base on the side.
+		local team=UI.row(body,wide and 104 or 186)
+		team.Name="TeamRow"
+		local lineup=UI.frame(team,{Name="SquadSlots",Size=wide and UDim2.new(0.78,0,0,104) or UDim2.new(1,0,0,104),BackgroundTransparency=1})
 		local base=Catalog.Bases[p.equippedBase or "outpost"] or Catalog.Bases.outpost
-		local baseCard=UI.secondary(team,"",function() openContext("bases") end,{Name="OpenBases",Position=wide and UDim2.fromScale(0.77,0) or UDim2.fromOffset(0,110),Size=wide and UDim2.new(0.23,-6,0,104) or UDim2.new(1,-6,0,76),BackgroundColor3=C.green:Lerp(C.panel,0.55)})
+		local baseCard=UI.secondary(team,"",function() openContext("bases") end,{Name="OpenBases",Position=wide and UDim2.new(0.78,4,0,0) or UDim2.fromOffset(0,110),Size=wide and UDim2.new(0.22,-6,0,104) or UDim2.new(1,-6,0,72),BackgroundColor3=C.green:Lerp(UI.Skin.body,0.45)})
 		UI.basePortrait(baseCard,base,{Position=UDim2.fromOffset(8,8),Size=wide and UDim2.new(1,-16,0,50) or UDim2.fromOffset(64,56)})
-		UI.label(baseCard,L(base.name),{Name="FormationBaseName",Position=wide and UDim2.fromOffset(6,60) or UDim2.fromOffset(80,6),Size=wide and UDim2.new(1,-12,0,38) or UDim2.new(1,-90,1,-12),TextWrapped=true,Font=UI.Fonts.display,TextSize=14,TextXAlignment=wide and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left})
+		UI.label(baseCard,L(base.name),{Name="FormationBaseName",Position=wide and UDim2.fromOffset(6,60) or UDim2.fromOffset(80,6),Size=wide and UDim2.new(1,-12,0,40) or UDim2.new(1,-90,1,-12),TextWrapped=true,Font=UI.Fonts.display,TextSize=15,TextXAlignment=wide and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left})
 		for slot=1,5 do
 			local id=(p.loadout or {})[slot]
+			local def=id and Catalog.Heroes[id]
+			local tint=def and UI.color(Catalog.Rarities[def.rarity].color) or UI.Skin.slot
 			local tile=UI.secondary(lineup,"",function()
 				if slot==1 then kit.inventoryView.leaderPick=not kit.inventoryView.leaderPick; inventoryFilter="owned"; kit.inventoryView.rarity="all"; renderContext()
 				elseif id and kit.inventoryView.leaderPick then makeLeader(id,function() kit.inventoryView.leaderPick=false; renderContext() end)
@@ -878,51 +961,35 @@ function Panels.new(ctx)
 					local list=copy(p.loadout); table.remove(list,table.find(list,id))
 					kit.inventoryView.choice=nil
 					act("SetLoadout",{heroes=list},function() showToast(T(heroName(id).." saiu da equipe.",heroName(id).." left the team.")) end)
-				else inventoryFilter="owned"; renderContext(); showToast(T("Toque num herói abaixo e escolha Colocar na equipe.","Tap a hero below and choose Add to team.")) end
-			end,{Name="SquadSlot_"..slot,Position=UDim2.new((slot-1)/5,0,0,0),Size=UDim2.new(0.2,-6,0,104),BackgroundColor3=slot==1 and C.gold:Lerp(C.panel,0.45) or C.card})
-			if slot==1 then UI.stroke(tile,C.gold,3) end
-			if id then heroPortrait(tile,id,{Position=UDim2.fromOffset(4,4),Size=UDim2.new(1,-8,1,-8)})
-			else UI.label(tile,"+",{Size=UDim2.fromScale(1,1),TextSize=38,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center}) end
-			UI.chip(tile,slot==1 and T("★ LÍDER","★ LEAD") or tostring(slot),slot==1 and C.gold or C.background,{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-4),Size=UDim2.new(slot==1 and 0.9 or 0.4,0,0,20),TextSize=slot==1 and 11 or 13})
+				else inventoryFilter="owned"; renderContext(); showToast(T("Clique num herói abaixo e escolha Colocar na equipe.","Click a hero below and choose Add to team.")) end
+			end,{Name="SquadSlot_"..slot,Position=UDim2.new((slot-1)/5,0,0,0),Size=UDim2.new(0.2,-8,0,104),BackgroundColor3=id and tint:Lerp(UI.Skin.body,0.25) or UI.Skin.slot})
+			UI.stroke(tile,slot==1 and C.gold or C.ink,slot==1 and 3.5 or 3)
+			if id then
+				heroPortrait(tile,id,{Position=UDim2.fromOffset(4,4),Size=UDim2.new(1,-8,1,-30)})
+				UI.hover(tile,function(box) heroTooltip(box,id) end,320)
+			else UI.label(tile,"+",{Size=UDim2.new(1,0,1,-24),TextSize=40,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center}) end
+			UI.chip(tile,slot==1 and T("Líder","Leader") or tostring(slot),slot==1 and C.gold or C.ink,{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-4),Size=UDim2.new(slot==1 and 0.86 or 0.4,0,0,22),TextSize=slot==1 and 14 or 15})
 		end
 		local leader=(p.loadout or {})[1]
 		if kit.inventoryView.leaderPick then
-			local pick=UI.roundFrame(body,{Name="LeaderPick",Size=UDim2.new(1,-6,0,56),BackgroundColor3=C.gold:Lerp(C.panel,0.6)},C.gold)
-			UI.label(pick,T("Toque no herói que vai liderar","Tap the hero who will lead"),{Position=UDim2.fromOffset(12,0),Size=UDim2.new(1,-150,1,0),Font=UI.Fonts.display,TextSize=16,TextWrapped=true})
-			UI.secondary(pick,T("CANCELAR","CANCEL"),function() kit.inventoryView.leaderPick=false; renderContext() end,{Name="CancelLeaderPick",AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-8,0.5,0),Size=UDim2.fromOffset(124,44),TextSize=15,BackgroundColor3=C.red})
-		elseif leader then
-			-- One line says what the leader does; the crowned slot does the rest.
-			local power=UI.row(body,48)
+			local pick=UI.roundFrame(body,{Name="LeaderPick",Size=UDim2.new(1,-6,0,58),BackgroundColor3=C.gold:Lerp(UI.Skin.body,0.6)},C.gold)
+			UI.label(pick,T("Clique no herói que vai liderar","Click the hero who will lead"),{Position=UDim2.fromOffset(14,0),Size=UDim2.new(1,-160,1,0),Font=UI.Fonts.display,TextSize=19,TextWrapped=true})
+			UI.secondary(pick,T("Cancelar","Cancel"),function() kit.inventoryView.leaderPick=false; renderContext() end,{Name="CancelLeaderPick",AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-8,0.5,0),Size=UDim2.fromOffset(130,44),TextSize=17,BackgroundColor3=C.red})
+		elseif leader and not wide then
+			-- One line says what the leader does (wide screens show it beside the grid).
+			local power=UI.row(body,40)
 			power.Name="LeaderPower"
-			UI.label(power,T("★ PODER DO LÍDER: ","★ LEADER POWER: ")..L(Catalog.Abilities[Catalog.Heroes[leader].ability].name),{Size=UDim2.new(1,-150,1,0),Font=UI.Fonts.display,TextColor3=C.gold,TextSize=16,TextWrapped=true})
-			UI.button(power,T("TROCAR LÍDER","CHANGE LEADER"),function()
-				kit.inventoryView.leaderPick=true; inventoryFilter="owned"; kit.inventoryView.rarity="all"; renderContext()
-			end,{Name="ChangeLeader",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,2),Size=UDim2.fromOffset(140,44),BackgroundColor3=C.gold,TextSize=15})
-		end
-		-- The two choices for the hero just tapped in the collection.
-		local choice=kit.inventoryView.choice
-		if choice and (p.heroes or {})[choice] then
-			local def=Catalog.Heroes[choice]
-			local tint=UI.color(Catalog.Rarities[def.rarity].color)
-			local inTeam=contains(p.loadout,choice)
-			local pick=UI.roundFrame(body,{Name="HeroChoice",Size=UDim2.new(1,-6,0,wide and 96 or 150),BackgroundColor3=tint:Lerp(C.panel,0.7)},tint)
-			heroPortrait(pick,choice,{Position=UDim2.fromOffset(6,6),Size=UDim2.fromOffset(wide and 84 or 76,wide and 84 or 76)})
-			UI.label(pick,heroName(choice),{Position=UDim2.fromOffset(wide and 98 or 90,6),Size=UDim2.new(1,-(wide and 160 or 150),0,34),TextSize=22,Font=UI.Fonts.display,TextColor3=tint:Lerp(C.text,0.4)})
-			UI.closeButton(pick,function() kit.inventoryView.choice=nil; renderContext() end,{Name="CloseHeroChoice",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-6,0,6),Size=UDim2.fromOffset(44,44),TextSize=24})
-			local buttonsY=wide and 48 or 90
-			UI.button(pick,inTeam and T("TIRAR DA EQUIPE","REMOVE FROM TEAM") or T("+ COLOCAR NA EQUIPE","+ ADD TO TEAM"),function()
-				local list=copy(p.loadout); local old=table.find(list,choice)
-				if old then table.remove(list,old) elseif #list<5 then table.insert(list,choice) else showToast(T("A equipe tem 5 heróis. Toque num herói da equipe, lá em cima, para tirá-lo.","Team full. Tap a hero in the team, up top, to take it out."),true); return end
-				kit.inventoryView.choice=nil
-				act("SetLoadout",{heroes=list})
-			end,{Name="ChoiceTeam",Position=wide and UDim2.fromOffset(98,buttonsY) or UDim2.fromOffset(6,buttonsY),Size=wide and UDim2.new(0.5,-52,0,44) or UDim2.new(0.5,-9,0,52),BackgroundColor3=inTeam and C.card or C.green,TextSize=wide and 15 or 14})
-			UI.button(pick,T("INFORMAÇÕES","INFO"),function() kit.inventoryView.choice=nil; openContext("hero",{heroId=choice}) end,{Name="ChoiceInfo",AnchorPoint=Vector2.new(1,0),Position=wide and UDim2.new(1,-6,0,buttonsY) or UDim2.new(1,-6,0,buttonsY),Size=wide and UDim2.new(0.5,-52,0,44) or UDim2.new(0.5,-9,0,52),BackgroundColor3=C.blue,TextSize=wide and 15 or 14})
+			UI.icon(power,"star",C.gold,{Position=UDim2.fromOffset(2,7),Size=UDim2.fromOffset(26,26)})
+			UI.label(power,T("Poder do líder: ","Leader power: ")..L(Catalog.Abilities[Catalog.Heroes[leader].ability].name),{Position=UDim2.fromOffset(34,0),Size=UDim2.new(1,-34,1,0),Font=UI.Fonts.display,TextColor3=C.gold,TextSize=17,TextWrapped=true})
 		end
 		local owned=0
 		for _,id in ipairs(Catalog.HeroOrder) do if (p.heroes or {})[id] then owned+=1 end end
-		categoryTabs(body,"InventoryTabs",{{id="owned",label=T("MEUS HERÓIS • ","MY HEROES • ")..owned},{id="all",label=T("TODOS • ","ALL • ")..#Catalog.HeroOrder}},inventoryFilter,function(id) inventoryFilter=id; renderContext() end)
+		local filterRow=wide and UI.row(body,50) or body
+		if wide then filterRow.Name="FilterRow" end
+		local tabsHost=wide and UI.frame(filterRow,{Name="TabsHost",Size=UDim2.new(0.42,0,1,0),BackgroundTransparency=1}) or body
+		categoryTabs(tabsHost,"InventoryTabs",{{id="owned",label=T("Meus heróis  ","My heroes  ")..owned,color=C.coral,icon="hero"},{id="all",label=T("Todos  ","All  ")..#Catalog.HeroOrder,color=C.blue,icon="star"}},inventoryFilter,function(id) inventoryFilter=id; renderContext() end)
 		-- Rarity chips: one tap narrows the cards, the active chip glows.
-		local chips=UI.row(body,40)
+		local chips=wide and UI.frame(filterRow,{Name="RarityChips",Position=UDim2.new(0.42,6,0,4),Size=UDim2.new(0.58,-6,0,42),BackgroundTransparency=1}) or UI.row(body,40)
 		chips.Name="RarityChips"
 		local options={"all"}
 		for _,id in ipairs(Catalog.RarityOrder) do table.insert(options,id) end
@@ -930,45 +997,92 @@ function Panels.new(ctx)
 			local rarity=Catalog.Rarities[id]
 			local tint=rarity and UI.color(rarity.color) or C.cream
 			local active=kit.inventoryView.rarity==id
-			local chip=UI.button(chips,rarity and Catalog.Upper(L(rarity.name)) or T("TODAS","ALL"),function() kit.inventoryView.rarity=id; renderContext() end,{
-				Name="HeroRarity_"..id,Position=UDim2.new((index-1)/#options,0,0,0),Size=UDim2.new(1/#options,-5,0,38),TextSize=width<520 and 10 or 13,
-				BackgroundColor3=active and tint or tint:Lerp(C.panel,0.7)})
+			local chip=UI.button(chips,rarity and L(rarity.name) or T("Todas","All"),function() kit.inventoryView.rarity=id; renderContext() end,{
+				Name="HeroRarity_"..id,Position=UDim2.new((index-1)/#options,0,0,0),Size=UDim2.new(1/#options,-6,0,38),TextSize=(width<520 or wide) and 13 or 16,
+				BackgroundColor3=active and tint or tint:Lerp(UI.Skin.body,0.62)})
 			if active then UI.stroke(chip,Color3.new(1,1,1),3) end
 		end
 		local entries=UI.collectionEntries(Catalog,p,{query="",rarity=kit.inventoryView.rarity,sort="collection",ownership=inventoryFilter},ctx.language())
-		local columns=math.max(2,math.min(4,math.floor((width+10)/150)))
-		local cellW=(width-(columns-1)*10)/columns
-		local cellH=math.floor(cellW*1.12)+36
-		if #entries==0 then UI.section(body,T("NENHUM HERÓI AQUI","NO HEROES HERE"),T("Abra baús na INVOCAÇÃO para ganhar heróis.","Open chests at the SUMMON halls to get heroes.")) end
-		local gallery=UI.frame(body,{Name="HeroGallery",Size=UDim2.new(1,-6,0,math.max(0,math.ceil(#entries/columns)*(cellH+10)-10)),BackgroundTransparency=1})
-		for index,id in ipairs(entries) do
+		-- The detail beside the grid (wide) or above it (narrow): the hero tapped,
+		-- or the leader until one is tapped.
+		local shown=kit.inventoryView.choice
+		if shown and not (p.heroes or {})[shown] then shown=nil end
+		local sideW=wide and 300 or 0
+		local gridW=width-(wide and sideW+14 or 0)
+		local columns=math.max(2,math.min(6,math.floor((gridW+10)/128)))
+		local cell=math.floor((gridW-(columns-1)*10)/columns)
+		local rowsH=math.max(0,math.ceil(#entries/columns)*(cell+10)-10)
+		local function detail(parent,id,closable)
 			local def=Catalog.Heroes[id]
+			local tint=UI.color(Catalog.Rarities[def.rarity].color)
 			local mine=(p.heroes or {})[id]
-			local rarity=Catalog.Rarities[def.rarity]
-			local tint=UI.color(rarity.color)
-			local slot=table.find(p.loadout or {},id)
-			local card=UI.roundFrame(gallery,{Name="Collection_"..id,Position=UDim2.fromOffset(((index-1)%columns)*(cellW+10),math.floor((index-1)/columns)*(cellH+10)),Size=UDim2.fromOffset(cellW,cellH),BackgroundColor3=mine and tint:Lerp(C.panel,0.35) or C.background},id==leader and C.gold or tint)
-			UI.candy(card)
-			UI.portraitStage(card,tint,{Name="HeroArtwork",Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,1,-42)})
-			heroPortrait(card,id,{Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,1,-42)})
-			UI.chip(card,Catalog.Upper(L(rarity.name)),tint,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(math.min(84,cellW-20),20),TextSize=12})
-			if mine then UI.chip(card,T("NV ","LV ")..mine.level,C.violet,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,8),Size=UDim2.fromOffset(46,20),TextSize=12})
-			else
-				local shade=UI.frame(card,{Name="NotOwned",Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,1,-42),BackgroundColor3=C.ink,BackgroundTransparency=0.45})
-				UI.corner(shade,12)
-				UI.icon(shade,"lock",C.cream,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(34,34)})
+			local inTeam=contains(p.loadout,id)
+			local pick=UI.frame(parent,{Name="HeroChoice",BackgroundColor3=UI.Skin.slot,Size=wide and UDim2.fromOffset(sideW,392) or UDim2.new(1,-6,0,300)})
+			UI.corner(pick,16)
+			UI.stroke(pick,tint,3)
+			UI.label(pick,heroName(id),{Name="ChoiceName",Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,closable and -70 or -28,0,36),TextSize=28,Font=UI.Fonts.display,TextColor3=Color3.new(1,1,1)})
+			UI.label(pick,L(Catalog.Rarities[def.rarity].name)..(mine and (T("  •  Nível ","  •  Level ")..tostring(mine.level or 1)) or ""),{Position=UDim2.fromOffset(14,42),Size=UDim2.new(1,-28,0,22),TextSize=17,Font=UI.Fonts.display,TextColor3=tint:Lerp(Color3.new(1,1,1),0.35)})
+			if closable then UI.closeButton(pick,function() kit.inventoryView.choice=nil; renderContext() end,{Name="CloseHeroChoice",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,8),Size=UDim2.fromOffset(44,44),TextSize=24}) end
+			heroTile(pick,id,{Name="ChoicePortrait",Position=UDim2.fromOffset(14,68),Size=UDim2.fromOffset(110,110)})
+			local buttonsX,buttonsW=134,(wide and sideW or 300)-148
+			UI.button(pick,inTeam and T("Tirar da equipe","Remove") or T("Colocar na equipe","Add to team"),function()
+				local list=copy(p.loadout); local old=table.find(list,id)
+				if old then table.remove(list,old) elseif #list<5 then table.insert(list,id) else showToast(T("A equipe tem 5 heróis. Clique num herói da equipe, lá em cima, para tirá-lo.","Team full. Click a hero in the team, up top, to take it out."),true); return end
+				kit.inventoryView.choice=nil
+				act("SetLoadout",{heroes=list})
+			end,{Name="ChoiceTeam",Position=UDim2.fromOffset(buttonsX,68),Size=UDim2.fromOffset(buttonsW,34),BackgroundColor3=inTeam and C.card or C.green,TextSize=15})
+			UI.button(pick,T("Informações","Info"),function() kit.inventoryView.choice=nil; openContext("hero",{heroId=id}) end,{Name="ChoiceInfo",Position=UDim2.fromOffset(buttonsX,106),Size=UDim2.fromOffset(buttonsW,34),BackgroundColor3=C.blue,TextSize=15})
+			UI.button(pick,(p.loadout or {})[1]==id and T("É o líder","Leader") or T("Fazer líder","Make leader"),function() makeLeader(id) end,{Name="ChoiceLeader",Position=UDim2.fromOffset(buttonsX,144),Size=UDim2.fromOffset(buttonsW,34),BackgroundColor3=C.gold,TextSize=15})
+			local stats=heroNow(id)
+			local perSecond=(stats.interval or 0)>0 and 1/stats.interval or 0
+			UI.statTable(pick,{{key="damage",label=T("Dano","Damage"),value=fmt(stats.damage)},{key="speed",label=T("Ataques/s","Hits/s"),value=string.format("%.1f",perSecond)},{key="range",label=T("Alcance","Range"),value=fmt(stats.range)}},{Name="ChoiceStats",Position=UDim2.fromOffset(14,188),Size=UDim2.new(1,-28,0,68)})
+			local pills=UI.frame(pick,{Name="ChoiceTraits",Position=UDim2.fromOffset(14,264),Size=UDim2.new(1,-28,0,72),BackgroundTransparency=1})
+			local flow=UI.list(pills,6,true)
+			pcall(function() flow.Wraps=true end)
+			UI.pill(pills,def.air and T("Chão e ar","Ground + air") or T("Só chão","Ground only"),def.air and C.green:Lerp(C.ink,0.2) or C.coral:Lerp(C.ink,0.2),{TextSize=14})
+			for _,trait in ipairs(UI.heroTraits(def,T,stats.slow)) do
+				local short=string.match(trait,"^([^,;:]+)") or trait
+				if #short>26 then short=string.sub(short,1,24).."…" end
+				UI.pill(pills,short,C.blue:Lerp(C.ink,0.15),{TextSize=14})
 			end
-			if slot then UI.chip(card,slot==1 and "★" or tostring(slot),slot==1 and C.gold or C.green,{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-8,1,-42),Size=UDim2.fromOffset(28,24),TextSize=15}) end
-			-- Earned stars (one per duplicate) along the bottom of the artwork.
+			local ability=def.ability and Catalog.Abilities[def.ability]
+			if ability then UI.label(pick,T("Poder de líder: ","Leader power: ")..L(ability.name),{Name="ChoicePower",Position=UDim2.new(0,14,1,-46),Size=UDim2.new(1,-28,0,40),TextSize=16,Font=UI.Fonts.display,TextColor3=C.gold,TextWrapped=true}) end
+			return pick
+		end
+		if not wide and shown then detail(body,shown,true) end
+		if #entries==0 then UI.section(body,T("Nenhum herói aqui","No heroes here"),T("Abra baús na Invocação para ganhar heróis.","Open chests at the Summon halls to get heroes.")) end
+		local area=UI.frame(body,{Name="HeroArea",Size=UDim2.new(1,-6,0,math.max(rowsH,wide and 392 or 0)),BackgroundTransparency=1})
+		local gallery=UI.frame(area,{Name="HeroGallery",Size=UDim2.fromOffset(gridW,rowsH),BackgroundTransparency=1})
+		for index,id in ipairs(entries) do
+			local mine=(p.heroes or {})[id]
+			local slot=table.find(p.loadout or {},id)
+			local x,y=((index-1)%columns)*(cell+10),math.floor((index-1)/columns)*(cell+10)
+			local card=heroTile(gallery,id,{Name="Collection_"..id,Position=UDim2.fromOffset(x,y),Size=UDim2.fromOffset(cell,cell)})
+			if id==(shown or (wide and leader)) then UI.stroke(card,Color3.new(1,1,1),3.5) end
+			-- The earned stars on a gold badge (one per duplicate), the level beside.
 			local stars=mine and math.clamp(mine.stars or 0,0,Catalog.Stars.max) or 0
-			if mine and mine.shiny then UI.label(card,"◆",{Name="CollectionShiny",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,30),Size=UDim2.fromOffset(28,24),TextSize=18,TextXAlignment=Enum.TextXAlignment.Right}) end
-			if stars>0 then UI.label(card,string.rep("★",stars),{Name="CollectionStars",Position=UDim2.new(0,8,1,-64),Size=UDim2.new(0.6,0,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.gold}) end
-			UI.label(card,heroName(id),{Name="HeroName",Position=UDim2.new(0,6,1,-36),Size=UDim2.new(1,-12,0,32),Font=UI.Fonts.display,TextSize=cellW<150 and 13 or 16,TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Center})
-			UI.button(card,"",function()
+			if mine then
+				local star=UI.frame(card,{Name="StarBadge",Position=UDim2.new(0,-4,1,-34),Size=UDim2.fromOffset(38,38),BackgroundTransparency=1,ZIndex=4})
+				UI.icon(star,"star",C.gold,{Size=UDim2.fromScale(1,1),ZIndex=4})
+				UI.label(star,tostring(stars),{Name="CollectionStars",Size=UDim2.fromScale(1,1),TextSize=17,Font=UI.Fonts.display,TextColor3=Color3.fromRGB(150,80,10),TextXAlignment=Enum.TextXAlignment.Center,ZIndex=5})
+				local level=UI.label(card,T("Nv. ","Lv. ")..mine.level,{Name="CollectionLevel",AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-6,1,-4),Size=UDim2.fromOffset(cell-40,26),TextSize=cell<110 and 16 or 20,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Right,ZIndex=4})
+				UI.outline(level,2.5)
+				if mine.shiny then UI.label(card,"◆",{Name="CollectionShiny",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-6,0,4),Size=UDim2.fromOffset(24,22),TextSize=18,TextXAlignment=Enum.TextXAlignment.Right,ZIndex=4}) end
+			end
+			if slot then UI.chip(card,slot==1 and T("Líder","Lead") or tostring(slot),slot==1 and C.gold or C.green,{Name="TeamMark",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-6,0,mine and mine.shiny and 28 or 6),Size=UDim2.fromOffset(slot==1 and 54 or 26,22),TextSize=13,ZIndex=4}) end
+			local hit=UI.button(card,"",function()
 				if kit.inventoryView.leaderPick and mine then makeLeader(id,function() kit.inventoryView.leaderPick=false; renderContext() end)
 				elseif mine then kit.inventoryView.choice=id; renderContext()
 				else openContext("hero",{heroId=id}) end
-			end,{Name="FormationHero_"..id,Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=4})
+			end,{Name="FormationHero_"..id,Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=6})
+			UI.hover(hit,function(box) heroTooltip(box,id) end,330)
+		end
+		if wide then
+			local id=shown or leader or entries[1]
+			if id and Catalog.Heroes[id] then
+				local panel=detail(area,id,shown~=nil)
+				panel.Position=UDim2.fromOffset(gridW+14,0)
+			end
 		end
 	end
 
