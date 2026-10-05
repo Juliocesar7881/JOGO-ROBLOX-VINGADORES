@@ -201,17 +201,20 @@ showToast = function(message, bad)
 	local inBattle = activeMatch() and refs.toastTop ~= nil
 	local top = inBattle and ((refs.boss and refs.boss.Parent and refs.boss.Visible) and refs.toastBossTop or refs.toastTop) or nil
 	local toast = UI.roundFrame(overlays, {
-		Name = "Toast", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, top or (activeMatch() and 8 or math.max(8,screenSize().Y-78))),
-		Size = UDim2.new(1, -32, 0, inBattle and 48 or 62), ZIndex = 60,
+		Name = "Toast", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, top or (activeMatch() and 8 or math.max(8,screenSize().Y-82))),
+		Size = UDim2.new(1, -32, 0, inBattle and 54 or 66), ZIndex = 60,
 	}, bad and C.red or C.green)
-	UI.create("UISizeConstraint", {MaxSize = Vector2.new(580, 100)}, toast)
+	UI.windowSkin(toast, bad and C.red or C.green)
+	UI.create("UISizeConstraint", {MaxSize = Vector2.new(640, 110)}, toast)
 	-- Server messages arrive as "pt / en" strings (or {pt, en} tables).
 	local shown = message
 	if type(message) == "string" then
 		local pt, en = string.match(message, "^(.-) / (.+)$")
 		if pt and en then shown = language == "en" and en or pt end
 	end
-	UI.label(toast, L(shown), {Position = UDim2.fromOffset(14, 6), Size = UDim2.new(1, -28, 1, -12), TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextSize = 14, ZIndex = 61})
+	UI.icon(toast, bad and "lock" or "star", bad and C.red or C.gold, {Position = UDim2.new(0, 14, 0.5, -14), Size = UDim2.fromOffset(28, 28), ZIndex = 61})
+	local words = UI.label(toast, L(shown), {Name = "ToastText", Position = UDim2.fromOffset(52, 4), Size = UDim2.new(1, -66, 1, -8), TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextScaled = true, Font = UI.Fonts.display, ZIndex = 61})
+	UI.create("UITextSizeConstraint", {MaxTextSize = 19, MinTextSize = 11}, words)
 	toast.Active=false
 	welcomePanel(toast)
 	task.delay(4.5, function() if toast.Parent then toast:Destroy() end end)

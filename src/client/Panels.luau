@@ -563,6 +563,8 @@ function Panels.new(ctx)
 				local rowH,artW,buttonH=slim and 96 or 150,slim and 74 or 118,slim and 38 or 50
 				local topY=slim and 5 or 10
 				local row=UI.roundFrame(body,{Name="Product_"..key,Size=UDim2.new(1,-6,0,rowH),BackgroundColor3=UI.Skin.slot},tint)
+				-- A hero for sale tells its numbers on hover, like everywhere else.
+				if group.kind=="hero" then UI.hover(row,function(box) heroTooltip(box,key) end,330) end
 				UI.stroke(row,tint,3)
 				local light=row:FindFirstChildOfClass("UIGradient")
 				if light then light.Color=ColorSequence.new(tint:Lerp(Color3.new(1,1,1),0.1),UI.Skin.slot); light.Rotation=0; light.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.55),NumberSequenceKeypoint.new(0.6,0.85),NumberSequenceKeypoint.new(1,0.95)}) end
@@ -748,24 +750,37 @@ function Panels.new(ctx)
 	  UI.section(body,T("Seu rank: ","Your rank: ")..(ctx.language()=="en" and rank.en or rank.pt),T("Bronze 10 • Prata 20 • Ouro 30 • Diamante 40 • Lenda 50 ondas","Bronze 10 • Silver 20 • Gold 30 • Diamond 40 • Legend 50 waves"))
 	 end
 		UI.section(body, T("Lendas da resistência", "Legends of the resistance"), T("Evolução real da conta • temporadas de 60 dias.", "Real account progression • 60-day seasons."))
-		local controls = UI.row(body, 46)
-		UI.secondary(controls, mapName(board.map), function()
+		local controls = UI.row(body, 52)
+		UI.tab(controls, mapName(board.map), C.coral, "globe", true, function()
 			local index = table.find(maps, board.map) or 1
 			board.map = maps[index % #maps + 1]
 			board.data = nil; renderContext(); loadBoard()
-		end, {Size = UDim2.new(0.6, -6, 0, 40), TextSize = 12})
-		UI.secondary(controls, tostring(board.size) .. T(" jogador(es)", " player(s)"), function() board.size = board.size % 4 + 1; board.data = nil; renderContext(); loadBoard() end, {Position = UDim2.new(0.6, 4, 0, 0), Size = UDim2.new(0.4, -4, 0, 40), TextSize = 12})
-		local row = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 66), BackgroundColor3 = C.card})
-		heading(row, T("Sua melhor marca: ", "Your personal best: ") .. tostring(board.data and board.data.personal or 0) .. T(" ondas", " waves"), 10, C.green)
-		smallText(row, T("Temporada ", "Season ") .. tostring(board.data and board.data.season or profile().season or 1), 38, 22)
+		end, {Name = "BoardMap", Size = UDim2.new(0.6, -6, 0, 48), TextSize = 17})
+		UI.tab(controls, tostring(board.size) .. T(" jogador(es)", " player(s)"), C.blue, "hero", true, function() board.size = board.size % 4 + 1; board.data = nil; renderContext(); loadBoard() end,
+			{Name = "BoardSize", Position = UDim2.new(0.6, 4, 0, 0), Size = UDim2.new(0.4, -4, 0, 48), TextSize = 17})
+		-- The personal best, big, like a trophy plate.
+		local row = UI.roundFrame(body, {Name = "BoardPersonal", Size = UDim2.new(1, -6, 0, 78), BackgroundColor3 = UI.Skin.slot}, C.green)
+		UI.stroke(row, C.green, 3)
+		UI.icon(row, "trophy", C.gold, {Position = UDim2.fromOffset(12, 15), Size = UDim2.fromOffset(46, 46)})
+		UI.label(row, T("Sua melhor marca", "Your personal best"), {Position = UDim2.fromOffset(70, 8), Size = UDim2.new(1, -190, 0, 26), Font = UI.Fonts.display, TextSize = 20, TextColor3 = C.green})
+		UI.label(row, T("Temporada ", "Season ") .. tostring(board.data and board.data.season or profile().season or 1), {Position = UDim2.fromOffset(70, 40), Size = UDim2.new(1, -190, 0, 24), TextSize = 16, TextColor3 = C.muted})
+		local best = UI.label(row, tostring(board.data and board.data.personal or 0) .. T(" ondas", " waves"), {Name = "BoardBest", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(170, 44), Font = UI.Fonts.display, TextSize = 30, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Right})
+		UI.outline(best, 3)
 		if board.data and board.data.rows then
+			local MEDALS = { C.gold, Color3.fromRGB(216, 224, 234), Color3.fromRGB(224, 154, 91) }
 			for _, entry in ipairs(board.data.rows) do
-				local entryRow = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 56), BackgroundColor3 = entry.userId == player.UserId and Color3.fromRGB(24, 54, 49) or C.card})
-				UI.label(entryRow, "#" .. tostring(entry.rank), {Position = UDim2.fromOffset(12, 10), Size = UDim2.fromOffset(49, 30), Font = Enum.Font.BuilderSansExtraBold, TextColor3 = C.gold})
+				local mine = entry.userId == player.UserId
+				local medal = MEDALS[entry.rank]
+				local entryRow = UI.roundFrame(body, {Name = "BoardRow_" .. tostring(entry.rank), Size = UDim2.new(1, -6, 0, 64), BackgroundColor3 = mine and Color3.fromRGB(24, 54, 49) or UI.Skin.slot}, medal or UI.Skin.slotLine)
+				UI.stroke(entryRow, medal or (mine and C.green or UI.Skin.slotLine), medal and 3 or 2)
+				local place = UI.label(entryRow, "#" .. tostring(entry.rank), {Position = UDim2.fromOffset(12, 0), Size = UDim2.new(0, 64, 1, 0), Font = UI.Fonts.display, TextSize = 26, TextColor3 = medal or C.gold})
+				UI.outline(place, 2.5)
 				local tier=Rules.RankForWaves(entry.waves)
-				local title=(entry.name or tostring(entry.userId))..(board.mode=="ranked" and ("\n"..(ctx.language()=="en" and tier.en or tier.pt)) or "")
-				UI.label(entryRow, title, {Position = UDim2.fromOffset(65, 6), Size = UDim2.new(1, -145, 0, 42), TextSize = 12, TextWrapped=true})
-				UI.label(entryRow, tostring(entry.waves), {Position = UDim2.new(1, -72, 0, 10), Size = UDim2.fromOffset(58, 30), TextXAlignment = Enum.TextXAlignment.Right, Font = Enum.Font.BuilderSansExtraBold, TextColor3 = C.green})
+				UI.label(entryRow, entry.name or tostring(entry.userId), {Position = UDim2.fromOffset(80, 6), Size = UDim2.new(1, -200, 0, 28), TextSize = 20, Font = UI.Fonts.display, TextTruncate = Enum.TextTruncate.AtEnd})
+				if board.mode=="ranked" then
+					UI.label(entryRow, ctx.language()=="en" and tier.en or tier.pt, {Position = UDim2.fromOffset(80, 34), Size = UDim2.new(1, -200, 0, 22), TextSize = 16, TextColor3 = C.muted})
+				end
+				UI.label(entryRow, tostring(entry.waves) .. T(" ondas", " waves"), {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(120, 34), TextXAlignment = Enum.TextXAlignment.Right, Font = UI.Fonts.display, TextSize = 22, TextColor3 = C.green})
 			end
 			if #board.data.rows == 0 then UI.label(body, T("Seja o primeiro a deixar sua marca neste setor.", "Be the first to set a record in this sector."), {Size = UDim2.new(1, -6, 0, 50), TextWrapped = true, TextColor3 = C.muted}) end
 		elseif board.failed then
