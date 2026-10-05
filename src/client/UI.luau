@@ -1,12 +1,13 @@
 -- UI primitives shared by the lobby and match controller. No external assets required.
 local UI = {}
 
--- Candy palette for a kids' game: saturated accents on deep navy, white
--- text with a black outline, and thick dark borders around everything.
+-- Candy palette for a kids' game: saturated accents on deep slate (the
+-- reference games' dark windows), white text with a black outline, and thick
+-- dark borders around everything.
 UI.Colors = {
-	background = Color3.fromRGB(24, 32, 72),
-	panel = Color3.fromRGB(36, 50, 110),
-	card = Color3.fromRGB(52, 72, 146),
+	background = Color3.fromRGB(22, 24, 42),
+	panel = Color3.fromRGB(36, 40, 68),
+	card = Color3.fromRGB(52, 58, 96),
 	stroke = Color3.fromRGB(128, 158, 238),
 	ink = Color3.fromRGB(11, 15, 36),
 	text = Color3.fromRGB(255, 255, 255),
@@ -688,12 +689,12 @@ function UI.scroll(parent, properties)
 end
 
 function UI.section(parent, title, subtitle)
-	local frame = UI.frame(parent, {BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, subtitle and 82 or 44)})
-	local bar = UI.frame(frame, {Name = "SectionMark", Position = UDim2.fromOffset(0, 10), Size = UDim2.fromOffset(6, 24), BackgroundColor3 = UI.Colors.gold})
+	local frame = UI.frame(parent, {BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, subtitle and 90 or 46)})
+	local bar = UI.frame(frame, {Name = "SectionMark", Position = UDim2.fromOffset(0, 10), Size = UDim2.fromOffset(6, 26), BackgroundColor3 = UI.Colors.gold})
 	UI.corner(bar, 3)
-	UI.label(frame, title, {Font = UI.Fonts.display, TextSize = 22, TextColor3 = UI.Colors.cream, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -14, 0, 44)})
+	UI.label(frame, title, {Font = UI.Fonts.display, TextSize = 24, TextColor3 = UI.Colors.cream, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -14, 0, 46)})
 	if subtitle then
-		UI.label(frame, subtitle, {TextColor3 = UI.Colors.muted, TextSize = 14, Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 36), TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
+		UI.label(frame, subtitle, {TextColor3 = UI.Colors.muted, TextSize = 16, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 42), TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
 	end
 	return frame
 end

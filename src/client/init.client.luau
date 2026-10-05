@@ -512,7 +512,7 @@ renderContext = function()
 	if not reuse and panel then panel:Destroy(); panel=nil; body=nil end
 	local size = screenSize()
 	-- Screens with a grid and a detail beside it get the wide window.
-	local wideKinds={talents=true,chests=true,squad=true,inventory=true,hero=true,premium=true,shop=true,bases=true,rewards=true,modes=true,maps=true}
+	local wideKinds={talents=true,chests=true,squad=true,inventory=true,hero=true,premium=true,shop=true,bases=true,rewards=true,modes=true,maps=true,quests=true,leaderboard=true,settings=true}
 	local slot=UI.contextLayout(size.X,size.Y,{wide=wideKinds[contextPanel.kind]==true,elevator=state.elevator~=nil,difficulty=state.elevator~=nil and state.elevator.modeId=="normal"})
 	-- The talent tree takes the whole screen, like the big games' research trees.
 	if contextPanel.kind=="talents" then slot={x=0,y=0,w=size.X,h=size.Y,modal=true,class=slot.class} end

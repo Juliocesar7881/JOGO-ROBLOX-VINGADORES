@@ -690,24 +690,25 @@ function Panels.new(ctx)
 				local quest, id = item.quest, item.id
 				local progress = math.min(quest.progress or 0, quest.target or 1)
 				local ready = not quest.claimed and progress >= (quest.target or 1)
-				local card = UI.roundFrame(body, {Name = "Quest_" .. id, Size = UDim2.new(1, -6, 0, 122), BackgroundColor3 = ready and C.green:Lerp(C.panel, 0.6) or C.card}, ready and C.green or nil)
-				UI.label(card, L(quest.name), {Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -160, 0, 28), Font = UI.Fonts.display, TextSize = 19})
-				UI.label(card, L(quest.description), {Position = UDim2.fromOffset(14, 36), Size = UDim2.new(1, -160, 0, 36), TextSize = 13, TextWrapped = true, TextColor3 = C.muted})
-				local fill = UI.bar(card, ready and C.green or C.gold, UDim2.fromOffset(14, 84), UDim2.new(1, -170, 0, 18))
+				local card = UI.roundFrame(body, {Name = "Quest_" .. id, Size = UDim2.new(1, -6, 0, 132), BackgroundColor3 = UI.Skin.slot}, ready and C.green or UI.Skin.slotLine)
+				UI.stroke(card, ready and C.green or UI.Skin.slotLine, ready and 3 or 2)
+				UI.label(card, L(quest.name), {Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -190, 0, 30), Font = UI.Fonts.display, TextSize = 23})
+				UI.label(card, L(quest.description), {Position = UDim2.fromOffset(14, 38), Size = UDim2.new(1, -190, 0, 40), TextSize = 16, TextWrapped = true, TextColor3 = C.muted})
+				local fill = UI.bar(card, ready and C.green or C.gold, UDim2.fromOffset(14, 90), UDim2.new(1, -200, 0, 24))
 				fill.Size = UDim2.fromScale(progress / math.max(quest.target or 1, 1), 1)
-				UI.label(fill.Parent, progress .. " / " .. (quest.target or 1), {Size = UDim2.fromScale(1, 1), TextSize = 13, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
-				UI.label(card, number(quest.gold or 0) .. T(" Ouro", " Gold") .. "\n" .. number(quest.xp or 0) .. " XP", {Position = UDim2.new(1, -146, 0, 6), Size = UDim2.fromOffset(134, 40), TextWrapped = true, TextSize = 14, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
-				local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or T("Resgatar recompensa", "Claim reward"), function() act("ClaimQuest", {questId = id}) end, {Position = UDim2.new(1, -146, 0, 50), Size = UDim2.fromOffset(134, 58), BackgroundColor3 = ready and C.green or C.card, TextSize = 14})
+				UI.label(fill.Parent, progress .. " / " .. (quest.target or 1), {Size = UDim2.fromScale(1, 1), TextSize = 16, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
+				UI.label(card, number(quest.gold or 0) .. T(" Ouro", " Gold") .. "\n" .. number(quest.xp or 0) .. " XP", {Position = UDim2.new(1, -176, 0, 6), Size = UDim2.fromOffset(164, 46), TextWrapped = true, TextSize = 18, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
+				local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or T("Resgatar recompensa", "Claim reward"), function() act("ClaimQuest", {questId = id}) end, {Position = UDim2.new(1, -176, 0, 62), Size = UDim2.fromOffset(164, 56), BackgroundColor3 = ready and C.green or C.card, TextSize = 17})
 				if quest.claimed or progress < (quest.target or 1) then UI.disabled(claim) end
 			end
 		end
 		local now = os.time()
 		-- The day's set is replaced at the next UTC midnight, two days before it expires.
 		local dailyAt = (newest.daily or 0) - 2 * 86400
-		if newest.daily then UI.label(body, T("Novas missões em ", "New missions in ") .. timeLeft(dailyAt - now) .. T("  •  semanais em ", "  •  weekly ones in ") .. timeLeft((newest.weekly or now) - now), {Name = "QuestReset", Size = UDim2.new(1, -6, 0, 24), TextSize = 13, TextColor3 = C.muted}) end
-		drawGroup(groups.daily, T("MISSÕES DE HOJE", "TODAY'S MISSIONS"), nil)
-		drawGroup(groups.weekly, T("MISSÕES DA SEMANA", "THIS WEEK'S MISSIONS"), nil)
-		drawGroup(groups.old, T("AINDA PARA RESGATAR", "STILL TO CLAIM"), nil)
+		if newest.daily then UI.label(body, T("Novas missões em ", "New missions in ") .. timeLeft(dailyAt - now) .. T("  •  semanais em ", "  •  weekly ones in ") .. timeLeft((newest.weekly or now) - now), {Name = "QuestReset", Size = UDim2.new(1, -6, 0, 26), TextSize = 16, TextColor3 = C.muted}) end
+		drawGroup(groups.daily, T("Missões de hoje", "Today's missions"), nil)
+		drawGroup(groups.weekly, T("Missões da semana", "This week's missions"), nil)
+		drawGroup(groups.old, T("Ainda para resgatar", "Still to claim"), nil)
 		if total == 0 then UI.label(body, T("Conclua o treinamento para iniciar suas missões.", "Complete training to begin your missions."), {Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.muted}) end
 		UI.section(body, T("Títulos", "Titles"))
 		local titles = {}
@@ -1108,7 +1109,7 @@ function Panels.new(ctx)
 	end
 
 	local function contextSettings(body)
-	 UI.button(body,T("APRENDER A JOGAR • 12 ONDAS","LEARN TO PLAY • 12 WAVES"),startTraining,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,44)})
+	 UI.button(body,T("Aprender a jogar • 12 ondas","Learn to play • 12 waves"),startTraining,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,52),TextSize=21})
 		UI.section(body, T("Seu jeito de jogar", "Your experience"), T("Acessibilidade e apresentação. As regras de combate são iguais para todos.", "Accessibility and presentation. Combat rules are the same for everyone."))
 		local settings = profile().settings or {}
 		local effectsOn = settings.effects
@@ -1121,17 +1122,24 @@ function Panels.new(ctx)
 			{title = T("Efeitos sonoros", "Sound effects"), value = effectsOn and T("Ligado", "On") or T("Desligado", "Off"), key = "effects", next = not effectsOn},
 			{title = T("Sons da interface", "Interface sounds"), value = settings.interface ~= false and T("Ligado", "On") or T("Desligado", "Off"), key = "interface", next = settings.interface == false},
 		}
+		-- One row per option, like the big games' settings: the name on the left,
+		-- a switch on the right (green when on).
 		for _, option in ipairs(options) do
-			local card = UI.roundFrame(body, {Size = UDim2.new(1, -6, 0, 100), BackgroundColor3 = C.card})
-			heading(card, option.title, 10)
-			UI.secondary(card, option.value .. "  ↻", function()
+			local card = UI.roundFrame(body, {Name = "Setting_" .. option.key, Size = UDim2.new(1, -6, 0, 66), BackgroundColor3 = UI.Skin.slot}, UI.Skin.slotLine)
+			UI.label(card, option.title, {Position = UDim2.fromOffset(16, 0), Size = UDim2.new(1, -250, 1, 0), TextSize = 21, Font = UI.Fonts.display, TextWrapped = true})
+			local on = option.value == T("Ligado", "On")
+			local off = option.value == T("Desligado", "Off")
+			UI.button(card, option.value, function()
 				local update = {}
 				update[option.key] = option.next
 				act("Settings", update)
-			end, {Position = UDim2.fromOffset(12, 43), Size = UDim2.new(1, -24, 0, 44)})
+			end, {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), Size = UDim2.fromOffset(220, 46), TextSize = 19,
+				BackgroundColor3 = on and C.green or (off and C.card or C.blue)})
 		end
 		UI.section(body, T("Controles", "Controls"))
-		UI.label(body, T("1–5: escolher herói  •  Q: poder do líder\nClique ou toque: selecionar posição / torre\nConfirmar: posicionar  •  Esc / Cancelar: cancelar seleção", "1–5: choose hero  •  Q: leader power\nClick or tap: select position / tower\nConfirm: place tower  •  Esc / Cancel: cancel selection"), {Size = UDim2.new(1, -6, 0, 90), TextColor3 = C.muted, TextSize = 13, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
+		UI.label(body, T("1 a 5: escolher herói  •  Q: poder do líder  •  F: velocidade  •  C: ficha\nClique no chão: coloca o herói na hora  •  botão direito ou Esc: cancela\nClique num herói em campo: melhorar, mirar ou vender  •  G: marcar um local para o grupo\nShift: correr  •  pule de novo no ar: pulo duplo",
+			"1 to 5: choose hero  •  Q: leader power  •  F: speed  •  C: sheet\nClick the ground: places the hero at once  •  right click or Esc: cancel\nClick a hero on the field: upgrade, target or sell  •  G: ping a spot for the squad\nShift: run  •  jump again in the air: double jump"),
+			{Name = "ControlsHelp", Size = UDim2.new(1, -6, 0, 120), TextColor3 = C.muted, TextSize = 17, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
 	end
 
 	local talentSelected = nil
@@ -1486,30 +1494,49 @@ function Panels.new(ctx)
 	end
 
 	local function contextBases(body)
-		categoryTabs(body,"BaseNavigation",{{id="inventory",label=T("HERÓIS","HEROES")},{id="bases",label=T("BASES","BASES")}},"bases",function(id) openContext(id) end)
+		categoryTabs(body,"BaseNavigation",{{id="inventory",label=T("Heróis","Heroes"),icon="hero",color=C.coral},{id="bases",label=T("Bases","Bases"),icon="heart",color=C.green}},"bases",function(id) openContext(id) end)
 		local activeId=profile().equippedBase or "outpost"
 		local active=Catalog.Bases[activeId] or Catalog.Bases.outpost
 		local activeStats=Rules.BaseStats(activeId,1)
-		local summary=UI.roundFrame(body,{Name="ActiveBaseSummary",Size=UDim2.new(1,-6,0,146),BackgroundColor3=C.green:Lerp(C.panel,0.87)},C.green)
-		UI.basePortrait(summary,active,{Position=UDim2.fromOffset(8,12),Size=UDim2.fromOffset(94,98)})
-		UI.label(summary,T("BASE ATIVA","ACTIVE BASE").." • "..L(active.name),{Position=UDim2.fromOffset(110,8),Size=UDim2.new(1,-122,0,48),TextWrapped=true,TextSize=18,Font=UI.Fonts.display,TextColor3=C.green})
-		UI.label(summary,T("Entra automaticamente na sua próxima partida.","Deploys automatically in your next match."),{Position=UDim2.fromOffset(110,59),Size=UDim2.new(1,-122,0,43),TextWrapped=true,TextSize=13})
-		UI.label(summary,"+"..activeStats.income..T(" Ouro/onda • Melhore tocando na vida da base durante a partida."," Gold/wave • Upgrade by tapping the base HP during a match."),{Position=UDim2.fromOffset(12,108),Size=UDim2.new(1,-24,0,32),TextWrapped=true,TextSize=12})
+		-- The base in use, big, with what it gives and where it is upgraded.
+		local summary=UI.roundFrame(body,{Name="ActiveBaseSummary",Size=UDim2.new(1,-6,0,150),BackgroundColor3=UI.Skin.slot},C.green)
+		UI.stroke(summary,C.green,3)
+		UI.basePortrait(summary,active,{Position=UDim2.fromOffset(10,12),Size=UDim2.fromOffset(110,118)})
+		UI.pill(summary,T("Base ativa","Active base"),C.green:Lerp(C.ink,0.2),{Position=UDim2.fromOffset(132,12),TextSize=15})
+		UI.label(summary,L(active.name),{Position=UDim2.fromOffset(132,44),Size=UDim2.new(1,-144,0,34),TextWrapped=true,TextSize=26,Font=UI.Fonts.display})
+		UI.label(summary,"+"..activeStats.income..T(" Ouro por onda  •  "," Gold per wave  •  ")..activeStats.hp..T(" de vida"," HP"),{Position=UDim2.fromOffset(132,80),Size=UDim2.new(1,-144,0,24),TextSize=18,Font=UI.Fonts.display,TextColor3=C.gold})
+		UI.label(summary,T("Entra na sua próxima partida. Evolua com o Agente da Base ao lado dela (tecla E).","Deploys in your next match. Upgrade it with the Base Agent beside it (E key)."),{Position=UDim2.fromOffset(132,106),Size=UDim2.new(1,-144,0,40),TextWrapped=true,TextSize=15,TextColor3=C.muted})
 
-		UI.button(body,T("IR À LOJA DE BASES","GO TO THE BASE SHOP"),function() routePreview.goShop("base_rare") end,{Size=UDim2.new(1,-6,0,44),BackgroundColor3=C.gold,TextSize=13})
-		for _,id in ipairs(Catalog.BaseOrder) do
+		UI.button(body,T("Ir à loja de bases","Go to the base shop"),function() routePreview.goShop("base_rare") end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=20})
+		-- Every base as a tile: picture, name, rarity, what it gives, one button.
+		local screen=screenSize()
+		local width=UI.contextLayout(screen.X,screen.Y,{wide=true}).w-40
+		local columns=width>=640 and 3 or (width>=420 and 2 or 1)
+		local cellW=math.floor((width-(columns-1)*10)/columns)
+		local cellH=286
+		local grid=UI.frame(body,{Name="BaseGrid",Size=UDim2.new(1,-6,0,math.ceil(#Catalog.BaseOrder/columns)*(cellH+10)-10),BackgroundTransparency=1})
+		for index,id in ipairs(Catalog.BaseOrder) do
 			local def=Catalog.Bases[id]; local stats=Rules.BaseStats(id,1)
 			local owned=(profile().bases or {outpost=true})[id]; local equipped=(profile().equippedBase or "outpost")==id
 			local tint=UI.color(Catalog.Rarities[def.rarity].color)
-			local row=UI.roundFrame(body,{Name="BaseCard_"..id,Size=UDim2.new(1,-6,0,258),BackgroundColor3=C.cream},equipped and C.green or tint)
-			UI.basePortrait(row,def,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(100,106)})
-			UI.label(row,L(def.name),{Position=UDim2.fromOffset(116,10),Size=UDim2.new(1,-126,0,62),TextSize=17,TextWrapped=true,TextColor3=C.background,Font=Enum.Font.GothamBlack})
-			UI.label(row,L(Catalog.Rarities[def.rarity].name),{Position=UDim2.fromOffset(116,76),Size=UDim2.new(1,-126,0,25),TextSize=13,TextColor3=C.background})
-			UI.label(row,L(def.description),{Position=UDim2.fromOffset(12,115),Size=UDim2.new(1,-24,0,48),TextSize=13,TextWrapped=true,TextColor3=C.background})
-			UI.label(row,"+"..stats.income..T(" Ouro/onda  •  +"," Gold/wave  •  +")..stats.hp..T(" vida*"," HP*"),{Position=UDim2.fromOffset(12,164),Size=UDim2.new(1,-24,0,30),TextSize=12,TextColor3=C.background})
-			local button=UI.button(row,equipped and T("BASE ATIVA","ACTIVE BASE") or owned and T("ATIVAR BASE","ACTIVATE BASE") or T("ENCONTRAR NOS BAÚS","FIND IN CHESTS"),function()
+			local row=UI.roundFrame(grid,{Name="BaseCard_"..id,Position=UDim2.fromOffset(((index-1)%columns)*(cellW+10),math.floor((index-1)/columns)*(cellH+10)),Size=UDim2.fromOffset(cellW,cellH),BackgroundColor3=UI.Skin.slot},equipped and C.green or tint)
+			UI.stroke(row,equipped and C.green or tint,equipped and 3.5 or 2.5)
+			local stage=UI.frame(row,{Name="BaseStage",Position=UDim2.fromOffset(8,8),Size=UDim2.new(1,-16,0,104),BackgroundColor3=tint})
+			UI.corner(stage,12)
+			UI.create("UIGradient",{Color=ColorSequence.new(tint:Lerp(Color3.new(1,1,1),0.15),tint:Lerp(C.ink,0.55)),Rotation=90},stage)
+			UI.basePortrait(stage,def,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=UDim2.fromOffset(100,96)})
+			if not owned then
+				local shade=UI.frame(stage,{Name="NotOwned",Size=UDim2.fromScale(1,1),BackgroundColor3=C.ink,BackgroundTransparency=0.45})
+				UI.corner(shade,12)
+				UI.icon(shade,"lock",C.cream,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(34,34)})
+			end
+			UI.label(row,L(def.name),{Position=UDim2.fromOffset(12,116),Size=UDim2.new(1,-24,0,30),TextSize=21,TextWrapped=true,Font=UI.Fonts.display})
+			UI.label(row,L(Catalog.Rarities[def.rarity].name),{Position=UDim2.fromOffset(12,144),Size=UDim2.new(1,-24,0,20),TextSize=15,Font=UI.Fonts.display,TextColor3=tint:Lerp(Color3.new(1,1,1),0.35)})
+			UI.label(row,L(def.description),{Position=UDim2.fromOffset(12,166),Size=UDim2.new(1,-24,0,40),TextSize=14,TextWrapped=true,TextTruncate=Enum.TextTruncate.AtEnd,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top})
+			UI.label(row,"+"..stats.income..T(" Ouro/onda  •  +"," Gold/wave  •  +")..stats.hp..T(" vida*"," HP*"),{Position=UDim2.fromOffset(12,206),Size=UDim2.new(1,-24,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold})
+			local button=UI.button(row,equipped and T("Base ativa","Active base") or owned and T("Ativar base","Activate base") or T("Encontrar nos baús","Find in chests"),function()
 				if owned then act("EquipBase",{baseId=id},function() showToast(T("Base ativada! Ela aparecerá na próxima partida.","Base activated! It will deploy in your next match.")) end) else routePreview.goShop("base_rare") end
-			end,{Name="EquipBase_"..id,Position=UDim2.fromOffset(12,204),Size=UDim2.new(1,-24,0,44),BackgroundColor3=equipped and C.green or tint,TextSize=13})
+			end,{Name="EquipBase_"..id,Position=UDim2.new(0,10,1,-54),Size=UDim2.new(1,-20,0,44),BackgroundColor3=equipped and C.green or (owned and C.blue or C.card),TextSize=18})
 			if equipped then UI.disabled(button) end
 		end
 		smallText(body,T("*No grupo, cada bônus de vida é dividido pelo tamanho inicial da equipe. Renda exige contribuição na onda.","*In co-op, each HP bonus is divided by the starting party size. Income requires wave contribution."),0,60)
