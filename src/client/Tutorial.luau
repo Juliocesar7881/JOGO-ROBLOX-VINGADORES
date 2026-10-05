@@ -489,7 +489,10 @@ function Tutorial:Step(dt)
 		-- In the lobby on a short phone the gold pill and the options button share the
 		-- top row with the card, so it drops one row lower there.
 		local screen = self.ctx.UI.toLogical(self.ctx.gui.AbsoluteSize)
-		local cardY = inMatch and 122 or ((screen and screen.Y < 500) and 62 or 10)
+		-- On a phone held upright the gold pill and the corner buttons share the
+		-- top row with the card: it goes below them there.
+		local narrow = screen and screen.X < 560
+		local cardY = inMatch and 122 or (narrow and 104 or ((screen and screen.Y < 500) and 62 or 10))
 		local target = step.gui
 		local origin, position, size = self.ctx.gui.AbsolutePosition, target and target.AbsolutePosition, target and target.AbsoluteSize
 		local scale = self.ctx.UI.screenScale or 1
@@ -503,7 +506,7 @@ function Tutorial:Step(dt)
 		-- the walk resumes when it closes.
 		local panelOpen = self.ctx.panelOpen and self.ctx.panelOpen()
 		local covered = self.ctx.fullScreen and self.ctx.fullScreen()
-		self.card.Visible = not ((panelOpen and not inMatch and screen and screen.Y < 500) or covered)
+		self.card.Visible = not ((panelOpen and not inMatch and screen and (screen.Y < 500 or screen.X < 560)) or covered)
 	end
 
 	local world = step.world

@@ -186,6 +186,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("scenes", nargs="+")
     parser.add_argument("--phone", action="store_true", help="also capture each fixture scene in a 667x375 area")
+    parser.add_argument("--phone-size", default=PHONE, help="the phone area for --phone, e.g. 375x667 for a phone held upright")
     parser.add_argument("--language", choices=("pt", "en"), default="pt")
     parser.add_argument("--window-handle", type=int, default=0)
     parser.add_argument("--keep-playing", action="store_true", help="leave the playtest running at the end")
@@ -240,7 +241,7 @@ def main() -> int:
                 command(f'{player}:SetAttribute("DoomReviewServer", "") task.wait() {player}:SetAttribute("DoomReviewServer", "{line}") task.wait(0.4)',
                         f"DOOM_SERVER_{int(time.time())}_{index}", 60)
                 continue
-            sizes = [""] + ([PHONE] if args.phone and scene != "live" else [])
+            sizes = [""] + ([args.phone_size] if args.phone and scene != "live" else [])
             for size in sizes:
                 command(f'{player}:SetAttribute("DoomReviewSize", "{size}") {player}:SetAttribute("DoomReview", nil) task.wait() '
                         f'{player}:SetAttribute("DoomReview", "{scene}") task.wait(1.6)', f"DOOM_SCENE_{int(time.time())}_{index}", 60)

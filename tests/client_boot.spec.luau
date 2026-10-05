@@ -590,7 +590,7 @@ local function session(screen)
 		-- The honeycomb is narrow enough for any panel: nothing to drag sideways.
 		local treeFrame = named(gui, "TalentTree")
 		local mapFrame = treeFrame and named(treeFrame, "TalentMap")
-		check(mapFrame ~= nil and mapFrame.Size.X.Offset <= view().w, tag .. ": the honeycomb fits the screen, " .. tostring(mapFrame and mapFrame.Size.X.Offset) .. " px wide")
+		check(mapFrame ~= nil and (mapFrame.Size.X.Offset <= view().w or named(gui, "TalentScroll") ~= nil), tag .. ": the honeycomb fits the screen or scrolls, " .. tostring(mapFrame and mapFrame.Size.X.Offset) .. " px wide")
 		check(named(gui, "TalentExit") ~= nil and named(gui, "TalentRoot") ~= nil, tag .. ": the full-screen tree has its Exit button and the commander's hexagon")
 		local function spent() local n = 0; for _, name in ipairs(actions) do if name == "UpgradeTalent" then n += 1 end end; return n end
 		local spentBefore = spent()
@@ -1212,7 +1212,7 @@ local function session(screen)
 		-- A short phone screen has no room for the card beside an open panel.
 		frames(1 / 30, 2)
 		local openCard = named(gui, "TutorialCard")
-		check(openCard ~= nil and openCard.Visible == (view().h >= 500), tag .. ": the lesson card steps aside for an open panel only on a short screen (h " .. tostring(view().h) .. ")")
+		check(openCard ~= nil and openCard.Visible == (view().h >= 500 and view().w >= 560), tag .. ": the lesson card steps aside for an open panel only on a short or narrow screen (" .. tostring(view().w) .. "x" .. tostring(view().h) .. ")")
 		clickNamed("FindTrainingPortal")
 		check(asked("StartTraining") and not asked("StartMatch"), tag .. ": the training button asks the server to board the training queue")
 		check(not contextOpen(),tag..": the play menu steps aside once training starts")

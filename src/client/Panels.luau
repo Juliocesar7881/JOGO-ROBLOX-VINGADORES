@@ -1036,7 +1036,9 @@ function Panels.new(ctx)
 			local active=kit.inventoryView.rarity==id
 			local chip=UI.button(chips,rarity and L(rarity.name) or T("Todas","All"),function() kit.inventoryView.rarity=id; renderContext() end,{
 				Name="HeroRarity_"..id,Position=UDim2.new((index-1)/#options,0,0,0),Size=UDim2.new(1/#options,-6,0,38),TextSize=(width<520 or wide) and 13 or 16,
-				BackgroundColor3=active and tint or tint:Lerp(UI.Skin.body,0.62)})
+				BackgroundColor3=active and tint or tint:Lerp(UI.Skin.body,0.62),TextWrapped=false,TextScaled=width<520})
+			local words=chip:FindFirstChild("Caption")
+			if words and width<520 then UI.create("UITextSizeConstraint",{MaxTextSize=13,MinTextSize=7},words) end
 			if active then UI.stroke(chip,Color3.new(1,1,1),3) end
 		end
 		local entries=UI.collectionEntries(Catalog,p,{query="",rarity=kit.inventoryView.rarity,sort="collection",ownership=inventoryFilter},ctx.language())
@@ -1280,13 +1282,18 @@ function Panels.new(ctx)
 		-- The honeycomb, sized to the space between the heading and the footer.
 		local units, order, minX, maxX, minY, maxY = talentUnits()
 		local areaW, areaH = stageW - 24, stageH - headH - footH - infoH - 12
-		local R = math.floor(math.clamp(math.min(areaW / (maxX - minX), areaH / (maxY - minY)), compact and 22 or 26, readOnly and 40 or 66))
+		-- Never smaller than a fingertip on a small screen: the tree scrolls instead.
+		local R = math.floor(math.clamp(math.min(areaW / (maxX - minX), areaH / (maxY - minY)), compact and 30 or 26, readOnly and 40 or 66))
+		if readOnly then R = math.min(R, math.floor(math.max(areaW / (maxX - minX), 22))) end
 		local mapW, mapH = math.ceil((maxX - minX) * R), math.ceil((maxY - minY) * R)
 		local holder = stage
 		if mapH > areaH or mapW > areaW then
 			-- A small phone: the tree scrolls inside its band.
 			holder = UI.scroll(stage, {Name = "TalentScroll", Position = UDim2.fromOffset(12, headH + 4), Size = UDim2.new(1, -24, 0, areaH + 8), ScrollingDirection = Enum.ScrollingDirection.XY,
 				AutomaticCanvasSize = Enum.AutomaticSize.None, CanvasSize = UDim2.fromOffset(mapW + 8, mapH + 8), ScrollBarThickness = 6, ZIndex = 3})
+			-- Opens centred on the commander's hexagon, where every branch starts.
+			local rootX, rootY = (0 - minX) * R, (0 - minY) * R
+			holder.CanvasPosition = Vector2.new(math.max(0, rootX - (areaW - 24) / 2), math.max(0, rootY - areaH / 2))
 		end
 		local map = UI.frame(holder, {Name = "TalentMap", AnchorPoint = Vector2.new(0.5, 0), Position = holder == stage and UDim2.new(0.5, 0, 0, headH + 4 + math.max(0, math.floor((areaH - mapH) / 2))) or UDim2.new(0.5, 0, 0, 4),
 			Size = UDim2.fromOffset(mapW, mapH), BackgroundTransparency = 1, ZIndex = 3})

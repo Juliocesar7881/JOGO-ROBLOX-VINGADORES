@@ -1372,7 +1372,9 @@ function UI.tab(parent, text, color, icon, selected, callback, properties)
 	end
 	local label = UI.label(button, text, {Name = "TabText", Position = UDim2.fromOffset(hasIcon and iconSize + 14 or 6, 0), Size = UDim2.new(1, hasIcon and -(iconSize + 20) or -12, 1, 0),
 		Font = UI.Fonts.display, TextSize = button.TextSize, TextXAlignment = hasIcon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center,
-		TextColor3 = selected and UI.Colors.text or UI.Colors.text:Lerp(UI.Skin.body, 0.15), TextScaled = false, ZIndex = (button.ZIndex or 1) + 1})
+		TextColor3 = selected and UI.Colors.text or UI.Colors.text:Lerp(UI.Skin.body, 0.15), TextScaled = true, TextTruncate = Enum.TextTruncate.None, ZIndex = (button.ZIndex or 1) + 1})
+	-- Shrinks to fit a narrow tab (a phone held upright), never past the set size.
+	UI.create("UITextSizeConstraint", {MaxTextSize = button.TextSize, MinTextSize = 9}, label)
 	UI.outline(label, 2)
 	-- The button keeps the words (tests and screen readers find it by them) but
 	-- draws none: its own text outline would show through as a ghost.
