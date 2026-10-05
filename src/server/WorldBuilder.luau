@@ -5636,7 +5636,10 @@ function World:UpdateBase(index, base, core, ownerId)
 			block("Banner",Vector3.new(1.3,1.8,0.15),Vector3.new(x*3.5+0.55,5,1),tint,Enum.Material.Fabric)
 		end
 	end
-	label(building,def.name.pt.." • "..base.level.."/5",Vector3.new(0,6,0),tint)
+	-- Both languages ride along; each client shows its own (see init.client).
+	local baseName=label(building,def.name.pt.." • "..base.level.."/5",Vector3.new(0,6,0),tint)
+	baseName:SetAttribute("LobbyTextPT",def.name.pt.." • "..base.level.."/5")
+	baseName:SetAttribute("LobbyTextEN",def.name.en.." • "..base.level.."/5")
 	-- The base agent: the only place a base is upgraded. Pressing E beside the
 	-- agent opens the upgrade (the client listens for the prompt); the server
 	-- still decides everything when the upgrade is requested.

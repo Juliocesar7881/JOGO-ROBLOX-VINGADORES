@@ -77,6 +77,14 @@ local function L(value)
 	if type(value) == "table" then return value[language] or value.pt or value.en or "" end
 	return tostring(value or "")
 end
+-- Server messages arrive as one "português / english" string for everyone:
+-- show the half in the player's language.
+local function serverText(value)
+	if type(value) ~= "string" then return L(value) end
+	local pt, en = string.match(value, "^(.-) / (.+)$")
+	if pt and en then return language == "en" and en or pt end
+	return value
+end
 local function number(value) return UI.format(value) end
 local function profile() return state and state.profile or {} end
 local function activeMatch() return state and (state.phase == "Wave" or state.phase == "Preparing") end
@@ -197,7 +205,7 @@ local function surface(label,tint)
 	return label
 end
 
-showToast = function(message, bad)
+showToast = function(message, bad, icon)
 	if not message or message == "" then return end
 	local current = overlays:FindFirstChild("Toast")
 	if current then current:Destroy() end
@@ -215,7 +223,7 @@ showToast = function(message, bad)
 		local pt, en = string.match(message, "^(.-) / (.+)$")
 		if pt and en then shown = language == "en" and en or pt end
 	end
-	UI.icon(toast, bad and "lock" or "star", bad and C.red or C.gold, {Position = UDim2.new(0, 14, 0.5, -14), Size = UDim2.fromOffset(28, 28), ZIndex = 61})
+	UI.icon(toast, icon or (bad and "lock" or "star"), bad and C.red or C.gold, {Position = UDim2.new(0, 14, 0.5, -14), Size = UDim2.fromOffset(28, 28), ZIndex = 61})
 	local words = UI.label(toast, L(shown), {Name = "ToastText", Position = UDim2.fromOffset(52, 4), Size = UDim2.new(1, -66, 1, -8), TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextScaled = true, Font = UI.Fonts.display, ZIndex = 61})
 	UI.textLimit(words, 19, 11)
 	toast.Active=false
@@ -1192,7 +1200,7 @@ local function renderMatch()
 	UI.stroke(refs.boss, C.red, 3)
 	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 2), Size = UDim2.new(1, -24, 0, 24), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Center})
 	refs.bossHP = UI.bar(refs.boss, C.red, UDim2.fromOffset(12, 26), UDim2.new(1, -24, 0, 12))
-	refs.bossHint = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 37), Size = UDim2.new(1, -24, 0, bossRect.h - 41), TextColor3 = C.muted, TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center})
+	refs.bossHint = UI.fit(UI.label(refs.boss, "", {Name = "BossHint", Position = UDim2.fromOffset(12, 37), Size = UDim2.new(1, -24, 0, bossRect.h - 41), TextColor3 = C.cream, TextSize = 14, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center}), 10)
 	refs.hint = UI.label(main, "", {Position = at(layout.hint), Size = dims(layout.hint), TextColor3 = C.green, TextSize = compact and 13 or 15, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
 	surface(refs.hint,C.green)
 	refs.placement = UI.roundFrame(main, {Position = at(layout.placement), Size = dims(layout.placement), Visible = false})
@@ -1345,7 +1353,7 @@ updateMatch = function()
 		refs.bossName.Text = (boss.final and T("Chefe final • ","Final boss • ") or "")..L(boss.name)
 		refs.bossName.TextSize=mobile() and 15 or 20
 		refs.bossHP.Size = UDim2.fromScale(math.clamp((boss.hp or 0) / math.max(boss.maxHP or 1, 1), 0, 1), 1)
-		refs.bossHint.Text = L(boss.hint)
+		refs.bossHint.Text = serverText(boss.hint)
 		-- Each new phase is announced: a boss that changes should feel like it.
 		local key = tostring(boss.id) .. ":" .. tostring(boss.phase or 1)
 		if kit.bossPhase and kit.bossPhase ~= key and string.match(kit.bossPhase, "^[^:]+") == tostring(boss.id) and (boss.phase or 1) > 1 then
@@ -1576,7 +1584,8 @@ end)
 fxRemote.OnClientEvent:Connect(function(event)
 	if type(event) ~= "table" then return end
 	if event.kind == "Notice" then
-		showToast(event.text, event.tone == "boss")
+		-- A boss's warning carries a skull, not the lock of a refused action.
+		showToast(event.text, event.tone == "boss", event.tone == "boss" and "skull" or nil)
 		if event.tone == "boss" then audio:Cue("boss", 4) end
 	elseif event.kind == "Mutation" then
 		local def = Catalog.Mutations[event.mutationId]
@@ -1702,6 +1711,15 @@ pcall(function()
 		local action, object = prompt:GetAttribute("Action" .. suffix), prompt:GetAttribute("Object" .. suffix)
 		if action then prompt.ActionText = action end
 		if object then prompt.ObjectText = object end
+	end)
+end)
+-- World labels the server writes in both languages (a base's name in a match)
+-- show this player's half as they appear; the lobby keeps its own pass.
+workspace.DescendantAdded:Connect(function(item)
+	if not item:IsA("TextLabel") then return end
+	task.defer(function()
+		local value = item.Parent and item:GetAttribute(language == "en" and "LobbyTextEN" or "LobbyTextPT")
+		if value and item.Text ~= value then item.Text = value end
 	end)
 end)
 game:GetService("ProximityPromptService").PromptTriggered:Connect(function(prompt)
