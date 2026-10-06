@@ -1313,10 +1313,11 @@ function Panels.new(ctx)
 		local bought = kit.talentBought
 		kit.talentBought = nil
 		local tweens = game:GetService("TweenService")
-		-- A plastic brick snapping into place: two quick clicks, a hair apart.
+		-- A plastic brick snapping into place: the placing thunk and a click a
+		-- hair after it, like a building block pressed home.
 		local function snap()
-			audio:Cue("click", 0)
-			task.delay(0.045, function() audio:Cue("click", 0) end)
+			audio:Cue("place", 0)
+			task.delay(0.04, function() audio:Cue("click", 0) end)
 		end
 		local function popIn(button, delay, fromScale)
 			local scale = button:FindFirstChild("PressScale")
