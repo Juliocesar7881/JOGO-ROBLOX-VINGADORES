@@ -156,3 +156,5 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M15.6 Tela de carregamento com cara de jogo grande: raios girando, estrela dourada, título com degradê, faixa verde, barra maior e dica em caixa, tudo escalado à tela (commit 9601c12).
 - [x] M15.7 Texto do servidor em "pt / en" aparecia cru na barra do chefe ("Impacto próximo / Impact nearby"): agora mostra só a metade do idioma; aviso de chefe com caveira em vez de cadeado; nome da base na partida nos dois idiomas.
 - [x] M15.8 Resultado com o rosto (avatar) de cada comandante: MVP em aro dourado, aliados ao lado do nome; a faixa de dica do lobby não repete o objetivo do primeiro baú.
+- [x] M15.9 Com chefe na estrada, as faixas de celebração da partida passam abaixo da barra do chefe e dos avisos (antes cobriam).
+- [x] M15.10 Aviso de interação (tecla E) no visual do jogo para teclado e controle: tecla numa tampa dourada, lugar em cima e ação grande, painel escuro com borda dourada, clique funciona como a tecla; celular e tablet ficam com o aviso do Roblox (toque já testado).

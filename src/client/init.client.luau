@@ -1714,17 +1714,75 @@ end)
 -- The base agent standing beside each commander's base: pressing E (or tapping
 -- its prompt) opens that base's upgrade, the only place a base is upgraded.
 -- A prompt that carries both languages is shown in this player's only.
+--
+-- Keyboard and gamepad players get the game's own prompt instead of Roblox's
+-- grey box: the key on a gold cap, the place above the action in the display
+-- font, on the dark window skin, and a click on it works like the key. A phone
+-- or tablet keeps Roblox's prompt, whose button is the proven tap target.
+-- Every prompt here is instant (no hold), so there is no progress ring.
+local customPrompts = not (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+local promptViews = {}
+local function stylePrompt(prompt)
+	if customPrompts then pcall(function() prompt.Style = Enum.ProximityPromptStyle.Custom end) end
+end
+local function hidePrompt(prompt)
+	local view = promptViews[prompt]
+	if not view then return end
+	promptViews[prompt] = nil
+	if view.watch then view.watch:Disconnect() end
+	if view.gui then view.gui:Destroy() end
+end
+local function showPrompt(prompt, inputType)
+	hidePrompt(prompt)
+	local adornee = prompt.Parent
+	if prompt.Style ~= Enum.ProximityPromptStyle.Custom or not adornee then return end
+	local gamepad = inputType == Enum.ProximityPromptInputType.Gamepad
+	local key = gamepad and string.gsub(prompt.GamepadKeyCode.Name, "^Button", "") or prompt.KeyboardKeyCode.Name
+	local gui = Instance.new("BillboardGui")
+	gui.Name, gui.AlwaysOnTop, gui.LightInfluence, gui.Active = "DoomPrompt", true, 0, true
+	gui.Size, gui.StudsOffset, gui.Adornee = UDim2.fromOffset(270, 66), Vector3.new(0, 0.6, 0), adornee
+	local panel = UI.roundFrame(gui, {Name = "PromptPanel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background}, C.gold)
+	UI.stroke(panel, C.gold, 2.5)
+	local cap = UI.frame(panel, {Name = "PromptKey", Position = UDim2.fromOffset(9, 9), Size = UDim2.fromOffset(48, 48), BackgroundColor3 = C.gold})
+	UI.corner(cap, 12)
+	UI.stroke(cap, C.ink, 2.5)
+	UI.label(cap, key, {Size = UDim2.fromScale(1, 1), TextSize = #key > 1 and 18 or 28, Font = UI.Fonts.display, TextColor3 = C.ink, TextXAlignment = Enum.TextXAlignment.Center})
+	UI.fit(UI.label(panel, prompt.ObjectText, {Name = "PromptObject", Position = UDim2.fromOffset(68, 6), Size = UDim2.new(1, -78, 0, 22), TextSize = 16, Font = UI.Fonts.display, TextColor3 = C.muted}), 10)
+	UI.fit(UI.label(panel, prompt.ActionText, {Name = "PromptAction", Position = UDim2.fromOffset(68, 28), Size = UDim2.new(1, -78, 0, 32), TextSize = 24, Font = UI.Fonts.display}), 12)
+	UI.button(panel, "", function()
+		pcall(function()
+			prompt:InputHoldBegin()
+			task.delay(0.05, function() pcall(function() prompt:InputHoldEnd() end) end)
+		end)
+	end, {Name = "PromptHit", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 5})
+	UI.scaleBillboard(gui)
+	-- It pops in, like every panel in the game.
+	local pop = UI.create("UIScale", {Scale = 0.7}, panel)
+	pcall(function() TweenService:Create(pop, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end)
+	gui.Parent = player:WaitForChild("PlayerGui")
+	promptViews[prompt] = {gui = gui, watch = prompt.AncestryChanged:Connect(function()
+		if not prompt:IsDescendantOf(workspace) then hidePrompt(prompt) end
+	end)}
+end
 pcall(function()
-	game:GetService("ProximityPromptService").PromptShown:Connect(function(prompt)
+	local prompts = game:GetService("ProximityPromptService")
+	prompts.PromptShown:Connect(function(prompt, inputType)
 		local suffix = language == "en" and "EN" or "PT"
 		local action, object = prompt:GetAttribute("Action" .. suffix), prompt:GetAttribute("Object" .. suffix)
 		if action then prompt.ActionText = action end
 		if object then prompt.ObjectText = object end
+		showPrompt(prompt, inputType)
 	end)
+	prompts.PromptHidden:Connect(hidePrompt)
+	for _, item in ipairs(workspace:GetDescendants()) do
+		if item:IsA("ProximityPrompt") then stylePrompt(item) end
+	end
 end)
 -- World labels the server writes in both languages (a base's name in a match)
--- show this player's half as they appear; the lobby keeps its own pass.
+-- show this player's half as they appear; the lobby keeps its own pass. New
+-- prompts take the game's own look.
 workspace.DescendantAdded:Connect(function(item)
+	if item:IsA("ProximityPrompt") then stylePrompt(item) return end
 	if not item:IsA("TextLabel") then return end
 	task.defer(function()
 		local value = item.Parent and item:GetAttribute(language == "en" and "LobbyTextEN" or "LobbyTextPT")
