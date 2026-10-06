@@ -859,8 +859,11 @@ renderLobby = function()
 		local newcomer=not profile().tutorialComplete
 		local p=profile()
 		local suggestion,key
+		-- The very first chest is taught by the objective card (Tutorial.luau):
+		-- the strip would only repeat it.
+		local firstChest=type(p.stats)=="table" and (p.stats.chests or 0)==0 and not p.paidRandomRestricted
 		if not newcomer then
-			if canOpenChest() then
+			if canOpenChest() and not firstChest then
 				key,suggestion="chest",{T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."),function() routePreview.goShop() end}
 			elseif tonumber(p.rewards and p.rewards.claimable) and p.rewards.claimable>0 then
 				key,suggestion="gifts",{T("Tem prêmios esperando por você!","You have gifts waiting!"),function() openContext("rewards",{hud=true}) end}

@@ -1711,6 +1711,8 @@ local function session(screen)
 		end
 		check(string.find(errand(), "baú", 1, true) ~= nil, tag .. ": a trained commander with Gold is sent to open the first chest, got " .. errand())
 		check(named(workspace, "TutorialArrow") ~= nil, tag .. ": an arrow marks the summon hall")
+		local strip = named(gui, "FirstVisitHint")
+		check(strip == nil, tag .. ": the tip strip does not repeat the first-chest errand")
 		fresh.stats.chests = 1
 		push(lobbySnapshot(fresh))
 		frames(1 / 30, 3)
