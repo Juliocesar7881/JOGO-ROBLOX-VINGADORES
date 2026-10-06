@@ -3516,9 +3516,10 @@ function World:BuildArena(lobby, hq)
 	gui.SizingMode, gui.CanvasSize, gui.Parent = Enum.SurfaceGuiSizingMode.FixedSize, Vector2.new(1120, 400), panel
 	local title = Instance.new("TextLabel")
 	title.Name, title.BackgroundTransparency, title.Size = "Title", 1, UDim2.new(1, 0, 0, 70)
-	title.Font, title.TextSize, title.TextColor3, title.Text = Enum.Font.FredokaOne, 50, orange, "ARENA COMPETITIVA • PLACAR SOLO"
+	-- The area's name floats above the board; the board says what it lists.
+	title.Font, title.TextSize, title.TextColor3, title.Text = Enum.Font.FredokaOne, 50, orange, "MELHORES DA TEMPORADA • SOLO"
 	title.Parent = gui
-	title:SetAttribute("LobbyTextPT", "ARENA COMPETITIVA • PLACAR SOLO"); title:SetAttribute("LobbyTextEN", "COMPETITIVE ARENA • SOLO LEADERBOARD")
+	title:SetAttribute("LobbyTextPT", "MELHORES DA TEMPORADA • SOLO"); title:SetAttribute("LobbyTextEN", "SEASON'S BEST • SOLO")
 	self.arenaColumns = {}
 	local maps = {}
 	for _, id in ipairs(self.catalog.DestinationOrder) do
