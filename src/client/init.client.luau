@@ -1284,6 +1284,12 @@ local function renderMatch()
 			-- the lobby, and a phone tile has no room to say so.
 			local empty = UI.roundFrame(cards, {Name = "EmptyHeroSlot", LayoutOrder = index, Size = UDim2.fromOffset(layout.cardW, layout.heroCards.h - 14), BackgroundColor3 = C.background, BackgroundTransparency = 0.35}, C.stroke)
 			UI.label(empty, "+", {Size = UDim2.fromScale(1, 1), TextSize = 26, TextColor3 = C.stroke, TextXAlignment = Enum.TextXAlignment.Center})
+			-- A mouse over it says how to fill it.
+			UI.hover(empty, function(box)
+				UI.label(box, T("Espaço livre", "Free slot"), {LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 24), TextSize = 18, Font = UI.Fonts.display, TextColor3 = C.gold})
+				UI.label(box, T("Leve até 5 heróis: monte a equipe no lobby, no botão Heróis.", "Bring up to 5 heroes: build your team in the lobby, with the Heroes button."),
+					{LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextSize = 15, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextColor3 = C.cream})
+			end, 280)
 		end
 	end
 	updateMatch()
