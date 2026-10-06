@@ -119,6 +119,15 @@ function MatchHud.new(ctx)
 						local gain = a > 0 and math.floor((b / a - 1) * 100 + 0.5) or 0
 						cells[key].after.Text = "→ " .. format(b) .. (gain ~= 0 and string.format("  (%+d%%)", gain) or "")
 						cells[key].after.TextColor3 = b >= a and C.green or C.red
+						cells[key].after.RichText = false
+					elseif current.branches and current.branches[1] and current.branches[2] then
+						-- Upgrade 4: each specialization's value, in its button's colour.
+						local ratio = key == "range" and 1 or (a / math.max(0.001, now[key] or 1))
+						local one, two = current.branches[1][key] * ratio, current.branches[2][key] * ratio
+						cells[key].after.RichText = true
+						cells[key].after.TextColor3 = C.muted
+						cells[key].after.Text = (math.abs(one - a) < 0.001 and math.abs(two - a) < 0.001) and ""
+							or ('<font color="#58E04F">' .. format(one) .. '</font>  |  <font color="#3FA9FF">' .. format(two) .. "</font>")
 					else
 						cells[key].after.Text = (current.level or 1) >= 5 and T("máximo", "max") or ""
 						cells[key].after.TextColor3 = C.muted

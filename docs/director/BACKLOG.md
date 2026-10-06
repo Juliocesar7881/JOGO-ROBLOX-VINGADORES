@@ -162,3 +162,7 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M15.12 Menores textos do celular (nível do comandante, linha do mapa, botões de ramo da torre) com pelo menos 12 px, encolhendo para caber quando aperta.
 - [x] M15.13 Dica ao passar o mouse nos controles da partida (poder do líder com o que faz agora, tecla e recarga; 2x, 3x, onda automática, ficha, cartas) e no espaço vazio da barra de heróis; teste do 2x.
 - [x] M15.14 Inspeção do mundo na altura do jogador (invocação, portais de todos os mapas, zona AFK, loja, estátuas): a placa de portal bloqueado repetia o aviso numa linha flutuante por cima das próprias palavras; removida (commit 771f124).
+
+## M16 — Refino contínuo, 06/10
+
+- [x] M16.1 Painel da torre na Melhoria 4: a linha do próximo valor ficava vazia (o servidor manda as duas especializações, não um 'next'); agora cada número mostra o valor das duas especializações, cada um na cor do seu botão (verde | azul), como o ganho em verde das referências. Teste no client boot. Não conferido no Studio (dono com a janela em primeiro plano).

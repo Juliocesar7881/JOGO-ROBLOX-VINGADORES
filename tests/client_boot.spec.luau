@@ -1862,6 +1862,11 @@ local function session(screen)
 		check(findButton(gui, "Precisão absoluta") ~= nil and findButton(gui, "Flechas explosivas") ~= nil, tag .. ": both branch buttons are shown")
 		local branchOne = named(gui, "TowerBranch1")
 		check(branchOne ~= nil and string.find(branchOne.Text, "Dano 96", 1, true) ~= nil, tag .. ": each specialization shows the damage it gives, got " .. tostring(branchOne and branchOne.Text))
+		local branchDamage = named(gui, "TowerNext_damage")
+		if branchDamage then
+			check(string.find(branchDamage.Text, "96", 1, true) ~= nil and string.find(branchDamage.Text, "81", 1, true) ~= nil,
+				tag .. ": at upgrade 4 the table's next row shows both specializations' damage, got " .. tostring(branchDamage.Text))
+		end
 		check(selectTower("t3") ~= nil, tag .. ": a maxed tower shows its specialization")
 		check(selectTower("t4") ~= nil, tag .. ": an ally's tower opens read-only")
 		check(findButton(gui, "Vender") == nil, tag .. ": an ally's tower cannot be sold from here")
