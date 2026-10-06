@@ -60,6 +60,9 @@ function LobbyWorld.new(ctx)
 			shroud.Material, shroud.Color, shroud.Transparency = Enum.Material.SmoothPlastic, kit.shroudColor, 1
 			shroud.Size, shroud.CFrame = size + Vector3.new(0.4, 0.4, 0.4), cf
 			shroud.Parent = model
+			-- A portal's own sign already says it is locked and why; a second,
+			-- floating line only covered the sign's words.
+			if model:GetAttribute("Kind") == "ModePortal" then return end
 			local billboard = Instance.new("BillboardGui")
 			billboard.Name, billboard.Size = "LockHint", UDim2.fromOffset(220, 50)
 			billboard.StudsOffset, billboard.MaxDistance = Vector3.new(0, size.Y / 2 + 2, 0), 36
