@@ -370,6 +370,10 @@ local celebrate = Celebrate.new({
 	UI = UI, root = overlays, audio = audio, portrait = heroPortrait, livePortrait = livePortrait,
 	language = function() return language end,
 	lowFX = function() local settings = profile().settings return settings ~= nil and settings.lowFX == true end,
+	-- In battle with a boss on the road, banners pass below its bar and notices.
+	bannerY = function()
+		return (activeMatch() and refs.boss and refs.boss.Parent and refs.boss.Visible) and 0.42 or nil
+	end,
 })
 
 -- A quickbar slot: the hero's 3D portrait on a tile in its rarity colour,

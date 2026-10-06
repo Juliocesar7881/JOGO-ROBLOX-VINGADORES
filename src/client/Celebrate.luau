@@ -44,6 +44,7 @@ function Celebrate.new(options)
 	self.livePortrait = options.livePortrait
 	self.language = options.language or function() return "pt" end
 	self.lowFX = options.lowFX or function() return false end
+	self.bannerY = options.bannerY
 	self.clock = options.clock or os.clock
 	self.random = Random.new(9001)
 	self.animations = {}
@@ -180,9 +181,11 @@ function Celebrate:Banner(title, subtitle, tint, options)
 	tint = tint or Color3.fromRGB(255, 206, 82)
 	local big = options.big == true
 	local duration = options.duration or (big and 2.6 or 1.7)
+	-- The host may ask for a lower line (a boss bar and its notices hold the top).
+	local y = options.y or (self.bannerY and self.bannerY()) or (big and 0.3 or 0.24)
 	local banner = self.UI.frame(self.root, {
 		Name = "CelebrationBanner", AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 90,
-		Position = UDim2.new(0.5, 0, big and 0.3 or 0.24, 0), Size = UDim2.new(0.86, 0, 0, big and 92 or 62),
+		Position = UDim2.new(0.5, 0, y, 0), Size = UDim2.new(0.86, 0, 0, big and 92 or 62),
 		BackgroundColor3 = tint:Lerp(BLACK, 0.55), BackgroundTransparency = 0.08,
 	})
 	self.UI.create("UISizeConstraint", { MaxSize = Vector2.new(big and 620 or 460, 200) }, banner)
