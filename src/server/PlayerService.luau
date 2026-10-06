@@ -642,6 +642,45 @@ end
 -- server itself has watched the commander stand in a farm for a minute.
 -- paymentId names the minute being paid: retrying the same id after a lost
 -- response is recognised by the transaction ledger and never pays twice.
+-- A friend's invite pays twice. Who invited comes from Roblox's join data,
+-- read by the server (a client never names its referrer). A brand-new account
+-- (no match played, created within the window) gets the welcome Gold once in
+-- its lifetime; the friend who invited, when in this server, gets the thanks
+-- Gold up to a daily cap. Returns what was paid, or nil when nothing was.
+function PlayerService:InviteBonus(player, inviterId)
+	local invite = self.catalog.Rewards.invite
+	inviterId = math.floor(tonumber(inviterId) or 0)
+	if not invite or inviterId <= 0 or inviterId == player.UserId then return nil end
+	local welcomed, gold = self:_transaction(player, function(profile, now)
+		if profile.referredBy ~= nil then return false, "Bônus de convite já recebido. / Invite bonus already received." end
+		if (profile.stats.matches or 0) > 0 or now - (tonumber(profile.createdAt) or now) > invite.newAccountSeconds then
+			return false, "O bônus de convite é para contas novas. / The invite bonus is for new accounts."
+		end
+		profile.referredBy = inviterId
+		profile.gold += invite.newcomerGold
+		return true, invite.newcomerGold
+	end)
+	if not welcomed then return nil end
+	local paid = { newcomer = gold }
+	local friend = Players:GetPlayerByUserId(inviterId)
+	if friend and self.records[inviterId] then
+		local thanked, thanks = self:_transaction(friend, function(profile, now)
+			local today = math.floor(now / DAY)
+			local log = profile.invites
+			if type(log) ~= "table" or log.day ~= today then
+				log = { day = today, count = 0 }
+				profile.invites = log
+			end
+			if (tonumber(log.count) or 0) >= invite.inviterDailyCap then return false, "Limite de convites de hoje. / Today's invite limit." end
+			log.count = (tonumber(log.count) or 0) + 1
+			profile.gold += invite.inviterGold
+			return true, invite.inviterGold
+		end)
+		if thanked then paid.friend, paid.thanks = friend, thanks end
+	end
+	return paid
+end
+
 function PlayerService:GrantAfk(player, kind, minutes, paymentId)
 	local reward = self.rules.AfkReward(kind, minutes)
 	if not reward then return false, "Farm AFK inválido." end

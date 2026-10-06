@@ -736,6 +736,18 @@ local function onPlayerAdded(player)
 		return
 	end
 	refreshPresence(player)
+	-- Joined through a friend's invite: PlayerService decides who is paid.
+	if role ~= "Match" then
+		local okJoin, join = pcall(function() return player:GetJoinData() end)
+		local inviter = okJoin and type(join) == "table" and tonumber(join.ReferredByPlayerId) or nil
+		local bonus = inviter and profiles:InviteBonus(player, inviter) or nil
+		if bonus then
+			notify(player, text("Bônus de convite: +" .. bonus.newcomer .. " Ouro!", "Invite bonus: +" .. bonus.newcomer .. " Gold!"))
+			if bonus.friend then
+				notify(bonus.friend, text(player.DisplayName .. " entrou pelo seu convite: +" .. bonus.thanks .. " Ouro!", player.DisplayName .. " joined from your invite: +" .. bonus.thanks .. " Gold!"))
+			end
+		end
+	end
 	if match:Reconnect(player) then
 		rejoin:Extend(player.UserId)
 	elseif role == "Match" then

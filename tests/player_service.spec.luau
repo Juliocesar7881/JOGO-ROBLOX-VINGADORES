@@ -866,6 +866,44 @@ do
 		check(not failed, "A failed membership check pays nothing")
 	end
 
+	-- A friend's invite: a brand-new account is welcomed once, and the friend
+	-- who invited (in this server) is thanked, a few times a day at most.
+	do
+		local invite = Catalog.Rewards.invite
+		local friend = player(41)
+		service:Load(friend)
+		local newcomer = player(42)
+		service:Load(newcomer)
+		local before, friendBefore = service:Get(newcomer).gold, service:Get(friend).gold
+		local paid = service:InviteBonus(newcomer, 41)
+		check(paid and paid.newcomer == invite.newcomerGold and service:Get(newcomer).gold == before + invite.newcomerGold, "A new account that joined from an invite gets the welcome Gold")
+		check(paid.friend == friend and paid.thanks == invite.inviterGold and service:Get(friend).gold == friendBefore + invite.inviterGold, "The friend who invited, in this server, is thanked")
+		check(service:InviteBonus(newcomer, 41) == nil and service:Get(newcomer).gold == before + invite.newcomerGold, "The welcome Gold pays once")
+		check(service:Get(newcomer).referredBy == nil, "Who invited whom never replicates")
+		local alone = player(43)
+		service:Load(alone)
+		check(service:InviteBonus(alone, 43) == nil and service:InviteBonus(alone, 0) == nil, "Nobody invites themselves, and no referrer means no bonus")
+		local away = player(44)
+		service:Load(away)
+		local awayPaid = service:InviteBonus(away, 99999)
+		check(awayPaid and awayPaid.friend == nil, "A friend in another server: the newcomer is still welcomed")
+		-- The friend's thanks stop at the daily cap; the newcomers are still welcomed.
+		local thanked = 1
+		for index = 1, invite.inviterDailyCap + 1 do
+			local guest = player(50 + index)
+			service:Load(guest)
+			local result = service:InviteBonus(guest, 41)
+			check(result and result.newcomer == invite.newcomerGold, "Every new guest is welcomed")
+			if result.friend then thanked += 1 end
+		end
+		check(thanked == invite.inviterDailyCap, "The friend is thanked at most " .. invite.inviterDailyCap .. " times a day, got " .. thanked)
+		-- An account older than the window gets nothing.
+		local veteran = player(45)
+		service:Load(veteran)
+		clockOffset += invite.newAccountSeconds + 1
+		check(service:InviteBonus(veteran, 41) == nil, "An account older than the window gets no invite bonus")
+	end
+
 	service.leaseSeconds = realLease
 end
 

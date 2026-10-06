@@ -645,6 +645,11 @@ Catalog.Rewards = {
 	freeChest = { chestId = "rare", cooldown = 6 * 3600 },
 	-- Once per account, for joining the experience's Roblox group (Config.GroupId).
 	group = { gold = 750 },
+	-- Bringing a friend. A brand-new account (no match played, created within the
+	-- window) that joins through a friend's invite gets the welcome Gold once;
+	-- the friend who invited, if in the same server, gets the thanks Gold, a few
+	-- times per UTC day at most.
+	invite = { newcomerGold = 500, inviterGold = 300, inviterDailyCap = 5, newAccountSeconds = 1800 },
 	-- One claim per UTC day. Missing a single day is forgiven; two reset the streak.
 	loginGraceDays = 2,
 	login = {

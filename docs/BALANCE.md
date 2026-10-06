@@ -168,3 +168,13 @@ então o 'mítico fraco' dessa tabela é artefato; a varredura `duel` (mesmo or�
 mostra os míticos no topo com 7.000 de Ouro (87% contra 72% dos comuns).
 `--hero a,b,c` limita a varredura; a tabela agora mostra os minutos simulados.
 
+
+## Bônus de convite (06/10/2026)
+
+`Catalog.Rewards.invite`: quem entra pelo convite de um amigo (o servidor lê
+`GetJoinData().ReferredByPlayerId`; o cliente nunca diz quem convidou) e tem conta
+nova (nenhuma partida e criada há no máximo 30 min) ganha **500 Ouro** uma vez na
+vida; o amigo que convidou, se estiver no mesmo servidor, ganha **300 Ouro**, até
+**5 vezes por dia UTC**. Referência: o baú de Suprimentos custa 400 e o grupo paga
+750 uma vez. O teto diário limita contas descartáveis; se a medição mostrar abuso,
+baixar `inviterDailyCap` ou exigir uma partida concluída antes de pagar o amigo.

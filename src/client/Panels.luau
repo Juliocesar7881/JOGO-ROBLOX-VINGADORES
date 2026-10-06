@@ -962,6 +962,11 @@ function Panels.new(ctx)
 			end, {Name = "ClaimGroupReward", Position = UDim2.new(1, -110, 0, 8), Size = UDim2.fromOffset(100, 44), BackgroundColor3 = C.gold, TextSize = 12})
 			if group.claimed then UI.disabled(claimGroup) end
 		end
+		local invite = Catalog.Rewards.invite
+		if invite then
+			smallText(body, T("Amigo novo que entrar pelo seu convite ganha ", "A new friend who joins from your invite gets ") .. number(invite.newcomerGold)
+				.. T(" Ouro, e você ganha ", " Gold, and you get ") .. number(invite.inviterGold) .. T(" Ouro (até ", " Gold (up to ") .. invite.inviterDailyCap .. T(" por dia).", " a day)."), 0, 40)
+		end
 		UI.button(body, T("Convidar amigos", "Invite friends"), function()
 			-- Roblox's own invite sheet: it decides who can be invited and how.
 			local ok = pcall(function()
