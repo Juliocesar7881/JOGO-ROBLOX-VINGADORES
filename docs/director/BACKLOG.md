@@ -159,3 +159,5 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M15.9 Com chefe na estrada, as faixas de celebração da partida passam abaixo da barra do chefe e dos avisos (antes cobriam).
 - [x] M15.10 Aviso de interação (tecla E) no visual do jogo para teclado e controle: tecla numa tampa dourada, lugar em cima e ação grande, painel escuro com borda dourada, clique funciona como a tecla; celular e tablet ficam com o aviso do Roblox (toque já testado).
 - [x] M15.11 Trilha dos inimigos com cor de tinta saturada (antes uma faixa pálida que parecia tubo de luz) e bloom dos mapas limitado a 0,2 (Gama, Wakanda e Latvéria passavam: 0,26-0,31), com teste no world boot. Desempenho medido no Studio: 60 FPS no lobby, na partida e com 80 inimigos (pior quadro 35 ms).
+- [x] M15.12 Menores textos do celular (nível do comandante, linha do mapa, botões de ramo da torre) com pelo menos 12 px, encolhendo para caber quando aperta.
+- [x] M15.13 Dica ao passar o mouse nos controles da partida (poder do líder com o que faz agora, tecla e recarga; 2x, 3x, onda automática, ficha, cartas) e no espaço vazio da barra de heróis; teste do 2x.
