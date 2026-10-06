@@ -1266,6 +1266,18 @@ local function session(screen)
 		clickNamed("Speed3Toggle")
 		check(not asked("SetSpeed"), tag .. ": 3x without the pass never asks the server for 3x")
 		check(auto ~= nil and shown(auto, gui), tag .. ": the auto-skip toggle is visible")
+		-- A mouse over a control explains it.
+		speed.MouseEnter:Fire()
+		flush()
+		local tip = named(gui, "Tooltip")
+		local words = {}
+		for _, item in ipairs(tip and tip:GetDescendants() or {}) do
+			if item:IsA("TextLabel") then table.insert(words, item.Text) end
+		end
+		check(tip ~= nil and string.find(table.concat(words, " | "), "Velocidade 2x", 1, true) ~= nil, tag .. ": hovering 2x explains it, got " .. table.concat(words, " | "))
+		speed.MouseLeave:Fire()
+		flush()
+		check(named(gui, "Tooltip") == nil, tag .. ": leaving the control closes its tip")
 		clickNamed("SpeedToggle")
 		check(asked("SetSpeed"), tag .. ": pressing 2x asks the server")
 		clickNamed("AutoSkipToggle")

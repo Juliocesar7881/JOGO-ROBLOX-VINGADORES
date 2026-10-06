@@ -1268,6 +1268,27 @@ local function renderMatch()
 		refs.cardsButton = UI.secondary(abilities, T("Cartas", "Cards"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 17 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = C.violet})
 	end
 	refs.autoSkipToggle = UI.secondary(abilities, "AUTO\nOFF", toggleAutoSkip, {Name = "AutoSkipToggle", LayoutOrder = 6, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 16 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
+	-- A mouse over a control says what it does (and its key), like the heroes do.
+	local function controlTip(button, title, body)
+		if not button then return end
+		UI.hover(button, function(box)
+			UI.label(box, title, {LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 24), TextSize = 18, Font = UI.Fonts.display, TextColor3 = C.gold})
+			UI.label(box, body, {LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextSize = 15, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextColor3 = C.cream})
+		end, 270)
+	end
+	local power = state.match and state.match.ability
+	local powerDef = power and Catalog.Abilities[power.id]
+	if powerDef then
+		for _, record in pairs(refs.abilityButtons) do
+			controlTip(record.button, L(powerDef.name) .. T("  (tecla Q)", "  (Q key)"), Rules.AbilityText(powerDef, power.rank or 1, language)
+				.. T("\nRecarga: ", "\nCooldown: ") .. math.floor((power.cooldownTotal or 0) + 0.5) .. " s")
+		end
+	end
+	controlTip(refs.speedToggle, T("Velocidade 2x  (tecla F)", "Speed 2x  (F key)"), T("Acelera a partida. Em grupo, começa quando todos pedirem.", "Speeds the match up. In a group it starts once everyone asks."))
+	controlTip(refs.speed3Toggle, T("Velocidade 3x", "Speed 3x"), T("Do passe 3x: quem tem o passe acelera a partida sozinho.", "From the 3x pass: its owner speeds the match up alone."))
+	controlTip(refs.autoSkipToggle, T("Onda automática", "Auto wave"), T("Ligado, a próxima onda começa sozinha quando a atual acaba.", "When on, the next wave starts by itself once the current one ends."))
+	controlTip(refs.sheetButton, T("Ficha  (tecla C)", "Sheet  (C key)"), T("Seus talentos nesta partida.", "Your talents in this match."))
+	controlTip(state.match and state.match.cardMode and refs.cardsButton or nil, T("Cartas", "Cards"), T("As cartas escolhidas e o bônus total delas.", "The cards you picked and their total bonus."))
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	UI.windowSkin(bottom, C.gold)
 	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
