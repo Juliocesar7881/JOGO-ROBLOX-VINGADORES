@@ -158,3 +158,4 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M15.8 Resultado com o rosto (avatar) de cada comandante: MVP em aro dourado, aliados ao lado do nome; a faixa de dica do lobby não repete o objetivo do primeiro baú.
 - [x] M15.9 Com chefe na estrada, as faixas de celebração da partida passam abaixo da barra do chefe e dos avisos (antes cobriam).
 - [x] M15.10 Aviso de interação (tecla E) no visual do jogo para teclado e controle: tecla numa tampa dourada, lugar em cima e ação grande, painel escuro com borda dourada, clique funciona como a tecla; celular e tablet ficam com o aviso do Roblox (toque já testado).
+- [x] M15.11 Trilha dos inimigos com cor de tinta saturada (antes uma faixa pálida que parecia tubo de luz) e bloom dos mapas limitado a 0,2 (Gama, Wakanda e Latvéria passavam: 0,26-0,31), com teste no world boot. Desempenho medido no Studio: 60 FPS no lobby, na partida e com 80 inimigos (pior quadro 35 ms).

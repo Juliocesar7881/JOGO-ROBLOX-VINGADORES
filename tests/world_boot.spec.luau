@@ -621,6 +621,8 @@ for _, mapId in ipairs(Catalog.MapOrder) do
 		check(lighting:FindFirstChild("ColorGrade") ~= nil, mapId .. " keeps a reusable ColorCorrection effect")
 		local dof = lighting:FindFirstChild("DOF")
 		check(dof ~= nil and dof.FarIntensity == 0, mapId .. " keeps depth of field off so the battlefield stays legible")
+		local bloom = lighting:FindFirstChild("Bloom")
+		check(bloom ~= nil and bloom.Intensity <= 0.2, mapId .. " keeps bloom at or under 0.2 (the owner's no blown-out glow rule), got " .. tostring(bloom and bloom.Intensity))
 		seenClockTimes[lighting.ClockTime] = true
 		local root = workspace:FindFirstChild("DoomWorld")
 		check(root ~= nil, mapId .. " produces a world model")

@@ -1685,7 +1685,8 @@ local function applyMapLighting(mapId)
 	atmosphere.Density, atmosphere.Offset = preset.atmosphereDensity, 0.15
 	atmosphere.Color, atmosphere.Decay, atmosphere.Glare, atmosphere.Haze = rgb(preset.atmosphereColor), rgb(preset.atmosphereColor):Lerp(Color3.new(), 0.35), preset.glare, 1.1
 	local bloom = ensureLightingEffect(lighting, "BloomEffect", "Bloom")
-	bloom.Intensity, bloom.Size, bloom.Threshold = preset.bloom * 0.55, 24, 1.1
+	-- The owner's rule: never a blown-out glow (bloom stays at or under 0.2).
+	bloom.Intensity, bloom.Size, bloom.Threshold = math.min(preset.bloom * 0.55, 0.2), 24, 1.1
 	local grade = ensureLightingEffect(lighting, "ColorCorrectionEffect", "ColorGrade")
 	grade.TintColor = rgb(preset.tint):Lerp(Color3.new(1, 1, 1), 0.8)
 	grade.Contrast, grade.Saturation, grade.Brightness = preset.contrast * 0.4, preset.saturation, 0.025
@@ -5519,7 +5520,8 @@ function World:Build(mapId)
 	self:DressMap(mapId, map)
 	-- Readable route overlay follows the exact simulation segments, including
 	-- alternate entrances. Streets used only as scenery never get this marking.
-	local routeColors={manhattan=Color3.fromRGB(255,206,93),gamma=Color3.fromRGB(122,255,151),hydra=Color3.fromRGB(255,131,103),wakanda=Color3.fromRGB(207,151,255),latveria=Color3.fromRGB(105,229,255),asgard=Color3.fromRGB(140,232,255)}
+	-- Saturated paint, not pale light: under a bright sky a pale strip read as a glowing tube.
+	local routeColors={manhattan=Color3.fromRGB(255,184,62),gamma=Color3.fromRGB(96,232,118),hydra=Color3.fromRGB(255,116,86),wakanda=Color3.fromRGB(186,124,255),latveria=Color3.fromRGB(84,206,255),asgard=Color3.fromRGB(112,210,255)}
 	-- A map without its own trail colour still gets one: a nil Color3 stops
 	-- the whole map from building in Roblox.
 	local routeTint=routeColors[mapId] or rgb(map.color or {255,255,255})
@@ -5533,7 +5535,7 @@ function World:Build(mapId)
 			drawn[key]=true
 			local length=(b-a).Magnitude
 			local strip=prop(self.Paths,"MobTrail",Vector3.new(3.4,0.07,length),CFrame.lookAt((a+b)/2,b),routeTint,Enum.Material.SmoothPlastic)
-			strip.Transparency=0.22
+			strip.Transparency=0.3
 			strip.CanCollide=false
 			strip:SetAttribute("RouteIndex",routeIndex)
 			strip:SetAttribute("SegmentIndex",segment)
