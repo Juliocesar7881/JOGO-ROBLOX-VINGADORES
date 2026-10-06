@@ -168,7 +168,7 @@ function MatchHud.new(ctx)
 			for branch = 1, 2 do
 				local after = tower.branches and tower.branches[branch]
 				local label = L(def.branches[branch].name) .. "\n" .. (after and (T("Dano ", "Dmg ") .. number(math.floor(after.damage + 0.5)) .. "  •  ") or "") .. number(tower.upgradeCost)
-				local choose = UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Name = "TowerBranch" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY), Size = UDim2.fromOffset(half, wide and actionH or 48), TextSize = wide and 11 or 14, TextWrapped = true, BackgroundColor3 = branch == 1 and C.green or C.blue})
+				local choose = UI.button(panel, label, function() act("UpgradeTower", {towerId = tower.id, branch = branch}) end, {Name = "TowerBranch" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY), Size = UDim2.fromOffset(half, wide and actionH or 48), TextSize = wide and 12 or 15, TextWrapped = true, BackgroundColor3 = branch == 1 and C.green or C.blue})
 				if not wide then
 					UI.label(panel, L(def.branches[branch].description), {Name = "BranchInfo" .. branch, Position = UDim2.fromOffset(12 + (branch - 1) * (half + 6), actionY + 52), Size = UDim2.fromOffset(half, 44), TextSize = 13, TextColor3 = C.cream, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top})
 				end
