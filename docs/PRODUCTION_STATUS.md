@@ -4,6 +4,43 @@ Este registro separa o que está pronto e verificado do que ainda depende de
 teste real, de arte ou de configuração. Plano de referência: "Plano de
 produção — Multiverse Doomsday Tower Defense" (etapas 0–7).
 
+## Rodada de interface e refino (2026-10-04 a 06)
+
+Pedido do dono: refazer HUD/IU no padrão dos jogos de referência (vídeos do
+tycoon e do TD de anime), nada cortado, informação ao passar o mouse, colocar
+herói com um clique, árvore de evolução animada, portais e lobby melhores.
+Fila completa em `docs/director/BACKLOG.md` (M13, M14 e M15).
+
+- **Colocação**: o fantasma fica exatamente sob o cursor; clique esquerdo
+  coloca, botão direito ou Esc cancela; toque também coloca na hora.
+- **Linguagem visual nova**: Fredoka One + Builder Sans, janelas com faixa de
+  título inclinada e X vermelho, botões e abas com textura de pinos, tudo
+  escalado à tela (canvas lógico 1150x640). Texto que encolhe para caber em
+  vez de cortar; o limite de tamanho acompanha a escala (em 1080p abas e avisos
+  saíam um terço menores).
+- **Informação**: dica ao passar o mouse em herói (coleção, equipe, barra da
+  partida, baú) e em talento; painel da torre como carta de unidade.
+- **Telas**: equipe/inventário, invocação em banner, loja, missões, placar
+  com medalhas, opções, bases, portais com foto do mapa, resultado com o
+  avatar de cada comandante, cartas, evolução da base.
+- **Árvore de evolução** em tela cheia: hexágonos saindo do nível do
+  comandante, entram encaixando um a um com som de bloco.
+- **Mundo**: portais redondos com galáxia girando, balcões redondos, adereços
+  sólidos, trilha dos inimigos em cor de tinta, bloom dos mapas até 0,2.
+- **Primeiros minutos**: tela de carregamento nova; objetivo em faixa de
+  missão com setas; a faixa de dica não repete o objetivo.
+- **Social**: bônus de convite (500 Ouro para conta nova que entra pelo
+  convite; 300 para quem convidou, no mesmo servidor, até 5 por dia).
+- **Verificado**: suíte completa verde a cada commit; varreduras no Studio em
+  PC (escala classe 1080p) e celular 667x375, em português e inglês, sem texto
+  cortado; 60 FPS no Studio com 80 inimigos; publicado na Roblox (confirmado
+  no log do Studio).
+- **Depende do dono**: trilha de batalha bloqueada pela moderação do Roblox
+  (o jogo usa a do lobby; reenviar exige a declaração de autoria no Studio);
+  produtos restantes no Creator Hub (parou num aviso de termos); decisão de IP
+  do visual dos heróis da liga (inclui o nome "Capitão Men", muito próximo de
+  um personagem de TV); teste em aparelho real.
+
 ## Rodada do diretor (2026-10-01)
 
 Uma noite e uma manhã de trabalho autônomo (log completo em
