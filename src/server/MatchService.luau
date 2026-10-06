@@ -759,7 +759,7 @@ function Match:_hazardStep(dt)
 	local color = Color3.fromRGB(hazard.color[1], hazard.color[2], hazard.color[3])
 	if not state.warned and self.hazardTimer >= hazard.every - hazard.warn then
 		state.warned, state.center = true, self:_hazardCenter(hazard)
-		self:_notice("▲ " .. hazard.name.pt .. ": " .. hazard.hint.pt, "▲ " .. hazard.name.en .. ": " .. hazard.hint.en)
+		self:_notice("▲ " .. hazard.name.pt .. ": " .. hazard.hint.pt, "▲ " .. hazard.name.en .. ": " .. hazard.hint.en, "hazard")
 		if state.center then
 			self:_fx({kind="Pulse",position=state.center,radius=hazard.radius or 12,color=color,duration=hazard.warn,warningText=hazard.warning})
 		end

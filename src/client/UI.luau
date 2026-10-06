@@ -462,6 +462,11 @@ function UI.icon(parent, kind, tint, properties)
 		shape(0.3, 0.55, 0.4, 0.3, 0, tint, 5)
 		shape(0.28, 0.34, 0.16, 0.18, 0, UI.Colors.background, 99)
 		shape(0.56, 0.34, 0.16, 0.18, 0, UI.Colors.background, 99)
+	elseif kind == "alert" then
+		-- A warning: a round badge with an exclamation mark.
+		shape(0.06, 0.06, 0.88, 0.88, 0, tint, 99)
+		shape(0.42, 0.2, 0.16, 0.42, 0, UI.Colors.text, 3)
+		shape(0.42, 0.68, 0.16, 0.14, 0, UI.Colors.text, 3)
 	elseif kind == "gift" then
 		shape(0.14, 0.42, 0.72, 0.46, 0, tint, 4)
 		shape(0.08, 0.3, 0.84, 0.15, 0, tint, 3)

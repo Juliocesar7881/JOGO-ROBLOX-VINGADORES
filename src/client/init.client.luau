@@ -1587,8 +1587,10 @@ end)
 fxRemote.OnClientEvent:Connect(function(event)
 	if type(event) ~= "table" then return end
 	if event.kind == "Notice" then
-		-- A boss's warning carries a skull, not the lock of a refused action.
-		showToast(event.text, event.tone == "boss", event.tone == "boss" and "skull" or nil)
+		-- A boss's warning carries a skull and a map hazard an alert badge, in
+		-- the red of a threat; neither is the lock of a refused action.
+		local threat = event.tone == "boss" or event.tone == "hazard"
+		showToast(event.text, threat, (event.tone == "boss" and "skull") or (event.tone == "hazard" and "alert") or nil)
 		if event.tone == "boss" then audio:Cue("boss", 4) end
 	elseif event.kind == "Mutation" then
 		local def = Catalog.Mutations[event.mutationId]
