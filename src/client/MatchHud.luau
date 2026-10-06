@@ -413,6 +413,23 @@ function MatchHud.new(ctx)
 		UI.label(body,T("Usa o Ouro desta partida. O Ouro do lobby nunca é gasto aqui. Renda exige contribuição na onda.","Uses this match's Gold. Lobby Gold is never spent here. Income requires contribution to the wave."),{Size=UDim2.new(1,-8,0,48),TextSize=15,TextWrapped=true,TextColor3=C.muted,ZIndex=48})
 	end
 
+	-- A commander's Roblox face (avatar headshot) in a round frame. The engine
+	-- fetches it from the user id; an unknown id shows the hero silhouette.
+	local function avatar(parent, userId, properties, tint)
+		local holder = UI.frame(parent, properties)
+		holder.BackgroundColor3 = UI.Skin.bodyTop
+		UI.corner(holder, 100)
+		UI.stroke(holder, tint or C.gold, 2.5)
+		UI.icon(holder, "hero", C.muted, {Position = UDim2.fromScale(0.15, 0.15), Size = UDim2.fromScale(0.7, 0.7)})
+		local id = math.floor(tonumber(userId) or 0)
+		if id > 0 then
+			local face = UI.create("ImageLabel", {Name = "Headshot", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1),
+				Image = "rbxthumb://type=AvatarHeadShot&id=" .. id .. "&w=150&h=150", ZIndex = (holder.ZIndex or 1) + 1}, holder)
+			UI.corner(face, 100)
+		end
+		return holder
+	end
+
 	local function renderResults()
 		local result = ctx.state().results or {}
 		local victory = result.victory == true or result.ended == true
@@ -478,16 +495,23 @@ function MatchHud.new(ctx)
 		if #team>0 then
 			local mvp=team[1]
 			local mine=mvp.userId==player.UserId
-			local card=UI.roundFrame(content,{Name="ResultMvp",Size=UDim2.new(1,-6,0,short and 60 or 76),BackgroundColor3=UI.Skin.slot},C.gold)
+			local cardH=short and 60 or 76
+			local card=UI.roundFrame(content,{Name="ResultMvp",Size=UDim2.new(1,-6,0,cardH),BackgroundColor3=UI.Skin.slot},C.gold)
 			UI.stroke(card,C.gold,3)
-			UI.label(card,"★ MVP",{Position=UDim2.fromOffset(12,4),Size=UDim2.new(0,100,1,-8),TextSize=short and 22 or 28,Font=UI.Fonts.display,TextColor3=C.gold})
-			UI.label(card,mine and T("Você!","You!") or tostring(mvp.name),{Name="MvpName",Position=UDim2.fromOffset(112,4),Size=UDim2.new(1,-122,0.5,-2),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-			UI.fit(UI.label(card,T("Dano ","Dmg ")..number(mvp.damage).."   "..T("Abates ","Kills ")..number(mvp.kills).."   "..T("Ouro ","Gold ")..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,112,0.5,0),Size=UDim2.new(1,-122,0.5,-4),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextColor3=C.cream}),9)
+			-- Each commander's own Roblox face (the avatar headshot), the MVP's in a gold frame.
+			local face=cardH-16
+			avatar(card,mvp.userId,{Name="MvpAvatar",Position=UDim2.fromOffset(10,8),Size=UDim2.fromOffset(face,face)},C.gold)
+			local left=face+20
+			UI.label(card,"★ MVP",{Position=UDim2.fromOffset(left,4),Size=UDim2.new(0,100,1,-8),TextSize=short and 22 or 28,Font=UI.Fonts.display,TextColor3=C.gold})
+			UI.label(card,mine and T("Você!","You!") or tostring(mvp.name),{Name="MvpName",Position=UDim2.fromOffset(left+100,4),Size=UDim2.new(1,-(left+110),0.5,-2),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
+			UI.fit(UI.label(card,T("Dano ","Dmg ")..number(mvp.damage).."   "..T("Abates ","Kills ")..number(mvp.kills).."   "..T("Ouro ","Gold ")..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,left+100,0.5,0),Size=UDim2.new(1,-(left+110),0.5,-4),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextColor3=C.cream}),9)
 			for index=2,#team do
 				local entry=team[index]
-				local row=UI.row(content,short and 28 or 34)
+				local rowH=short and 28 or 34
+				local row=UI.row(content,rowH)
 				row.Name="ResultTeam_"..index
-				UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Size=UDim2.new(0.5,0,1,0),TextSize=18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
+				avatar(row,entry.userId,{Name="TeamAvatar",Position=UDim2.fromOffset(2,1),Size=UDim2.fromOffset(rowH-2,rowH-2)},UI.Skin.slotLine)
+				UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Position=UDim2.fromOffset(rowH+6,0),Size=UDim2.new(0.5,-(rowH+6),1,0),TextSize=18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
 				UI.fit(UI.label(row,T("Dano ","Dmg ")..number(entry.damage).."   "..T("Abates ","Kills ")..number(entry.kills),{Name="TeamStats",Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,-12,1,0),TextSize=17,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right}),9)
 			end
 		end
