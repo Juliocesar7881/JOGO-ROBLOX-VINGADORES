@@ -1595,7 +1595,8 @@ local function applyState(nextState)
 	audio:Update(state)
 	if previousLevel and (profile().level or 1) > previousLevel then
 		celebrate:Banner({pt = "SUBIU DE NÍVEL! NV " .. profile().level, en = "LEVEL UP! LV " .. profile().level},
-			{pt = "+" .. (profile().level - previousLevel) .. " ponto(s) na árvore de evolução", en = "+" .. (profile().level - previousLevel) .. " talent point(s) to spend"},
+			profile().level - previousLevel == 1 and {pt = "+1 ponto na árvore de evolução", en = "+1 talent point to spend"}
+				or {pt = "+" .. (profile().level - previousLevel) .. " pontos na árvore de evolução", en = "+" .. (profile().level - previousLevel) .. " talent points to spend"},
 			C.violet, {big = true, cue = "levelUp", confetti = 40})
 	end
 	celebrateChanges(previousGold, previousMatch, phaseChanged)

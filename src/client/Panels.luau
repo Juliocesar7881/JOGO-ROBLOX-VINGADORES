@@ -758,7 +758,7 @@ function Panels.new(ctx)
 			board.map = maps[index % #maps + 1]
 			board.data = nil; renderContext(); loadBoard()
 		end, {Name = "BoardMap", Size = UDim2.new(0.6, -6, 0, 48), TextSize = 17})
-		UI.tab(controls, tostring(board.size) .. T(" jogador(es)", " player(s)"), C.blue, "hero", true, function() board.size = board.size % 4 + 1; board.data = nil; renderContext(); loadBoard() end,
+		UI.tab(controls, tostring(board.size) .. (board.size == 1 and T(" jogador", " player") or T(" jogadores", " players")), C.blue, "hero", true, function() board.size = board.size % 4 + 1; board.data = nil; renderContext(); loadBoard() end,
 			{Name = "BoardSize", Position = UDim2.new(0.6, 4, 0, 0), Size = UDim2.new(0.4, -4, 0, 48), TextSize = 17})
 		-- The personal best, big, like a trophy plate.
 		local row = UI.roundFrame(body, {Name = "BoardPersonal", Size = UDim2.new(1, -6, 0, 78), BackgroundColor3 = UI.Skin.slot}, C.green)
@@ -865,7 +865,7 @@ function Panels.new(ctx)
 				local marks = ((entry.free.chest or entry.premium.chest) and T("Baú", "Chest") or "") .. (entry.premium.title and ((entry.free.chest or entry.premium.chest) and " + " or "") .. T("Título", "Title") or "")
 				if marks ~= "" then line(68, marks, C.pink) end
 			end
-			local claimSeason = UI.button(seasonCard, season.claimable > 0 and (T("Resgatar ", "Claim ") .. season.claimable .. T(" prêmio(s)", " reward(s)")) or T("Jogue para subir de nível", "Play to level up"), function()
+			local claimSeason = UI.button(seasonCard, season.claimable > 0 and (T("Resgatar ", "Claim ") .. season.claimable .. (season.claimable == 1 and T(" prêmio", " reward") or T(" prêmios", " rewards"))) or T("Jogue para subir de nível", "Play to level up"), function()
 				act("ClaimSeason", {}, function(snapshot)
 					local paid = snapshot and snapshot.result
 					rewardGiven(paid)

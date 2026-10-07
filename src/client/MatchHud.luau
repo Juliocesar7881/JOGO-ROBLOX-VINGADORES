@@ -464,10 +464,14 @@ function MatchHud.new(ctx)
 		end
 		UI.list(content, 8)
 		local short=sizeClass().short
-		local celebration=UI.row(content,short and 44 or 64)
-		local emblemSize=short and 36 or 48
-		UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.fromOffset(2,short and 4 or 12),Size=UDim2.fromOffset(emblemSize,emblemSize)})
-		UI.label(celebration, result.ended and T("Recorde guardado!", "Record saved!") or victory and T("Vocês conseguiram!", "You did it!") or T("Vamos tentar de novo?", "Let's try again!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = short and 20 or (mobile() and 22 or 27), Font = Enum.Font.FredokaOne, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
+		-- On a short phone the title band and the banner already say it; the
+		-- space goes to the MVP card, which used to sit half under the fold.
+		if not short then
+			local celebration=UI.row(content,64)
+			local emblemSize=48
+			UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.fromOffset(2,12),Size=UDim2.fromOffset(emblemSize,emblemSize)})
+			UI.label(celebration, result.ended and T("Recorde guardado!", "Record saved!") or victory and T("Vocês conseguiram!", "You did it!") or T("Vamos tentar de novo?", "Let's try again!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = mobile() and 22 or 27, Font = Enum.Font.FredokaOne, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
+		end
 		UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal", result.difficultyId), {Size = UDim2.new(1, -6, 0, short and 20 or 28), TextColor3 = C.muted, TextSize = short and 14 or 17, TextXAlignment = Enum.TextXAlignment.Center})
 		if (tonumber(result.featured) or 1) > 1 then
 			UI.label(content, "★ " .. T("Mapa do dia +", "Map of the day +") .. math.floor((result.featured - 1) * 100 + 0.5) .. "%", {Name = "ResultFeatured", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
@@ -534,7 +538,7 @@ function MatchHud.new(ctx)
 		local earnedPoints = math.max(0, (profile().level or 1) - (result.startLevel or profile().level or 1))
 		local evolution = UI.roundFrame(content, {Name = "ResultEvolution", Size = UDim2.new(1, -6, 0, 90), BackgroundColor3 = UI.Skin.slot}, C.gold)
 		UI.label(evolution, T("Comandante • nível ", "Commander • level ") .. tostring(profile().level or 1), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 28), Font = UI.Fonts.display, TextSize = 20, TextColor3 = C.gold})
-		UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. T(" ponto(s) para sua árvore!", " point(s) for your talent tree!")) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 26), TextWrapped = true, TextSize = 16})
+		UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. (earnedPoints == 1 and T(" ponto para sua árvore!", " point for your talent tree!") or T(" pontos para sua árvore!", " points for your talent tree!"))) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 26), TextWrapped = true, TextSize = 16})
 		local xpTrack = UI.frame(evolution, {Position = UDim2.fromOffset(12, 72), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
 		UI.corner(xpTrack, 4)
 		UI.frame(xpTrack, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.gold})
@@ -547,7 +551,7 @@ function MatchHud.new(ctx)
 			UI.corner(seasonTrack, 4)
 			local seasonFill = UI.frame(seasonTrack, {Size = UDim2.fromScale(math.clamp(season.xpInto / season.xpNeed, 0, 1), 1), BackgroundColor3 = C.violet})
 			UI.corner(seasonFill, 4)
-			UI.label(seasonCard, season.claimable > 0 and (tostring(season.claimable) .. T(" prêmio(s) esperando em PRÊMIOS!", " reward(s) waiting in GIFTS!")) or (number(season.xpInto) .. " / " .. number(season.xpNeed) .. " XP"),
+			UI.label(seasonCard, season.claimable > 0 and (tostring(season.claimable) .. (season.claimable == 1 and T(" prêmio esperando em Prêmios!", " reward waiting in Gifts!") or T(" prêmios esperando em Prêmios!", " rewards waiting in Gifts!"))) or (number(season.xpInto) .. " / " .. number(season.xpNeed) .. " XP"),
 				{Name = "ResultSeasonHint", Position = UDim2.fromOffset(12, 46), Size = UDim2.new(1, -24, 0, 24), TextSize = 16, Font = UI.Fonts.display, TextColor3 = season.claimable > 0 and C.gold or C.muted})
 		end
 		local gains = {}

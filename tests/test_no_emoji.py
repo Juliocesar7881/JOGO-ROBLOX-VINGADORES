@@ -39,6 +39,11 @@ def main() -> int:
             for escape in re.findall(r"\\u\{([0-9A-Fa-f]+)\}", row):
                 if EMOJI.match(chr(int(escape, 16))):
                     hits.append(f"{path.relative_to(ROOT)}:{number}: escaped U+{int(escape, 16):04X}")
+    # "ponto(s)" reads like a form, not a game: pick the singular or the plural.
+    for path in sorted((ROOT / "src").rglob("*.luau")):
+        for line, text in literals(path.read_text(encoding="utf-8")):
+            if re.search(r"\w\((s|es|ns)\)", text):
+                hits.append(f"{path.relative_to(ROOT)}:{line}: lazy plural in {text[:70]!r} (choose singular/plural by the number)")
     if hits:
         print("FAIL no emoji:", len(hits), "emoji in player-facing strings (draw an icon or use a typographic symbol)")
         for hit in hits[:40]:
