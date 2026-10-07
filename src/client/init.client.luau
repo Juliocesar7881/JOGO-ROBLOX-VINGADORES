@@ -1376,11 +1376,18 @@ updateMatch = function()
 	end
 	-- A boss within three waves is announced while there is time to prepare.
 	local bossAhead = state.phase == "Preparing" and match.nextBoss and (match.nextBoss - (match.wave or 0)) or nil
-	local bossNote = bossAhead and bossAhead >= 1 and bossAhead <= 3 and ("   ▲ " .. (bossAhead == 1 and T("Chefe na próxima onda!", "Boss next wave!") or (T("Chefe em ", "Boss in ") .. bossAhead .. T(" ondas", " waves")))) or ""
+	-- It leads the line: a long list of enemies used to push it off the end.
+	local bossNote = bossAhead and bossAhead >= 1 and bossAhead <= 3 and ("▲ " .. (bossAhead == 1 and T("Chefe na próxima onda!", "Boss next wave!") or (T("Chefe em ", "Boss in ") .. bossAhead .. T(" ondas", " waves"))) .. "   ") or ""
+	-- At most three names fit beside it; the rest is an ellipsis.
+	local named = {}
+	for index = 1, math.min(3, #threatNames) do named[index] = threatNames[index] end
+	-- Commas between names: a regional name already carries a dot inside
+	-- ("Capanga Sombrio • Blindado").
+	local coming = #threatNames > 0 and (table.concat(named, ", ") .. (#threatNames > 3 and " …" or "")) or T("prepare suas defesas!", "get your defenses ready!")
 	-- A mutated wave says so, in front of everything else.
 	local mutationDef = match.mutation and Catalog.Mutations[match.mutation]
 	local mutationNote = mutationDef and (mutationDef.icon .. " " .. L(mutationDef.name) .. "  ") or ""
-	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. T("Vem aí: ", "Coming: ") .. (#threatNames > 0 and table.concat(threatNames, " • ") or T("prepare suas defesas!", "get your defenses ready!")) .. bossNote) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos na estrada  •  ", " enemies on the road  •  ") .. towerCount .. (towerCount == 1 and T(" herói em campo", " hero on the field") or T(" heróis em campo", " heroes on the field")))
+	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. bossNote .. T("Vem aí: ", "Coming: ") .. coming) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos na estrada  •  ", " enemies on the road  •  ") .. towerCount .. (towerCount == 1 and T(" herói em campo", " hero on the field") or T(" heróis em campo", " heroes on the field")))
 	local boss = match.boss
 	refs.boss.Visible = boss ~= nil
 	if boss then
@@ -1622,7 +1629,12 @@ fxRemote.OnClientEvent:Connect(function(event)
 		-- A boss's warning carries a skull and a map hazard an alert badge, in
 		-- the red of a threat; neither is the lock of a refused action.
 		local threat = event.tone == "boss" or event.tone == "hazard"
-		showToast(event.text, threat, (event.tone == "boss" and "skull") or (event.tone == "hazard" and "alert") or nil)
+		-- The arrival banner already named the boss a moment ago: no second
+		-- notice with the same words under it.
+		local justAnnounced = event.tone == "boss" and kit.bossBannerAt and os.clock() - kit.bossBannerAt < 1.5
+		if not justAnnounced then
+			showToast(event.text, threat, (event.tone == "boss" and "skull") or (event.tone == "hazard" and "alert") or nil)
+		end
 		if event.tone == "boss" then audio:Cue("boss", 4) end
 	elseif event.kind == "Mutation" then
 		local def = Catalog.Mutations[event.mutationId]
@@ -1642,6 +1654,7 @@ fxRemote.OnClientEvent:Connect(function(event)
 		end
 	else
 		if event.kind == "BossArrive" and activeMatch() then
+			kit.bossBannerAt = os.clock()
 			local def = Catalog.Enemies[event.enemyId]
 			celebrate:Banner(def and def.name or {pt = "CHEFE", en = "BOSS"}, event.final and {pt = "▲ CHEFE FINAL", en = "▲ FINAL BOSS"} or {pt = "▲ CHEFE", en = "▲ BOSS"}, C.red, {big = true, cue = "boss", duration = 2.4})
 			-- A short entrance: the camera flies to the boss and back, unless
