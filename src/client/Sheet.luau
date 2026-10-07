@@ -72,8 +72,9 @@ function Sheet:Open(tab)
 	self.tab = tab or self.tab or "talents"
 	local screen = ctx.screenSize()
 	local shade = UI.frame(ctx.overlays, { Name = "CommanderSheet", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.25, Active = true, ZIndex = 45 })
+	self.panelWidth, self.panelHeight = math.min(560, screen.X - 24), math.min(620, screen.Y - 24)
 	local panel = UI.roundFrame(shade, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(math.min(560, screen.X - 24), math.min(620, screen.Y - 24)), BackgroundColor3 = C.background, ZIndex = 46 }, C.violet)
+		Size = UDim2.fromOffset(self.panelWidth, self.panelHeight), BackgroundColor3 = C.background, ZIndex = 46 }, C.violet)
 	UI.windowSkin(panel, C.violet)
 	UI.label(panel, T("Ficha do comandante", "Commander sheet"), { Position = UDim2.fromOffset(16, 8), Size = UDim2.new(1, -76, 0, 34), TextColor3 = C.violet:Lerp(Color3.new(1, 1, 1), 0.3), TextSize = 26, Font = UI.Fonts.display, ZIndex = 47 })
 	UI.closeButton(panel, function() self:Close() end, { Name = "CloseSheet", Position = UDim2.new(1, -50, 0, 6), Size = UDim2.fromOffset(44, 44), TextSize = 25, ZIndex = 47 })
@@ -96,22 +97,23 @@ function Sheet:_render()
 	local known = false
 	for _, tab in ipairs(tabs) do if tab.id == self.tab then known = true end end
 	if not known then self.tab = "talents" end
-	local width = panel.AbsoluteSize.X > 0 and UI.toLogical(panel.AbsoluteSize.X) or 480
+	local width = self.panelWidth or (panel.AbsoluteSize.X > 0 and UI.toLogical(panel.AbsoluteSize.X) or 480)
 	local tabBar = UI.frame(panel, { Name = "SheetTabs", Position = UDim2.fromOffset(14, 50), Size = UDim2.new(1, -28, 0, 40), BackgroundTransparency = 1, ZIndex = 47 })
 	local tabW = math.floor((width - 28 - (#tabs - 1) * 6) / #tabs)
 	for index, tab in ipairs(tabs) do
 		local on = tab.id == self.tab
 		UI.button(tabBar, tab.label, function() self.tab = tab.id self:_render() end, {
 			Name = "SheetTab_" .. tab.id, Position = UDim2.fromOffset((index - 1) * (tabW + 6), 0), Size = UDim2.fromOffset(tabW, 40),
-			BackgroundColor3 = on and C.violet or C.card, TextColor3 = on and C.background or C.text, TextSize = 14, ZIndex = 48,
+			BackgroundColor3 = on and C.violet or C.card, TextColor3 = C.text, TextSize = 19, ZIndex = 48,
 		})
 	end
 	local body = UI.scroll(panel, { Name = "SheetBody", Position = UDim2.fromOffset(14, 98), Size = UDim2.new(1, -28, 1, -110), ZIndex = 47 })
 	UI.list(body, 10)
 	self.body = body
 	if self.tab == "talents" then
-		local height = panel.AbsoluteSize.Y > 0 and UI.toLogical(panel.AbsoluteSize.Y) or 540
-		ctx.buildTalents(body, { readOnly = true, rerender = function() self:_render() end, canvasHeight = math.clamp(height - 300, 170, 400) })
+		local height = self.panelHeight or (panel.AbsoluteSize.Y > 0 and UI.toLogical(panel.AbsoluteSize.Y) or 540)
+		-- The tree fills the window: the info card under it needs about 130.
+		ctx.buildTalents(body, { readOnly = true, rerender = function() self:_render() end, canvasHeight = math.clamp(height - 250, 170, 420), canvasWidth = self.panelWidth and (self.panelWidth - 40) or nil })
 	else
 		self:_cardsTab(body, match)
 	end

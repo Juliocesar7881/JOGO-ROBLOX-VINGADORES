@@ -1266,7 +1266,9 @@ function Panels.new(ctx)
 
 		-- The stage: the whole screen in the lobby, a fixed band in the match sheet.
 		local measured = body.AbsoluteSize
-		local bodyW = (measured and measured.X and measured.X > 0) and UI.toLogical(measured.X) or 460
+		-- A window still popping open measures smaller than it is: the caller
+		-- that knows the real width says so.
+		local bodyW = options.canvasWidth or ((measured and measured.X and measured.X > 0) and UI.toLogical(measured.X) or 460)
 		local stageW = readOnly and math.max(280, bodyW - 8) or screen.X
 		local stageH = readOnly and (options.canvasHeight or 300) or screen.Y
 		if readOnly then
@@ -1295,7 +1297,7 @@ function Panels.new(ctx)
 		local units, order, minX, maxX, minY, maxY = talentUnits()
 		local areaW, areaH = stageW - 24, stageH - headH - footH - infoH - 12
 		-- Never smaller than a fingertip on a small screen: the tree scrolls instead.
-		local R = math.floor(math.clamp(math.min(areaW / (maxX - minX), areaH / (maxY - minY)), compact and 30 or 26, readOnly and 40 or 66))
+		local R = math.floor(math.clamp(math.min(areaW / (maxX - minX), areaH / (maxY - minY)), compact and 30 or 26, readOnly and 50 or 66))
 		if readOnly then R = math.min(R, math.floor(math.max(areaW / (maxX - minX), 22))) end
 		local mapW, mapH = math.ceil((maxX - minX) * R), math.ceil((maxY - minY) * R)
 		local holder = stage

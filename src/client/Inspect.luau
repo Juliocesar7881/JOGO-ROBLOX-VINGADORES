@@ -38,33 +38,33 @@ function Inspect:Show(key, record, pinned)
 	local short = screen and screen.Y < 500
 	local card = UI.roundFrame(ctx.gui, {
 		Name = "EnemyCard", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, short and -74 or -112),
-		Size = UDim2.new(1, -32, 0, short and 86 or 100), ZIndex = 58, Active = false,
+		Size = UDim2.new(1, -32, 0, short and 100 or 124), ZIndex = 58, Active = false,
 	}, def.boss and C.red or C.stroke)
 	UI.windowSkin(card, def.boss and C.red or C.coral)
-	UI.create("UISizeConstraint", { MaxSize = Vector2.new(440, 120) }, card)
-	local name = UI.label(card, L(def.name), { Name = "EnemyName", Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -150, 0, 24),
-		Font = UI.Fonts.display, TextSize = 19, TextColor3 = def.boss and C.gold or C.cream, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 59 })
-	local health = UI.label(card, "", { Name = "EnemyHealth", Position = UDim2.new(1, -140, 0, 6), Size = UDim2.fromOffset(128, 24),
-		Font = UI.Fonts.display, TextSize = 16, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 59 })
-	local track = UI.frame(card, { Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -24, 0, 6), BackgroundColor3 = C.ink, ZIndex = 59 })
-	UI.corner(track, 3)
+	UI.create("UISizeConstraint", { MaxSize = Vector2.new(480, 140) }, card)
+	local name = UI.fit(UI.label(card, L(def.name), { Name = "EnemyName", Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -160, 0, 28),
+		Font = UI.Fonts.display, TextSize = 23, TextColor3 = def.boss and C.gold or C.cream, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 59 }), 13)
+	local health = UI.label(card, "", { Name = "EnemyHealth", Position = UDim2.new(1, -150, 0, 8), Size = UDim2.fromOffset(138, 26),
+		Font = UI.Fonts.display, TextSize = 20, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 59 })
+	local track = UI.frame(card, { Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 9), BackgroundColor3 = C.ink, ZIndex = 59 })
+	UI.corner(track, 4)
 	local fill = UI.frame(track, { Name = "EnemyHealthFill", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.green, ZIndex = 60 })
-	UI.corner(fill, 3)
+	UI.corner(fill, 4)
 	-- Chips: armour, pace and what kind of enemy it is.
 	local chips, x = {}, 12
 	local function chip(text, color, width)
-		UI.chip(card, text, color, { Position = UDim2.fromOffset(x, 44), Size = UDim2.fromOffset(width, 20), TextSize = 12, ZIndex = 59 })
+		UI.chip(card, text, color, { Position = UDim2.fromOffset(x, 54), Size = UDim2.fromOffset(width, 24), TextSize = 14, ZIndex = 59 })
 		x += width + 6
 	end
-	if (def.armor or 0) > 0 then chip(T("ARMADURA ", "ARMOR ") .. tostring(math.floor((def.armor or 0) * 100 + 0.5)) .. "%", C.blue, 112) end
-	chip(Inspect.SpeedWord(def.speed or 9, T), C.violet, 74)
-	if def.air then chip(T("VOADOR", "FLYING"), C.cyan or C.blue, 78) end
-	if def.stealth then chip(T("CAMUFLADO", "HIDDEN"), C.violet, 96) end
-	if def.boss then chip(T("CHEFE", "BOSS"), C.red, 64) end
+	if (def.armor or 0) > 0 then chip(T("ARMADURA ", "ARMOR ") .. tostring(math.floor((def.armor or 0) * 100 + 0.5)) .. "%", C.blue, 128) end
+	chip(Inspect.SpeedWord(def.speed or 9, T), C.violet, 84)
+	if def.air then chip(T("VOADOR", "FLYING"), C.cyan or C.blue, 88) end
+	if def.stealth then chip(T("CAMUFLADO", "HIDDEN"), C.violet, 108) end
+	if def.boss then chip(T("CHEFE", "BOSS"), C.red, 72) end
 	local note = def.boss and def.hint or def.trait
 	if note then
-		UI.label(card, L(note), { Name = "EnemyNote", Position = UDim2.fromOffset(12, short and 66 or 68), Size = UDim2.new(1, -24, 0, short and 18 or 28),
-			TextSize = short and 12 or 13, TextWrapped = true, TextColor3 = C.muted, ZIndex = 59 })
+		UI.fit(UI.label(card, L(note), { Name = "EnemyNote", Position = UDim2.fromOffset(12, 82), Size = UDim2.new(1, -24, 0, short and 16 or 36),
+			TextSize = short and 14 or 16, TextWrapped = true, TextColor3 = C.cream, ZIndex = 59 }), 11)
 	end
 	self.card, self.id, self.left, self.pinned = card, key, SHOWN_SECONDS, pinned == true
 	self.refs = { health = health, fill = fill }
