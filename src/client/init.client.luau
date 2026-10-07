@@ -1973,6 +1973,17 @@ RunService.RenderStepped:Connect(function(dt)
 	if os.clock() >= kit.afkBannerAt then
 		kit.afkBannerAt = os.clock() + 0.25
 		updateAfkBanner()
+		-- Roblox's chat sits on the right middle of the screen: while a window
+		-- of ours is open there (a menu, the sheet, the results, a card pick,
+		-- the base upgrade, a tower's card) the chat steps aside, and comes
+		-- back when it closes. The review's own chat switch is left alone.
+		local busy = contextPanel ~= nil or (state ~= nil and state.phase == "Results") or refs.protocolPanel ~= nil
+			or overlays:FindFirstChild("CommanderSheet") ~= nil or overlays:FindFirstChild("BaseUpgrade") ~= nil
+			or (refs.towerPanel ~= nil and refs.towerPanel.Parent ~= nil and refs.towerPanel.Visible == true)
+		if busy ~= kit.chatHidden and player:GetAttribute("DoomReviewHideChrome") ~= true then
+			kit.chatHidden = busy
+			pcall(function() game:GetService("TextChatService").ChatWindowConfiguration.Enabled = not busy end)
+		end
 	end
 	routePreview:Step(dt or 1 / 60, state and state.phase)
 	-- Only real news moves: a dock icon bobs while it has something waiting
