@@ -736,9 +736,11 @@ renderElevator = function()
 		..((boss and waves>0) and ("  •  "..T("Chefe: ","Boss: ")..Catalog.Upper(L(boss.name))) or "").."  •  "..prize
 	-- A short phone's campaign card gives the riders' line to the difficulties.
 	if withDifficulty and hud.class.short then summary=tostring(#(e.riders or {})).."/"..tostring(e.max or 4).."  •  "..summary end
-	UI.label(card, title, {Name="PortalDestination",Position = UDim2.fromOffset(14, 4), Size = UDim2.new(1, -96, 0, compact and 22 or 28), TextWrapped=true,TextSize = compact and 16 or 22, Font = UI.Fonts.display, TextColor3 = tint:Lerp(Color3.new(1, 1, 1), 0.25)})
-	UI.label(card, summary, {Name="PortalSummary",Position = UDim2.fromOffset(14, compact and 26 or 32), Size = UDim2.new(1, -96, 0, compact and 18 or 22), TextSize = compact and 12 or 15, Font = UI.Fonts.display, TextColor3 = C.muted})
-	refs.elevatorCount = UI.label(card, elevatorCountText(), {Position = UDim2.new(1, -86, 0, 4), Size = UDim2.fromOffset(72, 44), TextSize = compact and 30 or 38, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
+	UI.label(card, title, {Name="PortalDestination",Position = UDim2.fromOffset(14, 4), Size = UDim2.new(1, -124, 0, compact and 22 or 28), TextWrapped=true,TextSize = compact and 16 or 22, Font = UI.Fonts.display, TextColor3 = tint:Lerp(Color3.new(1, 1, 1), 0.25)})
+	UI.label(card, summary, {Name="PortalSummary",Position = UDim2.fromOffset(14, compact and 26 or 32), Size = UDim2.new(1, -124, 0, compact and 18 or 22), TextSize = compact and 12 or 15, Font = UI.Fonts.display, TextColor3 = C.muted})
+	refs.elevatorCount = UI.label(card, elevatorCountText(), {Name = "PortalCountdown", Position = UDim2.new(1, -86, 0, 4), Size = UDim2.fromOffset(72, 44), TextSize = compact and 30 or 38, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
+	-- A clock beside the number says it is the time left before departure.
+	UI.icon(card, "clock", C.gold, {Name = "PortalClock", Position = UDim2.new(1, -102, 0, compact and 12 or 14), Size = UDim2.fromOffset(compact and 22 or 26, compact and 22 or 26)})
 	local rowH = compact and 34 or 40
 	local rowY = r.h - rowH - 8
 	local leaveW = compact and 76 or 92
