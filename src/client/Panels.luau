@@ -702,7 +702,8 @@ function Panels.new(ctx)
 				fill.Size = UDim2.fromScale(progress / math.max(quest.target or 1, 1), 1)
 				UI.label(fill.Parent, progress .. " / " .. (quest.target or 1), {Size = UDim2.fromScale(1, 1), TextSize = 16, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
 				UI.label(card, number(quest.gold or 0) .. T(" Ouro", " Gold") .. "\n" .. number(quest.xp or 0) .. " XP", {Position = UDim2.new(1, -176, 0, 6), Size = UDim2.fromOffset(164, 46), TextWrapped = true, TextSize = 18, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
-				local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or T("Resgatar recompensa", "Claim reward"), function() act("ClaimQuest", {questId = id}) end, {Position = UDim2.new(1, -176, 0, 62), Size = UDim2.fromOffset(164, 56), BackgroundColor3 = ready and C.green or C.card, TextSize = 17})
+				-- The button says what it does now: claim when ready, otherwise the goal is still open.
+				local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or (ready and T("Resgatar recompensa", "Claim reward") or T("Em andamento", "In progress")), function() act("ClaimQuest", {questId = id}) end, {Name = "ClaimQuest_" .. id, Position = UDim2.new(1, -176, 0, 62), Size = UDim2.fromOffset(164, 56), BackgroundColor3 = ready and C.green or C.card, TextSize = 19})
 				if quest.claimed or progress < (quest.target or 1) then UI.disabled(claim) end
 			end
 		end
@@ -757,9 +758,9 @@ function Panels.new(ctx)
 			local index = table.find(maps, board.map) or 1
 			board.map = maps[index % #maps + 1]
 			board.data = nil; renderContext(); loadBoard()
-		end, {Name = "BoardMap", Size = UDim2.new(0.6, -6, 0, 48), TextSize = 17})
+		end, {Name = "BoardMap", Size = UDim2.new(0.6, -6, 0, 48), TextSize = 21})
 		UI.tab(controls, tostring(board.size) .. (board.size == 1 and T(" jogador", " player") or T(" jogadores", " players")), C.blue, "hero", true, function() board.size = board.size % 4 + 1; board.data = nil; renderContext(); loadBoard() end,
-			{Name = "BoardSize", Position = UDim2.new(0.6, 4, 0, 0), Size = UDim2.new(0.4, -4, 0, 48), TextSize = 17})
+			{Name = "BoardSize", Position = UDim2.new(0.6, 4, 0, 0), Size = UDim2.new(0.4, -4, 0, 48), TextSize = 21})
 		-- The personal best, big, like a trophy plate.
 		local row = UI.roundFrame(body, {Name = "BoardPersonal", Size = UDim2.new(1, -6, 0, 78), BackgroundColor3 = UI.Skin.slot}, C.green)
 		UI.stroke(row, C.green, 3)
@@ -788,9 +789,9 @@ function Panels.new(ctx)
 		elseif board.failed then
 			-- Failure is a state with a way out, not an endless "loading".
 			UI.label(body, T("Não foi possível carregar o placar agora.", "The leaderboard could not be loaded right now."), {Name = "BoardFailed", Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.red})
-			UI.button(body, T("Tentar novamente", "Try again"), function() board.data = nil; loadBoard(); renderContext() end, {Name = "BoardRetry", Size = UDim2.new(1, -6, 0, 48), BackgroundColor3 = C.gold, TextSize = 14})
+			UI.button(body, T("Tentar novamente", "Try again"), function() board.data = nil; loadBoard(); renderContext() end, {Name = "BoardRetry", Size = UDim2.new(1, -6, 0, 48), BackgroundColor3 = C.gold, TextSize = 20})
 		else UI.label(body, T("Carregando placar…", "Loading leaderboard…"), {TextColor3 = C.muted}) end
-		UI.secondary(body, T("Atualizar placar", "Refresh leaderboard"), loadBoard, {Size = UDim2.new(1, -6, 0, 40)})
+		UI.secondary(body, T("Atualizar placar", "Refresh leaderboard"), loadBoard, {Name = "BoardRefresh", Size = UDim2.new(1, -6, 0, 44), TextSize = 18})
 	end
 
 	-- Four small loops around the main game, all decided by the server's clock:
@@ -857,13 +858,14 @@ function Panels.new(ctx)
 				local entry = season.upcoming[index]
 				local cell = UI.roundFrame(seasonCard, {Name = "SeasonLevel_" .. entry.level, Position = UDim2.new((index - 1) / shown, 6, 0, 58), Size = UDim2.new(1 / shown, -3, 0, 92),
 					BackgroundColor3 = entry.reached and C.gold:Lerp(C.card, 0.8) or C.background}, entry.reached and C.gold or C.stroke)
-				local function line(y, text, tint) UI.label(cell, text, {Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, 20), TextSize = 16, Font = UI.Fonts.display, TextColor3 = tint, TextXAlignment = Enum.TextXAlignment.Center}) end
-				line(4, T("NV ", "LV ") .. entry.level, entry.reached and C.gold or C.muted)
-				line(26, entry.freeClaimed and "✓" or number(entry.free.gold), entry.freeClaimed and C.green or C.text)
+				-- Level on top, the free prize big, the premium one under it.
+				local function line(y, text, tint, size, height) UI.fit(UI.label(cell, text, {Position = UDim2.fromOffset(2, y), Size = UDim2.new(1, -4, 0, height or 20), TextSize = size or 16, Font = UI.Fonts.display, TextColor3 = tint, TextXAlignment = Enum.TextXAlignment.Center}), 10) end
+				line(3, T("NV ", "LV ") .. entry.level, entry.reached and C.gold or C.muted, 18, 22)
+				line(25, entry.freeClaimed and "✓" or number(entry.free.gold), entry.freeClaimed and C.green or C.text, 24, 28)
 				local premiumText = (entry.premiumClaimed and "✓") or number(entry.premium.gold)
-				line(48, premiumText, entry.premiumClaimed and C.green or (season.owned and C.cream or C.muted))
+				line(53, premiumText, entry.premiumClaimed and C.green or (season.owned and C.cream or C.muted), 18, 20)
 				local marks = ((entry.free.chest or entry.premium.chest) and T("Baú", "Chest") or "") .. (entry.premium.title and ((entry.free.chest or entry.premium.chest) and " + " or "") .. T("Título", "Title") or "")
-				if marks ~= "" then line(68, marks, C.pink) end
+				if marks ~= "" then line(73, marks, C.pink, 15, 17) end
 			end
 			local claimSeason = UI.button(seasonCard, season.claimable > 0 and (T("Resgatar ", "Claim ") .. season.claimable .. (season.claimable == 1 and T(" prêmio", " reward") or T(" prêmios", " rewards"))) or T("Jogue para subir de nível", "Play to level up"), function()
 				act("ClaimSeason", {}, function(snapshot)
@@ -875,11 +877,11 @@ function Panels.new(ctx)
 							{pt = "+" .. number(paid.gold or 0) .. " Ouro", en = "+" .. number(paid.gold or 0) .. " Gold"}, C.violet, {cue = "upgrade", duration = 1.8})
 					end
 				end)
-			end, {Name = "ClaimSeason", Position = UDim2.fromOffset(12, 158), Size = UDim2.new(1, -24, 0, 48), BackgroundColor3 = season.claimable > 0 and C.green or C.card, TextSize = 16})
+			end, {Name = "ClaimSeason", Position = UDim2.fromOffset(12, 158), Size = UDim2.new(1, -24, 0, 48), BackgroundColor3 = season.claimable > 0 and C.green or C.card, TextSize = 20})
 			if season.claimable == 0 then UI.disabled(claimSeason) end
 			if not season.owned then
 				UI.button(seasonCard, T("Liberar trilha premium", "Unlock the premium track"), function() openContext("shop", {shopKind = "pass"}) end,
-					{Name = "SeasonUnlock", Position = UDim2.fromOffset(12, 210), Size = UDim2.new(1, -24, 0, 36), BackgroundColor3 = C.violet, TextSize = 14})
+					{Name = "SeasonUnlock", Position = UDim2.fromOffset(12, 210), Size = UDim2.new(1, -24, 0, 36), BackgroundColor3 = C.violet, TextSize = 18})
 			end
 		end
 

@@ -312,6 +312,33 @@ function UI.fit(label, minSize)
 	return label
 end
 
+-- Keeps a label on one line: its size steps down until the words fit the
+-- width it really got (TextScaled would break "Meus heróis 43" into two lines
+-- to stay big). Re-measured whenever the label is resized or its words change.
+function UI.oneLine(label, minSize)
+	local maxSize = label.TextSize
+	label.TextScaled, label.TextWrapped = false, false
+	local okService, textService = pcall(game.GetService, game, "TextService")
+	local function measure()
+		if not okService or not textService then return end
+		local width = UI.toLogical(label.AbsoluteSize.X)
+		if not width or width <= 0 then return end
+		local size = maxSize
+		while size > (minSize or 9) do
+			local ok, bounds = pcall(function() return textService:GetTextSize(label.Text, size, label.Font, Vector2.new(4000, 400)) end)
+			if not ok or not bounds or bounds.X <= width then break end
+			size -= 1
+		end
+		label.TextSize = size
+	end
+	measure()
+	pcall(function()
+		label:GetPropertyChangedSignal("AbsoluteSize"):Connect(measure)
+		label:GetPropertyChangedSignal("Text"):Connect(measure)
+	end)
+	return label
+end
+
 function UI.secondary(parent, text, callback, properties)
 	properties = properties or {}
 	properties.BackgroundColor3 = properties.BackgroundColor3 or UI.Colors.card
@@ -1421,9 +1448,9 @@ function UI.tab(parent, text, color, icon, selected, callback, properties)
 	end
 	local label = UI.label(button, text, {Name = "TabText", Position = UDim2.fromOffset(hasIcon and iconSize + 14 or 6, 0), Size = UDim2.new(1, hasIcon and -(iconSize + 20) or -12, 1, 0),
 		Font = UI.Fonts.display, TextSize = button.TextSize, TextXAlignment = hasIcon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center,
-		TextColor3 = selected and UI.Colors.text or UI.Colors.text:Lerp(UI.Skin.body, 0.15), TextScaled = true, TextTruncate = Enum.TextTruncate.None, ZIndex = (button.ZIndex or 1) + 1})
-	-- Shrinks to fit a narrow tab (a phone held upright), never past the set size.
-	UI.textLimit(label, button.TextSize, 9)
+		TextColor3 = selected and UI.Colors.text or UI.Colors.text:Lerp(UI.Skin.body, 0.15), TextTruncate = Enum.TextTruncate.None, ZIndex = (button.ZIndex or 1) + 1})
+	-- Shrinks to fit a narrow tab (a phone held upright), on one line, never past the set size.
+	UI.oneLine(label, 9)
 	UI.outline(label, 2)
 	-- The button keeps the words (tests and screen readers find it by them) but
 	-- draws none: its own text outline would show through as a ghost.
