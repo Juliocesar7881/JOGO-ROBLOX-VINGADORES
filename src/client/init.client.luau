@@ -1022,7 +1022,10 @@ local function chooseHero(id)
 	selectedTower, selectedHero = nil, id
 	if refs.towerPanel then refs.towerPanel.Visible = false end
 	if towerRing then towerRing:Destroy(); towerRing = nil end
-	refs.hint.Text = heroName(id) .. " • " .. (UserInputService.TouchEnabled and T("toque no chão para colocar", "tap the ground to place") or T("clique no chão para colocar", "click the ground to place"))
+	-- The strip above names what is in hand and its price; the bar below says
+	-- how to place it (they used to say the same words twice).
+	local def = Catalog.Heroes[id]
+	refs.hint.Text = heroName(id) .. (def and ("  •  " .. number(def.cost) .. T(" Ouro", " Gold")) or "")
 	refs.hint.Visible = true
 	refs.placement.Visible = true
 	refs.confirm.Text = UserInputService.TouchEnabled and T("Toque no chão para colocar", "Tap the ground to place") or T("Clique para colocar  •  botão direito cancela", "Click to place  •  right click cancels")
@@ -1040,7 +1043,8 @@ local function chooseSkill(id)
 	selectedSkill, selectedTower = id, nil
 	if refs.towerPanel then refs.towerPanel.Visible = false end
 	if towerRing then towerRing:Destroy(); towerRing = nil end
-	refs.hint.Text = L(Catalog.Abilities[id].name) .. " • " .. (ability.target == "tower" and T("Selecione uma torre sua.", "Select one of your towers.") or T("Toque na região para usar o poder.", "Tap a region to use the power."))
+	refs.hint.Text = L(Catalog.Abilities[id].name) .. "  •  " .. (ability.target == "tower" and T("escolha uma torre sua", "pick one of your towers")
+		or ((tonumber(ability.radius) or 0) > 0 and (T("área de ", "area of ") .. math.floor(ability.radius + 0.5) .. " studs") or T("escolha a região", "pick the area")))
 	refs.hint.Visible = true
 	refs.placement.Visible = true
 	refs.confirm.Text = UserInputService.TouchEnabled and T("Toque no alvo", "Tap the target") or T("Clique no alvo  •  botão direito cancela", "Click the target  •  right click cancels")
@@ -1208,13 +1212,15 @@ local function renderMatch()
 	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 2), Size = UDim2.new(1, -24, 0, 24), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Center})
 	refs.bossHP = UI.bar(refs.boss, C.red, UDim2.fromOffset(12, 26), UDim2.new(1, -24, 0, 12))
 	refs.bossHint = UI.fit(UI.label(refs.boss, "", {Name = "BossHint", Position = UDim2.fromOffset(12, 37), Size = UDim2.new(1, -24, 0, bossRect.h - 41), TextColor3 = C.cream, TextSize = 14, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center}), 10)
-	refs.hint = UI.label(main, "", {Position = at(layout.hint), Size = dims(layout.hint), TextColor3 = C.green, TextSize = compact and 13 or 15, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
+	refs.hint = UI.fit(UI.label(main, "", {Position = at(layout.hint), Size = dims(layout.hint), TextColor3 = C.green, TextSize = compact and 16 or 20, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Visible = false}), 11)
 	surface(refs.hint,C.green)
 	refs.placement = UI.roundFrame(main, {Position = at(layout.placement), Size = dims(layout.placement), Visible = false})
 	-- A hint, not a button: the click on the ground is what places.
 	refs.confirm = UI.label(refs.placement, T("Clique no chão para colocar", "Click the ground to place"), {Name = "PlacementHint", Position = UDim2.fromOffset(6, 6), Size = UDim2.new(0.65, -9, 1, -12), TextSize = 16, Font = UI.Fonts.display, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = C.background})
+	refs.confirm.TextSize = 19
+	UI.fit(refs.confirm, 11)
 	UI.corner(refs.confirm, 12)
-	UI.button(refs.placement, T("Cancelar", "Cancel"), clearPlacement, {Position = UDim2.new(0.65, 2, 0, 6), Size = UDim2.new(0.35, -8, 1, -12), BackgroundColor3 = C.red, TextSize = 15})
+	UI.button(refs.placement, T("Cancelar", "Cancel"), clearPlacement, {Position = UDim2.new(0.65, 2, 0, 6), Size = UDim2.new(0.35, -8, 1, -12), BackgroundColor3 = C.red, TextSize = 19})
 	local abilities = UI.frame(main, {BackgroundTransparency = 1, Position = at(layout.abilities), Size = dims(layout.abilities)})
 	UI.list(abilities, 8, true)
 	refs.abilityButtons = {}
