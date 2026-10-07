@@ -785,7 +785,7 @@ function UI.section(parent, title, subtitle)
 	local frame = UI.frame(parent, {BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, subtitle and 90 or 46)})
 	local bar = UI.frame(frame, {Name = "SectionMark", Position = UDim2.fromOffset(0, 10), Size = UDim2.fromOffset(6, 26), BackgroundColor3 = UI.Colors.gold})
 	UI.corner(bar, 3)
-	UI.label(frame, title, {Font = UI.Fonts.display, TextSize = 24, TextColor3 = UI.Colors.cream, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -14, 0, 46)})
+	UI.fit(UI.label(frame, title, {Name = "SectionTitle", Font = UI.Fonts.display, TextSize = 24, TextColor3 = UI.Colors.cream, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -14, 0, 46)}), 13)
 	if subtitle then
 		UI.label(frame, subtitle, {TextColor3 = UI.Colors.muted, TextSize = 16, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 42), TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
 	end
@@ -1401,6 +1401,8 @@ function UI.titleRibbon(parent, text, tint, properties)
 		Size = UDim2.new(1, -math.floor(height * 0.9) - (properties.textInset or 0), 1, -2), Font = UI.Fonts.display, TextSize = properties.TextSize or 32,
 		TextColor3 = UI.Colors.text, TextXAlignment = Enum.TextXAlignment.Left, TextScaled = false, ZIndex = z + 1})
 	UI.outline(title, 3)
+	-- A long title on a narrow window shrinks on its one line.
+	UI.oneLine(title, 14)
 	return root, title
 end
 
