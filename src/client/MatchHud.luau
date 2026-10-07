@@ -472,16 +472,27 @@ function MatchHud.new(ctx)
 			UI.icon(celebration,victory and "trophy" or "heart",victory and C.gold or C.blue,{Position=UDim2.fromOffset(2,12),Size=UDim2.fromOffset(emblemSize,emblemSize)})
 			UI.label(celebration, result.ended and T("Recorde guardado!", "Record saved!") or victory and T("Vocês conseguiram!", "You did it!") or T("Vamos tentar de novo?", "Let's try again!"), {Position=UDim2.fromOffset(emblemSize+14,0),Size = UDim2.new(1, -emblemSize-20, 1, 0), TextSize = mobile() and 22 or 27, Font = Enum.Font.FredokaOne, TextWrapped = true, TextColor3 = victory and C.green or C.blue})
 		end
-		UI.label(content, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal", result.difficultyId), {Size = UDim2.new(1, -6, 0, short and 20 or 28), TextColor3 = C.muted, TextSize = short and 14 or 17, TextXAlignment = Enum.TextXAlignment.Center})
+		-- A phone on its side is wide and short: the results go in two columns,
+		-- what was won on the left and where the commander stands on the right,
+		-- so the rank and the level show without scrolling.
+		local left, right, columns = content, content, nil
+		if short then
+			columns = UI.frame(content, {Name = "ResultColumns", BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, 0)})
+			left = UI.frame(columns, {Name = "ResultLeft", BackgroundTransparency = 1, Size = UDim2.new(0.5, -5, 1, 0)})
+			right = UI.frame(columns, {Name = "ResultRight", BackgroundTransparency = 1, Position = UDim2.new(0.5, 5, 0, 0), Size = UDim2.new(0.5, -5, 1, 0)})
+			UI.list(left, 6)
+			UI.list(right, 6)
+		end
+		UI.label(left, mapName(result.mapId or "manhattan") .. "  /  " .. modeName(result.modeId or "normal", result.difficultyId), {Size = UDim2.new(1, -6, 0, short and 20 or 28), TextColor3 = C.muted, TextSize = short and 14 or 17, TextXAlignment = Enum.TextXAlignment.Center})
 		if (tonumber(result.featured) or 1) > 1 then
-			UI.label(content, "★ " .. T("Mapa do dia +", "Map of the day +") .. math.floor((result.featured - 1) * 100 + 0.5) .. "%", {Name = "ResultFeatured", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
+			UI.label(left, "★ " .. T("Mapa do dia +", "Map of the day +") .. math.floor((result.featured - 1) * 100 + 0.5) .. "%", {Name = "ResultFeatured", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
 		end
 		if (tonumber(result.party) or 1) > 1 then
-			UI.label(content, "★ " .. T("Bônus de grupo +", "Party bonus +") .. math.floor((result.party - 1) * 100 + 0.5) .. "%", {Name = "ResultParty", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
+			UI.label(left, "★ " .. T("Bônus de grupo +", "Party bonus +") .. math.floor((result.party - 1) * 100 + 0.5) .. "%", {Name = "ResultParty", Size = UDim2.new(1, -6, 0, short and 18 or 24), TextColor3 = C.gold, TextSize = short and 12 or 14, Font = Enum.Font.BuilderSansExtraBold, TextXAlignment = Enum.TextXAlignment.Center})
 		end
 		-- Core rewards stay together and appear before the optional detailed history,
 		-- including on short screens where three large rows needed several scrolls.
-		local rewards=UI.row(content,short and 70 or 92)
+		local rewards=UI.row(left,short and 70 or 92)
 		rewards.Name="ResultRewards"
 		for index,reward in ipairs({{T("Ondas", "Waves"), tostring(result.waves or 0), C.green}, {T("Ouro", "Gold"), "+" .. number(result.gold or 0), C.gold}, {"XP", "+" .. number(result.xp or 0), C.blue}}) do
 			local tile=UI.roundFrame(rewards,{Name="Reward_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-6,1,0),BackgroundColor3=UI.Skin.slot},reward[3])
@@ -509,43 +520,50 @@ function MatchHud.new(ctx)
 			local mvp=team[1]
 			local mine=mvp.userId==player.UserId
 			local cardH=short and 60 or 76
-			local card=UI.roundFrame(content,{Name="ResultMvp",Size=UDim2.new(1,-6,0,cardH),BackgroundColor3=UI.Skin.slot},C.gold)
+			local card=UI.roundFrame(left,{Name="ResultMvp",Size=UDim2.new(1,-6,0,cardH),BackgroundColor3=UI.Skin.slot},C.gold)
 			UI.stroke(card,C.gold,3)
 			-- Each commander's own Roblox face (the avatar headshot), the MVP's in a gold frame.
 			local face=cardH-16
 			avatar(card,mvp.userId,{Name="MvpAvatar",Position=UDim2.fromOffset(10,8),Size=UDim2.fromOffset(face,face)},C.gold)
-			local left=face+20
-			UI.label(card,"★ MVP",{Position=UDim2.fromOffset(left,4),Size=UDim2.new(0,100,1,-8),TextSize=short and 22 or 28,Font=UI.Fonts.display,TextColor3=C.gold})
-			UI.label(card,mine and T("Você!","You!") or tostring(mvp.name),{Name="MvpName",Position=UDim2.fromOffset(left+100,4),Size=UDim2.new(1,-(left+110),0.5,-2),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-			UI.fit(UI.label(card,T("Dano ","Dmg ")..number(mvp.damage).."   "..T("Abates ","Kills ")..number(mvp.kills).."   "..T("Ouro ","Gold ")..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,left+100,0.5,0),Size=UDim2.new(1,-(left+110),0.5,-4),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextColor3=C.cream}),9)
+			local textX=face+20
+			-- In a half-width column the medal is a small word on the name's line
+			-- and the numbers take the whole width under them.
+			local medal=short and 64 or 100
+			UI.label(card,"★ MVP",{Name="MvpMedal",Position=UDim2.fromOffset(textX,4),Size=short and UDim2.new(0,medal,0.5,-2) or UDim2.new(0,medal,1,-8),TextSize=short and 17 or 28,Font=UI.Fonts.display,TextColor3=C.gold})
+			UI.fit(UI.label(card,mine and T("Você!","You!") or tostring(mvp.name),{Name="MvpName",Position=UDim2.fromOffset(textX+medal,4),Size=UDim2.new(1,-(textX+medal+10),0.5,-2),TextSize=short and 18 or 22,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd}),11)
+			local statsX=short and textX or textX+medal
+			UI.fit(UI.label(card,T("Dano ","Dmg ")..number(mvp.damage).."   "..T("Abates ","Kills ")..number(mvp.kills).."   "..T("Ouro ","Gold ")..number(mvp.gold),{Name="MvpStats",Position=UDim2.new(0,statsX,0.5,0),Size=UDim2.new(1,-(statsX+10),0.5,-4),TextSize=short and 15 or 18,Font=UI.Fonts.display,TextColor3=C.cream}),9)
 			for index=2,#team do
 				local entry=team[index]
 				local rowH=short and 28 or 34
-				local row=UI.row(content,rowH)
+				local row=UI.row(left,rowH)
 				row.Name="ResultTeam_"..index
 				avatar(row,entry.userId,{Name="TeamAvatar",Position=UDim2.fromOffset(2,1),Size=UDim2.fromOffset(rowH-2,rowH-2)},UI.Skin.slotLine)
-				UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Position=UDim2.fromOffset(rowH+6,0),Size=UDim2.new(0.5,-(rowH+6),1,0),TextSize=18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-				UI.fit(UI.label(row,T("Dano ","Dmg ")..number(entry.damage).."   "..T("Abates ","Kills ")..number(entry.kills),{Name="TeamStats",Position=UDim2.fromScale(0.5,0),Size=UDim2.new(0.5,-12,1,0),TextSize=17,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right}),9)
+				-- In a half-width column the numbers get the larger share, on one line.
+				local split=short and 0.38 or 0.5
+				UI.label(row,(entry.userId==player.UserId and T("Você","You") or tostring(entry.name)),{Position=UDim2.fromOffset(rowH+6,0),Size=UDim2.new(split,-(rowH+6),1,0),TextSize=18,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
+				UI.fit(UI.label(row,T("Dano ","Dmg ")..number(entry.damage).."  "..T("Abates ","Kills ")..number(entry.kills),{Name="TeamStats",Position=UDim2.fromScale(split,0),Size=UDim2.new(1-split,-12,1,0),TextSize=17,TextWrapped=false,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Right}),8)
 			end
 		end
 		if result.modeId=="ranked" then
 			local tier=Rules.RankForWaves(result.waves)
-			local rankRow=UI.row(content,54)
+			local rankRow=UI.row(right,short and 46 or 54)
 			rankRow.Name="ResultRank"
-			UI.label(rankRow,"Rank: "..(ctx.language()=="en" and tier.en or tier.pt),{Size=UDim2.new(1,-6,0,28),Font=UI.Fonts.display,TextSize=22,TextColor3=C.gold})
-			UI.label(rankRow,T("Seu melhor resultado fica no placar da temporada.","Your best result stays on the seasonal leaderboard."),{Position=UDim2.fromOffset(0,30),Size=UDim2.new(1,-6,0,22),TextSize=15,TextColor3=C.muted})
+			UI.label(rankRow,"Rank: "..(ctx.language()=="en" and tier.en or tier.pt),{Size=UDim2.new(1,-6,0,short and 24 or 28),Font=UI.Fonts.display,TextSize=short and 20 or 22,TextColor3=C.gold})
+			UI.fit(UI.label(rankRow,T("Seu melhor resultado fica no placar da temporada.","Your best result stays on the seasonal leaderboard."),{Position=UDim2.fromOffset(0,short and 25 or 30),Size=UDim2.new(1,-6,0,short and 20 or 22),TextSize=15,TextColor3=C.muted}),10)
 		end
 		local earnedPoints = math.max(0, (profile().level or 1) - (result.startLevel or profile().level or 1))
-		local evolution = UI.roundFrame(content, {Name = "ResultEvolution", Size = UDim2.new(1, -6, 0, 90), BackgroundColor3 = UI.Skin.slot}, C.gold)
-		UI.label(evolution, T("Comandante • nível ", "Commander • level ") .. tostring(profile().level or 1), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 28), Font = UI.Fonts.display, TextSize = 20, TextColor3 = C.gold})
-		UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. (earnedPoints == 1 and T(" ponto para sua árvore!", " point for your talent tree!") or T(" pontos para sua árvore!", " points for your talent tree!"))) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 26), TextWrapped = true, TextSize = 16})
-		local xpTrack = UI.frame(evolution, {Position = UDim2.fromOffset(12, 72), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
+		local evolution = UI.roundFrame(right, {Name = "ResultEvolution", Size = UDim2.new(1, -6, 0, short and 80 or 90), BackgroundColor3 = UI.Skin.slot}, C.gold)
+		UI.fit(UI.label(evolution, T("Comandante • nível ", "Commander • level ") .. tostring(profile().level or 1), {Position = UDim2.fromOffset(12, short and 6 or 8), Size = UDim2.new(1, -24, 0, 28), Font = UI.Fonts.display, TextSize = 20, TextColor3 = C.gold}), 12)
+		UI.label(evolution, earnedPoints > 0 and ("+" .. earnedPoints .. (earnedPoints == 1 and T(" ponto para sua árvore!", " point for your talent tree!") or T(" pontos para sua árvore!", " points for your talent tree!"))) or T("Continue ganhando XP para liberar outro ponto.", "Keep earning XP to unlock another point."), {Name = "ResultPoints", Position = UDim2.fromOffset(12, short and 34 or 38), Size = UDim2.new(1, -24, 0, 26), TextWrapped = true, TextSize = 16})
+		UI.fit(evolution.ResultPoints, 10)
+		local xpTrack = UI.frame(evolution, {Position = UDim2.fromOffset(12, short and 64 or 72), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
 		UI.corner(xpTrack, 4)
 		UI.frame(xpTrack, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.gold})
 		-- The season pass: where this match's XP took it, and whether a claim waits.
 		local season = profile().seasonStatus
 		if season then
-			local seasonCard = UI.roundFrame(content, {Name = "ResultSeason", Size = UDim2.new(1, -6, 0, 76), BackgroundColor3 = UI.Skin.slot}, C.violet)
+			local seasonCard = UI.roundFrame(right, {Name = "ResultSeason", Size = UDim2.new(1, -6, 0, 76), BackgroundColor3 = UI.Skin.slot}, C.violet)
 			UI.label(seasonCard, T("Temporada • nível ", "Season • level ") .. tostring(season.level) .. "/" .. tostring(season.maxLevel), {Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 0, 26), Font = UI.Fonts.display, TextSize = 19, TextColor3 = C.violet:Lerp(Color3.new(1, 1, 1), 0.25)})
 			local seasonTrack = UI.frame(seasonCard, {Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.stroke})
 			UI.corner(seasonTrack, 4)
@@ -553,6 +571,18 @@ function MatchHud.new(ctx)
 			UI.corner(seasonFill, 4)
 			UI.label(seasonCard, season.claimable > 0 and (tostring(season.claimable) .. (season.claimable == 1 and T(" prêmio esperando em Prêmios!", " reward waiting in Gifts!") or T(" prêmios esperando em Prêmios!", " rewards waiting in Gifts!"))) or (number(season.xpInto) .. " / " .. number(season.xpNeed) .. " XP"),
 				{Name = "ResultSeasonHint", Position = UDim2.fromOffset(12, 46), Size = UDim2.new(1, -24, 0, 24), TextSize = 16, Font = UI.Fonts.display, TextColor3 = season.claimable > 0 and C.gold or C.muted})
+			UI.fit(seasonCard.ResultSeasonHint, 10)
+		end
+		-- The two columns are as tall as the taller one.
+		if columns then
+			local function height(column)
+				local total, count = 0, 0
+				for _, child in ipairs(column:GetChildren()) do
+					if child:IsA("GuiObject") then total += child.Size.Y.Offset; count += 1 end
+				end
+				return total + math.max(0, count - 1) * 6
+			end
+			columns.Size = UDim2.new(1, -6, 0, math.max(height(left), height(right)))
 		end
 		local gains = {}
 		for heroId, earned in pairs(result.mastery or {}) do
