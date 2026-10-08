@@ -379,3 +379,15 @@ O exemplo da seção D deve ser `server:unlock` seguido de
 `server:start gamma cards`; o jogo continua recusando Manhattan nesse modo,
 conforme a associação de mapas do catálogo atual. Não é necessário alterar
 as regras de entrada para revisar um modo bloqueado.
+
+## 10. Pedido seguinte: Q e navegação da árvore
+
+O refinamento de Q e da árvore tem registro próprio em
+[`REFINAMENTO_Q_ARVORE_2026-10-08.md`](REFINAMENTO_Q_ARVORE_2026-10-08.md)
+e fila M18 no backlog. O pedido altera a apresentação e navegação: raio
+regional antes de lançar, arraste/zoom na árvore e respostas visuais/sonoras,
+preservando as regras atuais de progressão e autoridade do servidor.
+
+Código `2aa4d0f`, com suíte completa verde e revisão no Studio. Publicado no
+mesmo lugar da equipe em 08/10/2026 às 11:46:18 local (14:46:18 UTC), com
+sucesso confirmado no log; Studio deixado em modo de edição.

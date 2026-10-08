@@ -192,3 +192,9 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M17.9 Dano efetivo e abates por torre no cartão, acertos fortes com escala limitada e indicador animado da melhoria; respeitam Menos efeitos e limites de efeitos. Testes aprovados e três capturas de combate real. PC no Studio: 60 FPS antes/depois de adicionar 80 inimigos (114 no snapshot), p95 de 17,62/18,17 ms; celular e sessão prolongada continuam pendentes.
 - [x] M17.10 Varredura das 37 cenas em português (PC, vertical, horizontal) e inglês (PC, horizontal). Corrigidos cortes da loja/ficha e contaminação das cenas pela animação de baús; telas afetadas repetidas com saída 0. Revisão agora falha ao encontrar corte ou erro de script.
 - [x] M17.11 Última correção de `PlayerService.luau` sincronizada seletivamente, lobby de edição refeito e publicação no lugar da equipe `97132875544830` confirmada por `PublishSuccessful` em 08/10/2026 às 13:16:21 UTC (10:16 local), após o dono confirmar que o PC estava livre. Acesso e colaboradores preservados.
+
+## M18 — Prévia de Q e árvore navegável, 08/10
+
+- [x] M18.1 Q: prévia regional antes do clique, raio recebido do servidor, acompanhamento da mira, contorno reutilizado, limites/cancelamento e ausência de círculo em poder global; testes de relayout sem lançamento.
+- [x] M18.2 Árvore do lobby navegável por arraste e roda, hexágonos maiores, Centralizar, posição/zoom preservados e adaptação à tela; arraste não compra, eventos encerram ao fechar e sons respeitam mute.
+- [x] M18.3 Revisão final em PC, celular horizontal/vertical e inglês sem cortes detectados; fontes finais comparadas, sincronização seletiva e publicação no lugar da equipe às 14:46:18 UTC. Código `2aa4d0f`; evidências e limites em `docs/REFINAMENTO_Q_ARVORE_2026-10-08.md`.
