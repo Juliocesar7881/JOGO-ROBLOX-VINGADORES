@@ -88,3 +88,4 @@ Uma linha por passo, a mais nova embaixo.
 - 2026-10-07 19:55 — FEITO M16.5-M16.7: linha da preparação, abas numa linha, missão 'Em andamento', placar e temporada legíveis, cartão do inimigo maior, ficha da partida medida certo; publicado 07/10 22:55 UTC. Commits 84c145d, bcabfe2, 49dd385
 - 2026-10-07 20:48 — FEITO M16.8-M16.9: colocação com herói e preço na faixa (sem texto repetido), relógio na contagem do portal, celular em pé sem texto cortado; publicado 07/10 23:47 UTC. Commits 4247735, 72b7873, 44a7e8f
 - 2026-10-07 21:04 — FEITO M16.10: chat do Roblox se esconde com janela do jogo aberta; varredura em inglês PC+celular sem corte; publicado 07/10 23:59 UTC. Commit 18f8d7a
+- 2026-10-07 21:31 — FEITO M16.11-M16.12: aviso AFK abaixo do objetivo (estava escondido), avisos de interação no idioma do jogador (lojas e salões com nome nos dois idiomas); lobby de edição refeito; publicado 08/10 00:30 UTC. Commits 39d2651, 73ad020
