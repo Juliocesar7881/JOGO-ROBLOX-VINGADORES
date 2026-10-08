@@ -177,3 +177,10 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M16.10 O chat do Roblox (à direita, no meio) se esconde enquanto uma janela do jogo está aberta (painel, ficha, resultado, cartas, evolução da base, carta da torre) e volta ao fechar; antes cobria o filtro "Mítico" e o cartão da torre.
 - [x] M16.11 Zona AFK: o aviso "+5 Ouro por minuto • próximo em…" ficava atrás do cartão de objetivo; agora desce para baixo dele, na pele das janelas, com título e detalhe maiores (conferido levando o personagem à câmara no Studio).
 - [x] M16.12 Avisos de interação no idioma do jogador: o servidor escrevia "Abrir / Open"; agora o cliente mostra só a metade certa, e lojas e salões de invocação levam nome em português e inglês (placa e aviso).
+
+## M17 — Próximos passos, 07/10 (abertos pela revisão do Studio)
+
+- [ ] M17.1 Ficha da partida: a árvore é larga e baixa, então fica pequena na janela de 560 px; desenhar em duas fileiras (Fortuna em cima, Comando embaixo) ou rolar na horizontal com hexágonos de pelo menos 40 px. Aceite: captura da cena `sheet` com hexágonos legíveis.
+- [ ] M17.2 Vitrine de chefes de frente lê pouco: virar a câmera da vitrine 3/4 (`tools/studio_showroom.py`) e conferir se cada chefe tem silhueta própria; ajustar o que parecer infectado comum. Aceite: captura `bosses` 3/4.
+- [ ] M17.3 Teste de cliente para o chat que se esconde com janela aberta (o dublê ainda não tem TextChatService). Aceite: `client_boot.spec` abre um painel e confere `ChatWindowConfiguration.Enabled == false`, fecha e confere `true`.
+- [!] M17.4 Depende do dono: trilha `battle` bloqueada pela moderação (reenvio pede a declaração de autoria no Studio); produtos restantes no Creator Hub (aviso de termos); decisão de IP do visual da liga e do nome "Capitão Men"; teste em aparelho real.
