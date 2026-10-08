@@ -401,3 +401,8 @@ dependências em [`REFINAMENTO_LOBBY_AUDIO_2026-10-08.md`](REFINAMENTO_LOBBY_AUD
 O mix atual usa os assets já disponíveis. Os 12 WAVs em
 `assets/audio/refined/` estão produzidos e verificados, mas aguardam envio pelo
 dono, declaração de autoria e moderação; não são gravações já publicadas.
+
+Código `ba3bd26` enviado ao `main`, sincronizado seletivamente e publicado no
+mesmo lugar da equipe em 08/10/2026 às 13:17:38 local (16:17:38 UTC), com
+`PublishSuccessful` confirmado no log. Studio em modo de edição. Suíte
+completa verde; travessia, loja física e carga de combate conferidas no Studio.

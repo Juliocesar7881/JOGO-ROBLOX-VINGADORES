@@ -4,6 +4,14 @@ Pedido: corrigir áreas incompletas, o vazio no mar, construções básicas e so
 repetitivos. Trabalho no repositório `main` e no lugar da equipe
 `97132875544830`, mantendo as regras de partidas, progressão e monetização.
 
+**Entrega:** código `ba3bd26` enviado ao `main`; quatro módulos comparados
+com o repositório, sincronização seletiva e lobby de edição refeito.
+Publicado no mesmo lugar da equipe em 08/10/2026 às **13:17:38 local
+(16:17:38 UTC)**. `PublishSuccessful` confirmado no log após o comando de
+publicação, com destino e modo de edição verificados. Acesso privado
+preservado; Studio deixado em edição. Evidência local:
+`test-results/lobby-audio-publication.txt`.
+
 ## Problemas e mudanças
 
 | Problema observado | Mudança | Evidência |
