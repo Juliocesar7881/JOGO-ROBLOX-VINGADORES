@@ -43,9 +43,11 @@ print("%s",string.format("frames=%%d fps=%%.1f p95=%%.2fms memory=%%.1fMB",#samp
 
     measure('BASELINE')
     review.command(guard + 'assert(r:InvokeServer("StudioReview",{command="crowd",arg=80}).ok)', 'REFINE_CROWD')
-    review.powershell('-File', str(review.ROOT / 'tools' / 'capture_studio.ps1'), '-WindowHandle', str(args.window_handle),
-                      '-OutputPath', 'test-results/refinement/combat-event.png', '-FrameCount', '3', '-FrameIntervalMs', '33')
     measure('CROWD80')
+    review.command(f'{player}:SetAttribute("DoomReviewFocus","tower")', 'REFINE_COMBAT_CAMERA')
+    frames = review.powershell('-File', str(review.ROOT / 'tools' / 'capture_studio.ps1'), '-WindowHandle', str(args.window_handle),
+                              '-OutputPath', 'test-results/refinement/combat-event.png', '-FrameCount', '3', '-FrameIntervalMs', '33')
+    print(frames.stdout, end='', flush=True)
     snapshot = review.query(f'{request}:InvokeServer("Sync",{{}}).data.phase')
     print('Final live phase:', snapshot, flush=True)
 

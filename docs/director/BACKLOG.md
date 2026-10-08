@@ -180,7 +180,15 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 
 ## M17 — Próximos passos, 07/10 (abertos pela revisão do Studio)
 
-- [ ] M17.1 Ficha da partida: a árvore é larga e baixa, então fica pequena na janela de 560 px; desenhar em duas fileiras (Fortuna em cima, Comando embaixo) ou rolar na horizontal com hexágonos de pelo menos 40 px. Aceite: captura da cena `sheet` com hexágonos legíveis.
-- [ ] M17.2 Vitrine de chefes de frente lê pouco: virar a câmera da vitrine 3/4 (`tools/studio_showroom.py`) e conferir se cada chefe tem silhueta própria; ajustar o que parecer infectado comum. Aceite: captura `bosses` 3/4.
+- [x] M17.1 Ficha da partida: hexágonos com raio mínimo de 40 px, árvore rolável sem coordenadas negativas e seleção preservando rolagem. Cena `sheet` conferida no Studio em PC, horizontal e vertical, português e inglês.
+- [x] M17.2 Vitrine em 3/4, seis chefes conferidos na mesma câmera/iluminação; cauda do Gekko, ombreiras do Comandante Sombra e espinhas do Megabruto reforçadas. Orçamento do world boot aprovado.
 - [x] M17.3 (dublê de TextChatService no client_boot; abre Missões, confere o chat escondido, fecha e confere de volta) Teste de cliente para o chat que se esconde com janela aberta (o dublê ainda não tem TextChatService). Aceite: `client_boot.spec` abre um painel e confere `ChatWindowConfiguration.Enabled == false`, fecha e confere `true`.
 - [!] M17.4 Depende do dono: trilha `battle` bloqueada pela moderação (reenvio pede a declaração de autoria no Studio); produtos restantes no Creator Hub (aviso de termos); decisão de IP do visual da liga e do nome "Capitão Men"; teste em aparelho real.
+
+- [x] M17.5 Dica por toque longo: 0,4 s abre, soltar fecha, arrastar cancela, toque curto seleciona e mouse preservado. Entrada de toque simulada nos seis roteiros completos; aparelho físico segue em M17.4.
+- [x] M17.6 `server:unlock` exclusivo da memória do Studio, com equipe e desbloqueios preservados no salvamento; testes de nuvem/memória e contrato aprovados. Partida nova de Cartas em `gamma` iniciada no Studio com cinco torres; nenhum desbloqueio de nuvem.
+- [x] M17.7 Cenas `afk` e `prompt` usam os componentes reais. Renda, sessão e salvamento completos; viagem em linha própria, abaixo do objetivo após o layout. PC e celular vertical/horizontal conferidos sem cortes.
+- [x] M17.8 Seis processos independentes executam todos os roteiros do cliente, sem remover cobertura. Rodada medida em 110,9 s; `--workers 1` mantém execução serial disponível.
+- [x] M17.9 Dano efetivo e abates por torre no cartão, acertos fortes com escala limitada e indicador animado da melhoria; respeitam Menos efeitos e limites de efeitos. Testes aprovados e três capturas de combate real. PC no Studio: 60 FPS antes/depois de adicionar 80 inimigos (114 no snapshot), p95 de 17,62/18,17 ms; celular e sessão prolongada continuam pendentes.
+- [x] M17.10 Varredura das 37 cenas em português (PC, vertical, horizontal) e inglês (PC, horizontal). Corrigidos cortes da loja/ficha e contaminação das cenas pela animação de baús; telas afetadas repetidas com saída 0. Revisão agora falha ao encontrar corte ou erro de script.
+- [x] M17.11 Última correção de `PlayerService.luau` sincronizada seletivamente, lobby de edição refeito e publicação no lugar da equipe `97132875544830` confirmada por `PublishSuccessful` em 08/10/2026 às 13:16:21 UTC (10:16 local), após o dono confirmar que o PC estava livre. Acesso e colaboradores preservados.
