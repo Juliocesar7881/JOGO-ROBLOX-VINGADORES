@@ -84,7 +84,13 @@ viralização por alterar efeitos ou miniaturas.
 
 Suíte completa verde: 6.137 verificações do mundo, 6.704 de layout, seis
 roteiros completos de cliente e demais testes de servidor, regras e áudio.
-Lobby com **4.476 peças**, abaixo do teto de 4.500. Revisão do Studio em PC,
+Lobby final com **4.362 peças no dublê e 4.455 no Studio**, abaixo do teto de
+4.500. A primeira reconstrução final revelou 4.569 peças reais, apesar de
+4.476 no dublê. Foram reduzidos os parafusos decorativos dos portais e
+espaçadas quatro flores por canteiro; suportes e circulação preservados.
+`studio_sync.py --preview-lobby` agora recusa uma reconstrução acima do teto,
+em vez de considerar suficiente apenas a contagem automatizada.
+Revisão do Studio em PC,
 667x375 e 375x667; inglês também em PC e 667x375. Sem cortes de texto ou
 erros Luau detectados nessas rodadas. Emulação de layout não é aparelho real.
 

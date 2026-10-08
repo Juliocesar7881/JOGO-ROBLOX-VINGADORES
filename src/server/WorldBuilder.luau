@@ -1952,8 +1952,9 @@ function Kit.flowers(parent, pos, colors)
 		local a = index * 2.1
 		Kit.blob(parent, "BedTuft", Vector3.new(1.3, 0.9, 1.3), CFrame.new(pos + Vector3.new(math.cos(a) * 1.2, 0.8, math.sin(a) * 0.8)), HQ.leaf:Lerp(HQ.leafLight, 0.3), Enum.Material.Grass)
 	end
-	for index = 1, 6 do
-		local a = index * 1.05 + 0.3
+	-- Four separated blooms read as flowers rather than a packed bead cluster.
+	for index = 1, 4 do
+		local a = index * math.pi / 2 + 0.3
 		local at = pos + Vector3.new(math.cos(a) * 1.3, 0, math.sin(a) * 0.85)
 		local height = 1.5 + (index % 3) * 0.45
 		Kit.column(parent, "BlossomStem", at + Vector3.new(0, 0.5, 0), height - 0.5, 0.14, HQ.leaf:Lerp(Color3.new(0, 0, 0), 0.25), Enum.Material.SmoothPlastic)
@@ -2631,8 +2632,9 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 		local frame=artPart(model,"PortalFrame",Vector3.new(0.9,7.7,7.7),door,HQ.navy,Enum.Material.Metal)
 		frame.Shape=Enum.PartType.Cylinder
 		frame.CastShadow=true
-		for stud=0,3 do
-			local angle=stud*math.pi/2+math.pi/4
+		-- Two mounting bolts leave the silhouette of the ring clear.
+		for stud=0,1 do
+			local angle=stud*math.pi+math.pi/4
 			Kit.blob(model,"PortalStud",Vector3.new(0.5,0.5,0.5),at(dx+math.cos(angle)*3.55,4.7+math.sin(angle)*3.55,-3.32),HQ.gold,Enum.Material.Metal)
 		end
 		local rim=artPart(model,"PortalRim",Vector3.new(0.96,6.9,6.9),door,tint,Enum.Material.Neon)
