@@ -1890,15 +1890,23 @@ local function updateAfkBanner()
 		return
 	end
 	if not kit.afkBanner then
-		kit.afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(math.min(460, screenSize().X - 24), 58), BackgroundColor3 = C.background}, C.gold)
-		kit.afkTitle = UI.label(kit.afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 28), TextSize = 18, Font = Enum.Font.FredokaOne, TextXAlignment = Enum.TextXAlignment.Center})
+		kit.afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(math.min(500, screenSize().X - 24), 66), BackgroundColor3 = C.background}, C.gold)
+		UI.windowSkin(kit.afkBanner, C.gold)
+		kit.afkTitle = UI.fit(UI.label(kit.afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -236, 0, 30), TextSize = 22, Font = Enum.Font.FredokaOne, TextXAlignment = Enum.TextXAlignment.Left}), 12)
 		-- The dedicated AFK place, when the game has one configured.
 		afk.travel = UI.button(kit.afkBanner, T("Servidor AFK", "AFK server"), function() act("EnterAfkServer", {}) end, {Name = "AfkServerGo", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -104, 0.5, 0), Size = UDim2.fromOffset(120, 44), BackgroundColor3 = C.violet, TextSize = 12, Visible = false})
 		UI.button(kit.afkBanner, T("Economia", "Saver"), function() setAfkEco(true) end, {Name = "AfkEcoOn", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(92, 44), BackgroundColor3 = C.blue, TextSize = 13})
-		kit.afkDetail = UI.label(kit.afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 22), TextSize = 13, Font = Enum.Font.BuilderSansExtraBold, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
+		kit.afkDetail = UI.fit(UI.label(kit.afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -120, 0, 24), TextSize = 16, Font = Enum.Font.BuilderSansExtraBold, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Left}), 10)
 	end
 	local tint = UI.color(farm.color)
 	kit.afkBanner.Visible = true
+	-- Below the objective card when one is up (they shared the top centre).
+	local card = main:FindFirstChild("TutorialCard") or gui:FindFirstChild("TutorialCard", true)
+	local below = 58
+	if card and card.Visible and card.AbsoluteSize.Y > 0 then
+		below = math.max(58, math.floor(UI.toLogical(card.AbsolutePosition.Y + card.AbsoluteSize.Y) + 8))
+	end
+	kit.afkBanner.Position = UDim2.new(0.5, 0, 0, below)
 	kit.afkTitle.Text = Catalog.Upper(L(farm.name))
 	kit.afkTitle.TextColor3 = tint
 	-- Session clock, what has really been paid, and whether the last minute is
