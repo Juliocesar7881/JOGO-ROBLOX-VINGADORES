@@ -90,6 +90,8 @@ Lobby final com **4.362 peças no dublê e 4.455 no Studio**, abaixo do teto de
 espaçadas quatro flores por canteiro; suportes e circulação preservados.
 `studio_sync.py --preview-lobby` agora recusa uma reconstrução acima do teto,
 em vez de considerar suficiente apenas a contagem automatizada.
+O preview também atualiza o foco da câmera: o foco antigo da vitrine podia
+deixar o editor olhando para o mar, apesar de o lobby estar presente.
 Revisão do Studio em PC,
 667x375 e 375x667; inglês também em PC e 667x375. Sem cortes de texto ou
 erros Luau detectados nessas rodadas. Emulação de layout não é aparelho real.
@@ -111,4 +113,12 @@ modelos 3/5, sensação visual de combate 3/5, desempenho de PC 4/5.
 Acabamento e peso dos ataques continuam em M22.7/M22.9. Escuta, marca e
 retenção não recebem nota conclusiva nesta entrega.
 
-Publicação será registrada após confirmação no log do lugar da equipe.
+Código `ead8ccd` e ajuste de orçamento `bb10c95` no `main`. Seis módulos
+comparados e sincronizados seletivamente; lobby de edição reconstruído e
+conferido com 4.455 peças. Publicação no **mesmo lugar da equipe
+97132875544830**, confirmada por `Go to PublishSuccessful` em
+08/10/2026 às **18:11:50 local / 21:11:50 UTC**. Inclui o lote anterior
+`fc35568`, cuja publicação estava pendente. Acesso e colaboradores preservados.
+
+Studio deixado em modo de edição, sem vitrine temporária. Capturas e logs
+ficam em `test-results/refinement/` e `test-results/refine-*.txt`.

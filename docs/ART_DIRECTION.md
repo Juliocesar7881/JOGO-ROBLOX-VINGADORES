@@ -38,7 +38,7 @@ gravações nesta rodada. Tutorial por setas, sem mascote ou personagem guia.
 | Função | Tratamento |
 |---|---|
 | Pele e uniformes | Cores sólidas, SmoothPlastic, pequenos detalhes de acabamento |
-| Armadura e arma | Metal; reflexo controlado, atualmente até 0,06 nas armaduras brilhantes |
+| Armadura e arma | Metal; reflexo controlado, 0,06 no corpo dos heróis brilhantes |
 | Orgânico e rocha | Wood e Slate aplicados por personagem, com facetas e formas próprias |
 | Arquitetura | Concreto, pedra e metal, com texturas em escala coerente |
 | Vidro | Glass transparente; sem transformar paredes e cercas em lâmpadas |

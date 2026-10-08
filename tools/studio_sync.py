@@ -114,6 +114,8 @@ local base = workspace:FindFirstChild("EditorBaseplate")
 if base then base.Transparency, base.CanCollide = 1, false end
 local hub = world.lobbySpawn
 local camera = workspace.CurrentCamera
+-- The editor re-aims Fixed cameras at Focus (a showroom can leave it far away).
+camera.Focus = CFrame.new(hub)
 camera.CFrame = CFrame.lookAt(hub + Vector3.new(0, 230, -200), hub)
 local parts = 0
 for _, item in ipairs(workspace.DoomLobby:GetDescendants()) do if item:IsA("BasePart") then parts += 1 end end

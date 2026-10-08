@@ -433,3 +433,10 @@ Suíte completa verde, revisões em PC e layouts de celular/inglês sem cortes
 detectados. Cartas/Complexo Gama com cinco torres e 114 inimigos: 60 FPS no
 PC do dono. Modelos e peso dos ataques ainda 3/5, com exemplos concretos na
 fila; não confundir inspeção de todo o catálogo com arte final aprovada.
+
+Código `ead8ccd`/`bb10c95` no `main`, seis módulos sincronizados
+seletivamente. Publicado no mesmo lugar da equipe `97132875544830` às
+18:11:50 local (21:11:50 UTC), 08/10/2026, com sucesso confirmado no log.
+Lobby salvo com 4.455 peças, abaixo do teto de 4.500; a sincronização agora
+confere esse orçamento também no Studio. Inclui a publicação pendente de
+`fc35568`. Studio em edição; dependências de conta e aparelhos preservadas.
