@@ -212,3 +212,9 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M20.2 Recompensas na mesma roleta da compra; todos os prêmios de lotes preservados e cartão imediato, sem segunda abertura. Testes do cliente em seis formatos aprovados.
 - [x] M20.3 Trilha não carregada usa arranjo de ação com coro menor e percussão dos próprios áudios; Música/Efeitos independentes e lobby mantido. Três stems carregados durante partida real, lobby parado e encerramento no resultado conferidos. Testes de áudio aprovados; avaliação auditiva pelo jogador pendente.
 - [x] M20.4 Código `7e8b8b6` no main, seis fontes sincronizadas seletivamente e 36 fontes conferidas. Contornos em 46 capturas, baú gratuito real e música carregada na partida aprovados; lobby de edição refeito. Publicação no lugar `97132875544830` confirmada por `PublishSuccessful` às 17:05:04 UTC (14:05 local), 08/10/2026. Registro em `docs/REFINAMENTO_HUD_BAUS_2026-10-08.md`.
+
+## M21 — Núcleo da base e aviso na partida, 08/10
+
+- [x] M21.1 Núcleo da base sem laje neon: a placa ciano de 14 studs (que virava uma mancha estourada vista da câmera, captura 05-live 08/10 14:10) virou borda acesa fina; capas dos pilares em metal com faixa acesa. Aviso 'Evoluir base' 22% menor durante a partida para não cobrir o campo. Commit fc35568, conferido no Studio (03-live).
+- [ ] M21.2 Publicar fc35568 no lugar 97132875544830 (Studio já sincronizado por inteiro em 08/10 14:2x; publicação adiada porque o dono estava usando o Studio).
+- [ ] M21.3 Cenas fx:lasers/fx:powers não geraram captura quando pedidas logo após server:give; investigar no studio_review (precisa de torres em campo?) e revisar o combate.
