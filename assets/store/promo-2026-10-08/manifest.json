@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-08",
+  "generator": "Built-in image_gen",
+  "kind": "promotional illustration",
+  "experience": "Multiverse Doomsday Tower Defense",
+  "universeId": 10768165352,
+  "referenceOrigin": "User-provided screenshots of Roblox discovery thumbnails and local assets/store/store-heroes.png; no third-party artwork copied.",
+  "files": [
+    {
+      "file": "icon.png",
+      "purpose": "experience icon",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 1991728,
+      "sha256": "055df9219db26b6037f0b58b3dc6a062d003987cf66ac593b6a7f026bae20d7c"
+    },
+    {
+      "file": "thumbnail.png",
+      "purpose": "experience thumbnail",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2273450,
+      "sha256": "85b04649d06a00ee705cc9bac70fbd9a49e14889963019d38cd57446101e9638"
+    }
+  ]
+}
