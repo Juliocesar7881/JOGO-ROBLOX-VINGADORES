@@ -61,13 +61,18 @@ function MatchHud.new(ctx)
 		local levelText = T("Melhoria ", "Upgrade ") .. tostring(tower.level) .. "/5" .. (tower.branch and "  •  " .. L(def.branches[tower.branch].name) or "")
 		UI.closeButton(panel, closeTowerPanel, {Name="CloseTower",Position = UDim2.fromOffset(w - (wide and 46 or 52), wide and 4 or 10), Size = UDim2.fromOffset(wide and 40 or 42, wide and 40 or 42), TextSize = 24})
 		local actionY, actionH, rowY, rowH
+		kit.towerSeenLevels = kit.towerSeenLevels or {}
+		local previousLevel = kit.towerSeenLevels[tower.id] or tower.level
+		kit.towerSeenLevels[tower.id] = tower.level
+		local totals = T("Dano total ", "Total damage ") .. number(tower.totalDamage or 0) .. "  •  " .. T("Abates ", "Kills ") .. number(tower.kills or 0)
+		ctx.refs().towerTotals = UI.oneLine(UI.label(panel, totals, {Name = "TowerTotals", Position = UDim2.fromOffset(12, wide and 23 or 82), Size = UDim2.fromOffset(w - (wide and 66 or 24), wide and 13 or 16), TextSize = wide and 11 or 14, Font = UI.Fonts.body, TextColor3 = C.cream}), 9)
 		-- Every stat reads as now -> after (the server's preview of the next
 		-- upgrade), in text a thumb-length away can still read.
 		if wide then
 			local nameW = math.floor((w - 66) * 0.55)
-			UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 6), Size = UDim2.fromOffset(nameW, 22), TextSize = 16, Font = UI.Fonts.display, TextColor3 = colorFor(tower.heroId), TextTruncate = Enum.TextTruncate.AtEnd})
-			UI.label(panel, levelText, {Position = UDim2.fromOffset(12 + nameW + 4, 8), Size = UDim2.fromOffset(w - 66 - nameW - 4, 18), TextSize = 12, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd})
-			ctx.refs().towerStats = UI.label(panel, "", {Name = "TowerStats", Position = UDim2.fromOffset(12, 29), Size = UDim2.fromOffset(w - 24, 18), TextSize = 13, Font = UI.Fonts.display, RichText = true, TextTruncate = Enum.TextTruncate.AtEnd})
+			UI.oneLine(UI.label(panel, heroName(tower.heroId), {Position = UDim2.fromOffset(12, 3), Size = UDim2.fromOffset(nameW, 19), TextSize = 16, Font = UI.Fonts.display, TextColor3 = colorFor(tower.heroId)}), 10)
+			UI.oneLine(UI.label(panel, levelText, {Position = UDim2.fromOffset(12 + nameW + 4, 5), Size = UDim2.fromOffset(w - 66 - nameW - 4, 16), TextSize = 12, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Right}), 9)
+			ctx.refs().towerStats = UI.oneLine(UI.label(panel, "", {Name = "TowerStats", Position = UDim2.fromOffset(12, 37), Size = UDim2.fromOffset(w - 24, 12), TextSize = 11, Font = UI.Fonts.display, RichText = true}), 9)
 			actionY, actionH, rowY, rowH = 50, 40, 94, 34
 		else
 			-- The tall panel, like the big games' unit cards: the hero on its rarity
@@ -86,9 +91,13 @@ function MatchHud.new(ctx)
 				local mark = UI.frame(panel, {Name = "LevelPip" .. pip, Position = UDim2.fromOffset(92 + (pip - 1) * 26, 66), Size = UDim2.fromOffset(22, 10), BackgroundColor3 = lit and (pip == 5 and C.violet or C.gold) or UI.Skin.slotLine})
 				UI.corner(mark, 5)
 				UI.stroke(mark, C.ink, 1.5)
+				if pip == tower.level and tower.level > previousLevel and not (profile().settings and profile().settings.lowFX) then
+					local pop = UI.create("UIScale", {Name = "UpgradePop", Scale = 1.5}, mark)
+					game:GetService("TweenService"):Create(pop, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+				end
 			end
 			-- The table: header, value now, and the value after the next upgrade.
-			local grid = UI.frame(panel, {Name = "TowerTable", Position = UDim2.fromOffset(12, 92), Size = UDim2.fromOffset(w - 24, 96), BackgroundColor3 = UI.Skin.slot})
+			local grid = UI.frame(panel, {Name = "TowerTable", Position = UDim2.fromOffset(12, 100), Size = UDim2.fromOffset(w - 24, 88), BackgroundColor3 = UI.Skin.slot})
 			UI.corner(grid, 12)
 			UI.stroke(grid, UI.Skin.slotLine, 2)
 			local cells = {}

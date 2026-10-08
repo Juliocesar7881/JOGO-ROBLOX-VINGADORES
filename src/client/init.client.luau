@@ -1461,6 +1461,7 @@ updateMatch = function()
 			if refs.towerKey ~= key then refs.towerKey = key; matchHud.towerPanel(tower) end
 			if refs.towerRefresh then refs.towerRefresh(tower)
 			elseif refs.towerStats then refs.towerStats.Text = matchHud.towerStatsText(tower, refs.towerWide) end
+			if refs.towerTotals then refs.towerTotals.Text = T("Dano total ", "Total damage ") .. number(tower.totalDamage or 0) .. "  •  " .. T("Abates ", "Kills ") .. number(tower.kills or 0) end
 			if typeof(tower.position) == "Vector3" then towerRing = rangeRing(towerRing, tower.position, tower.range or 20, colorFor(tower.heroId)) end
 		end
 	end
@@ -1773,6 +1774,7 @@ end)
 -- or tablet keeps Roblox's prompt, whose button is the proven tap target.
 -- Every prompt here is instant (no hold), so there is no progress ring.
 local customPrompts = not (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+kit.interactionHud = require(script:WaitForChild("InteractionHud"))
 local promptViews = {}
 local function stylePrompt(prompt)
 	if customPrompts then pcall(function() prompt.Style = Enum.ProximityPromptStyle.Custom end) end
@@ -1793,20 +1795,12 @@ local function showPrompt(prompt, inputType)
 	local gui = Instance.new("BillboardGui")
 	gui.Name, gui.AlwaysOnTop, gui.LightInfluence, gui.Active = "DoomPrompt", true, 0, true
 	gui.Size, gui.StudsOffset, gui.Adornee = UDim2.fromOffset(270, 66), Vector3.new(0, 0.6, 0), adornee
-	local panel = UI.roundFrame(gui, {Name = "PromptPanel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background}, C.gold)
-	UI.stroke(panel, C.gold, 2.5)
-	local cap = UI.frame(panel, {Name = "PromptKey", Position = UDim2.fromOffset(9, 9), Size = UDim2.fromOffset(48, 48), BackgroundColor3 = C.gold})
-	UI.corner(cap, 12)
-	UI.stroke(cap, C.ink, 2.5)
-	UI.label(cap, key, {Size = UDim2.fromScale(1, 1), TextSize = #key > 1 and 18 or 28, Font = UI.Fonts.display, TextColor3 = C.ink, TextXAlignment = Enum.TextXAlignment.Center})
-	UI.fit(UI.label(panel, prompt.ObjectText, {Name = "PromptObject", Position = UDim2.fromOffset(68, 6), Size = UDim2.new(1, -78, 0, 22), TextSize = 16, Font = UI.Fonts.display, TextColor3 = C.muted}), 10)
-	UI.fit(UI.label(panel, prompt.ActionText, {Name = "PromptAction", Position = UDim2.fromOffset(68, 28), Size = UDim2.new(1, -78, 0, 32), TextSize = 24, Font = UI.Fonts.display}), 12)
-	UI.button(panel, "", function()
+	local panel = kit.interactionHud.prompt(UI, gui, prompt.ObjectText, prompt.ActionText, key, function()
 		pcall(function()
 			prompt:InputHoldBegin()
 			task.delay(0.05, function() pcall(function() prompt:InputHoldEnd() end) end)
 		end)
-	end, {Name = "PromptHit", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 5})
+	end)
 	UI.scaleBillboard(gui)
 	-- It pops in, like every panel in the game.
 	local pop = UI.create("UIScale", {Scale = 0.7}, panel)
@@ -1896,13 +1890,10 @@ local function updateAfkBanner()
 		return
 	end
 	if not kit.afkBanner then
-		kit.afkBanner = UI.roundFrame(overlays, {Name = "AfkBanner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 58), Size = UDim2.fromOffset(math.min(500, screenSize().X - 24), 66), BackgroundColor3 = C.background}, C.gold)
-		UI.windowSkin(kit.afkBanner, C.gold)
-		kit.afkTitle = UI.fit(UI.label(kit.afkBanner, "", {Name = "AfkTitle", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -236, 0, 30), TextSize = 22, Font = Enum.Font.FredokaOne, TextXAlignment = Enum.TextXAlignment.Left}), 12)
-		-- The dedicated AFK place, when the game has one configured.
-		afk.travel = UI.button(kit.afkBanner, T("Servidor AFK", "AFK server"), function() act("EnterAfkServer", {}) end, {Name = "AfkServerGo", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -104, 0.5, 0), Size = UDim2.fromOffset(120, 44), BackgroundColor3 = C.violet, TextSize = 12, Visible = false})
-		UI.button(kit.afkBanner, T("Economia", "Saver"), function() setAfkEco(true) end, {Name = "AfkEcoOn", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = UDim2.fromOffset(92, 44), BackgroundColor3 = C.blue, TextSize = 13})
-		kit.afkDetail = UI.fit(UI.label(kit.afkBanner, "", {Name = "AfkDetail", Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -120, 0, 24), TextSize = 16, Font = Enum.Font.BuilderSansExtraBold, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Left}), 10)
+		kit.afkView = kit.interactionHud.afk(UI, overlays, math.min(500, screenSize().X - 24), T, {
+			travel = function() act("EnterAfkServer", {}) end, saver = function() setAfkEco(true) end,
+		})
+		kit.afkBanner, kit.afkTitle, kit.afkDetail, afk.travel = kit.afkView.banner, kit.afkView.title, kit.afkView.detail, kit.afkView.travel
 	end
 	local tint = UI.color(farm.color)
 	kit.afkBanner.Visible = true
@@ -1924,7 +1915,7 @@ local function updateAfkBanner()
 		.. "  •  " .. string.format("%d:%02d", math.floor(session / 60), session % 60)
 		.. "  •  +" .. number(earned) .. (kind == "gold" and T(" Ouro", " Gold") or " XP")
 		.. "  " .. (saving and T("salvando…", "saving…") or "✓")
-	if afk.travel then afk.travel.Visible = player:GetAttribute("AfkTravel") == true end
+	if kit.afkView then kit.afkView.setTravel(player:GetAttribute("AfkTravel") == true) end
 	-- On the AFK place the saving screen comes on by itself, once.
 	if player:GetAttribute("AfkServer") and not afk.autoEco then afk.autoEco = true; setAfkEco(true) end
 	if afk.text then
@@ -2083,7 +2074,7 @@ end)
 if RunService:IsStudio() and script:FindFirstChild("Review") then
 	local liveRequest = request
 	require(script.Review).start({
-		player = player, Catalog = Catalog, Rules = Rules, gui = gui, main = main, overlays = overlays, celebrate = celebrate,
+		player = player, Catalog = Catalog, Rules = Rules, UI = UI, interactionHud = kit.interactionHud, gui = gui, main = main, overlays = overlays, celebrate = celebrate,
 		getState = function() return state end,
 		setState = function(snapshot) state = snapshot end,
 		setLanguage = function(value) language = value end,
@@ -2095,6 +2086,7 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		chooseHero = chooseHero,
 		openBaseUpgrade = openBaseUpgrade,
 		openContext = function(kind, data) openContext(kind, data) end,
+		closeContext = closeContext,
 		hold = function(fn) reviewHold = fn end,
 		fire = function(event) effects:Handle(event) end,
 		-- Draw the HUD in a fixed phone-sized area (nil = the whole window, scaled).

@@ -574,7 +574,7 @@ end
 -- BillboardGui with no BasePart parent has no adornee and never renders, so
 -- each popup gets its own tiny invisible anchor part, exactly like coins.
 -- size: the text size the number settles at; it pops in half again bigger.
-function Effects:_popup(position, amount, color, prefix, size)
+function Effects:_popup(position, amount, color, prefix, size, strength)
 	if #self.popups >= 40 then return end
 	local pooled = table.remove(self.popupPool)
 	local anchor, label
@@ -591,10 +591,13 @@ function Effects:_popup(position, amount, color, prefix, size)
 		label = UI.label(billboard, "", {Size = UDim2.fromScale(1, 1), Font = UI.Fonts.display, TextSize = 18, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(24, 18, 30), TextXAlignment = Enum.TextXAlignment.Center})
 	end
 	size = size or 18
+	local state = self.getState()
+	local reduced = state and state.profile and state.profile.settings and state.profile.settings.lowFX
+	local pop = reduced and 0 or (0.18 + 0.32 * math.clamp(strength or 0, 0, 1))
 	label.Text, label.TextColor3, label.TextTransparency, label.TextStrokeTransparency = (prefix or "-") .. UI.format(math.max(1, math.floor(amount))), color, 0, 0
-	label.TextSize = math.floor(size * 1.5 * math.max(1, UI.screenScale or 1))
+	label.TextSize = math.floor(size * (1 + pop) * math.max(1, UI.screenScale or 1))
 	anchor.CFrame = CFrame.new(position + Vector3.new(math.random(-8, 8) * 0.1, 1, 0))
-	table.insert(self.popups, {anchor = anchor, label = label, born = self.clock, size = size, drift = math.random(-10, 10) * 0.12, expires = self.clock + 0.85})
+	table.insert(self.popups, {anchor = anchor, label = label, born = self.clock, size = size, pop = pop, drift = reduced and 0 or math.random(-10, 10) * 0.12, expires = self.clock + 0.85})
 end
 
 -- Shared, capped pool for every short-lived attack primitive. Each acquisition
@@ -1346,7 +1349,11 @@ function Effects:Handle(event)
 				local weight = math.clamp(dealt / math.max(enemy.maxHP or hp, 1) * 3, 0, 1)
 				current.hitWeight = weight
 				local tint = current.def.boss and UI.Colors.gold or Color3.fromRGB(255, 92, 76):Lerp(Color3.fromRGB(255, 236, 120), weight)
-				self:_popup(enemy.position + Vector3.new(0, 2.6 * current.scale, 0), dealt, tint, "-", math.floor(21 + weight * 15 + (current.def.boss and 5 or 0)))
+				-- Only the server's ten largest aggregated hits get a number.
+				-- The health tint still tells every hit, without eighty labels.
+				if event.hits and event.hits[enemy.id] then
+					self:_popup(enemy.position + Vector3.new(0, 2.6 * current.scale, 0), event.hits[enemy.id], tint, "-", math.floor(21 + weight * 15 + (current.def.boss and 5 or 0)), weight)
+				end
 			end
 			current.lastHP = hp
 			current.maxHP = enemy.maxHP or hp
@@ -1717,7 +1724,7 @@ function Effects:Step(dt)
 			-- Pop: it appears half again bigger and settles within 0.12 s.
 			local age = self.clock - (popup.born or self.clock)
 			local size = (popup.size or 18) * math.max(1, UI.screenScale or 1)
-			popup.label.TextSize = math.floor(size * (1 + 0.5 * math.max(0, 1 - age / 0.12)))
+			popup.label.TextSize = math.floor(size * (1 + (settings.lowFX and 0 or popup.pop or 0) * math.max(0, 1 - age / 0.16)))
 			local remaining = popup.expires - self.clock
 			popup.label.TextTransparency = remaining < 0.25 and (1 - remaining / 0.25) or 0
 			popup.label.TextStrokeTransparency = popup.label.TextTransparency

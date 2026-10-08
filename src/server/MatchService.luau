@@ -453,7 +453,9 @@ function Match:_damage(enemy, amount, tower, stats)
 	if enemy.vulnerableUntil and enemy.vulnerableUntil>self.elapsed then damage*=1+VULNERABLE_BONUS end
 	if enemy.shield>0 then local absorbed=math.min(damage,enemy.shield) enemy.shield-=absorbed damage-=absorbed end
 	local owner = tower and self.participants[tower.ownerId]
-	if owner then owner.damageDealt = (owner.damageDealt or 0) + math.max(0, math.min(damage, enemy.hp)) end
+	local dealt = math.max(0, math.min(damage, enemy.hp))
+	if owner then owner.damageDealt = (owner.damageDealt or 0) + dealt end
+	if tower and tower.id and tower.heroId then tower.totalDamage = (tower.totalDamage or 0) + dealt end
 	enemy.hp-=damage enemy.lastHit=self.elapsed
 	self:_recordHit(enemy, damage)
 	if enemy.regenUntil and enemy.regenUntil>self.elapsed then
@@ -463,6 +465,7 @@ function Match:_damage(enemy, amount, tower, stats)
 	if tower then self:_contribute(tower) end
 	if enemy.hp<=0 then
 		if owner then owner.kills = (owner.kills or 0) + 1 end
+		if tower and tower.id and tower.heroId then tower.kills = (tower.kills or 0) + 1 end
 		self.enemies[enemy.id]=nil self.alive-=1
 		self:_fx({kind="EnemyDown",id=enemy.id,enemyId=enemy.enemyId,position=enemy.position,boss=enemy.def.boss==true,split=enemy.def.split and true or nil})
 		-- The fragments wait for the end of the damage pass (see _flushSplits).
@@ -1595,7 +1598,7 @@ function Match:Handle(player,action,payload)
 		local valid,reason=self:_validBuild(payload.position)
 		if not valid then return refuse(reason or "bounds") end
 		local towerId=self:_nextId("t") local pos=Vector3.new(payload.position.X,0,payload.position.Z)
-		local tower={id=towerId,heroId=id,ownerId=player.UserId,position=pos,level=1,branch=nil,priority="First",invested=cost,nextAttack=0}
+		local tower={id=towerId,heroId=id,ownerId=player.UserId,position=pos,level=1,branch=nil,priority="First",invested=cost,nextAttack=0,totalDamage=0,kills=0}
 		tower.model=self.world:MakeTower(towerId,id,pos,player.UserId)
 		self.towers[towerId]=tower p.cash-=cost p.towerCount+=1
 		self:_fx({kind="Pulse",position=pos,radius=5,color=Color3.fromRGB(unpack(hero.color)),duration=0.45})
@@ -1677,6 +1680,7 @@ function Match:Snapshot(player)
 		local stats=self:_towerStats(t)
 		local preview=t.ownerId==player.UserId and self:_upgradePreview(t) or nil
 		table.insert(towers,{id=t.id,heroId=t.heroId,ownerId=t.ownerId,position=t.position,level=t.level,branch=t.branch,
+			totalDamage=math.floor(t.totalDamage or 0),kills=t.kills or 0,
 			priority=t.priority,invested=t.invested,damage=stats.damage,range=stats.range,rate=stats.rate,slow=stats.slow,splash=stats.splash,upgradeCost=stats.upgradeCost,
 			base=preview and statLine(self:_baseStats(t)) or nil,next=preview and preview.next or nil,branches=preview and preview.branches or nil,
 			stunned=(t.stunnedUntil or 0)>self.elapsed and math.ceil((t.stunnedUntil-self.elapsed)*10)/10 or nil})

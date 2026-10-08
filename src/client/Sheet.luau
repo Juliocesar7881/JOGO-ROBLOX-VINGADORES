@@ -90,6 +90,10 @@ function Sheet:_render()
 	local state = ctx.state()
 	local match = state and state.match
 	if not match then self:Close() return end
+	local oldBody = panel:FindFirstChild("SheetBody")
+	local outerPosition = oldBody and oldBody.CanvasPosition
+	local oldTree = oldBody and oldBody:FindFirstChild("TalentScroll", true)
+	local treePosition = oldTree and oldTree.CanvasPosition
 	for _, child in ipairs(panel:GetChildren()) do
 		if child.Name == "SheetTabs" or child.Name == "SheetBody" then child:Destroy() end
 	end
@@ -108,15 +112,16 @@ function Sheet:_render()
 		})
 	end
 	local body = UI.scroll(panel, { Name = "SheetBody", Position = UDim2.fromOffset(14, 98), Size = UDim2.new(1, -28, 1, -110), ZIndex = 47 })
-	UI.list(body, 10)
+	UI.list(body, 8)
 	self.body = body
 	if self.tab == "talents" then
 		local height = self.panelHeight or (panel.AbsoluteSize.Y > 0 and UI.toLogical(panel.AbsoluteSize.Y) or 540)
 		-- The tree fills the window: the info card under it needs about 130.
-		ctx.buildTalents(body, { readOnly = true, rerender = function() self:_render() end, canvasHeight = math.clamp(height - 250, 170, 420), canvasWidth = self.panelWidth and (self.panelWidth - 40) or nil })
+		ctx.buildTalents(body, { readOnly = true, rerender = function() self:_render() end, canvasHeight = math.clamp(height - 260, 100, 420), canvasWidth = self.panelWidth and (self.panelWidth - 40) or nil, canvasPosition = treePosition })
 	else
 		self:_cardsTab(body, match)
 	end
+	if outerPosition then body.CanvasPosition = outerPosition end
 end
 
 function Sheet:_cardsTab(body, match)

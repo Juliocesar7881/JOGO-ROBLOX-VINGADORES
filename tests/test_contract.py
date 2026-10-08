@@ -209,6 +209,21 @@ class ContractTests(unittest.TestCase):
         tail = BOOTSTRAP[BOOTSTRAP.index("game:BindToClose"):]
         self.assertLess(tail.index("match:Drain"), tail.index("profiles:Shutdown"))
 
+    def test_review_unlock_is_inside_the_studio_only_hook(self):
+        hook = BOOTSTRAP.index('if RunService:IsStudio() then\n\tlocal hook')
+        unlock = BOOTSTRAP.index('if command == "unlock"')
+        self.assertGreater(unlock, hook)
+        self.assertNotIn('"StudioUnlock"', BOOTSTRAP[:hook])
+        service = read("server/PlayerService.luau")
+        body = service[service.index("function PlayerService:StudioUnlock"):service.index("function PlayerService:Get(player)")]
+        self.assertIn("not self.memory", body)
+        self.assertNotIn("_transaction", body)
+        memory_edit = service[service.index("function PlayerService:_studioEdit"):service.index("function PlayerService:StudioGrant")]
+        self.assertIn("not self.memory", memory_edit)
+        self.assertIn("self.memoryProfiles", memory_edit)
+        self.assertIn("self:_withLock", memory_edit)
+        self.assertNotIn("self.store", memory_edit)
+
 
 class LoadingScreenContract(unittest.TestCase):
     """The game's own loading screen (ReplicatedFirst) covers a cold join."""

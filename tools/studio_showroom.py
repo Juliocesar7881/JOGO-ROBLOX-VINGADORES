@@ -70,7 +70,8 @@ local rows = math.ceil(#ids / perRow)
 local width = math.min(#ids, perRow) * spacing
 -- Frame the whole group: the wider of its width and a tall hero's height.
 local distance = (math.max(width, 14) * 0.95 + (rows - 1) * 10) * __ZOOM__
-local eye, look = Vector3.new(0, 4 + rows * 3 + distance * 0.12, ORIGIN_Z - distance), Vector3.new(0, 3.2 + rows, ORIGIN_Z + (rows - 1) * rowGap * 0.5)
+local look = Vector3.new(0, 3.2 + rows, ORIGIN_Z + (rows - 1) * rowGap * 0.5)
+local eye = look + Vector3.new(distance * math.sin(math.rad(35)), 4 + distance * 0.12, -distance * math.cos(math.rad(35)))
 -- Studio's editor camera re-aims at its Focus; set both.
 workspace.CurrentCamera.CFrame = CFrame.lookAt(eye, look)
 workspace.CurrentCamera.Focus = CFrame.new(look)
@@ -112,7 +113,8 @@ end
 local rows = math.ceil(#ids / perRow)
 local width = math.min(#ids, perRow) * spacing
 local distance = (math.max(width, 12) * 0.95 + (rows - 1) * 8) * __ZOOM__
-local eye, look = Vector3.new(0, 5 + rows * 3 + distance * 0.12, ORIGIN_Z - distance), Vector3.new(0, 2.5 + rows, ORIGIN_Z + (rows - 1) * rowGap * 0.5)
+local look = Vector3.new(0, 2.5 + rows, ORIGIN_Z + (rows - 1) * rowGap * 0.5)
+local eye = look + Vector3.new(distance * math.sin(math.rad(35)), 5 + distance * 0.12, -distance * math.cos(math.rad(35)))
 workspace.CurrentCamera.CFrame = CFrame.lookAt(eye, look)
 workspace.CurrentCamera.Focus = CFrame.new(look)
 print("__MARKER__", #ids)

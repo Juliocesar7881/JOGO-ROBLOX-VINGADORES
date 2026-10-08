@@ -951,10 +951,34 @@ local function session(screen)
 			hoverTarget.MouseLeave:Fire()
 			flush()
 			check(named(gui, "Tooltip") == nil, tag .. ": leaving the card closes the tooltip")
+			local finger = { UserInputType = Enum.UserInputType.Touch, UserInputState = Enum.UserInputState.Begin, Position = Vector3.new(screen.w / 2, screen.h / 2, 0) }
+			hoverTarget.InputBegan:Fire(finger)
+			frames(0.2, 1)
+			check(named(gui, "Tooltip") == nil, tag .. ": a quick touch does not open a tooltip")
+			frames(0.21, 1)
+			check(named(gui, "Tooltip") ~= nil, tag .. ": holding a hero for 0.4 seconds opens its tooltip")
+			local beforeHold = #actions
+			finger.UserInputState = Enum.UserInputState.End
+			input.InputEnded:Fire(finger)
+			hoverTarget.Activated:Fire(finger)
+			check(named(gui, "Tooltip") == nil and #actions == beforeHold, tag .. ": releasing a held card closes the tooltip without equipping it")
+			local swipe = { UserInputType = Enum.UserInputType.Touch, UserInputState = Enum.UserInputState.Begin, Position = finger.Position }
+			hoverTarget.InputBegan:Fire(swipe)
+			swipe.Position = swipe.Position + Vector3.new(0, 40, 0)
+			frames(0.5, 1)
+			check(named(gui, "Tooltip") == nil, tag .. ": scrolling a card cancels the hold")
+			input.InputEnded:Fire(swipe)
 		end
 		clickNamed("SquadSlot_1")
 		check(named(gui,"CancelLeaderPick")~=nil,tag..": highlighted first slot opens leader selection")
-		clickNamed("FormationHero_spiderman")
+		local tapTarget = named(gui, "FormationHero_spiderman")
+		local tap = { UserInputType = Enum.UserInputType.Touch, UserInputState = Enum.UserInputState.Begin, Position = v3(100, 100, 0) }
+		tapTarget.InputBegan:Fire(tap)
+		frames(0.1, 1)
+		tap.UserInputState = Enum.UserInputState.End
+		tapTarget.InputEnded:Fire(tap)
+		tapTarget.Activated:Fire(tap)
+		flush()
 		check(actionPayloads.SetLoadout.heroes[1]=="spiderman",tag..": collection directly sends the chosen leader")
 		check(actionPayloads.SetLoadout.heroes[2]=="ironman",tag..": changing leader preserves previous squad members")
 		-- A hero in the collection (down here) offers two choices; one in the team (up there) leaves at a tap.
@@ -1602,9 +1626,13 @@ local function session(screen)
 		check(named(gui, "SheetTab_talents") ~= nil and named(gui, "SheetTab_base") == nil and named(gui, "SheetTab_cards") == nil, tag .. ": tabs: talents only, no base (the agent upgrades it) and no cards outside the cards mode")
 		check(named(gui, "TalentReadOnlyNote") ~= nil, tag .. ": the talents say they only change in the lobby")
 		check(named(gui, "TalentNode_roundGold") ~= nil and named(gui, "TalentNode_globalMagnet") ~= nil, tag .. ": the whole tree is drawn, capstone included")
+		local treeScroll = named(gui, "TalentScroll")
+		check(treeScroll ~= nil and named(gui, "TalentNode_roundGold").Size.Y.Offset >= 70, tag .. ": the match tree scrolls with fingertip-sized hexagons")
+		if treeScroll then treeScroll.CanvasPosition = Vector2.new(70, 20) end
 		check(countNamed(gui, "UpgradeTalent_roundGold") == 0 and named(gui, "TalentOverview") == nil, tag .. ": nothing can be spent in a match")
 		check(countNamed(gui, "ResetTalents") == 0 and findButton(gui, "Redistribuir") == nil, tag .. ": and nothing can be reset")
 		clickNamed("TalentNode_globalMagnet")
+		check(named(gui, "TalentScroll").CanvasPosition == Vector2.new(70, 20), tag .. ": selecting a talent keeps the tree's scroll position")
 		local card = named(gui, "Talent_globalMagnet")
 		check(card ~= nil and string.find(named(card, "TalentNowNext").Text, "inativo", 1, true) ~= nil, tag .. ": a talent card says whether the capstone is active, got " .. tostring(card and named(card, "TalentNowNext").Text))
 		check(card ~= nil and named(card, "UpgradeTalent_globalMagnet") == nil, tag .. ": the card has no upgrade button")
@@ -1854,6 +1882,7 @@ local function session(screen)
 
 	step("the tower panel in every state", function()
 		check(selectTower("t1") ~= nil, tag .. ": an owned tower opens its panel in the " .. layout.towerVariant .. " slot")
+		check(named(gui, "TowerTotals") ~= nil and string.find(named(gui, "TowerTotals").Text, "Abates", 1, true) ~= nil, tag .. ": the tower card shows server damage and kills")
 		local upgradeLine = false
 		for _, item in ipairs(gui:GetDescendants()) do
 			if type(item.Text) == "string" and string.find(item.Text, "Melhoria 2/5", 1, true) then upgradeLine = true end
@@ -1870,6 +1899,15 @@ local function session(screen)
 		check(asked("UpgradeTower"), tag .. ": the upgrade button reaches the server")
 		click("Alvo:")
 		check(asked("SetPriority"), tag .. ": targeting cycles")
+		local evolved = matchSnapshot(profile, "Preparing")
+		for _, tower in ipairs(evolved.match.towers) do
+			if tower.id == "t1" then tower.level, tower.totalDamage, tower.kills = 3, 1500, 7 end
+		end
+		push(evolved)
+		check(string.find(named(gui, "TowerTotals").Text, "1.500", 1, true) ~= nil and string.find(named(gui, "TowerTotals").Text, "7", 1, true) ~= nil, tag .. ": tower totals update from the next server snapshot")
+		if layout.towerVariant == "tall" then
+			check(named(gui, "LevelPip3"):FindFirstChild("UpgradePop") ~= nil, tag .. ": the newly earned upgrade pip pops on the tower card")
+		end
 		check(selectTower("t2") ~= nil, tag .. ": a level 4 tower offers both specializations")
 		check(findButton(gui, "Precisão absoluta") ~= nil and findButton(gui, "Flechas explosivas") ~= nil, tag .. ": both branch buttons are shown")
 		local branchOne = named(gui, "TowerBranch1")
@@ -2305,9 +2343,14 @@ local function session(screen)
 		calm.settings.lowFX = true
 		push(matchSnapshot(calm, "Wave", { enemies = 1 }))
 		fx({ kind = "EnemySync", enemies = { { id = 9, enemyId = "runner", position = v3(0, 0, 0), hp = 30, maxHP = 36 } } })
-		fx({ kind = "EnemySync", enemies = { { id = 9, enemyId = "runner", position = v3(1, 0, 0), hp = 10, maxHP = 36 } } })
+		fx({ kind = "EnemySync", hits = { [9] = 20 }, enemies = { { id = 9, enemyId = "runner", position = v3(1, 0, 0), hp = 10, maxHP = 36 } } })
+		local damageLabel
+		for _, item in ipairs(workspace:FindFirstChild("DoomClientVisuals"):GetDescendants()) do if item:IsA("TextLabel") and item.Text == "-20" then damageLabel = item end end
+		check(damageLabel ~= nil, tag .. ": a confirmed strong hit keeps its number under reduced effects")
+		local calmSize = damageLabel and damageLabel.TextSize
 		fx({ kind = "Shot", from = v3(10, 4, 10), to = v3(0, 2, 0), color = Color3.fromRGB(1, 1, 1), towerId = "t2" })
 		frames(1 / 30, 5)
+		check(damageLabel and damageLabel.TextSize == calmSize, tag .. ": reduced effects removes the damage-number pop")
 	end)
 
 	--========================================================================
@@ -2452,6 +2495,11 @@ local function session(screen)
 				localPlayer:SetAttribute("DoomReview", stage)
 				flush(); advance(1); flush()
 			end
+			check(not overlays:FindFirstChild("ChestReel") and not overlays:FindFirstChild("ChestReveal"), tag .. ": the next fixture clears the chest sequence")
+			localPlayer:SetAttribute("DoomReview", "reel"); flush(); advance(1); flush()
+			localPlayer:SetAttribute("DoomReview", "afk"); flush(); advance(5); flush()
+			check(not overlays:FindFirstChild("ChestReel") and not overlays:FindFirstChild("ChestReveal"), tag .. ": an old reel never returns over the AFK fixture")
+			check(not gui:FindFirstChild("ContextPanel", true), tag .. ": the AFK fixture clears the previous hero window")
 			localPlayer:SetAttribute("DoomReviewSize", "667x375")
 			localPlayer:SetAttribute("DoomReview", "wave")
 			flush()
@@ -2468,7 +2516,8 @@ local function session(screen)
 	check(#prompts <= 1, tag .. ": purchases are only prompted when a button is actually pressed")
 end
 
-for _, screen in ipairs({
+local screenFilter = __SCREEN_FILTER__
+for index, screen in ipairs({
 	{ name = "android landscape", w = 640, h = 302 },
 	{ name = "iphone landscape", w = 754, h = 311 },
 	{ name = "laptop", w = 1280, h = 662 },
@@ -2476,8 +2525,10 @@ for _, screen in ipairs({
 	{ name = "desktop", w = 1920, h = 1022 },
 	{ name = "phone portrait", w = 375, h = 609 },
 }) do
-	print("--- " .. screen.name .. " ---")
-	session(screen)
+	if screenFilter == 0 or screenFilter == index then
+		print("--- " .. screen.name .. " ---")
+		session(screen)
+	end
 end
 
 print(string.format("%s client boot: %d checks, %d failures",

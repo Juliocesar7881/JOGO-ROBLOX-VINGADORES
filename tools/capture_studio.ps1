@@ -1,4 +1,5 @@
-param([string]$OutputPath = "test-results/studio.png", [long]$WindowHandle = 0)
+param([string]$OutputPath = "test-results/studio.png", [long]$WindowHandle = 0,
+  [ValidateRange(1,60)][int]$FrameCount = 1, [ValidateRange(0,1000)][int]$FrameIntervalMs = 33)
 Add-Type -AssemblyName System.Drawing
 Add-Type @'
 using System;
@@ -29,14 +30,22 @@ $captureHeight = $studioRect.Bottom - $studioRect.Top
 $captureBitmap = New-Object System.Drawing.Bitmap($captureWidth, $captureHeight)
 $captureGraphics = [System.Drawing.Graphics]::FromImage($captureBitmap)
 try {
+  $capturePath = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $OutputPath))
+  [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($capturePath)) | Out-Null
+  $clock = [System.Diagnostics.Stopwatch]::StartNew()
+  for ($frame = 1; $frame -le $FrameCount; $frame++) {
   $captureContext = $captureGraphics.GetHdc()
   try {
     if (-not [StudioWindow]::PrintWindow($studioWindow, $captureContext, 2)) { throw 'Unable to capture Studio window.' }
   } finally { $captureGraphics.ReleaseHdc($captureContext) }
-  $capturePath = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $OutputPath))
-  [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($capturePath)) | Out-Null
-  $captureBitmap.Save($capturePath, [System.Drawing.Imaging.ImageFormat]::Png)
-  Write-Output $capturePath
+  $framePath = $capturePath
+  if ($FrameCount -gt 1) {
+    $framePath = Join-Path ([System.IO.Path]::GetDirectoryName($capturePath)) (([System.IO.Path]::GetFileNameWithoutExtension($capturePath)) + ('-{0:d2}' -f $frame) + '.png')
+  }
+  $captureBitmap.Save($framePath, [System.Drawing.Imaging.ImageFormat]::Png)
+  if ($FrameCount -gt 1) { Write-Output ($framePath + ' elapsedMs=' + $clock.ElapsedMilliseconds) } else { Write-Output $framePath }
+  if ($frame -lt $FrameCount) { Start-Sleep -Milliseconds $FrameIntervalMs }
+  }
 } finally {
   $captureGraphics.Dispose()
   $captureBitmap.Dispose()

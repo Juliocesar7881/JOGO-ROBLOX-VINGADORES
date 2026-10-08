@@ -10,6 +10,9 @@ from pathlib import Path
 import argparse
 import subprocess
 import tempfile
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 IMMEDIATE = {"__STUBS__": "tests/roblox_stubs.luau"}
 LOADERS = {
@@ -43,6 +46,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--luau", type=Path, default=root / ".tools" / "luau" / "luau.exe")
     parser.add_argument("--keep", type=Path, help="Write the assembled script here for debugging")
+    parser.add_argument("--workers", type=int, default=min(6, os.cpu_count() or 2), help="Independent screen processes (all six screens always run)")
     args = parser.parse_args()
     if not args.luau.is_file():
         raise SystemExit("Luau CLI missing. Run tools/test.py or supply --luau <path>.")
@@ -61,13 +65,27 @@ def main() -> None:
         source = source.replace(token, loader(body))
 
     if args.keep:
-        args.keep.write_text(source, encoding="utf-8")
+        args.keep.write_text(source.replace("__SCREEN_FILTER__", "0"), encoding="utf-8")
 
     with tempfile.TemporaryDirectory(prefix="doomsday-client-boot-") as temporary:
-        script = Path(temporary) / "client.luau"
-        script.write_text(source, encoding="utf-8")
-        result = subprocess.run([str(args.luau), str(script)], cwd=root, check=False)
-        raise SystemExit(result.returncode)
+        scripts = []
+        for index in range(1, 7):
+            script = Path(temporary) / f"client-{index}.luau"
+            script.write_text(source.replace("__SCREEN_FILTER__", str(index)), encoding="utf-8")
+            scripts.append(script)
+        started = time.monotonic()
+        def run(script: Path):
+            return subprocess.run([str(args.luau), str(script)], cwd=root, check=False, capture_output=True, encoding="utf-8", errors="replace")
+        # Each Luau process has its own clock, services and GUI. The complete
+        # gameplay and layout script still runs at EVERY original screen size.
+        with ThreadPoolExecutor(max_workers=max(1, min(6, args.workers))) as pool:
+            results = list(pool.map(run, scripts))
+        for result in results:
+            print(result.stdout, end="")
+            if result.stderr:
+                print(result.stderr, end="")
+        print(f"Client boot: six complete screen runs in {time.monotonic() - started:.1f}s")
+        raise SystemExit(next((result.returncode for result in results if result.returncode), 0))
 
 
 if __name__ == "__main__":

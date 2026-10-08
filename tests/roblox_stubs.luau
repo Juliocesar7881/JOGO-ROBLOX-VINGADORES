@@ -522,6 +522,7 @@ local SIGNAL_NAMES = {
 	CharacterAdded = true, PlayerAdded = true, Activated = true, Heartbeat = true,
 	MouseButton1Down = true, MouseButton1Up = true, MouseLeave = true, MouseEnter = true,
 	DescendantAdded = true,
+	InputBegan = true, InputChanged = true, InputEnded = true, Destroying = true,
 }
 
 INSTANCE.__index = function(self, key)

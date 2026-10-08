@@ -666,6 +666,30 @@ end
 
 local function distanceBetween(a, b) return (a - b).Magnitude end
 
+print("--- authoritative tower combat totals ---")
+do
+	local match, player = stage()
+	local tower = place(match, player, "ironman")
+	local enemy = spawn(match, "brute", 0)
+	enemy.hp, enemy.shield = 100, 0
+	match:_damage(enemy, 35, tower, {trueDamage = true})
+	check(tower.totalDamage == 35 and tower.kills == 0, "a surviving target adds exact damage but no kill")
+	match:_damage(enemy, 1000, tower, {trueDamage = true})
+	check(tower.totalDamage == 100 and tower.kills == 1, "overkill counts only the health removed and one kill")
+	match:_damage(enemy, 1000, tower, {trueDamage = true})
+	check(tower.totalDamage == 100 and tower.kills == 1, "repeating damage on a dead enemy cannot duplicate totals")
+	local snapshot = match:Snapshot(player)
+	local replicated
+	for _, entry in ipairs(snapshot.towers) do if entry.id == tower.id then replicated = entry end end
+	check(replicated and replicated.totalDamage == 100 and replicated.kills == 1, "the real snapshot replicates the server's tower totals")
+	local shielded = spawn(match, "brute", 0)
+	shielded.hp, shielded.shield = 100, 50
+	match:_damage(shielded, 20, tower, {trueDamage = true})
+	check(tower.totalDamage == 100, "absorbed damage does not inflate health damage")
+	match:_damage(shielded, 10, {ownerId = player.UserId}, {trueDamage = true})
+	check(tower.totalDamage == 100, "base and soldier sources cannot add to an unrelated tower")
+end
+
 --==============================================================================
 -- Every hero ability, cast against real enemies
 --==============================================================================

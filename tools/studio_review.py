@@ -11,7 +11,7 @@ captures the window with PrintWindow and presses Stop. Scenes:
 
     <stage>            a fixture screen (see Review.STAGES); nothing reaches the server
     live               the real game as the server sends it
-    server:<command>   a Studio-only server scene: start <map> [mode] | give a,b,c (field these heroes) | spawn a,b |
+    server:<command>   a Studio-only server scene: unlock (memory profile only) | start <map> [mode] | give a,b,c (field these heroes) | spawn a,b |
                        crowd <n> | endwave [wave] | finish true|false | panel <name>
     wait:<seconds>     let the real game run before the next capture
     snap               capture what is on screen now (an animation in flight) without starting a scene
@@ -183,6 +183,11 @@ def drawable(path: Path) -> bool:
 
 
 def main() -> int:
+    # Windows' redirected stdout otherwise uses cp1252 and crashes while
+    # reporting a legitimate Portuguese line containing symbols such as ≈.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("scenes", nargs="+")
     parser.add_argument("--phone", action="store_true", help="also capture each fixture scene in a 667x375 area")
@@ -269,7 +274,7 @@ def main() -> int:
         print("Text overflow reported by Review.luau:")
         for line in overflow[-20:]:
             print("  " + line)
-    return 0
+    return 1 if errors or overflow else 0
 
 
 def scan_errors(origin: dict[Path, int]) -> list[str]:

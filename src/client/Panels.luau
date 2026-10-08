@@ -123,6 +123,7 @@ function Panels.new(ctx)
 		-- On a short screen the actions come right under a smaller showcase: the
 		-- panel opens on what you can do, and the numbers wait below.
 		local short = UI.sizeClass(screenSize().X, screenSize().Y).short
+		local narrowInfo = not short and screenSize().X < 600
 		local showcase = UI.row(body, short and 140 or 236)
 		UI.portraitStage(showcase,tint,{Name="HeroStage",Size=UDim2.new(0.42,0,1,0)})
 		-- The hero is alive on its stage: it breathes, shows its move every few
@@ -144,17 +145,17 @@ function Panels.new(ctx)
 		end
 		local info=UI.frame(showcase,{Position=UDim2.new(0.42,12,0,0),Size=UDim2.new(0.58,-12,1,0),BackgroundTransparency=1})
 		UI.pill(info,L(rarity.name),tint:Lerp(C.ink,0.2),{TextSize=16,Size=UDim2.fromOffset(0,28)})
-		UI.label(info,((owned and owned.shiny) and "◆ " or "")..L(def.name),{Name="HeroTitle",Position=UDim2.fromOffset(0,32),Size=UDim2.new(1,0,0,short and 36 or 44),TextSize=short and 26 or 34,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
-		if not short then UI.label(info,L(def.description),{Position=UDim2.fromOffset(0,80),Size=UDim2.new(1,0,0,62),TextSize=17,TextWrapped=true,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top}) end
+		UI.fit(UI.label(info,((owned and owned.shiny) and "◆ " or "")..L(def.name),{Name="HeroTitle",Position=UDim2.fromOffset(0,32),Size=UDim2.new(1,0,0,short and 36 or 44),TextSize=short and 26 or 34,Font=UI.Fonts.display,TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top}),14)
+		if not short then UI.fit(UI.label(info,L(def.description),{Position=UDim2.fromOffset(0,80),Size=UDim2.new(1,0,0,62),TextSize=17,TextWrapped=true,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top}),11) end
 		local price=UI.chip(info,number(def.cost)..T(" Ouro na partida"," Gold in battle"),C.ink,{Name="HeroPrice",Position=UDim2.fromOffset(0,short and 72 or 150),Size=UDim2.new(1,0,0,30),TextSize=17,TextColor3=C.gold})
 		UI.create("UISizeConstraint",{MaxSize=Vector2.new(230,30)},price)
 		UI.fit(price,11)
 		if owned then
 			local stars=math.clamp(owned.stars or 0,0,Catalog.Stars.max)
 			local rowY=short and 106 or 190
-			UI.label(info,T("Maestria ","Mastery ")..owned.level.."/20",{Position=UDim2.fromOffset(0,rowY),Size=UDim2.new(0.5,0,0,24),TextSize=17,Font=UI.Fonts.display,TextColor3=C.violet:Lerp(Color3.new(1,1,1),0.25)})
-			if not short then UI.label(info,T("Carta nv ","Card lv ")..(owned.rank or 1).."  •  "..(owned.copies or 0)..T(" cartas"," cards"),{Name="HeroCardSummary",Position=UDim2.fromOffset(238,153),Size=UDim2.new(1,-238,0,26),TextSize=17,Font=UI.Fonts.display,TextColor3=C.green}) end
-			UI.label(info,string.rep("★",stars)..string.rep("☆",Catalog.Stars.max-stars),{Name="HeroStars",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,rowY-2),Size=UDim2.new(0.5,0,0,28),TextSize=22,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Right})
+			UI.oneLine(UI.label(info,T("Maestria ","Mastery ")..owned.level.."/20",{Name="HeroMastery",Position=UDim2.fromOffset(0,rowY),Size=UDim2.new(narrowInfo and 1 or 0.5,0,0,24),TextSize=17,Font=UI.Fonts.display,TextColor3=C.violet:Lerp(Color3.new(1,1,1),0.25)}),11)
+			if not short then UI.fit(UI.label(narrowInfo and body or info,T("Carta nv ","Card lv ")..(owned.rank or 1).."  •  "..(owned.copies or 0)..T(" cartas"," cards"),{Name="HeroCardSummary",Position=UDim2.fromOffset(narrowInfo and 0 or 238,153),Size=UDim2.new(1,narrowInfo and -6 or -238,0,26),TextSize=17,Font=UI.Fonts.display,TextColor3=C.green}),11) end
+			UI.oneLine(UI.label(info,string.rep("★",stars)..string.rep("☆",Catalog.Stars.max-stars),{Name="HeroStars",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,narrowInfo and rowY+22 or rowY-2),Size=UDim2.new(narrowInfo and 1 or 0.5,0,0,28),TextSize=22,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=narrowInfo and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right}),12)
 		end
 		local function drawActions()
 			if owned then
@@ -524,7 +525,7 @@ function Panels.new(ctx)
 		heroPortrait(row,pack.heroId,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(104,116)})
 		UI.chip(row,T("Só uma vez","One time only"),C.red,{Position=UDim2.fromOffset(120,10),Size=UDim2.fromOffset(120,22),TextSize=12})
 		UI.label(row,Catalog.Upper(L(pack.name)),{Position=UDim2.fromOffset(120,34),Size=UDim2.new(1,-130,0,28),Font=UI.Fonts.display,TextSize=22,TextColor3=C.gold})
-		UI.label(row,L(Catalog.Heroes[pack.heroId].name).." + "..UI.format(pack.gold)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(120,60),Size=UDim2.new(1,-130,0,22),Font=UI.Fonts.display,TextSize=16})
+		UI.oneLine(UI.label(row,L(Catalog.Heroes[pack.heroId].name).." + "..UI.format(pack.gold)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(120,60),Size=UDim2.new(1,-130,0,22),Font=UI.Fonts.display,TextSize=16}),10)
 		local buy=UI.button(row,ready and ("R$ "..tostring(info.price)) or T("Carregando preço…","Loading price…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(0,120,1,-46),Size=UDim2.new(1,-132,0,40),BackgroundColor3=C.green,TextSize=17})
 		if not ready then UI.disabled(buy) end
 	end
@@ -562,7 +563,9 @@ function Panels.new(ctx)
 				local tint=group.kind=="hero" and UI.color(Catalog.Rarities[Catalog.Heroes[key].rarity].color) or group.kind=="pass" and C.green or C.gold
 				-- A short phone screen gets a slimmer row, so more than one product shows.
 				local slim=UI.sizeClass(screenSize().X,screenSize().Y).short
+				local narrowGold=group.kind=="product" and def.gold~=nil and not slim and screenSize().X<600
 				local rowH,artW,buttonH=slim and 96 or 150,slim and 74 or 118,slim and 38 or 50
+				if narrowGold then rowH=190 end
 				local topY=slim and 5 or 10
 				local row=UI.roundFrame(body,{Name="Product_"..key,Size=UDim2.new(1,-6,0,rowH),BackgroundColor3=UI.Skin.slot},tint)
 				-- A hero for sale tells its numbers on hover, like everywhere else.
@@ -576,6 +579,7 @@ function Panels.new(ctx)
 				else UI.illustration(art,group.kind=="pass" and "star" or "coin",C.gold,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(slim and 48 or 64,slim and 48 or 64)}) end
 				if group.kind=="hero" then UI.chip(row,Catalog.Upper(L(Catalog.Rarities[Catalog.Heroes[key].rarity].name)),tint,{Position=UDim2.fromOffset(left,topY),Size=UDim2.fromOffset(96,20),TextSize=12}) end
 				local isGold=group.kind=="product" and def.gold~=nil
+				local goldHeadingBottom=0
 				if isGold then
 					local badge=key==bestGold and {T("Melhor valor","Best value"),C.green} or def.popular and {T("Mais popular","Most popular"),C.coral} or nil
 					local used=0
@@ -586,11 +590,14 @@ function Panels.new(ctx)
 					-- The Gold per Robux comes from the price the platform reports.
 					local price=type(info)=="table" and tonumber(info.price) or def.price
 					if price and price>0 then
-						UI.label(row,T("≈ ","≈ ")..UI.format(math.floor(def.gold/price+0.5))..T(" Ouro por R$"," Gold per R$"),{Name="Value_"..key,Position=UDim2.fromOffset(left+used,topY),Size=UDim2.new(1,-left-used-12,0,20),TextSize=13,TextColor3=C.cream})
+						local valueY=topY+(narrowGold and badge and 22 or 0)
+						UI.fit(UI.label(row,T("≈ ","≈ ")..UI.format(math.floor(def.gold/price+0.5))..T(" Ouro por R$"," Gold per R$"),{Name="Value_"..key,Position=UDim2.fromOffset(left+(narrowGold and 0 or used),valueY),Size=UDim2.new(1,-left-(narrowGold and 64 or used+12),0,narrowGold and 26 or 20),TextSize=13,TextColor3=C.cream}),10)
+						goldHeadingBottom=valueY+26
 					end
 				end
 				local nameY=(group.kind=="hero" or isGold) and (slim and 25 or 32) or (slim and 8 or 12)
-				UI.label(row,L(def.name),{Name="ProductName",Position=UDim2.fromOffset(left,nameY),Size=UDim2.new(1,-left-64,0,slim and 22 or 30),TextWrapped=true,Font=UI.Fonts.display,TextSize=slim and 19 or 24})
+				if narrowGold then nameY=math.max(40,goldHeadingBottom+4) end
+				UI.fit(UI.label(row,L(def.name),{Name="ProductName",Position=UDim2.fromOffset(left,nameY),Size=UDim2.new(1,-left-64,0,slim and 22 or 30),TextWrapped=true,Font=UI.Fonts.display,TextSize=slim and 19 or 24}),12)
 				-- One line says what it is: a hero's numbers, a pass's or a pack's effect.
 				if not slim then
 					local line=""
@@ -600,7 +607,7 @@ function Panels.new(ctx)
 						line=T("Dano ","Damage ")..tostring(hero.damage).."  •  "..T("Alcance ","Range ")..tostring(hero.range).."  •  "..string.format("%.1f",perSecond)..T(" ataques/s"," hits/s")
 					elseif def.description then line=L(def.description)
 					elseif isGold then line=T("Ouro para abrir baús de heróis e bases","Gold to open hero and base chests") end
-					if line~="" then UI.label(row,line,{Name="ProductLine",Position=UDim2.fromOffset(left,nameY+30),Size=UDim2.new(1,-left-64,0,22),TextSize=16,TextColor3=C.muted,TextTruncate=Enum.TextTruncate.AtEnd}) end
+					if line~="" then UI.fit(UI.label(row,line,{Name="ProductLine",Position=UDim2.fromOffset(left,nameY+30),Size=UDim2.new(1,-left-(narrowGold and 12 or 64),0,32),TextSize=16,TextColor3=C.muted}),10) end
 				end
 				local cacheKey=group.kind..":"..key
 				local ready=type(info)=="table"
@@ -1272,7 +1279,7 @@ function Panels.new(ctx)
 		local stageW = readOnly and math.max(280, bodyW - 8) or screen.X
 		local stageH = readOnly and (options.canvasHeight or 300) or screen.Y
 		if readOnly then
-			UI.label(body, T("Seus talentos nesta partida. Só mudam no lobby.", "Your talents in this match. They only change in the lobby."), {Name = "TalentReadOnlyNote", Size = UDim2.new(1, -6, 0, 28), TextSize = 14, TextWrapped = true, TextColor3 = C.muted})
+			UI.fit(UI.label(body, T("Seus talentos nesta partida. Só mudam no lobby.", "Your talents in this match. They only change in the lobby."), {Name = "TalentReadOnlyNote", Size = UDim2.new(1, -6, 0, 24), TextSize = 14, TextWrapped = true, TextColor3 = C.muted}), 10)
 		else
 			body.ScrollingEnabled, body.ScrollBarThickness = false, 0
 		end
@@ -1298,7 +1305,7 @@ function Panels.new(ctx)
 		local areaW, areaH = stageW - 24, stageH - headH - footH - infoH - 12
 		-- Never smaller than a fingertip on a small screen: the tree scrolls instead.
 		local R = math.floor(math.clamp(math.min(areaW / (maxX - minX), areaH / (maxY - minY)), compact and 30 or 26, readOnly and 50 or 66))
-		if readOnly then R = math.min(R, math.floor(math.max(areaW / (maxX - minX), 22))) end
+		if readOnly then R = math.max(40, R) end
 		local mapW, mapH = math.ceil((maxX - minX) * R), math.ceil((maxY - minY) * R)
 		local holder = stage
 		if mapH > areaH or mapW > areaW then
@@ -1308,8 +1315,9 @@ function Panels.new(ctx)
 			-- Opens centred on the commander's hexagon, where every branch starts.
 			local rootX, rootY = (0 - minX) * R, (0 - minY) * R
 			holder.CanvasPosition = Vector2.new(math.max(0, rootX - (areaW - 24) / 2), math.max(0, rootY - areaH / 2))
+			if options.canvasPosition then holder.CanvasPosition = options.canvasPosition end
 		end
-		local map = UI.frame(holder, {Name = "TalentMap", AnchorPoint = Vector2.new(0.5, 0), Position = holder == stage and UDim2.new(0.5, 0, 0, headH + 4 + math.max(0, math.floor((areaH - mapH) / 2))) or UDim2.new(0.5, 0, 0, 4),
+		local map = UI.frame(holder, {Name = "TalentMap", AnchorPoint = holder == stage and Vector2.new(0.5, 0) or Vector2.new(0, 0), Position = holder == stage and UDim2.new(0.5, 0, 0, headH + 4 + math.max(0, math.floor((areaH - mapH) / 2))) or UDim2.fromOffset(4, 4),
 			Size = UDim2.fromOffset(mapW, mapH), BackgroundTransparency = 1, ZIndex = 3})
 		local function at(unit) return Vector2.new((unit.X - minX) * R, (unit.Y - minY) * R) end
 		local animate = not readOnly and kit.talentAnimate
@@ -1445,13 +1453,13 @@ function Panels.new(ctx)
 			local def = Catalog.Talents[id]
 			local branchTint = Color3.fromRGB(unpack(branchOf(id).color))
 			local rank = ranks[id] or 0
-			local card = UI.roundFrame(body, {Name = "Talent_" .. id, Size = UDim2.new(1, -6, 0, 118), BackgroundColor3 = branchTint:Lerp(C.background, 0.78)}, branchTint)
-			UI.label(card, L(def.name), {Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -90, 0, 30), TextSize = 21, Font = UI.Fonts.display, TextColor3 = branchTint})
+			local card = UI.roundFrame(body, {Name = "Talent_" .. id, Size = UDim2.new(1, -6, 0, 100), BackgroundColor3 = branchTint:Lerp(C.background, 0.78)}, branchTint)
+			UI.oneLine(UI.label(card, L(def.name), {Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -90, 0, 24), TextSize = 21, Font = UI.Fonts.display, TextColor3 = branchTint}), 12)
 			UI.label(card, rank .. " / " .. def.maxRank, {Position = UDim2.new(1, -82, 0, 10), Size = UDim2.fromOffset(70, 26), TextSize = 19, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Right})
-			UI.label(card, L(def.description), {Position = UDim2.fromOffset(12, 40), Size = UDim2.new(1, -24, 0, 40), TextWrapped = true, TextSize = 14, TextColor3 = C.muted, TextYAlignment = Enum.TextYAlignment.Top})
+			UI.fit(UI.label(card, L(def.description), {Position = UDim2.fromOffset(12, 34), Size = UDim2.new(1, -24, 0, 32), TextWrapped = true, TextSize = 14, TextColor3 = C.muted, TextYAlignment = Enum.TextYAlignment.Top}), 10)
 			local nowNext = rank >= def.maxRank and (T("Agora: ", "Now: ") .. talentValue(def, rank) .. T("  •  nível máximo", "  •  max level"))
 				or (T("Agora: ", "Now: ") .. talentValue(def, rank) .. "  →  " .. T("Próximo: ", "Next: ") .. talentValue(def, rank + 1))
-			UI.label(card, nowNext, {Name = "TalentNowNext", Position = UDim2.fromOffset(12, 84), Size = UDim2.new(1, -24, 0, 26), TextSize = 16, Font = UI.Fonts.display, TextColor3 = C.gold})
+			UI.fit(UI.label(card, nowNext, {Name = "TalentNowNext", Position = UDim2.fromOffset(12, 68), Size = UDim2.new(1, -24, 0, 26), TextSize = 16, Font = UI.Fonts.display, TextColor3 = C.gold}), 10)
 			return
 		end
 

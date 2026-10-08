@@ -22,7 +22,7 @@ local Review = {}
 
 Review.STAGES = {
 	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium", "premiumgold",
-	"quests", "leaderboard", "settings", "rewards", "boarding",
+	"quests", "leaderboard", "settings", "rewards", "boarding", "afk", "prompt",
 	"preparing", "wave", "placing", "sheet", "sheetbase", "enemycard", "enemycardboss", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
 	"reveal", "revealbase", "revealcommon", "reel", "herocard",
 }
@@ -170,13 +170,20 @@ function Review.start(api)
 	end
 
 	local function show(stage)
+		-- A fixture's chest sequence must not continue over the next screen.
+		if self.active or (stage ~= "live" and stage ~= "") then api.celebrate:Clear() end
+		if self.active or (stage ~= "live" and stage ~= "") then api.closeContext() end
+		if self.fixtureOverlay then self.fixtureOverlay:Destroy(); self.fixtureOverlay = nil end
 		applySize()
 		if stage == "live" or stage == "" then
 			self.active = false
 			intercept(false)
 			if self.held then api.applyState(self.held); self.held = nil end
 			api.render()
-			task.delay(0.8, measure, "live")
+			task.delay(0.8, function()
+				local current = player:GetAttribute("DoomReview")
+				if current == nil or current == "" or current == "live" then measure("live") end
+			end)
 			return
 		end
 		self.active = true
@@ -190,7 +197,10 @@ function Review.start(api)
 		elseif MATCH_STAGES[stage] then
 			api.setState(matchFixture(p, stage))
 			api.render()
-			if stage == "tower" then api.selectTower("review2") end
+			if stage == "tower" then
+				for _, tower in ipairs(api.getState().match.towers) do tower.totalDamage, tower.kills = 12480, 63 end
+				api.selectTower("review2")
+			end
 			-- A hero in hand: the ghost follows the pointer and the bar says how to place.
 			if stage == "placing" and api.chooseHero then api.chooseHero(p.loadout[2] or p.loadout[1]) end
 			-- The enemy inspector, pinned so it stays up for the capture.
@@ -222,7 +232,29 @@ function Review.start(api)
 			end
 			api.setState(snapshot)
 			api.render()
-			if stage == "reel" then
+			if stage == "afk" or stage == "prompt" then
+				local UI = api.UI
+				local function T(pt, en) return p.settings.language == "en" and en or pt end
+				local holder = UI.frame(api.overlays, {Name = "InteractionReview", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 50})
+				self.fixtureOverlay = holder
+				if stage == "afk" then
+					local view = api.interactionHud.afk(UI, holder, math.min(500, UI.toLogical(api.main.AbsoluteSize.X) - 24), T)
+					view.title.Text = Catalog.Upper(T(Catalog.Afk.gold.name.pt, Catalog.Afk.gold.name.en))
+					view.detail.Text = T(Catalog.Afk.gold.rate.pt, Catalog.Afk.gold.rate.en) .. T(" • próximo em 24s • 12:36 • +1.240 Ouro • salvando…", " • next in 24s • 12:36 • +1,240 Gold • saving…")
+					view.setTravel(true)
+					-- The tutorial lays itself out on the next render frame.
+					task.delay(0.35, function()
+						if self.fixtureOverlay ~= holder or not holder.Parent then return end
+						local objective = api.gui:FindFirstChild("TutorialCard", true)
+						if objective and objective.Visible then
+							view.banner.Position = UDim2.new(0.5, 0, 0, math.max(58, math.floor(UI.toLogical(objective.AbsolutePosition.Y + objective.AbsoluteSize.Y) + 8)))
+						end
+					end)
+				else
+					local box = UI.frame(holder, {Name = "DoomPrompt", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(270, 66), BackgroundTransparency = 1})
+					api.interactionHud.prompt(UI, box, T("Invocar heróis", "Summon heroes"), T("Abrir invocação", "Open summons"), "E")
+				end
+			elseif stage == "reel" then
 				-- Three chests in a row: the case-style reel, then the prize cards.
 				local picks = {}
 				for _, id in ipairs(Catalog.HeroOrder) do

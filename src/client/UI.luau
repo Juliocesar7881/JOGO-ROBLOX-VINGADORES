@@ -1,5 +1,7 @@
 -- UI primitives shared by the lobby and match controller. No external assets required.
 local UI = {}
+-- A held touch opens a card, rather than also equipping it on release.
+local heldTooltipTouches = setmetatable({}, { __mode = "k" })
 
 -- Candy palette for a kids' game: saturated accents on deep slate (the
 -- reference games' dark windows), white text with a black outline, and thick
@@ -283,7 +285,10 @@ function UI.button(parent, text, callback, properties)
 			UI.outline(button, (defaults.TextSize or 15) >= 18 and 3 or 2)
 		end
 	end
-	if callback then button.Activated:Connect(callback) end
+	if callback then button.Activated:Connect(function(input, ...)
+		if input and input.UserInputType == Enum.UserInputType.Touch and heldTooltipTouches[button] == input then return end
+		callback(input, ...)
+	end) end
 	-- Every press clicks (the controller wires UI.onPress to its audio).
 	button.Activated:Connect(function() if UI.onPress then pcall(UI.onPress, button) end end)
 	-- Every button squashes under the finger and springs back: the smallest
@@ -1524,7 +1529,7 @@ end
 
 function UI.hover(target, build, width)
 	if not target or not target.MouseEnter then return end
-	target.MouseEnter:Connect(function()
+	local function show(touch)
 		local layer = UI.tooltipLayer
 		if not layer or not target.Parent then return end
 		UI.hideTooltip()
@@ -1547,20 +1552,56 @@ function UI.hover(target, build, width)
 		local function follow()
 			if not target.Parent or not box.Parent then UI.hideTooltip(target); return end
 			if not okServices or not input then return end
-			local mouse = input:GetMouseLocation()
+			local mouse = touch and touch.Position or input:GetMouseLocation()
 			local inset = guiService and guiService:GetGuiInset() or Vector2.new(0, 0)
 			local scale = UI.screenScale or 1
 			local x, y = (mouse.X - inset.X) / scale + 18, (mouse.Y - inset.Y) / scale + 18
 			local layerSize = UI.toLogical(layer.AbsoluteSize) or Vector2.new(1280, 720)
 			local boxSize = UI.toLogical(box.AbsoluteSize) or Vector2.new(width or 300, 120)
+			if touch then x, y = x - boxSize.X / 2, y - boxSize.Y - 42 end
 			if x + boxSize.X > layerSize.X - 8 then x = x - boxSize.X - 30 end
 			if y + boxSize.Y > layerSize.Y - 8 then y = math.max(8, layerSize.Y - 8 - boxSize.Y) end
+			x = math.clamp(x, 8, math.max(8, layerSize.X - boxSize.X - 8))
+			y = math.clamp(y, 8, math.max(8, layerSize.Y - boxSize.Y - 8))
 			box.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
 		end
 		follow()
 		if run and run.RenderStepped then tooltip.connection = run.RenderStepped:Connect(follow) end
-	end)
+	end
+	target.MouseEnter:Connect(function() show(nil) end)
 	target.MouseLeave:Connect(function() UI.hideTooltip(target) end)
+	local touch, watch, release
+	local function cancel()
+		if watch then watch:Disconnect(); watch = nil end
+		if release then release:Disconnect(); release = nil end
+		touch = nil
+		UI.hideTooltip(target)
+	end
+	target.InputBegan:Connect(function(input)
+		if input.UserInputType ~= Enum.UserInputType.Touch then return end
+		cancel()
+		heldTooltipTouches[target] = nil
+		touch = input
+		local origin, started, opened = input.Position, os.clock(), false
+		local run = game:GetService("RunService")
+		-- This connection exists only while the finger is held. Scrolling a
+		-- collection cancels the gesture before a tooltip can interrupt it.
+		watch = run.RenderStepped:Connect(function()
+			if not target.Parent or input.UserInputState == Enum.UserInputState.End or input.UserInputState == Enum.UserInputState.Cancel then cancel(); return end
+			local dx, dy = input.Position.X - origin.X, input.Position.Y - origin.Y
+			if math.sqrt(dx * dx + dy * dy) > 12 * (UI.screenScale or 1) then cancel(); return end
+			if not opened and os.clock() - started >= 0.4 then
+				opened = true
+				heldTooltipTouches[target] = input
+				show(input)
+			end
+		end)
+		release = game:GetService("UserInputService").InputEnded:Connect(function(ended)
+			if ended == touch then cancel() end
+		end)
+	end)
+	target.InputEnded:Connect(function(input) if input == touch then cancel() end end)
+	target.Destroying:Connect(cancel)
 end
 
 return UI

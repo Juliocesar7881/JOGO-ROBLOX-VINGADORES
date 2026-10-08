@@ -1410,7 +1410,7 @@ ENEMY_EXTRAS.lizard = function(f)
 	-- The tail swings on four joints.
 	local previous, at = f.parts.LowerTorso, f.parts.LowerTorso.CFrame * CFrame.new(0, -0.1 * s, f.sizes.pelvis.Z / 2)
 	for i = 1, 4 do
-		local length = (1.2 - i * 0.16) * s
+		local length = (1.8 - i * 0.2) * s
 		local width = (0.8 - i * 0.14) * s
 		local segment = figurePart(f.model, "Tail" .. i, Vector3.new(width, width * 0.9, length), at * CFrame.Angles(i == 1 and 0.45 or 0.08, 0, 0) * CFrame.new(0, 0, length / 2), scale, FABRIC)
 		segment:SetAttribute("HeroVisual", true)
@@ -1428,6 +1428,8 @@ ENEMY_EXTRAS.abomination = function(f)
 	for _, name in ipairs({ "LeftLowerLeg", "RightLowerLeg" }) do f.parts[name].Color = f.parts.Head.Color end
 	for _, side in ipairs({ -1, 1 }) do
 		f.add("Head", "Fin", Vector3.new(0.12, 0.8, 0.7) * s, CFrame.new(side * h.X * 0.52, h.Y * 0.1, 0.1 * s) * CFrame.Angles(0.3, 0, -side * 0.4), ridge, FABRIC, "wedge")
+		-- The shoulder ridge projects beyond the body even in the battle camera.
+		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "BossShoulderSpine", Vector3.new(0.38, 0.72, 0.64) * s, CFrame.new(side * f.sizes.upperArm.X * 0.45, f.sizes.upperArm.Y * 0.4, 0) * CFrame.Angles(0, 0, -side * 0.45), ridge, Enum.Material.Slate, "wedge")
 		f.add("Head", "Gill", Vector3.new(0.06, 0.3, 0.26) * s, CFrame.new(side * h.X * 0.5, -h.Y * 0.25, -0.1 * s), EC.ink, FABRIC)
 		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "ScaleRidge", f.sizes.upperArm * Vector3.new(0.5, 0.8, 0.5), CFrame.new(side * f.sizes.upperArm.X * 0.35, 0, f.sizes.upperArm.Z * 0.2), ridge, Enum.Material.Slate, "ball")
 	end
@@ -1440,6 +1442,7 @@ ENEMY_EXTRAS.redskull = function(f)
 	for _, name in ipairs({ "LeftHand", "RightHand", "LeftFoot", "RightFoot" }) do f.parts[name].Color = EC.ink end
 	for _, side in ipairs({ -1, 1 }) do
 		f.add("Head", "Socket", Vector3.new(0.36, 0.38, 0.06) * s, f.face(side * 0.28, 0.12, 0.0), EC.ink, FABRIC, "ball")
+		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "CommandMantle", f.sizes.upperArm * Vector3.new(1.5, 0.4, 1.3), CFrame.new(side * 0.08 * s, f.sizes.upperArm.Y * 0.43, 0), Color3.fromRGB(94, 34, 42), FABRIC, "wedge")
 		f.add("Head", "Eye", Vector3.new(0.1, 0.1, 0.05) * s, f.face(side * 0.28, 0.12, 0.03), Color3.fromRGB(255, 90, 60), NEON, "ball")
 		f.add("LowerTorso", "CoatTail", Vector3.new(p.X * 0.52, 1.9 * s, 0.14 * s), CFrame.new(side * p.X * 0.26, -0.85 * s, 0), coat, FABRIC)
 	end

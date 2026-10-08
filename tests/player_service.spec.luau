@@ -119,6 +119,7 @@ check(initial.loadout[1] == "ironman", "Slot one starts with Iron Man, whose abi
 check(initial.pity.legendary == 0 and initial.stats.chests == 0, "A new account has opened no chests")
 check(initial.skills == nil and initial.activeSkills == nil and initial.passives == nil, "The old skill system leaves no trace")
 check(initial.paidRandomRestricted == false, "Regional restriction defaults to open")
+check(not service:StudioUnlock(p1) and not service:Get(p1).campaign.manhattan, "Studio unlock cannot mutate a cloud profile")
 check(not pcall(function() PlayerService.new(config, Catalog) end), "The service refuses to start without the shared Rules")
 
 -- AFK farm pay is server-internal: a small fixed amount per minute, and the
@@ -593,6 +594,14 @@ isStudio = true
 local localOnly = PlayerService.new(config, Catalog, nil, Rules)
 local p4 = player(4)
 check(localOnly.memory and localOnly:Load(p4) ~= nil, "Studio memory opt-in")
+local beforeUnlock = clone(localOnly:Get(p4))
+check(localOnly:StudioUnlock(p4), "Studio review can unlock its memory profile")
+for mapId in pairs(Catalog.Maps) do check(localOnly:Get(p4).campaign[mapId].normal == true, "Review unlock opens campaign map " .. mapId) end
+check(localOnly:Get(p4).gold == beforeUnlock.gold and localOnly:Get(p4).xp == beforeUnlock.xp, "Review unlock grants no economy or XP")
+check(not localOnly:StudioUnlock({ UserId = p4.UserId }), "Review unlock rejects a different player instance")
+check(localOnly:StudioGrant(p4, {"ironman", "hulk"}) and localOnly:Save(p4), "A memory save accepts the review roster")
+check(localOnly:Get(p4).tutorialComplete and localOnly:Get(p4).campaign.gamma.normal, "Review unlock survives an automatic memory save")
+check(localOnly:Get(p4).heroes.hulk ~= nil and localOnly:Get(p4).loadout[2] == "hulk", "Review heroes survive the next memory transaction")
 check(localOnly:_receipt({ PlayerId = 4, ProductId = 101, PurchaseId = "studio-purchase" }) == "pending", "Memory mode cannot acknowledge real purchases")
 local _, studioPurchase = localOnly:Handle(p4, "ProductInfo", { kind = "product", key = "gold1000" }, true)
 check(not studioPurchase, "Studio memory shop disabled")

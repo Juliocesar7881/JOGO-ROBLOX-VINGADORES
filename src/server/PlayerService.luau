@@ -713,21 +713,54 @@ end
 
 -- Studio memory mode only: own these heroes and field them as the squad, for
 -- reviewing a hero without opening chests. Never touches saved data.
+function PlayerService:_studioEdit(player, mutate)
+	if not self.memory or self.closed then return false end
+	local ok = self:_withLock(player.UserId, function()
+		local record = self.records[player.UserId]
+		if not record or record.player ~= player or record.lost or record.closing then return false end
+		local profile = copy(record.profile)
+		if mutate(profile) ~= true then return false end
+		-- The next automatic save reads this in-process backing profile.
+		-- Both copies must agree, otherwise a checkpoint discards the review.
+		self.memoryProfiles["p_" .. tostring(player.UserId)] = copy(profile)
+		record.profile = profile
+		return true
+	end)
+	if ok then self:_notify(player) end
+	return ok
+end
+
 function PlayerService:StudioGrant(player, heroIds)
-	local record = self.records[player.UserId]
-	if not self.memory or not record or type(heroIds) ~= "table" then return false end
+	if not self.memory or type(heroIds) ~= "table" then return false end
 	local loadout = {}
 	for _, id in ipairs(heroIds) do
 		if self.catalog.Heroes[id] and #loadout < 5 then
-			record.profile.heroes[id] = record.profile.heroes[id] or { xp = 0, level = 1, stars = 0 }
-			record.profile.abilities[id] = record.profile.abilities[id] or 1
 			table.insert(loadout, id)
 		end
 	end
 	if #loadout == 0 then return false end
-	record.profile.loadout = loadout
-	self:_notify(player)
-	return true
+	return self:_studioEdit(player, function(profile)
+		for _, id in ipairs(loadout) do
+			profile.heroes[id] = profile.heroes[id] or { xp = 0, level = 1, stars = 0 }
+			profile.abilities[id] = profile.abilities[id] or 1
+		end
+		profile.loadout = loadout
+		return true
+	end)
+end
+
+-- Review unlocks are deliberately ephemeral. A production profile cannot
+-- reach this operation, even if it is called internally by mistake.
+function PlayerService:StudioUnlock(player)
+	if not self.memory then return false end
+	return self:_studioEdit(player, function(profile)
+		profile.tutorialComplete = true
+		for id in pairs(self.catalog.Maps) do
+			profile.campaign[id] = profile.campaign[id] or {}
+			profile.campaign[id].normal = true
+		end
+		return true
+	end)
 end
 
 function PlayerService:Get(player)

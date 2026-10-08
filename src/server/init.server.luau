@@ -1006,6 +1006,11 @@ if RunService:IsStudio() then
 	-- how a cards run offers its cards and a last wave ends in victory;
 	-- finish: end the match now (true = victory).
 	hook.OnInvoke = function(command, arg, modeId)
+		if command == "unlock" then
+			local unlocked = false
+			for _, player in ipairs(Players:GetPlayers()) do unlocked = profiles:StudioUnlock(player) or unlocked end
+			return unlocked
+		end
 		-- start: begin a match on this map for everyone, skipping the unlocks
 		-- and the portal walk (arg = map id, modeId defaults to campaign).
 		if command == "start" and Catalog.Maps[arg] and match:CanStart() then
