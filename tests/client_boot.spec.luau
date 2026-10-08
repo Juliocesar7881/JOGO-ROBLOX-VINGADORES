@@ -317,6 +317,9 @@ local function session(screen)
 	services.ContextActionService = contextActions
 	services.TweenService = { Create = function() return { Play = function() end, Cancel = function() end } end }
 	services.MarketplaceService = market
+	-- Roblox's chat window: the client places it and hides it under its own windows.
+	local chatWindow = { Enabled = true }
+	services.TextChatService = { ChatWindowConfiguration = chatWindow, WaitForChild = function(self, name) return self[name] end }
 
 	local camera = Instance.new("Camera")
 	camera.ViewportSize = Vector2.new(SCREEN.w, SCREEN.h + 58)
@@ -528,6 +531,15 @@ local function session(screen)
 		check(not contextOpen(),tag..": the shop suggestion sends the player walking, no chest menu")
 		check(named(gui,"RefugeWelcome")==nil and named(gui,"GuideLink_modes")==nil,tag..": there is no guide panel")
 		check(#offscreen(main,view())==0,tag..": the strip stays inside the usable screen")
+	end)
+	step("Roblox's chat steps aside while a window of the game is open", function()
+		fx({ kind = "OpenPanel", panel = "quests" })
+		check(contextOpen(), tag .. ": the missions window is open")
+		frames(0.3, 1)
+		check(chatWindow.Enabled == false, tag .. ": the chat hides under an open window")
+		if contextOpen() then click("X") end
+		frames(0.3, 1)
+		check(not contextOpen() and chatWindow.Enabled == true, tag .. ": the chat comes back when the window closes")
 	end)
 	step("a portal opens no menu", function()
 		fx({ kind = "OpenPanel", panel = "play", modeId = "normal" })
