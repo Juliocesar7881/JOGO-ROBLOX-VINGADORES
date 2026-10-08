@@ -1841,7 +1841,10 @@ local function showPrompt(prompt, inputType)
 	local key = gamepad and string.gsub(prompt.GamepadKeyCode.Name, "^Button", "") or prompt.KeyboardKeyCode.Name
 	local gui = Instance.new("BillboardGui")
 	gui.Name, gui.AlwaysOnTop, gui.LightInfluence, gui.Active = "DoomPrompt", true, 0, true
-	gui.Size, gui.StudsOffset, gui.Adornee = UDim2.fromOffset(270, 66), Vector3.new(0, 0.6, 0), adornee
+	-- In a match the agent stands beside the base, in the middle of the field:
+	-- a smaller card keeps the battle visible while the commander waits there.
+	local size = activeMatch() and 0.78 or 1
+	gui.Size, gui.StudsOffset, gui.Adornee = UDim2.fromOffset(math.floor(270 * size), math.floor(66 * size)), Vector3.new(0, 0.6, 0), adornee
 	local panel = kit.interactionHud.prompt(UI, gui, prompt.ObjectText, prompt.ActionText, key, function()
 		pcall(function()
 			prompt:InputHoldBegin()
@@ -1850,8 +1853,10 @@ local function showPrompt(prompt, inputType)
 	end)
 	UI.scaleBillboard(gui)
 	-- It pops in, like every panel in the game.
-	local pop = UI.create("UIScale", {Scale = 0.7}, panel)
-	pcall(function() TweenService:Create(pop, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end)
+	-- The card keeps its own layout and is scaled down whole to the smaller gui.
+	panel.Size = UDim2.fromScale(1 / size, 1 / size)
+	local pop = UI.create("UIScale", {Scale = 0.7 * size}, panel)
+	pcall(function() TweenService:Create(pop, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = size}):Play() end)
 	gui.Parent = player:WaitForChild("PlayerGui")
 	promptViews[prompt] = {gui = gui, watch = prompt.AncestryChanged:Connect(function()
 		if not prompt:IsDescendantOf(workspace) then hidePrompt(prompt) end

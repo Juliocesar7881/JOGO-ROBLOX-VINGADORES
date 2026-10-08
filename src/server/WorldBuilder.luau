@@ -5664,12 +5664,20 @@ function World:Build(mapId)
 	local coreTint = Color3.fromRGB(95, 221, 255)
 	part(self.Scenery, "CorePedestal", Vector3.new(20, 1, 20), CFrame.new(coreX, 0.4, coreZ), Color3.fromRGB(44, 59, 73), Enum.Material.Metal)
 	part(self.Scenery, "CoreTier", Vector3.new(16, 1.2, 16), CFrame.new(coreX, 1.4, coreZ), Color3.fromRGB(51, 69, 85), Enum.Material.Metal)
-	local trim = part(self.Scenery, "CoreTrim", Vector3.new(14.4, 0.25, 14.4), CFrame.new(coreX, 2.1, coreZ), coreTint, Enum.Material.Neon)
-	trim.CanCollide = false
+	-- The trim is a thin lit border round the tier, not a lit slab: a 14-stud
+	-- square of neon washed the whole core into one cyan blob from the camera.
+	for _, edge in ipairs({ { 0, -7, 14.4, 0.5 }, { 0, 7, 14.4, 0.5 }, { -7, 0, 0.5, 13.4 }, { 7, 0, 0.5, 13.4 } }) do
+		local trim = part(self.Scenery, "CoreTrim", Vector3.new(edge[3], 0.25, edge[4]), CFrame.new(coreX + edge[1], 2.1, coreZ + edge[2]), coreTint, Enum.Material.Neon)
+		trim.CanCollide = false
+	end
 	for _, corner in ipairs({ { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } }) do
 		part(self.Scenery, "CoreButtress", Vector3.new(1.6, 7, 1.6), CFrame.new(coreX + corner[1] * 6.6, 3.5, coreZ + corner[2] * 6.6), Color3.fromRGB(58, 78, 94), Enum.Material.Metal).CanCollide = true
-		local cap = part(self.Scenery, "CoreButtressCap", Vector3.new(2.2, 0.5, 2.2), CFrame.new(coreX + corner[1] * 6.6, 7.1, coreZ + corner[2] * 6.6), coreTint, Enum.Material.Neon)
+		-- A metal cap with a lit band under it, so the four corners read as
+		-- pylons and not as four glowing cubes.
+		local cap = part(self.Scenery, "CoreButtressCap", Vector3.new(2.2, 0.5, 2.2), CFrame.new(coreX + corner[1] * 6.6, 7.1, coreZ + corner[2] * 6.6), Color3.fromRGB(84, 108, 126), Enum.Material.Metal)
 		cap.CanCollide = false
+		local band = part(self.Scenery, "CoreTrim", Vector3.new(1.75, 0.3, 1.75), CFrame.new(coreX + corner[1] * 6.6, 6.65, coreZ + corner[2] * 6.6), coreTint, Enum.Material.Neon)
+		band.CanCollide = false
 	end
 	local base = part(self.Scenery, "ResistanceCore", Vector3.new(9, 8, 9), CFrame.new(coreX, 6, coreZ), Color3.fromRGB(62, 193, 235), Enum.Material.Glass)
 	base.Shape=Enum.PartType.Ball
