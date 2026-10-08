@@ -49,7 +49,7 @@ das fontes novamente aprovada em `test-results/hud-chest-guard-final.txt`.
 | Baú gratuito | Verificado no Studio | `ClaimFreeChest` real no perfil isolado de memória, seguido da roleta e recibo dos componentes reais. Herói confirmado no inventário; nova solicitação recusada. |
 | Lotes de recompensa | Implementado e testado | Teste do cliente com três resultados de baús diferentes, incluindo base, resumo completo e opção de pular. |
 | Música da partida | Reprodução verificada no Studio | Os três stems carregados; coro e percussão ativos durante a partida; lobby parado e stems encerrados no resultado. Preferência sonora ainda depende da avaliação do jogador. |
-| Publicação | Pendente neste registro | Mesmo lugar da equipe, depois da entrega verde ao main. |
+| Publicação | Confirmada | Código `7e8b8b6` no main e no lugar da equipe `97132875544830`; `PublishSuccessful` em 08/10/2026 às 17:05:04 UTC (14:05 local). |
 
 Capturas em `test-results/hud-chest/`:
 
@@ -70,3 +70,16 @@ componentes reais e o servidor, sem simular um clique no botão da tela.
 Arquivos de produção: `UI.luau`, `Panels.luau`, `Celebrate.luau`,
 `Audio.luau`, `Review.luau` e `init.client.luau`, todos em `src/client/`.
 Testes alterados: `tests/client_boot.spec.luau` e `tests/test_audio.py`.
+
+## Entrega
+
+As 36 fontes foram comparadas antes da publicação, considerando somente o
+prefixo de papel de lugar que `tools/build.py` acrescenta ao bootstrap.
+Nenhuma diferença de código de outra sessão foi substituída. Seis arquivos
+sincronizados seletivamente, lobby de edição reconstruído e publicação
+confirmada em `test-results/hud-chest-publish.txt`. Studio em modo de edição.
+
+Próxima avaliação: ouvir o arranjo durante uma partida pelo Roblox,
+conferir os controles de Música/Efeitos no aparelho real e concluir as
+dependências de áudio de M19.3 com o dono. Estas fontes WAV continuam
+sem upload; não impedem a reprodução do arranjo verificado nesta entrega.

@@ -414,3 +414,9 @@ roleta de compras/recompensas e retira a segunda abertura de baú. O combate
 ganha um arranjo de ação quando a trilha dedicada não carrega, mantendo a
 música do lobby. Fila M20 e registro em
 [`REFINAMENTO_HUD_BAUS_2026-10-08.md`](REFINAMENTO_HUD_BAUS_2026-10-08.md).
+
+Código `7e8b8b6` no main, conferido no Studio com 46 capturas, baú grátis
+concedido pelo servidor e stems de ação carregados durante a partida.
+Publicação no mesmo lugar da equipe confirmada em 08/10/2026 às 14:05:04
+local (17:05:04 UTC). Studio em modo de edição; teste auditivo pelo jogador
+e aparelho físico continuam pendentes.
