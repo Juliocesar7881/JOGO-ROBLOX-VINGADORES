@@ -23,11 +23,11 @@ local Review = {}
 Review.STAGES = {
 	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium", "premiumgold",
 	"quests", "leaderboard", "settings", "rewards", "boarding", "afk", "prompt",
-	"preparing", "wave", "placing", "sheet", "sheetbase", "enemycard", "enemycardboss", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
+	"preparing", "wave", "placing", "skillaim", "sheet", "sheetbase", "enemycard", "enemycardboss", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
 	"reveal", "revealbase", "revealcommon", "reel", "herocard",
 }
 
-local MATCH_STAGES = { preparing = true, wave = true, placing = true, sheet = true, sheetbase = true, enemycard = true, enemycardboss = true, tower = true, cards = true, finalboss = true, baseupgrade = true }
+local MATCH_STAGES = { preparing = true, wave = true, placing = true, skillaim = true, sheet = true, sheetbase = true, enemycard = true, enemycardboss = true, tower = true, cards = true, finalboss = true, baseupgrade = true }
 
 local function clone(value)
 	if type(value) ~= "table" then return value end
@@ -170,6 +170,8 @@ function Review.start(api)
 	end
 
 	local function show(stage)
+		if api.clearPlacement then api.clearPlacement() end
+		if api.closeSheet then api.closeSheet() end
 		-- A fixture's chest sequence must not continue over the next screen.
 		if self.active or (stage ~= "live" and stage ~= "") then api.celebrate:Clear() end
 		if self.active or (stage ~= "live" and stage ~= "") then api.closeContext() end
@@ -203,6 +205,14 @@ function Review.start(api)
 			end
 			-- A hero in hand: the ghost follows the pointer and the bar says how to place.
 			if stage == "placing" and api.chooseHero then api.chooseHero(p.loadout[2] or p.loadout[1]) end
+			if stage == "skillaim" and api.aimSkill then
+				api.aimSkill(Vector3.new(0, 0, 12))
+				-- The command bar can resize the viewport after switching screens.
+				-- Restore the fixture after the controller's debounced relayout.
+				task.delay(0.8, function()
+					if player:GetAttribute("DoomReview") == "skillaim" then api.aimSkill(Vector3.new(0, 0, 12)) end
+				end)
+			end
 			-- The enemy inspector, pinned so it stays up for the capture.
 			if stage == "sheet" or stage == "sheetbase" then
 				api.openSheet(stage == "sheetbase" and "base" or "talents")

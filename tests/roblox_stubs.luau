@@ -363,6 +363,13 @@ end
 function METHODS:GetAttribute(name) return rawget(self, "__attributes")[name] end
 
 function METHODS:Destroy()
+	if rawget(self, "__destroyed") then return end
+	rawset(self, "__destroyed", true)
+	-- Roblox destroys descendants and fires Destroying. Leaving children
+	-- attached to a dead GUI hid leaked input handlers in viewport tests.
+	local signals = rawget(self, "__signals")
+	if signals.Destroying then signals.Destroying:Fire() end
+	for _, child in ipairs(self:GetChildren()) do child:Destroy() end
 	local props = rawget(self, "__props")
 	local parent = props.Parent
 	if parent then
@@ -375,7 +382,6 @@ function METHODS:Destroy()
 		end
 	end
 	props.Parent = nil
-	rawset(self, "__destroyed", true)
 end
 
 -- Terrain: every fill is recorded instead of voxelised, so tests can ask

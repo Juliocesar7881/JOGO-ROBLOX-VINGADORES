@@ -286,11 +286,12 @@ function UI.button(parent, text, callback, properties)
 		end
 	end
 	if callback then button.Activated:Connect(function(input, ...)
+		if button:GetAttribute("DragConsumed") == true then return end
 		if input and input.UserInputType == Enum.UserInputType.Touch and heldTooltipTouches[button] == input then return end
 		callback(input, ...)
 	end) end
 	-- Every press clicks (the controller wires UI.onPress to its audio).
-	button.Activated:Connect(function() if UI.onPress then pcall(UI.onPress, button) end end)
+	button.Activated:Connect(function() if button:GetAttribute("DragConsumed") ~= true and UI.onPress then pcall(UI.onPress, button) end end)
 	-- Every button squashes under the finger and springs back: the smallest
 	-- bit of feel, applied everywhere at once.
 	local press = UI.create("UIScale", {Name = "PressScale", Scale = 1}, button)
@@ -1587,6 +1588,7 @@ function UI.hover(target, build, width)
 		-- This connection exists only while the finger is held. Scrolling a
 		-- collection cancels the gesture before a tooltip can interrupt it.
 		watch = run.RenderStepped:Connect(function()
+			if target:GetAttribute("DragConsumed") == true then cancel(); return end
 			if not target.Parent or input.UserInputState == Enum.UserInputState.End or input.UserInputState == Enum.UserInputState.Cancel then cancel(); return end
 			local dx, dy = input.Position.X - origin.X, input.Position.Y - origin.Y
 			if math.sqrt(dx * dx + dy * dy) > 12 * (UI.screenScale or 1) then cancel(); return end

@@ -159,6 +159,37 @@ function Audio:Cue(name, minimumGap)
 	if not ok then self.sounds[name] = nil end
 end
 
+-- Original research-board cues derived from our own uploaded clicks/thunks.
+-- A private three-voice pool keeps hover notes quiet and stops a fast pan
+-- from producing dozens of overlapping sounds. Interface mute still applies.
+function Audio:Talent(action)
+	if not self:_allowed(true, "click") then return end
+	local settings = {
+		hover = {"click", 1.45, 0.055, 0.10},
+		snap = {"place", 1.2, 0.12, 0.07},
+		center = {"open", 1.1, 0.1, 0.15},
+	}
+	local cue = settings[action]
+	if not cue then return end
+	local key, now = "talent:" .. action, os.clock()
+	if now - (self.lastCue[key] or -1) < cue[4] then return end
+	self.lastCue[key] = now
+	local template = self:_sound(cue[1])
+	if not template then return end
+	local pool = self.voices[key] or {}
+	self.voices[key] = pool
+	local index = (self.voiceIndex[key] or 0) % 3 + 1
+	self.voiceIndex[key] = index
+	local sound = pool[index]
+	if not sound then
+		sound = Instance.new("Sound")
+		sound.Name, sound.SoundId, sound.Parent = "Talent_" .. action, template.SoundId, self.folder
+		pool[index] = sound
+	end
+	sound.Volume, sound.PlaybackSpeed = cue[3], template.PlaybackSpeed * cue[2]
+	pcall(function() SoundService:PlayLocalSound(sound) end)
+end
+
 -- The map's ambience loop, faded in under the music; nil fades it out. It
 -- follows the effects switch, not the music one: it is sound of the place.
 function Audio:Ambience(name)

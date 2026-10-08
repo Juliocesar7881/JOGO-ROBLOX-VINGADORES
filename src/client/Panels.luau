@@ -6,6 +6,7 @@
 -- state it shares with them (selected chest, hero tab, inventory view) in
 -- `kit`. Purely presentation: every action is a request the server decides.
 local Motion = require(script.Parent:WaitForChild("Motion"))
+local TalentViewport = require(script.Parent:WaitForChild("TalentViewport"))
 
 local Panels = {}
 
@@ -1284,20 +1285,20 @@ function Panels.new(ctx)
 			body.ScrollingEnabled, body.ScrollBarThickness = false, 0
 		end
 		local stage = UI.frame(body, {Name = "TalentTree", Size = UDim2.new(1, readOnly and -6 or 0, 0, stageH), BackgroundTransparency = 1, ClipsDescendants = readOnly})
-		local headH = readOnly and 0 or (compact and 46 or 78)
-		local footH = readOnly and 0 or (compact and 58 or 86)
+		local headH = readOnly and 0 or (compact and 64 or 78)
+		local footH = readOnly and 0 or (compact and 70 or 86)
 		local infoH = readOnly and 0 or (compact and 0 or 48)
 		if not readOnly then
 			-- The dark backdrop of the research screen, top to bottom.
-			local backdrop = UI.frame(stage, {Name = "TalentBackdrop", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(4, 5, 12), BackgroundTransparency = 0.06, ZIndex = 1})
-			UI.create("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(26, 22, 52), Color3.fromRGB(2, 2, 8)), Rotation = 90}, backdrop)
-			local heading = UI.label(stage, T("Árvore de Evolução", "Talent Tree"), {Name = "TalentHeading", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, compact and 4 or 10), Size = UDim2.new(1, -160, 0, compact and 32 or 42),
+			local backdrop = UI.frame(stage, {Name = "TalentBackdrop", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(3, 4, 7), ZIndex = 1})
+			UI.create("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(12, 15, 22), Color3.fromRGB(1, 2, 4)), Rotation = 90}, backdrop)
+			local heading = UI.label(stage, T("Árvore de Evolução", "Talent Tree"), {Name = "TalentHeading", Position = UDim2.fromOffset(compact and 128 or 160, compact and 4 or 10), Size = UDim2.new(1, compact and -194 or -240, 0, compact and 34 or 42),
 				Font = UI.Fonts.display, TextSize = compact and 26 or 38, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
+			UI.oneLine(heading, compact and 14 or 20)
 			UI.outline(heading, 3)
-			if not compact then
-				UI.label(stage, T("Passe o mouse para ver o que faz  •  clique para evoluir  •  cada nível novo dá 1 ponto", "Hover to see what it does  •  click to evolve  •  every new level gives 1 point"), {Name = "TalentHow", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52), Size = UDim2.new(1, -40, 0, 22),
-					TextSize = 16, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
-			end
+			local instruction = compact and T("Arraste para explorar", "Drag to explore") or T("Arraste para explorar  •  roda do mouse: aproximar  •  clique: evoluir", "Drag to explore  •  mouse wheel: zoom  •  click: upgrade")
+			UI.oneLine(UI.label(stage, instruction, {Name = "TalentHow", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, compact and 40 or 52), Size = UDim2.new(1, compact and -32 or -220, 0, 22),
+				TextSize = compact and 12 or 16, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3}), 11)
 		end
 
 		-- The honeycomb, sized to the space between the heading and the footer.
@@ -1305,10 +1306,12 @@ function Panels.new(ctx)
 		local areaW, areaH = stageW - 24, stageH - headH - footH - infoH - 12
 		-- Never smaller than a fingertip on a small screen: the tree scrolls instead.
 		local R = math.floor(math.clamp(math.min(areaW / (maxX - minX), areaH / (maxY - minY)), compact and 30 or 26, readOnly and 50 or 66))
-		if readOnly then R = math.max(40, R) end
+		if readOnly then R = math.max(40, R) else R = compact and 62 or 74 end
 		local mapW, mapH = math.ceil((maxX - minX) * R), math.ceil((maxY - minY) * R)
 		local holder = stage
-		if mapH > areaH or mapW > areaW then
+		if not readOnly then
+			holder = UI.frame(stage, {Name = "TalentViewport", Position = UDim2.fromOffset(12, headH + 4), Size = UDim2.new(1, -24, 0, areaH + 8), BackgroundTransparency = 1, ClipsDescendants = true, Active = true, ZIndex = 3})
+		elseif mapH > areaH or mapW > areaW then
 			-- A small phone: the tree scrolls inside its band.
 			holder = UI.scroll(stage, {Name = "TalentScroll", Position = UDim2.fromOffset(12, headH + 4), Size = UDim2.new(1, -24, 0, areaH + 8), ScrollingDirection = Enum.ScrollingDirection.XY,
 				AutomaticCanvasSize = Enum.AutomaticSize.None, CanvasSize = UDim2.fromOffset(mapW + 8, mapH + 8), ScrollBarThickness = 6, ZIndex = 3})
@@ -1320,7 +1323,17 @@ function Panels.new(ctx)
 		local map = UI.frame(holder, {Name = "TalentMap", AnchorPoint = holder == stage and Vector2.new(0.5, 0) or Vector2.new(0, 0), Position = holder == stage and UDim2.new(0.5, 0, 0, headH + 4 + math.max(0, math.floor((areaH - mapH) / 2))) or UDim2.fromOffset(4, 4),
 			Size = UDim2.fromOffset(mapW, mapH), BackgroundTransparency = 1, ZIndex = 3})
 		local function at(unit) return Vector2.new((unit.X - minX) * R, (unit.Y - minY) * R) end
-		local animate = not readOnly and kit.talentAnimate
+		local lowFX = p.settings and p.settings.lowFX == true
+		local navigation
+		if not readOnly then
+			kit.talentView = kit.talentView or {}
+			navigation = TalentViewport.new({UI = UI, holder = holder, map = map, saved = kit.talentView, width = areaW, height = areaH + 8,
+				mapW = mapW, mapH = mapH, root = at(Vector2.new(0, 0)), lowFX = lowFX})
+			local center = UI.secondary(stage, T("Centralizar", "Center"), function() navigation.Center(); audio:Talent("center") end,
+				{Name = "TalentCenter", Position = UDim2.fromOffset(12, compact and 4 or 12), Size = UDim2.fromOffset(compact and 106 or 130, compact and 34 or 42), TextSize = compact and 14 or 17, ZIndex = 8})
+			if compact then UI.hover(center, function(box) UI.tooltipTitle(box, T("Explorar a árvore", "Explore the tree")); UI.tooltipLine(box, T("Arraste com o dedo ou mouse. No PC, use a roda para aproximar.", "Drag with your finger or mouse. On PC, use the wheel to zoom."), C.muted) end, 280) end
+		end
+		local animate = not readOnly and kit.talentAnimate and not lowFX
 		kit.talentAnimate = nil
 		local bought = kit.talentBought
 		kit.talentBought = nil
@@ -1328,8 +1341,7 @@ function Panels.new(ctx)
 		-- A plastic brick snapping into place: the placing thunk and a click a
 		-- hair after it, like a building block pressed home.
 		local function snap()
-			audio:Cue("place", 0)
-			task.delay(0.04, function() audio:Cue("click", 0) end)
+			audio:Talent("snap")
 		end
 		local function popIn(button, delay, fromScale)
 			local scale = button:FindFirstChild("PressScale")
@@ -1347,6 +1359,7 @@ function Panels.new(ctx)
 		local root = UI.button(map, "", function()
 			showToast(T("Cada nível novo dá 1 ponto de evolução.", "Every new level gives 1 talent point."))
 		end, {Name = "TalentRoot", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(at(Vector2.new(0, 0)).X, at(Vector2.new(0, 0)).Y), Size = UDim2.fromOffset(R * 1.9, R * 2.1), BackgroundTransparency = 1, ZIndex = 4})
+		if navigation then navigation:Watch(root) end
 		local rootGlow = UI.frame(root, {Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(R * 2.5, R * 2.5), BackgroundColor3 = C.gold, BackgroundTransparency = 0.82, ZIndex = 4})
 		UI.corner(rootGlow, R * 2)
 		hexagon(root, "RootRing", R * 1.06, C.cream, 4)
@@ -1396,6 +1409,18 @@ function Panels.new(ctx)
 						end)
 					end
 				end, {Name = "TalentNode_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(spot.X, spot.Y), Size = UDim2.fromOffset(R * 1.732, R * 2), BackgroundTransparency = 1, ZIndex = 5})
+				if navigation then navigation:Watch(node) end
+				node.MouseEnter:Connect(function()
+					if not readOnly then audio:Talent("hover") end
+					if not lowFX then
+						local press = node:FindFirstChild("PressScale")
+						if press then tweens:Create(press, TweenInfo.new(0.12), {Scale = 1.05}):Play() end
+					end
+				end)
+				node.MouseLeave:Connect(function()
+					local press = node:FindFirstChild("PressScale")
+					if press then tweens:Create(press, TweenInfo.new(0.12), {Scale = 1}):Play() end
+				end)
 				-- Owned: the branch colour with a soft glow; maxed: a gold rim;
 				-- open: a white rim on a dark face; locked: grey and dim.
 				if rank > 0 or buyable then
@@ -1411,7 +1436,7 @@ function Panels.new(ctx)
 				-- Everything sits inside the hexagon (neighbours touch): the level on
 				-- top, the icon, the name, and the price when it can be bought.
 				local small = R < 34
-				UI.icon(node, TALENT_ICONS[id] or "star", iconTint, {Name = "TalentIcon_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, small and 0.5 or 0.43), Size = UDim2.fromOffset(R * (small and 0.62 or 0.56), R * (small and 0.62 or 0.56)), ZIndex = 7})
+				UI.illustration(node, TALENT_ICONS[id] or "star", iconTint, {Name = "TalentIcon_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, small and 0.5 or 0.43), Size = UDim2.fromOffset(R * 0.66, R * 0.66), ZIndex = 7})
 				if not open then
 					UI.icon(node, "lock", C.cream, {Name = "TalentLock_" .. id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, R * 0.5, 0.5, -R * 0.5), Size = UDim2.fromOffset(math.max(14, R * 0.36), math.max(14, R * 0.36)), ZIndex = 8})
 				end
@@ -1441,7 +1466,7 @@ function Panels.new(ctx)
 				end, 320)
 				if animate then
 					popIn(node, 0.12 + (order[id] or 1) * 0.07 + (branch.id == "guardian" and 0.03 or 0), 0)
-				elseif bought == id then
+				elseif bought == id and not lowFX then
 					popIn(node, 0, 1.35)
 				end
 			end
@@ -1466,21 +1491,23 @@ function Panels.new(ctx)
 		-- The footer: the points to spend on the left, Exit in the middle, reset on the right.
 		info = UI.label(stage, describe(talentSelected), {Name = "TalentInfo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -footH - 4), Size = UDim2.new(1, -40, 0, infoH > 0 and infoH or 1),
 			TextSize = 16, TextWrapped = true, RichText = true, TextTruncate = Enum.TextTruncate.None, TextXAlignment = Enum.TextXAlignment.Center, Visible = infoH > 0, ZIndex = 3})
-		local pointsBox = UI.frame(stage, {Name = "TalentOverview", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 16, 1, -12), Size = UDim2.fromOffset(compact and 150 or 250, footH - 20), BackgroundColor3 = UI.Skin.slot, ZIndex = 3})
+		local narrowFooter = stageW < 520
+		local narrowW = math.floor((stageW - 68) / 3)
+		local pointsBox = UI.frame(stage, {Name = "TalentOverview", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 16, 1, -12), Size = UDim2.fromOffset(narrowFooter and narrowW or (compact and 150 or 250), footH - 20), BackgroundColor3 = UI.Skin.slot, ZIndex = 3})
 		UI.corner(pointsBox, 14)
 		UI.stroke(pointsBox, points > 0 and C.gold or UI.Skin.slotLine, 2.5)
 		UI.icon(pointsBox, "star", C.gold, {Position = UDim2.new(0, 10, 0.5, -(compact and 13 or 18)), Size = UDim2.fromOffset(compact and 26 or 36, compact and 26 or 36), ZIndex = 4})
-		local count = UI.label(pointsBox, tostring(points), {Name = "TalentPoints", Position = UDim2.fromOffset(compact and 40 or 54, 0), Size = UDim2.new(0, compact and 36 or 50, 1, 0), Font = UI.Fonts.display, TextSize = compact and 26 or 38, TextColor3 = C.gold, ZIndex = 4})
+		local count = UI.label(pointsBox, tostring(points), {Name = "TalentPoints", Position = UDim2.fromOffset(compact and 40 or 54, 0), Size = UDim2.new(0, narrowFooter and 36 or (compact and 36 or 50), 1, 0), Font = UI.Fonts.display, TextSize = compact and 26 or 38, TextColor3 = C.gold, ZIndex = 4})
 		UI.outline(count, 3)
-		UI.label(pointsBox, compact and T("pontos", "points") or T("pontos para gastar", "points to spend"), {Position = UDim2.fromOffset(compact and 78 or 106, 0), Size = UDim2.new(1, compact and -82 or -110, 1, 0), Font = UI.Fonts.display, TextSize = compact and 13 or 17, TextWrapped = true, ZIndex = 4})
-		local exitW = compact and 140 or 210
+		if not narrowFooter then UI.label(pointsBox, compact and T("pontos", "points") or T("pontos para gastar", "points to spend"), {Position = UDim2.fromOffset(compact and 78 or 106, 0), Size = UDim2.new(1, compact and -82 or -110, 1, 0), Font = UI.Fonts.display, TextSize = compact and 13 or 17, TextWrapped = true, ZIndex = 4}) end
+		local exitW = narrowFooter and narrowW or (compact and 140 or 210)
 		UI.button(stage, T("Sair", "Exit"), closeContext, {Name = "TalentExit", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.fromOffset(exitW, footH - 20), BackgroundColor3 = C.red, TextSize = compact and 22 or 30, ZIndex = 3})
 		local confirmReset = false
 		local reset
 		reset = UI.secondary(stage, T("Redistribuir pontos", "Reset points"), function()
 			if not confirmReset then confirmReset = true; reset.Text = T("Confirmar redistribuição", "Confirm reset"); return end
 			act("ResetTalents", {}, function() showToast(T("Pontos devolvidos. Experimente outra especialidade!", "Points refunded. Try a different specialty!")) end)
-		end, {Name = "ResetTalents", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -16, 1, -12), Size = UDim2.fromOffset(compact and 150 or 230, footH - 20), TextSize = compact and 13 or 17, ZIndex = 3})
+		end, {Name = "ResetTalents", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -16, 1, -12), Size = UDim2.fromOffset(narrowFooter and narrowW or (compact and 150 or 230), footH - 20), TextSize = compact and 13 or 17, ZIndex = 3})
 	end
 	local function contextTalents(body) buildTalents(body, nil) end
 

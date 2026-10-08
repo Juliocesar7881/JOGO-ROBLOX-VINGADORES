@@ -919,11 +919,36 @@ local function rangeRing(existing, position, radius, tint)
 	return ring
 end
 
+-- A thin circumference makes the affected region readable on bright roads.
+-- Reuse the same 28 segments while aiming; never participate in raycasts.
+function kit.skillOutline(position, radius, tint)
+	if not position then
+		if kit.skillEdge then kit.skillEdge:Destroy(); kit.skillEdge = nil end
+		return
+	end
+	if not kit.skillEdge then
+		kit.skillEdge = UI.create("Folder", {Name = "SkillAreaOutline"}, effects.folder)
+		for index = 1, 28 do
+			local segment = previewPart("Edge", Vector3.one, tint, 0.06)
+			segment.Material = Enum.Material.SmoothPlastic
+			segment.Parent = kit.skillEdge
+		end
+	end
+	for index, segment in ipairs(kit.skillEdge:GetChildren()) do
+		local a, b = (index - 1) * math.pi * 2 / 28, index * math.pi * 2 / 28
+		local first = position + Vector3.new(math.cos(a) * radius, 0.38, math.sin(a) * radius)
+		local last = position + Vector3.new(math.cos(b) * radius, 0.38, math.sin(b) * radius)
+		segment.Size, segment.Color = Vector3.new(0.45, 0.08, (last - first).Magnitude), tint
+		segment.CFrame = CFrame.lookAt((first + last) / 2, last)
+	end
+end
+
 local function clearPlacement()
 	selectedHero, selectedSkill, selectedPosition, placementPinned = nil, nil, nil, false
 	if ghost then ghost:Destroy(); ghost = nil end
 	ghostParts, ghostLift = nil, nil
 	if placementRing then placementRing:Destroy(); placementRing = nil end
+	kit.skillOutline(nil)
 	buildOverlay:Clear()
 	if refs.placement then refs.placement.Visible = false end
 	if refs.hint then refs.hint.Visible = false end
@@ -987,10 +1012,16 @@ end
 
 local function updatePreview(position)
 	selectedPosition = Vector3.new(position.X, 0, position.Z)
-	local radius = selectedHero and effectiveRange(selectedHero) or (state.match and state.match.ability and state.match.ability.radius or 20)
-	if selectedHero then placementValid, kit.placementReason = positionValid(selectedPosition) else placementValid, kit.placementReason = true, nil end
-	local tint = placementValid and C.green or C.red
-	placementRing = rangeRing(placementRing, selectedPosition, radius, tint)
+	local ability = selectedSkill and state.match and state.match.ability
+	local radius = selectedHero and effectiveRange(selectedHero) or (ability and ability.radius or 0)
+	if selectedHero then placementValid, kit.placementReason = positionValid(selectedPosition)
+	else placementValid, kit.placementReason = math.abs(position.X) <= 112 and math.abs(position.Z) <= 112, nil end
+	local tint = placementValid and (ability and C.blue or C.green) or C.red
+	if radius > 0 and (selectedHero or (ability and ability.target == "area")) then
+		placementRing = rangeRing(placementRing, selectedPosition, radius, tint)
+		placementRing.Name = selectedHero and "RangePreview" or "SkillRangePreview"
+	elseif placementRing then placementRing:Destroy(); placementRing = nil end
+	if ability and ability.target == "area" and radius > 0 then kit.skillOutline(selectedPosition, radius, tint) else kit.skillOutline(nil) end
 	-- While a hero is being placed, the ground that refuses a tower is tinted.
 	buildOverlay:Update(selectedHero and state.match or nil)
 	if selectedHero then
@@ -1015,8 +1046,10 @@ local function updatePreview(position)
 	if refs.confirm then
 		refs.confirm.BackgroundColor3 = placementValid and C.background or Color3.fromRGB(110, 30, 44)
 		local reason = kit.placementReason and Rules.BuildReasons[kit.placementReason]
-		refs.confirm.Text = placementValid and (UserInputService.TouchEnabled and T("Toque no chão para colocar", "Tap the ground to place") or T("Clique para colocar  •  botão direito cancela", "Click to place  •  right click cancels"))
+		refs.confirm.Text = selectedSkill and (placementValid and (UserInputService.TouchEnabled and T("Toque na área para usar", "Tap the area to cast") or T("Clique para usar  •  botão direito cancela", "Click to cast  •  right click cancels")) or T("Escolha uma área no mapa", "Choose an area on the map"))
+			or (placementValid and (UserInputService.TouchEnabled and T("Toque no chão para colocar", "Tap the ground to place") or T("Clique para colocar  •  botão direito cancela", "Click to place  •  right click cancels"))
 			or (reason and L(reason) or T("Aqui não dá", "Not here"))
+			)
 	end
 	if refs.placement then refs.placement.Visible = true end
 end
@@ -1043,8 +1076,8 @@ local function chooseSkill(id)
 	if not ability or ability.id~=id then return end
 	local cooldown = ability.cooldown or 0
 	if cooldown > 0 then showToast(T("Habilidade recarregando.", "Ability is recharging."), true); return end
-	if ability.target == "self" then act("CastSkill", {skillId = id}); return end
 	clearPlacement()
+	if ability.target == "self" then act("CastSkill", {skillId = id}); return end
 	selectedSkill, selectedTower = id, nil
 	if refs.towerPanel then refs.towerPanel.Visible = false end
 	if towerRing then towerRing:Destroy(); towerRing = nil end
@@ -1053,6 +1086,10 @@ local function chooseSkill(id)
 	refs.hint.Visible = true
 	refs.placement.Visible = true
 	refs.confirm.Text = UserInputService.TouchEnabled and T("Toque no alvo", "Tap the target") or T("Clique no alvo  •  botão direito cancela", "Click the target  •  right click cancels")
+	if ability.target == "area" then
+		local hit = raycast(UserInputService:GetMouseLocation(), true)
+		if hit then updatePreview(hit.Position) end
+	end
 end
 
 -- 2x and auto-skip are votes the server counts; the settings write only
@@ -1106,7 +1143,7 @@ local function confirmPlacement()
 				celebrate:Float("-" .. number(reply.cost), refs.energy, C.red)
 			end
 		end)
-	elseif selectedSkill and selectedPosition and Catalog.Abilities[selectedSkill].target ~= "tower" then
+	elseif selectedSkill and selectedPosition and placementValid and Catalog.Abilities[selectedSkill].target ~= "tower" then
 		local skill, position = selectedSkill, selectedPosition
 		kit.placePendingAt = os.clock()
 		act("CastSkill", {skillId = skill, position = position}, function() kit.placePendingAt = nil; clearPlacement() end)
@@ -1472,6 +1509,9 @@ updateMatch = function()
 end
 
 render = function()
+	local ability = activeMatch() and state.match.ability
+	local aiming = selectedSkill and ability and ability.id == selectedSkill and ability.target == "area" and (ability.cooldown or 0) <= 0 and selectedSkill or nil
+	local aimPosition, aimPinned = selectedPosition, placementPinned
 	local baseModal=overlays:FindFirstChild("BaseUpgrade"); if baseModal then baseModal:Destroy() end
 	clearPlacement()
 	selectedTower = nil
@@ -1522,6 +1562,13 @@ render = function()
 		return
 	end
 	if state.phase == "Lobby" then renderLobby() elseif state.phase == "Results" then matchHud.renderResults() else renderMatch() end
+	-- Resizing the HUD must not silently cancel a power already being aimed.
+	-- Only an equipped, available regional power is restored; never cast it.
+	if aiming then
+		chooseSkill(aiming)
+		if aimPosition then updatePreview(aimPosition) end
+		placementPinned = aimPinned
+	end
 end
 
 local function frameCommanderView(inBattle)
@@ -1704,9 +1751,9 @@ local function handleWorldPointer(position, touch)
 			-- mouse keeps following the pointer after a refused spot.
 			updatePreview(hit.Position); placementPinned = touch == true
 			-- No confirmation step: a valid spot is used on the same tap or click.
-			if selectedHero and not placementValid then
+			if not placementValid then
 				local reason = kit.placementReason and Rules.BuildReasons[kit.placementReason]
-				showToast(reason and L(reason) or T("Posição inválida.", "Invalid position."), true)
+				showToast(reason and L(reason) or (selectedSkill and T("Escolha uma área no mapa.", "Choose an area on the map.") or T("Posição inválida.", "Invalid position.")), true)
 			else
 				confirmPlacement()
 			end
@@ -2027,9 +2074,14 @@ RunService.RenderStepped:Connect(function(dt)
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		if root and (root.Position - contextPanel.anchor).Magnitude > 26 then closeContext() end
 	end
-	if activeMatch() and selectedHero and not placementPinned and not UserInputService.TouchEnabled then
+	if activeMatch() and (selectedHero or (selectedSkill and state.match.ability and state.match.ability.target == "area")) and not placementPinned and not UserInputService.TouchEnabled then
 		local hit = raycast(UserInputService:GetMouseLocation(), true)
-		if hit then updatePreview(hit.Position) end
+		if hit then updatePreview(hit.Position)
+		elseif selectedSkill then
+			selectedPosition, placementValid = nil, false
+			if placementRing then placementRing:Destroy(); placementRing = nil end
+			kit.skillOutline(nil)
+		end
 	end
 end)
 
@@ -2084,6 +2136,16 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		render = function() render() end,
 		selectTower = selectTower,
 		chooseHero = chooseHero,
+		clearPlacement = clearPlacement,
+		-- Fixture only: render the real aiming path without spending a skill.
+		aimSkill = function(position)
+			local ability = state.match and state.match.ability
+			if ability and ability.target == "area" then
+				chooseSkill(ability.id)
+				updatePreview(position)
+				placementPinned = true
+			end
+		end,
 		openBaseUpgrade = openBaseUpgrade,
 		openContext = function(kind, data) openContext(kind, data) end,
 		closeContext = closeContext,
@@ -2096,6 +2158,7 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		end,
 		slowEffects = function(scale) effects.reviewSlow = scale end,
 		openSheet = function(tab) kit.sheet:Open(tab) end,
+		closeSheet = function() kit.sheet:Close() end,
 		inspectEnemy = function(enemyId, hp)
 			local def = Catalog.Enemies[enemyId]
 			if def then kit.inspect:Show("review", { def = def, lastHP = hp, maxHP = def.hp }, true) end

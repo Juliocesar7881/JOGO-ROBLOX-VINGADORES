@@ -298,9 +298,9 @@ local function session(screen)
 	function runService:BindToRenderStep(name, _, fn) self.binds[name] = fn end
 	function runService:IsStudio() return true end
 	function runService:IsServer() return false end
-	local input = { InputBegan = newSignal(), InputEnded = newSignal(), JumpRequest = newSignal(), TouchTapInWorld = newSignal(), TouchLongPress = newSignal(), TouchEnabled = false }
+	local input = { InputBegan = newSignal(), InputChanged = newSignal(), InputEnded = newSignal(), JumpRequest = newSignal(), TouchTapInWorld = newSignal(), TouchLongPress = newSignal(), TouchEnabled = false }
 	function input:GetFocusedTextBox() return self.focused end
-	function input:GetMouseLocation() return Vector2.new(SCREEN.w / 2, SCREEN.h / 2) end
+	function input:GetMouseLocation() return self.mouseLocation or Vector2.new(SCREEN.w / 2, SCREEN.h / 2) end
 	local guiService = {}
 	function guiService:GetGuiInset() return Vector2.new(0, 58), Vector2.new(0, 0) end
 	local prompts = {}
@@ -399,6 +399,11 @@ local function session(screen)
 	local function asked(action)
 		for _, name in ipairs(actions) do if name == action then return true end end
 		return false
+	end
+	local function requestCount(action)
+		local count = 0
+		for _, name in ipairs(actions) do if name == action then count += 1 end end
+		return count
 	end
 	local function click(prefix)
 		local gui = playerGui:FindFirstChild("DoomsdayUI")
@@ -599,10 +604,10 @@ local function session(screen)
 		check(named(gui, "TalentLegend") ~= nil, tag .. ": the three branches are named once, above the tree")
 		check(named(gui, "TalentLock_killGold") ~= nil and named(gui, "TalentLock_roundGold") == nil, tag .. ": a talent whose parent is too low shows a lock, an open one does not")
 		check(named(named(gui, "TalentRank_roundGold"), "Text") == nil and named(gui, "TalentRank_roundGold").Text == "0/5", tag .. ": the level badge reads 0/5")
-		-- The honeycomb is narrow enough for any panel: nothing to drag sideways.
+		-- Large research nodes live on an explorable board instead of shrinking.
 		local treeFrame = named(gui, "TalentTree")
 		local mapFrame = treeFrame and named(treeFrame, "TalentMap")
-		check(mapFrame ~= nil and (mapFrame.Size.X.Offset <= view().w or named(gui, "TalentScroll") ~= nil), tag .. ": the honeycomb fits the screen or scrolls, " .. tostring(mapFrame and mapFrame.Size.X.Offset) .. " px wide")
+		check(mapFrame ~= nil and named(gui, "TalentViewport") ~= nil and named(gui, "TalentViewport").ClipsDescendants == true, tag .. ": the large honeycomb is clipped inside its movable viewport")
 		check(named(gui, "TalentExit") ~= nil and named(gui, "TalentRoot") ~= nil, tag .. ": the full-screen tree has its Exit button and the commander's hexagon")
 		local function spent() local n = 0; for _, name in ipairs(actions) do if name == "UpgradeTalent" then n += 1 end end; return n end
 		local spentBefore = spent()
@@ -613,6 +618,67 @@ local function session(screen)
 		check(spent() == spentBefore, tag .. ": a talent whose parent is too low cannot be bought")
 		clickNamed("CloseContext")
 		push(lobbySnapshot(veteranProfile()))
+	end)
+
+	step("research board drag, touch, zoom and preserved view", function()
+		local boughtBefore = requestCount("UpgradeTalent")
+		local listenersBefore = #input.InputChanged.handlers
+		local evolved = veteranProfile({talents = {}, talentPoints = 3})
+		push(lobbySnapshot(evolved)); fx({kind="OpenPanel",panel="talents"})
+		local board = named(gui, "TalentViewport")
+		local node = named(gui, "TalentNode_roundGold")
+		local beforeX, beforeY = board:GetAttribute("PanX"), board:GetAttribute("PanY")
+		local gesture = {UserInputType = Enum.UserInputType.MouseButton1, Position = v3(120, 160, 0)}
+		board.InputBegan:Fire(gesture)
+		node.InputBegan:Fire(gesture)
+		input.InputChanged:Fire({UserInputType = Enum.UserInputType.MouseMovement, Position = v3(200, 210, 0)})
+		input.InputEnded:Fire(gesture); node.Activated:Fire(gesture); flush()
+		check(requestCount("UpgradeTalent") == boughtBefore and node:GetAttribute("DragConsumed") == true, tag .. ": dragging from a buyable node never spends a talent point")
+		check(board:GetAttribute("PanX") ~= beforeX and board:GetAttribute("PanY") ~= beforeY, tag .. ": the mouse moves the board on both axes")
+		local scale = named(main, "ScreenScale").Scale
+		check(math.abs(board:GetAttribute("PanX") - beforeX - 80 / scale) < 0.1, tag .. ": pan uses logical rather than physical pixels")
+		local keepX, keepY = board:GetAttribute("PanX"), board:GetAttribute("PanY")
+		push(lobbySnapshot(evolved))
+		board = named(gui, "TalentViewport")
+		check(board:GetAttribute("PanX") == keepX and board:GetAttribute("PanY") == keepY, tag .. ": a server refresh keeps the same view of the board")
+		-- Stand-ins do not calculate AbsolutePosition; use the independent
+		-- layout resolver rather than pretending every child starts at (0,0).
+		local rect = screenRect(board, gui, SCREEN)
+		board.AbsolutePosition = Vector2.new(rect.x, rect.y)
+		input.mouseLocation = board.AbsolutePosition + Vector2.new(100 * scale, 100 * scale) + Vector2.new(0, 58)
+		input.InputChanged:Fire({UserInputType = Enum.UserInputType.MouseWheel, Position = v3(0, 0, 1)})
+		check(math.abs(board:GetAttribute("Zoom") - 1.1) < 0.001, tag .. ": mouse wheel zooms the board")
+		for _ = 1, 30 do input.InputChanged:Fire({UserInputType = Enum.UserInputType.MouseWheel, Position = v3(0, 0, 1)}) end
+		check(board:GetAttribute("Zoom") == 1.35, tag .. ": zoom has an upper bound")
+		for _ = 1, 30 do input.InputChanged:Fire({UserInputType = Enum.UserInputType.MouseWheel, Position = v3(0, 0, -1)}) end
+		check(board:GetAttribute("Zoom") == 0.65, tag .. ": zoom has a lower bound")
+		input.mouseLocation = nil
+		clickNamed("TalentCenter")
+		local centerX = board:GetAttribute("PanX")
+		local finger = {UserInputType = Enum.UserInputType.Touch, Position = v3(90, 90, 0)}
+		board.InputBegan:Fire(finger); finger.Position = v3(150, 120, 0); input.InputChanged:Fire(finger); input.InputEnded:Fire(finger)
+		check(board:GetAttribute("PanX") ~= centerX, tag .. ": a finger pans the research board")
+		node = named(gui, "TalentNode_roundGold")
+		local tap = {UserInputType = Enum.UserInputType.MouseButton1, Position = v3(120, 160, 0)}
+		node.InputBegan:Fire(tap); input.InputEnded:Fire(tap); node.Activated:Fire(tap); flush()
+		check(requestCount("UpgradeTalent") == boughtBefore + 1, tag .. ": a stationary click still sends exactly one upgrade to the server")
+		clickNamed("CloseContext")
+		check(#input.InputChanged.handlers == listenersBefore, tag .. ": closing the board disconnects its global input handler")
+		local lastX = board:GetAttribute("PanX")
+		input.InputChanged:Fire({UserInputType = Enum.UserInputType.MouseWheel, Position = v3(0, 0, 1)})
+		check(board:GetAttribute("PanX") == lastX, tag .. ": a closed board no longer responds to input")
+		push(lobbySnapshot(veteranProfile()))
+		-- A different available canvas preserves the explored region rather
+		-- than keeping the old desktop offsets on a narrow phone.
+		fx({kind="OpenPanel",panel="talents"})
+		localPlayer:SetAttribute("DoomReviewSize", "375x667"); flush()
+		board = named(gui, "TalentViewport")
+		local map = named(board,"TalentMap")
+		local root = named(map,"TalentRoot")
+		local viewRect = screenRect(board,gui,SCREEN)
+		local rootX = map.Position.X.Offset + root.Position.X.Offset * named(map,"TalentZoom").Scale
+		check(rootX > 0 and rootX < viewRect.w, tag .. ": the root remains reachable after changing screen shape and node zoom")
+		localPlayer:SetAttribute("DoomReviewSize", ""); flush(); clickNamed("CloseContext")
 	end)
 
 	step("gallery and shop category navigation", function()
@@ -1960,6 +2026,40 @@ local function session(screen)
 	-- A card reads like a card: a medallion, one bar per effect with the number
 	-- green when it helps and red when it costs, and your running totals in a
 	-- corner; the cards have a button of their own.
+	step("leader ability previews server radius before casting", function()
+		local castBefore = requestCount("CastSkill")
+		local ability = {id = "repulsorBarrage", heroId = "ironman", rank = 5, target = "area", cooldown = 0, radius = 37.5}
+		push(matchSnapshot(profile, "Wave", {ability = ability, cardOffers = {}}))
+		rayHit = {Instance = workspace:FindFirstChild("DoomWorld").Towers:GetChildren()[1]:FindFirstChild("UpperTorso", true), Position = v3(12, 0, 18)}
+		input.InputBegan:Fire({UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Q}, false)
+		frames(1/60)
+		local ring = named(workspace, "SkillRangePreview")
+		check(ring and ring.Size.Y == 75 and ring.Size.Z == 75, tag .. ": Q shows the server's effective diameter before a click")
+		check(requestCount("CastSkill") == castBefore, tag .. ": aiming a regional power does not spend it")
+		local outline = named(workspace, "SkillAreaOutline")
+		check(outline and #outline:GetChildren() == 28, tag .. ": the radius has a bounded visible outline")
+		rayHit.Position = v3(42, 0, -20); frames(1/60)
+		check(ring and ring.CFrame.Position.X == 42 and ring.CFrame.Position.Z == -20, tag .. ": the ability preview follows the pointer every frame")
+		check(named(workspace, "SkillAreaOutline") == outline and #outline:GetChildren() == 28, tag .. ": pointer motion reuses outline segments")
+		check(string.find(named(gui, "PlacementHint").Text, "usar", 1, true) ~= nil, tag .. ": the power hint says cast rather than place a hero")
+		localPlayer:SetAttribute("DoomReviewSize", "375x667"); flush()
+		ring = named(workspace,"SkillRangePreview")
+		check(ring and ring.Size.Y == 75 and requestCount("CastSkill") == castBefore, tag .. ": HUD relayout keeps the skill preview without casting")
+		localPlayer:SetAttribute("DoomReviewSize", ""); flush(); ring = named(workspace,"SkillRangePreview")
+		rayHit.Position = v3(120, 0, 0); frames(1/60)
+		input.InputBegan:Fire({UserInputType = Enum.UserInputType.MouseButton1, Position = v3(5, 5, 0)}, false)
+		check(requestCount("CastSkill") == castBefore and ring.Color.R == UILayout.Colors.red.R and ring.Color.G == UILayout.Colors.red.G, tag .. ": off-map aiming is red and never submits a cast")
+		rayHit = nil; frames(1/60)
+		check(named(workspace, "SkillRangePreview") == nil, tag .. ": aiming at the sky clears the stale area")
+		check(named(workspace, "SkillAreaOutline") == nil, tag .. ": aiming at the sky also clears the perimeter")
+		input.InputBegan:Fire({UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Escape}, false)
+		ability = {id = "airCommand", heroId = "falcon", target = "self", cooldown = 0, radius = 0}
+		push(matchSnapshot(profile, "Wave", {ability = ability, cardOffers = {}}))
+		input.InputBegan:Fire({UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Q}, false)
+		check(requestCount("CastSkill") == castBefore + 1 and named(workspace, "SkillRangePreview") == nil and named(workspace, "SkillAreaOutline") == nil, tag .. ": a global power casts directly without a fictitious circle")
+		push(lobbySnapshot(profile))
+	end)
+
 	step("cards have a medallion, green and red numbers, totals and a button", function()
 		local function same(a, b) return a ~= nil and math.abs(a.R - b.R) + math.abs(a.G - b.G) + math.abs(a.B - b.B) < 0.01 end
 		local deck = { cardMode = true, cards = { "sharpen", "sharpen" }, cardOffers = { "glassCannon", "sharpen", "supplyDrop" } }
@@ -2495,6 +2595,9 @@ local function session(screen)
 				localPlayer:SetAttribute("DoomReview", stage)
 				flush(); advance(1); flush()
 			end
+			localPlayer:SetAttribute("DoomReview", "sheet"); flush()
+			localPlayer:SetAttribute("DoomReview", "skillaim"); flush()
+			check(named(gui,"CommanderSheet") == nil and named(workspace,"SkillRangePreview") ~= nil, tag .. ": aiming review closes the previous sheet and keeps its radius visible")
 			check(not overlays:FindFirstChild("ChestReel") and not overlays:FindFirstChild("ChestReveal"), tag .. ": the next fixture clears the chest sequence")
 			localPlayer:SetAttribute("DoomReview", "reel"); flush(); advance(1); flush()
 			localPlayer:SetAttribute("DoomReview", "afk"); flush(); advance(5); flush()

@@ -92,6 +92,22 @@ assert(effectsPlayed==count+3,'Every note of the jingle plays')
 Config.Audio.levelUp=77;clock+=1;count=effectsPlayed;delayed={}
 audio:Cue('levelUp')
 assert(effectsPlayed==count+1 and #delayed==0,'An uploaded sound replaces the jingle')
+-- Research board: quiet own cues, a bounded pool and both mute switches.
+Config.Audio.click=78;Config.Audio.place=79;Config.Audio.open=80
+settings.interface=true;settings.effects=true;clock+=1;count=effectsPlayed
+audio:Talent('hover');audio:Talent('hover')
+assert(effectsPlayed==count+1,'Repeated hover notes are rate limited')
+for i=1,20 do clock+=.2;audio:Talent('hover') end
+assert(#audio.voices['talent:hover']==3,'Hover audio reuses three voices')
+local hover=audio.voices['talent:hover'][audio.voiceIndex['talent:hover']]
+assert(hover.Volume<=.06 and hover.PlaybackSpeed>1,'Research hover stays quiet and has its own pitch')
+settings.interface=false;clock+=1;count=effectsPlayed
+audio:Talent('snap');audio:Talent('center')
+assert(effectsPlayed==count,'Interface mute silences all research sounds')
+settings.interface=true;settings.effects=false;clock+=1;audio:Talent('snap')
+assert(effectsPlayed==count,'Effects mute also silences research sounds')
+settings.effects=true;clock+=1;audio:Talent('snap');audio:Talent('center')
+assert(effectsPlayed==count+2,'Research snap and center have independent cues')
 print('PASS audio: transitions, mute, legacy settings, result cues, map ambience, weapon voice budget and jingles')
 '''.replace('__AUDIO__', source)
 with tempfile.TemporaryDirectory(prefix='doom-audio-') as temp:
