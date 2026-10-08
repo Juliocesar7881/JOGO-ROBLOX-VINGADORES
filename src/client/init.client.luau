@@ -1820,6 +1820,9 @@ pcall(function()
 		local action, object = prompt:GetAttribute("Action" .. suffix), prompt:GetAttribute("Object" .. suffix)
 		if action then prompt.ActionText = action end
 		if object then prompt.ObjectText = object end
+		-- A prompt written "Abrir / Open" by the server shows this player's half.
+		prompt.ActionText = serverText(prompt.ActionText)
+		prompt.ObjectText = serverText(prompt.ObjectText)
 		showPrompt(prompt, inputType)
 	end)
 	prompts.PromptHidden:Connect(hidePrompt)

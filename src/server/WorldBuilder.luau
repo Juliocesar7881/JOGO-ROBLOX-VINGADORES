@@ -2733,10 +2733,12 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 			node:SetAttribute("LobbyTextEN",node.Name=="Title" and "STEP CLOSER" or "CHOOSE • SUMMON • EQUIP")
 		end
 	end
-	interactable(pad,isBase and "Invocar bases" or "Invocar heróis",function(player)
+	local hallPrompt=interactable(pad,isBase and "Invocar bases" or "Invocar heróis",function(player)
 		local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if root and (root.Position-pad.Position).Magnitude<=14 then openPanel(player,"chests",{chestId=chestId}) end
 	end,12)
+	hallPrompt:SetAttribute("ObjectPT",isBase and "Invocar bases" or "Invocar heróis"); hallPrompt:SetAttribute("ObjectEN",isBase and "Summon bases" or "Summon heroes")
+	hallPrompt:SetAttribute("ActionPT","Abrir"); hallPrompt:SetAttribute("ActionEN","Open")
 	return model,{center=at(0,4,11.5).Position,size=Vector3.new(12,8,14),frame=at(0,4,11.5),
 		purchaseCenter=at(0,4,3).Position,purchaseSize=Vector3.new(26,10,31),purchaseFrame=at(0,4,3),
 		chestId=chestId,kind=isBase and "base" or "hero"}
@@ -2745,7 +2747,7 @@ end
 -- The store as a physical kiosk row: the drone spins in a display case, the
 -- vault holds the gold packs, the mannequin wears the VIP look. No aisle of
 -- buttons, one stand per product.
-local function buildShopStand(lobby, x, z, shopKind, shopKey, displayName, openPanel, showcase)
+local function buildShopStand(lobby, x, z, shopKind, shopKey, displayName, openPanel, showcase, displayEN)
 	local model = Instance.new("Model")
 	model.Name, model.Parent = "Shop_" .. shopKey, lobby
 	model:SetAttribute("Kind", "ShopStand")
@@ -2789,10 +2791,14 @@ local function buildShopStand(lobby, x, z, shopKind, shopKey, displayName, openP
 	else
 		part(model, "Chip", Vector3.new(1.4, 1.8, 1.4), CFrame.new(x, y+2.4, z), Color3.fromRGB(120, 220, 255), Enum.Material.Neon)
 	end
-	label(stand, displayName, Vector3.new(0, 7.4, 0), Color3.fromRGB(255, 210, 103), 220, 40)
+	local nameTag = label(stand, displayName, Vector3.new(0, 7.4, 0), Color3.fromRGB(255, 210, 103), 220, 40)
+	-- Both languages ride along; each client shows its own.
+	nameTag:SetAttribute("LobbyTextPT", displayName); nameTag:SetAttribute("LobbyTextEN", displayEN or displayName)
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= stand then p.CanCollide = false end end
 	model.PrimaryPart = stand
-	interactable(stand, displayName, function(player) openPanel(player, "shop", { shopKind = shopKind, shopKey = shopKey }) end)
+	local prompt = interactable(stand, displayName, function(player) openPanel(player, "shop", { shopKind = shopKind, shopKey = shopKey }) end)
+	prompt:SetAttribute("ObjectPT", displayName); prompt:SetAttribute("ObjectEN", displayEN or displayName)
+	prompt:SetAttribute("ActionPT", "Abrir"); prompt:SetAttribute("ActionEN", "Open")
 	return model
 end
 
@@ -3644,7 +3650,8 @@ function World:BuildMarket(lobby, hq)
 	for index, entry in ipairs(SHOP_STANDS) do
 		local pass = entry.kind == "pass" and self.catalog.Products.Passes[entry.key]
 		local displayName = pass and pass.name.pt or (entry.kind == "hero" and "Vitrine de Heróis" or "Cofre de Ouro")
-		buildShopStand(lobby, HUB.X + LAYOUT.kiosks[index], HUB.Z + LAYOUT.kioskDz, entry.kind, entry.key, displayName, self.openPanel, entry.kind == "hero" and showcase or nil)
+		local displayEN = pass and pass.name.en or (entry.kind == "hero" and "Hero Showcase" or "Gold Vault")
+		buildShopStand(lobby, HUB.X + LAYOUT.kiosks[index], HUB.Z + LAYOUT.kioskDz, entry.kind, entry.key, displayName, self.openPanel, entry.kind == "hero" and showcase or nil, displayEN)
 	end
 end
 
