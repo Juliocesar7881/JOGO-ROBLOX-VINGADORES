@@ -360,6 +360,7 @@ local function session(screen)
 	local actionPayloads = {}
 	-- What the mocked server answers to OpenChest; nil keeps the plain {} reply.
 	local chestResult
+	local rewardResult
 	local collectorPrice, leaderboardDown = false, false
 	requestRemote.InvokeServer = function(_, action, payload)
 		table.insert(actions, action)
@@ -377,6 +378,7 @@ local function session(screen)
 			return { ok = true, data = { rows = { { rank = 1, userId = 5, name = "Ana", waves = 42 }, { rank = 2, userId = LOCAL_ID, name = "Tester", waves = 12 } }, season = 1, personal = 12 } }
 		end
 		if action == "OpenChest" and chestResult then return { ok = true, data = { result = chestResult } } end
+		if rewardResult and (action:sub(1,5) == "Claim" or action == "RedeemCode") then return { ok = true, data = { result = rewardResult } } end
 		return { ok = true, data = {} }
 	end
 	local function push(snapshot)
@@ -869,7 +871,9 @@ local function session(screen)
 		local stage = reveal()
 		check(stage ~= nil, tag .. ": then the prize card opens")
 		local card = stage and named(stage, "RevealHeroCard")
-		check(card ~= nil and card.Visible == false, tag .. ": the hero stays hidden while the chest opens")
+		check(card ~= nil and card.Visible == true, tag .. ": the already granted prize appears immediately after the reel")
+		check(stage and named(stage,"ChestView") == nil and named(stage,"RevealChest").Visible == false, tag .. ": no second chest model or opening after the reel")
+		check(stage and named(stage,"RevealFlash").BackgroundTransparency == 1, tag .. ": no second opening flash")
 		-- The hero is not a photograph: it leaps out of the chest and keeps moving.
 		local function findRoot(node)
 			for _, child in ipairs(node:GetChildren()) do
@@ -889,8 +893,7 @@ local function session(screen)
 				lowest, highest = math.min(lowest, y), math.max(highest, y)
 				if (heroRoot.CFrame.LookVector - first.LookVector).Magnitude > 0.5 then turned = true end
 			end
-			check(highest - lowest > 1.5, tag .. ": the revealed hero leaps, rising " .. tostring(highest - lowest) .. " studs")
-			check(turned, tag .. ": and turns a full circle on the way")
+			check(highest - lowest < 1.5, tag .. ": the receipt does not repeat a chest-emergence leap")
 			check(portrait ~= nil and portrait.Parent ~= nil, tag .. ": the live portrait is still the card's portrait")
 		else
 			check(true, tag .. ": this hero has no jointed figure to animate")
@@ -1101,6 +1104,15 @@ local function session(screen)
 		check(named(gui, "ClaimFreeChest") ~= nil, tag .. ": the free chest card renders")
 		clickNamed("ClaimFreeChest")
 		check(asked("ClaimFreeChest"), tag .. ": the free chest sends its claim intent")
+		rewardResult={chest={chestId="rare",heroId="widow",rarity="rare",duplicate=false}}
+		clickNamed("ClaimFreeChest")
+		check(named(overlays,"ChestReel") ~= nil and named(overlays,"ChestReveal") == nil, tag .. ": a reward chest starts the same reel as a purchased chest")
+		clickNamed("RevealSkip"); clickNamed("RevealSkip"); frames(1/30,3)
+		local receipt=named(overlays,"ChestReveal")
+		check(receipt and named(receipt,"RevealHeroCard").Visible and named(receipt,"ChestView") == nil, tag .. ": reward reel finishes with a receipt, no second opening")
+		check(receipt and named(receipt,"RevealName").Text==Catalog.Heroes.widow.name.pt, tag .. ": reward receipt displays the server-granted hero")
+		clickNamed("RevealContinue")
+		rewardResult=nil
 		clickNamed("ClaimLogin")
 		check(asked("ClaimLogin"), tag .. ": the login streak sends its claim intent")
 		check(named(gui, "LoginDay_3") ~= nil, tag .. ": the seven-day strip renders every day")
@@ -1121,6 +1133,22 @@ local function session(screen)
 		check(named(gui, "SeasonUnlock") ~= nil, tag .. ": without the pass the card offers the premium track")
 		clickNamed("ClaimSeason")
 		check(asked("ClaimSeason"), tag .. ": the season claim sends its intent")
+		rewardResult={chests={
+			{chestId="rare",heroId="widow",rarity="rare",duplicate=false},
+			{chestId="base_epic",baseId="outpost",rarity="common",duplicate=true,refundGold=100},
+			{chestId="legendary",heroId="thor",rarity="legendary",duplicate=false},
+		}}
+		clickNamed("ClaimSeason")
+		check(named(overlays,"ChestReel")~=nil,tag..": a season batch starts its first reel")
+		clickNamed("RevealSkip");clickNamed("RevealSkip");frames(1/30,45)
+		local second=named(overlays,"ChestReel")
+		check(second and string.find(named(second,"ReelTitle").Text,Catalog.Upper(Catalog.Chests.base_epic.name.pt),1,true)~=nil,
+			tag..": mixed rewards use the second prize's actual base chest")
+		clickNamed("ReelSkipAll")
+		local summary=named(overlays,"ChestSummary")
+		check(summary and countNamed(summary,"SummaryTile")==3,tag..": reward batches preserve all prizes in one summary")
+		clickNamed("RevealContinue")
+		rewardResult=nil
 		push(lobbySnapshot(veteranProfile({ rewards = rewardsFixture("ready"), seasonStatus = Rules.SeasonStatus({ id = 1, xp = Rules.SeasonThreshold(3), freeClaimed = 3, premiumClaimed = 3 }, true) })))
 		check(named(gui, "SeasonUnlock") == nil, tag .. ": the premium owner is not offered the pass again")
 		local codeBox = named(gui, "CodeInput")
@@ -2469,6 +2497,9 @@ local function session(screen)
 		push(results)
 		check(countNamed(overlays, "CelebrationBanner") <= 1, tag .. ": a re-render of the same results never repeats the celebration")
 		local back, body = named(gui, "ResultReturn"), named(gui, "ResultBody")
+		local gutter = body and body:FindFirstChildOfClass("UIPadding")
+		check(gutter and gutter.PaddingLeft.Offset >= 6 and gutter.PaddingRight.Offset >= 6 and gutter.PaddingTop.Offset >= 6 and gutter.PaddingBottom.Offset >= 6,
+			tag .. ": result cards keep their rounded strokes inside the scroll clip on all four sides")
 		check(back ~= nil and body ~= nil and back.Parent == body.Parent,
 			tag .. ": return action remains outside the long rewards scroll")
 		local backRect, bodyRect = screenRect(back, gui, SCREEN), screenRect(body, gui, SCREEN)

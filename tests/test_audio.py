@@ -147,6 +147,34 @@ assert(refined.voices.place[1].SoundId=='rbxassetid://79','Dedicated recording u
 refined:Cue('place',0);assert(effectsPlayed==count+1,'Dedicated cue keeps anti-repeat spacing')
 settings.effects=false;clock+=1;refined:Cue('place')
 assert(effectsPlayed==count+1,'Dedicated cue keeps effects mute')
+-- Moderated battle uploads use an action arrangement, never the lobby song.
+Instance.new=originalNew
+Config.Audio.ambLatveria,Config.Audio.shotMelee,Config.Audio.shotArrow=81,82,83
+settings.music,settings.effects=true,false
+state.phase,state.wave='Wave',9
+local action=Audio.new(function() return state end)
+delayed={}
+action:Update(state)
+action.sounds.battle.IsLoaded=false
+for _,fn in ipairs(table.clone(delayed)) do fn() end
+assert(action.track=='action' and action.actionPlaying,'Unloaded battle starts the action arrangement')
+assert(not action.sounds.lobby or not action.sounds.lobby.IsPlaying,'It never plays the peaceful lobby as battle fallback')
+assert(action.actionVoices.bed.SoundId=='rbxassetid://81' and action.actionVoices.bed.Looped,'Action uses the owned minor choir')
+action:Step()
+assert(action.actionVoices.kick.IsPlaying,'Action drums play with Music enabled even when Effects is muted')
+clock+=.625;action:Step()
+assert(action.actionVoices.snare.IsPlaying,'Backbeat uses a different owned percussion stem')
+local voiceCount=#sounds
+for index=1,100 do clock+=.3125;action:Step() end
+assert(#sounds==voiceCount,'Long playback reuses its three voices')
+settings.music=false;action:Update(state)
+for _,sound in pairs(action.actionVoices) do assert(not sound.IsPlaying,'Music mute stops every action stem') end
+settings.music=true;action:Update(state)
+assert(action.actionPlaying,'Music can resume the action arrangement')
+state.phase='Results';state.results={victory=false};action:Update(state)
+assert(not action.actionPlaying,'Results stop the percussion without delayed beats')
+state.phase='Lobby';action:Update(state)
+assert(action.track=='lobby' and action.sounds.lobby.PlaybackSpeed==1,'Lobby keeps the original track and speed')
 print('PASS audio: transitions, mute, legacy settings, result cues, map ambience, weapon voice budget and jingles')
 '''.replace('__AUDIO__', source)
 with tempfile.TemporaryDirectory(prefix='doom-audio-') as temp:

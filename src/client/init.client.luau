@@ -1339,7 +1339,7 @@ local function renderMatch()
 	controlTip(state.match and state.match.cardMode and refs.cardsButton or nil, T("Cartas", "Cards"), T("As cartas escolhidas e o bônus total delas.", "The cards you picked and their total bonus."))
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	UI.windowSkin(bottom, C.gold)
-	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 7), Size = UDim2.new(1, -14, 1, -14), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
+	local cards = UI.scroll(bottom, {Position = UDim2.fromOffset(7, 1), Size = UDim2.new(1, -14, 1, -2), ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollBarThickness = 2})
 	UI.list(cards, 7, true)
 	refs.heroCards = {}
 	for index = 1, 5 do
@@ -2016,6 +2016,7 @@ kit.inspect = require(script:WaitForChild("Inspect")).new({
 	gui = overlays, UI = UI, C = C, T = T, L = L, Catalog = Catalog, effects = effects, state = function() return state end,
 })
 RunService.RenderStepped:Connect(function(dt)
+	audio:Step()
 	kit.autoQuality:Step(dt)
 	kit.inspect:Step(dt or 1 / 60)
 	stepShowcases()

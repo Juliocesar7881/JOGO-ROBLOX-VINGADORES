@@ -15,6 +15,7 @@ function Panels.new(ctx)
 	local celebrate, contains, copy, heading, heroName, heroPortrait, kit, levelProgress, mapName, number, pending, player = ctx.celebrate, ctx.contains, ctx.copy, ctx.heading, ctx.heroName, ctx.heroPortrait, ctx.kit, ctx.levelProgress, ctx.mapName, ctx.number, ctx.pending, ctx.player
 	local productInfo, profile, request, routePreview, screenSize, showToast, smallText = ctx.productInfo, ctx.profile, ctx.request, ctx.routePreview, ctx.screenSize, ctx.showToast, ctx.smallText
 	local openContext, renderContext, fetchProducts, closeContext = ctx.openContext, ctx.renderContext, ctx.fetchProducts, ctx.closeContext
+	local rewardGiven
 	-- Training starts at once (the server boards the commander); the panel steps aside.
 	local function startTraining() closeContext(); act("StartTraining", {}) end
 
@@ -347,7 +348,7 @@ function Panels.new(ctx)
 			local def=Catalog.Chests[id]; local chosen=id==kit.selectedChest
 			local color=UI.color(def.color)
 			local tile=UI.button(selector,"",function() kit.selectedChest=id; kit.confirmChest=nil; renderContext() end,
-				{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+3,chosen and 2 or 8),Size=UDim2.fromOffset(tileWidth-8,tileH),BackgroundColor3=chosen and color:Lerp(UI.Skin.body,0.15) or color:Lerp(UI.Skin.body,0.7)})
+				{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+6,chosen and 6 or 8),Size=UDim2.fromOffset(tileWidth-12,tileH),BackgroundColor3=chosen and color:Lerp(UI.Skin.body,0.15) or color:Lerp(UI.Skin.body,0.7)})
 			UI.stroke(tile,chosen and Color3.new(1,1,1) or C.ink,chosen and 3.5 or 2.5)
 			UI.illustration(tile,"crate",color,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=wide and UDim2.fromOffset(62,54) or UDim2.fromOffset(46,40)})
 			UI.label(tile,L(def.name),{Position=UDim2.fromOffset(4,wide and 58 or 44),Size=UDim2.new(1,-8,0,wide and 24 or 22),TextWrapped=true,TextSize=wide and 15 or 12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
@@ -464,13 +465,13 @@ function Panels.new(ctx)
 		local caption=UI.frame(galleryParent,{Name="SummonOddsCaption",Size=UDim2.new(1,-6,0,30),BackgroundTransparency=1})
 		UI.label(caption,T("Pode vir neste baú","In this chest"),{Size=UDim2.new(1,0,1,0),TextSize=20,Font=UI.Fonts.display,TextColor3=C.cream})
 		local cols=wide and 3 or math.max(2,math.floor(width/145))
-		local gallery=UI.scroll(galleryParent,{Name="SummonOdds",Position=UDim2.fromOffset(0,32),Size=UDim2.new(1,-6,0,galleryHeight),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,math.ceil(#outcomes/cols)*128),ScrollBarThickness=5,ScrollBarImageColor3=tint})
+		local gallery=UI.scroll(galleryParent,{Name="SummonOdds",Position=UDim2.fromOffset(0,32),Size=UDim2.new(1,-6,0,galleryHeight),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,math.ceil(#outcomes/cols)*128+6),ScrollBarThickness=5,ScrollBarImageColor3=tint})
 		gallery:SetAttribute("SummonChestId",kit.selectedChest)
 		gallery.CanvasPosition=scrolls.odds or Vector2.new(0,0)
 		for i,outcome in ipairs(outcomes) do
 			local rarityColor=UI.color(Catalog.Rarities[outcome.rarity].color)
 			local mine=owned[outcome.id]
-			local card=UI.frame(gallery,{Name="ChestHero_"..outcome.id,Position=UDim2.new(((i-1)%cols)/cols,2,0,math.floor((i-1)/cols)*128),Size=UDim2.new(1/cols,-6,0,122),BackgroundColor3=rarityColor})
+			local card=UI.frame(gallery,{Name="ChestHero_"..outcome.id,Position=UDim2.new(((i-1)%cols)/cols,6,0,math.floor((i-1)/cols)*128+6),Size=UDim2.new(1/cols,-12,0,116),BackgroundColor3=rarityColor})
 			UI.corner(card,12)
 			UI.stroke(card,mine and C.ink or Color3.new(1,1,1),mine and 2.5 or 3)
 			UI.create("UIGradient",{Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromRGB(120,120,130)),Rotation=90},card)
@@ -711,7 +712,9 @@ function Panels.new(ctx)
 				UI.label(fill.Parent, progress .. " / " .. (quest.target or 1), {Size = UDim2.fromScale(1, 1), TextSize = 16, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
 				UI.label(card, number(quest.gold or 0) .. T(" Ouro", " Gold") .. "\n" .. number(quest.xp or 0) .. " XP", {Position = UDim2.new(1, -176, 0, 6), Size = UDim2.fromOffset(164, 46), TextWrapped = true, TextSize = 18, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
 				-- The button says what it does now: claim when ready, otherwise the goal is still open.
-				local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or (ready and T("Resgatar recompensa", "Claim reward") or T("Em andamento", "In progress")), function() act("ClaimQuest", {questId = id}) end, {Name = "ClaimQuest_" .. id, Position = UDim2.new(1, -176, 0, 62), Size = UDim2.fromOffset(164, 56), BackgroundColor3 = ready and C.green or C.card, TextSize = 19})
+				local claim = UI.button(card, quest.claimed and T("Resgatado ✓", "Claimed ✓") or (ready and T("Resgatar recompensa", "Claim reward") or T("Em andamento", "In progress")), function()
+					act("ClaimQuest", {questId = id}, function(snapshot) rewardGiven(snapshot and snapshot.result) end)
+				end, {Name = "ClaimQuest_" .. id, Position = UDim2.new(1, -176, 0, 62), Size = UDim2.fromOffset(164, 56), BackgroundColor3 = ready and C.green or C.card, TextSize = 19})
 				if quest.claimed or progress < (quest.target or 1) then UI.disabled(claim) end
 			end
 		end
@@ -806,22 +809,23 @@ function Panels.new(ctx)
 	-- a free chest on a timer, a daily login streak, gifts for time played today
 	-- and one-time milestones for the collection. Nothing here can be bought.
 	local lastRewardResult
-	local function rewardGiven(paid)
+	rewardGiven = function(paid)
 		if type(paid) ~= "table" then return end
-		-- A season claim can open several chests: the last (the best) is the one shown.
+		-- Preserve every committed prize, including a season's mixed chest batch.
 		local opened = type(paid.chests) == "table" and #paid.chests or 0
-		if opened > 0 then paid.chest = paid.chests[opened] end
+		local lastChest = opened > 0 and paid.chests[opened] or paid.chest
 		local parts = {}
 		if paid.gold and paid.gold > 0 then table.insert(parts, "+" .. number(paid.gold) .. T(" Ouro", " Gold")) end
 		if paid.xp and paid.xp > 0 then table.insert(parts, "+" .. number(paid.xp) .. " XP") end
-		if paid.chest then
-			local hero = Catalog.Heroes[paid.chest.heroId]
-			table.insert(parts, paid.chest.duplicate and T("herói repetido → recompensa", "duplicate hero → reward") or (T("novo herói: ", "new hero: ") .. (hero and L(hero.name) or paid.chest.heroId)))
+		if lastChest then
+			local hero = Catalog.Bases[lastChest.baseId] or Catalog.Heroes[lastChest.heroId]
+			table.insert(parts, lastChest.duplicate and T("repetido → recompensa", "duplicate → reward") or (T("novo na coleção: ", "new in collection: ") .. (hero and L(hero.name) or "")))
 		end
 		if opened > 1 then table.insert(parts, "+" .. (opened - 1) .. T(" baús abertos", " more chests opened")) end
-		lastRewardResult = paid
+		lastRewardResult = copy(paid)
+		lastRewardResult.chest = lastChest
 		showToast(#parts > 0 and table.concat(parts, "  •  ") or T("Recompensa resgatada!", "Reward claimed!"), false)
-		if paid.chest then celebrate:Chest(paid.chest, paid.chest.chestId) else audio:Cue("upgrade") end
+		if lastChest then celebrate:Reel(opened > 0 and paid.chests or {lastChest}, lastChest.chestId) else audio:Cue("upgrade") end
 	end
 
 	local function contextRewards(body)

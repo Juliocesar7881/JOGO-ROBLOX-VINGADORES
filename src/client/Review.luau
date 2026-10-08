@@ -289,7 +289,8 @@ function Review.start(api)
 				local result = stage == "revealbase" and { baseId = Catalog.BaseOrder[#Catalog.BaseOrder], rarity = "epic", duplicate = false, refundGold = 0 }
 					or stage == "revealcommon" and { heroId = common, rarity = "common", duplicate = true, refundGold = 150, refundMastery = 60 }
 					or { heroId = legendary, rarity = "legendary", duplicate = false, refundGold = 0, refundMastery = 0 }
-				api.celebrate:Chest(result, stage == "revealbase" and "base_epic" or "legendary")
+				-- Review the actual post-reel receipt, not the retired second opening.
+				api.celebrate:Chest(result, stage == "revealbase" and "base_epic" or "legendary", nil, {quick=true})
 			elseif stage == "premiumgold" then
 				api.openContext("shop", { hud = true, shopKind = "product" })
 			elseif stage == "basechests" then

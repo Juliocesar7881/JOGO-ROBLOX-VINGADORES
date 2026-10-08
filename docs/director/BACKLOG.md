@@ -205,3 +205,10 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M19.2 Mix atual mais discreto: coleta curta, construção mecânica, melhoria com carga, habilidades por família, distância, variação e limite de vozes. Testes de repetição, mute, camadas agendadas, transições e famílias aprovados. IDs antigos preservados.
 - [!] M19.3 Doze fontes WAV novas produzidas e verificadas, ainda sem upload/moderação: confirmação de autoria somente pelo dono. Arquivos, manifesto e procedimento em `assets/audio/refined/README.md`. O mix M19.2 já funciona com os assets existentes.
 - [x] M19.4 Código `ba3bd26` no main, fontes finais comparadas e sincronizadas seletivamente; lobby de edição refeito. Publicação no mesmo lugar da equipe confirmada por `PublishSuccessful` em 08/10/2026 às 16:17:38 UTC (13:17 local). Capturas, testes e limites em `docs/REFINAMENTO_LOBBY_AUDIO_2026-10-08.md`.
+
+## M20 — Contornos, baús e música de combate, 08/10
+
+- [x] M20.1 Margens para contornos em listas, galerias e barra de heróis, com canvas preservando rolagem. Capturas de PC, celular horizontal/vertical e inglês conferidas no Studio, sem cortes de texto detectados.
+- [x] M20.2 Recompensas na mesma roleta da compra; todos os prêmios de lotes preservados e cartão imediato, sem segunda abertura. Testes do cliente em seis formatos aprovados.
+- [x] M20.3 Trilha não carregada usa arranjo de ação com coro menor e percussão dos próprios áudios; Música/Efeitos independentes e lobby mantido. Três stems carregados durante partida real, lobby parado e encerramento no resultado conferidos. Testes de áudio aprovados; avaliação auditiva pelo jogador pendente.
+- [ ] M20.4 Conferir contornos e fluxo no Studio, sincronizar seletivamente e publicar no lugar da equipe. Registro em `docs/REFINAMENTO_HUD_BAUS_2026-10-08.md`.

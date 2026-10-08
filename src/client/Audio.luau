@@ -35,6 +35,15 @@ local PALETTES = {
 }
 local CUE_GAPS = {click=0.08,open=0.25,collect=0.2,place=0.14,upgrade=0.3,abilityReady=1,wave=0.6,breach=0.4}
 local PITCHES = {0.96, 1.03, 0.99, 1.06, 0.93}
+-- A playable action arrangement while the dedicated battle upload is under
+-- moderation. All stems are our owned recordings: minor choir, bass drum
+-- and filtered noise percussion. It never substitutes the lobby melody.
+local ACTION_STEP = 60 / 96 / 2
+local ACTION_STEMS = {
+	bed = {"ambLatveria", 1, 0.18, -12, 3, -5},
+	kick = {"shotMelee", 0.85, 0.10, -22, -8, 4},
+	snare = {"shotArrow", 1.45, 0.065, 4, -12, -24},
+}
 
 function Audio.new(getState)
 	local self = setmetatable({ getState = getState, sounds = {}, fades = {}, track = nil, lastCue = {}, voices = {}, voiceIndex = {}, shotVoices = 0, ambient = nil }, Audio)
@@ -107,6 +116,7 @@ function Audio:_fade(name, volume)
 end
 
 function Audio:_stopMusic(except)
+	if except ~= "action" then self:_action(false) end
 	for name, sound in pairs(self.sounds) do
 		if MUSIC[name] and name ~= except then
 			if sound.IsPlaying then self:_fade(name, 0) else sound:Stop() end
@@ -114,10 +124,60 @@ function Audio:_stopMusic(except)
 	end
 end
 
+function Audio:_actionVoice(stem)
+	self.actionVoices = self.actionVoices or {}
+	if self.actionVoices[stem] then return self.actionVoices[stem] end
+	local def = ACTION_STEMS[stem]
+	local template = self:_sound(def[1])
+	if not template then return nil end
+	local sound = Instance.new("Sound")
+	sound.Name, sound.SoundId, sound.Parent = "Action_" .. stem, template.SoundId, self.folder
+	sound.PlaybackSpeed, sound.Volume, sound.Looped = def[2], def[3], stem == "bed"
+	local eq = Instance.new("EqualizerSoundEffect")
+	eq.HighGain, eq.MidGain, eq.LowGain, eq.Parent = def[4], def[5], def[6], sound
+	self.actionVoices[stem] = sound
+	return sound
+end
+
+function Audio:_action(enabled)
+	if enabled == self.actionPlaying then return end
+	self.actionPlaying = enabled
+	if not enabled then
+		for _, sound in pairs(self.actionVoices or {}) do sound:Stop() end
+		return
+	end
+	self.actionEpoch, self.actionBeat = os.clock(), -1
+	local bed = self:_actionVoice("bed")
+	if bed then bed.TimePosition = 0; bed:Play() end
+end
+
+-- The render driver plays only the current beat: a slow frame never queues
+-- a burst of missed drums. Three reusable voices are independent of combat
+-- sounds and follow Music, including when Effects is muted.
+function Audio:Step()
+	if not self.actionPlaying then return end
+	if not self:_allowed() then self:_action(false); return end
+	local step = math.floor((os.clock() - self.actionEpoch) / ACTION_STEP)
+	if step == self.actionBeat then return end
+	self.actionBeat = step
+	local eighth, bar = step % 8, math.floor(step / 8) % 8
+	local stem
+	if eighth == 0 or eighth == 4 or (bar % 2 == 1 and eighth == 7) then stem = "kick"
+	elseif eighth == 2 or eighth == 6 then stem = "snare" end
+	if stem then
+		local voice = self:_actionVoice(stem)
+		if voice then
+			voice.Volume = ACTION_STEMS[stem][3] * (eighth == 7 and 0.55 or 1) * (bar == 7 and 0.75 or 1)
+			voice.TimePosition = 0
+			voice:Play()
+		end
+	end
+end
+
 function Audio:Music(name)
-	-- A track Roblox will not serve (still under review, or rejected) stands in with
-	-- the lobby theme, so a moderated upload never leaves a match silent.
-	if name and self.unplayable and self.unplayable[name] and name ~= "lobby" then name = "lobby" end
+	-- Keep the lobby untouched. An unavailable battle upload uses the action
+	-- stems rather than the lobby's peaceful melody.
+	if name == "battle" and (((Config.Audio or {}).battle or 0) <= 0 or (self.unplayable and self.unplayable.battle)) then name = "action" end
 	local allowed = self:_allowed()
 	if self.track == name and self.musicAllowed == allowed then return end
 	self.musicAllowed = allowed
@@ -129,6 +189,7 @@ function Audio:Music(name)
 	self.track = name
 	self:_stopMusic(name)
 	if not name then return end
+	if name == "action" then self:_action(true); return end
 	local sound = self:_sound(name)
 	if sound then
 		local ok = pcall(function()
@@ -137,7 +198,7 @@ function Audio:Music(name)
 		end)
 		if not ok then self.sounds[name] = nil end
 		-- Not loaded after a few seconds (IsLoaded is exactly false): remember it and
-		-- switch to the lobby theme. A stand-in or an engine without IsLoaded never trips this.
+		-- switch to the action arrangement. A stand-in without IsLoaded never trips this.
 		if name ~= "lobby" and ((Config.Audio or {})[name] or 0) > 0 then
 			task.delay(6, function()
 				if self.track == name and sound.IsLoaded == false then

@@ -743,13 +743,21 @@ function UI.list(parent, gap, horizontal)
 		SortOrder = Enum.SortOrder.LayoutOrder,
 	}, parent)
 	if parent:IsA("ScrollingFrame") then
+		-- UIStroke sits outside a card. Leave a real gutter inside the clip
+		-- rectangle, on every side, rather than chopping off rounded borders.
+		if not parent:FindFirstChildOfClass("UIPadding") then
+			local inset = UI.padding(parent, 6)
+			inset.Name = "ScrollInset"
+		end
 		-- Only the list owns the canvas extent. AutomaticCanvasSize also
 		-- measures nested/scaled decorations and can feed back into its size.
 		parent.AutomaticCanvasSize=Enum.AutomaticSize.None
 		local function resizeCanvas()
 			if parent:GetAttribute("UpdatingCanvas") then return end
 			local size=layout.AbsoluteContentSize
-			parent.CanvasSize=horizontal and UDim2.fromOffset(math.ceil(size.X)+8,0) or UDim2.fromOffset(0,math.ceil(size.Y)+8)
+			local inset=parent:FindFirstChildOfClass("UIPadding")
+			local gutter=inset and (horizontal and inset.PaddingLeft.Offset+inset.PaddingRight.Offset or inset.PaddingTop.Offset+inset.PaddingBottom.Offset) or 0
+			parent.CanvasSize=horizontal and UDim2.fromOffset(math.ceil(size.X)+gutter+8,0) or UDim2.fromOffset(0,math.ceil(size.Y)+gutter+8)
 		end
 		layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(resizeCanvas)
 	end
@@ -765,7 +773,9 @@ function UI.finishScrollUpdate(frame)
 	frame:SetAttribute("UpdatingCanvas",nil)
 	if size then
 		local horizontal=layout.FillDirection==Enum.FillDirection.Horizontal
-		frame.CanvasSize=horizontal and UDim2.fromOffset(math.ceil(size.X)+8,0) or UDim2.fromOffset(0,math.ceil(size.Y)+8)
+		local inset=frame:FindFirstChildOfClass("UIPadding")
+		local gutter=inset and (horizontal and inset.PaddingLeft.Offset+inset.PaddingRight.Offset or inset.PaddingTop.Offset+inset.PaddingBottom.Offset) or 0
+		frame.CanvasSize=horizontal and UDim2.fromOffset(math.ceil(size.X)+gutter+8,0) or UDim2.fromOffset(0,math.ceil(size.Y)+gutter+8)
 	end
 end
 

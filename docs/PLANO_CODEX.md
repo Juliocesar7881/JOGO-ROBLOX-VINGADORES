@@ -406,3 +406,11 @@ Código `ba3bd26` enviado ao `main`, sincronizado seletivamente e publicado no
 mesmo lugar da equipe em 08/10/2026 às 13:17:38 local (16:17:38 UTC), com
 `PublishSuccessful` confirmado no log. Studio em modo de edição. Suíte
 completa verde; travessia, loja física e carga de combate conferidas no Studio.
+
+## 12. Contornos, baús e música de combate
+
+O pedido seguinte corrige contornos cortados em telas roláveis, unifica a
+roleta de compras/recompensas e retira a segunda abertura de baú. O combate
+ganha um arranjo de ação quando a trilha dedicada não carrega, mantendo a
+música do lobby. Fila M20 e registro em
+[`REFINAMENTO_HUD_BAUS_2026-10-08.md`](REFINAMENTO_HUD_BAUS_2026-10-08.md).
