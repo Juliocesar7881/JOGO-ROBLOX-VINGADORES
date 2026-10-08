@@ -217,4 +217,16 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 
 - [x] M21.1 Núcleo da base sem laje neon: a placa ciano de 14 studs (que virava uma mancha estourada vista da câmera, captura 05-live 08/10 14:10) virou borda acesa fina; capas dos pilares em metal com faixa acesa. Aviso 'Evoluir base' 22% menor durante a partida para não cobrir o campo. Commit fc35568, conferido no Studio (03-live).
 - [ ] M21.2 Publicar fc35568 no lugar 97132875544830 (Studio já sincronizado por inteiro em 08/10 14:2x; publicação adiada porque o dono estava usando o Studio).
-- [ ] M21.3 Cenas fx:lasers/fx:powers não geraram captura quando pedidas logo após server:give; investigar no studio_review (precisa de torres em campo?) e revisar o combate.
+- [x] M21.3 `studio_review.py` disparava os efeitos e pulava a fotografia. Captura automática adicionada; feixes e poderes inspecionados no Studio, com eventos de revisão identificados separadamente do combate real.
+
+## M22 — Direção de arte, apoios e leitura de combate, 08/10
+
+- [x] M22.1 Farol assentado, placa da academia com pés e sete pontes com quatro pilares cada; testes de contato e orçamento de peças.
+- [x] M22.2 Passagem com nervuras, teto e painéis; vitrines com montantes; vidro, estrada, farol e pedestais com brilho menor. Capturas no lugar da equipe.
+- [x] M22.3 HUD largo com horizonte livre; dois avisos rápidos no máximo, seleção prioritária e controles de toque mantidos; testes de layout e cliente.
+- [x] M22.4 Revisão de 43 heróis, seis chefes e cinco famílias; armaduras metálicas, placas inclinadas e acabamento orgânico/rochoso. Rig e pivôs preservados; arte final ainda em M22.7.
+- [x] M22.5 Feixes finos, ondas vazadas, poderes sem coluna gigante; treze perfis de ataque, retorno ao timbre neutro e limites de vozes/efeitos testados. Sem novos uploads.
+- [~] M22.6 Conferir celular, inglês, carga de combate e fontes; publicar no lugar da equipe após suíte verde. Sessão codex-refine-20261008.
+- [ ] M22.7 Acabamento dos modelos ainda 3/5: redesenhar tronco, cintura, mãos e pés de uma amostra humanoide/grandalhão/inimigo; conferir movimento em partida antes de replicar. Evidência: `test-results/showroom/refine-roster-1-full.png` até `refine-roster-8-full.png`. Não classificar catálogo inteiro como finalizado.
+- [!] M22.8 Dependências externas: envio e moderação dos doze WAVs com declaração do dono, celular físico, quatro jogadores, viagens, compras e sessão prolongada. Consulte RELEASE_CHECKLIST e o relatório de direção.
+- [ ] M22.9 Sensação de combate ainda 3/5: revisar preparação, recuo e recuperação do golpe pesado, tiro e controle com a amostra de M22.7. Feixes são legíveis, mas animação precisa transmitir mais peso. Evidência: `test-results/refinement/combat-event-01.png` e `test-results/refinement/fx/lasers.png`; aceite: três poses legíveis por ataque, emissão correta, Menos efeitos e carga de 80 inimigos preservados.

@@ -403,7 +403,9 @@ local HC = {
 	deep = Color3.fromRGB(96, 64, 46), energy = Color3.fromRGB(137, 226, 255), green = Color3.fromRGB(96, 160, 72),
 	purple = Color3.fromRGB(82, 49, 118), leather = Color3.fromRGB(92, 62, 44), yellow = Color3.fromRGB(245, 196, 52),
 }
-local METAL, FABRIC, NEON = Enum.Material.SmoothPlastic, Enum.Material.SmoothPlastic, Enum.Material.Neon
+-- Flat costume colours keep silhouettes readable; equipment has a distinct
+-- metal response without covering uniforms in a noisy repeating texture.
+local METAL, FABRIC, NEON = Enum.Material.Metal, Enum.Material.SmoothPlastic, Enum.Material.Neon
 
 -- How each hero moves when it attacks (read by the client's Motion).
 local HERO_POSE = {
@@ -503,11 +505,11 @@ HERO_EXTRAS.ironman = function(f)
 	-- Volt: a white helmet with one wide visor and a crest, a lightning bolt
 	-- across the chest and glowing palms.
 	f.add("Head", "Visor", Vector3.new(h.X * 0.8, 0.24 * s, 0.08 * s), f.face(0, 0.08, 0.03), spark, NEON)
-	f.add("Head", "HelmetCrest", Vector3.new(0.16 * s, h.Y * 0.5, h.Z * 0.9), CFrame.new(0, h.Y * 0.42, 0), Color3.fromRGB(36, 110, 220), METAL)
+	f.add("Head", "HelmetCrest", Vector3.new(0.18 * s, h.Y * 0.5, h.Z * 0.9), CFrame.new(0, h.Y * 0.42, 0), Color3.fromRGB(36, 110, 220), METAL, "wedge")
 	f.add("UpperTorso", "BoltTop", Vector3.new(0.22, 0.62, 0.06) * s, CFrame.new(0.08 * s, 0.36 * s, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), bolt, NEON)
 	f.add("UpperTorso", "BoltBottom", Vector3.new(0.22, 0.62, 0.06) * s, CFrame.new(-0.08 * s, -0.06 * s, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), bolt, NEON)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "ShoulderPlate", f.sizes.upperArm * Vector3.new(1.18, 0.46, 1.16), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0), HC.white, METAL)
+		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "ShoulderPlate", f.sizes.upperArm * Vector3.new(1.28, 0.52, 1.2), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.12), HC.white, METAL, "wedge")
 		f.disc(side < 0 and "LeftHand" or "RightHand", "Repulsor", 0.34 * s, 0.06 * s, CFrame.new(0, -f.sizes.hand.Y / 2 - 0.02 * s, 0) * CFrame.Angles(math.pi / 2, 0, 0), spark, NEON)
 	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
@@ -555,8 +557,10 @@ HERO_EXTRAS.hulk = function(f)
 	-- Boulder: a living rock with lava in its cracks and stone plates on the
 	-- shoulders and chest.
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "RockPlate", f.sizes.upperArm * Vector3.new(1.2, 0.5, 1.2), CFrame.new(0, f.sizes.upperArm.Y * 0.32, 0) * CFrame.Angles(0.2, 0, side * 0.2), stone, Enum.Material.Slate)
-		f.add("UpperTorso", "ChestRock", Vector3.new(c.X * 0.42, c.Y * 0.36, 0.22 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.16, -c.Z / 2 - 0.02 * s) * CFrame.Angles(0, 0, side * 0.08), stone, Enum.Material.Slate)
+		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "RockPlate", f.sizes.upperArm * Vector3.new(1.28, 0.62, 1.26), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0.2, side < 0 and math.pi or 0, side * 0.2), stone, Enum.Material.Slate, "wedge")
+		f.add("UpperTorso", "ChestRock", Vector3.new(c.X * 0.44, c.Y * 0.48, 0.28 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.12, -c.Z / 2 - 0.02 * s) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.08), stone, Enum.Material.Slate, "wedge")
+		local h = f.parts.Head.Size
+		f.add("Head", "RockBrow", Vector3.new(h.X * 0.46, h.Y * 0.22, h.Z * 0.32), CFrame.new(side * h.X * 0.24, h.Y * 0.32, -h.Z * 0.36) * CFrame.Angles(0, side < 0 and math.pi or 0, -side * 0.18), stone, Enum.Material.Slate, "wedge")
 	end
 	for i = -1, 1 do
 		f.add("UpperTorso", "LavaCrack", Vector3.new(0.08 * s, c.Y * 0.5, 0.06 * s), CFrame.new(i * c.X * 0.16, -c.Y * 0.14, -c.Z / 2 - 0.06 * s) * CFrame.Angles(0, 0, i * 0.4), glow, NEON)
@@ -722,10 +726,13 @@ HERO_EXTRAS.groot = function(f)
 	-- Bark ridges, a crown of twigs and leaves on the shoulders.
 	for _, side in ipairs({ -1, 1 }) do
 		f.rod("Head", "Twig", Vector3.new(side * h.X * 0.2, h.Y * 0.4, 0), Vector3.new(side * h.X * 0.5, h.Y * 0.95, 0.1 * s), 0.1 * s, Color3.fromRGB(96, 70, 46), Enum.Material.Wood)
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "Leaf", Vector3.new(0.6, 0.12, 0.4) * s, CFrame.new(0, f.sizes.upperArm.Y * 0.45, 0) * CFrame.Angles(0, 0, side * 0.4), Color3.fromRGB(96, 170, 72), Enum.Material.Grass, "ball")
+		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "Leaf", Vector3.new(0.74, 0.16, 0.5) * s, CFrame.new(side * 0.12 * s, f.sizes.upperArm.Y * 0.45, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.35), Color3.fromRGB(96, 170, 72), Enum.Material.SmoothPlastic, "wedge")
 		f.rod(side < 0 and "LeftHand" or "RightHand", "Root", Vector3.new(0, 0, 0), Vector3.new(side * 0.2 * s, -0.7 * s, -0.1 * s), 0.12 * s, Color3.fromRGB(96, 70, 46), Enum.Material.Wood)
 	end
-	for i = -1, 1 do f.add("UpperTorso", "Bark", Vector3.new(0.14 * s, f.sizes.chest.Y * 0.9, 0.06 * s), CFrame.new(i * f.sizes.chest.X * 0.28, 0, -f.sizes.chest.Z / 2 - 0.02 * s), Color3.fromRGB(88, 62, 40), Enum.Material.Wood) end
+	local c = f.sizes.chest
+	for i = -1, 1 do
+		f.rod("UpperTorso", "Bark", Vector3.new(i * c.X * 0.32, -c.Y * 0.45, -c.Z / 2 - 0.025 * s), Vector3.new(i * c.X * 0.18, c.Y * 0.44, -c.Z / 2 - 0.025 * s), 0.16 * s, Color3.fromRGB(88, 62, 40), Enum.Material.Wood)
+	end
 	-- A few leaves sprouting from the crown.
 	for i = -1, 1 do f.add("Head", "Leaf", Vector3.new(0.36, 0.1, 0.24) * s, CFrame.new(i * h.X * 0.26, h.Y * 0.56, i * 0.1 * s) * CFrame.Angles(0.2, i * 0.6, i * 0.5), Color3.fromRGB(110, 190, 80), Enum.Material.Grass, "ball") end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.3 * s, 0))
@@ -1042,10 +1049,22 @@ function Figure.Hero(parent, heroId, hero, scale)
 	local spec = table.clone(look.body or {})
 	spec.scale = (spec.scale or 1) * (scale or 1)
 	local figure = Figure.Build(parent, spec, look.colors, look.material or Enum.Material.SmoothPlastic)
+	-- The same finish applies to towers, portraits, ghosts and lobby cameos.
+	-- Use existing rig parts, so the entire roster gains material separation
+	-- without multiplying geometry or changing pivots and emission points.
+	for name, body in pairs(figure.parts) do
+		if name ~= "HumanoidRootPart" and not look.material then
+			if heroId == "hulk" then
+				body.Material = Enum.Material.Slate
+			elseif look.shiny then
+				body.Material = Enum.Material.Metal
+			end
+		end
+	end
 	figure.model:SetAttribute("HeroId", heroId)
 	figure.model:SetAttribute("PoseStyle", HERO_POSE[heroId] or "shoot")
 	if look.shiny then
-		for _, item in ipairs(figure.model:GetChildren()) do if item:IsA("BasePart") and item.Name ~= "HumanoidRootPart" then item.Reflectance = 0.1 end end
+		for _, item in ipairs(figure.model:GetChildren()) do if item:IsA("BasePart") and item.Name ~= "HumanoidRootPart" then item.Reflectance = 0.06 end end
 	end
 	if look.hair then Figure.Hair(figure, look.hair[1], look.hair[2]) end
 	if not DRAWN_FACE[heroId] then Figure.Face(figure, look.face or "smile", look.faceOptions) end
@@ -1276,7 +1295,7 @@ ENEMY_EXTRAS.armored = function(f)
 	f.add("Head", "Helmet", h * Vector3.new(1.12, 0.66, 1.12), CFrame.new(0, h.Y * 0.28, 0), EC.metal, METAL, "ball").Reflectance = 0.1
 	f.add("UpperTorso", "Plate", c * Vector3.new(0.86, 0.72, 0.3), CFrame.new(0, c.Y * 0.06, -c.Z / 2 - 0.1 * s), EC.metal, METAL).Reflectance = 0.1
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "Pauldron", f.sizes.upperArm * Vector3.new(1.4, 0.5, 1.36), CFrame.new(0, f.sizes.upperArm.Y * 0.32, 0), EC.metal, METAL)
+		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "Pauldron", f.sizes.upperArm * Vector3.new(1.5, 0.6, 1.36), CFrame.new(0, f.sizes.upperArm.Y * 0.32, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), EC.metal, METAL, "wedge")
 	end
 	local arm = f.sizes.lowerArm
 	f.add("LeftLowerArm", "Shield", Vector3.new(0.18, 1.8, 1.2) * s, CFrame.new(-arm.X / 2 - 0.12 * s, 0.1 * s, -0.1 * s), Color3.fromRGB(70, 88, 100), METAL)
@@ -1518,6 +1537,16 @@ function Figure.Enemy(parent, def)
 	local extras = ENEMY_EXTRAS[def.id] or ENEMY_EXTRAS[family] or ENEMY_EXTRAS.zombie
 	extras(figure, def)
 	if def.faction and FACTION_GEAR[def.faction] then FACTION_GEAR[def.faction](figure) end
+	for name, body in pairs(figure.parts) do
+		if name ~= "HumanoidRootPart" then
+			if family == "doom" then
+				body.Material = name == "LowerTorso" and FABRIC or METAL
+				body.Reflectance = name == "LowerTorso" and 0 or 0.04
+			elseif name ~= "Head" and body.Color ~= skin then
+				body.Material = FABRIC
+			end
+		end
+	end
 	Figure.Release(figure)
 	return figure
 end
@@ -1817,7 +1846,7 @@ function Kit.fence(parent, points, height, glow, closed)
 		if length > 0.5 then
 			local look = CFrame.lookAt((a + b) / 2, b)
 			Kit.block(parent, "FenceCurb", Vector3.new(1.3, 1, length), look * CFrame.new(0, 0.5, 0), HQ.steel, Enum.Material.Metal, true)
-			local glass = Kit.block(parent, "FenceGlass", Vector3.new(0.35, height - 1.6, math.max(0.4, length - 1.2)), look * CFrame.new(0, 1 + (height - 1.6) / 2, 0), glow:Lerp(HQ.navy, 0.35), Enum.Material.Neon)
+			local glass = Kit.block(parent, "FenceGlass", Vector3.new(0.35, height - 1.6, math.max(0.4, length - 1.2)), look * CFrame.new(0, 1 + (height - 1.6) / 2, 0), glow:Lerp(HQ.navy, 0.35), Enum.Material.Glass)
 			glass.Transparency = 0.55
 			Kit.block(parent, "FenceRail", Vector3.new(0.9, 0.5, length + 0.4), look * CFrame.new(0, height - 0.15, 0), HQ.navy, Enum.Material.Metal, true)
 		end
@@ -1852,7 +1881,7 @@ function Kit.tree(parent, base, scale, tint)
 	local barkDark = bark:Lerp(Color3.new(0, 0, 0), 0.22)
 	Kit.column(tree, "TreeTrunk", base - Vector3.new(0, 0.5, 0), 3.4 * scale, 1.9 * scale, barkDark, Enum.Material.Wood)
 	Kit.column(tree, "TreeTrunk", base + Vector3.new(0, 2.6 * scale, 0), 3.8 * scale, 1.35 * scale, bark, Enum.Material.Wood)
-	for index = 0, 2 do
+	for index = 0, 1 do
 		local a = index * 2.1 + 0.4
 		local out = Vector3.new(math.cos(a), 0, math.sin(a))
 		Kit.blob(tree, "TreeRoot", Vector3.new(1.3, 0.8, 1.0) * scale, CFrame.lookAt(base + out * 0.85 * scale + Vector3.new(0, 0.05, 0), base + Vector3.new(0, 0.05, 0)), barkDark, Enum.Material.Wood)
@@ -1863,11 +1892,10 @@ function Kit.tree(parent, base, scale, tint)
 	end
 	tint = tint:Lerp(HQ.leafLight, 0.2)
 	local shade, light = tint:Lerp(Color3.new(0, 0, 0), 0.16), tint:Lerp(HQ.leafLight, 0.55)
-	-- { x, y, z, diameter, colour }: six overlapping masses form the crown.
+	-- { x, y, z, diameter, colour }: five broad masses form the crown.
 	local lobes = {
 		{ 0, 8.7, 0, 8.4, tint },
 		{ -3.4, 7.4, 0.8, 5.6, shade }, { 3.2, 7.6, -1, 5.9, shade }, { 0.6, 7.2, 3.6, 5.4, tint },
-		{ -0.8, 7.5, -3.5, 5.7, shade },
 		{ 0.2, 11.6, 0.2, 5.2, light },
 	}
 	for index, c in ipairs(lobes) do
@@ -1904,7 +1932,9 @@ function Kit.bush(parent, pos, size, tint)
 	for _, c in ipairs({ { 0, 0.3, 0, 1, tint }, { 0.45, 0.3, 0.2, 0.8, light }, { -0.42, 0.25, -0.2, 0.78, shade } }) do
 		Kit.blob(parent, "Bush", Vector3.new(size * c[4], size * c[4] * 0.8, size * c[4]), CFrame.new(pos + Vector3.new(c[1] * size, c[2] * size, c[3] * size)), c[5], Enum.Material.Grass)
 	end
-	for index = 1, 3 do
+	-- One berry cluster reads better than a scatter of tiny beads and leaves
+	-- geometry for the foundations of the lobby's landmarks.
+	for index = 1, 1 do
 		local a = index * 2.3
 		Kit.blob(parent, "BushBerry", Vector3.new(0.3, 0.3, 0.3) * math.max(1, size / 4), CFrame.new(pos + Vector3.new(math.cos(a) * size * 0.5, size * 0.5, math.sin(a) * size * 0.5)), Color3.fromRGB(236, 84, 96))
 	end
@@ -2271,10 +2301,9 @@ function Kit.sign(parent, name, cf, width, height, spec)
 	back.CastShadow = true
 	local face = Kit.block(model, "SignFace", Vector3.new(width, height, 0.4), cf, HQ.ink, Enum.Material.SmoothPlastic)
 	for _, side in ipairs({ -1, 1 }) do
-		Kit.block(model, "SignRim", Vector3.new(width + 1.6, 0.45, 0.4), cf * CFrame.new(0, side * (height / 2 + 0.55), -0.1), accent, Enum.Material.Neon)
-		Kit.block(model, "SignRim", Vector3.new(0.45, height + 1.6, 0.4), cf * CFrame.new(side * (width / 2 + 0.55), 0, -0.1), accent, Enum.Material.Neon)
+		Kit.block(model, "SignRim", Vector3.new(width + 1.6, 0.45, 0.4), cf * CFrame.new(0, side * (height / 2 + 0.55), -0.1), accent, side == -1 and Enum.Material.Neon or Enum.Material.Metal)
+		Kit.block(model, "SignRim", Vector3.new(0.45, height + 1.6, 0.4), cf * CFrame.new(side * (width / 2 + 0.55), 0, -0.1), accent, Enum.Material.Metal)
 		Kit.blob(model, "SignStud", Vector3.new(1.3, 1.3, 0.8), cf * CFrame.new(side * (width / 2 + 0.55), height / 2 + 0.55, -0.2), HQ.gold, Enum.Material.Metal)
-		Kit.blob(model, "SignStud", Vector3.new(1.3, 1.3, 0.8), cf * CFrame.new(side * (width / 2 + 0.55), -(height / 2 + 0.55), -0.2), HQ.gold, Enum.Material.Metal)
 	end
 	if spec.legs then
 		-- Freestanding: two legs down to the ground.
@@ -3156,6 +3185,24 @@ end
 -- The hub: a paved island in the moat, the raised hero plaza where everyone
 -- spawns, four bridges with gates, and the ring road that ties the areas.
 --------------------------------------------------------------------------------
+-- Pilings continue below the water and join the underside of the deck. They
+-- stay outside the walking surface: scenery supports never obstruct a queue.
+function Kit.bridgeSupports(parent, a, b, halfWidth, name)
+	local V = Vector3.new
+	local dir = V(b.X - a.X, 0, b.Z - a.Z).Unit
+	local right = V(-dir.Z, 0, dir.X)
+	local bottom, top = SEA_Y - 7, GROUND_Y - 0.35
+	for _, fraction in ipairs({ 0.3, 0.7 }) do
+		local center = a:Lerp(b, fraction)
+		for _, side in ipairs({ -1, 1 }) do
+			local foot = V(center.X, bottom, center.Z) + right * side * halfWidth
+			local pier = Kit.column(parent, name, foot, top - bottom, 1.7, HQ.steel, Enum.Material.Metal, true)
+			pier.CastShadow = true
+			Kit.disc(parent, name .. "Foot", foot, 3, 0.7, HQ.stoneDark, Enum.Material.Concrete, true)
+		end
+	end
+end
+
 function World:BuildHeroesHub(lobby)
 	local V = Vector3.new
 	local hq = Instance.new("Model")
@@ -3216,6 +3263,7 @@ function World:BuildHeroesHub(lobby)
 		local right = V(-dir.Z, 0, dir.X)
 		local a, b = HUB + dir * (LAYOUT.hubDeck - 4), HUB + dir * (LAYOUT.moat + 5)
 		Kit.beam(hq, "BridgeDeck", a + V(0, GROUND_Y - 0.4, 0), b + V(0, GROUND_Y - 0.4, 0), 14, 1, HQ.stone, pave, true):SetAttribute("BridgeId", gate.en)
+		Kit.bridgeSupports(hq, a, b, 6.1, "MoatPier")
 		for _, side in ipairs({ -1, 1 }) do
 			local sa, sb = a + dir * 4 + right * side * 7.4, b + right * side * 7.4
 			Kit.beam(hq, "BridgeBeam", sa + V(0, GROUND_Y - 1.4, 0), sb + V(0, GROUND_Y - 1.4, 0), 1.4, 2.2, HQ.steel, metal, true)
@@ -3250,7 +3298,7 @@ function World:BuildHeroesHub(lobby)
 		Kit.block(hq, "RingRoad", V(outer - inner, 1.5, length), frame, Color3.fromRGB(132, 142, 164), pave, true)
 		-- Lit edges, like the big games' glowing streets.
 		for _, side in ipairs({ -1, 1 }) do
-			Kit.block(hq, "RoadGlow", V(0.5, 0.06, length - 0.3), frame * CFrame.new(side * ((outer - inner) / 2 - 0.6), 0.78, 0), HQ.cyan, Enum.Material.Neon)
+			Kit.block(hq, "RoadGlow", V(0.5, 0.06, length - 0.3), frame * CFrame.new(side * ((outer - inner) / 2 - 0.6), 0.78, 0), HQ.cyan, i % 6 == 0 and Enum.Material.Neon or Enum.Material.Metal)
 		end
 	end
 	return hq
@@ -3274,7 +3322,8 @@ function World:BuildHeroBeacon(lobby)
 	model.Name, model.Parent = "HeroBeacon", lobby
 	-- Far enough south that the lobby camera, which starts 23 studs behind the spawn,
 	-- is not inside the spinning orbits: their gold neon swept across the first view.
-	local base = HUB + V(0, PLAZA_Y, 46)
+	-- This landmark stands outside the raised plaza, on the lower hub deck.
+	local base = HUB + V(0, GROUND_Y + 0.06, 46)
 	Kit.disc(model, "BeaconStep", base + V(0, 0.6, 0), 16, 1.2, HQ.steel, Enum.Material.Metal, true)
 	Kit.disc(model, "BeaconStepGlow", base + V(0, 1.3, 0), 15.4, 0.2, HQ.cyan, Enum.Material.Neon)
 	Kit.disc(model, "BeaconStepTop", base + V(0, 1.6, 0), 16, 0.4, HQ.stoneWarm, Enum.Material.Pavement, true)
@@ -3302,10 +3351,10 @@ function World:BuildHeroBeacon(lobby)
 	for ring = 1, 2 do
 		local tilt = CFrame.new(center) * CFrame.Angles(ring == 1 and 0.5 or -0.35, ring * 1.2, ring == 1 and 0.2 or -0.4)
 		local radius = ring == 1 and 7.4 or 6.6
-		for i = 0, 15 do
-			local angle = i * math.pi * 2 / 16
-			local segment = Kit.block(model, "BeaconOrbit", V(2 * radius * math.sin(math.pi / 16) + 0.05, 0.35, 0.35),
-				tilt * CFrame.Angles(0, 0, angle) * CFrame.new(0, radius, 0), ring == 1 and HQ.gold or HQ.glow, Enum.Material.Neon)
+		for i = 0, 11 do
+			local angle = i * math.pi * 2 / 12
+			local segment = Kit.block(model, "BeaconOrbit", V(2 * radius * math.sin(math.pi / 12) + 0.05, 0.35, 0.35),
+				tilt * CFrame.Angles(0, 0, angle) * CFrame.new(0, radius, 0), ring == 1 and HQ.gold or HQ.glow, i % 3 == 0 and Enum.Material.Neon or Enum.Material.Metal)
 			Kit.animate(segment, ring == 1 and 0.6 or -0.45, 0, center)
 		end
 	end
@@ -3362,15 +3411,20 @@ function World:BuildHeroTower(lobby)
 		Kit.column(model, "PorticoColumn", base + V(side * 8.6, 0, -14), 9.3, 1.5, HQ.steel, Enum.Material.Metal, true)
 		Kit.block(model, "ArchLight", V(0.18, 6.2, 0.22), CFrame.new(base + V(side * 8.6, 5.4, -14.82)), HQ.lamp, Enum.Material.Neon)
 		for _, z in ipairs({ -7, 7 }) do
-			Kit.block(model, "PassageWallPanel", V(0.16, 4, 4.6), CFrame.new(base + V(side * 8.03, 4.5, z)), HQ.navy, Enum.Material.Metal)
+			local panel = Kit.block(model, "PassageWallPanel", V(0.16, 4, 4.6), CFrame.new(base + V(side * 8.03, 4.5, z)), Color3.fromRGB(42, 77, 94), Enum.Material.Glass)
+			panel.Reflectance = 0.15
 			Kit.block(model, "PassageSconce", V(0.25, 1.8, 0.6), CFrame.new(base + V(side * 7.87, 5.8, z)), HQ.lamp, Enum.Material.Neon)
+			-- Sloping ribs join the floor to the canopy rather than floating
+			-- decoration in the passage. Keep the central fourteen studs clear.
+			Kit.beam(model, "PassageRib", base + V(side * 7.8, 0, z + 3), base + V(side * 7.25, 8.7, z + 3), 0.5, 0.7, HQ.steel, Enum.Material.Metal, true)
 		end
 	end
 	Kit.block(model, "PodiumBridge", V(16, 5, 30), CFrame.new(base + V(0, 12, 0)), HQ.stone, Enum.Material.Concrete, true).CastShadow = true
 	Kit.block(model, "PorticoCanopy", V(19.5, 0.65, 5.5), CFrame.new(base + V(0, 9.3, -13.2)), HQ.navy, Enum.Material.Metal, true)
 	Kit.block(model, "ArchLintel", V(14, 0.12, 0.3), CFrame.new(base + V(0, 8.91, -15.9)), HQ.lamp, Enum.Material.Neon)
 	for _, z in ipairs({ -8, 0, 8 }) do
-		local fixture = Kit.block(model, "PassageCeiling", V(12, 0.15, 0.5), CFrame.new(base + V(0, 9.42, z)), HQ.lamp, Enum.Material.Neon)
+		Kit.block(model, "PassageCrossbeam", V(15, 0.45, 0.8), CFrame.new(base + V(0, 9.15, z)), HQ.steel, Enum.Material.Metal)
+		local fixture = Kit.block(model, "PassageCeiling", V(4.8, 0.12, 0.4), CFrame.new(base + V(0, 8.87, z)), Color3.fromRGB(242, 217, 172), Enum.Material.SmoothPlastic)
 		Kit.light(fixture, Color3.fromRGB(255, 221, 173), 14, 0.3)
 	end
 	-- The shaft: three stacked volumes, each a little slimmer, with lit floors.
@@ -3503,6 +3557,7 @@ function World:BuildServiceDesks(lobby)
 		if post then post:Destroy() end
 		panel.CFrame = frame * CFrame.new(0, 6.2 + GROUND_Y, -1.2) * CFrame.Angles(0, math.pi, 0)
 		panel.Color, panel.Material = HQ.navy, Enum.Material.Metal
+		Kit.block(scene, "ServiceScreenMount", V(0.45, 3.2, 0.45), frame * CFrame.new(0, 7.8 + GROUND_Y, -1.0), HQ.steel, Enum.Material.Metal)
 		text.TextScaled, text.RichText, text.TextSize = false, true, 36
 		local tint = string.format('<font color="#%02x%02x%02x">', math.floor(def.color.R * 255), math.floor(def.color.G * 255), math.floor(def.color.B * 255))
 		local how = '</font>\n<font size="17" color="#b8cdd8">'
@@ -4031,6 +4086,7 @@ function World:BuildIslands(hq)
 		local dir = Vector3.new(b.X - a.X, 0, b.Z - a.Z).Unit
 		local right = V(-dir.Z, 0, dir.X)
 		Kit.beam(hq, "IslandBridge", a - V(0, 0.4, 0) - dir * 4, b - V(0, 0.4, 0) + dir * 4, 12, 1, HQ.stone, Enum.Material.Pavement, true):SetAttribute("BridgeId", id)
+		Kit.bridgeSupports(hq, a, b, 5.1, "IslandPier")
 		for _, side in ipairs({ -1, 1 }) do
 			Kit.beam(hq, "BridgeBeam", a + right * side * 6.4 - V(0, 1.3, 0), b + right * side * 6.4 - V(0, 1.3, 0), 1.2, 2, HQ.steel, Enum.Material.Metal, true)
 			Kit.fence(hq, { a + right * side * 5.6 + V(0, 0.1, 0), b + right * side * 5.6 + V(0, 0.1, 0) }, 3, HQ.glow)
@@ -4063,10 +4119,10 @@ function World:BuildIslands(hq)
 		end
 		Kit.block(hq, "AsgardLintel", V(3, 2, 18), CFrame.new(archX, GROUND_Y + 16.6, walkZ), gold, Enum.Material.Metal)
 		for i, color in ipairs({ Color3.fromRGB(255, 80, 80), Color3.fromRGB(255, 170, 60), Color3.fromRGB(255, 230, 80), Color3.fromRGB(90, 220, 120), Color3.fromRGB(80, 160, 255), Color3.fromRGB(170, 110, 255) }) do
-			Kit.block(hq, "RainbowBridge", V(12, 0.1, 1.5), CFrame.new(archX - 5, GROUND_Y + 0.05, walkZ - 5.25 + i * 1.5), color, Enum.Material.Neon)
+			Kit.block(hq, "RainbowBridge", V(12, 0.1, 1.5), CFrame.new(archX - 5, GROUND_Y + 0.05, walkZ - 5.25 + i * 1.5), color, Enum.Material.SmoothPlastic)
 		end
 		Kit.sign(hq, "ExpeditionSign", CFrame.lookAt(hubAt(-272, 81, 38), hubAt(-150, 81, 38)), 38, 15, {
-			title = { "EXPEDIÇÕES", "EXPEDITIONS" }, subtitle = { "SELVA • PONTE CELESTE", "SELVA • PONTE CELESTE" },
+			title = { "EXPEDIÇÕES", "EXPEDITIONS" }, subtitle = { "SELVA • PONTE CELESTE", "JUNGLE • SKY BRIDGE" },
 			top = Color3.fromRGB(190, 140, 255), bottom = Color3.fromRGB(80, 40, 150), accent = purple,
 			art = "mountains", artX = 0.5, artY = 0.6, artW = 0.96, artH = 0.7, titleY = 0.34, legs = GRASS_Y,
 		})
@@ -4120,7 +4176,7 @@ function World:BuildIslands(hq)
 		Kit.sign(hq, "AcademySign", CFrame.lookAt(V(c.X, 36, hallZ - 10), V(c.X, 36, HUB.Z)), 36, 12, {
 			title = { "ACADEMIA", "ACADEMY" }, subtitle = { "TREINO • CARTAS", "TRAINING • CARDS" },
 			top = Color3.fromRGB(200, 150, 255), bottom = Color3.fromRGB(90, 50, 170), accent = violet,
-			art = "target", artX = 0.14, artW = 0.24, titleX = 0.6, titleW = 0.74,
+			art = "target", artX = 0.14, artW = 0.24, titleX = 0.6, titleW = 0.74, legs = GROUND_Y,
 		})
 		for _, x in ipairs({ -40, 40 }) do Kit.flag(hq, V(c.X + x, GROUND_Y, c.Z + 25), 16, violet, 5) end
 		-- Giant playing cards stand beside the cards station.
@@ -5835,9 +5891,9 @@ function World:MakeTower(id, heroId, position, ownerId)
 	-- ring (never above it, or the recoil animation would be hidden), a
 	-- glowing inset in the hero's colour and three studs on the rim.
 	local skirt = part(model, "PlatformSkirt", Vector3.new(0.12, 6.6, 6.6), CFrame.new(position.X, 0.06, position.Z)*flat, Color3.fromRGB(30, 35, 48), Enum.Material.Metal)
-	local inset = part(model, "PlatformInset", Vector3.new(0.06, 4.1, 4.1), CFrame.new(position.X, 0.6, position.Z)*flat, color, Enum.Material.Neon)
+	local inset = part(model, "PlatformInset", Vector3.new(0.06, 4.1, 4.1), CFrame.new(position.X, 0.6, position.Z)*flat, color:Lerp(Color3.fromRGB(30, 35, 48), 0.7), Enum.Material.Metal)
 	skirt.Shape, inset.Shape = Enum.PartType.Cylinder, Enum.PartType.Cylinder
-	inset.Transparency = 0.45
+	inset.Transparency = 0
 	for _, offset in ipairs({ { 2.45, 0 }, { -2.45, 0 }, { 0, -2.45 } }) do
 		part(model, "PlatformStud", Vector3.new(0.42, 0.22, 0.42), CFrame.new(position.X + offset[1], 0.62, position.Z + offset[2]), color:Lerp(Color3.new(1, 1, 1), 0.35), Enum.Material.Neon)
 	end

@@ -1064,9 +1064,13 @@ function UI.matchLayout(width, height, options)
 	local top = rect(pad, 8, width - 2 * pad, topH)
 	layout.top = top
 	local inner = top.w - 24
-	local leftW = math.floor(inner * 0.52)
-	local rightW = inner - leftW - 8
-	local rightX = top.x + 12 + leftW + 8
+	-- Two compact readouts leave the camera's horizon visible. The enclosing
+	-- rect still reserves the entire top row for layout and safe-area checks.
+	local leftW = math.min(360, math.floor(inner * 0.52))
+	local rightW = math.min(250, inner - leftW - 16)
+	local rightX = top.x + top.w - 12 - rightW
+	layout.command = rect(top.x, top.y, leftW + 16, topH)
+	layout.core = rect(rightX - 4, top.y, rightW + 16, topH)
 	layout.wave = rect(top.x + 12, top.y + 4, leftW, class.short and 20 or 26)
 	layout.map = rect(top.x + 12, top.y + (class.short and 26 or 32), leftW, class.narrow and 40 or (class.short and 16 or 20))
 	layout.hpText = rect(rightX, top.y + 4, rightW, class.short and 18 or 22)

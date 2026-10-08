@@ -225,6 +225,9 @@ def main() -> int:
                 # Attack and power visuals fired in a loop for seven seconds (see Review.luau).
                 command(f'{player}:SetAttribute("DoomReviewFx", "") task.wait() {player}:SetAttribute("DoomReviewFx", "{scene[3:]}") task.wait(1.1)',
                         f"DOOM_FX_{int(time.time())}_{index}", 60)
+                shot = capture(handle, f"{index:02d}-{label}")
+                shots.append(shot)
+                print(shot)
                 continue
             if scene.startswith("wait:"):
                 time.sleep(float(scene[5:]))

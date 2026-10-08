@@ -123,6 +123,11 @@ for _, screen in ipairs(SCREENS) do
 		for _, name in ipairs({ "wave", "map", "hpText", "hpBar" }) do
 			check(within(L[name], L.top), tag .. ": " .. name .. " sits inside the top bar " .. describe(L[name]))
 		end
+		check(within(L.command, L.top) and within(L.core, L.top), tag .. ": both compact readout panels stay inside the safe top row")
+		check(not overlaps(L.command, L.core), tag .. ": the command and core panels stay separate")
+		if screen.w >= 1024 then
+			check(L.core.x - L.command.x - L.command.w >= screen.w * .2, tag .. ": combat readouts leave the central horizon visible")
+		end
 
 		-- What is on screen together must never overlap. Skip only exists while
 		-- preparing and the boss only during a wave; the placement bar, its hint

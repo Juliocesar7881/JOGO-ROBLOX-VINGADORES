@@ -6,7 +6,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 source = (ROOT / 'src/client/Audio.luau').read_text(encoding='utf-8')
 harness = r'''
-local delayed, sounds = {}, {}
+local delayed, sounds, objects = {}, {}, {}
 local Config = {Audio={lobby=10,battle=11,collect=12,victory=13,wave=14,ambGamma=21,ambHydra=22,shotTech=23,shotBlast=24}}
 local module={WaitForChild=function(self) return self end}
 local clock=10
@@ -25,6 +25,11 @@ end}
 local require=function() return Config end
 local Instance={new=function(kind)
  local value={IsPlaying=false,Play=function(self) self.IsPlaying=true end,Stop=function(self) self.IsPlaying=false end}
+ value.FindFirstChild=function(self,name)
+  for _,child in ipairs(objects) do if child.Parent==self and child.Name==name then return child end end
+  return nil
+ end
+ table.insert(objects,value)
  if kind=='Sound' then table.insert(sounds,value) end
  return value
 end}
@@ -83,6 +88,18 @@ assert(nearVolume>farVolume,'Nearer shots are louder')
 settings.effects=false;clock+=1
 assert(not audio:Shot('shotTech',5),'The effects switch silences weapons too')
 settings.effects=true
+-- Timbre is distinct per hero and never leaks to the next reused voice.
+Config.Audio.shotMelee=25
+clock+=1;assert(audio:Shot('shotMelee',5,'hulk'))
+local heavy=audio.voices.shotMelee[audio.voiceIndex.shotMelee]
+local heavyPitch=heavy.PlaybackSpeed
+assert(heavy:FindFirstChild('WeaponTone').HighGain<0 and heavy:FindFirstChild('WeaponTone').LowGain>0,'Heavy fists have a darker, bassier timbre')
+clock+=1;assert(audio:Shot('shotMelee',5,'beast'))
+assert(audio.voices.shotMelee[audio.voiceIndex.shotMelee].PlaybackSpeed>heavyPitch,'An agile fighter has a higher register than the giant')
+for i=1,5 do clock+=1;assert(audio:Shot('shotMelee',5)) end
+local neutral=audio.voices.shotMelee[audio.voiceIndex.shotMelee]
+assert(neutral:FindFirstChild('WeaponTone').HighGain==0 and neutral:FindFirstChild('WeaponTone').LowGain==0,'Pooled equalization resets for an ordinary fighter')
+assert(#audio.voices.shotMelee==3,'Hero timbres do not grow the voice pool')
 -- A built-in jingle: the first note now, the rest on their beat, once per cue.
 Config.BuiltinCues={levelUp={path='rbxasset://sounds/volume_slider.ogg',speed=1.5,notes={{at=0,speed=1.5},{at=0.1,speed=1.89},{at=0.2,speed=2.25}}}}
 delayed={}

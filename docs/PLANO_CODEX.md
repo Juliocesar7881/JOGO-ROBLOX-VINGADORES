@@ -420,3 +420,16 @@ concedido pelo servidor e stems de ação carregados durante a partida.
 Publicação no mesmo lugar da equipe confirmada em 08/10/2026 às 14:05:04
 local (17:05:04 UTC). Studio em modo de edição; teste auditivo pelo jogador
 e aparelho físico continuam pendentes.
+
+## 13. Direção de arte e leitura do combate
+
+Implementação do pedido de refinamento, com heróis e cooperação como
+assinatura, registrada em
+[`REFINAMENTO_DIRECAO_2026-10-08.md`](REFINAMENTO_DIRECAO_2026-10-08.md),
+fila M22. Apoios físicos, passagem, materiais do catálogo, HUD com centro
+livre, dois avisos rápidos, efeitos menos opacos e timbres por arma.
+
+Suíte completa verde, revisões em PC e layouts de celular/inglês sem cortes
+detectados. Cartas/Complexo Gama com cinco torres e 114 inimigos: 60 FPS no
+PC do dono. Modelos e peso dos ataques ainda 3/5, com exemplos concretos na
+fila; não confundir inspeção de todo o catálogo com arte final aprovada.

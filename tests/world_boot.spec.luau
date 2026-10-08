@@ -62,6 +62,10 @@ do
 			table.insert(report, id .. "=" .. parts)
 			-- A common enemy is drawn by the hundred; only a boss may be elaborate.
 			check(parts <= (def.boss and 60 or 40), id .. " stays inside its part budget, got " .. parts)
+			if (def.family or id) == "armored" then
+				local plate = figure:FindFirstChild("Pauldron")
+				check(plate and plate:IsA("WedgePart"), id .. " has sloped armour with its existing geometry")
+			end
 		end
 	end
 	table.sort(report)
@@ -187,6 +191,27 @@ do
 	check(bridges == 4 and islandBridges == 3, "four bridges cross the moat and three reach the islands, got " .. bridges .. "/" .. islandBridges)
 	-- Landmarks.
 	local beacon = lobby:FindFirstChild("HeroBeacon")
+	local step = beacon and beacon:FindFirstChild("BeaconStep")
+	local deck = hq and hq:FindFirstChild("HubInner")
+	check(step and deck and math.abs(step.Position.Y - step.Size.X / 2 - (deck.Position.Y + deck.Size.X / 2)) < .03, "beacon foundation meets the lower hub deck instead of floating above it")
+	local pierCounts = {MoatPier = 0, IslandPier = 0}
+	for _, piece in ipairs(hq and hq:GetChildren() or {}) do
+		if pierCounts[piece.Name] then
+			pierCounts[piece.Name] += 1
+			check(piece.CanCollide and piece.Position.Y + piece.Size.X / 2 < WorldBuilder.HQ.groundY, "bridge piling stays below the walkable surface")
+			check(piece.Position.Y - piece.Size.X / 2 < -8, "bridge piling extends below the sea surface")
+		end
+	end
+	check(pierCounts.MoatPier == 16 and pierCounts.IslandPier == 12, "all seven lobby bridges have four structural pilings")
+	local academy = hq and hq:FindFirstChild("AcademySign")
+	local supports = 0
+	for _, piece in ipairs(academy and academy:GetChildren() or {}) do
+		if piece.Name == "SignLeg" then
+			supports += 1
+			check(math.abs(piece.Position.Y - piece.Size.X / 2 - WorldBuilder.HQ.groundY) < .01, "academy board has a support reaching the ground")
+		end
+	end
+	check(supports == 2, "academy board has two physical supports")
 	local stones = 0
 	for _, piece in ipairs(beacon and beacon:GetChildren() or {}) do
 		if piece.Name == "JumpStone" and piece.CanCollide then stones += 1 end

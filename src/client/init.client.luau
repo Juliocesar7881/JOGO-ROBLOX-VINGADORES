@@ -1198,6 +1198,7 @@ local matchHud = MatchHud.new({
 	heroName = heroName, colorFor = colorFor, mapName = mapName, modeName = modeName, profile = profile, heroPortrait = heroPortrait,
 	activeMatch = activeMatch, levelProgress = levelProgress, welcomePanel = welcomePanel,
 	currentMatchLayout = currentMatchLayout, closeTowerPanel = closeTowerPanel, selectTower = selectTower,
+	selectedTower = function() return selectedTower end,
 })
 local openBaseUpgrade = matchHud.openBaseUpgrade
 
@@ -1210,9 +1211,16 @@ local function renderMatch()
 	local class = layout.class
 	local compact = class.compact
 	local topRect = layout.top
-	local top = UI.roundFrame(main, {Position = at(topRect), Size = dims(topRect), BackgroundColor3 = C.panel})
-	UI.windowSkin(top, C.blue)
-	top.BackgroundTransparency = 0.06
+	local top = UI.frame(main, {Name = "MatchReadouts", Position = at(topRect), Size = dims(topRect), BackgroundTransparency = 1})
+	if class.narrow then
+		UI.windowSkin(top, C.blue)
+		top.BackgroundColor3, top.BackgroundTransparency = C.panel, 0.06
+	else
+		for _, rect in ipairs({layout.command, layout.core}) do
+			local panel = UI.roundFrame(top, {Position = at(rect, topRect), Size = dims(rect), BackgroundColor3 = C.panel, BackgroundTransparency = 0.08})
+			UI.windowSkin(panel, C.blue)
+		end
+	end
 	refs.wave = UI.label(top, "", {Position = at(layout.wave, topRect), Size = dims(layout.wave), TextSize = math.min(class.short and 20 or (compact and 23 or 30), layout.wave.h + 2), Font = UI.Fonts.display, TextColor3 = C.gold})
 	refs.map = UI.fit(UI.label(top, "", {Position = at(layout.map, topRect), Size = dims(layout.map), TextWrapped=class.narrow, TextSize = compact and 12 or 15, Font = UI.Fonts.display, TextColor3 = C.muted}), 9)
 	refs.hpText = UI.button(top, "", function() showToast(T("Evolua a base com o Agente ao lado dela (tecla E).", "Upgrade the base with the Agent beside it (E key)."), false) end, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
@@ -1237,6 +1245,7 @@ local function renderMatch()
 	end
 	refs.matchGold.TextXAlignment=Enum.TextXAlignment.Center
 	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 14 or 17, Font = UI.Fonts.display, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Center})
+	UI.fit(refs.waveInfo, 10)
 	surface(refs.waveInfo,UI.Skin.slotLine)
 	refs.waveInfo.BackgroundColor3,refs.waveInfo.BackgroundTransparency=UI.Skin.slot,0.1
 	refs.skip = UI.button(main, T("Pronto", "Ready"), function() act("SkipWave", {}) end, {Position = at(layout.skip), Size = dims(layout.skip), BackgroundColor3 = C.green, TextSize = 18})
@@ -1435,7 +1444,9 @@ updateMatch = function()
 	-- A mutated wave says so, in front of everything else.
 	local mutationDef = match.mutation and Catalog.Mutations[match.mutation]
 	local mutationNote = mutationDef and (mutationDef.icon .. " " .. L(mutationDef.name) .. "  ") or ""
-	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. bossNote .. T("Vem aí: ", "Coming: ") .. coming) or (mutationNote .. tostring(match.enemies or 0) .. T(" inimigos na estrada  •  ", " enemies on the road  •  ") .. towerCount .. (towerCount == 1 and T(" herói em campo", " hero on the field") or T(" heróis em campo", " heroes on the field")))
+	refs.waveInfo.Text = state.phase == "Preparing" and (mutationNote .. bossNote .. T("Vem aí: ", "Coming: ") .. coming) or (mutationNote .. tostring(match.enemies or 0) .. ((match.enemies or 0) == 1 and T(" inimigo  •  ", " enemy  •  ") or T(" inimigos  •  ", " enemies  •  ")) .. towerCount .. (towerCount == 1 and T(" herói em campo", " hero on the field") or T(" heróis em campo", " heroes on the field")))
+	refs.waveInfo.TextColor3 = (state.phase == "Preparing" or mutationDef ~= nil) and C.text or C.muted
+	refs.waveInfo.BackgroundTransparency = state.phase == "Preparing" and 0.1 or 1
 	local boss = match.boss
 	refs.boss.Visible = boss ~= nil
 	if boss then

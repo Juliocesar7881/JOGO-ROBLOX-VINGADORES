@@ -35,6 +35,16 @@ local PALETTES = {
 }
 local CUE_GAPS = {click=0.08,open=0.25,collect=0.2,place=0.14,upgrade=0.3,abilityReady=1,wave=0.6,breach=0.4}
 local PITCHES = {0.96, 1.03, 0.99, 1.06, 0.93}
+-- Timbre belongs to the weapon, not the rarity. Heavy equipment gets a
+-- lower register; agile tools stay short and bright. Shared voices remain
+-- capped at three per family even with the entire roster on screen.
+local WEAPON_TONE = {
+	ironman = {1.12, 1, 1, -3}, warmachine = {0.74, 1.05, -5, 3}, rocket = {0.8, 0.95, -3, 2},
+	hulk = {0.68, 1.1, -9, 5}, groot = {0.8, 0.85, -8, 1}, beast = {0.9, 0.9, -4, 1},
+	hawkeye = {1.12, 0.82, 2, -7}, spiderman = {0.88, 0.75, -3, -6},
+	wanda = {0.9, 0.85, -4, -3}, strange = {1.05, 0.8, -2, -5}, thor = {0.83, 1, -4, 3},
+	starlord = {1.2, 0.82, 3, -6}, cyclops = {0.9, 0.9, -1, -4},
+}
 -- A playable action arrangement while the dedicated battle upload is under
 -- moderation. All stems are our owned recordings: minor choir, bass drum
 -- and filtered noise percussion. It never substitutes the lobby melody.
@@ -319,13 +329,15 @@ function Audio:_voice(name)
 		voice = Instance.new("Sound")
 		voice.Name, voice.SoundId, voice.PlaybackSpeed = name, template.SoundId, template.PlaybackSpeed
 		voice.Parent = self.folder
+		local filter = Instance.new("EqualizerSoundEffect")
+		filter.Name, filter.Parent = "WeaponTone", voice
 		pool[index] = voice
 	end
 	return voice
 end
 
 -- A weapon cue at a distance from the listener. Returns whether it played.
-function Audio:Shot(name, distance)
+function Audio:Shot(name, distance, heroId)
 	if not self:_allowed(true, name) then return false end
 	distance = tonumber(distance) or 0
 	if distance > EARSHOT then return false end
@@ -338,8 +350,11 @@ function Audio:Shot(name, distance)
 	self.shotVoices += 1
 	self.lastCue[name] = now
 	self.shotSequence = (self.shotSequence or 0) + 1
-	voice.PlaybackSpeed = self:_sound(name).PlaybackSpeed * PITCHES[(self.shotSequence-1)%#PITCHES+1]
-	voice.Volume = (VOLUME[name] or 0.085) * math.clamp((1 - distance / EARSHOT)^1.5, 0.06, 1)
+	local tone = WEAPON_TONE[heroId]
+	voice.PlaybackSpeed = self:_sound(name).PlaybackSpeed * PITCHES[(self.shotSequence-1)%#PITCHES+1] * (tone and tone[1] or 1)
+	voice.Volume = (VOLUME[name] or 0.085) * math.clamp((1 - distance / EARSHOT)^1.5, 0.06, 1) * (tone and tone[2] or 1)
+	local filter = voice:FindFirstChild("WeaponTone")
+	if filter then filter.HighGain, filter.MidGain, filter.LowGain = tone and tone[3] or 0, -2, tone and tone[4] or 0 end
 	return (pcall(function() voice:Play() end))
 end
 
@@ -353,6 +368,8 @@ function Audio:Ability(family, distance)
 	if not voice then return false end
 	voice.Volume=0.15*math.clamp(1-(distance or 0)/EARSHOT,0.12,1)
 	voice.PlaybackSpeed=(self:_sound(family) or self:_sound("ability")).PlaybackSpeed*0.78
+	local filter=voice:FindFirstChild("WeaponTone")
+	if filter then filter.HighGain,filter.MidGain,filter.LowGain=-3,0,1 end
 	return pcall(function() SoundService:PlayLocalSound(voice) end)
 end
 

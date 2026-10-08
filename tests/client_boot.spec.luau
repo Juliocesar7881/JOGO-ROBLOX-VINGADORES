@@ -1938,7 +1938,7 @@ local function session(screen)
 		frames(1 / 30, 2)
 	end)
 
-	step("each owned tower carries its next upgrade above it", function()
+	step("nearby owned towers retain quick upgrades", function()
 		local function board(id) return playerGui:FindFirstChild("Upgrade_" .. id) end
 		local function green(c) local g = UILayout.Colors.green; return c ~= nil and math.abs(c.R - g.R) + math.abs(c.G - g.G) + math.abs(c.B - g.B) < 0.01 end
 		check(board("t1") ~= nil and board("t2") ~= nil, tag .. ": the player's upgradable towers get an upgrade button in the world")
@@ -1947,6 +1947,7 @@ local function session(screen)
 		local first = board("t1") and board("t1"):FindFirstChildOfClass("TextButton")
 		check(first ~= nil and string.find(first.Text, "350", 1, true) ~= nil, tag .. ": the button shows the upgrade cost, got " .. tostring(first and first.Text))
 		check(first ~= nil and green(first.BackgroundColor3), tag .. ": an affordable upgrade is green")
+		check(board("t1") ~= nil and board("t1").Size.X.Offset == math.floor(136 * main.ScreenScale.Scale), tag .. ": a quick upgrade retains the HUD scale after state updates")
 		local before = #actions
 		if first then first.Activated:Fire(); flush() end
 		local sent = false
@@ -1973,6 +1974,34 @@ local function session(screen)
 		flush()
 		return frameAt(main, layout.tower)
 	end
+
+	step("quick upgrades leave the horde visible and prioritize selection", function()
+		local snapshot = matchSnapshot(profile, "Wave")
+		for index = 5, 6 do
+			local tower = table.clone(snapshot.match.towers[1])
+			tower.id, tower.position = "t" .. index, v3(1000 + index * 10, 0, 0)
+			table.insert(snapshot.match.towers, tower)
+			world:MakeTower(tower.id, tower.heroId, tower.position, LOCAL_ID)
+		end
+		local function countVisible()
+			local count = 0
+			for _, item in ipairs(playerGui:GetChildren()) do
+				if string.sub(item.Name, 1, 8) == "Upgrade_" and item.Enabled then count += 1 end
+			end
+			return count
+		end
+		push(snapshot)
+		check(countVisible() == 2, tag .. ": only two quick upgrades cover the battlefield")
+		check(playerGui.Upgrade_t6.Enabled == false, tag .. ": a distant unselected hero has no floating label")
+		check(selectTower("t6") ~= nil and playerGui.Upgrade_t6.Enabled, tag .. ": selecting that hero makes its upgrade visible")
+		check(countVisible() == 2, tag .. ": selection keeps the same label budget")
+		click("X")
+		push(matchSnapshot(profile, "Wave"))
+		check(playerGui:FindFirstChild("Upgrade_t6") == nil, tag .. ": removing a tower cleans its contextual label")
+		for _, model in ipairs(workspace.DoomWorld.Towers:GetChildren()) do
+			if model:GetAttribute("TowerId") == "t5" or model:GetAttribute("TowerId") == "t6" then model:Destroy() end
+		end
+	end)
 
 	step("the tower panel in every state", function()
 		check(selectTower("t1") ~= nil, tag .. ": an owned tower opens its panel in the " .. layout.towerVariant .. " slot")
@@ -2254,6 +2283,27 @@ local function session(screen)
 		frames(0.5, 4)
 		fx({ kind = "Clear" })
 		frames(1 / 30, 2)
+	end)
+
+	step("dense attack effects preserve silhouettes and return to their pool", function()
+		push(matchSnapshot(profile, "Wave", {enemies = 0}))
+		fx({kind = "Clear"})
+		world:MakeTower("refine-beam", "cyclops", v3(70, 0, 70), LOCAL_ID)
+		local visuals = workspace:FindFirstChild("DoomClientVisuals")
+		local shot = {kind = "Shot", heroId = "cyclops", towerId = "refine-beam", from = v3(70, 4, 70), to = v3(70, 2, 50), color = Color3.fromRGB(220, 50, 70)}
+		fx(shot)
+		local beams = 0
+		for _, item in ipairs(visuals:GetChildren()) do
+			if item.Name == "CombatEffect" and item.Size.Z > 10 and item.Shape == Enum.PartType.Block then
+				beams += 1
+				check(item.Size.X < .6 and item.Transparency >= .15, tag .. ": laser does not cover the enemy with an opaque slab")
+			end
+		end
+		check(beams == 2, tag .. ": laser uses a narrow core and a restrained outer beam")
+		for _ = 1, 40 do fx(shot) end
+		check(countNamed(visuals, "CombatEffect") <= 80, tag .. ": dense fire stays within the shared effect budget")
+		frames(1 / 30, 25)
+		check(countNamed(visuals, "CombatEffect") == 0, tag .. ": all attack primitives expire from the scene")
 	end)
 
 	step("heroes move between shots: breathing, upgrade, cast and interruption", function()

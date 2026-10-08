@@ -1,119 +1,103 @@
 # Direção de arte
 
-Referência curta para manter o jogo consistente. Vale para heróis, inimigos,
-chefes, lobby e interface. Tudo é construído por código (sem modelos da
-Toolbox); a arte final feita no Studio entra por `assets/models` e substitui
-o modelo gerado sem mudar regras.
+Referência de produção do Multiverse Doomsday. A assinatura é **heróis com
+personalidade, defesa em equipe e uma ilha tecnológica acolhedora**. A arte
+precisa comunicar o jogo na câmera do jogador; quantidade de peças não é
+critério de acabamento. Os arquivos Luau são a fonte de verdade.
 
-## Identidade
+## Identidade e referências
 
-Aventura de quadrinhos dos Vingadores com **proporções de avatar Roblox**:
-corpo articulado em blocos, cabeça clássica arredondada, cores de uniforme
-fortes e poucos detalhes, mas intencionais. O jogador deve reconhecer cada
-personagem pela silhueta, pelas cores e por um acessório (escudo, martelo,
-arco, garras, capa), sem ler o nome.
+Aventura de quadrinhos, com anatomia estilizada de Roblox, silhuetas fortes,
+cores de uniforme e equipamento reconhecível. Preserve os nomes atuais do
+catálogo e a política de conteúdo do projeto. Nenhum logotipo oficial.
 
-Fontes consultadas: capturas das duas gravações do proprietário
-(`C:\Users\loops\Videos\NVIDIA\Desktop`, folhas de quadros extraídas em
-2026-09-26): a segunda mostra um TD/RPG do Roblox com avatares padrão, ícones
-ilustrados grandes no dock e um guia com balão de fala. Tower Defense
-Simulator, Tower Defense X e Toilet Tower Defense foram usados como
-referência de categoria (unidades reconhecíveis, inimigos por família,
-evolução visível). Não foram jogados nem assistidos nesta sessão.
+Referências: capturas e vídeos enviados pelo proprietário, com estudos
+anteriores registrados em `docs/director/REFERENCE_TTD.md`; tower defenses
+como referência de clareza, portais e evolução. As imagens fornecidas pelo
+dono mostram placas com vistas de mapas, unidades grandes e navegação
+simples. Não se afirma ter jogado os títulos ou assistido novamente às
+gravações nesta rodada. Tutorial por setas, sem mascote ou personagem guia.
 
-## Corpo (figuras articuladas)
+## Personagens
 
-- Esquema R15: `HumanoidRootPart` nos pés, `LowerTorso`, `UpperTorso`,
-  `Head`, braço (`UpperArm`, `LowerArm`, `Hand`) e perna (`UpperLeg`,
-  `LowerLeg`, `Foot`). Um `Motor6D` em cada articulação; o cliente anima só
-  com `Motor6D.Transform` (`src/client/Motion.luau`).
-- Humano = 6 studs. A torre acrescenta 15%.
-- Tamanho vem de **proporção**, não de zoom: Hulk ~10 studs, peito largo,
-  braços grossos, cabeça pequena; Groot alto e estreito, braços longos;
-  Rocket ~60% do humano, cabeça grande; brutamontes largo de pernas curtas.
-- Inimigos comuns ~0,8 do humano; chefes 1,45–1,8.
-- Acessórios soldados à parte do corpo a que pertencem (escudo no antebraço,
-  martelo na mão, capa nas costas) para acompanharem a pose.
+- Rig articulado: raiz, tronco, cabeça, braços, mãos, pernas e pés, com
+  Motor6D. A animação do cliente não altera a simulação do servidor.
+- Massa vem de proporções: grandalhão com cabeça menor, peito largo e braços
+  pesados; herói orgânico alto e estreito; atirador pequeno com mãos e arma
+  proporcionais. Não aumentar todos os eixos de um boneco genérico.
+- Ombros, cintura, mãos e pés precisam de desenho; acessórios soldados à
+  articulação correta. Preserve pivôs, alcance, colisões e emissão.
+- Diferenciar chefes pelo corpo, postura e equipamento, incluindo capa,
+  focinho, cauda ou espinhas quando fizerem parte do personagem.
+- Equipamento, roupa e pose devem tornar a melhoria perceptível na partida.
+  Emblema ou aura repetida não substitui evolução própria da unidade.
+- Rostos e cores de família legíveis sem depender do nome flutuante.
 
-## Rosto
+## Materiais, iluminação e paleta
 
-Sem imagens: olhos de peça. Rosto exposto = dois ovais escuros com brilho e
-sorriso clássico; herói bravo ganha sobrancelhas. Máscaras usam lentes
-brancas com borda (Homem-Aranha, Pantera, Wolverine), visor ou fendas
-luminosas (Homem de Ferro, Ciclope, Máquina de Combate). Infectados: órbitas
-escuras com olhos verdes luminosos de tamanhos diferentes e mandíbula aberta.
-
-## Paleta e materiais
-
-| Uso | Cor |
+| Função | Tratamento |
 |---|---|
-| Tinta / contorno | `#181C27` |
-| Branco de uniforme | `#ECF0F4` |
-| Vermelho herói | `#BE2632` |
-| Dourado | `#E8B84C` |
-| Azul-marinho | `#1C3A70` |
-| Energia (neon) | `#89E2FF` |
-| Pele infectada | `#80AA68` |
-| Olho infectado (neon) | `#BEFF6E` |
+| Pele e uniformes | Cores sólidas, SmoothPlastic, pequenos detalhes de acabamento |
+| Armadura e arma | Metal; reflexo controlado, atualmente até 0,06 nas armaduras brilhantes |
+| Orgânico e rocha | Wood e Slate aplicados por personagem, com facetas e formas próprias |
+| Arquitetura | Concreto, pedra e metal, com texturas em escala coerente |
+| Vidro | Glass transparente; sem transformar paredes e cercas em lâmpadas |
+| Energia | Neon em bordas, olhos, emissão e segmentos curtos |
 
-- `SmoothPlastic` para roupa e pele; reflexo 0,1 em armaduras.
-- `Neon` só para energia (reator, repulsores, olhos, magias) e nunca em
-  superfícies grandes.
-- `Wood` no Groot, `Ice` no Homem de Gelo. Texturas de material apenas no
-  cenário, com escala coerente.
+Tinta escura, azul profundo, pedra clara, verde da vegetação e mar turquesa
+formam a base. Dourado e ciano indicam tecnologia; outras cores identificam
+distritos e funções. Não aplicar todas as cores de raridade ao cenário.
+Bloom limitado a 0,2. Materiais texturizados não devem esconder o desenho do
+rosto ou produzir ruído em todos os uniformes.
 
-## Movimento
+## Lobby
 
-- Inimigos andam por distância percorrida (pé não escorrega): arrastar
-  (infectado, braços à frente), correr inclinado, pisar pesado (poeira),
-  marchar com escudo, esgueirar agachado, pairar, deslizar, espreitar,
-  réptil, régio.
-- Heróis: respiração em repouso, giro para o alvo, ataque no estilo do
-  herói (tiro, arco, duas armas, rifle, golpe, soco, corte, magia, raio,
-  arremesso), braços para cima na habilidade, salto na melhoria, tontura ao
-  serem interrompidos.
-- Com "Menos efeitos", os inimigos ficam parados na pose e os heróis não
-  respiram.
+Caminhos claros entre partida, equipe, evolução, invocação, arena e AFK.
+Cada área tem marco e cor funcional, com espaço de circulação. Placas de
+mapa ficam acima dos portais e mostram uma vista do mapa; decoração não
+recebe títulos flutuantes. Reduzir competição entre placas e fontes de luz.
 
-## Evolução visível
+Toda estrutura física deve mostrar como se sustenta: bases em contato com o
+chão, pontes com pilares, placas com suportes e vitrines montadas na
+arquitetura. Hologramas e nave podem flutuar intencionalmente; pilares de
+concreto não. Cenário sólido, sem props bloqueando pontes, filas ou cliques.
+Apoios e circulação são testados. Teto atual: 4.500 peças no lobby.
 
-Nível 2 ombreiras, 3 braceletes luminosos, 4 emblema no peito, 5 mãos e
-auréola na cor do ramo (quente = ramo 1, fria = ramo 2).
+Trabalhar composição e formas inclinadas antes de acrescentar adornos.
+Avaliar chegada, passagem e distritos na altura do jogador. Uma vista aérea
+não demonstra travessia. O movimento é local, limitado e respeita Menos
+efeitos: árvores, bandeiras, hologramas e nave não precisam animar juntos.
 
-## Lobby: Base dos Heróis
+## Interface e combate
 
-Referência do proprietário (27/09/2026): capturas do lobby do Toilet Tower
-Defense — praça elevada cercada de vidro iluminado, placas ilustradas
-enormes, títulos flutuando sobre cada área, filas com pads que brilham, água
-azul e muita vegetação. A tradução para o nosso universo é uma ilha-base
-tropical dos Vingadores/S.H.I.E.L.D., sempre de tarde e ensolarada.
+Fredoka One nos destaques, Builder Sans no apoio; canvas lógico 1150x640,
+UIScale e utilitários UI.fit/UI.oneLine. Português e inglês, no locale.
+Verde confirma, vermelho comunica perigo, dourado comunica Ouro. Custos,
+requisitos e resultados têm hierarquia própria.
 
-- Paleta: pedra clara `#CED5E0`, aço `#46546E`, marinho `#1C2640`, ciano
-  `#40D4FF`, vidro aceso `#96F0FF`, dourado `#FFC440`, lâmpada `#FFD480`;
-  árvores redondas em dois verdes, areia `#F0DCA8`, mar turquesa.
-- Cada área tem **uma cor-assinatura, uma placa ilustrada gigante e um
-  marco**: campanha (verde-água, horizonte de Manhattan), arena (laranja,
-  placar e refletores), zona AFK (azul, lua), invocação (dourado/rosa, baú),
-  expedições (roxo, cristais de vibranium e arco de Asgard), Latvéria (verde,
-  muralha com chamas), academia (violeta, alvo e cartas gigantes).
-- Um só vocabulário (`Kit` em `WorldBuilder.luau`): cerca de vidro aceso,
-  poste, árvore, palmeira, canteiro, escada com nariz de neon, marcas
-  amarelas de canto, bandeira, estrela, placa ilustrada e título flutuante.
-  Nada novo entra no lobby fora desse kit.
-- Placas são desenhadas com GUI (céu em gradiente, raios de sol, ilustração,
-  título LuckiestGuy com contorno) — nenhuma imagem enviada.
-- Neon com bloom é o que faz o lobby brilhar: em frisos, vidro e anéis, nunca
-  em superfícies grandes de piso.
-- Movimento só no cliente, por atributo (`Spin`, `Bob`, `SpinCenter`,
-  `Sway`): globo holográfico e órbitas, rotores do Helicarrier, Quinjet em
-  patrulha, baús de prêmio, ícones dos balcões, bandeiras. "Menos efeitos"
-  congela tudo.
-- Cenário nunca pisa em piso de área, ponte ou fila (há teste para isso).
-- Sem logotipos oficiais da Marvel: estrela e emblemas estilizados.
+O centro e o horizonte pertencem à batalha. Separar comando e núcleo em
+telas largas; reduzir informações secundárias e limitar avisos sobre
+unidades. Dois botões rápidos de melhoria no máximo, priorizando seleção.
+Personagens continuam selecionáveis pelo modelo. Toque precisa de espaço
+suficiente, rolagem e seleção não podem se perder ao atualizar estado.
 
-## Interface
+Ataque: preparar, orientar, emitir da mão/arma, acertar e recuperar. Feixes
+com núcleo fino, explosões e poderes com ondas vazadas, cores do herói e
+pouca luz branca. Respeitar limite compartilhado de 80 efeitos e Menos
+efeitos. Apresentação segue os eventos do servidor.
 
-Fonte de destaque FredokaOne com contorno escuro; texto de apoio Gotham.
-Verde = jogar/confirmar, dourado = Ouro, laranja = evolução, roxo =
-coleção, vermelho = perigo/vender. Placas do lobby: título curto na cor do
-balcão e uma linha pequena de instrução; sem painel inteiro em maiúsculas.
+## Som e avaliação
+
+Armas, golpes, controle e magia têm timbres e ritmos próprios, com volume,
+distância, repetição e número de vozes limitados. Equalização deve voltar ao
+perfil neutro quando uma voz é reutilizada. Música e efeitos independentes.
+Lobby mantém sua trilha; combate usa o arranjo de ação existente.
+
+Os doze WAVs em `assets/audio/refined/` são fontes produzidas, ainda sem
+integração publicada. Envio, declaração de autoria do dono e moderação são
+necessários. Nunca apresentar mistura de assets antigos como nova gravação.
+
+A revisão atual do catálogo está em `REFINAMENTO_DIRECAO_2026-10-08.md`:
+43 heróis inspecionados, acabamento ainda 3/5. Finalizar uma amostra de
+anatomia, movimento, inimigo e combate antes de replicá-la. Testes verdes não
+substituem inspeção visual, escuta, celular real ou quatro jogadores.

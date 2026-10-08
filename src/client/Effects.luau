@@ -628,10 +628,10 @@ function Effects:_impact(position, color, diameter)
 	if effect then effect.ballFrom, effect.ballTo = diameter, diameter * 1.9 end
 end
 
--- The flash at a muzzle: a pale ball that swells and fades in a tenth of a second.
+-- A short muzzle flash, contained inside the silhouette of the weapon.
 function Effects:_muzzle(position, color, size)
-	local flash = self:_effect(Vector3.one * size, CFrame.new(position), color:Lerp(Color3.new(1, 1, 1), 0.55), 0.11, Enum.PartType.Ball, 0.25)
-	if flash then flash.ballFrom, flash.ballTo = size, size * 2.2 end
+	local flash = self:_effect(Vector3.one * size, CFrame.new(position), color:Lerp(Color3.new(1, 1, 1), 0.2), 0.11, Enum.PartType.Ball, 0.35)
+	if flash then flash.ballFrom, flash.ballTo = size * 0.7, size * 1.25 end
 end
 
 -- Short streaks thrown outward from a point.
@@ -646,23 +646,22 @@ end
 
 -- Where a shot lands: a swelling flash, a ring on the ground and sparks.
 function Effects:_burst(position, color, size)
-	self:_impact(position, color:Lerp(Color3.new(1, 1, 1), 0.45), size * 1.6)
-	self:_groundImpact(position, color, size * 4)
-	self:_sparks(position, color, 4, size * 2.4)
+	self:_impact(position, color, size * 1.1)
+	self:_ring(position, color, size, size * 3.5, 0.22)
+	self:_sparks(position, color, 3, size * 2)
 end
 
--- A real laser: a wide soft glow, a coloured body and a white-hot core, with a
--- flash at the muzzle and a burst where it lands.
+-- A narrow beam with a coloured core. Fewer primitives and restrained glow
+-- preserve the enemies' silhouettes when several heroes fire together.
 function Effects:_laser(from, to, color, width, duration)
 	duration = duration or 0.2
 	local length = (to - from).Magnitude
 	if length < 0.05 then return end
 	local middle = CFrame.lookAt((from + to) / 2, to)
-	self:_effect(Vector3.new(width * 3.4, width * 3.4, length), middle, color, duration, nil, 0.6)
-	self:_effect(Vector3.new(width * 1.7, width * 1.7, length), middle, color, duration, nil, 0.12)
-	self:_effect(Vector3.new(width * 0.55, width * 0.55, length), middle, Color3.new(1, 1, 1), duration * 0.85, nil, 0)
-	self:_muzzle(from, color, width * 3)
-	self:_burst(to, color, width * 2)
+	self:_effect(Vector3.new(width * 1.8, width * 1.8, length), middle, color, duration, nil, 0.62)
+	self:_effect(Vector3.new(width * 0.65, width * 0.65, length), middle, color:Lerp(Color3.new(1, 1, 1), 0.22), duration * 0.85, nil, 0.16)
+	self:_muzzle(from, color, width * 1.8)
+	self:_burst(to, color, width * 1.4)
 end
 
 function Effects:_groundImpact(position, color, radius)
@@ -902,7 +901,7 @@ function Effects:PlaceBurst(position, color)
 	self:_effect(Vector3.new(11, 1.5, 1.5), CFrame.new(position + Vector3.new(0, 5.5, 0)) * CFrame.Angles(0, 0, math.pi / 2), color, 0.4, Enum.PartType.Cylinder, 0.6)
 end
 
--- The signature of an ultimate: a pillar of light and three shockwaves rolling
+-- The signature of an ultimate: a short light column and two hollow shockwaves
 -- out from the cast point, then one ring per extra effect in that effect's own
 -- color so a player can read what the ultimate just did. Reduced effects keeps a
 -- single ring and no strobing.
@@ -918,20 +917,18 @@ function Effects:_ultimateBurst(event, tint, lowFX)
 		self:_groundImpact(position, tint, radius)
 		return
 	end
-	local pale = tint:Lerp(Color3.new(1, 1, 1), 0.55)
-	local width = math.clamp(radius * 0.18, 3, 12)
-	self:_effect(Vector3.new(120, width, width), CFrame.new(position + Vector3.new(0, 60, 0)) * CFrame.Angles(0, 0, math.pi / 2), pale, 0.7, Enum.PartType.Cylinder, 0.35)
-	for wave = 1, 3 do
+	local width = math.clamp(radius * 0.07, 1, 3)
+	self:_column(position, tint, 16, width, 0.42, 0.65)
+	for wave = 1, 2 do
 		task.delay((wave - 1) * 0.14, function()
-			self:_groundImpact(position, tint, radius * (0.55 + 0.3 * wave))
-			self:_impact(position + Vector3.new(0, 1.5, 0), pale, radius * 0.12 * wave)
+			self:_ring(position, tint, radius * 0.25, radius * (0.7 + 0.3 * wave), 0.38)
 		end)
 	end
 	for index, extra in ipairs(event.extras or {}) do
 		local color = EXTRA_TINT[extra.kind]
 		if color then
 			task.delay(0.1 + index * 0.16, function()
-				self:_groundImpact(position, color, math.max(extra.radius or 0, radius * 0.5) * 0.8)
+				self:_ring(position, color, 2, math.max(extra.radius or 0, radius * 0.5) * 0.8, 0.35)
 			end)
 		end
 	end
@@ -1441,7 +1438,9 @@ function Effects:Handle(event)
 		self:_recoil(event.towerId)
 		local camera = workspace.CurrentCamera
 		if self.audio and camera and typeof(event.to) == "Vector3" then
-			self.audio:Shot(Effects.ShotSound(event.heroId), (event.to - camera.CFrame.Position).Magnitude)
+			local model = self:_towerModel(event.towerId)
+			local heroId = event.heroId or (model and model:GetAttribute("HeroId"))
+			self.audio:Shot(Effects.ShotSound(heroId), (event.to - camera.CFrame.Position).Magnitude, heroId)
 		end
 		if typeof(event.from) ~= "Vector3" or typeof(event.to) ~= "Vector3" or #self.shots >= 80 then return end
 		local lowFX = state and state.profile and state.profile.settings.lowFX

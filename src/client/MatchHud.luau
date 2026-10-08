@@ -203,11 +203,10 @@ function MatchHud.new(ctx)
 		end, {Position = UDim2.fromOffset(18 + half, rowY), Size = UDim2.fromOffset(half, rowH), BackgroundColor3 = C.red:Lerp(UI.Skin.body, 0.35), TextSize = wide and 12 or 16})
 	end
 
-	-- Every tower you own carries its next upgrade above it, in the world: tap
-	-- to buy, green when the energy is there. The panel stays one tap away for
-	-- targeting and selling, and it is where level 4 picks a branch, but a
-	-- plain upgrade never needs it. Billboards live in PlayerGui, so they are
-	-- this player's alone and survive HUD re-layouts.
+	-- Keep quick upgrades near the camera, with at most two labels over the
+	-- battlefield. Selecting a hero reserves one of those labels. The other
+	-- heroes remain selectable through their models; level 4 opens the branch
+	-- panel. Billboards belong to this player and survive HUD re-layouts.
 	local upgradeBoards = {}
 	local function clearUpgradeBoards()
 		for id, board in pairs(upgradeBoards) do
@@ -226,7 +225,10 @@ function MatchHud.new(ctx)
 	end
 
 	local function updateUpgradeBoards(match)
-		local seen = {}
+		local seen, candidates = {}, {}
+		local selected = ctx.selectedTower and ctx.selectedTower()
+		local camera = workspace.CurrentCamera
+		local eye = camera and camera.CFrame.Position or Vector3.new(0, 0, 0)
 		for _, tower in ipairs(match.towers or {}) do
 			if tower.ownerId ~= player.UserId or (tower.level or 1) >= 5 then continue end
 			local id = tostring(tower.id)
@@ -243,7 +245,7 @@ function MatchHud.new(ctx)
 					local figure = anchor.Parent and anchor.Parent:FindFirstChild("HeroFigure")
 					local height = figure and tonumber(figure:GetAttribute("FigureHeight")) or 6.5
 					local gui = Instance.new("BillboardGui")
-					gui.Name, gui.Size, gui.AlwaysOnTop, gui.Active = "Upgrade_" .. id, UDim2.fromOffset(150, 40), true, true
+					gui.Name, gui.Size, gui.AlwaysOnTop, gui.Active = "Upgrade_" .. id, UDim2.fromOffset(136, mobile() and 48 or 40), true, true
 					gui.StudsOffset, gui.MaxDistance, gui.ResetOnSpawn = Vector3.new(0, height + 2.6, 0), 200, false
 					gui.Adornee = anchor
 					board = {gui = gui}
@@ -261,6 +263,12 @@ function MatchHud.new(ctx)
 			if board then
 				seen[id] = true
 				board.tower = tower
+				local screenScale = UI.screenScale or 1
+				board.gui.Size = UDim2.fromOffset(math.floor(136 * screenScale), math.floor((mobile() and 48 or 40) * screenScale))
+				board.button.TextSize = math.floor(16 * screenScale)
+				local position = board.gui.Adornee.Position
+				local dx, dz = position.X - eye.X, position.Z - eye.Z
+				table.insert(candidates, {id = id, board = board, score = tostring(selected) == id and -1 or dx * dx + dz * dz})
 				local cost = tower.upgradeCost or 0
 				local affordable = (match.cash or 0) >= cost
 				local nextLevel = (tower.level or 1) + 1
@@ -270,6 +278,11 @@ function MatchHud.new(ctx)
 				board.button.TextColor3 = affordable and C.text or C.muted
 			end
 		end
+		table.sort(candidates, function(a, b)
+			if a.score == b.score then return a.id < b.id end
+			return a.score < b.score
+		end)
+		for index, candidate in ipairs(candidates) do candidate.board.gui.Enabled = index <= 2 end
 		for id, board in pairs(upgradeBoards) do
 			if not seen[id] then
 				board.gui:Destroy()

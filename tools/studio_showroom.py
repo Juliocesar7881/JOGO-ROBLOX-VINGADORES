@@ -180,7 +180,8 @@ def main() -> None:
     if not studio_sync.wait_for(f"{marker}_MODE", started, 30).endswith("true"):
         raise SystemExit("Studio is in a playtest: press Stop first.")
     studio_sync.run_command(code, 901)
-    print(studio_sync.wait_for(marker, started, 120))
+    # Do not accept the earlier <marker>_MODE line as a successful build.
+    print(studio_sync.wait_for(marker + " ", started, 120))
     if args.kind == "clean":
         return
     # A one-line command collapses the command bar over the viewport again.
