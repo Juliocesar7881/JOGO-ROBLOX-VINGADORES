@@ -198,3 +198,10 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M18.1 Q: prévia regional antes do clique, raio recebido do servidor, acompanhamento da mira, contorno reutilizado, limites/cancelamento e ausência de círculo em poder global; testes de relayout sem lançamento.
 - [x] M18.2 Árvore do lobby navegável por arraste e roda, hexágonos maiores, Centralizar, posição/zoom preservados e adaptação à tela; arraste não compra, eventos encerram ao fechar e sons respeitam mute.
 - [x] M18.3 Revisão final em PC, celular horizontal/vertical e inglês sem cortes detectados; fontes finais comparadas, sincronização seletiva e publicação no lugar da equipe às 14:46:18 UTC. Código `2aa4d0f`; evidências e limites em `docs/REFINAMENTO_Q_ARVORE_2026-10-08.md`.
+
+## M19 — Acabamento do lobby e áudio, 08/10
+
+- [x] M19.1 Mar sem reserva vazia antes da partida; costa, passagem pavimentada da torre, cantos arredondados, caixilhos, iluminação e cinco vitrines distintas. Salões com frontões, janelas circulares e plataforma. 4.489 peças dentro do teto; passagem do personagem, aviso físico da loja e capturas conferidos no Studio.
+- [x] M19.2 Mix atual mais discreto: coleta curta, construção mecânica, melhoria com carga, habilidades por família, distância, variação e limite de vozes. Testes de repetição, mute, camadas agendadas, transições e famílias aprovados. IDs antigos preservados.
+- [!] M19.3 Doze fontes WAV novas produzidas e verificadas, ainda sem upload/moderação: confirmação de autoria somente pelo dono. Arquivos, manifesto e procedimento em `assets/audio/refined/README.md`. O mix M19.2 já funciona com os assets existentes.
+- [ ] M19.4 Conferir e publicar o lote no mesmo lugar da equipe; registrar horário e evidências em `docs/REFINAMENTO_LOBBY_AUDIO_2026-10-08.md`.

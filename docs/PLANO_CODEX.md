@@ -391,3 +391,13 @@ preservando as regras atuais de progressão e autoridade do servidor.
 Código `2aa4d0f`, com suíte completa verde e revisão no Studio. Publicado no
 mesmo lugar da equipe em 08/10/2026 às 11:46:18 local (14:46:18 UTC), com
 sucesso confirmado no log; Studio deixado em modo de edição.
+
+## 11. Acabamento do lobby e áudio
+
+O pedido seguinte trata da passagem incompleta da torre, vazio no mar,
+arquitetura do lobby e repetição dos sons. Implementação, capturas, testes e
+dependências em [`REFINAMENTO_LOBBY_AUDIO_2026-10-08.md`](REFINAMENTO_LOBBY_AUDIO_2026-10-08.md), fila M19.
+
+O mix atual usa os assets já disponíveis. Os 12 WAVs em
+`assets/audio/refined/` estão produzidos e verificados, mas aguardam envio pelo
+dono, declaração de autoria e moderação; não são gravações já publicadas.

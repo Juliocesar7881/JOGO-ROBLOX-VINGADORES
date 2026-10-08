@@ -1286,7 +1286,11 @@ function Effects:Handle(event)
 			if i>(lowFX and 2 or 12) then break end
 			if typeof(point)=="Vector3" then self:_bolt(point,UI.color(event.color),0.26) end
 		end
-		if self.audio then self.audio:Cue("ability",0.35) end
+		if self.audio then
+			local camera=workspace.CurrentCamera
+			local distance=camera and typeof(event.position)=="Vector3" and (event.position-camera.CFrame.Position).Magnitude or 0
+			self.audio:Ability(Effects.ShotSound(event.heroId),distance)
+		end
 		return
 	end
 	if event.kind == "Breach" then

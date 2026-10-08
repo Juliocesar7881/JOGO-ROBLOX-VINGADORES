@@ -57,7 +57,7 @@ state.match={mapId='hydra'};audio:Update(state)
 assert(audio.ambient=='ambHydra','A different map switches the ambience')
 state.phase='Lobby';audio:Update(state)
 assert(audio.ambient==nil,'The lobby has no map ambience')
--- Weapon cues: a budget per quarter second, nothing beyond earshot, quieter far away.
+-- Weapon cues: a hard budget per 300 ms, per-family spacing and distance.
 local plays=0
 local originalNew=Instance.new
 Instance.new=function(kind)
@@ -69,7 +69,10 @@ clock+=5
 assert(not audio:Shot('shotTech',200),'A shot beyond earshot is silent')
 local heard=0
 for index=1,10 do clock+=0.01; if audio:Shot(index%2==0 and 'shotTech' or 'shotBlast',10) then heard+=1 end end
-assert(heard==4,'Dense fire is thinned to four voices, got '..heard)
+assert(heard==2,'Repeated families are spaced by 120 ms, got '..heard)
+clock+=1;heard=0
+for index=1,6 do clock+=0.055; if audio:Shot(index%2==0 and 'shotTech' or 'shotBlast',10) then heard+=1 end end
+assert(heard==3,'No more than three shots play in a 300 ms window, got '..heard)
 clock+=1
 assert(audio:Shot('shotTech',80),'A far shot within earshot still plays')
 local farVolume=audio.voices.shotTech[audio.voiceIndex.shotTech].Volume
@@ -108,6 +111,42 @@ settings.interface=true;settings.effects=false;clock+=1;audio:Talent('snap')
 assert(effectsPlayed==count,'Effects mute also silences research sounds')
 settings.effects=true;clock+=1;audio:Talent('snap');audio:Talent('center')
 assert(effectsPlayed==count+2,'Research snap and center have independent cues')
+-- Quiet material palettes: pickup bursts do not turn into a repeated melody;
+-- delayed layers obey mute and placements cannot double from reply + FX.
+Config.Audio.shotMelee=81;Config.Audio.shotArrow=82
+clock+=1;count=effectsPlayed;delayed={}
+audio:Cue('collect',.01)
+for i=1,12 do clock+=.01;audio:Cue('collect',.01) end
+assert(effectsPlayed==count+1,'A burst of pickups produces one quiet tick')
+local pickup=audio.voices.click[audio.voiceIndex.click]
+assert(pickup.SoundId=='rbxassetid://78' and pickup.Volume<=.08,'Pickup uses a short owned click, not the old arpeggio')
+clock+=1;count=effectsPlayed;delayed={}
+audio:Cue('place',.01);audio:Cue('place',.01)
+assert(effectsPlayed==count+1 and #delayed==1,'Reply and FX cannot double a placement sound')
+settings.effects=false
+for _,fn in ipairs(delayed) do fn() end
+assert(effectsPlayed==count+1,'Mute cancels a scheduled placement layer')
+settings.interface=true;settings.effects=true;clock+=1;delayed={};audio:Cue('upgrade')
+local upgrade=audio.voices.shotTech[audio.voiceIndex.shotTech]
+assert(upgrade.SoundId=='rbxassetid://23' and upgrade.PlaybackSpeed<1,'Upgrade has a mechanical charge timbre')
+clock+=1;count=effectsPlayed
+assert(audio:Ability('shotMelee',5),'Melee leader power plays')
+assert(not audio:Ability('shotTech',5),'Repeated power messages are rate limited')
+clock+=1;assert(audio:Ability('shotTech',5),'Tech leader has a distinct power source')
+assert(audio.voices.shotMelee[audio.voiceIndex.shotMelee].SoundId~=audio.voices.shotTech[audio.voiceIndex.shotTech].SoundId,'Power sounds follow the leader family')
+clock+=1;assert(not audio:Ability('shotTech',200),'Distant powers are silent')
+settings.effects=false;clock+=1;assert(not audio:Ability('shotMelee',5),'Power honours effects mute')
+-- Owner-uploaded material cues replace the compatibility remix, preserving
+-- all rate limits and settings. No fictitious production IDs are introduced.
+Config.DirectAudioCues={collect=true,place=true,upgrade=true}
+local refined=Audio.new(function() return state end)
+settings.effects=true;clock+=1;delayed={};count=effectsPlayed
+refined:Cue('place')
+assert(effectsPlayed==count+1 and #delayed==0,'Dedicated placement replaces both remixed layers')
+assert(refined.voices.place[1].SoundId=='rbxassetid://79','Dedicated recording uses its configured asset')
+refined:Cue('place',0);assert(effectsPlayed==count+1,'Dedicated cue keeps anti-repeat spacing')
+settings.effects=false;clock+=1;refined:Cue('place')
+assert(effectsPlayed==count+1,'Dedicated cue keeps effects mute')
 print('PASS audio: transitions, mute, legacy settings, result cues, map ambience, weapon voice budget and jingles')
 '''.replace('__AUDIO__', source)
 with tempfile.TemporaryDirectory(prefix='doom-audio-') as temp:

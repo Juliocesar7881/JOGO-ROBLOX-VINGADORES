@@ -119,6 +119,33 @@ class ReleaseTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(output.exists())
 
+    def test_refined_audio_sources_are_complete_and_not_claimed_as_uploads(self):
+        base = ROOT / 'assets/audio/refined'
+        manifest = json.loads((base / 'manifest.json').read_text(encoding='utf-8'))
+        expected = {'lobby', 'battle', 'click', 'collect', 'open', 'place', 'upgrade',
+                    'shotTech', 'shotArrow', 'shotMagic', 'shotMelee', 'shotBlast'}
+        self.assertEqual(set(manifest['assets']), expected)
+        self.assertEqual(set(path.stem for path in base.glob('*.wav')), expected)
+        hashes = set()
+        for name, entry in manifest['assets'].items():
+            path = base / entry['file']
+            self.assertEqual(entry['assetId'], 0, 'Unuploaded sources must not claim Roblox IDs')
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), entry['sha256'])
+            hashes.add(entry['sha256'])
+            with wave.open(str(path)) as sound:
+                self.assertEqual((sound.getnchannels(), sound.getsampwidth(), sound.getframerate()), (1, 2, 32000))
+                samples = [v[0] for v in struct.iter_unpack('<h', sound.readframes(sound.getnframes()))]
+            self.assertGreater(max(abs(v) for v in samples), 1000, name + ' must be audible')
+            self.assertLessEqual(max(abs(v) for v in samples), 23600, name + ' must not clip')
+            self.assertLess(abs(sum(samples) / len(samples)), 100, name + ' DC offset')
+            self.assertAlmostEqual(len(samples) / 32000, entry['seconds'], places=2)
+            if entry['loop']:
+                self.assertGreater(entry['seconds'], 30)
+                self.assertLess(abs(samples[0] - samples[-1]), 2500, name + ' loop seam')
+            else:
+                self.assertLessEqual(entry['seconds'], .65, 'Ordinary actions must stay short')
+        self.assertEqual(len(hashes), len(expected), 'Material sounds must be distinct files')
+
     def test_audio_samples_match_manifest_and_are_not_clipped(self):
         base = ROOT / 'assets/audio'
         manifest = json.loads((base / 'manifest.json').read_text(encoding='utf-8'))

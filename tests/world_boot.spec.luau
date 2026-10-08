@@ -116,6 +116,40 @@ check(countClass(lobby, "BasePart") > 40,
 	"the lobby has real geometry, got " .. tostring(countClass(lobby, "BasePart")) .. " parts")
 check(lobby:FindFirstChild("LobbySpawn") ~= nil, "the lobby has a spawn point")
 check(world.lobbySpawn ~= nil, "the spawn position is recorded for MovePlayer")
+-- The bay used to contain a 360-stud square void before any battle existed.
+do
+	local fills=rawget(workspace.Terrain,"__fills") or {}
+	for _, point in ipairs({v3(-170,-5,-170),v3(170,-5,-170),v3(-170,-5,170),v3(170,-5,170),v3(0,-5,0)}) do
+		local water=false
+		for _,fill in ipairs(fills) do
+			if fill.kind=="Block" and fill.material==Enum.Material.Water then
+				local at=fill.cframe:Inverse()*point
+				if math.abs(at.X)<=fill.size.X/2 and math.abs(at.Y)<=fill.size.Y/2 and math.abs(at.Z)<=fill.size.Z/2 then water=true end
+			end
+		end
+		check(water,"uninterrupted water before the first match: "..tostring(point))
+	end
+	local tower=lobby:FindFirstChild("HeroTower")
+	local floor=tower and tower:FindFirstChild("TowerPassageFloor")
+	check(floor and floor.CanCollide and math.abs(floor.Position.Y+floor.Size.Y/2-WorldBuilder.HQ.groundY)<.05,"tower passage has a solid floor flush with the road")
+	check(floor and floor.Size.X>=14 and floor.Size.Z>=28,"paved passage covers the gap between the connecting roads")
+	local plaza=lobby.HeroesHQ:FindFirstChild("TowerPlaza")
+	local road=lobby.HeroesHQ:FindFirstChild("TowerRoad")
+	check(floor and math.abs(floor.Position.Z-floor.Size.Z/2-(plaza.Position.Z+plaza.Size.Z/2))<.05 and math.abs(floor.Position.Z+floor.Size.Z/2-(road.Position.Z-road.Size.Z/2))<.05,"passage joins both roads without gaps or overlapping top surfaces")
+	check(tower and tower:FindFirstChild("PremiumShopSign") and not tower:FindFirstChild("StarkShopTitle"),"premium shop uses a physical sign")
+	for _, name in ipairs({"Shop_heroes","Shop_gold","Shop_collector","Shop_training","Shop_vip"}) do
+		local shop=lobby:FindFirstChild(name)
+		local plaque=shop and shop:FindFirstChild("ProductPlaque")
+		check(plaque and plaque:FindFirstChild("Title",true):GetAttribute("LobbyTextEN")~=nil,name.." has a localized physical product plaque")
+	end
+	check(lobby.Shop_collector:FindFirstChild("DroneMotor") and lobby.Shop_gold:FindFirstChild("VaultDoor") and lobby.Shop_training:FindFirstChild("TrainingScreen"),"products have distinct equipment silhouettes")
+	for _,name in ipairs({"Chest_rare","Chest_base_rare"}) do
+		local hall=lobby:FindFirstChild(name)
+		local windows=0
+		for _,p in ipairs(hall:GetChildren()) do if p.Name=="HallWindowGlass" then windows+=1 end end
+		check(windows==4,name.." has framed glazing on both side walls")
+	end
+end
 do
 	local root={Position=v3(165,-30,380),AssemblyLinearVelocity=v3(0,-70,0)}
 	local moves=0

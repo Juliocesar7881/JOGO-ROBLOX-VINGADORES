@@ -516,16 +516,16 @@ local function session(screen)
 		check(countNamed(lobby, "StartHere") == 0, tag .. ": a veteran gets no first-visit beacon")
 	end)
 
-	step("the showroom drone turns in its case", function()
+	step("the showroom drone's rotors turn above their motors", function()
 		local stand = workspace:FindFirstChild("DoomLobby").Shop_collector
 		local arm
 		for _, child in ipairs(stand:GetChildren()) do
-			if child.Name == "Drone" and child.Size.X > 3 then arm = child end
+			if child.Name == "DroneRotor" then arm = child end
 		end
 		local before = arm and arm.CFrame.LookVector
 		frames(0.25, 4)
 		local after = arm and arm.CFrame.LookVector
-		check(before ~= nil and after ~= nil and before.X * after.X + before.Z * after.Z < 0.99, tag .. ": the drone's rotor arm has turned")
+		check(before ~= nil and after ~= nil and before.X * after.X + before.Z * after.Z < 0.99, tag .. ": the drone's rotor has turned")
 	end)
 
 	local contextSlot = lobbyLayout.context

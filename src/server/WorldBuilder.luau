@@ -1863,11 +1863,11 @@ function Kit.tree(parent, base, scale, tint)
 	end
 	tint = tint:Lerp(HQ.leafLight, 0.2)
 	local shade, light = tint:Lerp(Color3.new(0, 0, 0), 0.16), tint:Lerp(HQ.leafLight, 0.55)
-	-- { x, y, z, diameter, colour }: the centre lobe, a ring of six and a cap.
+	-- { x, y, z, diameter, colour }: six overlapping masses form the crown.
 	local lobes = {
 		{ 0, 8.7, 0, 8.4, tint },
 		{ -3.4, 7.4, 0.8, 5.6, shade }, { 3.2, 7.6, -1, 5.9, shade }, { 0.6, 7.2, 3.6, 5.4, tint },
-		{ -0.8, 7.5, -3.5, 5.7, shade }, { -2.6, 9.6, -1.8, 5.2, light }, { 2.6, 9.9, 1.9, 5.4, tint },
+		{ -0.8, 7.5, -3.5, 5.7, shade },
 		{ 0.2, 11.6, 0.2, 5.2, light },
 	}
 	for index, c in ipairs(lobes) do
@@ -1900,8 +1900,8 @@ end
 function Kit.bush(parent, pos, size, tint)
 	size, tint = size or 3, (tint or HQ.leaf):Lerp(HQ.leafLight, 0.15)
 	local shade, light = tint:Lerp(Color3.new(0, 0, 0), 0.16), tint:Lerp(HQ.leafLight, 0.5)
-	-- Five overlapping clumps, each its own tone, and a few berries.
-	for _, c in ipairs({ { 0, 0.3, 0, 1, tint }, { 0.45, 0.2, 0.2, 0.7, light }, { -0.42, 0.25, -0.2, 0.78, shade }, { 0.1, 0.55, 0.38, 0.55, light }, { -0.25, 0.5, 0.3, 0.6, tint } }) do
+	-- Three broad clumps read cleanly and leave geometry budget for landmarks.
+	for _, c in ipairs({ { 0, 0.3, 0, 1, tint }, { 0.45, 0.3, 0.2, 0.8, light }, { -0.42, 0.25, -0.2, 0.78, shade } }) do
 		Kit.blob(parent, "Bush", Vector3.new(size * c[4], size * c[4] * 0.8, size * c[4]), CFrame.new(pos + Vector3.new(c[1] * size, c[2] * size, c[3] * size)), c[5], Enum.Material.Grass)
 	end
 	for index = 1, 3 do
@@ -2419,7 +2419,7 @@ function World:ApplyLobbyLighting()
 	-- The sea, the island's own terrain colours and the sky; a chapter may
 	-- have recoloured all of them, so they are put back here too.
 	local terrain = workspace.Terrain
-	terrain.WaterColor, terrain.WaterTransparency, terrain.WaterReflectance = Color3.fromRGB(20, 150, 215), 0.45, 0.45
+	terrain.WaterColor, terrain.WaterTransparency, terrain.WaterReflectance = Color3.fromRGB(26, 137, 184), 0.35, 0.22
 	terrain.WaterWaveSize, terrain.WaterWaveSpeed = 0.18, 9
 	terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(106, 178, 74))
 	terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromRGB(240, 220, 168))
@@ -2687,6 +2687,14 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 	part(model,"BackWall",Vector3.new(28,16,1.2),at(0,8,-10.5),HQ.navy,Enum.Material.Metal).CastShadow=true
 	for _,side in ipairs({-1,1}) do
 		part(model,"HallWall",Vector3.new(1.2,16,22),at(side*13.4,8,0),HQ.steel,Enum.Material.Metal).CastShadow=true
+		-- Deep round glazing breaks the broad side wall into recognisable bays.
+		-- These are facade details; the solid wall still owns its collision.
+		for _, dz in ipairs({-4,4}) do
+			local frame = Kit.disc(model,"HallWindowFrame",at(side*14.18,8,dz).Position,6,0.25,tint:Lerp(HQ.steel,0.55),Enum.Material.Metal)
+			frame.CFrame = at(side*14.18,8,dz)
+			local pane = Kit.disc(model,"HallWindowGlass",at(side*14.38,8,dz).Position,4.8,0.18,secondary:Lerp(HQ.navy,0.6),Enum.Material.Glass)
+			pane.CFrame, pane.Reflectance = at(side*14.38,8,dz), 0.18
+		end
 		-- Round towers frame the door, each with a dome: the hall reads as a
 		-- castle of the summons, not a box.
 		local towerBase=at(side*9.6,0,10).Position
@@ -2699,7 +2707,14 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 	-- The roof's front edge is rolled, not cut square.
 	local rolled=Kit.block(model,"RoofRoll",Vector3.new(19,2.2,2.2),at(0,16.5,11.3),HQ.trim,Enum.Material.SmoothPlastic)
 	rolled.Shape=Enum.PartType.Cylinder
-	artPart(model,"RoofGlow",Vector3.new(29.3,0.3,23.3),at(0,15.9,0),tint,Enum.Material.Neon)
+	artPart(model,"RoofGlow",Vector3.new(29.3,0.3,23.3),at(0,15.9,0),tint,Enum.Material.Metal)
+	-- Sloping eaves give each hall a roof silhouette instead of a flat box.
+	for _, side in ipairs({-1,1}) do
+		local span = origin*Vector3.new(0,3.5,0)-origin.Position
+		local chord = origin*Vector3.new(side*14.5,0,0)-origin.Position
+		Kit.triangle(model,"HallEave",at(0,17,-10).Position,span,chord,0.5,HQ.navy,Enum.Material.Metal)
+		Kit.triangle(model,"HallEave",at(0,17,9.8).Position,span,chord,0.5,HQ.navy,Enum.Material.Metal)
+	end
 	part(model,"EntranceLintel",Vector3.new(13,4,1.4),at(0,14,10),HQ.navy,Enum.Material.Metal)
 	Kit.sign(model,"SummonHeader",at(0,21.2,9.6)*CFrame.Angles(0,math.pi,0),22,6.4,{
 		title=isBase and {"INVOCAR BASES","SUMMON BASES"} or {"INVOCAR HERÓIS","SUMMON HEROES"},
@@ -2725,7 +2740,8 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 	beam.Shape,beam.Transparency=Enum.PartType.Cylinder,0.55
 	Kit.light(reactor,secondary,26,1.6)
 	artPart(model,"HallGlow",Vector3.new(24,0.4,0.3),at(0,13.5,-9.85),tint,Enum.Material.Neon)
-	artPart(model,"HallFloorRing",Vector3.new(14,0.1,14),at(0,0.62,-3),secondary,Enum.Material.Neon).Transparency=0.6
+	Kit.disc(model,"HallFloorRing",at(0,0.62,-3).Position,13,0.1,secondary,Enum.Material.Metal)
+	Kit.disc(model,"HallFloorInset",at(0,0.7,-3).Position,11.8,0.06,HQ.navy,Enum.Material.Slate)
 	local pad=artPart(model,"ShopEntryPad",Vector3.new(11,0.16,12),at(0,0.64,11.5),Color3.fromRGB(81,220,130),Enum.Material.Neon)
 	pad.Transparency=0.35; pad.CanCollide=false
 	for _,side in ipairs({-1,1}) do artPart(model,"ShopEntryBorder",Vector3.new(0.3,0.15,12),at(side*5.65,0.77,11.5),tint,Enum.Material.Neon) end
@@ -2747,8 +2763,8 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 		chestId=chestId,kind=isBase and "base" or "hero"}
 end
 
--- The store as a physical kiosk row: the drone spins in a display case, the
--- vault holds the gold packs, the mannequin wears the VIP look. No aisle of
+-- The store as a physical kiosk row: powered drone rotors, a gold vault,
+-- a training console and a VIP crest. No aisle of
 -- buttons, one stand per product.
 local function buildShopStand(lobby, x, z, shopKind, shopKey, displayName, openPanel, showcase, displayEN)
 	local model = Instance.new("Model")
@@ -2757,46 +2773,59 @@ local function buildShopStand(lobby, x, z, shopKind, shopKey, displayName, openP
 	model:SetAttribute("ShopKind", shopKind)
 	model:SetAttribute("ShopKey", shopKey)
 	local y = GROUND_Y
-	local stand = part(model, "Stand", Vector3.new(6.4,1,6.4), CFrame.new(x,y+0.5,z), HQ.trim, Enum.Material.SmoothPlastic)
-	artPart(model,"DisplayInset",Vector3.new(5.8,0.15,5.8),CFrame.new(x,y+1.06,z),HQ.navy,Enum.Material.DiamondPlate)
-	artPart(model,"StandGlow",Vector3.new(6.6,0.2,6.6),CFrame.new(x,y+0.15,z),HQ.gold,Enum.Material.Neon)
+	local V = Vector3.new
+	local accents = { heroes = HQ.cyan, gold = HQ.gold, collector = Color3.fromRGB(118, 211, 183), training = Color3.fromRGB(172, 149, 239), vip = Color3.fromRGB(235, 173, 93) }
+	local tint = accents[shopKey] or HQ.gold
+	local stand = Kit.disc(model, "Stand", V(x,y+0.5,z), 7.4, 1, HQ.steel, Enum.Material.Metal, true)
+	Kit.disc(model, "DisplayInset", V(x,y+1.04,z), 6.6, 0.12, HQ.navy, Enum.Material.Slate)
+	Kit.disc(model, "StandRim", V(x,y+0.95,z), 7.6, 0.18, tint, Enum.Material.Metal)
+	-- One sculpted backrest, rather than a box of oversized neon pillars.
+	Kit.block(model, "ShowcaseBack", V(5.8, 5.6, 0.45), CFrame.new(x,y+3.7,z+2.7), HQ.navy, Enum.Material.Metal)
 	for _,side in ipairs({-1,1}) do
-		artPart(model,"ShowcasePillar",Vector3.new(0.5,5.6,0.5),CFrame.new(x+side*2.9,y+3.8,z-2.9),HQ.navy,Enum.Material.Metal)
-		artPart(model,"DisplayLight",Vector3.new(0.14,4.1,0.14),CFrame.new(x+side*2.62,y+3.8,z-2.62),HQ.gold,Enum.Material.Neon)
+		Kit.column(model, "ShowcasePillar", V(x+side*3,y+1,z+2.6), 5.3, 0.7, HQ.steel, Enum.Material.Metal)
 	end
-	artPart(model,"ShowcaseCanopy",Vector3.new(6.8,0.4,6),CFrame.new(x,y+6.8,z-0.4),HQ.navy,Enum.Material.Metal)
-	artPart(model,"CanopyGlow",Vector3.new(6.9,0.22,0.3),CFrame.new(x,y+6.72,z+2.55),HQ.gold,Enum.Material.Neon)
+	Kit.block(model, "ShowcaseCanopy", V(6.7,0.4,2.6), CFrame.new(x,y+6.6,z+1.6), HQ.navy, Enum.Material.Metal)
+	Kit.block(model, "DisplayLight", V(5.6,0.1,0.18), CFrame.new(x,y+6.35,z+0.4), HQ.lamp, Enum.Material.Neon)
 	if shopKey == "heroes" and showcase then
-		-- Recruitment card marks direct purchases without a character statue.
-		artPart(model,"RecruitCard",Vector3.new(0.4,3.6,2.8),CFrame.new(x,y+3,z),ART.gold,Enum.Material.Metal)
-		artPart(model,"RecruitStar",Vector3.new(0.5,1.2,1.2),CFrame.new(x+0.25,y+3,z)*CFrame.Angles(math.pi/4,0,0),ART.cyan,Enum.Material.Neon)
-		part(model, "DisplayRing", Vector3.new(4.6, 0.15, 4.6), CFrame.new(x, y+1.15, z), ART.gold, Enum.Material.Neon).CanCollide = false
+		local frame = CFrame.new(x, y+3.4, z-0.3) * CFrame.Angles(0,0,-0.12)
+		Kit.block(model, "RecruitCard", V(3.5,4.4,0.25), frame, HQ.trim, Enum.Material.Metal)
+		Kit.block(model, "RecruitFace", V(3.1,4,0.12), frame*CFrame.new(0,0,-0.19), HQ.navy, Enum.Material.SmoothPlastic)
+		Kit.star(model, "RecruitStar", frame*V(0,0.65,-0.3), frame.RightVector, frame.UpVector, 1.15, tint, Enum.Material.Metal, 0.12)
+		for i=1,2 do Kit.block(model, "RecruitLine", V(2.1,0.14,0.1), frame*CFrame.new(0,-0.6-i*0.4,-0.28), HQ.trim, Enum.Material.Metal) end
 	elseif shopKey == "collector" then
-		-- A body with two crossed rotor arms, so the client's showroom spin is
-		-- actually visible; a lone sphere turning looks exactly like one standing.
-		local drone = part(model, "Drone", Vector3.new(1.4, 1.4, 1.4), CFrame.new(x, y+3, z), Color3.fromRGB(120, 220, 255), Enum.Material.Neon)
-		drone.Shape = Enum.PartType.Ball
-		for _, angle in ipairs({ math.pi / 4, -math.pi / 4 }) do
-			part(model, "Drone", Vector3.new(3.2, 0.14, 0.3), CFrame.new(x, y+3, z) * CFrame.Angles(0, angle, 0), Color3.fromRGB(150, 172, 190), Enum.Material.Metal)
-		end
-		part(model, "DroneRing", Vector3.new(2.6, 0.15, 2.6), CFrame.new(x, y+2.1, z), Color3.fromRGB(120, 220, 255), Enum.Material.Neon)
+		-- A recognisable quadcopter: shell, camera, four motor pods and rotors.
+		Kit.blob(model, "DroneShell", V(2.2,1.1,1.8), CFrame.new(x,y+3.4,z), HQ.trim, Enum.Material.Metal)
+		Kit.block(model, "DroneCamera", V(0.6,0.6,0.3), CFrame.new(x,y+3.15,z-1), HQ.navy, Enum.Material.Metal)
+		Kit.disc(model, "DroneLens", V(x,y+3.15,z-1.18), 0.35,0.14,tint,Enum.Material.Glass).CFrame=CFrame.new(x,y+3.15,z-1.18)*CFrame.Angles(0,math.pi/2,0)
+		for _, sx in ipairs({-1,1}) do for _, sz in ipairs({-1,1}) do
+			local motor = V(x+sx*1.7,y+3.5,z+sz*1.2)
+			Kit.beam(model, "DroneArm", V(x,y+3.4,z),motor,0.22,0.25,HQ.steel,Enum.Material.Metal)
+			Kit.column(model, "DroneMotor", motor-V(0,0.25,0),0.5,0.6,HQ.navy,Enum.Material.Metal)
+			Kit.animate(Kit.block(model,"DroneRotor",V(1.3,0.08,0.22),CFrame.new(motor+V(0,0.3,0)),HQ.steel,Enum.Material.Metal),2.5,0)
+		end end
+		Kit.column(model,"DroneSupport",V(x,y+1.1,z),1.6,0.2,HQ.steel,Enum.Material.Metal)
 	elseif shopKey == "vip" then
-		part(model, "Mannequin", Vector3.new(1.6, 3.6, 1), CFrame.new(x, y+2.8, z), Color3.fromRGB(255, 210, 103), Enum.Material.Neon)
-		part(model, "MannequinHead", Vector3.new(1, 1, 1), CFrame.new(x, y+5, z), Color3.fromRGB(255, 210, 103))
-	elseif shopKey == "gold" then
-		for i = 1, 3 do
-			-- A Cylinder's axis runs along X, so a coin lying flat needs its
-			-- thickness in X and a quarter turn to stand the axis upright.
-			local diameter = 1.7 - i * 0.12
-			local coin = part(model, "Coin", Vector3.new(0.4, diameter, diameter), CFrame.new(x, y + 0.75 + i * 0.42, z) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(255, 210, 103), Enum.Material.Neon)
-			coin.Shape = Enum.PartType.Cylinder
+		Kit.disc(model,"VipShield",V(x,y+3.4,z),3.6,0.35,HQ.gold,Enum.Material.Metal).CFrame=CFrame.new(x,y+3.4,z)*CFrame.Angles(0,math.pi/2,0)
+		Kit.disc(model,"VipField",V(x,y+3.4,z-0.2),2.9,0.12,HQ.navy,Enum.Material.SmoothPlastic).CFrame=CFrame.new(x,y+3.4,z-0.2)*CFrame.Angles(0,math.pi/2,0)
+		Kit.star(model,"VipStar",V(x,y+3.4,z-0.35),V(1,0,0),V(0,1,0),1.1,HQ.gold,Enum.Material.Metal,0.13)
+		for i=-1,1 do
+			Kit.block(model,"VipCrown",V(0.35,0.6+(i==0 and 0.3 or 0),0.25),CFrame.new(x+i*0.65,y+5.25,z),HQ.gold,Enum.Material.Metal)
 		end
+	elseif shopKey == "gold" then
+		Kit.block(model,"VaultBody",V(3.6,3,2.5),CFrame.new(x,y+2.6,z),HQ.steel,Enum.Material.Metal)
+		Kit.block(model,"VaultDoor",V(3.25,2.65,0.18),CFrame.new(x,y+2.6,z-1.38)*CFrame.Angles(0,-0.25,0),HQ.navy,Enum.Material.DiamondPlate)
+		Kit.disc(model,"VaultDial",V(x,y+2.65,z-1.6),1.1,0.2,HQ.gold,Enum.Material.Metal).CFrame=CFrame.new(x,y+2.65,z-1.6)*CFrame.Angles(0,math.pi/2,0)
+		for i=1,5 do Kit.disc(model,"Coin",V(x+0.9,y+1.14+i*0.18,z-1.55),1.05,0.16,HQ.gold,Enum.Material.Metal) end
 	else
-		part(model, "Chip", Vector3.new(1.4, 1.8, 1.4), CFrame.new(x, y+2.4, z), Color3.fromRGB(120, 220, 255), Enum.Material.Neon)
+		Kit.block(model,"TrainingConsole",V(3.8,1.3,2.4),CFrame.new(x,y+1.9,z),HQ.steel,Enum.Material.Metal)
+		Kit.block(model,"TrainingScreen",V(3.3,1.9,0.18),CFrame.new(x,y+3.35,z+0.55)*CFrame.Angles(-0.12,0,0),HQ.ink,Enum.Material.SmoothPlastic)
+		for i=1,3 do Kit.block(model,"TrainingBar",V(0.4,0.45+i*0.35,0.12),CFrame.new(x-1.25+i*0.62,y+3.1,z+0.4),tint,Enum.Material.Metal) end
 	end
-	local nameTag = label(stand, displayName, Vector3.new(0, 7.4, 0), Color3.fromRGB(255, 210, 103), 220, 40)
-	-- Both languages ride along; each client shows its own.
-	nameTag:SetAttribute("LobbyTextPT", displayName); nameTag:SetAttribute("LobbyTextEN", displayEN or displayName)
+	local plaque = wallSign(model,"ProductPlaque",CFrame.new(x,y+0.85,z-3.7),V(6.6,1.3,0.15),displayName,"VER LOJA",tint)
+	local nameTag = plaque:FindFirstChild("Title",true)
+	nameTag:SetAttribute("LobbyTextPT",displayName); nameTag:SetAttribute("LobbyTextEN",displayEN or displayName)
+	local hint=plaque:FindFirstChild("Subtitle",true)
+	hint:SetAttribute("LobbyTextPT","VER LOJA"); hint:SetAttribute("LobbyTextEN","VIEW SHOP")
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= stand then p.CanCollide = false end end
 	model.PrimaryPart = stand
 	local prompt = interactable(stand, displayName, function(player) openPanel(player, "shop", { shopKind = shopKind, shopKey = shopKey }) end)
@@ -3059,10 +3088,10 @@ end
 function World:BuildLobbyTerrain()
 	local terrain = workspace.Terrain
 	local role = workspace:GetAttribute("DoomRole")
-	-- Servers that also build battlefields (standalone, match) keep the sea
-	-- out of the battlefield's square: World:Build owns 176 studs around the
-	-- origin and clears only that volume.
-	local shared = role ~= "Lobby" and role ~= "Afk"
+	-- Before the first match this is an uninterrupted bay, not a square void.
+	-- An existing battlefield still owns its volume; Build clears that same
+	-- volume before laying any map, so lobby water never changes its ground.
+	local shared = role ~= "Lobby" and role ~= "Afk" and self.root ~= nil
 	local keep, reach = 180, 1000
 	local function sea(x0, x1, z0, z1)
 		terrain:FillBlock(CFrame.new((x0 + x1) / 2, SEA_Y - 8, (z0 + z1) / 2), Vector3.new(x1 - x0, 16, z1 - z0), Enum.Material.Water)
@@ -3094,6 +3123,15 @@ function World:BuildLobbyTerrain()
 		end
 	end
 	island(HUB + Vector3.new(0, 0, 5), LAYOUT.islandRadius, 30)
+	-- Shallow coves break the perfect circular shore. Low sand lobes and
+	-- submerged rocks meet the water without obstructing bridge landings.
+	for i = 0, 11 do
+		local a = i * math.pi / 6 + 0.16
+		local shore = HUB + Vector3.new(math.cos(a) * 160, SEA_Y - 5, 5 + math.sin(a) * 160)
+		local clear = true
+		for _, landing in ipairs(landings) do if (Vector3.new(shore.X, 0, shore.Z) - landing).Magnitude < 25 then clear = false end end
+		if clear then terrain:FillBall(shore, 7 + i % 3, Enum.Material.Sand) end
+	end
 	for _, def in pairs(LAYOUT.islands) do island(def.center, def.radius, 12) end
 	-- The moat: clear shallow water over a sand floor around the hub deck.
 	terrain:FillCylinder(CFrame.new(HUB.X, -7, HUB.Z), 6, LAYOUT.moat, Enum.Material.Sand)
@@ -3186,7 +3224,7 @@ function World:BuildHeroesHub(lobby)
 			local foot = b - dir * 1 + right * side * 8.6
 			Kit.block(hq, "GatePillar", V(2, 12, 2), CFrame.new(foot + V(0, GROUND_Y + 6, 0)), HQ.navy, metal, true).CastShadow = true
 			Kit.block(hq, "GateLight", V(0.4, 9, 0.4), CFrame.new(foot - dir * 1.05 + V(0, GROUND_Y + 6, 0)), gate.color, Enum.Material.Neon)
-			Kit.blob(hq, "GateOrb", V(1.8, 1.8, 1.8), CFrame.new(foot + V(0, GROUND_Y + 13.9, 0)), gate.color, Enum.Material.Neon)
+			Kit.blob(hq, "GateOrb", V(1.8, 1.8, 1.8), CFrame.new(foot + V(0, GROUND_Y + 13.9, 0)), gate.color, Enum.Material.Metal)
 		end
 		local top = b - dir * 1 + V(0, GROUND_Y + 12.4, 0)
 		local lintel = Kit.block(hq, "GateLintel", V(19.6, 2.2, 2.4), CFrame.lookAt(top, top - dir), HQ.navy, metal)
@@ -3296,15 +3334,45 @@ function World:BuildHeroTower(lobby)
 	model.Name, model.Parent = "HeroTower", lobby
 	local base = LAYOUT.tower + V(0, GROUND_Y, 0)
 	local glass = Color3.fromRGB(96, 170, 220)
-	-- Podium: two wings and a bridge over the passage.
+	-- A finished portico: rounded masonry ends, inset glazing and a paved
+	-- through-route at exactly the same height as both connecting roads.
+	Kit.block(model, "TowerPassageFloor", V(16, 1.5, 28), CFrame.new(base + V(0, -0.75, 0)), HQ.stoneWarm, Enum.Material.Pavement, true)
+	Kit.block(model, "PassageRunner", V(8, 0.04, 27.8), CFrame.new(base + V(0, 0.035, 0)), Color3.fromRGB(60, 83, 104), Enum.Material.Slate)
 	for _, side in ipairs({ -1, 1 }) do
-		Kit.block(model, "PodiumWing", V(18, 12, 30), CFrame.new(base + V(side * 17, 6, 0)), HQ.stone, Enum.Material.Concrete, true).CastShadow = true
-		Kit.block(model, "PodiumGlass", V(16, 7, 0.4), CFrame.new(base + V(side * 17, 5.5, -15.1)), glass, Enum.Material.Glass)
-		Kit.block(model, "PodiumTrim", V(18.4, 0.6, 30.4), CFrame.new(base + V(side * 17, 12.2, 0)), HQ.navy, Enum.Material.Metal, true)
-		Kit.block(model, "ArchLight", V(0.4, 9.5, 0.4), CFrame.new(base + V(side * 8.2, 4.8, -15.2)), HQ.gold, Enum.Material.Neon)
+		Kit.block(model, "PassageEdge", V(0.18, 0.05, 27.8), CFrame.new(base + V(side * 4.5, 0.06, 0)), HQ.gold, Enum.Material.Metal)
+	end
+	for _, side in ipairs({ -1, 1 }) do
+		local wingX = side * 17
+		Kit.block(model, "PodiumWing", V(14, 12, 26), CFrame.new(base + V(wingX, 6, 0)), HQ.stone, Enum.Material.Concrete, true).CastShadow = true
+		Kit.block(model, "PodiumCross", V(18, 12, 22), CFrame.new(base + V(wingX, 6, 0)), HQ.stone, Enum.Material.Concrete, true)
+		for _, endX in ipairs({ -7, 7 }) do
+			for _, endZ in ipairs({ -11, 11 }) do
+				Kit.column(model, "PodiumRoundEnd", base + V(wingX + endX, 0, endZ), 12, 4, HQ.stone, Enum.Material.Concrete, true)
+			end
+		end
+		local pane = Kit.block(model, "PodiumGlass", V(12, 6.4, 0.4), CFrame.new(base + V(wingX, 5.7, -13.25)), Color3.fromRGB(40, 83, 109), Enum.Material.Glass)
+		pane.Reflectance = 0.12
+		for i = -1, 1 do
+			Kit.block(model, "WindowMullion", V(0.28, 6.7, 0.55), CFrame.new(base + V(wingX + i * 3.7, 5.7, -13.6)), HQ.trim, Enum.Material.Metal)
+		end
+		for _, y in ipairs({ 2.3, 9.1 }) do
+			Kit.block(model, "WindowSill", V(12.5, 0.35, 0.7), CFrame.new(base + V(wingX, y, -13.65)), HQ.navy, Enum.Material.Metal)
+		end
+		Kit.block(model, "PodiumTrim", V(18.6, 0.7, 27), CFrame.new(base + V(wingX, 12.2, 0)), HQ.navy, Enum.Material.Metal, true)
+		Kit.column(model, "PorticoColumn", base + V(side * 8.6, 0, -14), 9.3, 1.5, HQ.steel, Enum.Material.Metal, true)
+		Kit.block(model, "ArchLight", V(0.18, 6.2, 0.22), CFrame.new(base + V(side * 8.6, 5.4, -14.82)), HQ.lamp, Enum.Material.Neon)
+		for _, z in ipairs({ -7, 7 }) do
+			Kit.block(model, "PassageWallPanel", V(0.16, 4, 4.6), CFrame.new(base + V(side * 8.03, 4.5, z)), HQ.navy, Enum.Material.Metal)
+			Kit.block(model, "PassageSconce", V(0.25, 1.8, 0.6), CFrame.new(base + V(side * 7.87, 5.8, z)), HQ.lamp, Enum.Material.Neon)
+		end
 	end
 	Kit.block(model, "PodiumBridge", V(16, 5, 30), CFrame.new(base + V(0, 12, 0)), HQ.stone, Enum.Material.Concrete, true).CastShadow = true
-	Kit.block(model, "ArchLintel", V(16.4, 0.5, 0.4), CFrame.new(base + V(0, 9.4, -15.2)), HQ.gold, Enum.Material.Neon)
+	Kit.block(model, "PorticoCanopy", V(19.5, 0.65, 5.5), CFrame.new(base + V(0, 9.3, -13.2)), HQ.navy, Enum.Material.Metal, true)
+	Kit.block(model, "ArchLintel", V(14, 0.12, 0.3), CFrame.new(base + V(0, 8.91, -15.9)), HQ.lamp, Enum.Material.Neon)
+	for _, z in ipairs({ -8, 0, 8 }) do
+		local fixture = Kit.block(model, "PassageCeiling", V(12, 0.15, 0.5), CFrame.new(base + V(0, 9.42, z)), HQ.lamp, Enum.Material.Neon)
+		Kit.light(fixture, Color3.fromRGB(255, 221, 173), 14, 0.3)
+	end
 	-- The shaft: three stacked volumes, each a little slimmer, with lit floors.
 	local y = 14.5
 	for level, spec in ipairs({ { 30, 34, 22 }, { 24, 30, 18 }, { 18, 24, 14 } }) do
@@ -3314,6 +3382,9 @@ function World:BuildHeroTower(lobby)
 		body.Reflectance, body.CastShadow = 0.25, true
 		for f = 1, math.floor(h / 6) do
 			Kit.block(model, "TowerFloor", V(w + 0.3, 0.45, d + 0.3), CFrame.new(base + V(x, y + f * 6 - 0.5, level * 1.5)), HQ.trim, Enum.Material.SmoothPlastic)
+		end
+		for _, side in ipairs({ -1, 1 }) do
+			Kit.block(model, "TowerMullion", V(0.45, h, 0.5), CFrame.new(base + V(x + side * w * 0.28, y + h / 2, level * 1.5 - d / 2 - 0.18)), HQ.steel, Enum.Material.Metal)
 		end
 		Kit.block(model, "TowerFin", V(1.2, h, 1.2), CFrame.new(base + V(x - w / 2 - 0.4, y + h / 2, level * 1.5 - d / 2)), HQ.navy, Enum.Material.Metal)
 		Kit.block(model, "TowerFinLight", V(0.3, h - 2, 0.3), CFrame.new(base + V(x + w / 2 + 0.2, y + h / 2, level * 1.5 - d / 2 - 0.2)), HQ.cyan, Enum.Material.Neon)
@@ -3342,8 +3413,16 @@ function World:BuildHeroTower(lobby)
 	title.Name, title.BackgroundTransparency, title.Size, title.Font, title.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.FredokaOne, true
 	title.TextColor3, title.Text, title.Parent = HQ.gold, "TORRE DOS HERÓIS", gui
 	title:SetAttribute("LobbyTextPT", "TORRE DOS HERÓIS"); title:SetAttribute("LobbyTextEN", "HEROES TOWER")
-	-- The Robux kiosks' title floats over the left row of stands.
-	Kit.floatText(model, "StarkShopTitle", V(HUB.X - 27, GROUND_Y + 20, HUB.Z + LAYOUT.kioskDz), "LOJA DE FERRO", "IRON SHOP", HQ.gold, 26)
+	-- Shop identity belongs to a physical sign, not text floating in the bay.
+	local shopSign = wallSign(model, "PremiumShopSign", CFrame.new(base + V(0, 16, -16)), V(20, 4, 0.3), "LOJA • EQUIPAMENTOS", "ESCOLHA SUA VANTAGEM", HQ.gold)
+	for _, text in ipairs(shopSign:GetDescendants()) do
+		if text:IsA("TextLabel") then
+			local isTitle = text.Text == "LOJA • EQUIPAMENTOS"
+			text.Name = isTitle and "Title" or "Subtitle"
+			text:SetAttribute("LobbyTextPT", text.Text)
+			text:SetAttribute("LobbyTextEN", isTitle and "SHOP • EQUIPMENT" or "CHOOSE YOUR PERK")
+		end
+	end
 	return model
 end
 

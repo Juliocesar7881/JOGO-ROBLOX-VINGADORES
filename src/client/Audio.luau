@@ -15,13 +15,26 @@ local MUSIC = { lobby = true, battle = true }
 local AMBIENCE = { manhattan = "ambManhattan", gamma = "ambGamma", hydra = "ambHydra", wakanda = "ambWakanda", asgard = "ambAsgard", latveria = "ambLatveria" }
 local LOOPED = { lobby = true, battle = true }
 for _, name in pairs(AMBIENCE) do LOOPED[name] = true end
-local VOLUME = { lobby = 0.3, battle = 0.28, victory = 0.4, defeat = 0.3, collect = 0.18, breach = 0.22, place = 0.2, upgrade = 0.3, levelUp = 0.4, ability = 0.25, boss = 0.28, wave = 0.22, chest = 0.3,
-	abilityReady = 0.35, click = 0.22, open = 0.14, shotTech = 0.13, shotArrow = 0.13, shotMagic = 0.12, shotMelee = 0.15, shotBlast = 0.16 }
-for _, name in pairs(AMBIENCE) do VOLUME[name] = 0.2 end
+local VOLUME = { lobby = 0.16, battle = 0.18, victory = 0.26, defeat = 0.18, collect = 0.08, breach = 0.16, place = 0.12, upgrade = 0.16, levelUp = 0.22, ability = 0.17, boss = 0.2, wave = 0.1, chest = 0.2,
+	abilityReady = 0.09, click = 0.065, open = 0.085, shotTech = 0.085, shotArrow = 0.075, shotMagic = 0.07, shotMelee = 0.1, shotBlast = 0.11 }
+for _, name in pairs(AMBIENCE) do VOLUME[name] = 0.1 end
 -- Combat is dense: only a few weapon sounds per quarter second reach the
 -- speakers, quieter with distance, and none from beyond earshot.
-local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.25, 4, 90, 3
+local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.3, 3, 90, 3
 Audio.Ambiences = AMBIENCE
+-- Material language using our existing owned recordings: a tactile click,
+-- a mechanical placement, a charging upgrade and a soft wave whoosh.
+-- Repeated ordinary actions no longer all play a melodic reward arpeggio.
+local PALETTES = {
+	collect = {{"click", 1.22, 0.075}},
+	place = {{"shotMelee", 1.25, 0.085}, {"click", 0.9, 0.035, 0.045}},
+	upgrade = {{"shotTech", 0.72, 0.085}, {"click", 1.3, 0.045, 0.08}},
+	wave = {{"shotArrow", 0.82, 0.075}},
+	breach = {{"shotBlast", 0.8, 0.12}},
+	abilityReady = {{"click", 1.1, 0.05}},
+}
+local CUE_GAPS = {click=0.08,open=0.25,collect=0.2,place=0.14,upgrade=0.3,abilityReady=1,wave=0.6,breach=0.4}
+local PITCHES = {0.96, 1.03, 0.99, 1.06, 0.93}
 
 function Audio.new(getState)
 	local self = setmetatable({ getState = getState, sounds = {}, fades = {}, track = nil, lastCue = {}, voices = {}, voiceIndex = {}, shotVoices = 0, ambient = nil }, Audio)
@@ -144,8 +157,24 @@ end
 function Audio:Cue(name, minimumGap)
 	if not self:_allowed(true, name) then return end
 	local now = os.clock()
-	if now - (self.lastCue[name] or -1) < (minimumGap or 0.12) then return end
+	if now - (self.lastCue[name] or -1) < math.max(minimumGap or 0.12, CUE_GAPS[name] or 0) then return end
 	self.lastCue[name] = now
+	if PALETTES[name] and not (Config.DirectAudioCues or {})[name] then
+		for _, layer in ipairs(PALETTES[name]) do
+			local function play()
+				-- Recheck mute for a delayed layer; closing/muting never leaves
+				-- a pending sound behind. Missing aliases keep the original cue.
+				if not self:_allowed(true,name) then return end
+				local voice = self:_voice(layer[1]) or self:_voice(name)
+				if voice then
+					voice.Volume, voice.PlaybackSpeed = layer[3], (self:_sound(layer[1]) or self:_sound(name)).PlaybackSpeed * layer[2]
+					pcall(function() SoundService:PlayLocalSound(voice) end)
+				end
+			end
+			if (layer[4] or 0) > 0 then task.delay(layer[4],play) else play() end
+		end
+		return
+	end
 	local fallback = (Config.BuiltinCues or {})[name]
 	if fallback and fallback.notes and math.floor(tonumber((Config.Audio or {})[name]) or 0) <= 0 then
 		self:_jingle(name, fallback)
@@ -154,7 +183,15 @@ function Audio:Cue(name, minimumGap)
 	local sound = self:_sound(name)
 	if not sound then return end
 	local ok = pcall(function()
-		if LOOPED[name] then sound:Play() else SoundService:PlayLocalSound(sound) end
+		if LOOPED[name] then sound:Play()
+		else
+			local voice = self:_voice(name)
+			if voice then
+				self.cueSequence = (self.cueSequence or 0) + 1
+				voice.Volume, voice.PlaybackSpeed = VOLUME[name] or 0.2, sound.PlaybackSpeed * PITCHES[(self.cueSequence-1)%#PITCHES+1]
+				SoundService:PlayLocalSound(voice)
+			end
+		end
 	end)
 	if not ok then self.sounds[name] = nil end
 end
@@ -234,13 +271,28 @@ function Audio:Shot(name, distance)
 	local now = os.clock()
 	if now - (self.shotWindowAt or -math.huge) >= SHOT_WINDOW then self.shotWindowAt, self.shotVoices = now, 0 end
 	if self.shotVoices >= SHOT_VOICES then return false end
-	if now - (self.lastCue[name] or -math.huge) < 0.05 then return false end
+	if now - (self.lastCue[name] or -math.huge) < 0.12 then return false end
 	local voice = self:_voice(name)
 	if not voice then return false end
 	self.shotVoices += 1
 	self.lastCue[name] = now
-	voice.Volume = (VOLUME[name] or 0.13) * math.clamp(1 - distance / EARSHOT, 0.2, 1)
+	self.shotSequence = (self.shotSequence or 0) + 1
+	voice.PlaybackSpeed = self:_sound(name).PlaybackSpeed * PITCHES[(self.shotSequence-1)%#PITCHES+1]
+	voice.Volume = (VOLUME[name] or 0.085) * math.clamp((1 - distance / EARSHOT)^1.5, 0.06, 1)
 	return (pcall(function() voice:Play() end))
+end
+
+-- Powers inherit the leader's weapon family instead of one identical jingle.
+function Audio:Ability(family, distance)
+	if not self:_allowed(true,"ability") then return false end
+	local now = os.clock()
+	if now-(self.lastCue.ability or -math.huge)<0.6 or (distance or 0)>EARSHOT then return false end
+	self.lastCue.ability=now
+	local voice=self:_voice(family) or self:_voice("ability")
+	if not voice then return false end
+	voice.Volume=0.15*math.clamp(1-(distance or 0)/EARSHOT,0.12,1)
+	voice.PlaybackSpeed=(self:_sound(family) or self:_sound("ability")).PlaybackSpeed*0.78
+	return pcall(function() SoundService:PlayLocalSound(voice) end)
 end
 
 function Audio:Update(state)
