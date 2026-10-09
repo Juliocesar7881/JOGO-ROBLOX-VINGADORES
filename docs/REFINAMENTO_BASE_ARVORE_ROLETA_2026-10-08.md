@@ -78,5 +78,10 @@ Instruções e lista dos arquivos: `assets/audio/summon/README.md`.
 O fallback atual já oferece cliques e finais por raridade. A gravação
 dedicada substituirá cada som inteiro, sem sobrepor o final antigo.
 
-Sincronização seletiva feita no place **97132875544830**. Registro final
-de commit e publicação será acrescentado após a conferência final.
+Código **86fb6bc** enviado ao `main`, com suíte completa verde antes do
+commit. Seis fontes finais conferidas no Studio e sincronizadas
+seletivamente. Lobby de edição refeito com 4.455 peças, abaixo do teto.
+Publicado no mesmo place **97132875544830** em **08/10/2026 às 23:44:17
+local (09/10/2026 às 02:44:17 UTC)**, com `Go to PublishSuccessful`
+confirmado no log. Studio em modo de edição; acesso e colaboradores
+preservados. Os uploads dedicados continuam pendentes.

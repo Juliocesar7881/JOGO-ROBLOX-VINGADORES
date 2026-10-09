@@ -440,3 +440,22 @@ seletivamente. Publicado no mesmo lugar da equipe `97132875544830` às
 Lobby salvo com 4.455 peças, abaixo do teto de 4.500; a sincronização agora
 confere esse orçamento também no Studio. Inclui a publicação pendente de
 `fc35568`. Studio em edição; dependências de conta e aparelhos preservadas.
+
+## 14. Base, fundo da árvore e sons da roleta
+
+Base agora ocupa o menu principal, junto de Heróis. A equipe não mostra
+base, e a tela de Bases não tem abas para Heróis. A árvore mantém arraste e
+zoom sobre o cenário desfocado, sem o painel preto. A roleta tem cliques
+próprios e um final diferente por raridade, sem repetir o som no recibo.
+
+Código `86fb6bc` no `main`, suíte completa verde e revisão no Studio em
+PC, celular horizontal/vertical e inglês. Publicado no mesmo lugar da equipe
+às 23:44:17 local de 08/10/2026 (02:44:17 UTC de 09/10), com sucesso
+confirmado no log. Registro e limites em
+[`REFINAMENTO_BASE_ARVORE_ROLETA_2026-10-08.md`](REFINAMENTO_BASE_ARVORE_ROLETA_2026-10-08.md), fila M23.
+
+O áudio exato do MP3 enviado depende do upload dos sete WAVs de
+`assets/audio/summon/` na conta do dono e dos IDs reais. Os dois recortes
+mantêm a origem da referência, e os cinco finais são sínteses originais.
+Enquanto isso, o mix publicado usa áudios próprios disponíveis; não
+confundir arquivos preparados com gravações já disponíveis no Roblox.
