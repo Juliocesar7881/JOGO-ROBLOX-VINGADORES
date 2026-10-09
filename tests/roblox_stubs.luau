@@ -205,6 +205,7 @@ UDim2 = {
 NumberSequenceKeypoint = { new = function(t, value) return { Time = t, Value = value } end }
 ColorSequenceKeypoint = { new = function(t, value) return { Time = t, Value = value } end }
 NumberSequence = { new = function(a, b) return { keypoints = { a, b } } end }
+NumberRange = { new = function(a, b) return { Min = a, Max = b or a } end }
 ColorSequence = { new = function(a, b) return { keypoints = { a, b } } end }
 NumberRange = { new = function(minimum, maximum) return { Min = minimum, Max = maximum or minimum } end }
 TweenInfo = { new = function(...) return { ... } end }

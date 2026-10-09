@@ -61,6 +61,10 @@ function Celebrate:_cue(name, gap)
 	if self.audio then pcall(self.audio.Cue, self.audio, name, gap) end
 end
 
+function Celebrate:_summon(action, rarity)
+	if self.audio then pcall(self.audio.Summon, self.audio, action, rarity) end
+end
+
 function Celebrate:_add(record)
 	record.start = self.clock()
 	table.insert(self.animations, record)
@@ -445,7 +449,7 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 				for _, bar in ipairs(rayBars) do bar.BackgroundColor3 = finalTint:Lerp(WHITE, 0.3); bar.BackgroundTransparency = 0.7 end
 				tierLabel.Text = ""
 				if not quick then
-					self:_cue("victory", 0.05)
+					self:_summon("reward", rarity.id)
 					self:Confetti(CONFETTI_BY_TIER[tierIndex] or 10, 0.4)
 					if not lowFX then burstSparkles(10 + tierIndex * 4, finalTint:Lerp(WHITE, 0.3)) end
 				end
@@ -475,7 +479,6 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 			if not carded then
 				carded = true
 				card.Visible = true
-				if tierIndex >= 4 and not quick then self:_cue("levelUp", 0.05) end
 			end
 			local rise = (lowFX or quick) and 1 or backOut((t - cardAt) / 0.5)
 			cardScale.Scale = rise
@@ -609,6 +612,7 @@ function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, f
 	local duration = lowFX and 0.9 or (position == 1 and 6 or 3.6)
 	local hold = lowFX and 0.15 or 0.25
 	local landed, lastTile = false, 0
+	self:_summon("start")
 	local reveal = { root = root, finalAt = duration, onClosed = onDone, result = result }
 	self.reveal = reveal
 	reveal.anim = self:_add({ duration = duration + hold, update = function(t)
@@ -619,7 +623,9 @@ function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, f
 		local crossing = math.floor((travelled + REEL_WIDTH / 2) / REEL_PITCH)
 		if crossing ~= lastTile then
 			lastTile = crossing
-			if u < 0.97 then self:_cue("collect", 0.07) end
+			-- A skipped/slow frame never queues the missed ticks. The final
+			-- slow crossings stay audible; landing has one rarity signature.
+			if t > 0 and u < 1 then self:_summon("tick") end
 		end
 		for index = 1, REEL_TILES do
 			local x = (index - 1) * REEL_PITCH - travelled
@@ -633,7 +639,7 @@ function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, f
 			local tint = UI.color(prizeRarity.color)
 			nameLabel.Text = Catalog.Upper(self:_t(win.def.name))
 			nameLabel.TextColor3 = tint:Lerp(WHITE, 0.25)
-			self:_cue(prizeTier >= 4 and "levelUp" or "chest", 0.05)
+			self:_summon("reward", prizeRarity.id)
 			self:Confetti(math.floor((CONFETTI_BY_TIER[prizeTier] or 8) / 2), 0.4)
 		end
 	end, done = function() if self.reveal == reveal then self:_closeReveal() end end })
@@ -775,6 +781,7 @@ end
 
 -- Scene changes (lobby <-> match) clear anything still on screen.
 function Celebrate:Clear()
+	self:_summon("cancel")
 	if self.reveal then self.reveal.onClosed = nil; self:_closeReveal() end
 	for _, record in ipairs(self.animations) do
 		if record.done then pcall(record.done) end

@@ -66,6 +66,10 @@ return {
 		shotBlast = 108098929987722, abilityReady = 116839098197325,
 		-- Interface: every button press and every panel opening.
 		click = 74693654931748, open = 78745367903334,
+		-- Prepared in assets/audio/summon. Zero uses the live owned-sample mix;
+		-- replace only after uploading and granting this experience access.
+		reelStart = 0, reelTick = 0,
+		rewardCommon = 0, rewardRare = 0, rewardEpic = 0, rewardLegendary = 0, rewardMythic = 0,
 	},
 	-- Enable each dedicated material cue only AFTER its refined WAV is uploaded
 	-- and Audio[name] contains the real ID. Empty keeps the quieter live remix.

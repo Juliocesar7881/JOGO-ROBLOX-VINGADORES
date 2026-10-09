@@ -1236,7 +1236,7 @@ end
 -- clear. A boarding card sits above the dock, except on short phones where
 -- it temporarily replaces the dock to preserve room for contextual sheets.
 -- Heroes, evolution, shop, gifts, missions.
-UI.NAV_COUNT = 5
+UI.NAV_COUNT = 6
 
 function UI.difficultyRowH(class) return class.compact and 30 or 34 end
 
@@ -1245,19 +1245,18 @@ function UI.lobbyLayout(width, height, options)
 	local class = UI.sizeClass(width, height)
 	local pad = class.compact and 10 or 14
 	local rowH = 48
-	-- Round buttons in the top-right corner: the active base and settings.
+	-- Settings alone occupies the top-right; Base lives in the main dock.
 	local round = class.short and 58 or 66
 	local settings = rect(width - pad - round, pad, round, round + 16)
-	local squad = rect(settings.x - 10 - round, pad, round, round + 16)
 	-- The pill never reaches the buttons, however narrow the screen.
-	local pill = rect(pad, pad, math.min(class.compact and 170 or 236, squad.x - 8 - pad), rowH)
+	local pill = rect(pad, pad, math.min(class.compact and 170 or 236, settings.x - 8 - pad), rowH)
 	local count = UI.NAV_COUNT
 	local column = width >= 1000 and not class.short
 	local navigation
 	if column then
-		local cell = 92
-		local navigationH = count * cell
 		local top = pill.y + pill.h + 20
+		local cell = math.min(92, math.floor((height - pad - top) / count))
+		local navigationH = count * cell
 		navigation = rect(pad, math.max(top, math.floor((height - navigationH) / 2)), 84, navigationH)
 	else
 		local navigationW = math.min(count * (class.short and 84 or 100), width - 2 * pad)
@@ -1276,13 +1275,13 @@ function UI.lobbyLayout(width, height, options)
 	local contextW = math.min(560, width - 2 * pad)
 	-- The context panel is a sheet on landscape phones. Hiding corner chrome
 	-- there makes enough room for the close control and scrollable content.
-	local contextTop = class.short and pad or pad + squad.h + 8
+	local contextTop = class.short and pad or pad + settings.h + 8
 	local function contextAbove(bottom)
 		local h = math.min(class.compact and 330 or 400, bottom - contextTop)
 		return rect(math.floor((width - contextW) / 2), bottom - h, contextW, h)
 	end
 	return {
-		class = class, pill = pill, squad = squad, settings = settings, navigation = navigation,
+		class = class, pill = pill, settings = settings, navigation = navigation,
 		column = column, elevator = elevator, hint = hint,
 		context = contextAbove(column and hint.y - 8 or navigation.y - 8),
 		contextRiding = contextAbove(elevator.y - 8),

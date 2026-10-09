@@ -315,7 +315,12 @@ local function session(screen)
 	function contextActions:SetTitle(name, title) self.titles[name] = title end
 	function contextActions:UnbindAction(name) self.handlers[name] = nil end
 	services.ContextActionService = contextActions
-	services.TweenService = { Create = function() return { Play = function() end, Cancel = function() end } end }
+	services.TweenService = { Create = function(_, subject, _, goal)
+		return { Play = function()
+			-- Blur has no layout side effects; model its completed tween.
+			if subject:IsA("BlurEffect") then subject.Size = goal.Size end
+		end, Cancel = function() end }
+	end }
 	services.MarketplaceService = market
 	-- Roblox's chat window: the client places it and hides it under its own windows.
 	local chatWindow = { Enabled = true }
@@ -475,7 +480,7 @@ local function session(screen)
 	local lobbyLayout = UILayout.lobbyLayout(view().w, view().h)
 	step("the lobby HUD lays out", function()
 		check(frameAt(main, lobbyLayout.pill) ~= nil, tag .. ": the gold pill sits where lobbyLayout puts it")
-		check(frameAt(main, lobbyLayout.squad) ~= nil, tag .. ": the squad button sits where lobbyLayout puts it")
+		check(named(main,"Nav_bases") ~= nil and named(main,"Nav_bases").Parent == named(main,"LobbyNavigation"), tag .. ": Base sits in the main navigation dock")
 		check(frameAt(main, lobbyLayout.settings) ~= nil, tag .. ": the settings button sits where lobbyLayout puts it")
 		check(frameAt(main, lobbyLayout.elevator) == nil, tag .. ": no elevator card while standing on the open deck")
 		-- The world is the menu: nothing else sits on screen when the lobby opens.
@@ -487,8 +492,11 @@ local function session(screen)
 		local tracker = main:FindFirstChild("QuestTracker")
 		check((tracker ~= nil) == (lobbyLayout.tracker ~= nil), tag .. ": the quest tracker shows exactly on screens with room for it")
 		if tracker then check(frameAt(main, lobbyLayout.tracker) ~= nil, tag .. ": the quest tracker sits where lobbyLayout puts it") end
-		local expected = tracker and 6 or 5
-		check(visible == expected, tag .. ": the idle lobby shows counters, play/settings, dock, guide and quests, got " .. visible .. " elements")
+		local expected = tracker and 5 or 4
+		check(visible == expected, tag .. ": the idle lobby shows counters, settings, dock, guide and quests, got " .. visible .. " elements")
+		for _, id in ipairs({"inventory","bases","talents","premium","rewards","quests"}) do
+			check(named(main,"Nav_"..id)~=nil,tag..": shared dock contains "..id)
+		end
 		local bad = offscreen(main, view())
 		check(#bad == 0, tag .. ": every lobby element is on screen: " .. table.concat(bad, ", "))
 	end)
@@ -608,6 +616,9 @@ local function session(screen)
 		check(named(named(gui, "TalentRank_roundGold"), "Text") == nil and named(gui, "TalentRank_roundGold").Text == "0/5", tag .. ": the level badge reads 0/5")
 		-- Large research nodes live on an explorable board instead of shrinking.
 		local treeFrame = named(gui, "TalentTree")
+		check(named(gui,"TalentBackdrop") == nil and treeFrame.BackgroundTransparency == 1 and named(gui,"ContextPanel").BackgroundTransparency == 1, tag .. ": talent nodes overlay the world without an opaque background")
+		local blur = game:GetService("Lighting"):FindFirstChild("DoomMenuBlur")
+		check(blur ~= nil and blur.Size == 14, tag .. ": the talent tree blurs the game behind it")
 		local mapFrame = treeFrame and named(treeFrame, "TalentMap")
 		check(mapFrame ~= nil and named(gui, "TalentViewport") ~= nil and named(gui, "TalentViewport").ClipsDescendants == true, tag .. ": the large honeycomb is clipped inside its movable viewport")
 		check(named(gui, "TalentExit") ~= nil and named(gui, "TalentRoot") ~= nil, tag .. ": the full-screen tree has its Exit button and the commander's hexagon")
@@ -981,8 +992,10 @@ local function session(screen)
 		clickNamed("FindPortal_normal")
 		check(not asked("StartMatch"),tag..": finding a portal never starts a match remotely")
 		check(not contextOpen(),tag..": finding a portal clears the screen to walk there")
-		clickNamed("ActiveBaseButton")
+		check(named(gui,"ActiveBaseButton")==nil and named(gui,"Nav_bases").Parent.Name=="LobbyNavigation",tag..": Base shares the main dock, with no corner shortcut")
+		clickNamed("Nav_bases")
 		check(named(gui,"ActiveBaseSummary")~=nil,tag..": active base has a direct HUD entry")
+		check(named(gui,"BaseNavigation")==nil and named(gui,"BaseNavigation_inventory")==nil,tag..": Bases has no hero navigation")
 		click("X")
 		clickNamed("Nav_inventory")
 		check(contextOpen(), tag .. ": Heroes opens the owned inventory")
@@ -991,7 +1004,8 @@ local function session(screen)
 	end)
 
 	step("collection tabs, rarity chips, base and direct leader selection",function()
-		check(named(gui,"FormationBaseName")~=nil,tag..": formation shows its equipped base")
+		check(named(gui,"FormationBaseName")==nil and named(gui,"OpenBases")==nil and named(gui,"BasePortrait")==nil,tag..": Heroes shows only heroes, without a base card or base shortcut")
+		check(named(gui,"SquadSlots").Size.X.Scale==1 and named(gui,"TeamRow").Size.Y.Offset==104,tag..": five hero slots use the freed width and one row")
 		check(named(gui,"HeroSearch")==nil and named(gui,"CycleHeroSort")==nil,tag..": no search box or sort cycle clutters the team screen")
 		clickNamed("InventoryTabs_all")
 		check(named(gui,"Collection_captain")~=nil,tag..": the All tab shows the whole collection")
@@ -1196,12 +1210,12 @@ local function session(screen)
 		check(bodyRect ~= nil and bodyRect.w >= 200 and bodyRect.h >= 65,
 			tag .. ": the panel keeps a positive, usable scrolling area")
 		local focused = UILayout.contextLayout(view().w, view().h, {}).modal
-		for _, name in ipairs({"LobbyPill", "ActiveBaseButton", "SettingsButton", "LobbyNavigation"}) do
+		for _, name in ipairs({"LobbyPill", "SettingsButton", "LobbyNavigation"}) do
 			local element = named(gui, name)
 			check(element ~= nil and element.Visible == not focused,
 				tag .. ": " .. name .. " gives compact panels room and remains available on large screens")
 		end
-		for _, id in ipairs({"inventory", "talents", "premium", "rewards"}) do
+		for _, id in ipairs({"inventory", "bases", "talents", "premium", "rewards"}) do
 			local nav = named(gui, "Nav_" .. id)
 			local indicator = nav and named(nav, "SelectedTab")
 			check(indicator ~= nil and indicator.Visible == (id == "inventory"),

@@ -1,0 +1,77 @@
+{
+  "rate": 32000,
+  "reference": {
+    "file": "reference.mp3",
+    "origin": "MP3 supplied by owner, Nexiz case-opening reference",
+    "sha256": "36b10e747918cdee25ffdc4f72b5007541a3cd109746adafa65ef9d0b0f38a9d"
+  },
+  "assets": {
+    "reelStart": {
+      "file": "reelStart.wav",
+      "seconds": 1.37,
+      "assetId": 0,
+      "origin": "owner-provided reference excerpt",
+      "sourceSeconds": [
+        0.13,
+        1.5
+      ],
+      "sha256": "e4ca8c7ccdb06d00af064c47eef50a032030fc790cca09caeb53a36f50919ad6"
+    },
+    "reelTick": {
+      "file": "reelTick.wav",
+      "seconds": 0.1,
+      "assetId": 0,
+      "origin": "owner-provided reference excerpt",
+      "sourceSeconds": [
+        2.16,
+        2.26
+      ],
+      "sha256": "ca42bb01706089ce3d4ce4c32aff5307631db33a8c7390875e37a78a2bbf16c9"
+    },
+    "rewardCommon": {
+      "file": "rewardCommon.wav",
+      "seconds": 0.5,
+      "loop": false,
+      "peak": 0.3838,
+      "sha256": "c532b60b0a4d3f3a7229e0b4dbdd80970f2067079494a72a9b19399c3e0d2698",
+      "assetId": 0,
+      "origin": "original synthesis"
+    },
+    "rewardRare": {
+      "file": "rewardRare.wav",
+      "seconds": 0.9,
+      "loop": false,
+      "peak": 0.2743,
+      "sha256": "5448b8fc79165374288234a076d78094a2454fc8815793fdeed783b9e67379fc",
+      "assetId": 0,
+      "origin": "original synthesis"
+    },
+    "rewardEpic": {
+      "file": "rewardEpic.wav",
+      "seconds": 1.25,
+      "loop": false,
+      "peak": 0.4327,
+      "sha256": "d7a077c99c918d4f927f652be78cabeaf0c090e8c0194d82f38d8521c56087d2",
+      "assetId": 0,
+      "origin": "original synthesis"
+    },
+    "rewardLegendary": {
+      "file": "rewardLegendary.wav",
+      "seconds": 1.65,
+      "loop": false,
+      "peak": 0.438,
+      "sha256": "efc89ab8cf847c80402a1dd65de876c4e5aa3e5159cb8a33662ac62ccaa3903b",
+      "assetId": 0,
+      "origin": "original synthesis"
+    },
+    "rewardMythic": {
+      "file": "rewardMythic.wav",
+      "seconds": 2.15,
+      "loop": false,
+      "peak": 0.5474,
+      "sha256": "b4285d9b1c3d3b1ebd9023167590d46f216b52ad0e8b501a180a490350e441e9",
+      "assetId": 0,
+      "origin": "original synthesis"
+    }
+  }
+}

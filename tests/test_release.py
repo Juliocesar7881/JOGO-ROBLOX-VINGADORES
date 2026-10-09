@@ -25,7 +25,7 @@ class ReleaseTests(unittest.TestCase):
         checked = json.loads((ROOT / 'deployment/template.json').read_text(encoding='utf-8'))
         self.assertEqual(checked, self.template)
         missing, configured = release.validate(checked, self.template)
-        self.assertEqual(len(missing), 81)
+        self.assertEqual(len(missing), 88)
         self.assertEqual(configured, [])
 
     def test_uploaded_audio_ids_match_the_manifest_and_the_files(self):
@@ -119,6 +119,34 @@ class ReleaseTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(output.exists())
 
+    def test_summon_audio_preserves_reference_and_distinct_endings(self):
+        base = ROOT / 'assets/audio/summon'
+        manifest = json.loads((base / 'manifest.json').read_text(encoding='utf-8'))
+        expected = {'reelStart', 'reelTick', 'rewardCommon', 'rewardRare',
+                    'rewardEpic', 'rewardLegendary', 'rewardMythic'}
+        self.assertEqual(set(manifest['assets']), expected)
+        reference = manifest['reference']
+        self.assertEqual(hashlib.sha256((base / reference['file']).read_bytes()).hexdigest(), reference['sha256'])
+        hashes = set()
+        for name, entry in manifest['assets'].items():
+            self.assertEqual(entry['assetId'], 0, 'Prepared files must not claim uploads')
+            path = base / entry['file']
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), entry['sha256'])
+            hashes.add(entry['sha256'])
+            with wave.open(str(path)) as sound:
+                self.assertEqual((sound.getnchannels(), sound.getsampwidth(), sound.getframerate()), (1, 2, 32000))
+                samples = [v[0] for v in struct.iter_unpack('<h', sound.readframes(sound.getnframes()))]
+            self.assertGreater(max(abs(v) for v in samples), 1000)
+            self.assertLessEqual(max(abs(v) for v in samples), 23600)
+            self.assertAlmostEqual(len(samples) / 32000, entry['seconds'], places=2)
+            if name.startswith('reward'):
+                self.assertEqual(entry['origin'], 'original synthesis')
+                self.assertNotIn('sourceSeconds', entry)
+            else:
+                self.assertEqual(entry['origin'], 'owner-provided reference excerpt')
+                self.assertLess(entry['sourceSeconds'][1], 7.7, 'Never use the reference ending')
+        self.assertEqual(len(hashes), 7, 'Every rarity ending and reel cue is distinct')
+
     def test_refined_audio_sources_are_complete_and_not_claimed_as_uploads(self):
         base = ROOT / 'assets/audio/refined'
         manifest = json.loads((base / 'manifest.json').read_text(encoding='utf-8'))
@@ -149,7 +177,9 @@ class ReleaseTests(unittest.TestCase):
     def test_audio_samples_match_manifest_and_are_not_clipped(self):
         base = ROOT / 'assets/audio'
         manifest = json.loads((base / 'manifest.json').read_text(encoding='utf-8'))
-        self.assertEqual(set(manifest['assets']), set(self.template['Audio']))
+        summon = json.loads((base / 'summon/manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(set(manifest['assets']) | set(summon['assets']), set(self.template['Audio']),
+                         'Every configured sound must have a source in one of the packs')
         for name, entry in manifest['assets'].items():
             path = base / entry['file']
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), entry['sha256'])

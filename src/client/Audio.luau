@@ -55,6 +55,17 @@ local ACTION_STEMS = {
 	snare = {"shotArrow", 1.45, 0.065, 4, -12, -24},
 }
 
+-- Five reward signatures, from a short confirmation to a layered fanfare.
+-- Values: existing owned sample, pitch, volume, delay. Dedicated uploads
+-- replace the whole signature, never layer a second ending over it.
+local REWARDS = {
+	common = {name="rewardCommon", notes={{"click",0.82,0.10,0},{"click",1.1,0.07,0.075}}},
+	rare = {name="rewardRare", notes={{"shotMagic",0.75,0.095,0},{"shotMagic",1,0.11,0.15}}},
+	epic = {name="rewardEpic", notes={{"shotTech",0.6,0.055,0},{"shotMagic",0.84,0.09,0.06},{"shotMagic",1.12,0.10,0.22},{"shotMagic",1.33,0.09,0.38}}},
+	legendary = {name="rewardLegendary", notes={{"shotMelee",0.9,0.075,0},{"shotMagic",0.75,0.11,0},{"shotMagic",1,0.11,0.18},{"shotMagic",1.5,0.10,0.36},{"shotMagic",1.19,0.075,0.36}}},
+	mythic = {name="rewardMythic", notes={{"shotBlast",0.82,0.07,0},{"shotMagic",0.5,0.10,0.02},{"shotMagic",0.75,0.10,0.16},{"shotMagic",1,0.11,0.30},{"shotMagic",1.5,0.10,0.5},{"shotMagic",1.26,0.075,0.5}}},
+}
+
 function Audio.new(getState)
 	local self = setmetatable({ getState = getState, sounds = {}, fades = {}, track = nil, lastCue = {}, voices = {}, voiceIndex = {}, shotVoices = 0, ambient = nil }, Audio)
 	self.folder = Instance.new("Folder")
@@ -296,6 +307,59 @@ function Audio:Talent(action)
 	end
 	sound.Volume, sound.PlaybackSpeed = cue[3], template.PlaybackSpeed * cue[2]
 	pcall(function() SoundService:PlayLocalSound(sound) end)
+end
+
+-- The reel owns these voices: the tick is independent of coin collection
+-- and follows actual tile crossings, including the slow last few cards.
+function Audio:Summon(action, rarity)
+	if action == "cancel" or action == "start" then
+		self.summonEpoch = (self.summonEpoch or 0) + 1
+		for _, voice in pairs(self.summonVoices or {}) do voice:Stop() end
+		if action == "cancel" then return end
+	end
+	if not self:_allowed(true, "chest") then return end
+	self.summonVoices = self.summonVoices or {}
+	local function play(key, source, pitch, volume, segment)
+		if not self:_allowed(true, "chest") then return end
+		local template = self:_sound(source)
+		if not template then return end
+		local voice = self.summonVoices[key]
+		if not voice then
+			voice = Instance.new("Sound")
+			voice.Name, voice.Parent = "Summon_" .. key, self.folder
+			self.summonVoices[key] = voice
+		end
+		voice:Stop()
+		voice.SoundId, voice.PlaybackSpeed, voice.Volume = template.SoundId, template.PlaybackSpeed * pitch, volume
+		-- The fallback uses the initial transient, not the entire melodic cue.
+		voice.PlaybackRegionsEnabled = segment ~= nil
+		if segment then voice.PlaybackRegion = NumberRange.new(0, segment) end
+		voice.TimePosition = 0
+		pcall(function() voice:Play() end)
+	end
+	if action == "tick" or action == "start" then
+		local key = action == "tick" and "reelTick" or "reelStart"
+		local now = os.clock()
+		if action == "tick" and now - (self.lastCue[key] or -math.huge) < 0.045 then return end
+		self.lastCue[key] = now
+		local dedicated = ((Config.Audio or {})[key] or 0) > 0
+		play(key, dedicated and key or (action == "tick" and "click" or "open"), dedicated and 1 or 0.72,
+			action == "tick" and 0.13 or 0.10, not dedicated and (action == "tick" and 0.065 or 0.24) or nil)
+	elseif action == "reward" then
+		local cue = REWARDS[rarity] or REWARDS.common
+		self.summonEpoch = (self.summonEpoch or 0) + 1
+		local epoch = self.summonEpoch
+		if ((Config.Audio or {})[cue.name] or 0) > 0 then
+			play("reward", cue.name, 1, 0.20)
+			return
+		end
+		for index, note in ipairs(cue.notes) do
+			local function layer()
+				if self.summonEpoch == epoch then play("reward_" .. index, note[1], note[2], note[3]) end
+			end
+			if note[4] == 0 then layer() else task.delay(note[4], layer) end
+		end
+	end
 end
 
 -- The map's ambience loop, faded in under the music; nil fades it out. It

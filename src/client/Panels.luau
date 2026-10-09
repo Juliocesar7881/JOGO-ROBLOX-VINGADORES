@@ -991,22 +991,17 @@ function Panels.new(ctx)
 		end, {Name = "InviteFriends", Size = UDim2.new(1, -6, 0, 48), BackgroundColor3 = C.blue, TextSize = 14})
 	end
 
-	-- The team and the collection on one screen: five slots and the base on
-	-- top (the leader crowned), then big hero cards. Tap a card to see the hero;
+	-- The team and collection: five hero slots, then the hero cards.
 	-- the only filters are the owned/all tabs and one row of rarity chips.
 	local function contextSquad(body)
 		local p=profile()
 		local screen=screenSize()
 		local width=UI.contextLayout(screen.X,screen.Y,{wide=true}).w-40
 		local wide=width>=640
-		-- The team: five slots (the first one leads) and the base on the side.
-		local team=UI.row(body,wide and 104 or 186)
+		-- Bases have their own dock entry and screen.
+		local team=UI.row(body,104)
 		team.Name="TeamRow"
-		local lineup=UI.frame(team,{Name="SquadSlots",Size=wide and UDim2.new(0.78,0,0,104) or UDim2.new(1,0,0,104),BackgroundTransparency=1})
-		local base=Catalog.Bases[p.equippedBase or "outpost"] or Catalog.Bases.outpost
-		local baseCard=UI.secondary(team,"",function() openContext("bases") end,{Name="OpenBases",Position=wide and UDim2.new(0.78,4,0,0) or UDim2.fromOffset(0,110),Size=wide and UDim2.new(0.22,-6,0,104) or UDim2.new(1,-6,0,72),BackgroundColor3=C.green:Lerp(UI.Skin.body,0.45)})
-		UI.basePortrait(baseCard,base,{Position=UDim2.fromOffset(8,8),Size=wide and UDim2.new(1,-16,0,50) or UDim2.fromOffset(64,56)})
-		UI.label(baseCard,L(base.name),{Name="FormationBaseName",Position=wide and UDim2.fromOffset(6,60) or UDim2.fromOffset(80,6),Size=wide and UDim2.new(1,-12,0,40) or UDim2.new(1,-90,1,-12),TextWrapped=true,Font=UI.Fonts.display,TextSize=15,TextXAlignment=wide and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left})
+		local lineup=UI.frame(team,{Name="SquadSlots",Size=UDim2.new(1,0,0,104),BackgroundTransparency=1})
 		for slot=1,5 do
 			local id=(p.loadout or {})[slot]
 			local def=id and Catalog.Heroes[id]
@@ -1293,16 +1288,15 @@ function Panels.new(ctx)
 		local footH = readOnly and 0 or (compact and 70 or 86)
 		local infoH = readOnly and 0 or (compact and 0 or 48)
 		if not readOnly then
-			-- The dark backdrop of the research screen, top to bottom.
-			local backdrop = UI.frame(stage, {Name = "TalentBackdrop", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(3, 4, 7), ZIndex = 1})
-			UI.create("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(12, 15, 22), Color3.fromRGB(1, 2, 4)), Rotation = 90}, backdrop)
+			-- The world stays visible through the controller's menu blur.
 			local heading = UI.label(stage, T("Árvore de Evolução", "Talent Tree"), {Name = "TalentHeading", Position = UDim2.fromOffset(compact and 128 or 160, compact and 4 or 10), Size = UDim2.new(1, compact and -194 or -240, 0, compact and 34 or 42),
 				Font = UI.Fonts.display, TextSize = compact and 26 or 38, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
 			UI.oneLine(heading, compact and 14 or 20)
 			UI.outline(heading, 3)
 			local instruction = compact and T("Arraste para explorar", "Drag to explore") or T("Arraste para explorar  •  roda do mouse: aproximar  •  clique: evoluir", "Drag to explore  •  mouse wheel: zoom  •  click: upgrade")
-			UI.oneLine(UI.label(stage, instruction, {Name = "TalentHow", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, compact and 40 or 52), Size = UDim2.new(1, compact and -32 or -220, 0, 22),
-				TextSize = compact and 12 or 16, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3}), 11)
+			local how = UI.oneLine(UI.label(stage, instruction, {Name = "TalentHow", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, compact and 40 or 52), Size = UDim2.new(1, compact and -32 or -220, 0, 22),
+				TextSize = compact and 12 or 16, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3}), 11)
+			UI.outline(how, 2)
 		end
 
 		-- The honeycomb, sized to the space between the heading and the footer.
@@ -1495,6 +1489,7 @@ function Panels.new(ctx)
 		-- The footer: the points to spend on the left, Exit in the middle, reset on the right.
 		info = UI.label(stage, describe(talentSelected), {Name = "TalentInfo", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -footH - 4), Size = UDim2.new(1, -40, 0, infoH > 0 and infoH or 1),
 			TextSize = 16, TextWrapped = true, RichText = true, TextTruncate = Enum.TextTruncate.None, TextXAlignment = Enum.TextXAlignment.Center, Visible = infoH > 0, ZIndex = 3})
+		UI.outline(info, 2)
 		local narrowFooter = stageW < 520
 		local narrowW = math.floor((stageW - 68) / 3)
 		local pointsBox = UI.frame(stage, {Name = "TalentOverview", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 16, 1, -12), Size = UDim2.fromOffset(narrowFooter and narrowW or (compact and 150 or 250), footH - 20), BackgroundColor3 = UI.Skin.slot, ZIndex = 3})
@@ -1608,7 +1603,6 @@ function Panels.new(ctx)
 	end
 
 	local function contextBases(body)
-		categoryTabs(body,"BaseNavigation",{{id="inventory",label=T("Heróis","Heroes"),icon="hero",color=C.coral},{id="bases",label=T("Bases","Bases"),icon="heart",color=C.green}},"bases",function(id) openContext(id) end)
 		local activeId=profile().equippedBase or "outpost"
 		local active=Catalog.Bases[activeId] or Catalog.Bases.outpost
 		local activeStats=Rules.BaseStats(activeId,1)

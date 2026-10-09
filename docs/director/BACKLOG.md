@@ -231,3 +231,11 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [!] M22.8 Dependências externas: envio e moderação dos doze WAVs com declaração do dono, celular físico, quatro jogadores, viagens, compras e sessão prolongada. Consulte RELEASE_CHECKLIST e o relatório de direção.
 - [ ] M22.9 Sensação de combate ainda 3/5: revisar preparação, recuo e recuperação do golpe pesado, tiro e controle com a amostra de M22.7. Feixes são legíveis, mas animação precisa transmitir mais peso. Evidência: `test-results/refinement/combat-event-01.png` e `test-results/refinement/fx/lasers.png`; aceite: três poses legíveis por ataque, emissão correta, Menos efeitos e carga de 80 inimigos preservados.
 - [x] M22.10 Reconstrução real revelou 4.569 peças, contra 4.476 no dublê. Decoração redistribuída sem retirar apoios: final 4.455 no Studio/4.362 no teste. `--preview-lobby` passa a recusar contagem real acima do teto de 4.500.
+
+## M23 — Base, blur dos talentos e roleta por raridade, 08/10
+
+- [x] M23.1 Base no dock principal, Heróis sem cartão de base e Bases sem abas para Heróis. Seis botões conferidos em PC/horizontal/vertical; regressão de seleção e geometria aprovada.
+- [x] M23.2 Árvore sobre o cenário desfocado, sem fundo preto; textos com contorno, navegação e configuração Menos efeitos preservadas. Testes e capturas reais do Studio.
+- [x] M23.3 Cliques independentes da coleta, sincronizados à roleta; um final distinto por raridade usando áudios próprios disponíveis, sem som duplicado no recibo. Mute, cancelamento, orçamento de vozes e substituição por upload cobertos.
+- [!] M23.4 Áudio exato depende de envio na conta: `assets/audio/summon/` contém sete WAVs, o MP3 fornecido e manifesto. O dono responde às declarações aplicáveis e permite uso na experiência; depois atualizar `Config.Audio`. Não atribuir autoria dos recortes ao projeto. Instruções em `assets/audio/summon/README.md`.
+- [~] M23.5 Finalizar conferência de áudio no Studio, registrar fontes finais, commit/push e publicação no mesmo lugar da equipe. Sessão `codex-base-tree-reel-20261008`.

@@ -13,6 +13,7 @@ local clock=10
 local os={clock=function() return clock end}
 local task={delay=function(_,fn) table.insert(delayed,fn) end}
 local TweenInfo={new=function() return {} end}
+local NumberRange={new=function(a,b) return {Min=a,Max=b or a} end}
 local effectsPlayed=0
 local soundService={PlayLocalSound=function(_,sound) assert(sound.SoundId); effectsPlayed+=1 end}
 local tweenService={Create=function(_,sound,_,goal)
@@ -193,6 +194,53 @@ assert(not action.actionPlaying,'Results stop the percussion without delayed bea
 state.phase='Lobby';action:Update(state)
 assert(action.track=='lobby' and action.sounds.lobby.PlaybackSpeed==1,'Lobby keeps the original track and speed')
 print('PASS audio: transitions, mute, legacy settings, result cues, map ambience, weapon voice budget and jingles')
+-- Reel ticks are mechanical, independent of pickup throttling, with one
+-- final signature per rarity. Reusing voices never leaves old regions.
+Config.Audio.shotMagic=84
+settings.effects,settings.interface=true,true
+local reel=Audio.new(function() return state end)
+local summonPlays=0
+Instance.new=function(kind)
+ local value=originalNew(kind)
+ if kind=='Sound' then value.Play=function(self) self.IsPlaying=true;summonPlays+=1 end end
+ return value
+end
+clock+=1;reel:Summon('start');reel:Summon('tick')
+local tick=reel.summonVoices.reelTick
+assert(tick.SoundId=='rbxassetid://78' and tick.PlaybackRegion.Max==.065 and tick.PlaybackRegionsEnabled,'Fallback tick is a short owned transient')
+local before=summonPlays
+for i=1,10 do clock+=.001;reel:Summon('tick') end
+assert(summonPlays==before,'A fast frame cannot queue a burst of ticks')
+clock+=.05;reel:Summon('tick');assert(summonPlays==before+1,'The next crossed tile can tick independently of pickups')
+local patterns={}
+for _,rarity in ipairs({'common','rare','epic','legendary','mythic'}) do
+ delayed={};reel:Summon('start');reel:Summon('reward',rarity)
+ local immediate=summonPlays
+ for _,fn in ipairs(delayed) do fn() end
+ local signature=tostring(summonPlays-immediate)..':'
+ for i=1,6 do
+  local voice=reel.summonVoices['reward_'..i]
+  if voice and voice.IsPlaying then signature..=voice.SoundId..':'..voice.PlaybackSpeed..':'..voice.Volume..';' end
+ end
+ assert(not patterns[signature],'Every rarity has a distinct ending: '..rarity)
+ patterns[signature]=true
+end
+local voices=0;for _ in pairs(reel.summonVoices) do voices+=1 end
+assert(voices<=8,'The whole summon uses at most eight reusable voices')
+delayed={};reel:Summon('reward','mythic');reel:Summon('cancel');before=summonPlays
+for _,fn in ipairs(delayed) do fn() end
+assert(summonPlays==before,'Leaving a scene cancels pending reward layers')
+delayed={};reel:Summon('reward','mythic');settings.interface=false;before=summonPlays
+for _,fn in ipairs(delayed) do fn() end
+reel:Summon('tick');reel:Summon('reward','common')
+assert(summonPlays==before,'Interface mute also cancels delayed summon audio')
+settings.interface=true;settings.effects=false;reel:Summon('start');reel:Summon('reward','epic')
+assert(summonPlays==before,'Effects mute applies to the reel')
+settings.effects=true;Config.Audio.reelTick=85;clock+=1;reel:Summon('tick')
+assert(tick.SoundId=='rbxassetid://85' and not tick.PlaybackRegionsEnabled and tick.PlaybackSpeed==1,'The reference tick replaces the fallback without truncation or altered pitch')
+Config.Audio.rewardMythic=86;delayed={};before=summonPlays;reel:Summon('reward','mythic')
+assert(summonPlays==before+1 and #delayed==0 and reel.summonVoices.reward.SoundId=='rbxassetid://86','A dedicated ending replaces all layers with one sound')
+print('PASS summon audio: independent ticks, five rarity signatures, voice limits, mute, cancellation and upload replacement')
 '''.replace('__AUDIO__', source)
 with tempfile.TemporaryDirectory(prefix='doom-audio-') as temp:
     path = Path(temp) / 'audio.luau'

@@ -39,13 +39,13 @@ print("--- lobby corners ---")
 for _, device in ipairs(DEVICES) do
 	local H = UI.lobbyLayout(device.width, 720)
 	local label = device.name .. " (" .. tostring(device.width) .. "px)"
-	check(not rectsOverlap(H.pill, H.squad), label .. ": the gold pill never runs under the squad button")
-	check(not rectsOverlap(H.squad, H.settings), label .. ": the squad button never overlaps settings")
+	check(not rectsOverlap(H.pill, H.settings), label .. ": the gold pill never runs under settings")
+	check(H.squad == nil and UI.NAV_COUNT == 6, label .. ": Base belongs to the six-button dock, not the corner")
 	check(H.settings.x + H.settings.w <= math.max(320, device.width), label .. ": settings stays on screen")
 	check(H.pill.w >= 100, label .. ": the gold pill keeps room for a number, got " .. H.pill.w)
-	check(H.squad.w >= 46 and H.settings.w >= 46 and H.squad.h >= 48, label .. ": buttons stay thumb-sized")
+	check(H.settings.w >= 46 and H.settings.h >= 48, label .. ": settings stays thumb-sized")
 	-- The whole point of the redesign: the corners are corners, not a bar.
-	check(H.pill.w + H.squad.w + H.settings.w <= math.max(320, device.width) * 0.8 or device.width < 560,
+	check(H.pill.w + H.settings.w <= math.max(320, device.width) * 0.8 or device.width < 560,
 		label .. ": the corner HUD leaves the middle of the top edge to the world")
 end
 
@@ -56,7 +56,7 @@ print("--- degenerate ---")
 for _, width in ipairs({ 0, 1, 120, -500 }) do
 	local H = UI.lobbyLayout(width, 0)
 	check(H.pill.w > 0 and H.context.h > 0, "a " .. tostring(width) .. "px screen still clamps to a usable HUD")
-	check(not rectsOverlap(H.pill, H.squad), "a " .. tostring(width) .. "px screen keeps the pill clear of the buttons")
+	check(not rectsOverlap(H.pill, H.settings), "a " .. tostring(width) .. "px screen keeps the pill clear of settings")
 end
 local fallback = UI.lobbyLayout(nil, nil)
 check(fallback.pill.w > 0, "a missing screen size falls back instead of erroring")
@@ -205,10 +205,10 @@ print("--- lobby hud ---")
 for _, screen in ipairs(SCREENS) do
 	local H = UI.lobbyLayout(screen.w, screen.h)
 	local tag = screen.name .. " " .. screen.w .. "x" .. screen.h
-	for _, name in ipairs({ "pill", "squad", "settings", "navigation", "elevator", "hint", "context", "contextRiding" }) do
+	for _, name in ipairs({ "pill", "settings", "navigation", "elevator", "hint", "context", "contextRiding" }) do
 		check(inside(H[name], screen.w, screen.h), tag .. ": lobby " .. name .. " stays on screen " .. describe(H[name]))
 	end
-	for _, corner in ipairs({ "pill", "squad", "settings" }) do
+	for _, corner in ipairs({ "pill", "settings" }) do
 		if not H.class.short then
 			check(not overlaps(H.context, H[corner]), tag .. ": a contextual panel never covers the " .. corner)
 		end
@@ -222,7 +222,7 @@ for _, screen in ipairs(SCREENS) do
 	-- A campaign car is taller (its row of difficulties) and still fits.
 	local D = UI.lobbyLayout(screen.w, screen.h, { difficulty = true })
 	check(inside(D.elevator, screen.w, screen.h) and (D.class.short or D.elevator.h >= H.elevator.h + UI.difficultyRowH(D.class)), tag .. ": the campaign card fits its difficulty row on screen " .. describe(D.elevator))
-	for _, corner in ipairs({ "pill", "squad", "settings" }) do
+	for _, corner in ipairs({ "pill", "settings" }) do
 		check(not overlaps(D.elevator, D[corner]), tag .. ": the campaign card never covers the " .. corner)
 	end
 	local DP = UI.contextLayout(screen.w, screen.h, { elevator = true, difficulty = true })
@@ -230,7 +230,15 @@ for _, screen in ipairs(SCREENS) do
 	-- Inventory and progression now have persistent, labelled navigation;
 	-- keep its width bounded so it does not become four giant desktop strips.
 	check(H.navigation.h >= 48 and H.navigation.w <= 720, tag .. ": navigation is tappable and bounded on desktop")
-	local covered = H.pill.w * H.pill.h + H.squad.w * H.squad.h + H.settings.w * H.settings.h + H.navigation.w * H.navigation.h
+	for i=1,UI.NAV_COUNT do
+		local cell = H.column
+			and {x=H.navigation.x,y=H.navigation.y+(i-1)*H.navigation.h/UI.NAV_COUNT,w=H.navigation.w,h=H.navigation.h/UI.NAV_COUNT-8}
+			or {x=H.navigation.x+(i-1)*H.navigation.w/UI.NAV_COUNT,y=H.navigation.y,w=H.navigation.w/UI.NAV_COUNT-6,h=H.navigation.h}
+		check(inside(cell,screen.w,screen.h),tag..": dock button "..i.." remains on screen")
+		check(cell.w>=44 and cell.h>=48,tag..": dock button "..i.." keeps a usable touch target")
+		check(not overlaps(cell,H.pill) and not overlaps(cell,H.settings),tag..": dock button "..i.." stays clear of corner controls")
+	end
+	local covered = H.pill.w * H.pill.h + H.settings.w * H.settings.h + H.navigation.w * H.navigation.h
 	check(covered <= screen.w * screen.h * 0.23, tag .. ": at least 77% of the idle view remains world space")
 	for _, wide in ipairs({false, true}) do
 		for _, riding in ipairs({false, true}) do
@@ -242,7 +250,7 @@ for _, screen in ipairs(SCREENS) do
 			if P.modal then
 				check(H.class.short and P.y <= 14, label .. ": modal sheet reclaims the hidden top chrome")
 			else
-				for _, chrome in ipairs({"pill", "squad", "settings", "navigation"}) do
+				for _, chrome in ipairs({"pill", "settings", "navigation"}) do
 					check(not overlaps(P, H[chrome]), label .. ": panel leaves " .. chrome .. " accessible")
 				end
 			end

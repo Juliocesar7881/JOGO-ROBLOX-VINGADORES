@@ -480,7 +480,7 @@ fetchProducts = function()
 end
 
 local function lobbyChrome(visible)
-	for _,name in ipairs({"LobbyPill","ActiveBaseButton","SettingsButton","LobbyNavigation"}) do
+	for _,name in ipairs({"LobbyPill","SettingsButton","LobbyNavigation"}) do
 		local item=main:FindFirstChild(name)
 		if item then
 			local size=screenSize()
@@ -496,7 +496,7 @@ end
 
 local function refreshNavigation()
 	local selected=contextPanel and contextPanel.kind
-	if selected=="hero" or selected=="squad" or selected=="bases" then selected="inventory" end
+	if selected=="hero" or selected=="squad" then selected="inventory" end
 	if selected=="shop" then selected="premium" end
 	for id,entry in pairs(refs.navigation or {}) do
 		local active=selected==id
@@ -815,11 +815,8 @@ renderLobby = function()
 	refs.levelBar = UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.violet})
 	UI.corner(refs.levelBar, 3)
 	UI.button(pill, "", function() openContext("talents", {}) end, {Name = "OpenTalentTree", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1})
-	-- Round corner buttons: the equipped base (its own little picture) and settings.
+	-- The equipped base belongs beside the other main navigation buttons.
 	local equipped = Catalog.Bases[profile().equippedBase or "outpost"] or Catalog.Bases.outpost
-	UI.roundIcon(main, "ActiveBaseButton", T("Base", "Base"), C.green, function(disc)
-		UI.basePortrait(disc, equipped, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.54), Size = UDim2.fromScale(0.74, 0.6)})
-	end, function() openContext("bases", {}) end, {Position = at(hud.squad), Size = dims(hud.squad)})
 	UI.roundIcon(main, "SettingsButton", T("Opções", "Settings"), C.blue, "gear", function() openContext("settings", {}) end, {Position = at(hud.settings), Size = dims(hud.settings)})
 
 	-- The big round buttons: a column on the left of wide screens, a dock at
@@ -834,6 +831,9 @@ renderLobby = function()
 	end
 	local nav={
 		{"inventory",T("Heróis","Heroes"),C.coral,"hero"},
+		{"bases",T("Base","Base"),C.green,function(disc)
+			UI.basePortrait(disc,equipped,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.54),Size=UDim2.fromScale(0.74,0.6)})
+		end},
 		{"talents",T("Evolução","Talents"),C.violet,"star",function() return profile().talentPoints or 0 end},
 		{"premium",T("Loja","Shop"),C.green,"shop"},
 		{"rewards",T("Prêmios","Gifts"),C.pink,"gift",function() return tonumber(profile().rewards and profile().rewards.claimable) or 0 end},
