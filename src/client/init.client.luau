@@ -207,6 +207,7 @@ end
 
 showToast = function(message, bad, icon)
 	if not message or message == "" then return end
+	if bad and UI.onError then UI.onError() end
 	local current = overlays:FindFirstChild("Toast")
 	if current then current:Destroy() end
 	local inBattle = activeMatch() and refs.toastTop ~= nil
@@ -261,6 +262,7 @@ end
 
 local audio = Audio.new(function() return state end)
 UI.onPress = function() audio:Cue("click", 0.04) end
+UI.onError = function() audio:Cue("deny", 0.6) end
 local nameplates = Nameplates.new(player, function() return language end)
 local effects = Effects.new(player, request, function() return state end, audio)
 local routePreview = RoutePreview.new(effects.folder, Catalog, C)
@@ -1725,6 +1727,7 @@ fxRemote.OnClientEvent:Connect(function(event)
 	else
 		if event.kind == "BossArrive" and activeMatch() then
 			kit.bossBannerAt = os.clock()
+			audio:BossProfile(event.enemyId)
 			local def = Catalog.Enemies[event.enemyId]
 			celebrate:Banner(def and def.name or {pt = "CHEFE", en = "BOSS"}, event.final and {pt = "▲ CHEFE FINAL", en = "▲ FINAL BOSS"} or {pt = "▲ CHEFE", en = "▲ BOSS"}, C.red, {big = true, cue = "boss", duration = 2.4})
 			-- A short entrance: the camera flies to the boss and back, unless
@@ -1744,7 +1747,7 @@ fxRemote.OnClientEvent:Connect(function(event)
 			end
 		elseif event.kind == "EnemyDown" and event.boss and activeMatch() then
 			local def = Catalog.Enemies[event.enemyId]
-			celebrate:Banner({pt = "CHEFE DERROTADO!", en = "BOSS DEFEATED!"}, def and def.name or nil, C.gold, {big = true, cue = "victory", confetti = 50})
+			celebrate:Banner({pt = "CHEFE DERROTADO!", en = "BOSS DEFEATED!"}, def and def.name or nil, C.gold, {big = true, confetti = 50})
 		elseif event.kind == "Ability" and event.ultimate and event.ownerId == player.UserId then
 			local def = Catalog.Abilities[event.abilityId]
 			if def then celebrate:Banner({pt = "★ " .. Catalog.Upper(def.name.pt) .. "!", en = "★ " .. Catalog.Upper(def.name.en) .. "!"}, {pt = "ULTIMATE", en = "ULTIMATE"}, UI.color(def.color), {cue = "ability", duration = 1.5}) end

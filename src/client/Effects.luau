@@ -666,8 +666,24 @@ end
 
 function Effects:_groundImpact(position, color, radius)
 	local center = Vector3.new(position.X, 0.18, position.Z)
-	local effect = self:_effect(Vector3.new(0.09, radius, radius), CFrame.new(center) * CFrame.Angles(0, 0, math.pi / 2), color, 0.28, Enum.PartType.Cylinder, 0.78)
-	if effect then effect.growFrom, effect.growTo = radius, radius * 2 end
+	-- A thin expanding rim leaves enemies readable inside the shockwave.
+	local effect = self:_ring(center, color, radius * .65, radius * 2, .32)
+	if effect then effect.fade, effect.part.Transparency = .96, .96 end
+	local state = self.getState()
+	local lowFX = state and state.profile and state.profile.settings and state.profile.settings.lowFX
+	-- Tiny footsteps do not throw debris. Heavy impacts get three short,
+	-- matte fragments, globally spaced and inside the existing 80-part pool.
+	if lowFX or radius < 3 or self.clock - (self.lastDebrisAt or -math.huge) < .1 then return end
+	self.lastDebrisAt = self.clock
+	for index = 1, 3 do
+		local angle = index * math.pi * 2 / 3 + self.shotSerial * .7
+		local away = Vector3.new(math.cos(angle), 0, math.sin(angle))
+		local shard = self:_effect(Vector3.new(.28,.22,.38), CFrame.new(center), color:Lerp(Color3.fromRGB(75,68,61),.8), .34, nil, .1)
+		if shard then
+			shard.part.Material = Enum.Material.SmoothPlastic
+			shard.from, shard.to, shard.arc = center, center + away * math.min(radius*.6,4), .7
+		end
+	end
 end
 
 -- A column of light standing on the ground that narrows as it fades.
@@ -1003,12 +1019,6 @@ function Effects:_heroShot(event, lowFX)
 	elseif heroId == "hulk" or heroId == "antman" or heroId=="beast" then
 		self:_groundImpact(target, color, heroId == "hulk" and 5 or 3.5)
 		self:_ring(target, color:Lerp(Color3.new(1, 1, 1), 0.3), 1.5, heroId == "hulk" and 11 or 7, 0.32)
-		for index = 0, 2 do
-			local angle = index * math.pi * 2 / 3 + self.shotSerial
-			local offset = Vector3.new(math.cos(angle), 0, math.sin(angle))
-			local fragment = self:_effect(Vector3.new(0.32, 0.32, 0.32), CFrame.new(target), color:Lerp(Color3.new(), 0.4), 0.32, nil, 0.15)
-			if fragment then fragment.from, fragment.to, fragment.arc = target, target + offset * 2, 1.8 end
-		end
 	elseif heroId == "captain" then
 		local shield = self:_effect(Vector3.new(0.15, 1.4, 1.4), CFrame.new(from), Color3.fromRGB(223, 62, 70), 0.38, Enum.PartType.Cylinder)
 		if shield then shield.from, shield.to, shield.returning, shield.disc = from, target, true, true end
@@ -1189,7 +1199,10 @@ function Effects:Handle(event)
 		return
 	end
 	if event.kind=="BaseShot" then
-		self:_line(event.from,event.to,event.color,0.3,0.18); self:_impact(event.to,event.color,2)
+		if typeof(event.from)~="Vector3" or typeof(event.to)~="Vector3" then return end
+		self:_laser(event.from,event.to,UI.color(event.color),.16,.18)
+		local camera = workspace.CurrentCamera
+		if self.audio and camera then self.audio:Shot("shotTech",(event.to-camera.CFrame.Position).Magnitude) end
 		return
 	elseif event.kind=="SoldierSync" then
 		local seen={}
@@ -1233,10 +1246,14 @@ function Effects:Handle(event)
 			self:_impact(fallen.position + Vector3.new(0, height, 0), event.split and Color3.fromRGB(150, 255, 190) or Color3.fromRGB(214, 255, 190), (event.split and 2.8 or 1.8) * math.max(0.8, fallen.scale or 1))
 		end
 		self:Release(tostring(event.id))
-		if event.boss and typeof(event.position)=="Vector3" then self:_groundImpact(event.position,UI.Colors.gold,12) end
+		if event.boss and typeof(event.position)=="Vector3" then
+			self:_groundImpact(event.position,UI.Colors.gold,12)
+			local camera = workspace.CurrentCamera
+			if self.audio then self.audio:Event("bossDown",camera and (event.position-camera.CFrame.Position).Magnitude or 0) end
+		end
 		return
 	elseif event.kind == "CardPicked" then
-		if self.audio then self.audio:Cue("upgrade") end
+		if self.audio then self.audio:Cue("card") end
 		return
 	elseif event.kind == "TowerUpgrade" then
 		-- The upgraded hero hops off its pedestal in a column of gold.
@@ -1275,7 +1292,7 @@ function Effects:Handle(event)
 		-- colour, then floods back, tinted by the power (not under reduced effects).
 		if event.ultimate and not lowFX then self:_ultimateGrade(tint) end
 		if typeof(event.position)=="Vector3" then
-			self:Handle({kind="Pulse",position=event.position,color=event.color,radius=math.max(event.radius or 0,5),duration=math.clamp(event.duration or 0.5,0.5,6)})
+			self:Handle({kind="Pulse",cosmetic=true,position=event.position,color=event.color,radius=math.max(event.radius or 0,5),duration=math.clamp(event.duration or 0.5,0.5,6)})
 			if not lowFX then self:_abilityVisual(kind,event.position,math.max(event.radius or 0,5),tint) end
 		end
 		if event.ultimate and typeof(event.position)=="Vector3" then self:_ultimateBurst(event,tint,lowFX) end
@@ -1286,7 +1303,7 @@ function Effects:Handle(event)
 		if self.audio then
 			local camera=workspace.CurrentCamera
 			local distance=camera and typeof(event.position)=="Vector3" and (event.position-camera.CFrame.Position).Magnitude or 0
-			self.audio:Ability(Effects.ShotSound(event.heroId),distance)
+			self.audio:Ability(Effects.ShotSound(event.heroId),distance,kind,event.heroId)
 		end
 		return
 	end
@@ -1459,7 +1476,8 @@ function Effects:Handle(event)
 		-- A telegraph carries its own duration and holds at full size: it marks
 		-- an area the player has to read and act on, not an impact already over.
 		local duration = math.clamp(tonumber(event.duration) or 0.42, 0.1, 6)
-		local telegraph = duration > 1
+		local cosmetic = event.cosmetic == true
+		local telegraph = duration > 1 and not cosmetic
 		-- A disc, not a square: every area in the match is a radius check, and a
 		-- square's corners would mark danger where there is none. A Cylinder's
 		-- axis is X, so its thickness goes there and a quarter turn lays it flat.
@@ -1475,9 +1493,17 @@ function Effects:Handle(event)
 				end
 			end
 		end
-		local pulse = self:_effect(Vector3.new(0.14, width, width),
-			CFrame.new(event.position + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
-			UI.color(event.color), duration, Enum.PartType.Cylinder, 0.68)
+		local pulse
+		if cosmetic then
+			-- Confirmed player powers mark their area with a hollow rim. Filled
+			-- danger telegraphs retain their stronger contrast and priority.
+			pulse = self:_ring(event.position, UI.color(event.color), radius * 2, radius * 2, duration)
+			if pulse then pulse.fade, pulse.part.Transparency = .96, .96 end
+		else
+			pulse = self:_effect(Vector3.new(0.14, width, width),
+				CFrame.new(event.position + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+				UI.color(event.color), duration, Enum.PartType.Cylinder, 0.68)
+		end
 		if pulse then
 			pulse.telegraph = telegraph
 			pulse.followEnemyId = event.followEnemyId and tostring(event.followEnemyId) or nil
@@ -1496,7 +1522,9 @@ function Effects:Handle(event)
 				board.Text.Text, board.Enabled = pulse.warning, true
 				pulse.warningBoard = board
 			end
-			pulse.growFrom, pulse.growTo = not telegraph and radius * 0.7 or nil, not telegraph and radius * 2.1 or nil
+			if not cosmetic then
+				pulse.growFrom, pulse.growTo = not telegraph and radius * 0.7 or nil, not telegraph and radius * 2.1 or nil
+			end
 		end
 	elseif event.kind == "Clear" then
 		for _,record in pairs(self.soldiers) do record.model:Destroy() end; self.soldiers={}

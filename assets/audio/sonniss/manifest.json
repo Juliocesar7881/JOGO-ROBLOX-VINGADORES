@@ -1,0 +1,1421 @@
+{
+  "version": 1,
+  "rate": 32000,
+  "licenseUrl": "https://sonniss.com/gdc-bundle-license/",
+  "reviewed": "2026-10-09",
+  "inventory": [
+    {
+      "bundle": "Sonniss.com-GDC2026-GameAudioBundle1of5.zip",
+      "recordings": 82,
+      "licenseSha256": "8a26e0113e8b00a4dc953a2d568d326bc780ebd792165f9bb604cb26010dee27"
+    },
+    {
+      "bundle": "Sonniss.com-GDC2026-GameAudioBundle2of5.zip",
+      "recordings": 130,
+      "licenseSha256": "8a26e0113e8b00a4dc953a2d568d326bc780ebd792165f9bb604cb26010dee27"
+    },
+    {
+      "bundle": "Sonniss.com-GDC2026-GameAudioBundle3of5.zip",
+      "recordings": 65,
+      "licenseSha256": "8a26e0113e8b00a4dc953a2d568d326bc780ebd792165f9bb604cb26010dee27"
+    },
+    {
+      "bundle": "Sonniss.com-GDC2026-GameAudioBundle4of5.zip",
+      "recordings": 24,
+      "licenseSha256": "8a26e0113e8b00a4dc953a2d568d326bc780ebd792165f9bb604cb26010dee27"
+    },
+    {
+      "bundle": "Sonniss.com-GDC2026-GameAudioBundle5of5.zip",
+      "recordings": 46,
+      "licenseSha256": "8a26e0113e8b00a4dc953a2d568d326bc780ebd792165f9bb604cb26010dee27"
+    }
+  ],
+  "sources": {
+    "2:Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/UIClick_UI Button Analog Vintage Double Click Neutral Dry Press 11_ESM_BG.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/UIClick_UI Button Analog Vintage Double Click Neutral Dry Press 11_ESM_BG.wav",
+      "crc32": 3812927658
+    },
+    "2:Epic Stock Media - Fantasy Game 2 - Sound Kit for Enchanted Realms/CLOTHFlp_Action Inventory Open Flip Cloth Canvas Bag Slide Light 02_ESM_FG2.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Fantasy Game 2 - Sound Kit for Enchanted Realms/CLOTHFlp_Action Inventory Open Flip Cloth Canvas Bag Slide Light 02_ESM_FG2.wav",
+      "crc32": 2139506636
+    },
+    "5:The Noisery - Rich Glitch/UIGlitch_Designed_Glitch_Corrupted_Data Error_The Noisery_Rich Glitch_06.wav": {
+      "bundle": 5,
+      "file": "The Noisery - Rich Glitch/UIGlitch_Designed_Glitch_Corrupted_Data Error_The Noisery_Rich Glitch_06.wav",
+      "crc32": 3627210939
+    },
+    "2:Cinematic Sound Design - Interface & Infographics/Interface Percussion Snap.wav": {
+      "bundle": 2,
+      "file": "Cinematic Sound Design - Interface & Infographics/Interface Percussion Snap.wav",
+      "crc32": 1982562102
+    },
+    "2:Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/GAMEBoard_Game Play Piece Action Organic Connect Dots Fall Bounce 04_ESM_BG.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/GAMEBoard_Game Play Piece Action Organic Connect Dots Fall Bounce 04_ESM_BG.wav",
+      "crc32": 516754700
+    },
+    "2:Cinematic Sound Design - Ultra Transitions & Impacts/Woosh Sweep Slide Infographics Basic.wav": {
+      "bundle": 2,
+      "file": "Cinematic Sound Design - Ultra Transitions & Impacts/Woosh Sweep Slide Infographics Basic.wav",
+      "crc32": 1582334238
+    },
+    "2:Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/PAPRHndl_Game Play Cards Dry Show Flip Toss Disgard Near 12_ESM_BG.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/PAPRHndl_Game Play Cards Dry Show Flip Toss Disgard Near 12_ESM_BG.wav",
+      "crc32": 3254364842
+    },
+    "2:Cinematic Sound Design - UI Interaction Elements/Ting Coins.wav": {
+      "bundle": 2,
+      "file": "Cinematic Sound Design - UI Interaction Elements/Ting Coins.wav",
+      "crc32": 2413645600
+    },
+    "2:Epic Stock Media - Tower Defense Game/ROBTMvmt_Tower Deploy Hitech Robot Motor Dark Thump Servo Whine 04_ESM_TDG.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Tower Defense Game/ROBTMvmt_Tower Deploy Hitech Robot Motor Dark Thump Servo Whine 04_ESM_TDG.wav",
+      "crc32": 2743546823
+    },
+    "2:Epic Stock Media - Anime Game/DSGNStngr_Power Up Bright Positive Successful Light Saturation Crash Shimmer 05_ESM_AG.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Anime Game/DSGNStngr_Power Up Bright Positive Successful Light Saturation Crash Shimmer 05_ESM_AG.wav",
+      "crc32": 1395427219
+    },
+    "2:Cinematic Sound Design - Hybrid Game & UI Elements/Game Entry Happy Short.wav": {
+      "bundle": 2,
+      "file": "Cinematic Sound Design - Hybrid Game & UI Elements/Game Entry Happy Short.wav",
+      "crc32": 1264105982
+    },
+    "2:Epic Stock Media - Tower Defense Game/DSGNStngr_Action Deploy Units Sword Slice Special Move Layered Swish 04_ESM_TDG.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Tower Defense Game/DSGNStngr_Action Deploy Units Sword Slice Special Move Layered Swish 04_ESM_TDG.wav",
+      "crc32": 2484263092
+    },
+    "2:Cinematic Sound Design - Interface & Infographics/Interface Accept Glassy Snap.wav": {
+      "bundle": 2,
+      "file": "Cinematic Sound Design - Interface & Infographics/Interface Accept Glassy Snap.wav",
+      "crc32": 3836895101
+    },
+    "4:Sonik Sound Library - Spanish Crowds/CRWDCheer_Small Club, 50 People, Crowd, Spanish, Cheering and Applause-Surround_KSL_KS015.wav": {
+      "bundle": 4,
+      "file": "Sonik Sound Library - Spanish Crowds/CRWDCheer_Small Club, 50 People, Crowd, Spanish, Cheering and Applause-Surround_KSL_KS015.wav",
+      "crc32": 2297035271
+    },
+    "2:Cinematic Sound Design - System & UI Feedback Elements/Interface Arp Reveal Down Long.wav": {
+      "bundle": 2,
+      "file": "Cinematic Sound Design - System & UI Feedback Elements/Interface Arp Reveal Down Long.wav",
+      "crc32": 3392377404
+    },
+    "5:The Noisery - Moaning Metal/DSGNImpt_Metal Hit Thud Thump Low Ring Geofon 1_The Noisery_Moaning Metal.wav": {
+      "bundle": 5,
+      "file": "The Noisery - Moaning Metal/DSGNImpt_Metal Hit Thud Thump Low Ring Geofon 1_The Noisery_Moaning Metal.wav",
+      "crc32": 1799724073
+    },
+    "4:Sonic Bat - Music Boxes/SBmb_Music Box C Wind Up 006.wav": {
+      "bundle": 4,
+      "file": "Sonic Bat - Music Boxes/SBmb_Music Box C Wind Up 006.wav",
+      "crc32": 380902740
+    },
+    "4:Sonic Bat - Vintage Radio/SBvr_Mode Select Wheel 006.wav": {
+      "bundle": 4,
+      "file": "Sonic Bat - Vintage Radio/SBvr_Mode Select Wheel 006.wav",
+      "crc32": 3231858481
+    },
+    "2:CB_Sounddesign - Applicable Sounds - Organic UI and Building Games SFX/UIMisc_Kalimba 3 Up_CB Sounddesign_APPlicable Sounds.wav": {
+      "bundle": 2,
+      "file": "CB_Sounddesign - Applicable Sounds - Organic UI and Building Games SFX/UIMisc_Kalimba 3 Up_CB Sounddesign_APPlicable Sounds.wav",
+      "crc32": 1867224292
+    },
+    "2:CB_Sounddesign - Applicable Sounds - Organic UI and Building Games SFX/GAMEMisc_Magic Creation 23_CB Sounddesign_APPlicable Sounds.wav": {
+      "bundle": 2,
+      "file": "CB_Sounddesign - Applicable Sounds - Organic UI and Building Games SFX/GAMEMisc_Magic Creation 23_CB Sounddesign_APPlicable Sounds.wav",
+      "crc32": 4230108934
+    },
+    "2:Cinematic Sound Design - Ultra Transitions & Impacts/Impact Hit Rapid Chord Reverb.wav": {
+      "bundle": 2,
+      "file": "Cinematic Sound Design - Ultra Transitions & Impacts/Impact Hit Rapid Chord Reverb.wav",
+      "crc32": 4286662830
+    },
+    "1:344 Audio - Cinematic Fight Vol. 1/FGHTImpt_4 x Punch, Body 02_344 Audio_Cinematic Fight Vol 1.wav": {
+      "bundle": 1,
+      "file": "344 Audio - Cinematic Fight Vol. 1/FGHTImpt_4 x Punch, Body 02_344 Audio_Cinematic Fight Vol 1.wav",
+      "crc32": 3477594367
+    },
+    "2:David Dumais Audio - Melee Weapons Sound Effects Pack 2/SWSH_SWING IMPACTS Quick Heavy Weapon Swing To Thud Impact Var 01_DDUMAIS_MWP2.wav": {
+      "bundle": 2,
+      "file": "David Dumais Audio - Melee Weapons Sound Effects Pack 2/SWSH_SWING IMPACTS Quick Heavy Weapon Swing To Thud Impact Var 01_DDUMAIS_MWP2.wav",
+      "crc32": 1470635003
+    },
+    "1:344 Audio - Historical Weapons Vol. 2/WEAPArmr_Metal Shield Spin On Floor, Buckler MKH_344 Audio_Medieval Weapons Vol 2.wav": {
+      "bundle": 1,
+      "file": "344 Audio - Historical Weapons Vol. 2/WEAPArmr_Metal Shield Spin On Floor, Buckler MKH_344 Audio_Medieval Weapons Vol 2.wav",
+      "crc32": 2955008608
+    },
+    "1:344 Audio - Historical Weapons Vol. 2/WEAPBlnt_Spear And Stick Impact, Wooden MKH 2_344 Audio_Medieval Weapons Vol 2.wav": {
+      "bundle": 1,
+      "file": "344 Audio - Historical Weapons Vol. 2/WEAPBlnt_Spear And Stick Impact, Wooden MKH 2_344 Audio_Medieval Weapons Vol 2.wav",
+      "crc32": 2540726406
+    },
+    "2:David Dumais Audio - Melee Weapons Sound Effects Pack 2/WEAPWhip_WHIP Snap Crack 05_DDUMAIS_MWP2.wav": {
+      "bundle": 2,
+      "file": "David Dumais Audio - Melee Weapons Sound Effects Pack 2/WEAPWhip_WHIP Snap Crack 05_DDUMAIS_MWP2.wav",
+      "crc32": 2203899584
+    },
+    "2:Cinematic Sound Design - Cartoon Bloopers/Arrow Hit Rattle.wav": {
+      "bundle": 2,
+      "file": "Cinematic Sound Design - Cartoon Bloopers/Arrow Hit Rattle.wav",
+      "crc32": 3647942052
+    },
+    "3:InMotionAudio - Arc/ELECArc_ArcDesign15_InMotionAudio_Arc.wav": {
+      "bundle": 3,
+      "file": "InMotionAudio - Arc/ELECArc_ArcDesign15_InMotionAudio_Arc.wav",
+      "crc32": 2790108433
+    },
+    "5:The Noisery - Rich Glitch/UIGlitch_User interface_Glitch_High_Electronic_The Noisery_Rich Glitch_05.wav": {
+      "bundle": 5,
+      "file": "The Noisery - Rich Glitch/UIGlitch_User interface_Glitch_High_Electronic_The Noisery_Rich Glitch_05.wav",
+      "crc32": 202693779
+    },
+    "2:Alexander Kopeikin - Emotion and Magic/magic, energy flow, astonishment-001.wav": {
+      "bundle": 2,
+      "file": "Alexander Kopeikin - Emotion and Magic/magic, energy flow, astonishment-001.wav",
+      "crc32": 1717771970
+    },
+    "2:Epic Stock Media - Tower Defense Game/ICEBrk_Skill Freeze Whoosh Break Impact Layered Movement Shatter 03_ESM_TDG.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Tower Defense Game/ICEBrk_Skill Freeze Whoosh Break Impact Layered Movement Shatter 03_ESM_TDG.wav",
+      "crc32": 548923576
+    },
+    "2:Epic Stock Media - Elemental Mutation Whooshes and Impacts/FIREWhsh_Whoosh Fire Deep Growl Monster Saturated Crisp 03_ESM_EMWI.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Elemental Mutation Whooshes and Impacts/FIREWhsh_Whoosh Fire Deep Growl Monster Saturated Crisp 03_ESM_EMWI.wav",
+      "crc32": 2940901663
+    },
+    "2:Epic Stock Media - Anime Game/EXPLDsgn_Explosion Small Blast Enemy Death Crunchy Boom Cartoon Noisy Crash Impact Delay 03_ESM_AG.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Anime Game/EXPLDsgn_Explosion Small Blast Enemy Death Crunchy Boom Cartoon Noisy Crash Impact Delay 03_ESM_AG.wav",
+      "crc32": 4053584334
+    },
+    "2:David Dumais Audio - Melee Weapons Sound Effects Pack 2/METLFric_SWING SCRAPE Swift Melee Weapon Swing With A Long Blade 14_DDUMAIS_MWP2.wav": {
+      "bundle": 2,
+      "file": "David Dumais Audio - Melee Weapons Sound Effects Pack 2/METLFric_SWING SCRAPE Swift Melee Weapon Swing With A Long Blade 14_DDUMAIS_MWP2.wav",
+      "crc32": 3707924499
+    },
+    "2:Federico Soler - Effective Trailer Booms Vol. 2/EffectiveTrailer_Booms_Vol2_075.wav": {
+      "bundle": 2,
+      "file": "Federico Soler - Effective Trailer Booms Vol. 2/EffectiveTrailer_Booms_Vol2_075.wav",
+      "crc32": 1675203412
+    },
+    "3:InMotionAudio - Arc/ELECArc_ArcPowerUpDesign04_InMotionAudio_Arc.wav": {
+      "bundle": 3,
+      "file": "InMotionAudio - Arc/ELECArc_ArcPowerUpDesign04_InMotionAudio_Arc.wav",
+      "crc32": 1515825498
+    },
+    "1:344 Audio - Elemental Palette Designed Vol. 1/WINDDsgn_Wind, Rush, Whoosh, Long x5 01_344 Audio_Elemental Palette Designed Vol 1.wav": {
+      "bundle": 1,
+      "file": "344 Audio - Elemental Palette Designed Vol. 1/WINDDsgn_Wind, Rush, Whoosh, Long x5 01_344 Audio_Elemental Palette Designed Vol 1.wav",
+      "crc32": 4176700649
+    },
+    "2:Alexander Kopeikin - Emotion and Magic/magic, energy flow, astral travel-015.wav": {
+      "bundle": 2,
+      "file": "Alexander Kopeikin - Emotion and Magic/magic, energy flow, astral travel-015.wav",
+      "crc32": 3967690331
+    },
+    "2:Epic Stock Media - Fantasy Game 2 - Sound Kit for Enchanted Realms/MAGAngl_Magic Light Spell Enchantment Potion Effect Tonal Bright 03_ESM_FG2.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Fantasy Game 2 - Sound Kit for Enchanted Realms/MAGAngl_Magic Light Spell Enchantment Potion Effect Tonal Bright 03_ESM_FG2.wav",
+      "crc32": 3592715359
+    },
+    "5:SoundBits - Vox Bestiae - Source Elements/CREAHmn_Violent Humanoid Creature Exhale Short 4_SNDBTS_VB-SE.wav": {
+      "bundle": 5,
+      "file": "SoundBits - Vox Bestiae - Source Elements/CREAHmn_Violent Humanoid Creature Exhale Short 4_SNDBTS_VB-SE.wav",
+      "crc32": 1701410171
+    },
+    "3:Jake Fielding - Cinematic Horn Braams/DSGNBram____Cinematic Horn Braam, Epic, Cinematic, Dark, Instrument, Huge-32.wav": {
+      "bundle": 3,
+      "file": "Jake Fielding - Cinematic Horn Braams/DSGNBram____Cinematic Horn Braam, Epic, Cinematic, Dark, Instrument, Huge-32.wav",
+      "crc32": 3921857368
+    },
+    "5:The Noisery - Moaning Metal/DSGNTonl_Metal Scrape Low Tonal LFE 4_The Noisery_Moaning Metal.wav": {
+      "bundle": 5,
+      "file": "The Noisery - Moaning Metal/DSGNTonl_Metal Scrape Low Tonal LFE 4_The Noisery_Moaning Metal.wav",
+      "crc32": 335150587
+    },
+    "1:344 Audio - Dinosaurs Vol. 2/ANMLRept_Large Herbivore Roar 01_344 Audio_Dinosaurs Vol 2.wav": {
+      "bundle": 1,
+      "file": "344 Audio - Dinosaurs Vol. 2/ANMLRept_Large Herbivore Roar 01_344 Audio_Dinosaurs Vol 2.wav",
+      "crc32": 183953516
+    },
+    "5:SoundBits - Vox Bestiae - Source Elements/CREAEthr_Ethereal Entity Grim Pain Long 4_SNDBTS_VB-SE.wav": {
+      "bundle": 5,
+      "file": "SoundBits - Vox Bestiae - Source Elements/CREAEthr_Ethereal Entity Grim Pain Long 4_SNDBTS_VB-SE.wav",
+      "crc32": 1459491598
+    },
+    "2:Federico Soler - Effective Trailer Booms Vol. 2/EffectiveTrailer_Booms_Vol2_011.wav": {
+      "bundle": 2,
+      "file": "Federico Soler - Effective Trailer Booms Vol. 2/EffectiveTrailer_Booms_Vol2_011.wav",
+      "crc32": 2654359019
+    },
+    "1:344 Audio - East Coast America Vol. 1/AMBSubn_Ambience, Forest Crickets, Birds, Connecticut 02_344 Audio_East Coast America.wav": {
+      "bundle": 1,
+      "file": "344 Audio - East Coast America Vol. 1/AMBSubn_Ambience, Forest Crickets, Birds, Connecticut 02_344 Audio_East Coast America.wav",
+      "crc32": 979539691
+    },
+    "2:Epic Stock Media - Public Spaces - Urban Life Exteriors/AMBTown_City Courtyard Calm Street Distant Traffic Children Playing 03_ESM_CPS.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Public Spaces - Urban Life Exteriors/AMBTown_City Courtyard Calm Street Distant Traffic Children Playing 03_ESM_CPS.wav",
+      "crc32": 3799972973
+    },
+    "2:Epic Stock Media - Strange Game Ambient Loops 3/DSGNSynth_Scifi Loop Ship Reactor Synth Layer Layered Saw Buzz_ESM_SGA3.wav": {
+      "bundle": 2,
+      "file": "Epic Stock Media - Strange Game Ambient Loops 3/DSGNSynth_Scifi Loop Ship Reactor Synth Layer Layered Saw Buzz_ESM_SGA3.wav",
+      "crc32": 2394473541
+    },
+    "3:Just Sound Effects - Rocky Coast of Norway/WATRWave_Soft Waves Cliffs_JSE_RCoN_Stereo.wav": {
+      "bundle": 3,
+      "file": "Just Sound Effects - Rocky Coast of Norway/WATRWave_Soft Waves Cliffs_JSE_RCoN_Stereo.wav",
+      "crc32": 2843842458
+    },
+    "3:Just Sound Effects - Highlands of Norway/AMBSwmp_Meadow Pipits calling many Insects humming Wind blowing through Grass_JSE_HoN_Stereo.wav": {
+      "bundle": 3,
+      "file": "Just Sound Effects - Highlands of Norway/AMBSwmp_Meadow Pipits calling many Insects humming Wind blowing through Grass_JSE_HoN_Stereo.wav",
+      "crc32": 1416496452
+    },
+    "3:InMotionAudio - Chimney Wind/WINDInt_ChimneyWind05_InMotionAudio_ChimneyWind.wav": {
+      "bundle": 3,
+      "file": "InMotionAudio - Chimney Wind/WINDInt_ChimneyWind05_InMotionAudio_ChimneyWind.wav",
+      "crc32": 836866679
+    },
+    "5:The Noisery - City Rain/WINDInt_Wind Strong Metal Rattle_The Noisery_City Rain.wav": {
+      "bundle": 5,
+      "file": "The Noisery - City Rain/WINDInt_Wind Strong Metal Rattle_The Noisery_City Rain.wav",
+      "crc32": 2807861689
+    }
+  },
+  "assets": {
+    "ui": {
+      "file": "sfx_ui.wav",
+      "seconds": 3.54690625,
+      "bytes": 227046,
+      "configKey": "sfxUi",
+      "assetId": 0,
+      "sha256": "c57772c4b4a94f4b80fbd91558a7ed87b0c370394aa83a60df98c069074418bc"
+    },
+    "events": {
+      "file": "sfx_events.wav",
+      "seconds": 10.28565625,
+      "bytes": 658326,
+      "configKey": "sfxEvents",
+      "assetId": 0,
+      "sha256": "f0711d7f37b1edb1380ada4a5c2a85f77b7c8f997d8f4391372f9080c57f034c"
+    },
+    "summon": {
+      "file": "sfx_summon.wav",
+      "seconds": 7.73671875,
+      "bytes": 495194,
+      "configKey": "sfxSummon",
+      "assetId": 0,
+      "sha256": "6d5d4781572c096e10b2bf1d2b7479d8a22eb587a0b2cdd9b2a0bb67acff0b3b"
+    },
+    "combat": {
+      "file": "sfx_combat.wav",
+      "seconds": 14.58,
+      "bytes": 933164,
+      "configKey": "sfxCombat",
+      "assetId": 0,
+      "sha256": "70d2353b93ba6e5d0f302cc362353d6ecd590e235d3b167b7accbc99b855a746"
+    },
+    "powers": {
+      "file": "sfx_powers.wav",
+      "seconds": 10.66446875,
+      "bytes": 682570,
+      "configKey": "sfxPowers",
+      "assetId": 0,
+      "sha256": "e8e590546a3757788588106bfbb4171547525af3af5e46105bda34e8fc66edde"
+    },
+    "boss": {
+      "file": "sfx_boss.wav",
+      "seconds": 9.2,
+      "bytes": 588844,
+      "configKey": "sfxBoss",
+      "assetId": 0,
+      "sha256": "492650a9b1e5cef59cd02d1627642c7e0a0723bf32f8f76f3cd3539f92cad79a"
+    },
+    "world": {
+      "file": "sfx_world.wav",
+      "seconds": 124.05,
+      "bytes": 7939244,
+      "configKey": "sfxWorld",
+      "assetId": 0,
+      "sha256": "c4a486563aaaa3324743b8178629186660b02db4271a08de956d35e2861fb742"
+    }
+  },
+  "cues": {
+    "click": {
+      "bank": "ui",
+      "loop": false,
+      "variants": [
+        {
+          "start": 0.15,
+          "stop": 0.29,
+          "origin": "2:Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/UIClick_UI Button Analog Vintage Double Click Neutral Dry Press 11_ESM_BG.wav",
+          "edit": {
+            "sourceStart": 0.005,
+            "sourceSeconds": 0.14,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 0.44,
+          "stop": 0.58,
+          "origin": "2:Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/UIClick_UI Button Analog Vintage Double Click Neutral Dry Press 11_ESM_BG.wav",
+          "edit": {
+            "sourceStart": 0.005,
+            "sourceSeconds": 0.14,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "open": {
+      "bank": "ui",
+      "loop": false,
+      "variants": [
+        {
+          "start": 0.73,
+          "stop": 1.09,
+          "origin": "2:Epic Stock Media - Fantasy Game 2 - Sound Kit for Enchanted Realms/CLOTHFlp_Action Inventory Open Flip Cloth Canvas Bag Slide Light 02_ESM_FG2.wav",
+          "edit": {
+            "sourceStart": 0.085,
+            "sourceSeconds": 0.36,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "deny": {
+      "bank": "ui",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.24,
+          "stop": 1.56,
+          "origin": "5:The Noisery - Rich Glitch/UIGlitch_Designed_Glitch_Corrupted_Data Error_The Noisery_Rich Glitch_06.wav",
+          "edit": {
+            "sourceStart": 0.015,
+            "sourceSeconds": 0.32,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "talentHover": {
+      "bank": "ui",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.71,
+          "stop": 1.8,
+          "origin": "2:Cinematic Sound Design - Interface & Infographics/Interface Percussion Snap.wav",
+          "edit": {
+            "sourceStart": 0.015,
+            "sourceSeconds": 0.09,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "talentSnap": {
+      "bank": "ui",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.95,
+          "stop": 2.164594,
+          "origin": "2:Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/GAMEBoard_Game Play Piece Action Organic Connect Dots Fall Bounce 04_ESM_BG.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 0.214594,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "talentCenter": {
+      "bank": "ui",
+      "loop": false,
+      "variants": [
+        {
+          "start": 2.314594,
+          "stop": 2.764594,
+          "origin": "2:Cinematic Sound Design - Ultra Transitions & Impacts/Woosh Sweep Slide Infographics Basic.wav",
+          "edit": {
+            "sourceStart": 0.045,
+            "sourceSeconds": 0.45,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "card": {
+      "bank": "ui",
+      "loop": false,
+      "variants": [
+        {
+          "start": 2.914594,
+          "stop": 3.08075,
+          "origin": "2:Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/PAPRHndl_Game Play Cards Dry Show Flip Toss Disgard Near 12_ESM_BG.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 0.166156,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 3.23075,
+          "stop": 3.396906,
+          "origin": "2:Epic Stock Media - Board Game - Sound Set Kit for Tabletop and Digital Games/PAPRHndl_Game Play Cards Dry Show Flip Toss Disgard Near 12_ESM_BG.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 0.166156,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "collect": {
+      "bank": "events",
+      "loop": false,
+      "variants": [
+        {
+          "start": 0.15,
+          "stop": 0.43,
+          "origin": "2:Cinematic Sound Design - UI Interaction Elements/Ting Coins.wav",
+          "edit": {
+            "sourceStart": 0.095,
+            "sourceSeconds": 0.28,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 0.58,
+          "stop": 0.86,
+          "origin": "2:Cinematic Sound Design - UI Interaction Elements/Ting Coins.wav",
+          "edit": {
+            "sourceStart": 0.095,
+            "sourceSeconds": 0.28,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "place": {
+      "bank": "events",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.01,
+          "stop": 1.71,
+          "origin": "2:Epic Stock Media - Tower Defense Game/ROBTMvmt_Tower Deploy Hitech Robot Motor Dark Thump Servo Whine 04_ESM_TDG.wav",
+          "edit": {
+            "sourceStart": 0.095,
+            "sourceSeconds": 0.7,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "upgrade": {
+      "bank": "events",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.86,
+          "stop": 2.96,
+          "origin": "2:Epic Stock Media - Anime Game/DSGNStngr_Power Up Bright Positive Successful Light Saturation Crash Shimmer 05_ESM_AG.wav",
+          "edit": {
+            "sourceStart": 0.135,
+            "sourceSeconds": 1.1,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "levelUp": {
+      "bank": "events",
+      "loop": false,
+      "variants": [
+        {
+          "start": 3.11,
+          "stop": 3.9845,
+          "origin": "2:Cinematic Sound Design - Hybrid Game & UI Elements/Game Entry Happy Short.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 0.8745,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "wave": {
+      "bank": "events",
+      "loop": false,
+      "variants": [
+        {
+          "start": 4.1345,
+          "stop": 4.8845,
+          "origin": "2:Epic Stock Media - Tower Defense Game/DSGNStngr_Action Deploy Units Sword Slice Special Move Layered Swish 04_ESM_TDG.wav",
+          "edit": {
+            "sourceStart": 0.275,
+            "sourceSeconds": 0.75,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "abilityReady": {
+      "bank": "events",
+      "loop": false,
+      "variants": [
+        {
+          "start": 5.0345,
+          "stop": 5.2945,
+          "origin": "2:Cinematic Sound Design - Interface & Infographics/Interface Accept Glassy Snap.wav",
+          "edit": {
+            "sourceStart": 0.005,
+            "sourceSeconds": 0.26,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "victory": {
+      "bank": "events",
+      "loop": false,
+      "variants": [
+        {
+          "start": 5.4445,
+          "stop": 8.0445,
+          "origin": "4:Sonik Sound Library - Spanish Crowds/CRWDCheer_Small Club, 50 People, Crowd, Spanish, Cheering and Applause-Surround_KSL_KS015.wav",
+          "edit": {
+            "sourceStart": 0.095,
+            "sourceSeconds": 2.6,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "defeat": {
+      "bank": "events",
+      "loop": false,
+      "variants": [
+        {
+          "start": 8.1945,
+          "stop": 9.335656,
+          "origin": "2:Cinematic Sound Design - System & UI Feedback Elements/Interface Arp Reveal Down Long.wav",
+          "edit": {
+            "sourceStart": 0.025,
+            "sourceSeconds": 1.141156,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "breach": {
+      "bank": "events",
+      "loop": false,
+      "variants": [
+        {
+          "start": 9.485656,
+          "stop": 10.135656,
+          "origin": "5:The Noisery - Moaning Metal/DSGNImpt_Metal Hit Thud Thump Low Ring Geofon 1_The Noisery_Moaning Metal.wav",
+          "edit": {
+            "sourceStart": 0.025,
+            "sourceSeconds": 0.65,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "reelStart": {
+      "bank": "summon",
+      "loop": false,
+      "variants": [
+        {
+          "start": 0.15,
+          "stop": 0.95,
+          "origin": "4:Sonic Bat - Music Boxes/SBmb_Music Box C Wind Up 006.wav",
+          "edit": {
+            "sourceStart": 0.035,
+            "sourceSeconds": 0.8,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "reelTick": {
+      "bank": "summon",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.1,
+          "stop": 1.175,
+          "origin": "4:Sonic Bat - Vintage Radio/SBvr_Mode Select Wheel 006.wav",
+          "edit": {
+            "sourceStart": 0.025,
+            "sourceSeconds": 0.075,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "rewardCommon": {
+      "bank": "summon",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.325,
+          "stop": 1.645,
+          "origin": "2:Cinematic Sound Design - Interface & Infographics/Interface Accept Glassy Snap.wav",
+          "edit": {
+            "sourceStart": 0.005,
+            "sourceSeconds": 0.32,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "rewardRare": {
+      "bank": "summon",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.795,
+          "stop": 2.347469,
+          "origin": "2:CB_Sounddesign - Applicable Sounds - Organic UI and Building Games SFX/UIMisc_Kalimba 3 Up_CB Sounddesign_APPlicable Sounds.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 0.552469,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "rewardEpic": {
+      "bank": "summon",
+      "loop": false,
+      "variants": [
+        {
+          "start": 2.497469,
+          "stop": 3.697469,
+          "origin": "2:CB_Sounddesign - Applicable Sounds - Organic UI and Building Games SFX/GAMEMisc_Magic Creation 23_CB Sounddesign_APPlicable Sounds.wav",
+          "edit": {
+            "sourceStart": 0.385,
+            "sourceSeconds": 1.2,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "rewardLegendary": {
+      "bank": "summon",
+      "loop": false,
+      "variants": [
+        {
+          "start": 3.847469,
+          "stop": 5.236719,
+          "origin": "2:Epic Stock Media - Anime Game/DSGNStngr_Power Up Bright Positive Successful Light Saturation Crash Shimmer 05_ESM_AG.wav",
+          "edit": {
+            "sourceStart": 0.135,
+            "sourceSeconds": 1.38925,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "rewardMythic": {
+      "bank": "summon",
+      "loop": false,
+      "variants": [
+        {
+          "start": 5.386719,
+          "stop": 7.586719,
+          "origin": "2:Cinematic Sound Design - Ultra Transitions & Impacts/Impact Hit Rapid Chord Reverb.wav",
+          "edit": {
+            "sourceStart": 0.365,
+            "sourceSeconds": 2.2,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "punch": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 0.15,
+          "stop": 0.43,
+          "origin": "1:344 Audio - Cinematic Fight Vol. 1/FGHTImpt_4 x Punch, Body 02_344 Audio_Cinematic Fight Vol 1.wav",
+          "edit": {
+            "sourceStart": 0.195,
+            "sourceSeconds": 0.28,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 0.58,
+          "stop": 0.86,
+          "origin": "1:344 Audio - Cinematic Fight Vol. 1/FGHTImpt_4 x Punch, Body 02_344 Audio_Cinematic Fight Vol 1.wav",
+          "edit": {
+            "sourceStart": 1.155,
+            "sourceSeconds": 0.28,
+            "pitch": 0.965
+          }
+        },
+        {
+          "start": 1.01,
+          "stop": 1.29,
+          "origin": "1:344 Audio - Cinematic Fight Vol. 1/FGHTImpt_4 x Punch, Body 02_344 Audio_Cinematic Fight Vol 1.wav",
+          "edit": {
+            "sourceStart": 1.435,
+            "sourceSeconds": 0.28,
+            "pitch": 1.035
+          }
+        }
+      ]
+    },
+    "heavy": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.44,
+          "stop": 1.96,
+          "origin": "2:David Dumais Audio - Melee Weapons Sound Effects Pack 2/SWSH_SWING IMPACTS Quick Heavy Weapon Swing To Thud Impact Var 01_DDUMAIS_MWP2.wav",
+          "edit": {
+            "sourceStart": 0.095,
+            "sourceSeconds": 0.52,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 2.11,
+          "stop": 2.63,
+          "origin": "2:David Dumais Audio - Melee Weapons Sound Effects Pack 2/SWSH_SWING IMPACTS Quick Heavy Weapon Swing To Thud Impact Var 01_DDUMAIS_MWP2.wav",
+          "edit": {
+            "sourceStart": 3.085,
+            "sourceSeconds": 0.52,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "metal": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 2.78,
+          "stop": 3.16,
+          "origin": "1:344 Audio - Historical Weapons Vol. 2/WEAPArmr_Metal Shield Spin On Floor, Buckler MKH_344 Audio_Medieval Weapons Vol 2.wav",
+          "edit": {
+            "sourceStart": 1.595,
+            "sourceSeconds": 0.38,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 3.31,
+          "stop": 3.69,
+          "origin": "1:344 Audio - Historical Weapons Vol. 2/WEAPArmr_Metal Shield Spin On Floor, Buckler MKH_344 Audio_Medieval Weapons Vol 2.wav",
+          "edit": {
+            "sourceStart": 1.895,
+            "sourceSeconds": 0.38,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "organic": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 3.84,
+          "stop": 4.22,
+          "origin": "1:344 Audio - Historical Weapons Vol. 2/WEAPBlnt_Spear And Stick Impact, Wooden MKH 2_344 Audio_Medieval Weapons Vol 2.wav",
+          "edit": {
+            "sourceStart": 0.045,
+            "sourceSeconds": 0.38,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 4.37,
+          "stop": 4.75,
+          "origin": "1:344 Audio - Historical Weapons Vol. 2/WEAPBlnt_Spear And Stick Impact, Wooden MKH 2_344 Audio_Medieval Weapons Vol 2.wav",
+          "edit": {
+            "sourceStart": 0.645,
+            "sourceSeconds": 0.38,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "web": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 4.9,
+          "stop": 5.14,
+          "origin": "2:David Dumais Audio - Melee Weapons Sound Effects Pack 2/WEAPWhip_WHIP Snap Crack 05_DDUMAIS_MWP2.wav",
+          "edit": {
+            "sourceStart": 0.165,
+            "sourceSeconds": 0.24,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 5.29,
+          "stop": 5.53,
+          "origin": "2:David Dumais Audio - Melee Weapons Sound Effects Pack 2/WEAPWhip_WHIP Snap Crack 05_DDUMAIS_MWP2.wav",
+          "edit": {
+            "sourceStart": 0.455,
+            "sourceSeconds": 0.24,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "arrow": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 5.68,
+          "stop": 6.0,
+          "origin": "2:Cinematic Sound Design - Cartoon Bloopers/Arrow Hit Rattle.wav",
+          "edit": {
+            "sourceStart": 0.265,
+            "sourceSeconds": 0.32,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 6.15,
+          "stop": 6.47,
+          "origin": "2:Cinematic Sound Design - Cartoon Bloopers/Arrow Hit Rattle.wav",
+          "edit": {
+            "sourceStart": 0.525,
+            "sourceSeconds": 0.32,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "tech": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 6.62,
+          "stop": 6.94,
+          "origin": "3:InMotionAudio - Arc/ELECArc_ArcDesign15_InMotionAudio_Arc.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 0.32,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 7.09,
+          "stop": 7.41,
+          "origin": "3:InMotionAudio - Arc/ELECArc_ArcDesign15_InMotionAudio_Arc.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 0.32,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "beam": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 7.56,
+          "stop": 7.88,
+          "origin": "5:The Noisery - Rich Glitch/UIGlitch_User interface_Glitch_High_Electronic_The Noisery_Rich Glitch_05.wav",
+          "edit": {
+            "sourceStart": 0.005,
+            "sourceSeconds": 0.32,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 8.03,
+          "stop": 8.35,
+          "origin": "5:The Noisery - Rich Glitch/UIGlitch_User interface_Glitch_High_Electronic_The Noisery_Rich Glitch_05.wav",
+          "edit": {
+            "sourceStart": 0.005,
+            "sourceSeconds": 0.32,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "magic": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 8.5,
+          "stop": 9.0,
+          "origin": "2:Alexander Kopeikin - Emotion and Magic/magic, energy flow, astonishment-001.wav",
+          "edit": {
+            "sourceStart": 1.645,
+            "sourceSeconds": 0.5,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 9.15,
+          "stop": 9.65,
+          "origin": "2:Alexander Kopeikin - Emotion and Magic/magic, energy flow, astonishment-001.wav",
+          "edit": {
+            "sourceStart": 1.645,
+            "sourceSeconds": 0.5,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "ice": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 9.8,
+          "stop": 10.2,
+          "origin": "2:Epic Stock Media - Tower Defense Game/ICEBrk_Skill Freeze Whoosh Break Impact Layered Movement Shatter 03_ESM_TDG.wav",
+          "edit": {
+            "sourceStart": 0.105,
+            "sourceSeconds": 0.4,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 10.35,
+          "stop": 10.75,
+          "origin": "2:Epic Stock Media - Tower Defense Game/ICEBrk_Skill Freeze Whoosh Break Impact Layered Movement Shatter 03_ESM_TDG.wav",
+          "edit": {
+            "sourceStart": 0.665,
+            "sourceSeconds": 0.4,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "fire": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 10.9,
+          "stop": 11.35,
+          "origin": "2:Epic Stock Media - Elemental Mutation Whooshes and Impacts/FIREWhsh_Whoosh Fire Deep Growl Monster Saturated Crisp 03_ESM_EMWI.wav",
+          "edit": {
+            "sourceStart": 0.265,
+            "sourceSeconds": 0.45,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 11.5,
+          "stop": 11.95,
+          "origin": "2:Epic Stock Media - Elemental Mutation Whooshes and Impacts/FIREWhsh_Whoosh Fire Deep Growl Monster Saturated Crisp 03_ESM_EMWI.wav",
+          "edit": {
+            "sourceStart": 1.095,
+            "sourceSeconds": 0.45,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "blast": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 12.1,
+          "stop": 12.8,
+          "origin": "2:Epic Stock Media - Anime Game/EXPLDsgn_Explosion Small Blast Enemy Death Crunchy Boom Cartoon Noisy Crash Impact Delay 03_ESM_AG.wav",
+          "edit": {
+            "sourceStart": 0.015,
+            "sourceSeconds": 0.7,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 12.95,
+          "stop": 13.65,
+          "origin": "2:Epic Stock Media - Anime Game/EXPLDsgn_Explosion Small Blast Enemy Death Crunchy Boom Cartoon Noisy Crash Impact Delay 03_ESM_AG.wav",
+          "edit": {
+            "sourceStart": 0.505,
+            "sourceSeconds": 0.7,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "swift": {
+      "bank": "combat",
+      "loop": false,
+      "variants": [
+        {
+          "start": 13.8,
+          "stop": 14.04,
+          "origin": "2:David Dumais Audio - Melee Weapons Sound Effects Pack 2/METLFric_SWING SCRAPE Swift Melee Weapon Swing With A Long Blade 14_DDUMAIS_MWP2.wav",
+          "edit": {
+            "sourceStart": 0.035,
+            "sourceSeconds": 0.24,
+            "pitch": 1
+          }
+        },
+        {
+          "start": 14.19,
+          "stop": 14.43,
+          "origin": "2:David Dumais Audio - Melee Weapons Sound Effects Pack 2/METLFric_SWING SCRAPE Swift Melee Weapon Swing With A Long Blade 14_DDUMAIS_MWP2.wav",
+          "edit": {
+            "sourceStart": 0.035,
+            "sourceSeconds": 0.24,
+            "pitch": 0.965
+          }
+        }
+      ]
+    },
+    "powerBlast": {
+      "bank": "powers",
+      "loop": false,
+      "variants": [
+        {
+          "start": 0.15,
+          "stop": 1.65,
+          "origin": "2:Federico Soler - Effective Trailer Booms Vol. 2/EffectiveTrailer_Booms_Vol2_075.wav",
+          "edit": {
+            "sourceStart": 0.255,
+            "sourceSeconds": 1.5,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "powerLightning": {
+      "bank": "powers",
+      "loop": false,
+      "variants": [
+        {
+          "start": 1.8,
+          "stop": 3.0,
+          "origin": "3:InMotionAudio - Arc/ELECArc_ArcPowerUpDesign04_InMotionAudio_Arc.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 1.2,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "powerFreeze": {
+      "bank": "powers",
+      "loop": false,
+      "variants": [
+        {
+          "start": 3.15,
+          "stop": 4.55,
+          "origin": "2:Epic Stock Media - Tower Defense Game/ICEBrk_Skill Freeze Whoosh Break Impact Layered Movement Shatter 03_ESM_TDG.wav",
+          "edit": {
+            "sourceStart": 0.105,
+            "sourceSeconds": 1.4,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "powerWeb": {
+      "bank": "powers",
+      "loop": false,
+      "variants": [
+        {
+          "start": 4.7,
+          "stop": 5.6,
+          "origin": "1:344 Audio - Elemental Palette Designed Vol. 1/WINDDsgn_Wind, Rush, Whoosh, Long x5 01_344 Audio_Elemental Palette Designed Vol 1.wav",
+          "edit": {
+            "sourceStart": 0.075,
+            "sourceSeconds": 0.9,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "powerMagic": {
+      "bank": "powers",
+      "loop": false,
+      "variants": [
+        {
+          "start": 5.75,
+          "stop": 7.35,
+          "origin": "2:Alexander Kopeikin - Emotion and Magic/magic, energy flow, astral travel-015.wav",
+          "edit": {
+            "sourceStart": 0.825,
+            "sourceSeconds": 1.6,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "powerFire": {
+      "bank": "powers",
+      "loop": false,
+      "variants": [
+        {
+          "start": 7.5,
+          "stop": 8.6,
+          "origin": "2:Epic Stock Media - Elemental Mutation Whooshes and Impacts/FIREWhsh_Whoosh Fire Deep Growl Monster Saturated Crisp 03_ESM_EMWI.wav",
+          "edit": {
+            "sourceStart": 0.265,
+            "sourceSeconds": 1.1,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "powerHeal": {
+      "bank": "powers",
+      "loop": false,
+      "variants": [
+        {
+          "start": 8.75,
+          "stop": 9.95,
+          "origin": "2:Epic Stock Media - Fantasy Game 2 - Sound Kit for Enchanted Realms/MAGAngl_Magic Light Spell Enchantment Potion Effect Tonal Bright 03_ESM_FG2.wav",
+          "edit": {
+            "sourceStart": 0.005,
+            "sourceSeconds": 1.2,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "powerTaunt": {
+      "bank": "powers",
+      "loop": false,
+      "variants": [
+        {
+          "start": 10.1,
+          "stop": 10.514469,
+          "origin": "5:SoundBits - Vox Bestiae - Source Elements/CREAHmn_Violent Humanoid Creature Exhale Short 4_SNDBTS_VB-SE.wav",
+          "edit": {
+            "sourceStart": 0.015,
+            "sourceSeconds": 0.414469,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "boss": {
+      "bank": "boss",
+      "loop": false,
+      "variants": [
+        {
+          "start": 0.15,
+          "stop": 2.35,
+          "origin": "3:Jake Fielding - Cinematic Horn Braams/DSGNBram____Cinematic Horn Braam, Epic, Cinematic, Dark, Instrument, Huge-32.wav",
+          "edit": {
+            "sourceStart": 0.205,
+            "sourceSeconds": 2.2,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "bossMetal": {
+      "bank": "boss",
+      "loop": false,
+      "variants": [
+        {
+          "start": 2.5,
+          "stop": 4.3,
+          "origin": "5:The Noisery - Moaning Metal/DSGNTonl_Metal Scrape Low Tonal LFE 4_The Noisery_Moaning Metal.wav",
+          "edit": {
+            "sourceStart": 0.535,
+            "sourceSeconds": 1.8,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "bossBeast": {
+      "bank": "boss",
+      "loop": false,
+      "variants": [
+        {
+          "start": 4.45,
+          "stop": 6.05,
+          "origin": "1:344 Audio - Dinosaurs Vol. 2/ANMLRept_Large Herbivore Roar 01_344 Audio_Dinosaurs Vol 2.wav",
+          "edit": {
+            "sourceStart": 0.245,
+            "sourceSeconds": 1.6,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "bossIllusion": {
+      "bank": "boss",
+      "loop": false,
+      "variants": [
+        {
+          "start": 6.2,
+          "stop": 7.5,
+          "origin": "5:SoundBits - Vox Bestiae - Source Elements/CREAEthr_Ethereal Entity Grim Pain Long 4_SNDBTS_VB-SE.wav",
+          "edit": {
+            "sourceStart": 0.015,
+            "sourceSeconds": 1.3,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "bossDown": {
+      "bank": "boss",
+      "loop": false,
+      "variants": [
+        {
+          "start": 7.65,
+          "stop": 9.05,
+          "origin": "2:Federico Soler - Effective Trailer Booms Vol. 2/EffectiveTrailer_Booms_Vol2_011.wav",
+          "edit": {
+            "sourceStart": 0.265,
+            "sourceSeconds": 1.4,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "ambLobby": {
+      "bank": "world",
+      "loop": true,
+      "variants": [
+        {
+          "start": 0.15,
+          "stop": 17.7,
+          "origin": "1:344 Audio - East Coast America Vol. 1/AMBSubn_Ambience, Forest Crickets, Birds, Connecticut 02_344 Audio_East Coast America.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 17.55,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "ambManhattan": {
+      "bank": "world",
+      "loop": true,
+      "variants": [
+        {
+          "start": 17.85,
+          "stop": 35.4,
+          "origin": "2:Epic Stock Media - Public Spaces - Urban Life Exteriors/AMBTown_City Courtyard Calm Street Distant Traffic Children Playing 03_ESM_CPS.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 17.55,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "ambGamma": {
+      "bank": "world",
+      "loop": true,
+      "variants": [
+        {
+          "start": 35.55,
+          "stop": 53.1,
+          "origin": "2:Epic Stock Media - Strange Game Ambient Loops 3/DSGNSynth_Scifi Loop Ship Reactor Synth Layer Layered Saw Buzz_ESM_SGA3.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 17.55,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "ambHydra": {
+      "bank": "world",
+      "loop": true,
+      "variants": [
+        {
+          "start": 53.25,
+          "stop": 70.8,
+          "origin": "3:Just Sound Effects - Rocky Coast of Norway/WATRWave_Soft Waves Cliffs_JSE_RCoN_Stereo.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 17.55,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "ambWakanda": {
+      "bank": "world",
+      "loop": true,
+      "variants": [
+        {
+          "start": 70.95,
+          "stop": 88.5,
+          "origin": "3:Just Sound Effects - Highlands of Norway/AMBSwmp_Meadow Pipits calling many Insects humming Wind blowing through Grass_JSE_HoN_Stereo.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 17.55,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "ambAsgard": {
+      "bank": "world",
+      "loop": true,
+      "variants": [
+        {
+          "start": 88.65,
+          "stop": 106.2,
+          "origin": "3:InMotionAudio - Chimney Wind/WINDInt_ChimneyWind05_InMotionAudio_ChimneyWind.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 17.55,
+            "pitch": 1
+          }
+        }
+      ]
+    },
+    "ambLatveria": {
+      "bank": "world",
+      "loop": true,
+      "variants": [
+        {
+          "start": 106.35,
+          "stop": 123.9,
+          "origin": "5:The Noisery - City Rain/WINDInt_Wind Strong Metal Rattle_The Noisery_City Rain.wav",
+          "edit": {
+            "sourceStart": 0.0,
+            "sourceSeconds": 17.55,
+            "pitch": 1
+          }
+        }
+      ]
+    }
+  }
+}

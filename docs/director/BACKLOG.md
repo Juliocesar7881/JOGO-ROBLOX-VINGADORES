@@ -239,3 +239,13 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M23.3 Cliques independentes da coleta, sincronizados à roleta; um final distinto por raridade usando áudios próprios disponíveis, sem som duplicado no recibo. Mute, cancelamento, orçamento de vozes e substituição por upload cobertos.
 - [!] M23.4 Áudio exato depende de envio na conta: `assets/audio/summon/` contém sete WAVs, o MP3 fornecido e manifesto. O dono responde às declarações aplicáveis e permite uso na experiência; depois atualizar `Config.Audio`. Não atribuir autoria dos recortes ao projeto. Instruções em `assets/audio/summon/README.md`.
 - [x] M23.5 Código `86fb6bc` no main, suíte completa verde, seis fontes conferidas e sincronizadas seletivamente. PC/horizontal/vertical/inglês sem cortes; cinco assinaturas exercitadas e fontes carregadas no Studio. Lobby de edição com 4.455 peças; publicado no place 97132875544830 em 08/10 às 23:44:17 local (09/10 às 02:44:17 UTC), `PublishSuccessful` confirmado. Studio em edição. M23.4 continua pendente.
+
+## M24 — Sons Sonniss e impactos legíveis, 09/10
+
+- [x] M24.1 Inventário de 347 gravações nos cinco volumes; seleção de 52 fontes, 56 funções e 73 regiões em sete WAVs privados. Manifesto de origem/edição/hash e produtor reproduzível; biblioteca licenciada fora do Git.
+- [x] M24.2 Perfis para o elenco atual, oito famílias de habilidade, três entradas de chefe, ambientes por mapa e cinco finais de roleta. Pools limitados, distância, variação, mute, carregamento e som anterior testados; IDs novos em zero.
+- [x] M24.3 Impactos com aro expansivo e três fragmentos foscos, disparos finos da base e áreas cosméticas vazadas sem enfraquecer perigo. Nove quadros de revisão; batalha real com cinco torres e 90 inimigos visíveis a 60 FPS, p95 17,77 ms na RTX 4060 Ti. Suíte completa verde; PC/horizontal/vertical/inglês conferidos.
+- [!] M24.4 Upload dos sete WAVs depende da declaração pessoal de direitos do dono. Fila preparada no lugar oficial, nenhum ID obtido ou som Sonniss já ativo. Arquivos e mapeamento em `assets/audio/sonniss/README.md`.
+- [ ] M24.5 Após upload: registrar IDs reais, conferir autorização/carregamento/regiões, ouvir todas as famílias e loops, ajustar o mix e medir carga com os bancos ativos. Celular físico/quatro jogadores continuam no checklist.
+- [~] M24.6 codex-sonniss-20261009: commit/push no main, lobby salvo atualizado e publicação no mesmo place 97132875544830; confirmar pelo log antes de concluir.
+- [ ] M24.7 Aviso 3D da base corta na borda quando fica fora do enquadramento (`test-results/review/sonniss-combat80.png`). Ocultar ou reposicionar a apresentação projetada sem perder a interação; conferir PC e toque. Não é corte de texto do canvas 2D.

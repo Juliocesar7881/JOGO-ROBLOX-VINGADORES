@@ -12,5 +12,9 @@ test-results/
 # Editor and OS noise.
 .vscode/
 deployment/local.json
+# Licensed Sonniss recordings stay local/private; rebuild from the owner's ZIPs.
+assets/audio/sonniss/rendered/
+assets/audio/sonniss/audition/
+assets/audio/sonniss/uploads.local.json
 .DS_Store
 Thumbs.db

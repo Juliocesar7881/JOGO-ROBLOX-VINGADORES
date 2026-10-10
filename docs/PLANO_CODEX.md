@@ -459,3 +459,18 @@ O áudio exato do MP3 enviado depende do upload dos sete WAVs de
 mantêm a origem da referência, e os cinco finais são sínteses originais.
 Enquanto isso, o mix publicado usa áudios próprios disponíveis; não
 confundir arquivos preparados com gravações já disponíveis no Roblox.
+
+## 15. Sons Sonniss e leitura dos impactos
+
+Os cinco volumes fornecidos foram inventariados; 52 fontes selecionadas
+viraram 56 funções, 73 regiões e sete WAVs privados. Roteamento por arma,
+poder, chefe, ambiente e raridade integrado com fallback, limites e testes.
+Impactos e áreas cosméticas mais limpos, preservando os avisos de perigo.
+Registro: [`REFINAMENTO_SONNISS_2026-10-09.md`](REFINAMENTO_SONNISS_2026-10-09.md),
+fila M24.
+
+Suíte completa verde e conferência no Studio; cinco heróis e 90 inimigos
+visíveis mantiveram cerca de 60 FPS no PC. Os sete bancos ainda não estão
+publicados: `Config.Audio.sfx* = 0`. O dono confirma os direitos na importação;
+depois entram os IDs reais, a escuta e a medição do novo mix. Os sons
+anteriores continuam funcionando até essa integração estar verificada.

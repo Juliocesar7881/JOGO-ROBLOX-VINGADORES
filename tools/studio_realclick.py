@@ -116,7 +116,7 @@ def main() -> int:
     name = title(args.window_handle)
     # The Studio window itself, or the "Importação de arquivo" confirmation Studio
     # opens (a separate window) for an upload the owner asked for.
-    if "Doomsday" not in name and name not in ("Importação de arquivo", "File Import"):
+    if ("doomsday" not in name.lower() or "studio" not in name.lower()) and name not in ("Importação de arquivo", "File Import"):
         print(f"Refusing: window {args.window_handle} is '{name}', not the Doomsday Studio window.")
         return 2
     rect = wintypes.RECT()

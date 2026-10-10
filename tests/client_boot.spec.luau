@@ -2221,6 +2221,13 @@ local function session(screen)
 		local warningPart
 		for _,item in ipairs(workspace.DoomClientVisuals:GetChildren()) do if item:FindFirstChild("Warning") and item.Warning.Enabled then warningPart=item end end
 		check(warningPart and warningPart.Warning.Text.Text:find("PODER DO CHEFE",1,true),tag..": boss warning has a readable countdown")
+		fx({kind="Ability",heroId="spiderman",abilityKind="slow",position=v3(55,0,55),radius=10,duration=3,color=Color3.fromRGB(230,240,250)})
+		local hollowPower
+		for _,item in ipairs(workspace.DoomClientVisuals:GetChildren()) do
+			if item:FindFirstChild("RingGui") and item.Size.Y==20 and item.Transparency>=.95 then hollowPower=item end
+		end
+		check(hollowPower~=nil,tag..": confirmed player power leaves enemies visible through its hollow area")
+		check(warningPart and warningPart.Transparency<.8,tag..": cosmetic power does not weaken the boss danger telegraph")
 		local warningX=warningPart and warningPart.Position.X or 0
 		enemies[4].position+=v3(8,0,0)
 		fx({kind="EnemySync",enemies=enemies})

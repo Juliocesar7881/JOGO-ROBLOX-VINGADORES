@@ -5,10 +5,15 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 source = (ROOT / 'src/client/Audio.luau').read_text(encoding='utf-8')
+bank_source = (ROOT / 'src/client/SoundBank.luau').read_text(encoding='utf-8')
 harness = r'''
 local delayed, sounds, objects = {}, {}, {}
 local Config = {Audio={lobby=10,battle=11,collect=12,victory=13,wave=14,ambGamma=21,ambHydra=22,shotTech=23,shotBlast=24}}
-local module={WaitForChild=function(self) return self end}
+local Bank=(function()
+__BANK__
+end)()
+local module={WaitForChild=function(self,name) return {Name=name,WaitForChild=self.WaitForChild} end}
+local script={Parent=module}
 local clock=10
 local os={clock=function() return clock end}
 local task={delay=function(_,fn) table.insert(delayed,fn) end}
@@ -23,7 +28,7 @@ end}
 local game={GetService=function(_,name)
  return name=='SoundService' and soundService or name=='TweenService' and tweenService or module
 end}
-local require=function() return Config end
+local require=function(dependency) return dependency.Name=='SoundBank' and Bank or Config end
 local Instance={new=function(kind)
  local value={IsPlaying=false,Play=function(self) self.IsPlaying=true end,Stop=function(self) self.IsPlaying=false end}
  value.FindFirstChild=function(self,name)
@@ -62,7 +67,7 @@ assert(audio.ambient=='ambGamma' and audio.sounds.ambGamma.IsPlaying,'A match pl
 state.match={mapId='hydra'};audio:Update(state)
 assert(audio.ambient=='ambHydra','A different map switches the ambience')
 state.phase='Lobby';audio:Update(state)
-assert(audio.ambient==nil,'The lobby has no map ambience')
+assert(audio.ambient=='ambLobby','Returning restores the lobby ambience instead of keeping a battle map loop')
 -- Weapon cues: a hard budget per 300 ms, per-family spacing and distance.
 local plays=0
 local originalNew=Instance.new
@@ -241,7 +246,78 @@ assert(tick.SoundId=='rbxassetid://85' and not tick.PlaybackRegionsEnabled and t
 Config.Audio.rewardMythic=86;delayed={};before=summonPlays;reel:Summon('reward','mythic')
 assert(summonPlays==before+1 and #delayed==0 and reel.summonVoices.reward.SoundId=='rbxassetid://86','A dedicated ending replaces all layers with one sound')
 print('PASS summon audio: independent ticks, five rarity signatures, voice limits, mute, cancellation and upload replacement')
-'''.replace('__AUDIO__', source)
+-- Private atlases: actual region selection, fallback while downloading,
+-- family-specific weapons/powers, independent settings and bounded reuse.
+for index,key in ipairs({'sfxUi','sfxEvents','sfxSummon','sfxCombat','sfxPowers','sfxBoss','sfxWorld'}) do Config.Audio[key]=900+index end
+settings.effects,settings.interface,settings.music=true,true,true
+local bank=Audio.new(function() return state end)
+clock+=2;bank:Cue('click')
+local click=bank.bankPools.ui[1]
+assert(click.SoundId=='rbxassetid://901' and click.PlaybackRegionsEnabled,'Configured private atlas replaces the old click')
+assert(click.PlaybackRegion.Min==Bank.click.regions[1][1] and click.TimePosition==click.PlaybackRegion.Min,'Playback starts at the exact cue, not the start of the atlas')
+clock+=1;bank:Cue('click')
+assert(bank.bankPools.ui[2].PlaybackRegion.Min==Bank.click.regions[2][1],'Repeated clicks rotate source variations')
+for i=1,80 do clock+=1;bank:Cue('click') end
+assert(#bank.bankPools.ui==3,'80 interface actions still use only three Sound voices')
+bank.sounds.sfxCombat.IsLoaded=false
+clock+=1;assert(bank:Shot('shotTech',5,'ironman'))
+assert(bank.voices.shotTech[1].SoundId=='rbxassetid://23','Loading atlases keep working fallback shots')
+bank.sounds.sfxCombat.IsLoaded=true
+local starts={}
+for _,entry in ipairs({{'hulk','shotMelee'},{'spiderman','shotArrow'},{'iceman','shotMagic'},{'torch','shotTech'},{'rocket','shotBlast'}}) do
+ clock+=1;assert(bank:Shot(entry[2],5,entry[1]))
+ local sound=bank.bankPools.combat[bank.bankIndex.combat]
+ local profile=Audio.WeaponProfile(entry[1],entry[2])
+ assert(sound.SoundId=='rbxassetid://904' and sound.PlaybackRegion.Min==Bank[profile].regions[1][1],'Weapons select the correct material: '..entry[1])
+ assert(not starts[sound.PlaybackRegion.Min],'Fists, webs, ice, fire and rockets have distinct recordings')
+ starts[sound.PlaybackRegion.Min]=true
+end
+for i=1,80 do clock+=.01;bank:Shot('shotMelee',5,'hulk') end
+assert(#bank.bankPools.combat<=6,'Dense combat cannot allocate unbounded bank voices')
+assert(not bank:Shot('shotMelee',200,'hulk'),'Atlas shots still obey earshot')
+assert(Audio.PowerProfile('spiderman','slow','shotArrow')=='powerWeb','A slowing web uses web audio rather than ice')
+assert(Audio.PowerProfile('wanda','stun','shotMagic')=='powerMagic','Magical control does not inherit an electric stun')
+assert(Audio.PowerProfile('ghostrider','burn','shotMagic')=='powerFire','Persistent fire has a fire signature')
+assert(Audio.PowerProfile('falcon','rally','shotArrow')=='powerHeal','Support commands have a supportive cue')
+clock+=1;assert(bank:Ability('shotTech',5,'freeze'))
+assert(bank.bankPools.powers[1].PlaybackRegion.Min==Bank.powerFreeze.regions[1][1],'Freeze uses the ice power, not the ordinary weapon')
+clock+=1;assert(bank:Ability('shotTech',5,'lightning'))
+assert(bank.bankPools.powers[2].PlaybackRegion.Min==Bank.powerLightning.regions[1][1],'Lightning has its own power cue')
+clock+=1;assert(bank:Ability('shotArrow',5,'slow','spiderman'))
+assert(bank.bankPools.powers[3].PlaybackRegion.Min==Bank.powerWeb.regions[1][1],'The web profile reaches real playback selection')
+for _,entry in ipairs({{'doom','bossMetal'},{'lizard','bossBeast'},{'loki','bossIllusion'}}) do
+ clock+=2;bank:BossProfile(entry[1]);bank:Cue('boss')
+ assert(bank.bankPools.boss[bank.bankIndex.boss].PlaybackRegion.Min==Bank[entry[2]].regions[1][1],'Boss arrivals distinguish armor, beasts and illusion')
+end
+clock+=1;bank:Cue('deny');local denied=bank.bankIndex.ui;bank:Cue('deny')
+assert(bank.bankIndex.ui==denied,'Repeated rejected actions cannot spam the refusal cue')
+bank:Ambience('ambGamma')
+local reactor=bank.bankAmbientVoice
+assert(reactor.Looped and reactor.LoopRegion.Min==Bank.ambGamma.regions[1][1] and reactor.LoopRegion.Max==Bank.ambGamma.regions[1][2],'World loops stay inside their own region')
+bank:Ambience('ambGamma');assert(bank.bankAmbientVoice==reactor,'Snapshots do not restart the current loop')
+bank:Ambience('ambHydra');assert(not reactor.IsPlaying and bank.bankAmbientVoice~=reactor,'Changing maps stops the old ambience')
+bank:Ambience(nil);assert(not bank.bankPools.world[2].IsPlaying,'Returning stops the ambient region')
+local rarityStarts={}
+for _,rarity in ipairs({'common','rare','epic','legendary','mythic'}) do
+ bank:Summon('start');clock+=.1;bank:Summon('tick');delayed={};before=summonPlays
+ bank:Summon('reward',rarity)
+ assert(summonPlays==before+1 and #delayed==0,'An atlas ending plays exactly once with no second reward layer')
+ local sound=bank.bankPools.summon[bank.bankIndex.summon]
+ assert(not rarityStarts[sound.PlaybackRegion.Min],'Each rarity has a distinct ending region')
+ rarityStarts[sound.PlaybackRegion.Min]=true
+end
+bank:Summon('cancel');for _,sound in ipairs(bank.bankPools.summon) do assert(not sound.IsPlaying,'Cancel stops all summon regions') end
+clock+=1;bank:Talent('hover');bank:Summon('start');bank:Cue('collect')
+settings.interface=false;bank:Step()
+for _,channel in ipairs({'ui','summon'}) do for _,sound in ipairs(bank.bankPools[channel]) do assert(not sound.IsPlaying,'Interface mute stops active regions') end end
+assert(not bank.bankPools.events[bank.bankIndex.events].IsPlaying,'Interface mute stops an active pickup too')
+settings.interface=true;bank:Ambience('ambGamma');settings.effects=false;bank:Step()
+assert(not bank.bankAmbientVoice.IsPlaying,'Effects mute immediately stops looping bank ambience')
+settings.effects=true;bank:Music('lobby');clock+=2;bank:Cue('boss');bank:Step()
+assert(bank.sounds.lobby.Volume<.16,'Boss cue briefly makes room in the music')
+clock+=1;bank:Step();assert(bank.sounds.lobby.Volume==.16,'Music returns after the priority cue')
+print('PASS Sonniss banks: regions, variations, loading fallback, weapon/power identity, budgets, loops, five endings and live mute')
+'''.replace('__AUDIO__', source).replace('__BANK__', bank_source)
 with tempfile.TemporaryDirectory(prefix='doom-audio-') as temp:
     path = Path(temp) / 'audio.luau'
     path.write_text(harness, encoding='utf-8')

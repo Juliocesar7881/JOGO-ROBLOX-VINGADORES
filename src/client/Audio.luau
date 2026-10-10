@@ -5,6 +5,7 @@ local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("DoomShared"):WaitForChild("Config"))
+local SoundBank = require(script.Parent:WaitForChild("SoundBank"))
 
 local Audio = {}
 Audio.__index = Audio
@@ -22,6 +23,32 @@ for _, name in pairs(AMBIENCE) do VOLUME[name] = 0.1 end
 -- speakers, quieter with distance, and none from beyond earshot.
 local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.3, 3, 90, 3
 Audio.Ambiences = AMBIENCE
+local BANK_LIMITS = {ui=3,events=4,summon=2,combat=6,powers=3,boss=2,world=2}
+local WEAPON_BANK = {
+	hulk="heavy", capmen="heavy", beast="punch", shangchi="punch", ironfist="punch", antman="punch",
+	captain="metal", panther="swift", wolverine="swift", daredevil="swift", blade="swift",
+	groot="organic", spiderman="web", hawkeye="arrow", thor="tech", storm="tech", wasp="tech",
+	ironman="tech", starlord="tech", vision="beam", cyclops="beam", nova="beam", captainmarvel="beam",
+	wanda="magic", strange="magic", jean="magic", gambit="magic", nightcrawler="magic", emerald="magic",
+	iceman="ice", ghostrider="fire", torch="fire", rocket="blast", warmachine="blast", nightstalker="blast",
+	falcon="swift", bucky="tech", widow="swift", silversurfer="beam", psylocke="magic", deadpool="tech",
+	moonknight="arrow", solartitan="beam", speedster="swift", amazon="metal", seaking="organic",
+}
+local FAMILY_BANK = {shotTech="tech",shotArrow="arrow",shotMagic="magic",shotMelee="punch",shotBlast="blast"}
+local POWER_BANK = {blast="powerBlast",smite="powerLightning",freeze="powerFreeze",web="powerWeb",lightning="powerLightning",chain="powerLightning",
+	heal="powerHeal",buff="powerHeal",rally="powerHeal",barrier="powerHeal",shield="powerHeal",overdrive="powerHeal",
+	taunt="powerTaunt",meteor="powerFire",fire="powerFire",burn="powerFire",execute="powerBlast",
+	pull="powerMagic",teleport="powerMagic",slow="powerFreeze",stun="powerLightning",reveal="powerMagic",weaken="powerMagic",energy="powerHeal"}
+local HERO_POWER_BANK = {spiderman="powerWeb",iceman="powerFreeze",groot="powerTaunt",wanda="powerMagic",strange="powerMagic",jean="powerFire"}
+local function bankChannel(asset) return string.lower(string.sub(asset,4)) end
+
+function Audio.WeaponProfile(heroId, family)
+	return WEAPON_BANK[heroId] or FAMILY_BANK[family] or "tech"
+end
+
+function Audio.PowerProfile(heroId, kind, family)
+	return HERO_POWER_BANK[heroId] or POWER_BANK[kind] or (family=="shotBlast" and "powerBlast" or "powerMagic")
+end
 -- Material language using our existing owned recordings: a tactile click,
 -- a mechanical placement, a charging upgrade and a soft wave whoosh.
 -- Repeated ordinary actions no longer all play a melodic reward arpeggio.
@@ -32,8 +59,9 @@ local PALETTES = {
 	wave = {{"shotArrow", 0.82, 0.075}},
 	breach = {{"shotBlast", 0.8, 0.12}},
 	abilityReady = {{"click", 1.1, 0.05}},
+	deny = {{"click", 0.65, 0.075}},
 }
-local CUE_GAPS = {click=0.08,open=0.25,collect=0.2,place=0.14,upgrade=0.3,abilityReady=1,wave=0.6,breach=0.4}
+local CUE_GAPS = {click=0.08,open=0.25,deny=0.6,collect=0.2,place=0.14,upgrade=0.3,abilityReady=1,wave=0.6,breach=0.4}
 local PITCHES = {0.96, 1.03, 0.99, 1.06, 0.93}
 -- Timbre belongs to the weapon, not the rarity. Heavy equipment gets a
 -- lower register; agile tools stay short and bright. Shared voices remain
@@ -71,6 +99,11 @@ function Audio.new(getState)
 	self.folder = Instance.new("Folder")
 	self.folder.Name = "DoomAudio"
 	self.folder.Parent = SoundService
+	-- Parenting starts Roblox's normal download before the first action.
+	local loaded = {}
+	for _, entry in pairs(SoundBank) do
+		if not loaded[entry.asset] then loaded[entry.asset] = true; self:_bankSound(entry.asset) end
+	end
 	return self
 end
 
@@ -93,7 +126,7 @@ function Audio:_sound(name)
 end
 
 -- Menu and reward sounds have their own switch, separate from the battle's.
-local INTERFACE = { chest = true, levelUp = true, upgrade = true, collect = true, click = true, open = true }
+local INTERFACE = { chest = true, levelUp = true, upgrade = true, collect = true, click = true, open = true, card = true, deny = true }
 
 -- A built-in jingle: one Sound per note, played at its time and pitch.
 function Audio:_jingle(name, fallback)
@@ -120,6 +153,62 @@ function Audio:_allowed(effects, name)
 	-- Preserve the old combined mute until the player explicitly changes it.
 	if effects and settings and settings.effects ~= nil then return settings.effects ~= false end
 	return settings == nil or settings.music ~= false
+end
+
+-- One privately uploaded atlas per category, with bounded reusable voices.
+-- Missing, loading or moderated uploads keep the existing playable sound.
+function Audio:_bankSound(asset)
+	local id = tonumber((Config.Audio or {})[asset]) or 0
+	if id <= 0 then return nil end
+	return self:_sound(asset)
+end
+
+function Audio:_bankPlay(name, options)
+	options = options or {}
+	local entry = SoundBank[name]
+	if not entry or not self:_allowed(true, options.interface and "click" or nil) then return false end
+	local template = self:_bankSound(entry.asset)
+	if not template or template.IsLoaded == false then return false end
+	local channel = bankChannel(entry.asset)
+	self.bankPools, self.bankIndex, self.bankVariants = self.bankPools or {}, self.bankIndex or {}, self.bankVariants or {}
+	local pool = self.bankPools[channel] or {}; self.bankPools[channel] = pool
+	local index = (self.bankIndex[channel] or 0) % (BANK_LIMITS[channel] or 2) + 1
+	self.bankIndex[channel] = index
+	local variant = (self.bankVariants[name] or 0) % #entry.regions + 1
+	self.bankVariants[name] = variant
+	local region = entry.regions[variant]
+	local sound = pool[index]
+	if not sound then
+		sound = Instance.new("Sound"); sound.Name, sound.Parent = "Bank_" .. channel .. "_" .. index, self.folder
+		pool[index] = sound
+	end
+	sound:Stop()
+	sound.SoundId, sound.PlaybackRegionsEnabled = template.SoundId, true
+	sound.PlaybackRegion, sound.LoopRegion = NumberRange.new(region[1], region[2]), NumberRange.new(region[1], region[2])
+	sound.Looped = entry.loop == true
+	sound.PlaybackSpeed = options.pitch or 1
+	sound.Volume = options.volume or VOLUME[name] or 0.12
+	sound.TimePosition = region[1]
+	self.bankInterfaceVoices = self.bankInterfaceVoices or {}
+	self.bankInterfaceVoices[sound] = options.interface == true
+	local ok = pcall(function() sound:Play() end)
+	if ok and options.duck then self.duckUntil = os.clock() + options.duck end
+	return ok, sound
+end
+
+function Audio:_stopBank(channel)
+	for _, sound in ipairs((self.bankPools or {})[channel] or {}) do sound:Stop() end
+end
+
+-- Non-weapon battle events share a separate, restrained budget.
+function Audio:Event(name, distance)
+	if not self:_allowed(true) or (distance or 0) > EARSHOT then return false end
+	local now = os.clock()
+	if now - (self.lastCue["event:" .. name] or -math.huge) < (name=="bossDown" and 2 or .5) then return false end
+	self.lastCue["event:" .. name] = now
+	local played = self:_bankPlay(name, {volume=.16*math.clamp(1-(distance or 0)/EARSHOT,.1,1),duck=name=="bossDown" and .8 or nil})
+	if not played and name == "bossDown" then self:Cue("victory",2) end
+	return played
 end
 
 function Audio:_fade(name, volume)
@@ -176,6 +265,25 @@ end
 -- a burst of missed drums. Three reusable voices are independent of combat
 -- sounds and follow Music, including when Effects is muted.
 function Audio:Step()
+	local effectsAllowed = self:_allowed(true)
+	local interfaceAllowed = self:_allowed(true, "click")
+	if self.bankEffectsAllowed ~= effectsAllowed or self.bankInterfaceAllowed ~= interfaceAllowed then
+		self.bankEffectsAllowed, self.bankInterfaceAllowed = effectsAllowed, interfaceAllowed
+		for channel in pairs(self.bankPools or {}) do
+			if not effectsAllowed or (not interfaceAllowed and (channel == "ui" or channel == "summon")) then self:_stopBank(channel) end
+		end
+		if not interfaceAllowed then
+			for sound, interface in pairs(self.bankInterfaceVoices or {}) do if interface then sound:Stop() end end
+		end
+	end
+	local ducked = effectsAllowed and os.clock() < (self.duckUntil or 0)
+	if self.ducked ~= ducked then
+		self.ducked = ducked
+		local current = self.track and self.sounds[self.track]
+		if current and MUSIC[self.track] and current.IsPlaying then current.Volume = (VOLUME[self.track] or .18) * (ducked and .64 or 1) end
+		local bed = self.actionVoices and self.actionVoices.bed
+		if bed then bed.Volume = ACTION_STEMS.bed[3] * (ducked and .64 or 1) end
+	end
 	if not self.actionPlaying then return end
 	if not self:_allowed() then self:_action(false); return end
 	local step = math.floor((os.clock() - self.actionEpoch) / ACTION_STEP)
@@ -188,7 +296,7 @@ function Audio:Step()
 	if stem then
 		local voice = self:_actionVoice(stem)
 		if voice then
-			voice.Volume = ACTION_STEMS[stem][3] * (eighth == 7 and 0.55 or 1) * (bar == 7 and 0.75 or 1)
+			voice.Volume = ACTION_STEMS[stem][3] * (eighth == 7 and 0.55 or 1) * (bar == 7 and 0.75 or 1) * (ducked and .64 or 1)
 			voice.TimePosition = 0
 			voice:Play()
 		end
@@ -236,11 +344,19 @@ end
 
 -- Short cues are rate limited so a wave of coin pickups cannot turn into a
 -- continuous tone.
+function Audio:BossProfile(enemyId)
+	self.bossCue = ({doom="bossMetal",redskull="bossMetal",killmonger="bossMetal",
+		lizard="bossBeast",abomination="bossBeast",loki="bossIllusion"})[enemyId] or "boss"
+end
+
 function Audio:Cue(name, minimumGap)
 	if not self:_allowed(true, name) then return end
 	local now = os.clock()
 	if now - (self.lastCue[name] or -1) < math.max(minimumGap or 0.12, CUE_GAPS[name] or 0) then return end
 	self.lastCue[name] = now
+	if self:_bankPlay(name=="boss" and (self.bossCue or "boss") or name, {interface=INTERFACE[name],volume=VOLUME[name] or .12,
+		duck=(name=="boss" or name=="victory" or name=="defeat") and .8 or nil}) then return end
+	if name == "card" then name = "upgrade" end
 	if PALETTES[name] and not (Config.DirectAudioCues or {})[name] then
 		for _, layer in ipairs(PALETTES[name]) do
 			local function play()
@@ -293,6 +409,8 @@ function Audio:Talent(action)
 	local key, now = "talent:" .. action, os.clock()
 	if now - (self.lastCue[key] or -1) < cue[4] then return end
 	self.lastCue[key] = now
+	local bank = {hover="talentHover",snap="talentSnap",center="talentCenter"}
+	if self:_bankPlay(bank[action], {interface=true,volume=cue[3]}) then return end
 	local template = self:_sound(cue[1])
 	if not template then return end
 	local pool = self.voices[key] or {}
@@ -315,6 +433,7 @@ function Audio:Summon(action, rarity)
 	if action == "cancel" or action == "start" then
 		self.summonEpoch = (self.summonEpoch or 0) + 1
 		for _, voice in pairs(self.summonVoices or {}) do voice:Stop() end
+		self:_stopBank("summon")
 		if action == "cancel" then return end
 	end
 	if not self:_allowed(true, "chest") then return end
@@ -342,6 +461,7 @@ function Audio:Summon(action, rarity)
 		local now = os.clock()
 		if action == "tick" and now - (self.lastCue[key] or -math.huge) < 0.045 then return end
 		self.lastCue[key] = now
+		if self:_bankPlay(key, {interface=true,volume=action=="tick" and .11 or .12}) then return end
 		local dedicated = ((Config.Audio or {})[key] or 0) > 0
 		play(key, dedicated and key or (action == "tick" and "click" or "open"), dedicated and 1 or 0.72,
 			action == "tick" and 0.13 or 0.10, not dedicated and (action == "tick" and 0.065 or 0.24) or nil)
@@ -349,6 +469,8 @@ function Audio:Summon(action, rarity)
 		local cue = REWARDS[rarity] or REWARDS.common
 		self.summonEpoch = (self.summonEpoch or 0) + 1
 		local epoch = self.summonEpoch
+		self:_stopBank("summon")
+		if self:_bankPlay(cue.name, {interface=true,volume=.19,duck=.6}) then return end
 		if ((Config.Audio or {})[cue.name] or 0) > 0 then
 			play("reward", cue.name, 1, 0.20)
 			return
@@ -366,6 +488,19 @@ end
 -- follows the effects switch, not the music one: it is sound of the place.
 function Audio:Ambience(name)
 	if not self:_allowed(true) then name = nil end
+	-- Retry a loading atlas on the next snapshot, without restarting a loop
+	-- that is already playing. Scene changes stop the previous region.
+	if self.bankAmbientName == name and self.bankAmbientVoice and self.bankAmbientVoice.IsPlaying then return end
+	if self.bankAmbientVoice then self.bankAmbientVoice:Stop(); self.bankAmbientVoice = nil end
+	self.bankAmbientName = nil
+	if name then
+		local ok, voice = self:_bankPlay(name, {volume=name=="ambLobby" and .045 or .065})
+		if ok then
+			if self.ambient and self.sounds[self.ambient] then self:_fade(self.ambient, 0) end
+			self.ambient, self.bankAmbientName, self.bankAmbientVoice = name, name, voice
+			return
+		end
+	end
 	if self.ambient == name then return end
 	if self.ambient and self.sounds[self.ambient] then self:_fade(self.ambient, 0) end
 	self.ambient = name
@@ -409,25 +544,33 @@ function Audio:Shot(name, distance, heroId)
 	if now - (self.shotWindowAt or -math.huge) >= SHOT_WINDOW then self.shotWindowAt, self.shotVoices = now, 0 end
 	if self.shotVoices >= SHOT_VOICES then return false end
 	if now - (self.lastCue[name] or -math.huge) < 0.12 then return false end
+	local tone = WEAPON_TONE[heroId]
+	local volume = (VOLUME[name] or .085) * math.clamp((1-distance/EARSHOT)^1.5,.06,1) * (tone and tone[2] or 1)
+	local sequence = (self.shotSequence or 0) + 1
+	if self:_bankPlay(Audio.WeaponProfile(heroId,name), {volume=volume,pitch=PITCHES[(sequence-1)%#PITCHES+1]}) then
+		self.shotVoices += 1; self.lastCue[name] = now; self.shotSequence = sequence
+		return true
+	end
 	local voice = self:_voice(name)
 	if not voice then return false end
 	self.shotVoices += 1
 	self.lastCue[name] = now
 	self.shotSequence = (self.shotSequence or 0) + 1
-	local tone = WEAPON_TONE[heroId]
 	voice.PlaybackSpeed = self:_sound(name).PlaybackSpeed * PITCHES[(self.shotSequence-1)%#PITCHES+1] * (tone and tone[1] or 1)
-	voice.Volume = (VOLUME[name] or 0.085) * math.clamp((1 - distance / EARSHOT)^1.5, 0.06, 1) * (tone and tone[2] or 1)
+	voice.Volume = volume
 	local filter = voice:FindFirstChild("WeaponTone")
 	if filter then filter.HighGain, filter.MidGain, filter.LowGain = tone and tone[3] or 0, -2, tone and tone[4] or 0 end
 	return (pcall(function() voice:Play() end))
 end
 
 -- Powers inherit the leader's weapon family instead of one identical jingle.
-function Audio:Ability(family, distance)
+function Audio:Ability(family, distance, kind, heroId)
 	if not self:_allowed(true,"ability") then return false end
 	local now = os.clock()
 	if now-(self.lastCue.ability or -math.huge)<0.6 or (distance or 0)>EARSHOT then return false end
 	self.lastCue.ability=now
+	if self:_bankPlay(Audio.PowerProfile(heroId,kind,family),
+		{volume=.15*math.clamp(1-(distance or 0)/EARSHOT,.12,1),duck=.45}) then return true end
 	local voice=self:_voice(family) or self:_voice("ability")
 	if not voice then return false end
 	voice.Volume=0.15*math.clamp(1-(distance or 0)/EARSHOT,0.12,1)
@@ -446,7 +589,7 @@ function Audio:Update(state)
 	self.lastWave, self.lastPhase = state.wave, phase
 	if phase == "Lobby" then
 		self:Music("lobby")
-		self:Ambience(nil)
+		self:Ambience("ambLobby")
 	elseif phase == "Preparing" or phase == "Wave" then
 		self:Music("battle")
 		self:Ambience(AMBIENCE[state.match and state.match.mapId])

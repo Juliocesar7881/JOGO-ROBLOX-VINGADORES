@@ -25,7 +25,7 @@ class ReleaseTests(unittest.TestCase):
         checked = json.loads((ROOT / 'deployment/template.json').read_text(encoding='utf-8'))
         self.assertEqual(checked, self.template)
         missing, configured = release.validate(checked, self.template)
-        self.assertEqual(len(missing), 88)
+        self.assertEqual(len(missing), 95)
         self.assertEqual(configured, [])
 
     def test_uploaded_audio_ids_match_the_manifest_and_the_files(self):
@@ -178,7 +178,9 @@ class ReleaseTests(unittest.TestCase):
         base = ROOT / 'assets/audio'
         manifest = json.loads((base / 'manifest.json').read_text(encoding='utf-8'))
         summon = json.loads((base / 'summon/manifest.json').read_text(encoding='utf-8'))
-        self.assertEqual(set(manifest['assets']) | set(summon['assets']), set(self.template['Audio']),
+        sonniss = json.loads((base / 'sonniss/manifest.json').read_text(encoding='utf-8'))
+        bank_keys = {entry['configKey'] for entry in sonniss['assets'].values()}
+        self.assertEqual(set(manifest['assets']) | set(summon['assets']) | bank_keys, set(self.template['Audio']),
                          'Every configured sound must have a source in one of the packs')
         for name, entry in manifest['assets'].items():
             path = base / entry['file']

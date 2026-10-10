@@ -70,6 +70,10 @@ return {
 		-- replace only after uploading and granting this experience access.
 		reelStart = 0, reelTick = 0,
 		rewardCommon = 0, rewardRare = 0, rewardEpic = 0, rewardLegendary = 0, rewardMythic = 0,
+		-- Seven private Sonniss atlases. Timings live in client/SoundBank.luau.
+		-- Keep zero until real uploads are approved and allowed in this universe.
+		sfxUi = 0, sfxEvents = 0, sfxSummon = 0, sfxCombat = 0,
+		sfxPowers = 0, sfxBoss = 0, sfxWorld = 0,
 	},
 	-- Enable each dedicated material cue only AFTER its refined WAV is uploaded
 	-- and Audio[name] contains the real ID. Empty keeps the quieter live remix.

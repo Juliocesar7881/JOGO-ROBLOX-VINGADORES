@@ -164,7 +164,11 @@ class ContractTests(unittest.TestCase):
         configured = table_keys(CONFIG, "Audio = {")
         missing = sorted(known - configured)
         self.assertEqual(missing, [], f"Audio module knows tracks Config cannot supply: {missing}")
-        unknown = sorted(audio_requested_tracks() - known)
+        bank = (ROOT / "src/client/SoundBank.luau").read_text(encoding="utf-8")
+        bank_cues = set(re.findall(r'^\s*(\w+) = \{asset = ', bank, re.M))
+        bank_assets = set(re.findall(r'asset = "(\w+)"', bank))
+        self.assertEqual(sorted(bank_assets - configured), [], "Every atlas must resolve through Config.Audio")
+        unknown = sorted(audio_requested_tracks() - known - bank_cues)
         self.assertEqual(unknown, [], f"Code asks for tracks the Audio module does not define: {unknown}")
 
     def test_no_asset_id_is_hardcoded_outside_config(self):
