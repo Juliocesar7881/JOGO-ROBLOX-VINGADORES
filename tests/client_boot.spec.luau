@@ -324,7 +324,8 @@ local function session(screen)
 	services.MarketplaceService = market
 	-- Roblox's chat window: the client places it and hides it under its own windows.
 	local chatWindow = { Enabled = true }
-	services.TextChatService = { ChatWindowConfiguration = chatWindow, WaitForChild = function(self, name) return self[name] end }
+	local chatInput = { Enabled = true }
+	services.TextChatService = { ChatWindowConfiguration = chatWindow, ChatInputBarConfiguration = chatInput, WaitForChild = function(self, name) return self[name] end }
 
 	local camera = Instance.new("Camera")
 	camera.ViewportSize = Vector2.new(SCREEN.w, SCREEN.h + 58)
@@ -457,6 +458,33 @@ local function session(screen)
 	local gui = playerGui:FindFirstChild("DoomsdayUI")
 	check(gui ~= nil, tag .. ": the client mounts its ScreenGui")
 	if not gui then return end
+	step("comic artwork stays bounded and owns its lifetime",function()
+		local UI=require(clientModules.UI)
+		local host=UI.frame(playerGui,{Name="ComicProbe",Size=UDim2.fromOffset(320,220)})
+		UI.windowSkin(host,UI.Colors.blue,"inventory")
+		local count=#host:GetDescendants()
+		UI.windowSkin(host,UI.Colors.blue,"inventory")
+		check(#host:GetDescendants()==count,tag..": skin refresh replaces its art without accumulating instances")
+		check(host.BackgroundColor3.R==1,tag..": window gradients preserve their navy values without dark colour multiplication")
+		local art=host:FindFirstChild("Sheen")
+		local passive=art.ClipsDescendants and art.Active==false
+		for _,item in ipairs(art:GetDescendants()) do if item:IsA("GuiObject") and item.Active~=false then passive=false end end
+		check(passive and #art:GetDescendants()<=45,tag..": chapter art is clipped, passive and within its fixed budget")
+		local portrait=UI.heroPortrait(host,"ironman",nil,UI.Colors.blue,{Name="LifetimePortrait",Size=UDim2.fromOffset(90,90)})
+		check(portrait.BackgroundTransparency==1 and portrait:GetAttribute("PortraitFraming")=="bust",tag..": small portraits expose their illustrated stage and frame the face and torso")
+		check(host:FindFirstChild("LifetimePortrait_Art")~=nil,tag..": the portrait has its own graphic stage")
+		portrait:Destroy()
+		check(host:FindFirstChild("LifetimePortrait_Art")==nil,tag..": virtualized portraits release their sibling artwork on destruction")
+		local full=UI.heroPortrait(host,"ironman",nil,UI.Colors.blue,{FullFigure=true})
+		check(full:GetAttribute("PortraitFraming")=="figure",tag..": large hero sheets retain their full figure")
+		local previousMotion=UI.reducedMotion
+		UI.reducedMotion=function() return true end
+		local button=UI.button(host,"Probe",nil)
+		button.MouseButton1Down:Fire();button.MouseEnter:Fire()
+		check(button.PressScale.Scale==1,tag..": reduced effects keeps button scale stable")
+		UI.reducedMotion=previousMotion
+		host:Destroy()
+	end)
 	local main
 	for _, child in ipairs(gui:GetChildren()) do
 		if rawget(child, "__class") == "Frame" and child.ZIndex ~= 50 then main = child end
@@ -556,9 +584,11 @@ local function session(screen)
 		check(contextOpen(), tag .. ": the missions window is open")
 		frames(0.3, 1)
 		check(chatWindow.Enabled == false, tag .. ": the chat hides under an open window")
+		check(chatInput.Enabled == false, tag .. ": the typing field also hides instead of covering upgrades")
 		if contextOpen() then click("X") end
 		frames(0.3, 1)
 		check(not contextOpen() and chatWindow.Enabled == true, tag .. ": the chat comes back when the window closes")
+		check(chatInput.Enabled == true, tag .. ": the typing field returns after closing the window")
 	end)
 	step("a portal opens no menu", function()
 		fx({ kind = "OpenPanel", panel = "play", modeId = "normal" })
@@ -712,6 +742,16 @@ local function session(screen)
 		fx({kind="OpenPanel",panel="chests"})
 		check(countNamed(gui,"SummonSelect_rare")==1 and countNamed(gui,"OpenChest_rare")==1 and countNamed(gui,"SummonSelect_base_rare")==0,tag..": rare chest has a dedicated page")
 		local odds=named(gui,"SummonOdds")
+		local panel=named(gui,"ContextPanel")
+		check(panel.Sheen:GetAttribute("Chapter")=="chests",tag..": summon window carries its own chapter artwork")
+		local featured=named(gui,"SummonFeatured")
+		if featured then
+			local children=featured:GetChildren()
+			check(#children>0 and #children<=3,tag..": summon showcases at most three real outcomes")
+			check(named(gui,"OpenChest_rare")~=nil,tag..": the featured roster keeps the real purchase action")
+			local first=odds:GetChildren()[1]
+			check(first and first.Size.Y.Offset+first.Position.Y.Offset<=odds.Size.Y.Offset,tag..": one complete odds entry fits below the showcase")
+		end
 		local crates=named(gui,"SummonCrates")
 		if view().w>=1000 then
 			local viewport=screenRect(named(gui,"ContextBody"),gui,SCREEN)
@@ -1624,9 +1664,13 @@ local function session(screen)
 			check(string.find(named(card, "EnemyNote").Text, "Racha", 1, true) ~= nil, tag .. ": a line says what it does, got " .. tostring(named(card, "EnemyNote").Text))
 			check(math.abs(named(card, "EnemyHealthFill").Size.X.Scale - 80 / 118) < 1e-6, tag .. ": the bar matches the health")
 		end
+		tap(10, 10)
+		local towerClose=named(gui,"CloseTower")
+		check(named(gui,"EnemyCard")==nil and towerClose and shown(towerClose,gui),tag..": selecting a tower closes enemy inspection before showing its upgrades")
 		tap(91, -21)
 		card = named(gui, "EnemyCard")
 		check(card ~= nil and named(card, "EnemyName").Text == "Gekko Colosso" and named(card, "EnemyNote").Text == Catalog.Enemies.lizard.hint.pt, tag .. ": a boss shows its own hint")
+		check(not shown(towerClose,gui),tag..": inspecting an enemy closes tower upgrades, including on phones")
 		check(countNamed(gui, "EnemyCard") == 1, tag .. ": only one card at a time")
 		tap(-60, 60)
 		check(named(gui, "EnemyCard") == nil, tag .. ": a tap on empty ground folds the card away")

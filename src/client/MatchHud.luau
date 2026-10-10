@@ -53,7 +53,7 @@ function MatchHud.new(ctx)
 		local slot, wide = layout.tower, layout.towerVariant == "wide"
 		local w = slot.w
 		local panel = UI.roundFrame(main, {Position = at(slot), Size = dims(slot), BackgroundColor3 = C.background})
-		UI.windowSkin(panel, UI.color(Catalog.Rarities[Catalog.Heroes[tower.heroId].rarity].color))
+		UI.windowSkin(panel, UI.color(Catalog.Rarities[Catalog.Heroes[tower.heroId].rarity].color),"tower")
 		ctx.refs().towerPanel, ctx.refs().towerWide, ctx.refs().towerRefresh = panel, wide, nil
 		local def = Catalog.Heroes[tower.heroId]
 		local own = tower.ownerId == player.UserId
@@ -83,6 +83,7 @@ function MatchHud.new(ctx)
 			UI.corner(face, 12)
 			UI.stroke(face, C.ink, 2.5)
 			UI.create("UIGradient", {Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(140, 140, 150)), Rotation = 90}, face)
+			UI.cardSkin(face,tint)
 			if ctx.heroPortrait then ctx.heroPortrait(face, tower.heroId, {Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6)}) end
 			UI.label(panel, heroName(tower.heroId), {Name = "TowerName", Position = UDim2.fromOffset(92, 10), Size = UDim2.fromOffset(w - 148, 32), TextSize = 25, Font = UI.Fonts.display, TextColor3 = colorFor(tower.heroId):Lerp(Color3.new(1, 1, 1), 0.3), TextScaled = false, TextTruncate = Enum.TextTruncate.AtEnd})
 			UI.label(panel, levelText, {Name = "TowerLevel", Position = UDim2.fromOffset(92, 42), Size = UDim2.fromOffset(w - 104, 20), TextSize = 15, Font = UI.Fonts.display, TextColor3 = C.muted, TextTruncate = Enum.TextTruncate.AtEnd})
@@ -317,9 +318,8 @@ function MatchHud.new(ctx)
 			local tint = rarity and UI.color(rarity.color) or C.green
 			-- A game card: dark face, the rarity's colour around it and lighting its top.
 			local card = UI.roundFrame(panel, {Name = "Card_" .. id, Position = at(cardRect, P.panel), Size = dims(cardRect), BackgroundColor3 = UI.Skin.slot, ZIndex = 53}, tint)
+			UI.windowSkin(card, tint)
 			UI.stroke(card, tint, 3.5)
-			local light = card:FindFirstChildOfClass("UIGradient")
-			if light then light.Color = ColorSequence.new(tint:Lerp(Color3.new(1, 1, 1), 0.1), UI.Skin.slot); light.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(0.45, 0.92), NumberSequenceKeypoint.new(1, 1)}) end
 			local buttonRect = P.buttons[index]
 			local rows = CardArt.rows(Rules, def, owned, T)
 			local function chipsAt(x, y, width, room, chipH, textSize)
@@ -404,7 +404,8 @@ function MatchHud.new(ctx)
 		local body=UI.scroll(panel,{Position=UDim2.fromOffset(16,54),Size=UDim2.new(1,-32,1,-66),ZIndex=47,ScrollBarThickness=8}); UI.list(body,10)
 		local art=UI.row(body,112); art.ZIndex=47
 		local stage=UI.frame(art,{Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(112,112),BackgroundColor3=C.green:Lerp(C.ink,0.55),ZIndex=47})
-		UI.corner(stage,14)
+		UI.cardSkin(stage,C.green)
+		UI.multiverseSeal(stage,C.cream,{Size=UDim2.fromScale(1,1),ZIndex=0})
 		UI.basePortrait(stage,def,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(104,104),ZIndex=48})
 		UI.fit(UI.label(art,L(def.name),{Name="BaseUpgradeName",Position=UDim2.fromOffset(124,4),Size=UDim2.new(1,-130,0,34),TextSize=25,Font=UI.Fonts.display,TextWrapped=true,ZIndex=48}),13)
 		-- The level as five pips, like a tower's.
@@ -467,7 +468,7 @@ function MatchHud.new(ctx)
 		local veil = UI.frame(main, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.12})
 		local panel = UI.roundFrame(veil, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 8), Size = UDim2.new(1, -32, 1, -60), BackgroundColor3 = C.panel}, victory and C.green or C.red)
 		UI.create("UISizeConstraint", {MaxSize = Vector2.new(640, 720)}, panel)
-		UI.windowSkin(panel, victory and C.green or C.blue)
+		UI.windowSkin(panel, victory and C.green or C.blue,"results")
 		-- The window's title tab, like every other screen: victory green, retry blue.
 		UI.titleRibbon(panel, result.ended and T("Recorde!", "Record!") or victory and T("Vitória!", "Victory!") or T("Fim de jogo", "Game over"), victory and C.green or C.blue,
 			{Name = "ResultRibbon", Position = UDim2.fromOffset(-10, -14), width = 320, height = 54, TextSize = 32, ZIndex = 3})

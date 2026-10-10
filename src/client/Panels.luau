@@ -95,12 +95,7 @@ function Panels.new(ctx)
 		for key, value in pairs(properties or {}) do tile[key] = value end
 		UI.corner(tile, 14)
 		UI.stroke(tile, C.ink, 3)
-		UI.create("UIGradient", {Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 150)), Rotation = 90}, tile)
-		-- Light rays behind the hero, like a card that shines.
-		local rays = UI.frame(tile, {Name = "Rays", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true})
-		for index = 0, 3 do
-			UI.frame(rays, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.new(0.16, 0, 1.6, 0), Rotation = index * 45, BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.88})
-		end
+		UI.cardSkin(tile,mine and tint or tint:Lerp(C.ink,0.55))
 		heroPortrait(tile, id, {Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8)})
 		if not mine then
 			local shade = UI.frame(tile, {Name = "NotOwned", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.5})
@@ -131,7 +126,7 @@ function Panels.new(ctx)
 		-- The hero is alive on its stage: it breathes, shows its move every few
 		-- seconds and again whenever the portrait is tapped. Reduced effects keeps
 		-- the still picture.
-		local portraitProperties={Position=UDim2.fromOffset(4,4),Size=UDim2.new(0.42,-8,1,-8)}
+		local portraitProperties={Position=UDim2.fromOffset(4,4),Size=UDim2.new(0.42,-8,1,-8),FullFigure=true}
 		local settings=profile().settings or {}
 		local live=ctx.livePortrait and settings.lowFX~=true and ctx.livePortrait(showcase,id,portraitProperties)
 		if live and Motion.Prepare(live) then
@@ -350,6 +345,7 @@ function Panels.new(ctx)
 			local tile=UI.button(selector,"",function() kit.selectedChest=id; kit.confirmChest=nil; renderContext() end,
 				{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+6,chosen and 6 or 8),Size=UDim2.fromOffset(tileWidth-12,tileH),BackgroundColor3=chosen and color:Lerp(UI.Skin.body,0.15) or color:Lerp(UI.Skin.body,0.7)})
 			UI.stroke(tile,chosen and Color3.new(1,1,1) or C.ink,chosen and 3.5 or 2.5)
+			UI.cardSkin(tile,chosen and color or color:Lerp(UI.Skin.body,0.55))
 			UI.illustration(tile,"crate",color,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=wide and UDim2.fromOffset(62,54) or UDim2.fromOffset(46,40)})
 			UI.label(tile,L(def.name),{Position=UDim2.fromOffset(4,wide and 58 or 44),Size=UDim2.new(1,-8,0,wide and 24 or 22),TextWrapped=true,TextSize=wide and 15 or 12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 			local price=UI.chip(tile,number(def.cost),C.ink,{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-5),Size=UDim2.new(1,-18,0,wide and 24 or 22),TextSize=wide and 16 or 14,TextColor3=C.gold})
@@ -420,8 +416,8 @@ function Panels.new(ctx)
 			local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirming and 74 or 128),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
 			if not confirming then quantityRow(purchase,76,42) end
 			UI.illustration(purchase,"crate",color,{Position=UDim2.fromOffset(6,8),Size=UDim2.fromOffset(62,56)})
-			UI.label(purchase,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(74,8),Size=UDim2.new(0.5,-78,0,24),TextSize=16,Font=UI.Fonts.display,TextTruncate=Enum.TextTruncate.AtEnd})
-			UI.label(purchase,number(p.gold)..T(" Ouro"," Gold"),{Name="SummonBalance",Position=UDim2.fromOffset(74,32),Size=UDim2.new(0.5,-78,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.gold})
+			UI.oneLine(UI.label(purchase,Catalog.Upper(L(chest.name)),{Name="SummonChestName",Position=UDim2.fromOffset(74,8),Size=UDim2.new(0.5,-78,0,24),TextSize=16,Font=UI.Fonts.display}),9)
+			UI.oneLine(UI.label(purchase,number(p.gold)..T(" Ouro"," Gold"),{Name="SummonBalance",Position=UDim2.fromOffset(74,32),Size=UDim2.new(0.5,-78,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.gold}),9)
 			if chest.pity then
 				local count=(p.pity or {})[id] or 0
 				local fill=UI.bar(purchase,C.gold,UDim2.fromOffset(74,56),UDim2.new(0.5,-80,0,7))
@@ -462,25 +458,46 @@ function Panels.new(ctx)
 		end
 		if not eligible and not p.paidRandomRestricted then smallText(purchaseParent,T("Faltam ","You need ")..number(chest.cost*count-(p.gold or 0))..T(" Ouro: jogue partidas e pegue os prêmios."," Gold: play matches and claim gifts."),0,36) end
 
-		local caption=UI.frame(galleryParent,{Name="SummonOddsCaption",Size=UDim2.new(1,-6,0,30),BackgroundTransparency=1})
+		-- A real roster showcase, separate from the complete odds list. These
+		-- are available outcomes, never a promise that the player will win one.
+		local featuredH=wide and 140 or 0
+		if wide then
+			local featured=UI.frame(galleryParent,{Name="SummonFeatured",Size=UDim2.new(1,-6,0,featuredH),BackgroundTransparency=1})
+			local seen,chosen={},{}
+			for index=#outcomes,1,-1 do
+				local outcome=outcomes[index]
+				if outcome.chance>0 and not seen[outcome.rarity] then seen[outcome.rarity]=true; table.insert(chosen,outcome) end
+				if #chosen==3 then break end
+			end
+			for index,outcome in ipairs(chosen) do
+				local tint=UI.color(Catalog.Rarities[outcome.rarity].color)
+				local slot=UI.portraitStage(featured,tint,{Name="Featured_"..outcome.id,Position=UDim2.new((index-1)/#chosen,3,0,3),Size=UDim2.new(1/#chosen,-6,1,-6)})
+				portrait(slot,outcome.id,{Position=UDim2.fromOffset(3,3),Size=UDim2.new(1,-6,1,-26)})
+				UI.chip(slot,UI.percent(outcome.chance,ctx.language()),C.ink,{Name="FeaturedChance",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,4),Size=UDim2.fromOffset(54,22),TextSize=13,ZIndex=3})
+				UI.fit(UI.label(slot,L(catalog[outcome.id].name),{Name="FeaturedName",AnchorPoint=Vector2.new(0,1),Position=UDim2.new(0,4,1,-2),Size=UDim2.new(1,-8,0,24),Font=UI.Fonts.display,TextSize=15,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=3}),10)
+			end
+		end
+		local caption=UI.frame(galleryParent,{Name="SummonOddsCaption",Position=UDim2.fromOffset(0,featuredH),Size=UDim2.new(1,-6,0,30),BackgroundTransparency=1})
 		UI.label(caption,T("Pode vir neste baú","In this chest"),{Size=UDim2.new(1,0,1,0),TextSize=20,Font=UI.Fonts.display,TextColor3=C.cream})
-		local cols=wide and 3 or math.max(2,math.floor(width/145))
-		local gallery=UI.scroll(galleryParent,{Name="SummonOdds",Position=UDim2.fromOffset(0,32),Size=UDim2.new(1,-6,0,galleryHeight),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,math.ceil(#outcomes/cols)*128+6),ScrollBarThickness=5,ScrollBarImageColor3=tint})
+		local cols=wide and 2 or math.max(2,math.floor(width/145))
+		local pitch,tileH=wide and 64 or 128,wide and 56 or 116
+		local gallery=UI.scroll(galleryParent,{Name="SummonOdds",Position=UDim2.fromOffset(0,32+featuredH),Size=UDim2.new(1,-6,0,galleryHeight-featuredH),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,math.ceil(#outcomes/cols)*pitch+6),ScrollBarThickness=5,ScrollBarImageColor3=tint})
 		gallery:SetAttribute("SummonChestId",kit.selectedChest)
 		gallery.CanvasPosition=scrolls.odds or Vector2.new(0,0)
 		for i,outcome in ipairs(outcomes) do
 			local rarityColor=UI.color(Catalog.Rarities[outcome.rarity].color)
 			local mine=owned[outcome.id]
-			local card=UI.frame(gallery,{Name="ChestHero_"..outcome.id,Position=UDim2.new(((i-1)%cols)/cols,6,0,math.floor((i-1)/cols)*128+6),Size=UDim2.new(1/cols,-12,0,116),BackgroundColor3=rarityColor})
+			local card=UI.frame(gallery,{Name="ChestHero_"..outcome.id,Position=UDim2.new(((i-1)%cols)/cols,6,0,math.floor((i-1)/cols)*pitch+6),Size=UDim2.new(1/cols,-12,0,tileH),BackgroundColor3=rarityColor})
 			UI.corner(card,12)
 			UI.stroke(card,mine and C.ink or Color3.new(1,1,1),mine and 2.5 or 3)
-			UI.create("UIGradient",{Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromRGB(120,120,130)),Rotation=90},card)
-			portrait(card,outcome.id,{Position=UDim2.fromOffset(4,22),Size=UDim2.new(1,-8,0,70)})
+			UI.cardSkin(card,rarityColor)
+			portrait(card,outcome.id,{Position=UDim2.fromOffset(4,wide and 4 or 22),Size=wide and UDim2.fromOffset(44,48) or UDim2.new(1,-8,0,70)})
 			-- The chance on top, big; NEW for what the account does not own yet.
-			local odds=UI.label(card,UI.percent(outcome.chance,ctx.language()),{Name="ChestOdds_"..outcome.id,Position=UDim2.fromOffset(4,2),Size=UDim2.new(1,-8,0,22),TextSize=19,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			local odds=UI.label(card,UI.percent(outcome.chance,ctx.language()),{Name="ChestOdds_"..outcome.id,Position=wide and UDim2.new(1,-62,0,14) or UDim2.fromOffset(4,2),Size=wide and UDim2.fromOffset(58,28) or UDim2.new(1,-8,0,22),TextSize=19,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,BackgroundTransparency=wide and 0.15 or 1,BackgroundColor3=C.ink})
+			UI.oneLine(odds,11);UI.corner(odds,8)
 			UI.outline(odds,2.5)
-			if not mine then UI.chip(card,T("Novo","New"),C.green,{Name="ChestNew",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,24),Size=UDim2.fromOffset(44,18),TextSize=12}) end
-			local name=UI.label(card,L(catalog[outcome.id].name),{Position=UDim2.fromOffset(4,92),Size=UDim2.new(1,-8,0,28),TextScaled=true,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			if not mine then UI.chip(card,T("Novo","New"),C.green,{Name="ChestNew",AnchorPoint=Vector2.new(wide and 0 or 1,0),Position=wide and UDim2.fromOffset(4,38) or UDim2.new(1,-4,0,24),Size=UDim2.fromOffset(wide and 40 or 44,wide and 14 or 18),TextSize=wide and 10 or 12,ZIndex=3}) end
+			local name=UI.label(card,L(catalog[outcome.id].name),{Position=UDim2.fromOffset(wide and 54 or 4,wide and 4 or 92),Size=wide and UDim2.new(1,-120,0,48) or UDim2.new(1,-8,0,28),TextScaled=true,TextWrapped=wide,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 			UI.textLimit(name,15,7)
 			UI.outline(name,2)
 			if not isBase then UI.hover(card,function(box) if kit.heroTooltip then kit.heroTooltip(box,outcome.id) end end,320) end
@@ -721,7 +738,7 @@ function Panels.new(ctx)
 		local now = os.time()
 		-- The day's set is replaced at the next UTC midnight, two days before it expires.
 		local dailyAt = (newest.daily or 0) - 2 * 86400
-		if newest.daily then UI.label(body, T("Novas missões em ", "New missions in ") .. timeLeft(dailyAt - now) .. T("  •  semanais em ", "  •  weekly ones in ") .. timeLeft((newest.weekly or now) - now), {Name = "QuestReset", Size = UDim2.new(1, -6, 0, 26), TextSize = 16, TextColor3 = C.muted}) end
+		if newest.daily then UI.fit(UI.label(body, T("Novas missões em ", "New missions in ") .. timeLeft(dailyAt - now) .. T("  •  semanais em ", "  •  weekly ones in ") .. timeLeft((newest.weekly or now) - now), {Name = "QuestReset", Size = UDim2.new(1, -6, 0, 40), TextSize = 16, TextColor3 = C.muted}),11) end
 		drawGroup(groups.daily, T("Missões de hoje", "Today's missions"), nil)
 		drawGroup(groups.weekly, T("Missões da semana", "This week's missions"), nil)
 		drawGroup(groups.old, T("Ainda para resgatar", "Still to claim"), nil)
@@ -1634,6 +1651,8 @@ function Panels.new(ctx)
 			local stage=UI.frame(row,{Name="BaseStage",Position=UDim2.fromOffset(8,8),Size=UDim2.new(1,-16,0,104),BackgroundColor3=tint})
 			UI.corner(stage,12)
 			UI.create("UIGradient",{Color=ColorSequence.new(tint:Lerp(Color3.new(1,1,1),0.15),tint:Lerp(C.ink,0.55)),Rotation=90},stage)
+			UI.cardSkin(stage,tint)
+			UI.multiverseSeal(stage,C.cream,{Position=UDim2.fromScale(0.25,0),Size=UDim2.fromScale(0.5,1),ZIndex=0})
 			UI.basePortrait(stage,def,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=UDim2.fromOffset(100,96)})
 			if not owned then
 				local shade=UI.frame(stage,{Name="NotOwned",Size=UDim2.fromScale(1,1),BackgroundColor3=C.ink,BackgroundTransparency=0.45})

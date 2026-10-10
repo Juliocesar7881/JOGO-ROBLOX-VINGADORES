@@ -7,9 +7,9 @@ local heldTooltipTouches = setmetatable({}, { __mode = "k" })
 -- reference games' dark windows), white text with a black outline, and thick
 -- dark borders around everything.
 UI.Colors = {
-	background = Color3.fromRGB(22, 24, 42),
-	panel = Color3.fromRGB(36, 40, 68),
-	card = Color3.fromRGB(52, 58, 96),
+	background = Color3.fromRGB(12, 20, 43),
+	panel = Color3.fromRGB(24, 40, 72),
+	card = Color3.fromRGB(40, 61, 101),
 	stroke = Color3.fromRGB(128, 158, 238),
 	ink = Color3.fromRGB(11, 15, 36),
 	text = Color3.fromRGB(255, 255, 255),
@@ -32,10 +32,10 @@ UI.Fonts = { display = Enum.Font.FredokaOne, bold = Enum.Font.BuilderSansExtraBo
 -- The window skin of those games: dark bodies, a colour frame, slots a shade
 -- darker, and text in white on everything.
 UI.Skin = {
-	body = Color3.fromRGB(30, 32, 50),
-	bodyTop = Color3.fromRGB(42, 46, 74),
-	slot = Color3.fromRGB(20, 22, 36),
-	slotLine = Color3.fromRGB(64, 70, 104),
+	body = Color3.fromRGB(15, 24, 48),
+	bodyTop = Color3.fromRGB(40, 58, 93),
+	slot = Color3.fromRGB(18, 30, 57),
+	slotLine = Color3.fromRGB(64, 89, 132),
 	tooltip = Color3.fromRGB(14, 15, 24),
 }
 
@@ -168,9 +168,13 @@ end
 -- and a gentle top-lit shade.
 function UI.roundFrame(parent, properties, color)
 	local frame = UI.frame(parent, properties)
-	UI.corner(frame, 18)
+	UI.corner(frame, 12)
 	UI.stroke(frame, color or UI.Colors.ink, color and 2.5 or 3)
-	UI.shade(frame, 90, 0.18)
+	UI.shade(frame, 75, 0.23)
+	-- A small inset rail gives cards a printed-panel edge without covering text.
+	local edge = UI.frame(frame, {Name="PanelRail", Position=UDim2.fromOffset(8,3), Size=UDim2.new(1,-16,0,2), BackgroundColor3=color or UI.Colors.stroke,
+		BackgroundTransparency=0.6, Active=false, ZIndex=0})
+	UI.corner(edge,2)
 	return frame
 end
 
@@ -206,19 +210,15 @@ end
 -- (studs) across the face, faint, behind the words. Drawn from flat frames,
 -- clipped to the button, so it needs no image asset.
 -- Kept to a few dozen frames per button: panels are rebuilt on every refresh.
-local STUD_COLUMNS = 9
 function UI.studs(host, height, width, z)
-	local rows = height >= 46 and 2 or 1
-	local size = math.clamp(math.floor(height * 0.2), 5, 11)
-	local columns = width and math.clamp(math.floor(width / (size * 3.4)), 2, 9) or STUD_COLUMNS
+	local old = host:FindFirstChild("Studs")
+	if old then old:Destroy() end
 	local layer = UI.frame(host, {Name = "Studs", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true, Active = false, ZIndex = z})
-	UI.corner(layer, 12)
-	for row = 1, rows do
-		local y = rows == 1 and 0.5 or (row == 1 and 0.3 or 0.72)
-		for column = 1, columns do
-			UI.frame(layer, {Name = "Stud", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new((column - 0.5) / columns, 0, y, 0),
-				Size = UDim2.fromOffset(size, size), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.87, Active = false, ZIndex = z})
-		end
+	UI.corner(layer, 10)
+	-- Comic speed hatching stays at the edges, away from the action caption.
+	for index=0,3 do
+		UI.frame(layer,{Name="SpeedHatch",AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-8-index*9,0.5,0),Size=UDim2.fromOffset(4,height*1.6),Rotation=24,
+			BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.91,Active=false,ZIndex=z})
 	end
 	return layer
 end
@@ -296,6 +296,7 @@ function UI.button(parent, text, callback, properties)
 	-- bit of feel, applied everywhere at once.
 	local press = UI.create("UIScale", {Name = "PressScale", Scale = 1}, button)
 	local function squash(target, seconds, style)
+		if UI.reducedMotion and UI.reducedMotion() then press.Scale=1; return end
 		local ok, tweens = pcall(game.GetService, game, "TweenService")
 		if ok and tweens then
 			tweens:Create(press, TweenInfo.new(seconds, style or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = target}):Play()
@@ -305,7 +306,7 @@ function UI.button(parent, text, callback, properties)
 	end
 	button.MouseButton1Down:Connect(function() if button.Active ~= false then squash(0.9, 0.07) end end)
 	button.MouseButton1Up:Connect(function() squash(1, 0.28, Enum.EasingStyle.Back) end)
-	button.MouseEnter:Connect(function() if button.Active ~= false then squash(1.05, 0.12) end end)
+	button.MouseEnter:Connect(function() if button.Active ~= false then squash(1.025, 0.12) end end)
 	button.MouseLeave:Connect(function() squash(1, 0.15) end)
 	return button
 end
@@ -631,6 +632,46 @@ function UI.printTexture(parent, tint, properties)
 	return root
 end
 
+-- Original multiverse insignia: orbit rings, four broken dimensional gates
+-- and a central energy diamond. Static vector art, never an input surface.
+-- All parts are clipped inside one square and have a fixed instance budget.
+function UI.multiverseSeal(parent, tint, properties)
+	local root=UI.frame(parent,{Name="MultiverseSeal",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ClipsDescendants=true,Active=false,ZIndex=0})
+	for key,value in pairs(properties or {}) do root[key]=value end
+	local z=root.ZIndex
+	local orbit=UI.frame(root,{Name="Orbit",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromScale(0.86,0.86),BackgroundTransparency=1,Active=false,ZIndex=z})
+	UI.create("UIAspectRatioConstraint",{AspectRatio=1},orbit)
+	UI.corner(orbit,1000); UI.stroke(orbit,tint,2).Transparency=0.48
+	local inner=UI.frame(orbit,{Name="InnerOrbit",Position=UDim2.fromScale(0.12,0.12),Size=UDim2.fromScale(0.76,0.76),BackgroundTransparency=1,Active=false,ZIndex=z})
+	UI.corner(inner,1000); UI.stroke(inner,tint,1).Transparency=0.65
+	for index=0,3 do
+		local gate=UI.frame(orbit,{Name="DimensionalGate",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromScale(0.6,0.6),Rotation=45+index*90,BackgroundTransparency=1,Active=false,ZIndex=z})
+		UI.frame(gate,{Name="GateEdge",Position=UDim2.fromScale(0,0),Size=UDim2.fromScale(0.37,0.045),BackgroundColor3=tint,BackgroundTransparency=0.3,Active=false,ZIndex=z})
+	end
+	local core=UI.frame(orbit,{Name="DimensionCore",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromScale(0.18,0.18),Rotation=45,BackgroundColor3=tint,BackgroundTransparency=0.4,Active=false,ZIndex=z})
+	UI.stroke(core,tint,2).Transparency=0.4
+	return root
+end
+
+-- A comic trading-card stage. The silhouette has room to breathe and its
+-- rarity supplies the light; fine hatching sits away from the face.
+function UI.cardSkin(frame,tint)
+	frame.BackgroundColor3=tint:Lerp(UI.Colors.ink,0.25)
+	local corner=frame:FindFirstChildOfClass("UICorner")
+	if corner then corner.CornerRadius=UDim.new(0,12) else UI.corner(frame,12) end
+	local shade=frame:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient",{},frame)
+	shade.Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromRGB(86,105,153)); shade.Rotation=65
+	local old=frame:FindFirstChild("CardPrint"); if old then old:Destroy() end
+	local art=UI.frame(frame,{Name="CardPrint",Size=UDim2.fromScale(1,1),ClipsDescendants=true,BackgroundTransparency=1,Active=false,ZIndex=0})
+	UI.corner(art,12)
+	for index=0,2 do
+		UI.frame(art,{Name="ComicRay",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.45),Size=UDim2.fromScale(0.18,1.8),Rotation=-50+index*50,
+			BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.89,Active=false,ZIndex=0})
+	end
+	UI.frame(art,{Name="CardFoot",Position=UDim2.fromScale(0,0.76),Size=UDim2.fromScale(1,0.24),BackgroundColor3=UI.Colors.ink,BackgroundTransparency=0.28,Active=false,ZIndex=0})
+	return art
+end
+
 function UI.ribbon(parent, tint, height)
 	local band=UI.frame(parent,{Name="TitleRibbon",Position=UDim2.fromOffset(5,5),Size=UDim2.new(1,-10,0,height or 46),BackgroundColor3=UI.Colors.cream,ClipsDescendants=true,Active=false})
 	UI.corner(band,10)
@@ -641,14 +682,11 @@ end
 
 function UI.portraitStage(parent, tint, properties)
 	local stage=UI.frame(parent,properties)
-	stage.BackgroundColor3=tint:Lerp(UI.Colors.background,0.42)
+	stage.BackgroundColor3=tint:Lerp(UI.Colors.background,0.28)
 	stage.ClipsDescendants=true
 	UI.corner(stage,12)
-	UI.shade(stage,45)
-	local halo=UI.frame(stage,{Name="PortraitHalo",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.53),Size=UDim2.fromOffset(88,88),BackgroundColor3=tint,BackgroundTransparency=0.65})
-	UI.corner(halo,100)
-	UI.stroke(halo,tint,2).Transparency=0.55
-	UI.printTexture(stage,UI.Colors.text)
+	UI.cardSkin(stage,tint)
+	UI.multiverseSeal(stage,UI.Colors.cream,{Name="PortraitHalo",Position=UDim2.fromScale(0.12,0.03),Size=UDim2.fromScale(0.76,0.88),ZIndex=0})
 	return stage
 end
 
@@ -827,9 +865,11 @@ function UI.roundIcon(parent, name, caption, color, icon, callback, properties)
 	local captionH = caption ~= "" and 20 or 0
 	local disc = UI.frame(button, {Name = "Disc", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 2), Size = UDim2.new(1, -captionH, 1, -captionH - 2), BackgroundColor3 = color, Active = false})
 	UI.create("UIAspectRatioConstraint", {AspectRatio = 1}, disc)
-	UI.corner(disc, 100)
+	UI.corner(disc, 13)
 	UI.stroke(disc, UI.Colors.ink, 3)
-	UI.candy(disc)
+	UI.shade(disc,65,0.5)
+	local rim=UI.frame(disc,{Name="InsigniaRim",Position=UDim2.fromOffset(3,3),Size=UDim2.new(1,-6,1,-6),BackgroundTransparency=1,Active=false})
+	UI.corner(rim,10); UI.stroke(rim,color:Lerp(Color3.new(1,1,1),0.5),1.5)
 	local shine = UI.frame(disc, {Name = "Shine", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.07), Size = UDim2.fromScale(0.62, 0.22), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.72, Active = false})
 	UI.corner(shine, 100)
 	if type(icon) == "function" then icon(disc) elseif icon then UI.illustration(disc, icon, color, {Name = "NavIcon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromScale(0.66, 0.66)}) end
@@ -864,6 +904,9 @@ function UI.bar(parent, color, position, size)
 	local fill = UI.frame(base, {BackgroundColor3 = color, Size = UDim2.fromScale(0, 1)})
 	UI.corner(fill, 8)
 	UI.shade(fill, 90, 0.3)
+	local marks=UI.frame(base,{Name="MeterDivisions",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ClipsDescendants=true,Active=false,ZIndex=2})
+	UI.corner(marks,8)
+	for index=1,4 do UI.frame(marks,{Name="MeterNotch",Position=UDim2.fromScale(index/5,0),Size=UDim2.new(0,1,1,0),BackgroundColor3=UI.Colors.ink,BackgroundTransparency=0.35,Active=false,ZIndex=2}) end
 	return fill
 end
 
@@ -942,10 +985,12 @@ function UI.heroPortraitLive(parent, heroId, source, tint, properties)
 		Name = "PortraitLive_" .. heroId, Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = tint:Lerp(UI.Colors.background, 0.8), BorderSizePixel = 0,
 		Ambient = Color3.fromRGB(195, 207, 224), LightColor = Color3.fromRGB(255, 245, 228),
-		LightDirection = Vector3.new(-1, -0.6, -1), BackgroundTransparency = 0.05,
+		LightDirection = Vector3.new(-1, -0.6, -1), BackgroundTransparency = 1,
 	}
-	for key, value in pairs(properties or {}) do defaults[key] = value end
+	for key, value in pairs(properties or {}) do if key~="FullFigure" then defaults[key] = value end end
+	local backing=UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
 	local viewportFrame = UI.create("ViewportFrame", defaults, parent)
+	viewportFrame.Destroying:Connect(function() if backing.Parent then backing:Destroy() end end)
 	UI.corner(viewportFrame, 8)
 	local world = UI.create("WorldModel", {Name = "HeroPreview"}, viewportFrame)
 	local model = UI.heroModel(world, heroId, source)
@@ -966,16 +1011,20 @@ function UI.heroPortrait(parent, heroId, source, tint, properties)
 		Name = "Portrait_" .. heroId, Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = tint:Lerp(UI.Colors.background, 0.8), BorderSizePixel = 0,
 		Ambient = Color3.fromRGB(195, 207, 224), LightColor = Color3.fromRGB(255, 245, 228),
-		LightDirection = Vector3.new(-1, -0.6, -1), BackgroundTransparency = 0.05,
+		LightDirection = Vector3.new(-1, -0.6, -1), BackgroundTransparency = 1,
 	}
-	for key, value in pairs(properties or {}) do defaults[key] = value end
+	for key, value in pairs(properties or {}) do if key~="FullFigure" then defaults[key] = value end end
+	local backing=UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
 	local viewportFrame = UI.create("ViewportFrame", defaults, parent)
+	viewportFrame.Destroying:Connect(function() if backing.Parent then backing:Destroy() end end)
 	UI.corner(viewportFrame, 8)
 	local world = UI.create("WorldModel", {Name = "HeroPreview"}, viewportFrame)
 	local model = UI.heroModel(world, heroId, source)
 	local frame, bounds = model:GetBoundingBox()
-	local focus = frame.Position + Vector3.new(0, bounds.Y * 0.06, 0)
-	local span = math.max(bounds.Y, bounds.X * 0.9, 5)
+	local full=properties and properties.FullFigure==true
+	local focus = frame.Position + Vector3.new(0, bounds.Y * (full and 0.06 or 0.24), 0)
+	local span = math.max(bounds.Y * (full and 1 or 0.66), bounds.X * 0.9, full and 5 or 3.3)
+	viewportFrame:SetAttribute("PortraitFraming",full and "figure" or "bust")
 	local camera = UI.create("Camera", {Name = "PortraitCamera", FieldOfView = 32}, viewportFrame)
 	-- Characters face -Z. A mild three-quarter angle keeps their emblems,
 	-- weapons and silhouette readable even in the small quickbar slots.
@@ -1416,6 +1465,10 @@ function UI.titleRibbon(parent, text, tint, properties)
 	UI.create("UIGradient", {Color = ColorSequence.new(tint:Lerp(Color3.new(1, 1, 1), 0.22), tint:Lerp(Color3.new(0, 0, 0), 0.18)), Rotation = 90}, fill)
 	local _, gloss = UI.parallelogram(root, Color3.new(1, 1, 1), {Name = "RibbonGloss", Position = UDim2.fromOffset(6, 4), Size = UDim2.fromOffset(width - 12, math.floor(height * 0.34)), ZIndex = z})
 	gloss.BackgroundTransparency = 0.78
+	-- Inked speed cuts at the free end of the title, clear of its caption.
+	for index=0,2 do
+		UI.parallelogram(root,UI.Colors.ink,{Name="RibbonCut",Position=UDim2.fromOffset(width-22-index*8,height-13),Size=UDim2.fromOffset(4,8),ZIndex=z+1})
+	end
 	local title = UI.label(root, text, {Name = properties.TitleName or "RibbonTitle", Position = UDim2.fromOffset(math.floor(height * 0.42) + (properties.textInset or 0), 0),
 		Size = UDim2.new(1, -math.floor(height * 0.9) - (properties.textInset or 0), 1, -2), Font = UI.Fonts.display, TextSize = properties.TextSize or 32,
 		TextColor3 = UI.Colors.text, TextXAlignment = Enum.TextXAlignment.Left, TextScaled = false, ZIndex = z + 1})
@@ -1436,8 +1489,10 @@ function UI.closeButton(parent, callback, properties)
 end
 
 -- A dark window body with the colour frame and a soft diagonal sheen.
-function UI.windowSkin(frame, tint)
-	frame.BackgroundColor3 = UI.Skin.body
+function UI.windowSkin(frame, tint, kind)
+	-- Gradients multiply the base colour in Roblox: white keeps the intended
+	-- navy values instead of multiplying two dark colours into a black box.
+	frame.BackgroundColor3 = Color3.new(1,1,1)
 	frame.BackgroundTransparency = 0
 	local gradient = frame:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient", {}, frame)
 	gradient.Color = ColorSequence.new(UI.Skin.bodyTop, UI.Skin.body)
@@ -1445,12 +1500,24 @@ function UI.windowSkin(frame, tint)
 	gradient.Enabled = true
 	local border = UI.stroke(frame, tint:Lerp(Color3.new(1, 1, 1), 0.18), 4)
 	local corner = frame:FindFirstChildOfClass("UICorner")
-	if corner then corner.CornerRadius = UDim.new(0, 18) end
-	local sheen = frame:FindFirstChild("Sheen") or UI.frame(frame, {Name = "Sheen", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true, Active = false})
+	if corner then corner.CornerRadius = UDim.new(0, 14) end
+	local sheen = frame:FindFirstChild("Sheen") or UI.frame(frame, {Name = "Sheen", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ClipsDescendants = true, Active = false,ZIndex=0})
 	UI.clear(sheen)
-	for index = 0, 2 do
-		UI.frame(sheen, {Name = "Stripe", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.62 + index * 0.13, 0.5),
-			Size = UDim2.new(0, 34 + index * 22, 2.4, 0), Rotation = 24, BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.955, Active = false})
+	if not sheen:FindFirstChildOfClass("UICorner") then UI.corner(sheen,14) end
+	local header=UI.frame(sheen,{Name="ChapterWash",Size=UDim2.new(1,0,0,48),BackgroundColor3=tint,BackgroundTransparency=0.78,Active=false,ZIndex=0})
+	UI.create("UIGradient",{Transparency=NumberSequence.new(0,1),Rotation=90},header)
+	UI.frame(sheen,{Name="InnerKeyline",Position=UDim2.fromOffset(7,7),Size=UDim2.new(1,-14,1,-14),BackgroundTransparency=1,Active=false,ZIndex=0})
+	UI.corner(sheen.InnerKeyline,10); UI.stroke(sheen.InnerKeyline,tint,1).Transparency=0.72
+	for index=0,2 do
+		UI.frame(sheen,{Name="PanelSpeedLine",AnchorPoint=Vector2.new(1,0.5),Position=UDim2.fromScale(0.97-index*0.055,0.5),Size=UDim2.new(0,9,2,0),Rotation=24,
+			BackgroundColor3=tint,BackgroundTransparency=0.96,Active=false,ZIndex=0})
+	end
+	if kind then
+		sheen:SetAttribute("Chapter",kind)
+		UI.multiverseSeal(sheen,tint,{Position=UDim2.new(1,-190,1,-180),Size=UDim2.fromOffset(180,180),ZIndex=0})
+	end
+	for _,side in ipairs({0,1}) do
+		UI.frame(sheen,{Name="FrameTerminal",AnchorPoint=Vector2.new(side,1),Position=UDim2.new(side,side==0 and 16 or -16,1,-7),Size=UDim2.fromOffset(34,3),BackgroundColor3=tint,Active=false,ZIndex=0})
 	end
 	return border
 end
@@ -1550,7 +1617,9 @@ function UI.hover(target, build, width)
 		local box = UI.frame(layer, {Name = "Tooltip", BackgroundColor3 = UI.Skin.tooltip, BackgroundTransparency = 0.04, Size = UDim2.fromOffset(width or 300, 0),
 			AutomaticSize = Enum.AutomaticSize.Y, ZIndex = 120, Active = false})
 		UI.corner(box, 12)
-		UI.stroke(box, Color3.fromRGB(236, 238, 250), 2)
+		box.BackgroundColor3 = UI.Colors.panel
+		UI.shade(box, 75, 0.3)
+		UI.stroke(box, UI.Colors.blue:Lerp(UI.Colors.cream, 0.3), 2)
 		UI.padding(box, 12)
 		local list = UI.list(box, 4)
 		list.SortOrder = Enum.SortOrder.LayoutOrder

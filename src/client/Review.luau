@@ -295,6 +295,9 @@ function Review.start(api)
 				api.openContext("shop", { hud = true, shopKind = "product" })
 			elseif stage == "basechests" then
 				api.openContext("chests", { chestId = "base_cosmic" })
+			elseif stage == "chests" then
+				-- Reset the fixture's category even after reviewing base summons.
+				api.openContext("chests", { chestId = "rare", hud = true })
 			elseif stage ~= "lobby" and stage ~= "boarding" and stage ~= "newcomer" then
 				-- hud = true: the panel opens centered, as from the nav dock, not beside a 3D desk that may be off screen.
 				api.openContext(stage, stage == "hero" and { heroId = p.loadout[1], hud = true } or { hud = true })

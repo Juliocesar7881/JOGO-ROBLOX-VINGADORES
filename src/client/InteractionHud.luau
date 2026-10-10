@@ -21,6 +21,7 @@ end
 function InteractionHud.prompt(UI, parent, objectText, actionText, key, activate)
 	local C = UI.Colors
 	local panel = UI.roundFrame(parent, {Name = "PromptPanel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background}, C.gold)
+	UI.windowSkin(panel, C.gold)
 	UI.stroke(panel, C.gold, 2.5)
 	local cap = UI.frame(panel, {Name = "PromptKey", Position = UDim2.fromOffset(9, 9), Size = UDim2.fromOffset(48, 48), BackgroundColor3 = C.gold})
 	UI.corner(cap, 12)

@@ -568,8 +568,7 @@ function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, f
 		local rarity = Catalog.Rarities[rarityId] or Catalog.Rarities.common
 		local tint = UI.color(rarity.color)
 		local frame = UI.frame(track, { Name = "ReelTile", Position = UDim2.fromOffset((index - 1) * REEL_PITCH + (REEL_PITCH - REEL_TILE) / 2, 0), Size = UDim2.fromOffset(REEL_TILE, REEL_TILE), BackgroundColor3 = tint:Lerp(REEL_INK, 0.62), ZIndex = 85 })
-		UI.corner(frame, 12)
-		UI.create("UIGradient", { Color = ColorSequence.new(tint:Lerp(WHITE, 0.1), tint:Lerp(BLACK, 0.45)), Rotation = 90 }, frame)
+		UI.cardSkin(frame, tint)
 		UI.frame(frame, { Name = "RarityBar", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 8), BackgroundColor3 = tint, ZIndex = 87 })
 		local nameText = UI.label(frame, self:_t(def.name), { Name = "TileName", Position = UDim2.new(0, 4, 1, -44), Size = UDim2.new(1, -8, 0, 34), Font = Enum.Font.FredokaOne, TextSize = 15, TextWrapped = true, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 88 })
 		UI.outline(nameText, 1.5)

@@ -262,6 +262,7 @@ end
 
 local audio = Audio.new(function() return state end)
 UI.onPress = function() audio:Cue("click", 0.04) end
+UI.reducedMotion = function() return profile().settings and profile().settings.lowFX == true end
 UI.onError = function() audio:Cue("deny", 0.6) end
 local nameplates = Nameplates.new(player, function() return language end)
 local effects = Effects.new(player, request, function() return state end, audio)
@@ -391,6 +392,7 @@ local function heroCard(parent, id, index, width, height, callback, equipped)
 	})
 	local light = button:FindFirstChildOfClass("UIGradient")
 	if light then light.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(120, 120, 130)) end
+	UI.cardSkin(button,tint)
 	UI.stroke(button, index == 1 and C.gold or tint, index == 1 and 3.5 or 2.5)
 	heroPortrait(button, id, {Position = UDim2.fromOffset(2, 1), Size = UDim2.new(1, -4, 1, -14)})
 	local priceH = height < 62 and 17 or 20
@@ -546,7 +548,7 @@ renderContext = function()
 	-- a slanted title ribbon sticking out of the top-left corner and a square
 	-- red X on the top-right. The talent tree has no window at all.
 	local bare=contextPanel.kind=="talents"
-	local border=UI.windowSkin(panel,tint)
+	local border=UI.windowSkin(panel,tint,contextPanel.kind)
 	panel.BackgroundTransparency=bare and 1 or 0
 	border.Transparency=bare and 1 or 0
 	local shade=panel:FindFirstChildOfClass("UIGradient")
@@ -807,6 +809,7 @@ renderLobby = function()
 	local pill = UI.frame(main, {Name = "LobbyPill", Position = at(hud.pill), Size = dims(hud.pill), BackgroundColor3 = C.ink, BackgroundTransparency = 0.2})
 	UI.corner(pill, 24)
 	UI.stroke(pill, C.gold, 2.5)
+	UI.multiverseSeal(pill,C.violet,{Position=UDim2.new(1,-74,0,-8),Size=UDim2.fromOffset(70,64),ZIndex=0})
 	UI.illustration(pill,"coin",C.gold,{Position=UDim2.fromOffset(2,2),Size=UDim2.fromOffset(44,44)})
 	refs.gold = UI.label(pill, goldText(), {Name = "GoldAmount", Position = UDim2.fromOffset(50, 0), Size = UDim2.new(1, -100, 1, -6), TextSize = compact and 21 or 27, Font = UI.Fonts.display, TextColor3 = C.gold})
 	local star = UI.illustration(pill,"star",C.violet,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-2,0,0),Size=UDim2.fromOffset(46,46)})
@@ -1166,6 +1169,7 @@ local function selectTower(id)
 		return
 	end
 	clearPlacement()
+	if kit.inspect then kit.inspect:Hide() end
 	selectedTower = tower.id
 	refs.towerKey = nil
 	updateMatch()
@@ -1220,11 +1224,22 @@ local function renderMatch()
 	else
 		for _, rect in ipairs({layout.command, layout.core}) do
 			local panel = UI.roundFrame(top, {Position = at(rect, topRect), Size = dims(rect), BackgroundColor3 = C.panel, BackgroundTransparency = 0.08})
-			UI.windowSkin(panel, C.blue)
+			UI.windowSkin(panel, rect==layout.command and C.blue or C.red)
 		end
 	end
 	refs.wave = UI.label(top, "", {Position = at(layout.wave, topRect), Size = dims(layout.wave), TextSize = math.min(class.short and 20 or (compact and 23 or 30), layout.wave.h + 2), Font = UI.Fonts.display, TextColor3 = C.gold})
 	refs.map = UI.fit(UI.label(top, "", {Position = at(layout.map, topRect), Size = dims(layout.map), TextWrapped=class.narrow, TextSize = compact and 12 or 15, Font = UI.Fonts.display, TextColor3 = C.muted}), 9)
+	-- A mission insignia anchors the wave readout, like the opening panel of a
+	-- comic issue. It remains inside the reserved command rectangle.
+	if not class.narrow then
+		local inset=class.short and 28 or 40
+		UI.illustration(top,"bolt",C.blue,{Name="MissionInsignia",Position=UDim2.fromOffset(8,class.short and 8 or 13),Size=UDim2.fromOffset(inset-4,inset-4)})
+		for _,label in ipairs({refs.wave,refs.map}) do
+			local p,s=label.Position,label.Size
+			label.Position=UDim2.new(p.X.Scale,p.X.Offset+inset,p.Y.Scale,p.Y.Offset)
+			label.Size=UDim2.new(s.X.Scale,s.X.Offset-inset,s.Y.Scale,s.Y.Offset)
+		end
+	end
 	refs.hpText = UI.button(top, "", function() showToast(T("Evolua a base com o Agente ao lado dela (tecla E).", "Upgrade the base with the Agent beside it (E key)."), false) end, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
 	UI.outline(refs.hpText, 2)
 	refs.hp = UI.bar(top, C.green, at(layout.hpBar, topRect), dims(layout.hpBar))
@@ -1261,6 +1276,7 @@ local function renderMatch()
 	refs.toastTop = (layout.waveInfo.y or 0) + (layout.waveInfo.h or 0) + 6
 	refs.toastBossTop = (bossRect.y or 0) + (bossRect.h or 0) + 6
 	refs.boss = UI.roundFrame(main, {Position = at(bossRect), Size = dims(bossRect), BackgroundColor3 = Color3.fromRGB(56,20,34), Visible = false}, C.red)
+	UI.windowSkin(refs.boss, C.red)
 	UI.stroke(refs.boss, C.red, 3)
 	refs.bossName = UI.label(refs.boss, "", {Position = UDim2.fromOffset(12, 2), Size = UDim2.new(1, -24, 0, 24), TextColor3 = C.text, Font = UI.Fonts.display, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Center})
 	refs.bossHP = UI.bar(refs.boss, C.red, UDim2.fromOffset(12, 26), UDim2.new(1, -24, 0, 12))
@@ -1294,6 +1310,7 @@ local function renderMatch()
 		-- power recharges), the power's name and state beside it. The button
 		-- keeps the words in its Text; a caption draws them.
 		local face = layout.buttonH - 12
+		UI.multiverseSeal(button,tint,{Name="PowerInsignia",Position=UDim2.new(1,-58,0,-6),Size=UDim2.fromOffset(56,56),ZIndex=0})
 		local host = UI.frame(button, {Name = "LeaderFace", Position = UDim2.fromOffset(6, 5), Size = UDim2.fromOffset(face, face), BackgroundColor3 = tint:Lerp(C.ink, 0.35), ClipsDescendants = true, Active = false})
 		UI.corner(host, 10)
 		UI.stroke(host, C.ink, 2)
@@ -1792,7 +1809,7 @@ local function handleWorldPointer(position, touch)
 		if best then selectTower(best) return end
 		-- No tower: an enemy near the tap is inspected; empty ground folds the card away.
 		local key, record = effects:EnemyNear(hit.Position, 5)
-		if key then kit.inspect:Show(key, record) else kit.inspect:Hide() end
+		if key then closeTowerPanel(); kit.inspect:Show(key, record) else kit.inspect:Hide() end
 	end
 end
 
@@ -2056,7 +2073,11 @@ RunService.RenderStepped:Connect(function(dt)
 			or (refs.towerPanel ~= nil and refs.towerPanel.Parent ~= nil and refs.towerPanel.Visible == true)
 		if busy ~= kit.chatHidden and player:GetAttribute("DoomReviewHideChrome") ~= true then
 			kit.chatHidden = busy
-			pcall(function() game:GetService("TextChatService").ChatWindowConfiguration.Enabled = not busy end)
+			-- The input bar has its own switch; hiding only the message window
+			-- left the typing field floating across tower stats and upgrade buttons.
+			for _,name in ipairs({"ChatWindowConfiguration","ChatInputBarConfiguration"}) do
+				pcall(function() game:GetService("TextChatService")[name].Enabled = not busy end)
+			end
 		end
 	end
 	routePreview:Step(dt or 1 / 60, state and state.phase)
@@ -2183,7 +2204,7 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		closeSheet = function() kit.sheet:Close() end,
 		inspectEnemy = function(enemyId, hp)
 			local def = Catalog.Enemies[enemyId]
-			if def then kit.inspect:Show("review", { def = def, lastHP = hp, maxHP = def.hp }, true) end
+			if def then closeTowerPanel(); kit.inspect:Show("review", { def = def, lastHP = hp, maxHP = def.hp }, true) end
 		end,
 	})
 end

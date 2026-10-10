@@ -507,3 +507,23 @@ salvo com 4.455 peças. Publicado no mesmo place **97132875544830** em
 **10/10/2026 às 09:13:57 local (12:13:57 UTC)**, `PublishSuccessful`
 confirmado. Studio em edição; estados anteriores com IDs em zero são
 históricos. M24.8 mantém a escuta pelo jogador e os testes externos pendentes.
+
+## 17. HUDs com identidade de quadrinhos e multiverso — 10/10
+
+Corpo azul-marinho, molduras e emblema dimensional original, navegação em
+placas, retratos maiores, cartões por raridade, vitrine de invocação e barras
+segmentadas. O padrão alcança os menus e o combate; a árvore continua
+somente sobre o cenário desfocado. Corrigidos chat sobre as melhorias,
+sobreposição torre/inimigo e truncagens do baú e das missões no vertical.
+
+Suíte completa verde, seis roteiros de cliente, 38 cenas revisadas no Studio
+em formatos de PC/celular e português/inglês. Carga real de 90 inimigos a
+60 FPS, p95 18,02 ms na RTX 4060 Ti. Sete módulos sincronizados seletivamente,
+37 fontes finais conferidas e lobby de edição com 4.455 peças. Publicado
+no mesmo place **97132875544830** em **10/10/2026 às 10:51:56 local
+(13:51:56 UTC)**, `PublishSuccessful` confirmado. Studio em edição.
+
+Capturas, comparação antes/depois, matriz e limites em
+[`REFINAMENTO_HUD_QUADRINHOS_2026-10-10.md`](REFINAMENTO_HUD_QUADRINHOS_2026-10-10.md),
+fila M25. Preferência visual do jogador, aparelho físico e os modelos do
+elenco permanecem identificados separadamente.
