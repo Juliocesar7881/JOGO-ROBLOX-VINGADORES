@@ -474,3 +474,11 @@ visíveis mantiveram cerca de 60 FPS no PC. Os sete bancos ainda não estão
 publicados: `Config.Audio.sfx* = 0`. O dono confirma os direitos na importação;
 depois entram os IDs reais, a escuta e a medição do novo mix. Os sons
 anteriores continuam funcionando até essa integração estar verificada.
+
+Código `903a157` no `main`, publicado no lugar oficial em 09/10/2026 às
+23:57:05 local (10/10 às 02:57:05 UTC), `PublishSuccessful` confirmado.
+Studio em edição, com a janela de direitos dos sete WAVs aguardando o dono.
+As 37 fontes finais foram comparadas com o repositório; veja o relatório
+para as evidências e o registro do preview. Atenção: `studio_sync.py
+--preview-lobby` sem arquivos também sincroniza tudo. Informar sempre os
+arquivos alterados quando usar essa opção.

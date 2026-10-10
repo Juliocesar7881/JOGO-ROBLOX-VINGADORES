@@ -44,6 +44,10 @@ autoriza o uso nesta experiência. Não houve envio confirmado, cobrança nem
 ID obtido. Caso a fila tenha sido fechada, selecionar os sete WAVs da pasta
 `rendered/` no Gerenciador de ativos e iniciar a importação novamente.
 
+Estado final da sessão: Studio em edição, janela de direitos aberta para o
+dono responder, após publicar código/efeitos às 23:57:05 local de 09/10.
+Captura local: `test-results/review/sonniss-rights-final.png`.
+
 Conferir no playtest que os sete Sound.IsLoaded estão verdadeiros, ouvir a
 seleção por família e conferir loops e finais antes de publicar. Produção,
 envio, autorização e verificação são etapas distintas.

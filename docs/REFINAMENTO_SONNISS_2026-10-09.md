@@ -70,7 +70,7 @@ substituem a escuta das gravações carregadas na Roblox.
 
 ## Conferência no Studio
 
-Cinco fontes finais comparadas com o repositório e sincronizadas apenas no
+Cinco fontes finais comparadas com o repositório e sincronizadas no
 lugar da equipe. Revisões `wave`, `tower` e `reel` em PC e celular horizontal;
 `wave` e `tower` também em vertical 375×667. Português e inglês conferidos;
 os roteiros terminaram sem erro de script ou corte de texto detectado.
@@ -106,8 +106,26 @@ de escuta após upload; não foi classificada como aprovada. O aviso 3D da
 base ainda pode atravessar a borda da tela quando a câmera aponta para longe
 dele (`sonniss-combat80.png`); tratar a projeção desse aviso em M24.7.
 
-Entrega no `main` e publicação: em fechamento. Os efeitos funcionam com os
-áudios anteriores enquanto `Config.Audio.sfx*` estiver em zero.
+Código **`903a157`** no `main`, enviado ao remoto após a suíte completa
+(`test-results/sonniss-suite-commit.txt`). Publicação no mesmo lugar
+**97132875544830** confirmada pelo log em **09/10/2026 às 23:57:05 local**
+(10/10 às 02:57:05 UTC), `Go to PublishSuccessful`.
+Registro: `test-results/sonniss-publish.txt`.
+
+Ao preparar o preview, o comando sem lista de arquivos iniciou um reenvio
+amplo antes de ser interrompido. A conferência posterior verificou todas as
+**37 fontes** iguais ao repositório; o lobby foi reconstruído sem outro
+reenvio e manteve o teto de 4.500 peças. Evidências:
+`test-results/sonniss-preview-safe.txt` e
+`test-results/review/sonniss-edit-preview.png`.
+Para próximos lotes, sempre informar os arquivos alterados junto de
+`--preview-lobby`: sem lista, `studio_sync.py` sincroniza todos os módulos.
+
+Studio deixado em **modo de edição**, no diálogo pessoal de direitos,
+sem confirmar o envio. Captura:
+`test-results/review/sonniss-rights-final.png`.
+Os efeitos publicados funcionam com os áudios anteriores enquanto
+`Config.Audio.sfx*` estiver em zero.
 
 ## Origem e pendência exata
 
