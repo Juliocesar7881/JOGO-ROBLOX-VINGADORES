@@ -265,3 +265,9 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M26.2 Composições de invocação, missões, opções, árvore, cartas, resultados, conexão e recibos. Bases com miniaturas 3D por função. Custos e dados reais preservados; 38 cenas conferidas em PC.
 - [x] M26.3 Suíte completa verde, 38 capturas finais no PC e 72 nas revisões de formatos menores/inglês, sem erros/cortes detectados. Cinco heróis e 114 inimigos a 60 FPS, p95 18,02 ms na RTX 4060 Ti. Oito módulos sincronizados seletivamente, 37 fontes conferidas com prefixo de papel anterior preservado; preview com 4.455 peças. Publicado no mesmo place 97132875544830 em 10/10 às 13:27:05 local (16:27:05 UTC), `PublishSuccessful` confirmado. Studio em edição. Relatório `docs/REFINAMENTO_HUD_REFERENCIAS_2026-10-10.md`; galeria comparativa no Desktop.
 - [ ] M26.4 Preferência do jogador e toque físico. Anatomia original ainda precisa de M22.7; não declarar os modelos das propostas como implementados.
+
+## M27 — Inicialização e telas completas AFK, 10/10
+
+- [x] M27.1 Ouro e XP com cenário próprio, contadores separados, estados honestos de pagamento e ações completas; arte nativa visível com 3D desligado. Pagamentos naturais, Mostrar jogo e Voltar ao lobby conferidos no Studio.
+- [x] M27.2 Mesma arte na inicialização e conexão, prontidão real e prazo de saída incluindo mundo; regressões em seis formatos, inclusive perfil chegando antes do cenário e rotação da tela AFK.
+- [x] M27.3 Suíte completa verde, 32 capturas PC/celular emulado/inglês sem cortes detectados. 39 fontes conferidas, cinco módulos sincronizados e lobby 4.455 peças. Publicado no place 97132875544830 em 10/10 às 14:06:51 local (17:06:51 UTC), `PublishSuccessful` confirmado. Studio em edição; galeria no Desktop e relatório `REFINAMENTO_TELAS_COMPLETAS_2026-10-10.md`. Celular físico/reconexão/sessão prolongada continuam no checklist.

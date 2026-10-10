@@ -70,6 +70,8 @@ local pending = {}
 -- Small HUD state and constants, one table to spare the main chunk's
 -- registers (Luau allows 200 and this script is close to it).
 local kit = { cosmeticsRetryPending = false, contextRefreshPending = false }
+kit.screenArt = require(game:GetService("ReplicatedFirst"):WaitForChild("DoomLoader"):WaitForChild("ScreenArt"))
+kit.restScreen = require(script:WaitForChild("RestScreen"))
 local render, renderLobby, renderContext, renderElevator, openContext, closeContext, updateWorldCosmetics, fetchProducts, updateMatch, showToast
 
 local function T(pt, en) return language == "en" and en or pt end
@@ -1560,45 +1562,8 @@ render = function()
 	if not retained then contextPanel = nil; menuBlur(false) end
 	if not activeMatch() then matchHud.clearUpgradeBoards() end
 	if not state or not state.profile then
-		-- The splash between joining and the first snapshot (and again after a
-		-- teleport): the game's name, a bar that moves, and one tip to read.
-		local splash = UI.frame(main, {Name = "LoadingSplash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, ZIndex = 80})
-		UI.create("UIGradient", {Color = ColorSequence.new(C.background:Lerp(C.violet, 0.5), C.background), Rotation = 90}, splash)
-		if screenSize().X>800 then
-			for _,entry in ipairs({{"capmen",0.01},{"thor",0.76}}) do
-				heroPortrait(splash,entry[1],{Name="SplashHero_"..entry[1],Position=UDim2.fromScale(entry[2],0.2),Size=UDim2.fromScale(0.23,0.7),FullFigure=true,NoBackdrop=true,ZIndex=81})
-			end
-		end
-		local card = UI.frame(splash, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.new(1, -40, 0, 260), BackgroundTransparency = 1, ZIndex = 81})
-		UI.create("UISizeConstraint", {MaxSize = Vector2.new(560, 280)}, card)
-		card.BackgroundColor3=C.panel
-		UI.angular(card,C.gold,{cut=18})
-		UI.label(card, T("Multiverso", "Multiverse"), {Name = "SplashKicker", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 24, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
-		UI.label(card, "DOOMSDAY", {Name = "SplashTitle", Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 78), Font = UI.Fonts.display, TextSize = 66, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
-		UI.label(card, T("Última defesa", "Last stand"), {Position = UDim2.fromOffset(0, 108), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 22, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
-		local track = UI.frame(card, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 158), Size = UDim2.new(0.7, 0, 0, 10), BackgroundColor3 = C.ink, ClipsDescendants = true, ZIndex = 82})
-		UI.corner(track, 5)
-		local slider = UI.frame(track, {Name = "SplashBar", Position = UDim2.fromScale(-0.4, 0), Size = UDim2.fromScale(0.4, 1), BackgroundColor3 = C.green, ZIndex = 83})
-		UI.corner(slider, 5)
-		TweenService:Create(slider, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, false), {Position = UDim2.fromScale(1, 0)}):Play()
-		local tips = {
-			{ "Heróis repetidos viram estrelas: +3% de dano por estrela.", "Duplicate heroes become stars: +3% damage per star." },
-			{ "Jogue em grupo: +10% de Ouro e XP por comandante extra.", "Play together: +10% Gold and XP per extra commander." },
-			{ "No nível 5 de uma torre, escolha um dos dois caminhos.", "At tower level 5, pick one of its two paths." },
-			{ "Use o poder do líder (Q) para virar uma onda difícil.", "Use your leader's power (Q) to turn a hard wave." },
-			{ "Missões e partidas enchem a barra da temporada.", "Missions and matches fill the season bar." },
-			{ "Ouro do chão some: ande até ele ou compre o Drone coletor.", "Gold on the ground fades: walk to it or get the Collector drone." },
-			{ "Gosmentos racham ao morrer: dano em área limpa os fragmentos.", "Splitters burst when they die: area damage clears the fragments." },
-			{ "Sabotadores paralisam torres: derrube-os cedo ou use heróis imunes.", "Saboteurs stun towers: take them down early or field stun-proof heroes." },
-			{ "Segure o dedo no chão (ou G) para marcar um local aos amigos.", "Hold your finger on the ground (or G) to ping a spot for your squad." },
-			{ "Todo dia um mapa paga +25% de Ouro e XP: veja o mapa do dia.", "Every day one map pays +25% Gold and XP: check the map of the day." },
-			{ "Ondas mutantes avisam antes: Corrida, Enxame ou Blindada.", "Mutant waves warn you first: Rush, Swarm or Armored." },
-			{ "O herói do primeiro slot define o poder que você usa em partida.", "The hero in your first slot sets the power you use in a match." },
-			{ "Segure Shift para correr e aperte pular de novo no ar para um pulo duplo.", "Hold Shift to run and press jump again in the air for a double jump." },
-		}
-		local tip = tips[math.random(1, #tips)]
-		UI.label(card, T(tip[1], tip[2]), {Name = "SplashTip", Position = UDim2.fromOffset(0, 190), Size = UDim2.new(1, 0, 0, 56), TextSize = 16, TextWrapped = true, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
-		UI.label(splash, T("Conectando à resistência…", "Connecting to the resistance…"), {AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -24), Size = UDim2.new(1, -40, 0, 24), TextSize = 14, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
+		refs.loading = kit.screenArt.Loading(main, T, screenSize(), UI)
+		refs.loadingStarted = os.clock()
 		return
 	end
 	if state.phase == "Lobby" then renderLobby() elseif state.phase == "Results" then matchHud.renderResults() else renderMatch() end
@@ -1962,18 +1927,25 @@ end)
 kit.afkBanner, kit.afkTitle, kit.afkDetail, kit.afkBannerAt = nil, nil, nil, 0
 -- Power saving while farming: the 3D world stops rendering and a quiet
 -- screen shows the session. It always switches back when the farm ends.
-local afk = { eco = false, screen = nil, text = nil, travel = nil, autoEco = false }
+local afk = { eco = false, screen = nil, view = nil, travel = nil, autoEco = false }
 local function setAfkEco(on)
+	local kind = player:GetAttribute("AfkZone")
+	on = on and Catalog.Afk[kind] ~= nil
 	afk.eco = on
 	pcall(function() RunService:Set3dRenderingEnabled(not on) end)
+	local size = screenSize()
+	local key = tostring(size.X) .. ":" .. tostring(size.Y) .. ":" .. language .. ":" .. tostring(kind)
+	if afk.screen and (not on or afk.viewKey ~= key) then
+		afk.screen:Destroy(); afk.screen, afk.view = nil, nil
+	end
 	if on and not afk.screen then
-		afk.screen = UI.frame(overlays, {Name = "AfkScreen", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.02, Active = true, ZIndex = 60})
-		UI.label(afk.screen, T("Farm AFK", "AFK farm"), {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 0), Size = UDim2.fromOffset(420, 56), TextSize = 40, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 61})
-		afk.text = UI.label(afk.screen, "", {Name = "AfkScreenStats", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.18, 70), Size = UDim2.fromOffset(460, 150), TextSize = 20, Font = UI.Fonts.display, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 61})
-		UI.button(afk.screen, T("Mostrar o jogo", "Show the game"), function() setAfkEco(false) end, {Name = "AfkEcoOff", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, -115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.blue, TextSize = 16, ZIndex = 61})
-		UI.button(afk.screen, T("Voltar ao lobby", "Back to lobby"), function() setAfkEco(false); act("LeaveAfk", {}) end, {Name = "AfkLeave", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 115, 0.18, 236), Size = UDim2.fromOffset(220, 50), BackgroundColor3 = C.red, TextSize = 16, ZIndex = 61})
-	elseif not on and afk.screen then
-		afk.screen:Destroy(); afk.screen, afk.text = nil, nil
+		closeContext()
+		kit.sheet:Close()
+		afk.view = kit.restScreen.new(UI, overlays, T, Catalog, size, kind, {
+			show = function() setAfkEco(false) end,
+			leave = function() setAfkEco(false); act("LeaveAfk", {}) end,
+		})
+		afk.screen, afk.viewKey = afk.view.root, key
 	end
 end
 local function updateAfkBanner()
@@ -2013,10 +1985,13 @@ local function updateAfkBanner()
 	if kit.afkView then kit.afkView.setTravel(player:GetAttribute("AfkTravel") == true) end
 	-- On the AFK place the saving screen comes on by itself, once.
 	if player:GetAttribute("AfkServer") and not afk.autoEco then afk.autoEco = true; setAfkEco(true) end
-	if afk.text then
-		afk.text.Text = L(farm.name) .. "\n" .. T("Sessão ", "Session ") .. string.format("%d:%02d", math.floor(session / 60), session % 60)
-			.. "\n" .. T("Próximo pagamento em ", "Next payment in ") .. tostring(player:GetAttribute("AfkNext") or 60) .. "s"
-			.. "\n" .. T("Recebido: +", "Received: +") .. number(earned) .. (kind == "gold" and T(" Ouro", " Gold") or " XP") .. "  " .. (saving and T("(salvando…)", "(saving…)") or T("✓ salvo", "✓ saved"))
+	if afk.eco then
+		local size = screenSize()
+		local key = tostring(size.X) .. ":" .. tostring(size.Y) .. ":" .. language .. ":" .. tostring(kind)
+		if afk.viewKey ~= key then setAfkEco(true) end
+	end
+	if afk.view then
+		afk.view.Update({session=session, earned=earned, saving=saving, nextPayment=player:GetAttribute("AfkNext")})
 	end
 end
 pcall(function()
@@ -2068,6 +2043,7 @@ RunService.RenderStepped:Connect(function(dt)
 	kit.autoQuality:Step(dt)
 	kit.inspect:Step(dt or 1 / 60)
 	stepShowcases()
+	if refs.loading then refs.loading.Step(os.clock() - (refs.loadingStarted or os.clock()), game:IsLoaded(), false, profile().settings and profile().settings.lowFX) end
 	kit.sheet:Sync()
 	kit.movement:Step(dt or 1 / 60)
 	kit.tutorial:Step(dt or 1 / 60)
@@ -2079,6 +2055,7 @@ RunService.RenderStepped:Connect(function(dt)
 		-- the base upgrade, a tower's card) the chat steps aside, and comes
 		-- back when it closes. The review's own chat switch is left alone.
 		local busy = contextPanel ~= nil or (state ~= nil and state.phase == "Results") or refs.protocolPanel ~= nil
+			or afk.eco or overlays:FindFirstChild("AfkScreen", true) ~= nil or overlays:FindFirstChild("LoadingSplash", true) ~= nil or refs.loading ~= nil
 			or overlays:FindFirstChild("CommanderSheet") ~= nil or overlays:FindFirstChild("BaseUpgrade") ~= nil
 			or (refs.towerPanel ~= nil and refs.towerPanel.Parent ~= nil and refs.towerPanel.Visible == true)
 		if busy ~= kit.chatHidden and player:GetAttribute("DoomReviewHideChrome") ~= true then
@@ -2179,7 +2156,7 @@ end)
 if RunService:IsStudio() and script:FindFirstChild("Review") then
 	local liveRequest = request
 	require(script.Review).start({
-		player = player, Catalog = Catalog, Rules = Rules, UI = UI, interactionHud = kit.interactionHud, gui = gui, main = main, overlays = overlays, celebrate = celebrate,
+		player = player, Catalog = Catalog, Rules = Rules, UI = UI, interactionHud = kit.interactionHud, restScreen = kit.restScreen, screenArt = kit.screenArt, screenSize = screenSize, gui = gui, main = main, overlays = overlays, celebrate = celebrate,
 		getState = function() return state end,
 		setState = function(snapshot) state = snapshot end,
 		setLanguage = function(value) language = value end,

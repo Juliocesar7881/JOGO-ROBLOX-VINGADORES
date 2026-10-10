@@ -88,6 +88,11 @@ local SharedConfig = require(shared.Config)
 local UILayout = __UI__(nil, clockOs)
 local WorldBuilder = __WORLD__(nil, clockOs)
 local CLIENT_MODULES = __CLIENT_MODULES__
+services.ReplicatedFirst = Instance.new("ReplicatedFirst")
+local firstScript = Instance.new("LocalScript", services.ReplicatedFirst)
+firstScript.Name = "DoomLoader"
+moduleScript(firstScript, "ScreenArt", __SCREEN_ART__)
+game.IsLoaded = function() return true end
 
 --==============================================================================
 -- Fixtures
@@ -298,6 +303,7 @@ local function session(screen)
 	function runService:BindToRenderStep(name, _, fn) self.binds[name] = fn end
 	function runService:IsStudio() return true end
 	function runService:IsServer() return false end
+	function runService:Set3dRenderingEnabled(enabled) self.renderingEnabled = enabled end
 	local input = { InputBegan = newSignal(), InputChanged = newSignal(), InputEnded = newSignal(), JumpRequest = newSignal(), TouchTapInWorld = newSignal(), TouchLongPress = newSignal(), TouchEnabled = false }
 	function input:GetFocusedTextBox() return self.focused end
 	function input:GetMouseLocation() return self.mouseLocation or Vector2.new(SCREEN.w / 2, SCREEN.h / 2) end
@@ -309,6 +315,8 @@ local function session(screen)
 		PromptProductPurchase = function(_, _, id) table.insert(prompts, "product:" .. tostring(id)) end,
 	}
 	services.RunService, services.UserInputService, services.GuiService = runService, input, guiService
+	services.LocalizationService = {RobloxLocaleId="pt-br"}
+	services.ReplicatedFirst.RemoveDefaultLoadingScreen = function(self) self.defaultRemoved=true end
 	-- Context actions: the bound handlers and button titles are kept so a test can press them.
 	local contextActions = { handlers = {}, titles = {} }
 	function contextActions:BindAction(name, handler) self.handlers[name] = handler end
@@ -453,11 +461,88 @@ local function session(screen)
 	local effectsScript = clientModules.Effects
 	local reviewScript = clientModules.Review
 	loaded[shared.Config] = nil
+	step("cold-join art works before the client and always dismisses",function()
+		local originalDelay=task.delay
+		local timeout
+		task.delay=function(_,fn) timeout=fn end
+		local loadedWorld=false
+		game.IsLoaded=function() return loadedWorld end
+		__FIRST__(firstScript,clockOs)
+		task.delay=originalDelay
+		local cover=playerGui:FindFirstChild("DoomLoader")
+		check(cover and cover.IgnoreGuiInset==true and named(cover,"DimensionalBackdrop"),tag..": early loader draws its packaged full-screen art without the world")
+		advance(0.2);runService.RenderStepped:Fire(0.2)
+		check(named(cover,"SplashStatus").Text=="Carregando o refúgio…",tag..": initial status reflects actual world loading")
+		localPlayer:SetAttribute("DoomReady",true);advance(0.2);runService.RenderStepped:Fire(0.2)
+		check(cover.Parent~=nil,tag..": a profile arriving early does not expose a world that has not loaded")
+		check(named(cover,"SplashBar").Size.X.Scale<1,tag..": an early profile does not mark unfinished world loading as complete")
+		localPlayer:SetAttribute("DoomReady",nil)
+		loadedWorld=true;advance(0.2);runService.RenderStepped:Fire(0.2)
+		check(named(cover,"SplashStatus").Text=="Conectando seu perfil…",tag..": profile status begins only after the world loads")
+		localPlayer:SetAttribute("DoomReady",true);advance(0.2);runService.RenderStepped:Fire(0.2)
+		check(not cover.Parent,tag..": first real profile dismisses the early loader")
+		timeout()
+		localPlayer:SetAttribute("DoomReady",nil)
+		loadedWorld=false
+		task.delay=function(_,fn) timeout=fn end
+		__FIRST__(firstScript,clockOs)
+		task.delay=originalDelay
+		cover=playerGui:FindFirstChild("DoomLoader")
+		timeout()
+		check(not cover.Parent,tag..": the hard timeout also dismisses when the world never loads")
+		game.IsLoaded=function() return true end
+	end)
 
 	if not step("init.client boots and syncs", function() __CLIENT__(clientScript, clockOs); flush() end) then return end
 	local gui = playerGui:FindFirstChild("DoomsdayUI")
 	check(gui ~= nil, tag .. ": the client mounts its ScreenGui")
 	if not gui then return end
+	step("AFK screens only display authoritative payments and restore play",function()
+		local before=requestCount("LeaveAfk")
+		localPlayer:SetAttribute("AfkZone","gold")
+		localPlayer:SetAttribute("AfkNext",24)
+		localPlayer:SetAttribute("AfkSession",756)
+		localPlayer:SetAttribute("AfkEarned",60)
+		localPlayer:SetAttribute("AfkSaving",false)
+		frames(0.3,2);clickNamed("AfkEcoOn");frames(0.3,2)
+		local screenRoot=named(gui,"AfkScreen")
+		check(screenRoot and screenRoot:GetAttribute("AfkKind")=="gold" and named(screenRoot,"DimensionalBackdrop"),tag..": Gold AFK has an opaque dedicated resource scene")
+		check(named(screenRoot,"AfkScreenEarned").Text=="+60 Ouro" and named(screenRoot,"AfkScreenNext").Text=="24s",tag..": AFK shows actual earned Gold and the server countdown")
+		check(named(screenRoot,"AfkPaymentFill").Size.X.Scale==0.6,tag..": payment bar follows the server interval")
+		check(runService.renderingEnabled==false and not chatWindow.Enabled and not chatInput.Enabled,tag..": saver disables 3D and hides chat over the complete screen")
+		local count=#screenRoot:GetDescendants()
+		check(count<600,tag..": static AFK artwork stays within a fixed UI budget, got "..count)
+		frames(20,4)
+		check(named(screenRoot,"AfkScreenEarned").Text=="+60 Ouro" and #screenRoot:GetDescendants()==count,tag..": elapsed client time neither invents rewards nor accumulates art")
+		localPlayer:SetAttribute("AfkSaving",true);frames(0.3,2)
+		check(named(screenRoot,"AfkScreenSaved").Text=="Salvando pagamento…",tag..": pending payment is never labelled as saved")
+		localPlayer:SetAttribute("AfkZone","xp");localPlayer:SetAttribute("AfkEarned",0);localPlayer:SetAttribute("AfkSaving",false);frames(0.3,2)
+		screenRoot=named(gui,"AfkScreen")
+		check(screenRoot:GetAttribute("AfkKind")=="xp" and named(screenRoot,"AfkScreenEarned").Text=="+0 XP",tag..": switching chambers rebuilds the XP scene and unit")
+		check(named(screenRoot,"AfkScreenSaved").Text=="Aguardando o primeiro pagamento",tag..": no saved award is claimed before the first minute")
+		for _,name in ipairs({"AfkEcoOff","AfkLeave","AfkScreenEarned","AfkScreenNext"}) do
+			local rect=screenRect(named(screenRoot,name),gui,screen)
+			check(rect and rect.x>=0 and rect.y>=0 and rect.x+rect.w<=screen.w+1 and rect.y+rect.h<=screen.h+1,tag..": AFK control/counter stays on screen: "..name)
+		end
+		local canvas=gui:GetChildren()[1]
+		local originalSize=canvas.AbsoluteSize
+		SCREEN.w,SCREEN.h=screen.h,screen.w
+		canvas.AbsoluteSize=Vector2.new(SCREEN.w,SCREEN.h)
+		canvas:GetPropertyChangedSignal("AbsoluteSize"):Fire();flush();frames(0.3,2)
+		screenRoot=named(gui,"AfkScreen")
+		check(screenRoot and screenRoot:GetAttribute("AfkKind")=="xp" and named(screenRoot,"AfkScreenEarned").Text=="+0 XP",tag..": rotating rebuilds the active farm without changing its server counters")
+		check(runService.renderingEnabled==false,tag..": relayout preserves power saving")
+		SCREEN.w,SCREEN.h=screen.w,screen.h
+		canvas.AbsoluteSize=originalSize
+		canvas:GetPropertyChangedSignal("AbsoluteSize"):Fire();flush();frames(0.3,2)
+		clickNamed("AfkEcoOff");frames(0.3,2)
+		check(not named(gui,"AfkScreen") and runService.renderingEnabled==true and requestCount("LeaveAfk")==before,tag..": show game restores rendering without leaving the farm")
+		clickNamed("AfkEcoOn");frames(0.3,2);clickNamed("AfkLeave");frames(0.3,2)
+		check(requestCount("LeaveAfk")==before+1 and runService.renderingEnabled==true,tag..": exit requests exactly one server leave and restores 3D")
+		clickNamed("AfkEcoOn");frames(0.3,2)
+		localPlayer:SetAttribute("AfkZone",nil);frames(0.3,2)
+		check(not named(gui,"AfkScreen") and runService.renderingEnabled==true and chatWindow.Enabled and chatInput.Enabled,tag..": leaving the chamber restores the interface and chat automatically")
+	end)
 	step("comic artwork stays bounded and owns its lifetime",function()
 		local UI=require(clientModules.UI)
 		local host=UI.frame(playerGui,{Name="ComicProbe",Size=UDim2.fromOffset(320,220)})

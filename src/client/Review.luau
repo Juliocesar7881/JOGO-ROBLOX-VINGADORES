@@ -22,8 +22,8 @@ local Review = {}
 
 Review.STAGES = {
 	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium", "premiumgold",
-	"quests", "leaderboard", "settings", "rewards", "boarding", "afk", "prompt",
-	"preparing", "wave", "placing", "skillaim", "sheet", "sheetbase", "enemycard", "enemycardboss", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading",
+	"quests", "leaderboard", "settings", "rewards", "boarding", "afk", "afkgold", "afkxp", "prompt",
+	"preparing", "wave", "placing", "skillaim", "sheet", "sheetbase", "enemycard", "enemycardboss", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading", "startup",
 	"reveal", "revealbase", "revealcommon", "reel", "herocard",
 }
 
@@ -196,6 +196,10 @@ function Review.start(api)
 			-- Before the first snapshot: no profile yet, so the splash shows.
 			api.setState({ phase = "Lobby", role = "Standalone" })
 			api.render()
+		elseif stage == "startup" then
+			api.setState({ phase="Lobby", role="Standalone", profile=p, players=actors() })
+			api.render()
+			self.fixtureOverlay=api.screenArt.Loading(api.overlays,function(pt,en) return p.settings.language=="en" and en or pt end,api.screenSize(),api.UI).root
 		elseif MATCH_STAGES[stage] then
 			api.setState(matchFixture(p, stage))
 			api.render()
@@ -242,7 +246,12 @@ function Review.start(api)
 			end
 			api.setState(snapshot)
 			api.render()
-			if stage == "afk" or stage == "prompt" then
+			if stage == "afkgold" or stage == "afkxp" then
+				local kind=stage=="afkgold" and "gold" or "xp"
+				local view=api.restScreen.new(api.UI,api.overlays,function(pt,en) return p.settings.language=="en" and en or pt end, Catalog,api.screenSize(),kind)
+				view.Update({session=756,earned=kind=="gold" and 60 or 120,nextPayment=24,saving=false})
+				self.fixtureOverlay=view.root
+			elseif stage == "afk" or stage == "prompt" then
 				local UI = api.UI
 				local function T(pt, en) return p.settings.language == "en" and en or pt end
 				local holder = UI.frame(api.overlays, {Name = "InteractionReview", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 50})

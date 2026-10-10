@@ -547,3 +547,26 @@ p95 18,02 ms na RTX 4060 Ti. Oito módulos sincronizados seletivamente;
 com 4.455 peças. Publicado no mesmo place em **10/10/2026 às 13:27:05 local
 (16:27:05 UTC)**, `PublishSuccessful` confirmado. Studio em edição.
 Comparativo no Desktop: `Multiverse_HUDs_Implementados_2026-10-10/INDICE.html`.
+
+## 19. Telas completas de inicialização e farms AFK — 10/10
+
+Ouro AFK, XP AFK e inicialização receberam cenário 2D nativo original de
+observatório dimensional, cores por recurso e hierarquia própria. A arte
+funciona com o 3D desligado, sem upload ou dependência de imagem. Contadores,
+próximo pagamento e salvamento usam os dados existentes do servidor.
+Inicialização e conexão compartilham a composição de ReplicatedFirst.
+
+Suíte completa verde, seis roteiros de cliente e 32 capturas em PC,
+celular emulado horizontal/vertical e inglês. Pagamentos naturais de Ouro
+e XP, Mostrar jogo e retorno ao lobby verificados no servidor do Studio,
+com perfil temporário. 39 fontes conferidas, cinco módulos sincronizados
+seletivamente e preview com 4.455 peças. Publicado no mesmo place
+**97132875544830** em **10/10/2026 às 14:06:51 local (17:06:51 UTC)**,
+`PublishSuccessful` confirmado; Studio em edição.
+
+Relatório e limites:
+[`REFINAMENTO_TELAS_COMPLETAS_2026-10-10.md`](REFINAMENTO_TELAS_COMPLETAS_2026-10-10.md),
+fila M27. Galeria no Desktop:
+`Multiverse_Telas_Completas_2026-10-10/INDICE.html`.
+Reconexão prolongada, DataStore publicado e aparelho físico continuam no
+checklist; os testes desta entrega não certificam esses fluxos.

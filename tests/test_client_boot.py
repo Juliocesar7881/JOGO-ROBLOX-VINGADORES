@@ -22,6 +22,8 @@ LOADERS = {
     "__UI__": "src/client/UI.luau",
     "__WORLD__": "src/server/WorldBuilder.luau",
     "__CLIENT__": "src/client/init.client.luau",
+    "__SCREEN_ART__": "src/first/ScreenArt.luau",
+    "__FIRST__": "src/first/init.client.luau",
 }
 
 
