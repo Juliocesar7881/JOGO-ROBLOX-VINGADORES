@@ -510,6 +510,8 @@ históricos. M24.8 mantém a escuta pelo jogador e os testes externos pendentes.
 
 ## 17. HUDs com identidade de quadrinhos e multiverso — 10/10
 
+Código `d6f064b` enviado ao `main` após a suíte completa verde.
+
 Corpo azul-marinho, molduras e emblema dimensional original, navegação em
 placas, retratos maiores, cartões por raridade, vitrine de invocação e barras
 segmentadas. O padrão alcança os menus e o combate; a árvore continua

@@ -4,6 +4,8 @@ Pedido: enriquecer todas as interfaces com a personalidade de uma aventura
 de super-heróis, usando o vídeo fornecido como referência de apresentação.
 Trabalho no `main` e no lugar da equipe **97132875544830**.
 
+Código entregue: **`d6f064b`**, enviado ao `main` após a suíte completa.
+
 ## Referência consultada e diagnóstico
 
 Arquivo local: `Desktop 2026.10.10 - 09.42.59.01.mp4`, em
