@@ -500,3 +500,10 @@ Relatório e evidências em
 A escuta de preferência pelo jogador, aparelho físico e quatro jogadores
 continuam pendentes; a trilha antiga moderada mantém o arranjo de ação
 existente como alternativa. O lobby preserva sua música.
+
+Código `30e99e5` no `main`, suíte completa verde. Config e controlador do
+cliente sincronizados seletivamente, 37 fontes finais conferidas, lobby
+salvo com 4.455 peças. Publicado no mesmo place **97132875544830** em
+**10/10/2026 às 09:13:57 local (12:13:57 UTC)**, `PublishSuccessful`
+confirmado. Studio em edição; estados anteriores com IDs em zero são
+históricos. M24.8 mantém a escuta pelo jogador e os testes externos pendentes.

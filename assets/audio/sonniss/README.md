@@ -48,6 +48,10 @@ Complexo Gama com 114 inimigos manteve aproximadamente 60 FPS na RTX 4060 Ti.
 Isso verifica reprodução e integração; preferência de timbre/volume pelo
 jogador e testes em aparelho físico continuam pendentes.
 
+Código `30e99e5` sincronizado seletivamente e publicado no mesmo lugar em
+**10/10/2026 às 09:13:57 local (12:13:57 UTC)**, com `PublishSuccessful`
+confirmado. As 37 fontes foram comparadas; lobby salvo com 4.455 peças.
+
 O gerador preserva um ID existente somente quando o WAV reconstruído tem
 o mesmo SHA-256. Se os bytes mudarem, o manifesto volta a zero: reimportar
 esse banco e atualizar também Config. O teste recusa IDs divergentes.

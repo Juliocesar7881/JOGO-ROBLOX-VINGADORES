@@ -167,7 +167,7 @@ Conferência no cliente real do Studio:
   de relâmpago e magia com proprietário/ultimate reais nos seis layouts.
 - Depois da correção, cinco lançamentos aceitos pelo servidor e seus FX
   foram conferidos no cliente real: Gigante Furioso, Armadura de Ferro,
-  Aranha Urbana, Deus do Trovão e Feiticeira Rubi. O banco de poderes estava
+  Aranha Urbana, Deus do Trovão e Bruxa do Caos. O banco de poderes estava
   carregado e reproduzindo a região correta em todos, inclusive os ultimates.
 
 | Amostra de seis segundos | Inimigos visíveis | FPS | p95 | Pior quadro |
@@ -196,3 +196,13 @@ Suíte completa desta ativação: saída **0**, registro
 `test-results/sonniss-activate-final-tests.txt`. Inclui 632.736 asserções de
 regras/economia, 6.937 checagens de layout e seis roteiros completos do
 cliente (965/968 checagens por formato), além de serviços, simulação e builds.
+
+Código **`30e99e5`** enviado ao `main`. Sincronizados somente Config e o
+controlador do cliente; as **37 fontes** finais foram comparadas com o
+repositório. Preview reconstruído sem reenvio amplo, com **4.455 peças**.
+Publicação no lugar **97132875544830** confirmada em **10/10/2026 às
+09:13:57 local (12:13:57 UTC)**, `Go to PublishSuccessful`.
+Registros: `test-results/sonniss-activate-preview.txt`,
+`sonniss-activate-publish.txt`; captura `sonniss-activated-edit-preview.png`.
+Studio deixado em modo de edição. Esta publicação foi confirmada no Studio;
+teste no cliente Roblox publicado e aparelho físico continuam separados.
