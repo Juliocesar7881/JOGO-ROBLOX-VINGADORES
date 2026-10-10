@@ -529,3 +529,21 @@ Capturas, comparação antes/depois, matriz e limites em
 [`REFINAMENTO_HUD_QUADRINHOS_2026-10-10.md`](REFINAMENTO_HUD_QUADRINHOS_2026-10-10.md),
 fila M25. Preferência visual do jogador, aparelho físico e os modelos do
 elenco permanecem identificados separadamente.
+
+## 18. Implementação das propostas visuais de HUD — 10/10
+
+Pedido de aplicar as 38 imagens ao jogo: placas com cantos recortados,
+contorno metálico, retratos e composições por tela, miniaturas 3D de bases,
+árvore enquadrada no PC e recibos com aparência de carta colecionável.
+Dados, servidor e sons preservados. Relatório, matriz e galeria:
+[`REFINAMENTO_HUD_REFERENCIAS_2026-10-10.md`](REFINAMENTO_HUD_REFERENCIAS_2026-10-10.md),
+fila M26. Modelos reais continuam nos retratos; a anatomia das propostas
+não substitui a amostra pendente em M22.7.
+
+Suíte completa verde, 38 telas finais no PC e revisão de 12 telas nos
+formatos horizontal/vertical e inglês. Cinco heróis e 114 inimigos a 60 FPS,
+p95 18,02 ms na RTX 4060 Ti. Oito módulos sincronizados seletivamente;
+37 fontes conferidas, prefixo de papel anterior preservado e preview
+com 4.455 peças. Publicado no mesmo place em **10/10/2026 às 13:27:05 local
+(16:27:05 UTC)**, `PublishSuccessful` confirmado. Studio em edição.
+Comparativo no Desktop: `Multiverse_HUDs_Implementados_2026-10-10/INDICE.html`.

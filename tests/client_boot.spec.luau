@@ -470,6 +470,19 @@ local function session(screen)
 		local passive=art.ClipsDescendants and art.Active==false
 		for _,item in ipairs(art:GetDescendants()) do if item:IsA("GuiObject") and item.Active~=false then passive=false end end
 		check(passive and #art:GetDescendants()<=45,tag..": chapter art is clipped, passive and within its fixed budget")
+		local shell=host:FindFirstChild("ComicShell")
+		check(shell and shell:FindFirstChild("MetalRim") and shell:FindFirstChild("Enamel"),tag..": the window has native cut corners and a separate metal rim")
+		local shellPassive=true
+		for _,item in ipairs(shell:GetDescendants()) do if item:IsA("GuiObject") and item.Active~=false then shellPassive=false end end
+		check(shellPassive,tag..": decorative metal layers never consume clicks or touch gestures")
+		local border=host:FindFirstChild("Border")
+		border.Color=UI.Colors.green
+		-- Property notifications are explicit in the Roblox stand-in.
+		border:GetPropertyChangedSignal("Color"):Fire()
+		check(shell.MetalRim:GetChildren()[1].BackgroundColor3==UI.Colors.green,tag..": a live selection colour reaches the visible metal rim")
+		local before=#host:GetDescendants()
+		UI.angular(host,UI.Colors.gold)
+		check(#host:GetDescendants()==before,tag..": recolouring a selection does not accumulate geometry")
 		local portrait=UI.heroPortrait(host,"ironman",nil,UI.Colors.blue,{Name="LifetimePortrait",Size=UDim2.fromOffset(90,90)})
 		check(portrait.BackgroundTransparency==1 and portrait:GetAttribute("PortraitFraming")=="bust",tag..": small portraits expose their illustrated stage and frame the face and torso")
 		check(host:FindFirstChild("LifetimePortrait_Art")~=nil,tag..": the portrait has its own graphic stage")
@@ -477,6 +490,21 @@ local function session(screen)
 		check(host:FindFirstChild("LifetimePortrait_Art")==nil,tag..": virtualized portraits release their sibling artwork on destruction")
 		local full=UI.heroPortrait(host,"ironman",nil,UI.Colors.blue,{FullFigure=true})
 		check(full:GetAttribute("PortraitFraming")=="figure",tag..": large hero sheets retain their full figure")
+		local cutout=UI.heroPortrait(host,"ironman",nil,UI.Colors.blue,{Name="CutoutPortrait",FullFigure=true,NoBackdrop=true})
+		check(host:FindFirstChild("CutoutPortrait_Art")==nil,tag..": a scene illustration keeps its transparent background")
+		cutout:Destroy()
+		for _,baseId in ipairs({"outpost","garden","barracks"}) do
+			local def=Catalog.Bases[baseId]
+			if def then
+				local miniature=UI.basePortrait(host,def,{Name="BaseArtProbe",Size=UDim2.fromOffset(180,130)})
+				local count,passive=0,true
+				for _,item in ipairs(miniature:GetDescendants()) do
+					if item:IsA("BasePart") then count+=1;passive=passive and item.Anchored and item.CanCollide==false and item.CanQuery==false end
+				end
+				check(miniature:IsA("ViewportFrame") and miniature.CurrentCamera~=nil and count>0 and count<=36 and passive,tag..": base miniature is a bounded cosmetic model with no gameplay collision")
+				miniature:Destroy()
+			end
+		end
 		local previousMotion=UI.reducedMotion
 		UI.reducedMotion=function() return true end
 		local button=UI.button(host,"Probe",nil)

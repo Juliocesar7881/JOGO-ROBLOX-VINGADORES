@@ -7,17 +7,17 @@ local heldTooltipTouches = setmetatable({}, { __mode = "k" })
 -- reference games' dark windows), white text with a black outline, and thick
 -- dark borders around everything.
 UI.Colors = {
-	background = Color3.fromRGB(12, 20, 43),
-	panel = Color3.fromRGB(24, 40, 72),
-	card = Color3.fromRGB(40, 61, 101),
+	background = Color3.fromRGB(7, 18, 36),
+	panel = Color3.fromRGB(17, 38, 64),
+	card = Color3.fromRGB(30, 55, 85),
 	stroke = Color3.fromRGB(128, 158, 238),
 	ink = Color3.fromRGB(11, 15, 36),
-	text = Color3.fromRGB(255, 255, 255),
-	muted = Color3.fromRGB(206, 218, 255),
+	text = Color3.fromRGB(255, 250, 236),
+	muted = Color3.fromRGB(188, 209, 230),
 	green = Color3.fromRGB(88, 224, 79),
 	gold = Color3.fromRGB(255, 210, 63),
 	red = Color3.fromRGB(255, 77, 94),
-	blue = Color3.fromRGB(63, 169, 255),
+	blue = Color3.fromRGB(35, 189, 255),
 	coral = Color3.fromRGB(255, 138, 61),
 	violet = Color3.fromRGB(169, 112, 255),
 	pink = Color3.fromRGB(255, 111, 198),
@@ -32,8 +32,8 @@ UI.Fonts = { display = Enum.Font.FredokaOne, bold = Enum.Font.BuilderSansExtraBo
 -- The window skin of those games: dark bodies, a colour frame, slots a shade
 -- darker, and text in white on everything.
 UI.Skin = {
-	body = Color3.fromRGB(15, 24, 48),
-	bodyTop = Color3.fromRGB(40, 58, 93),
+	body = Color3.fromRGB(8, 22, 41),
+	bodyTop = Color3.fromRGB(24, 50, 78),
 	slot = Color3.fromRGB(18, 30, 57),
 	slotLine = Color3.fromRGB(64, 89, 132),
 	tooltip = Color3.fromRGB(14, 15, 24),
@@ -175,7 +175,66 @@ function UI.roundFrame(parent, properties, color)
 	local edge = UI.frame(frame, {Name="PanelRail", Position=UDim2.fromOffset(8,3), Size=UDim2.new(1,-16,0,2), BackgroundColor3=color or UI.Colors.stroke,
 		BackgroundTransparency=0.6, Active=false, ZIndex=0})
 	UI.corner(edge,2)
+	UI.angular(frame, color or UI.Skin.slotLine, {cut=10})
 	return frame
+end
+
+-- The reference mockups use cut metal corners, an ink contour and an inset
+-- enamel face. Six flat pieces form an actual octagon at any aspect ratio;
+-- the corners are transparent, not black squares painted over the world.
+-- These are native UI objects: no external images, upload or baked captions.
+function UI.angular(frame, tint, options)
+	options=options or {}
+	local existing=frame:FindFirstChild("ComicShell")
+	if existing then
+		UI.stroke(frame,tint,3)
+		return existing
+	end
+	local z=math.max(0,(frame.ZIndex or 1)-1)
+	local cut=options.cut or 9
+	local root=UI.frame(frame,{Name="ComicShell",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Active=false,ZIndex=z})
+	local function polygon(name,inset,color)
+		local c=math.max(2,cut-inset*0.55)
+		local layer=UI.frame(root,{Name=name,Position=UDim2.fromOffset(inset,inset),Size=UDim2.new(1,-inset*2,1,-inset*2),BackgroundTransparency=1,Active=false,ZIndex=z})
+		local parts={}
+		local function part(properties)
+			properties.BackgroundColor3,properties.Active,properties.ZIndex=color,false,z
+			local p=UI.frame(layer,properties); table.insert(parts,p)
+		end
+		part({Position=UDim2.fromOffset(c,0),Size=UDim2.new(1,-c*2,1,0)})
+		part({Position=UDim2.fromOffset(0,c),Size=UDim2.new(1,0,1,-c*2)})
+		for _,xy in ipairs({{0,0},{1,0},{0,1},{1,1}}) do
+			part({AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(xy[1],xy[1]==0 and c or -c,xy[2],xy[2]==0 and c or -c),Size=UDim2.fromOffset(c*math.sqrt(2),c*math.sqrt(2)),Rotation=45})
+		end
+		return layer,parts
+	end
+	polygon("InkContour",0,UI.Colors.ink)
+	local _,rims=polygon("MetalRim",2,tint)
+	local _,faces=polygon("Enamel",4,frame.BackgroundColor3)
+	local border=UI.stroke(frame,tint,3)
+	border.Enabled=false
+	frame.BackgroundTransparency=1
+	local function refresh()
+		local gradient=frame:FindFirstChildOfClass("UIGradient")
+		for _,p in ipairs(rims) do p.BackgroundColor3=border.Color end
+		for _,p in ipairs(faces) do
+			p.BackgroundColor3=frame.BackgroundColor3
+			if gradient then
+				local g=p:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient",{},p)
+				g.Color,g.Rotation=gradient.Color,gradient.Rotation
+			end
+		end
+		if gradient then gradient.Enabled=false end
+	end
+	border:GetPropertyChangedSignal("Color"):Connect(refresh)
+	frame:GetPropertyChangedSignal("BackgroundColor3"):Connect(refresh)
+	local gradient=frame:FindFirstChildOfClass("UIGradient")
+	if gradient then
+		gradient:GetPropertyChangedSignal("Color"):Connect(refresh)
+		gradient:GetPropertyChangedSignal("Rotation"):Connect(refresh)
+	end
+	refresh()
+	return root
 end
 
 local DISPLAY_FONTS = { [Enum.Font.GothamBlack] = true, [Enum.Font.FredokaOne] = true, [Enum.Font.LuckiestGuy] = true }
@@ -290,6 +349,11 @@ function UI.button(parent, text, callback, properties)
 		if input and input.UserInputType == Enum.UserInputType.Touch and heldTooltipTouches[button] == input then return end
 		callback(input, ...)
 	end) end
+	if visible then
+		UI.angular(button,defaults.BackgroundColor3:Lerp(UI.Colors.cream,0.4),{cut=8})
+		local bevel=button:FindFirstChild("Bevel"); if bevel then bevel:Destroy() end
+		local shine=button:FindFirstChild("Shine"); if shine then shine.BackgroundTransparency=0.93 end
+	end
 	-- Every press clicks (the controller wires UI.onPress to its audio).
 	button.Activated:Connect(function() if button:GetAttribute("DragConsumed") ~= true and UI.onPress then pcall(UI.onPress, button) end end)
 	-- Every button squashes under the finger and springs back: the smallest
@@ -669,6 +733,8 @@ function UI.cardSkin(frame,tint)
 			BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.89,Active=false,ZIndex=0})
 	end
 	UI.frame(art,{Name="CardFoot",Position=UDim2.fromScale(0,0.76),Size=UDim2.fromScale(1,0.24),BackgroundColor3=UI.Colors.ink,BackgroundTransparency=0.28,Active=false,ZIndex=0})
+	UI.angular(frame,tint:Lerp(UI.Colors.cream,0.45),{cut=9})
+	frame.BackgroundTransparency=1
 	return art
 end
 
@@ -837,6 +903,8 @@ end
 
 function UI.section(parent, title, subtitle)
 	local frame = UI.frame(parent, {BackgroundTransparency = 1, Size = UDim2.new(1, -6, 0, subtitle and 90 or 46)})
+	local strip=UI.frame(frame,{Name="SectionRibbon",Position=UDim2.fromOffset(0,3),Size=UDim2.new(1,0,0,37),BackgroundColor3=UI.Skin.bodyTop,Active=false,ZIndex=0})
+	UI.angular(strip,UI.Colors.gold:Lerp(UI.Skin.body,0.65),{cut=8})
 	local bar = UI.frame(frame, {Name = "SectionMark", Position = UDim2.fromOffset(0, 10), Size = UDim2.fromOffset(6, 26), BackgroundColor3 = UI.Colors.gold})
 	UI.corner(bar, 3)
 	UI.fit(UI.label(frame, title, {Name = "SectionTitle", Font = UI.Fonts.display, TextSize = 24, TextColor3 = UI.Colors.cream, TextWrapped=true, TextTruncate=Enum.TextTruncate.None, Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -14, 0, 46)}), 13)
@@ -862,19 +930,25 @@ function UI.roundIcon(parent, name, caption, color, icon, callback, properties)
 	-- read like any other button.
 	local button = UI.button(parent, caption, callback, {Name = name, BackgroundTransparency = 1, TextTransparency = 1, Size = UDim2.fromOffset(72, 88)})
 	for key, value in pairs(properties or {}) do button[key] = value end
-	local captionH = caption ~= "" and 20 or 0
-	local disc = UI.frame(button, {Name = "Disc", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 2), Size = UDim2.new(1, -captionH, 1, -captionH - 2), BackgroundColor3 = color, Active = false})
-	UI.create("UIAspectRatioConstraint", {AspectRatio = 1}, disc)
+	local captionH = caption ~= "" and 18 or 0
+	local disc = UI.frame(button, {Name = "Disc", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 2), Size = UDim2.new(1, -8, 1, -4), BackgroundColor3 = color, Active = false})
 	UI.corner(disc, 13)
 	UI.stroke(disc, UI.Colors.ink, 3)
 	UI.shade(disc,65,0.5)
+	UI.angular(disc,UI.Colors.gold,{cut=10})
 	local rim=UI.frame(disc,{Name="InsigniaRim",Position=UDim2.fromOffset(3,3),Size=UDim2.new(1,-6,1,-6),BackgroundTransparency=1,Active=false})
 	UI.corner(rim,10); UI.stroke(rim,color:Lerp(Color3.new(1,1,1),0.5),1.5)
 	local shine = UI.frame(disc, {Name = "Shine", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.07), Size = UDim2.fromScale(0.62, 0.22), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.72, Active = false})
 	UI.corner(shine, 100)
-	if type(icon) == "function" then icon(disc) elseif icon then UI.illustration(disc, icon, color, {Name = "NavIcon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromScale(0.66, 0.66)}) end
+	if type(icon) == "function" then icon(disc)
+	elseif icon == "hero" then
+		local templates=game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
+		local source=templates and (templates:FindFirstChild("ironman") or templates:FindFirstChild("Hero_ironman"))
+		UI.heroPortrait(disc,"ironman",source,color,{Name="NavIcon",Position=UDim2.fromOffset(4,3),Size=UDim2.new(1,-8,1,-captionH-6),NoBackdrop=true,ZIndex=2})
+	elseif icon then UI.illustration(disc, icon, color, {Name = "NavIcon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5,0,0.5,-captionH/2), Size = UDim2.new(0.72,0,0.72,-captionH/2)}) end
 	if captionH > 0 then
-		UI.label(button, caption, {Name = "Caption", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(1, 24, 0, 22), TextSize = 16, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, TextTruncate = Enum.TextTruncate.None})
+		local caption=UI.label(button, caption, {Name = "Caption", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, -12, 0, captionH), BackgroundColor3=UI.Colors.ink,BackgroundTransparency=0.12,TextSize = 14, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, TextTruncate = Enum.TextTruncate.None,ZIndex=3})
+		UI.oneLine(caption,10)
 	end
 	return button, disc
 end
@@ -987,10 +1061,10 @@ function UI.heroPortraitLive(parent, heroId, source, tint, properties)
 		Ambient = Color3.fromRGB(195, 207, 224), LightColor = Color3.fromRGB(255, 245, 228),
 		LightDirection = Vector3.new(-1, -0.6, -1), BackgroundTransparency = 1,
 	}
-	for key, value in pairs(properties or {}) do if key~="FullFigure" then defaults[key] = value end end
-	local backing=UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
+	for key, value in pairs(properties or {}) do if key~="FullFigure" and key~="NoBackdrop" then defaults[key] = value end end
+	local backing=not (properties and properties.NoBackdrop) and UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
 	local viewportFrame = UI.create("ViewportFrame", defaults, parent)
-	viewportFrame.Destroying:Connect(function() if backing.Parent then backing:Destroy() end end)
+	viewportFrame.Destroying:Connect(function() if backing and backing.Parent then backing:Destroy() end end)
 	UI.corner(viewportFrame, 8)
 	local world = UI.create("WorldModel", {Name = "HeroPreview"}, viewportFrame)
 	local model = UI.heroModel(world, heroId, source)
@@ -1013,10 +1087,10 @@ function UI.heroPortrait(parent, heroId, source, tint, properties)
 		Ambient = Color3.fromRGB(195, 207, 224), LightColor = Color3.fromRGB(255, 245, 228),
 		LightDirection = Vector3.new(-1, -0.6, -1), BackgroundTransparency = 1,
 	}
-	for key, value in pairs(properties or {}) do if key~="FullFigure" then defaults[key] = value end end
-	local backing=UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
+	for key, value in pairs(properties or {}) do if key~="FullFigure" and key~="NoBackdrop" then defaults[key] = value end end
+	local backing=not (properties and properties.NoBackdrop) and UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
 	local viewportFrame = UI.create("ViewportFrame", defaults, parent)
-	viewportFrame.Destroying:Connect(function() if backing.Parent then backing:Destroy() end end)
+	viewportFrame.Destroying:Connect(function() if backing and backing.Parent then backing:Destroy() end end)
 	UI.corner(viewportFrame, 8)
 	local world = UI.create("WorldModel", {Name = "HeroPreview"}, viewportFrame)
 	local model = UI.heroModel(world, heroId, source)
@@ -1403,33 +1477,55 @@ function UI.clear(parent)
 end
 
 function UI.basePortrait(parent, def, properties)
-	local root=UI.frame(parent,properties)
-	root.BackgroundTransparency=1
+	local props={Name="BaseMiniaturePortrait",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,
+		Ambient=Color3.fromRGB(182,201,224),LightColor=Color3.fromRGB(255,242,213),LightDirection=Vector3.new(-1,-1,-1)}
+	for key,value in pairs(properties or {}) do props[key]=value end
+	local root=UI.create("ViewportFrame",props,parent)
+	root:SetAttribute("BaseStyle",def.style or "outpost")
 	local tint=UI.color(def.color)
-	local function block(x,y,w,h,color,radius)
-		local f=UI.frame(root,{Position=UDim2.fromScale(x,y),Size=UDim2.fromScale(w,h),BackgroundColor3=color,ZIndex=root.ZIndex})
-		UI.corner(f,radius or 3); return f
+	local world=UI.create("WorldModel",{Name="BasePreview"},root)
+	local model=UI.create("Model",{Name="BaseMiniature"},world)
+	local function block(name,x,y,z,w,h,d,color,material)
+		return UI.create("Part",{Name=name,CFrame=CFrame.new(x,y,z),Size=Vector3.new(w,h,d),Color=color or tint,Material=material or Enum.Material.SmoothPlastic,
+			Anchored=true,CanCollide=false,CanTouch=false,CanQuery=false,CastShadow=false},model)
 	end
-	block(0.06,0.79,0.88,0.15,UI.Colors.background,8)
-	block(0.12,0.74,0.76,0.1,tint,6)
-	block(0.22,0.36,0.56,0.39,tint:Lerp(UI.Colors.background,0.35),5)
-	block(0.16,0.28,0.68,0.13,tint,6)
-	for n=0,2 do block(0.29+n*0.16,0.46,0.09,0.12,UI.Colors.cream,2) end
+	-- A small isometric diorama: the same functional families as the field
+	-- bases, with a grounded platform, facade, entrance and readable equipment.
+	block("Foundation",0,0,0,10,0.7,9,UI.Colors.ink,Enum.Material.Slate)
+	block("Platform",0,0.45,0,9.6,0.25,8.6,tint:Lerp(UI.Colors.cream,0.25))
+	block("Building",0,2,-0.5,6,3,4.6,tint:Lerp(UI.Colors.background,0.55))
+	block("Roof",0,3.65,-0.5,7,0.4,5.6,tint)
+	block("RoofInset",0,3.92,-0.5,5.8,0.2,4.4,tint:Lerp(UI.Colors.cream,0.45))
+	block("Door",0,1.55,-2.86,1.5,2,0.12,UI.Colors.ink)
+	block("DoorLintel",0,2.65,-2.95,1.8,0.2,0.24,tint)
+	block("EntryStep",0,0.7,-3.35,2.2,0.25,1.2,UI.Colors.muted,Enum.Material.Concrete)
+	for _,x in ipairs({-2.1,2.1}) do
+		block("Window",x,2.25,-2.85,1,1,0.15,UI.Colors.blue:Lerp(UI.Colors.cream,0.35),Enum.Material.Glass)
+		block("Column",x*1.45,2,-0.5,0.3,3.2,4.9,tint:Lerp(UI.Colors.cream,0.4))
+	end
 	if def.style=="farm" then
-		for n=0,3 do
-			block(0.14+n*0.19,0.68,0.13,0.13,UI.Colors.coral)
-			block(0.17+n*0.19,0.52,0.07,0.18,UI.Colors.green,10)
+		for _,x in ipairs({-3.3,3.3}) do
+			block("SupplyBed",x,0.9,-3.1,2.1,0.5,2.4,Color3.fromRGB(104,73,49),Enum.Material.Wood)
+			for z=0,1 do
+				block("Stem",x,1.5,-3.6+z,0.2,1,0.2,UI.Colors.green)
+				local crop=block("Crop",x,1.9,-3.6+z,1,0.9,1,tint:Lerp(UI.Colors.green,0.55));crop.Shape=Enum.PartType.Ball
+			end
 		end
 	elseif def.style=="wall" then
-		for n=0,3 do block(0.07+n*0.23,0.57,0.18,0.28,tint:Lerp(UI.Colors.cream,0.25),3) end
+		for x=-1,1 do block("Barricade",x*3.1,1.65,-3.7,2.6,2.4,0.65,tint:Lerp(UI.Colors.cream,0.15),Enum.Material.Concrete) end
+		block("Emitter",0,3,-3.8,8.5,0.25,0.4,UI.Colors.blue)
 	elseif def.style=="turret" then
-		block(0.36,0.12,0.26,0.22,UI.Colors.stroke,5)
-		block(0.42,0.06,0.12,0.17,UI.Colors.gold,3)
+		block("Turret",0,4.65,-0.5,2.8,1.3,2.5,UI.Colors.muted,Enum.Material.Metal)
+		for _,x in ipairs({-0.8,0.8}) do block("Barrel",x,4.8,-2.5,0.55,0.55,3.4,tint,Enum.Material.Metal) end
 	elseif def.style=="soldiers" then
-		block(0.4,0.57,0.2,0.22,UI.Colors.background)
-		block(0.77,0.13,0.03,0.59,UI.Colors.cream)
-		block(0.79,0.13,0.19,0.19,UI.Colors.coral)
+		for _,x in ipairs({-4,4}) do
+			block("Flagpole",x,2.8,1.6,0.15,4.8,0.15,UI.Colors.cream,Enum.Material.Metal)
+			block("Banner",x+0.65,4.1,1.6,1.3,1.7,0.1,tint,Enum.Material.Fabric)
+		end
 	end
+	local camera=UI.create("Camera",{Name="BaseCamera",FieldOfView=34},root)
+	camera.CFrame=CFrame.lookAt(Vector3.new(15,11,-18),Vector3.new(0,2,0))
+	root.CurrentCamera=camera
 	return root
 end
 
@@ -1461,10 +1557,12 @@ function UI.titleRibbon(parent, text, tint, properties)
 		Size = UDim2.fromOffset(width, height), Active = false, ZIndex = z})
 	UI.parallelogram(root, tint:Lerp(Color3.new(0, 0, 0), 0.55), {Name = "RibbonDepth", Position = UDim2.fromOffset(10, 8), Size = UDim2.fromOffset(width, height), ZIndex = z})
 	UI.parallelogram(root, UI.Colors.ink, {Name = "RibbonOutline", Position = UDim2.fromOffset(-3, -3), Size = UDim2.fromOffset(width + 6, height + 6), ZIndex = z})
+	UI.parallelogram(root, UI.Colors.gold, {Name = "RibbonMetal", Position = UDim2.fromOffset(-1, -1), Size = UDim2.fromOffset(width + 2, height + 2), ZIndex = z})
 	local _, fill = UI.parallelogram(root, tint, {Name = "RibbonFill", Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(width, height), ZIndex = z})
 	UI.create("UIGradient", {Color = ColorSequence.new(tint:Lerp(Color3.new(1, 1, 1), 0.22), tint:Lerp(Color3.new(0, 0, 0), 0.18)), Rotation = 90}, fill)
 	local _, gloss = UI.parallelogram(root, Color3.new(1, 1, 1), {Name = "RibbonGloss", Position = UDim2.fromOffset(6, 4), Size = UDim2.fromOffset(width - 12, math.floor(height * 0.34)), ZIndex = z})
-	gloss.BackgroundTransparency = 0.78
+	gloss.BackgroundTransparency = 0.9
+	UI.printTexture(root,UI.Colors.ink,{Position=UDim2.new(1,-118,0,2),Size=UDim2.fromOffset(110,height-8),ZIndex=z+1})
 	-- Inked speed cuts at the free end of the title, clear of its caption.
 	for index=0,2 do
 		UI.parallelogram(root,UI.Colors.ink,{Name="RibbonCut",Position=UDim2.fromOffset(width-22-index*8,height-13),Size=UDim2.fromOffset(4,8),ZIndex=z+1})
@@ -1519,6 +1617,8 @@ function UI.windowSkin(frame, tint, kind)
 	for _,side in ipairs({0,1}) do
 		UI.frame(sheen,{Name="FrameTerminal",AnchorPoint=Vector2.new(side,1),Position=UDim2.new(side,side==0 and 16 or -16,1,-7),Size=UDim2.fromOffset(34,3),BackgroundColor3=tint,Active=false,ZIndex=0})
 	end
+	UI.angular(frame,tint:Lerp(UI.Colors.gold,0.28),{cut=18})
+	frame.BackgroundTransparency=1
 	return border
 end
 

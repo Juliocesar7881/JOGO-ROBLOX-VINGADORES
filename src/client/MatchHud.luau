@@ -302,7 +302,7 @@ function MatchHud.new(ctx)
 		if #offers == 0 then return end
 		local size = screenSize()
 		local P = UI.protocolLayout(size.X, size.Y)
-		local veil = UI.frame(overlays, {BackgroundColor3 = C.background, BackgroundTransparency = 0.12, Size = UDim2.fromScale(1, 1), ZIndex = 51, Active = true})
+		local veil = UI.frame(overlays, {BackgroundColor3 = C.background, BackgroundTransparency = 0.4, Size = UDim2.fromScale(1, 1), ZIndex = 51, Active = true})
 		ctx.refs().protocolPanel = veil
 		local panel = UI.roundFrame(veil, {Position = at(P.panel), Size = dims(P.panel), ZIndex = 52}, C.gold)
 		UI.windowSkin(panel, C.gold)
@@ -340,8 +340,17 @@ function MatchHud.new(ctx)
 				UI.label(card, nameText, {Position = UDim2.fromOffset(medal + 22, 6), Size = UDim2.new(1, -medal - 32, 0, 26), Font = UI.Fonts.display, TextSize = 19, TextColor3 = tint:Lerp(C.text, 0.4), ZIndex = 54})
 				chipsAt(medal + 22, 32, cardRect.w - medal - 32, cardRect.h - 58, 22, 13)
 			else
-				local medal = short and 54 or math.min(96, math.floor(cardRect.h * 0.27))
-				CardArt.medallion(UI, card, def, tint, medal, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, short and 6 or 10), ZIndex = 54})
+				local medal = short and 54 or math.min(132, math.floor(cardRect.h * 0.34))
+				if not short and ctx.heroPortrait then
+					local glyph=CardArt.glyph(def)
+					local id=({sword="capmen",bow="hawkeye",bank="hulk",heart="groot",ring="thor"})[glyph] or "ironman"
+					local illustration=UI.frame(card,{Name="CardIllustration",Position=UDim2.fromOffset(6,6),Size=UDim2.new(1,-12,0,medal),ZIndex=54})
+					UI.cardSkin(illustration,tint)
+					ctx.heroPortrait(card,id,{Name="CardChampion",Position=UDim2.fromOffset(8,8),Size=UDim2.new(1,-16,0,medal),NoBackdrop=true,ZIndex=54})
+					CardArt.medallion(UI,card,def,tint,42,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,medal-36),ZIndex=55})
+				else
+					CardArt.medallion(UI, card, def, tint, medal, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, short and 6 or 10), ZIndex = 54})
+				end
 				local nameY = (short and 6 or 10) + medal + 4
 				UI.label(card, nameText, {Position = UDim2.fromOffset(8, nameY), Size = UDim2.new(1, -16, 0, short and 22 or 30), Font = UI.Fonts.display, TextSize = short and 16 or 22, TextColor3 = tint:Lerp(C.text, 0.4), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
 				local chipH = short and 24 or 34
@@ -465,10 +474,14 @@ function MatchHud.new(ctx)
 	local function renderResults()
 		local result = ctx.state().results or {}
 		local victory = result.victory == true or result.ended == true
-		local veil = UI.frame(main, {Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.12})
+		local veil = UI.frame(main, {Name="ResultVeil",Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.5})
 		local panel = UI.roundFrame(veil, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 8), Size = UDim2.new(1, -32, 1, -60), BackgroundColor3 = C.panel}, victory and C.green or C.red)
 		UI.create("UISizeConstraint", {MaxSize = Vector2.new(640, 720)}, panel)
 		UI.windowSkin(panel, victory and C.green or C.blue,"results")
+		if not mobile() and ctx.heroPortrait then
+			ctx.heroPortrait(veil,victory and "capmen" or "hawkeye",{Name="ResultChampionLeft",Position=UDim2.new(0,4,0.15,0),Size=UDim2.new(0.2,0,0.72,0),FullFigure=true,NoBackdrop=true,ZIndex=0})
+			ctx.heroPortrait(veil,victory and "thor" or "ironman",{Name="ResultChampionRight",Position=UDim2.new(0.8,-4,0.15,0),Size=UDim2.new(0.2,0,0.72,0),FullFigure=true,NoBackdrop=true,ZIndex=0})
+		end
 		-- The window's title tab, like every other screen: victory green, retry blue.
 		UI.titleRibbon(panel, result.ended and T("Recorde!", "Record!") or victory and T("Vitória!", "Victory!") or T("Fim de jogo", "Game over"), victory and C.green or C.blue,
 			{Name = "ResultRibbon", Position = UDim2.fromOffset(-10, -14), width = 320, height = 54, TextSize = 32, ZIndex = 3})

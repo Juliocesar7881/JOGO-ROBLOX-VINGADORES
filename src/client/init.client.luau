@@ -549,14 +549,15 @@ renderContext = function()
 	-- red X on the top-right. The talent tree has no window at all.
 	local bare=contextPanel.kind=="talents"
 	local border=UI.windowSkin(panel,tint,contextPanel.kind)
-	panel.BackgroundTransparency=bare and 1 or 0
+	panel.BackgroundTransparency=1
+	if panel:FindFirstChild("ComicShell") then panel.ComicShell.Visible=not bare end
 	border.Transparency=bare and 1 or 0
 	local shade=panel:FindFirstChildOfClass("UIGradient")
 	if shade then shade.Enabled=not bare end
 	if panel:FindFirstChild("Sheen") then panel.Sheen.Visible=not bare end
 	if reuse then
 		for _,child in ipairs(panel:GetChildren()) do
-			if child~=body and child.Name~="Sheen" and not child:IsA("UIComponent") then child:Destroy() end
+			if child~=body and child.Name~="Sheen" and child.Name~="ComicShell" and not child:IsA("UIComponent") then child:Destroy() end
 		end
 	end
 	refs.context = panel
@@ -809,6 +810,8 @@ renderLobby = function()
 	local pill = UI.frame(main, {Name = "LobbyPill", Position = at(hud.pill), Size = dims(hud.pill), BackgroundColor3 = C.ink, BackgroundTransparency = 0.2})
 	UI.corner(pill, 24)
 	UI.stroke(pill, C.gold, 2.5)
+	UI.shade(pill,90,0.3)
+	UI.angular(pill,C.gold,{cut=13})
 	UI.multiverseSeal(pill,C.violet,{Position=UDim2.new(1,-74,0,-8),Size=UDim2.fromOffset(70,64),ZIndex=0})
 	UI.illustration(pill,"coin",C.gold,{Position=UDim2.fromOffset(2,2),Size=UDim2.fromOffset(44,44)})
 	refs.gold = UI.label(pill, goldText(), {Name = "GoldAmount", Position = UDim2.fromOffset(50, 0), Size = UDim2.new(1, -100, 1, -6), TextSize = compact and 21 or 27, Font = UI.Fonts.display, TextColor3 = C.gold})
@@ -1220,7 +1223,7 @@ local function renderMatch()
 	local top = UI.frame(main, {Name = "MatchReadouts", Position = at(topRect), Size = dims(topRect), BackgroundTransparency = 1})
 	if class.narrow then
 		UI.windowSkin(top, C.blue)
-		top.BackgroundColor3, top.BackgroundTransparency = C.panel, 0.06
+		top.BackgroundColor3, top.BackgroundTransparency = C.panel, 1
 	else
 		for _, rect in ipairs({layout.command, layout.core}) do
 			local panel = UI.roundFrame(top, {Position = at(rect, topRect), Size = dims(rect), BackgroundColor3 = C.panel, BackgroundTransparency = 0.08})
@@ -1561,8 +1564,15 @@ render = function()
 		-- teleport): the game's name, a bar that moves, and one tip to read.
 		local splash = UI.frame(main, {Name = "LoadingSplash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, ZIndex = 80})
 		UI.create("UIGradient", {Color = ColorSequence.new(C.background:Lerp(C.violet, 0.5), C.background), Rotation = 90}, splash)
+		if screenSize().X>800 then
+			for _,entry in ipairs({{"capmen",0.01},{"thor",0.76}}) do
+				heroPortrait(splash,entry[1],{Name="SplashHero_"..entry[1],Position=UDim2.fromScale(entry[2],0.2),Size=UDim2.fromScale(0.23,0.7),FullFigure=true,NoBackdrop=true,ZIndex=81})
+			end
+		end
 		local card = UI.frame(splash, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.new(1, -40, 0, 260), BackgroundTransparency = 1, ZIndex = 81})
 		UI.create("UISizeConstraint", {MaxSize = Vector2.new(560, 280)}, card)
+		card.BackgroundColor3=C.panel
+		UI.angular(card,C.gold,{cut=18})
 		UI.label(card, T("Multiverso", "Multiverse"), {Name = "SplashKicker", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 24, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
 		UI.label(card, "DOOMSDAY", {Name = "SplashTitle", Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 78), Font = UI.Fonts.display, TextSize = 66, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})
 		UI.label(card, T("Última defesa", "Last stand"), {Position = UDim2.fromOffset(0, 108), Size = UDim2.new(1, 0, 0, 30), Font = UI.Fonts.display, TextSize = 22, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 82})

@@ -39,7 +39,12 @@ function Viewport.new(ctx)
 		pan = Vector2.new(ctx.width * 0.5, ctx.height * 0.6) - ctx.root * zoom
 		apply()
 	end
-	if saved.x == nil then center() else apply() end
+	if saved.x == nil and ctx.overview then
+		-- Desktop opens on the whole board, including the highest branch.
+		-- Later refreshes retain the explored region; Center still finds the root.
+		pan=Vector2.new((ctx.width-ctx.mapW*zoom)*0.5,(ctx.height-ctx.mapH*zoom)*0.5)
+		apply()
+	elseif saved.x == nil then center() else apply() end
 	local function pointer(position)
 		local inset = GuiService:GetGuiInset()
 		return UI.toLogical(Vector2.new(position.X, position.Y) - inset - holder.AbsolutePosition)

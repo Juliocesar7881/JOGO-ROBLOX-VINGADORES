@@ -26,6 +26,7 @@ function InteractionHud.prompt(UI, parent, objectText, actionText, key, activate
 	local cap = UI.frame(panel, {Name = "PromptKey", Position = UDim2.fromOffset(9, 9), Size = UDim2.fromOffset(48, 48), BackgroundColor3 = C.gold})
 	UI.corner(cap, 12)
 	UI.stroke(cap, C.ink, 2.5)
+	UI.angular(cap, C.cream, {cut=8})
 	UI.oneLine(UI.label(cap, key, {Size = UDim2.fromScale(1, 1), TextSize = #key > 1 and 18 or 28, Font = UI.Fonts.display, TextColor3 = C.ink, TextXAlignment = Enum.TextXAlignment.Center}), 10)
 	UI.fit(UI.label(panel, objectText, {Name = "PromptObject", Position = UDim2.fromOffset(68, 6), Size = UDim2.new(1, -78, 0, 22), TextSize = 16, Font = UI.Fonts.display, TextColor3 = C.muted}), 10)
 	UI.fit(UI.label(panel, actionText, {Name = "PromptAction", Position = UDim2.fromOffset(68, 28), Size = UDim2.new(1, -78, 0, 32), TextSize = 24, Font = UI.Fonts.display}), 12)

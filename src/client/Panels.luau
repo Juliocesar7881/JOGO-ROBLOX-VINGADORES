@@ -332,7 +332,7 @@ function Panels.new(ctx)
 		-- The tiers: big chests you can see from across the room.
 		-- A phone panel has room for the tiers and one buy row above the fold:
 		-- shorter tiles and a single-row purchase card keep SUMMON visible.
-		local tileH=wide and 112 or 92
+		local tileH=wide and 94 or 92
 		local selector=UI.scroll(body,{Name="SummonCrates",Size=UDim2.new(1,-6,0,tileH+16),AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollingDirection=Enum.ScrollingDirection.X,ScrollBarThickness=3,ScrollBarImageColor3=tint})
 		local tileWidth=wide and (width-6)/#ids or 118
 		selector.CanvasSize=UDim2.fromOffset(tileWidth*#ids,0)
@@ -346,8 +346,8 @@ function Panels.new(ctx)
 				{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+6,chosen and 6 or 8),Size=UDim2.fromOffset(tileWidth-12,tileH),BackgroundColor3=chosen and color:Lerp(UI.Skin.body,0.15) or color:Lerp(UI.Skin.body,0.7)})
 			UI.stroke(tile,chosen and Color3.new(1,1,1) or C.ink,chosen and 3.5 or 2.5)
 			UI.cardSkin(tile,chosen and color or color:Lerp(UI.Skin.body,0.55))
-			UI.illustration(tile,"crate",color,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=wide and UDim2.fromOffset(62,54) or UDim2.fromOffset(46,40)})
-			UI.label(tile,L(def.name),{Position=UDim2.fromOffset(4,wide and 58 or 44),Size=UDim2.new(1,-8,0,wide and 24 or 22),TextWrapped=true,TextSize=wide and 15 or 12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			UI.illustration(tile,"crate",color,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=wide and UDim2.fromOffset(50,38) or UDim2.fromOffset(46,40)})
+			UI.oneLine(UI.label(tile,L(def.name),{Position=UDim2.fromOffset(4,wide and 41 or 44),Size=UDim2.new(1,-8,0,wide and 20 or 22),TextWrapped=false,TextSize=wide and 15 or 12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center}),10)
 			local price=UI.chip(tile,number(def.cost),C.ink,{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-5),Size=UDim2.new(1,-18,0,wide and 24 or 22),TextSize=wide and 16 or 14,TextColor3=C.gold})
 			price.Name="ChestPrice"
 		end
@@ -368,7 +368,7 @@ function Panels.new(ctx)
 		local purchaseParent, galleryParent=body,body
 		local galleryHeight=254
 		if wide then
-			local stageHeight=math.max(260,math.min(440,slot.h-248))
+			local stageHeight=math.max(300,math.min(460,slot.h-212))
 			local stage=UI.frame(body,{Name="SummonStage",Size=UDim2.new(1,-6,0,stageHeight),BackgroundTransparency=1})
 			galleryParent=UI.frame(stage,{Name="SummonPreview",Size=UDim2.new(0.58,-8,1,0),BackgroundTransparency=1})
 			purchaseParent=UI.frame(stage,{Name="SummonActions",Position=UDim2.fromScale(0.59,0),Size=UDim2.new(0.41,0,1,0),BackgroundTransparency=1})
@@ -460,7 +460,7 @@ function Panels.new(ctx)
 
 		-- A real roster showcase, separate from the complete odds list. These
 		-- are available outcomes, never a promise that the player will win one.
-		local featuredH=wide and 140 or 0
+		local featuredH=wide and math.min(210,math.floor(galleryHeight*0.58)) or 0
 		if wide then
 			local featured=UI.frame(galleryParent,{Name="SummonFeatured",Size=UDim2.new(1,-6,0,featuredH),BackgroundTransparency=1})
 			local seen,chosen={},{}
@@ -722,9 +722,15 @@ function Panels.new(ctx)
 				local ready = not quest.claimed and progress >= (quest.target or 1)
 				local card = UI.roundFrame(body, {Name = "Quest_" .. id, Size = UDim2.new(1, -6, 0, 132), BackgroundColor3 = UI.Skin.slot}, ready and C.green or UI.Skin.slotLine)
 				UI.stroke(card, ready and C.green or UI.Skin.slotLine, ready and 3 or 2)
-				UI.fit(UI.label(card, L(quest.name), {Name = "QuestName", Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -190, 0, 30), Font = UI.Fonts.display, TextSize = 23}), 12)
-				UI.fit(UI.label(card, L(quest.description), {Name = "QuestText", Position = UDim2.fromOffset(14, 38), Size = UDim2.new(1, -190, 0, 40), TextSize = 16, TextWrapped = true, TextColor3 = C.muted}), 10)
-				local fill = UI.bar(card, ready and C.green or C.gold, UDim2.fromOffset(14, 90), UDim2.new(1, -200, 0, 24))
+				local inset=14
+				if screenSize().X>=900 then
+					local emblem=UI.roundFrame(card,{Name="MissionEmblem",Position=UDim2.fromOffset(10,12),Size=UDim2.fromOffset(92,108)},ready and C.green or C.gold)
+					UI.illustration(emblem,ready and "gift" or "trophy",ready and C.green or C.gold,{Position=UDim2.fromOffset(8,10),Size=UDim2.fromOffset(76,76)})
+					inset=116
+				end
+				UI.fit(UI.label(card, L(quest.name), {Name = "QuestName", Position = UDim2.fromOffset(inset, 8), Size = UDim2.new(1, -176-inset, 0, 30), Font = UI.Fonts.display, TextSize = 23}), 12)
+				UI.fit(UI.label(card, L(quest.description), {Name = "QuestText", Position = UDim2.fromOffset(inset, 38), Size = UDim2.new(1, -176-inset, 0, 40), TextSize = 16, TextWrapped = true, TextColor3 = C.muted}), 10)
+				local fill = UI.bar(card, ready and C.green or C.gold, UDim2.fromOffset(inset, 90), UDim2.new(1, -186-inset, 0, 24))
 				fill.Size = UDim2.fromScale(progress / math.max(quest.target or 1, 1), 1)
 				UI.label(fill.Parent, progress .. " / " .. (quest.target or 1), {Size = UDim2.fromScale(1, 1), TextSize = 16, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
 				UI.label(card, number(quest.gold or 0) .. T(" Ouro", " Gold") .. "\n" .. number(quest.xp or 0) .. " XP", {Position = UDim2.new(1, -176, 0, 6), Size = UDim2.fromOffset(164, 46), TextWrapped = true, TextSize = 18, Font = UI.Fonts.display, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Right})
@@ -1178,7 +1184,11 @@ function Panels.new(ctx)
 		local narrow = UI.contextLayout(screen.X, screen.Y, {wide = true}).w - 40 < 420
 		for _, option in ipairs(options) do
 			local card = UI.roundFrame(body, {Name = "Setting_" .. option.key, Size = UDim2.new(1, -6, 0, 66), BackgroundColor3 = UI.Skin.slot}, UI.Skin.slotLine)
-			local name = UI.label(card, option.title, {Position = UDim2.fromOffset(16, 4), Size = narrow and UDim2.new(0.56, -24, 1, -8) or UDim2.new(1, -250, 1, -8), TextSize = 21, Font = UI.Fonts.display, TextWrapped = true})
+			if not narrow then
+				local glyphs={language="globe",lowFX="sparkle",shake="target",music="music",effects="bolt",interface="gear"}
+				UI.illustration(card,glyphs[option.key],C.blue,{Name="SettingIcon",Position=UDim2.fromOffset(12,11),Size=UDim2.fromOffset(44,44)})
+			end
+			local name = UI.label(card, option.title, {Position = UDim2.fromOffset(narrow and 16 or 68, 4), Size = narrow and UDim2.new(0.56, -24, 1, -8) or UDim2.new(1, -302, 1, -8), TextSize = 21, Font = UI.Fonts.display, TextWrapped = true})
 			UI.fit(name, 12)
 			local on = option.value == T("Ligado", "On")
 			local off = option.value == T("Desligado", "Off")
@@ -1306,6 +1316,12 @@ function Panels.new(ctx)
 		local infoH = readOnly and 0 or (compact and 0 or 48)
 		if not readOnly then
 			-- The world stays visible through the controller's menu blur.
+			local plaque=UI.frame(stage,{Name="TalentTitlePlate",AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=UDim2.new(1,compact and -230 or -330,0,compact and 36 or 48),BackgroundColor3=C.background,Active=false,ZIndex=1})
+			UI.angular(plaque,C.gold,{cut=12})
+			if not compact then
+				heroPortrait(stage,"capmen",{Name="TalentChampionFortune",Position=UDim2.new(0,0,0.24,0),Size=UDim2.new(0.17,0,0.55,0),FullFigure=true,NoBackdrop=true,ImageTransparency=0.18,ZIndex=0})
+				heroPortrait(stage,"thor",{Name="TalentChampionCommand",Position=UDim2.new(0.83,0,0.24,0),Size=UDim2.new(0.17,0,0.55,0),FullFigure=true,NoBackdrop=true,ImageTransparency=0.18,ZIndex=0})
+			end
 			local heading = UI.label(stage, T("Árvore de Evolução", "Talent Tree"), {Name = "TalentHeading", Position = UDim2.fromOffset(compact and 128 or 160, compact and 4 or 10), Size = UDim2.new(1, compact and -194 or -240, 0, compact and 34 or 42),
 				Font = UI.Fonts.display, TextSize = compact and 26 or 38, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
 			UI.oneLine(heading, compact and 14 or 20)
@@ -1321,7 +1337,7 @@ function Panels.new(ctx)
 		local areaW, areaH = stageW - 24, stageH - headH - footH - infoH - 12
 		-- Never smaller than a fingertip on a small screen: the tree scrolls instead.
 		local R = math.floor(math.clamp(math.min(areaW / (maxX - minX), areaH / (maxY - minY)), compact and 30 or 26, readOnly and 50 or 66))
-		if readOnly then R = math.max(40, R) else R = compact and 62 or 74 end
+		if readOnly then R = math.max(40, R) else R = compact and 62 or 60 end
 		local mapW, mapH = math.ceil((maxX - minX) * R), math.ceil((maxY - minY) * R)
 		local holder = stage
 		if not readOnly then
@@ -1343,7 +1359,7 @@ function Panels.new(ctx)
 		if not readOnly then
 			kit.talentView = kit.talentView or {}
 			navigation = TalentViewport.new({UI = UI, holder = holder, map = map, saved = kit.talentView, width = areaW, height = areaH + 8,
-				mapW = mapW, mapH = mapH, root = at(Vector2.new(0, 0)), lowFX = lowFX})
+				mapW = mapW, mapH = mapH, root = at(Vector2.new(0, 0)), overview = not compact, lowFX = lowFX})
 			local center = UI.secondary(stage, T("Centralizar", "Center"), function() navigation.Center(); audio:Talent("center") end,
 				{Name = "TalentCenter", Position = UDim2.fromOffset(12, compact and 4 or 12), Size = UDim2.fromOffset(compact and 106 or 130, compact and 34 or 42), TextSize = compact and 14 or 17, ZIndex = 8})
 			if compact then UI.hover(center, function(box) UI.tooltipTitle(box, T("Explorar a árvore", "Explore the tree")); UI.tooltipLine(box, T("Arraste com o dedo ou mouse. No PC, use a roda para aproximar.", "Drag with your finger or mouse. On PC, use the wheel to zoom."), C.muted) end, 280) end
