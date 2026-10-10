@@ -55,6 +55,13 @@ class SoundBankTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(len(result.stdout.splitlines()), 2)
 
+    def test_uploaded_assets_match_runtime_configuration(self):
+        config = (ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8')
+        for asset in self.manifest['assets'].values():
+            match = re.search(r'\b' + asset['configKey'] + r'\s*=\s*(\d+)', config)
+            self.assertIsNotNone(match, asset['configKey'])
+            self.assertEqual(int(match[1]), asset['assetId'], asset['configKey'])
+
     def test_local_pcm_when_present_is_complete_and_not_clipped(self):
         paths = [BASE / 'rendered' / asset['file'] for asset in self.manifest['assets'].values()]
         if not any(path.exists() for path in paths):

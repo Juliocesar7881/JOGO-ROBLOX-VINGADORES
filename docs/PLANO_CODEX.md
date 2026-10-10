@@ -482,3 +482,21 @@ As 37 fontes finais foram comparadas com o repositório; veja o relatório
 para as evidências e o registro do preview. Atenção: `studio_sync.py
 --preview-lobby` sem arquivos também sincroniza tudo. Informar sempre os
 arquivos alterados quando usar essa opção.
+
+## 16. Ativação dos bancos e som dos ultimates — 10/10
+
+Os sete bancos Sonniss foram importados no lugar oficial às 08:41 local,
+com IDs reais em Config e manifesto. Todos carregaram no cliente real do
+Studio: 73 regiões reproduzidas, cinco finais por raridade, loops e mute.
+Tiros, golpes, teias e magia usam os perfis existentes; poderes têm oito
+famílias. O banner de ultimate deixou de tocar um som genérico que consumia
+a recarga de áudio e silenciava o poder específico. Regressão coberta nos
+seis roteiros completos do cliente.
+
+Com os bancos ativos, Cartas/Complexo Gama e 114 inimigos visíveis mantiveram
+59,99 FPS na RTX 4060 Ti, p95 de 18,24 ms, em amostra de seis segundos.
+Relatório e evidências em
+[`REFINAMENTO_SONNISS_2026-10-09.md`](REFINAMENTO_SONNISS_2026-10-09.md).
+A escuta de preferência pelo jogador, aparelho físico e quatro jogadores
+continuam pendentes; a trilha antiga moderada mantém o arranjo de ação
+existente como alternativa. O lobby preserva sua música.

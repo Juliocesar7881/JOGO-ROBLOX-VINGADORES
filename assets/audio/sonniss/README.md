@@ -5,7 +5,7 @@ fontes dos cinco volumes para 56 funções do jogo, com 73 regiões editadas.
 Não há necessidade de tocar toda a biblioteca: a escolha acompanha a função,
 o material da arma e o espaço disponível no mix.
 
-## Arquivos prontos para enviar
+## Bancos importados
 
 Estão na pasta local `assets/audio/sonniss/rendered/`. São sete WAVs mono,
 PCM 16 bits/32 kHz, somando aproximadamente 11 MB. Cada arquivo é um atlas:
@@ -25,32 +25,38 @@ O código não considera um arquivo publicado até existir um ID real em
 `src/shared/Config.luau`. Sem esse ID, ou enquanto o Roblox carrega o áudio,
 o som anterior continua disponível. A música do lobby foi preservada.
 
-## Envio para o projeto oficial
+## Ativação no projeto oficial — 10/10/2026
 
-No Gerenciador de ativos do lugar **97132875544830**, importar os sete WAVs
-sem converter para um formato com perda. O dono confirma pessoalmente a
-declaração de direitos solicitada pelo Roblox. Após processamento/moderação,
-copiar os IDs reais para os sete campos acima e conceder o uso ao universo
-**10768165352**, quando necessário. Manter os áudios privados.
+Os sete WAVs foram importados pelo Gerenciador de ativos do lugar
+**97132875544830**, com horário de criação **08:41 local**. Os IDs reais
+estão no manifesto e em `src/shared/Config.luau`:
 
-Não usar `tools/studio_upload_audio.py` para esse pacote: a versão antiga
-confirma automaticamente uma declaração, sem parar para o dono responder.
-Os arquivos Sonniss são licenciados; não são gravações próprias do projeto.
+| Campo | ID |
+|---|---:|
+| sfxUi | 85369475902522 |
+| sfxEvents | 75724766927443 |
+| sfxSummon | 78967956683172 |
+| sfxCombat | 106008096538276 |
+| sfxPowers | 85187270766836 |
+| sfxBoss | 88205770181304 |
+| sfxWorld | 140273603492577 |
 
-A fila de importação foi preparada no Studio da equipe com os sete arquivos.
-O envio foi interrompido na janela **Importação de arquivo**, antes de
-**Confirmar**. Essa janela declara os direitos de inserção na Roblox e
-autoriza o uso nesta experiência. Não houve envio confirmado, cobrança nem
-ID obtido. Caso a fila tenha sido fechada, selecionar os sete WAVs da pasta
-`rendered/` no Gerenciador de ativos e iniciar a importação novamente.
+No cliente real do Studio, os sete bancos carregaram e as **73 regiões**
+tocaram dentro dos limites. Foram conferidos os cinco finais da roleta,
+encerramento dos trechos, troca de ambiente e mute. A carga de Cartas em
+Complexo Gama com 114 inimigos manteve aproximadamente 60 FPS na RTX 4060 Ti.
+Isso verifica reprodução e integração; preferência de timbre/volume pelo
+jogador e testes em aparelho físico continuam pendentes.
 
-Estado final da sessão: Studio em edição, janela de direitos aberta para o
-dono responder, após publicar código/efeitos às 23:57:05 local de 09/10.
-Captura local: `test-results/review/sonniss-rights-final.png`.
+O gerador preserva um ID existente somente quando o WAV reconstruído tem
+o mesmo SHA-256. Se os bytes mudarem, o manifesto volta a zero: reimportar
+esse banco e atualizar também Config. O teste recusa IDs divergentes.
 
-Conferir no playtest que os sete Sound.IsLoaded estão verdadeiros, ouvir a
-seleção por família e conferir loops e finais antes de publicar. Produção,
-envio, autorização e verificação são etapas distintas.
+O registro de 09/10, com importação parada no diálogo de direitos, é
+histórico; não repetir o envio desses arquivos já importados. Em novos
+uploads, o dono continua respondendo pessoalmente às declarações. Não usar
+`tools/studio_upload_audio.py` para confirmar automaticamente direitos de
+material licenciado. Sonniss é a origem das gravações, não o projeto.
 
 ## Origem, edição e reprodução
 

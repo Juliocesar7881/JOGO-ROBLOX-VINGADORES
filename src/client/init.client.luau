@@ -1750,7 +1750,9 @@ fxRemote.OnClientEvent:Connect(function(event)
 			celebrate:Banner({pt = "CHEFE DERROTADO!", en = "BOSS DEFEATED!"}, def and def.name or nil, C.gold, {big = true, confetti = 50})
 		elseif event.kind == "Ability" and event.ultimate and event.ownerId == player.UserId then
 			local def = Catalog.Abilities[event.abilityId]
-			if def then celebrate:Banner({pt = "★ " .. Catalog.Upper(def.name.pt) .. "!", en = "★ " .. Catalog.Upper(def.name.en) .. "!"}, {pt = "ULTIMATE", en = "ULTIMATE"}, UI.color(def.color), {cue = "ability", duration = 1.5}) end
+			-- Effects plays the hero's power cue below. A generic banner cue would
+			-- consume the same cooldown and silence the actual ultimate sound.
+			if def then celebrate:Banner({pt = "★ " .. Catalog.Upper(def.name.pt) .. "!", en = "★ " .. Catalog.Upper(def.name.en) .. "!"}, {pt = "ULTIMATE", en = "ULTIMATE"}, UI.color(def.color), {duration = 1.5}) end
 		end
 		effects:Handle(event)
 	end

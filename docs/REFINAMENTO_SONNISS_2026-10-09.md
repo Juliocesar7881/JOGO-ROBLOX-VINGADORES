@@ -146,3 +146,53 @@ Depois: copiar os sete IDs reais para os campos indicados no README,
 conferir autorização no universo, `IsLoaded`, duração, limites das regiões e
 loops; ouvir as famílias em combate e os cinco finais. Rodar a suíte,
 sincronizar seletivamente e publicar no mesmo lugar.
+
+## Atualização de 10/10 — bancos reais e ultimates
+
+O estado pendente acima descreve a entrega de 09/10. Em 10/10, às 08:41
+local, os sete bancos apareceram importados no Gerenciador de ativos do
+mesmo lugar **97132875544830**. IDs reais registrados no manifesto e Config;
+mapeamento em `assets/audio/sonniss/README.md`. Nenhum novo lugar criado.
+
+Conferência no cliente real do Studio:
+
+- Sete bancos carregados (`IsLoaded`), com duração correspondente aos WAVs.
+- 56 funções / 73 regiões tocadas, dentro dos limites de cada trecho.
+- Cinco finais de raridade distintos; todos encerram sem tocar o trecho
+  seguinte. Troca de ambiente interrompe o anterior; mute bloqueia novas vozes.
+- Disparos e golpes reais observados usando o banco de combate. Uma revisão
+  adicional descobriu que o banner de ultimate tocava `Cue("ability")` antes
+  do efeito: isso consumia o intervalo mínimo e silenciava o poder correto.
+  O banner agora só desenha; `Effects` toca a família do herói. Regressão
+  de relâmpago e magia com proprietário/ultimate reais nos seis layouts.
+- Depois da correção, cinco lançamentos aceitos pelo servidor e seus FX
+  foram conferidos no cliente real: Gigante Furioso, Armadura de Ferro,
+  Aranha Urbana, Deus do Trovão e Feiticeira Rubi. O banco de poderes estava
+  carregado e reproduzindo a região correta em todos, inclusive os ultimates.
+
+| Amostra de seis segundos | Inimigos visíveis | FPS | p95 | Pior quadro |
+|---|---:|---:|---:|---:|
+| Antes da carga adicional | 10 | 60,00 | 17,67 ms | 19,11 ms |
+| Depois de `server:crowd 80` | 114 | 59,99 | 18,24 ms | 30,72 ms |
+
+PC do dono, NVIDIA GeForce RTX 4060 Ti, Studio, Cartas/Complexo Gama.
+Os sete bancos novos estavam carregados. Um dos 34 Sounds era a trilha
+antiga `battle`, ainda moderada; o arranjo de ação existente cobre esse caso.
+Esta amostra curta não verifica memória prolongada, celular ou quatro jogadores.
+
+Arquivos alterados nesta ativação: Config, manifesto, gerador (preserva ID
+somente para PCM idêntico), controlador do cliente (banner), dublê de Sound,
+regressões do cliente/IDs e documentação. Não houve mudança de economia,
+habilidades, dano ou progressão.
+
+Evidências locais: `test-results/sonniss/activated-loaded.json`,
+`activated-probe.json`, `activated-measure.json`, `activated-powers.json`;
+`test-results/review/sonniss-activate-ids.png` e `sonniss-active-combat80.png`.
+O gerador e testes garantem IDs consistentes e hashes dos sete WAVs privados.
+Escuta subjetiva de timbre/volume pelo jogador permanece em M24.8; não é
+inferida de `IsPlaying`.
+
+Suíte completa desta ativação: saída **0**, registro
+`test-results/sonniss-activate-final-tests.txt`. Inclui 632.736 asserções de
+regras/economia, 6.937 checagens de layout e seis roteiros completos do
+cliente (965/968 checagens por formato), além de serviços, simulação e builds.

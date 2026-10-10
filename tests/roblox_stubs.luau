@@ -291,6 +291,16 @@ local function newInstance(className)
 	rawset(self, "__children", {})
 	rawset(self, "__attributes", {})
 	rawset(self, "__id", instanceCount)
+	if className == "Sound" then
+		local props = rawget(self, "__props")
+		-- Deterministic audio loading; tests may set IsLoaded=false explicitly.
+		props.IsLoaded, props.IsPlaying, props.TimePosition = true, false, 0
+		props.Play = function(sound)
+			assert(sound.SoundId, "Sound needs an asset before playback")
+			sound.IsPlaying = true
+		end
+		props.Stop = function(sound) sound.IsPlaying, sound.TimePosition = false, 0 end
+	end
 	return self
 end
 
@@ -623,6 +633,7 @@ local SERVICES = {
 		CollisionGroupSetCollidable = function() end,
 	},
 }
+SERVICES.SoundService.PlayLocalSound = function(_, sound) sound:Play() end
 game = {
 	GetService = function(_, name)
 		return assert(SERVICES[name], "unstubbed service: " .. tostring(name))

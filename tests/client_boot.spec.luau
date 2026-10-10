@@ -479,6 +479,10 @@ local function session(screen)
 	--========================================================================
 	local lobbyLayout = UILayout.lobbyLayout(view().w, view().h)
 	step("the lobby HUD lays out", function()
+		local audioFolder = services.SoundService:FindFirstChild("DoomAudio")
+		local ambience = audioFolder and audioFolder:FindFirstChild("Bank_world_1")
+		check(ambience and ambience.IsPlaying and ambience.PlaybackRegionsEnabled and ambience.Looped,
+			tag .. ": configured lobby ambience starts as a bounded looping audio region")
 		check(frameAt(main, lobbyLayout.pill) ~= nil, tag .. ": the gold pill sits where lobbyLayout puts it")
 		check(named(main,"Nav_bases") ~= nil and named(main,"Nav_bases").Parent == named(main,"LobbyNavigation"), tag .. ": Base sits in the main navigation dock")
 		check(frameAt(main, lobbyLayout.settings) ~= nil, tag .. ": the settings button sits where lobbyLayout puts it")
@@ -2304,6 +2308,35 @@ local function session(screen)
 		frames(0.5, 4)
 		fx({ kind = "Clear" })
 		frames(1 / 30, 2)
+	end)
+
+	step("ultimate banners preserve each hero's power sound", function()
+		push(matchSnapshot(veteranProfile(), "Wave", {enemies = 0}))
+		local folder = services.SoundService:FindFirstChild("DoomAudio")
+		local bank = require(clientModules.SoundBank)
+		local oldCamera = camera.CFrame
+		camera.CFrame = CFrame.new(0, 30, 20)
+		for heroId, cue in pairs({thor = "powerLightning", wanda = "powerMagic"}) do
+			for _, voice in ipairs(folder:GetChildren()) do
+				if string.match(voice.Name, "^Bank_powers_") then voice:Stop() end
+			end
+			advance(1)
+			local ability = Catalog.Abilities[Catalog.Heroes[heroId].ability]
+			fx({kind = "Ability", heroId = heroId, abilityId = ability.id, abilityKind = ability.kind,
+				ownerId = LOCAL_ID, ultimate = true, position = v3(0, 0, 0), radius = 12,
+				color = Color3.fromRGB(110, 180, 255)})
+			local playing, matched = 0, false
+			for _, voice in ipairs(folder:GetChildren()) do
+				if string.match(voice.Name, "^Bank_powers_") and voice.IsPlaying then
+					playing += 1
+					matched = voice.PlaybackRegion.Min == bank[cue].regions[1][1]
+						and voice.SoundId == "rbxassetid://" .. SharedConfig.Audio.sfxPowers
+				end
+			end
+			check(playing == 1 and matched, tag .. ": " .. heroId .. " ultimate plays its own power cue once, without the banner consuming its cooldown")
+		end
+		camera.CFrame = oldCamera
+		fx({kind = "Clear"})
 	end)
 
 	step("dense attack effects preserve silhouettes and return to their pool", function()

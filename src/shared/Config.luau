@@ -71,9 +71,9 @@ return {
 		reelStart = 0, reelTick = 0,
 		rewardCommon = 0, rewardRare = 0, rewardEpic = 0, rewardLegendary = 0, rewardMythic = 0,
 		-- Seven private Sonniss atlases. Timings live in client/SoundBank.luau.
-		-- Keep zero until real uploads are approved and allowed in this universe.
-		sfxUi = 0, sfxEvents = 0, sfxSummon = 0, sfxCombat = 0,
-		sfxPowers = 0, sfxBoss = 0, sfxWorld = 0,
+		-- Uploaded through the official place's Asset Manager on 2026-10-10.
+		sfxUi = 85369475902522, sfxEvents = 75724766927443, sfxSummon = 78967956683172, sfxCombat = 106008096538276,
+		sfxPowers = 85187270766836, sfxBoss = 88205770181304, sfxWorld = 140273603492577,
 	},
 	-- Enable each dedicated material cue only AFTER its refined WAV is uploaded
 	-- and Audio[name] contains the real ID. Empty keeps the quieter live remix.

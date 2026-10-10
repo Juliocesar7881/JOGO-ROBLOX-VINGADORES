@@ -148,6 +148,8 @@ def main():
     DEST.mkdir(parents=True,exist_ok=True)
     rendered=DEST/'rendered';rendered.mkdir(exist_ok=True)
     audition=DEST/'audition';audition.mkdir(exist_ok=True)
+    previous_path=DEST/'manifest.json'
+    previous=json.loads(previous_path.read_text(encoding='utf-8')).get('assets',{}) if previous_path.exists() else {}
     banks, cues, origins, inventory = {}, {}, {}, []
     archives={}
     try:
@@ -180,8 +182,12 @@ def main():
         for name,chunks in banks.items():
             data=np.concatenate(chunks);path=rendered/f'sfx_{name}.wav';pcm_write(path,data)
             assert path.stat().st_size<20_000_000 and len(data)/RATE<420
+            digest=hashlib.sha256(path.read_bytes()).hexdigest()
+            uploaded=previous.get(name,{})
+            # An existing upload is reusable only for byte-identical audio.
+            asset_id=uploaded.get('assetId',0) if uploaded.get('sha256')==digest else 0
             assets[name]=dict(file=path.name,seconds=len(data)/RATE,bytes=path.stat().st_size,
-                configKey='sfx'+name.title(),assetId=0,sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+                configKey='sfx'+name.title(),assetId=asset_id,sha256=digest)
         manifest=dict(version=1,rate=RATE,licenseUrl='https://sonniss.com/gdc-bundle-license/',
             reviewed='2026-10-09',inventory=inventory,sources=origins,assets=assets,cues=cues)
         (DEST/'manifest.json').write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')

@@ -298,7 +298,7 @@
       "seconds": 3.54690625,
       "bytes": 227046,
       "configKey": "sfxUi",
-      "assetId": 0,
+      "assetId": 85369475902522,
       "sha256": "c57772c4b4a94f4b80fbd91558a7ed87b0c370394aa83a60df98c069074418bc"
     },
     "events": {
@@ -306,7 +306,7 @@
       "seconds": 10.28565625,
       "bytes": 658326,
       "configKey": "sfxEvents",
-      "assetId": 0,
+      "assetId": 75724766927443,
       "sha256": "f0711d7f37b1edb1380ada4a5c2a85f77b7c8f997d8f4391372f9080c57f034c"
     },
     "summon": {
@@ -314,7 +314,7 @@
       "seconds": 7.73671875,
       "bytes": 495194,
       "configKey": "sfxSummon",
-      "assetId": 0,
+      "assetId": 78967956683172,
       "sha256": "6d5d4781572c096e10b2bf1d2b7479d8a22eb587a0b2cdd9b2a0bb67acff0b3b"
     },
     "combat": {
@@ -322,7 +322,7 @@
       "seconds": 14.58,
       "bytes": 933164,
       "configKey": "sfxCombat",
-      "assetId": 0,
+      "assetId": 106008096538276,
       "sha256": "70d2353b93ba6e5d0f302cc362353d6ecd590e235d3b167b7accbc99b855a746"
     },
     "powers": {
@@ -330,7 +330,7 @@
       "seconds": 10.66446875,
       "bytes": 682570,
       "configKey": "sfxPowers",
-      "assetId": 0,
+      "assetId": 85187270766836,
       "sha256": "e8e590546a3757788588106bfbb4171547525af3af5e46105bda34e8fc66edde"
     },
     "boss": {
@@ -338,7 +338,7 @@
       "seconds": 9.2,
       "bytes": 588844,
       "configKey": "sfxBoss",
-      "assetId": 0,
+      "assetId": 88205770181304,
       "sha256": "492650a9b1e5cef59cd02d1627642c7e0a0723bf32f8f76f3cd3539f92cad79a"
     },
     "world": {
@@ -346,7 +346,7 @@
       "seconds": 124.05,
       "bytes": 7939244,
       "configKey": "sfxWorld",
-      "assetId": 0,
+      "assetId": 140273603492577,
       "sha256": "c4a486563aaaa3324743b8178629186660b02db4271a08de956d35e2861fb742"
     }
   },
