@@ -1,0 +1,66 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-10-11",
+  "place_id": 97132875544830,
+  "text_baked": false,
+  "assets": {
+    "launch": {
+      "prompt": "Use case: stylized-concept. Asset: finished landscape 16:9 text-free loading-screen background for Multiverse Doomsday, an existing Roblox tower defense. Create a beautiful polished stylized 3D Roblox render based closely on the actual game in the two reference images. Image 1 is environment identity reference: keep its circular gray brick island plaza with navy, gold and cyan concentric rings and gold five-point star, tall rectangular blue/navy hero tower with golden trims and circular white star medallion, orbital blue globe beacon, navy/gold lamps and summoning halls, green round trees, grassy ocean cliffs. Image 2 is CHARACTER IDENTITY reference ONLY: reproduce the two actual simple blocky characters shown there: silver spiky hair, tan smiling face, navy tunic with a single tilted white rectangular emblem, pale gray arms, black trousers/navy boots and a dark brown long hammer handle; second is the bulky royal-blue and gray armored robot with rounded gray helmet, wide horizontal cyan visor, single yellow lightning bolt on blue chest, blue gloves/boots. Preserve these actual boxy Roblox proportions and original colors, small bevels and tasteful material polish allowed. No human anatomical superheroes, no capes added, no movie franchise costumes. Composition: two actual heroes standing cooperatively in the LEFT foreground, clean visible silhouettes, camera at character chest height with tower/globe/plaza recognizable behind them in the LEFT half. Rightmost 44% gradually becomes calm deep navy atmospheric negative space with very restrained cyan edge light, for the game's native text and progress UI later; no objects or faces in that area. Bright welcoming soft daylight left, golden rim accents, rich blue and teal, modest bloom, crisp legible shapes, elegant restrained cinematic depth, fidelity to supplied Roblox world rather than a different invented world. No text, no letters, no labels, no logo, no user interface, no buttons, no progress bar, no editor chrome, no Roblox top controls, no watermark. Deliver a single finished wide illustration, not a UI mockup or collage.",
+      "generated_file": "exec-7fe5d284-321c-4ee9-b379-a767c741a170.png",
+      "source": {
+        "file": "launch_refuge_v2.png",
+        "size": [
+          1672,
+          941
+        ],
+        "sha256": "c4d44094664bbbf8816ce2e3692a07c9f3f55ee5a0103e062b5b9c8dbdc3083d"
+      },
+      "delivery": {
+        "file": "roblox/md_launch_refuge_v2.png",
+        "size": [
+          1024,
+          576
+        ],
+        "sha256": "c961280424509a11a56c45dfcddac51802448e199416b91e4da792438fd21595"
+      },
+      "references": [
+        "C:/Users/loops/Desktop/Multiverse_Lobby_2026-10-11/overview.png",
+        "test-results/review/01-startup.png"
+      ],
+      "identity": [
+        "actual star-medallion tower and circular refuge plaza",
+        "actual orbital globe and cyan AFK pavilion",
+        "actual silver-haired navy hero and blue lightning-armored hero"
+      ]
+    },
+    "afk": {
+      "prompt": "Use case: stylized-concept. Asset: final 16:9 landscape background for the AFK rest/reward screen of the existing Roblox game Multiverse Doomsday. Reference image 1 is the ACTUAL GAME environment and architecture. Reference image 2 is the ACTUAL GAME character identity reference, ignore all editor and interface around it. Reference image 3 is the approved new loading artwork for matching render polish and color. Create a calmer companion illustration. Keep the real navy/royal-blue buildings with gold trim and cyan light lines, the cyan circular AFK pavilion on the right side of the original game photo, turquoise island ocean, green round trees, stone walkways with navy/gold rails, orbital globe and star-medallion tower visible at a distance. Camera beside the cyan-ring AFK pavilion, looking back toward the recognizable refuge plaza. The two actual blocky heroes are resting watchfully in the LEFT foreground: the silver spiky-haired smiling tan hero with navy tunic, single tilted white bar on chest, pale gray block arms, black trousers/navy boots and long brown hammer handle; and the gray helmet/flat cyan visor royal-blue robot with yellow lightning bolt on chest and blue gloves. Keep exact simplified Roblox block geometry, no realistic anatomy or different superhero costumes, no new weapons or objects. Use the same faithful slightly polished 3D rendering as reference 3. Comfortable soft afternoon light, subtle gold bounce light/cyan station lights, clean crisp shapes, no flashy combat. Composition: actual characters and pavilion fill left 55%; right 45% is calm deep navy atmospheric negative space to receive native gold/XP counters and return controls, so no face or key building in that area. Text-free: no letters, words, numbers, badges, symbols claiming reward amounts, logos, HUD, editor UI, buttons, watermark. A single finished background illustration, not a mockup/collage. Must remain visibly the exact same Roblox world and characters from the references.",
+      "generated_file": "exec-8c3bbd75-d2d0-463a-8b5e-fa0b422b7340.png",
+      "source": {
+        "file": "afk_refuge_v2.png",
+        "size": [
+          1672,
+          941
+        ],
+        "sha256": "730664b93a15b6e2761dac0a8812fe911866d540745fdee2c01906fe5f0998e4"
+      },
+      "delivery": {
+        "file": "roblox/md_afk_refuge_v2.png",
+        "size": [
+          1024,
+          576
+        ],
+        "sha256": "8324d2e820b8fbd270cd6408f9bf167df15767bf1ab649a9f76219851b49970e"
+      },
+      "references": [
+        "C:/Users/loops/Desktop/Multiverse_Lobby_2026-10-11/overview.png",
+        "test-results/review/01-startup.png"
+      ],
+      "identity": [
+        "actual star-medallion tower and circular refuge plaza",
+        "actual orbital globe and cyan AFK pavilion",
+        "actual silver-haired navy hero and blue lightning-armored hero"
+      ]
+    }
+  }
+}

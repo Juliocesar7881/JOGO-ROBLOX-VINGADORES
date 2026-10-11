@@ -301,12 +301,18 @@ local rarityStarts={}
 for _,rarity in ipairs({'common','rare','epic','legendary','mythic'}) do
  bank:Summon('start');clock+=.1;bank:Summon('tick');delayed={};before=summonPlays
  bank:Summon('reward',rarity)
- assert(summonPlays==before+1 and #delayed==0,'An atlas ending plays exactly once with no second reward layer')
+ assert(summonPlays==before+1,'The rarity fanfare starts exactly once')
+ assert(#delayed==(rarity=='common' and 0 or 1),'Rarer rewards have one restrained texture on their own channel')
  local sound=bank.bankPools.summon[bank.bankIndex.summon]
  assert(not rarityStarts[sound.PlaybackRegion.Min],'Each rarity has a distinct ending region')
  rarityStarts[sound.PlaybackRegion.Min]=true
+ for _,fn in ipairs(delayed) do fn() end
+ assert(not bank.bankPools.rewardAccent or #bank.bankPools.rewardAccent<=2,'Reward textures have a separate bounded two-voice pool')
 end
-bank:Summon('cancel');for _,sound in ipairs(bank.bankPools.summon) do assert(not sound.IsPlaying,'Cancel stops all summon regions') end
+bank:Summon('cancel');for _,channel in ipairs({'summon','rewardAccent'}) do for _,sound in ipairs(bank.bankPools[channel] or {}) do assert(not sound.IsPlaying,'Cancel stops the fanfare and its texture') end end
+delayed={};bank:Summon('reward','mythic');bank:Summon('cancel');before=summonPlays
+for _,fn in ipairs(delayed) do fn() end
+assert(summonPlays==before,'A pending rarity texture cannot survive cancellation')
 clock+=1;bank:Talent('hover');bank:Summon('start');bank:Cue('collect')
 settings.interface=false;bank:Step()
 for _,channel in ipairs({'ui','summon'}) do for _,sound in ipairs(bank.bankPools[channel]) do assert(not sound.IsPlaying,'Interface mute stops active regions') end end

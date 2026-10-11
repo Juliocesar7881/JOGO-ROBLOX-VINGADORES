@@ -474,10 +474,6 @@ local function session(screen)
 		check(cover and cover.IgnoreGuiInset==true and named(cover,"DimensionalBackdrop"),tag..": early loader draws its packaged full-screen art without the world")
 		advance(0.2);runService.RenderStepped:Fire(0.2)
 		check(named(cover,"SplashStatus").Text=="Carregando o refúgio…",tag..": initial status reflects actual world loading")
-		localPlayer:SetAttribute("DoomReady",true);advance(0.2);runService.RenderStepped:Fire(0.2)
-		check(cover.Parent~=nil,tag..": a profile arriving early does not expose a world that has not loaded")
-		check(named(cover,"SplashBar").Size.X.Scale<1,tag..": an early profile does not mark unfinished world loading as complete")
-		localPlayer:SetAttribute("DoomReady",nil)
 		loadedWorld=true;advance(0.2);runService.RenderStepped:Fire(0.2)
 		check(named(cover,"SplashStatus").Text=="Conectando seu perfil…",tag..": profile status begins only after the world loads")
 		localPlayer:SetAttribute("DoomReady",true);advance(0.2);runService.RenderStepped:Fire(0.2)
@@ -489,15 +485,88 @@ local function session(screen)
 		__FIRST__(firstScript,clockOs)
 		task.delay=originalDelay
 		cover=playerGui:FindFirstChild("DoomLoader")
+		localPlayer:SetAttribute("DoomReady",true);advance(0.2);runService.RenderStepped:Fire(0.2)
+		check(not cover.Parent,tag..": a successfully rendered HUD can take over even while optional world loading remains pending")
+		localPlayer:SetAttribute("DoomReady",nil)
+		task.delay=function(_,fn) timeout=fn end
+		__FIRST__(firstScript,clockOs)
+		task.delay=originalDelay
+		cover=playerGui:FindFirstChild("DoomLoader")
 		timeout()
 		check(not cover.Parent,tag..": the hard timeout also dismisses when the world never loads")
 		game.IsLoaded=function() return true end
 	end)
+	step("reference paintings replace native fallback only when ready",function()
+		local Art=require(firstScript.ScreenArt)
+		local host=Instance.new("Frame",playerGui)
+		local create=Instance.new
+		Instance.new=function(class,...)
+			local item=create(class,...)
+			if class=="ImageLabel" then item.IsLoaded=false end
+			return item
+		end
+		local backdrop=Art.Draw(host,"loading",1150,640)
+		Instance.new=create
+		local painting=named(backdrop,"RefugePainting")
+		check(painting and painting:GetAttribute("ReferenceArt")=="launch" and painting.BackgroundTransparency==1,tag..": image download leaves a transparent fallback and does not block entry")
+		check(named(backdrop,"LobbyPhotography").Visible~=false,tag..": the actual game models remain the fallback before the painting loads")
+		painting.IsLoaded=true; painting:GetPropertyChangedSignal("IsLoaded"):Fire()
+		check(painting.Visible and named(backdrop,"LobbyPhotography").Visible==false,tag..": completed reference art replaces its native fallback")
+		local duplicated=false
+		for _,item in ipairs(backdrop:GetChildren()) do if item:IsA("ViewportFrame") and item.Visible~=false then duplicated=true end end
+		check(not duplicated,tag..": generated heroes are never doubled by model overlays")
+		local farm=Art.Draw(host,"xp",375,667)
+		check(named(farm,"RefugePainting"):GetAttribute("ReferenceArt")=="afk",tag..": AFK uses its own faithful scene with a safe portrait crop")
+		shared.Parent=nil
+		local early=Art.Draw(host,"loading",1150,640)
+		check(not named(early,"RefugePainting"),tag..": a cold cover draws even before Config replicates")
+		shared.Parent=replicated; frames(0.6,1)
+		check(named(early,"RefugePainting")~=nil,tag..": late configuration attaches the art without rebuilding or blocking the cover")
+		host:Destroy()
+	end)
 
-	if not step("init.client boots and syncs", function() __CLIENT__(clientScript, clockOs); flush() end) then return end
+	-- Reproduce the real cold-join ordering: Sync returns Lobby before the
+	-- data store has supplied a profile. The next packet is still Lobby.
+	local profilePending=true
+	local firstSyncHeld=false
+	local invoke=requestRemote.InvokeServer
+	requestRemote.InvokeServer=function(self,action,payload)
+		if action=="Sync" and profilePending then
+			table.insert(actions,action)
+			if not firstSyncHeld then firstSyncHeld=true; coroutine.yield() end
+			return {ok=true,data={phase="Lobby",players={}}}
+		end
+		return invoke(self,action,payload)
+	end
+	-- The test scheduler is synchronous; hold the initial retry coroutine
+	-- while we supply the real delayed State packet, then let it terminate.
+	local spawn=task.spawn
+	local bootThreads={}
+	task.spawn=function(fn,...)
+		local thread=coroutine.create(fn)
+		local ok,problem=coroutine.resume(thread,...)
+		assert(ok,problem)
+		if coroutine.status(thread)~="dead" then table.insert(bootThreads,thread) end
+	end
+	local wait=task.wait
+	task.wait=function() coroutine.yield() end
+	if not step("init.client boots and syncs before its profile arrives", function() __CLIENT__(clientScript, clockOs); flush() end) then return end
+	task.spawn=spawn; task.wait=wait
 	local gui = playerGui:FindFirstChild("DoomsdayUI")
 	check(gui ~= nil, tag .. ": the client mounts its ScreenGui")
 	if not gui then return end
+	check(named(gui,"LoadingSplash")~=nil and localPlayer:GetAttribute("DoomReady")~=true,tag..": pending profile keeps a truthful cover and does not signal readiness")
+	frames(2.1,1)
+	check(requestCount("Sync")==2 and named(gui,"LoadingSplash")~=nil,tag..": a blocked first Sync permits an independent bounded retry")
+	profilePending=false
+	-- Cover both delivery orders: a later Sync reply and the pushed State.
+	if screen.w>1000 then frames(2.1,1) else push(current) end
+	check(named(gui,"LoadingSplash")==nil and localPlayer:GetAttribute("DoomReady")==true,tag..": delayed profile rebuilds Lobby and releases the cover on the first join")
+	local synced=requestCount("Sync")
+	frames(2.1,2)
+	check(requestCount("Sync")==synced,tag..": successful handoff disconnects bootstrap retries")
+	for _,thread in ipairs(bootThreads) do if coroutine.status(thread)~="dead" then local ok,problem=coroutine.resume(thread);check(ok,tag..": cold boot retry completes: "..tostring(problem)) end end
+	check(named(gui,"LoadingSplash")==nil,tag..": a stale nil-profile reply cannot resurrect the loading screen")
 	step("AFK screens only display authoritative payments and restore play",function()
 		local before=requestCount("LeaveAfk")
 		localPlayer:SetAttribute("AfkZone","gold")
@@ -512,7 +581,7 @@ local function session(screen)
 		check(named(screenRoot,"AfkPaymentFill").Size.X.Scale==0.6,tag..": payment bar follows the server interval")
 		check(runService.renderingEnabled==false and not chatWindow.Enabled and not chatInput.Enabled,tag..": saver disables 3D and hides chat over the complete screen")
 		local count=#screenRoot:GetDescendants()
-		check(count<600,tag..": static AFK artwork stays within a fixed UI budget, got "..count)
+		check(count<1100,tag..": actual-model AFK composition stays within a fixed geometry/UI budget, got "..count)
 		frames(20,4)
 		check(named(screenRoot,"AfkScreenEarned").Text=="+60 Ouro" and #screenRoot:GetDescendants()==count,tag..": elapsed client time neither invents rewards nor accumulates art")
 		localPlayer:SetAttribute("AfkSaving",true);frames(0.3,2)
@@ -1139,7 +1208,7 @@ local function session(screen)
 		check(card ~= nil and card.Visible == true, tag .. ": the already granted prize appears immediately after the reel")
 		check(stage and named(stage,"ChestView") == nil and named(stage,"RevealChest").Visible == false, tag .. ": no second chest model or opening after the reel")
 		check(stage and named(stage,"RevealFlash").BackgroundTransparency == 1, tag .. ": no second opening flash")
-		-- The hero is not a photograph: it leaps out of the chest and keeps moving.
+		-- The actual hero makes a grounded entrance and keeps its own signature.
 		local function findRoot(node)
 			for _, child in ipairs(node:GetChildren()) do
 				if child.Name == "HumanoidRootPart" then return child end

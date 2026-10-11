@@ -1,6 +1,5 @@
--- Immediate native fallback plus the authored observatory illustration.
--- A cold join never waits for the texture, world or player's profile to draw.
--- Static 2D art also remains visible with 3D rendering disabled in AFK mode.
+-- Launch/AFK art referenced from the actual lobby and hero geometry.
+-- A cold join never waits for imagery, world replication or a profile to draw.
 local ScreenArt = {}
 local P = {
 	ink = Color3.fromRGB(5, 13, 29), navy = Color3.fromRGB(10, 27, 51),
@@ -28,125 +27,134 @@ local function line(parent, name, x1,y1,x2,y2,thickness,color,z,transparency)
 	made.AnchorPoint=Vector2.new(0.5,0.5)
 	return made
 end
-local function ellipse(parent,name,x,y,w,h,color,z,transparency)
-	return round(frame(parent,name,x,y,w,h,color,z,0,transparency),math.max(w,h))
-end
 local function gradient(item,a,b,rotation)
 	make("UIGradient",item,{Color=ColorSequence.new(a,b),Rotation=rotation or 90})
 end
 
+-- Neither the reference painting nor the native model fallback blocks entry.
+-- ReplicatedFirst draws immediately, before Config, imagery or profiles exist.
 function ScreenArt.Draw(parent, mode, width, height, z)
 	z=z or 1
 	local accent=mode=="gold" and P.gold or (mode=="xp" and P.violet or P.blue)
 	local root=make("Frame",parent,{Name="DimensionalBackdrop",Size=UDim2.fromScale(1,1),BackgroundColor3=P.navy,BorderSizePixel=0,ClipsDescendants=true,Active=false,ZIndex=z})
-	gradient(root,mode=="gold" and Color3.fromRGB(33,47,58) or Color3.fromRGB(23,36,72),P.ink,30)
-	local canvas=make("Frame",root,{Name="Illustration",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(1150,640),BackgroundTransparency=1,Active=false,ZIndex=z})
-	make("UIScale",canvas,{Scale=math.max(width/1150,height/640)})
-	if width<600 then canvas.AnchorPoint=Vector2.new(0.27,0.5) end
-	-- The observatory looks across the island towards a city, framed by steel
-	-- ribs. Far scenery stays lower contrast than the portal and live counters.
-	ellipse(canvas,"DistantMoon",740,70,100,100,Color3.fromRGB(57,88,128),z)
-	ellipse(canvas,"MoonShadow",762,61,92,100,Color3.fromRGB(21,37,65),z)
-	for i=1,22 do
-		local x=(i*173)%1130
-		local y=35+(i*73)%270
-		ellipse(canvas,"Star",x,y,i%4==0 and 4 or 2,i%4==0 and 4 or 2,P.muted,z,0.35)
-	end
-	for i=0,12 do
-		local x=490+i*57
-		local h=38+(i*37)%126
-		frame(canvas,"CityTower",x,350-h,42,h,Color3.fromRGB(24,52,81),z)
-		frame(canvas,"RoofCap",x+5,346-h,32,4,Color3.fromRGB(52,82,110),z)
-		for row=0,3 do
-			line(canvas,"CityWindow",x+9,362-h+row*22,x+30,362-h+row*22,2,P.blue,z,0.65)
+	gradient(root,Color3.fromRGB(29,60,87),P.ink,30)
+	-- A quiet technical cover remains usable if an image fails to download.
+	for i=1,14 do line(root,"LaunchGrid",0,height*i/14,width,height*i/14,1,P.steel,z+1,0.65) end
+	for i=1,22 do line(root,"LaunchGrid",width*i/22,0,width*i/22,height,1,P.steel,z+1,0.65) end
+	local view=make("ViewportFrame",root,{Name="LobbyPhotography",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=z+2,
+		Ambient=Color3.fromRGB(165,190,210),LightColor=Color3.fromRGB(255,241,211),LightDirection=Vector3.new(-1,-1,-0.4)})
+	local world=make("WorldModel",view,{Name="ActualLobby"})
+	local camera=make("Camera",view,{FieldOfView=60})
+	camera.CFrame=CFrame.lookAt(Vector3.new(-34,32,559),Vector3.new(0,15,466))
+	view.CurrentCamera=camera
+	local filled,heroes=false,false
+	local painting,artReady,artConnection
+	local function showPainting()
+		if not root.Parent or not painting then return end
+		artReady=true; painting.Visible=true; view.Visible=false
+		for _,item in ipairs(root:GetChildren()) do
+			if item:IsA("ViewportFrame") then item.Visible=false end
 		end
 	end
-	frame(canvas,"IslandHorizon",0,350,1150,80,Color3.fromRGB(17,49,59),z)
-	for i=0,10 do
-		local x=70+i*105
-		frame(canvas,"TreeTrunk",x+18,321,9,44,Color3.fromRGB(12,34,43),z)
-		ellipse(canvas,"TreeCrown",x,290-(i%3)*8,48,44,Color3.fromRGB(24,67,67),z)
+	local function requestPainting()
+		if painting then return end
+		local shared=game:GetService("ReplicatedStorage"):FindFirstChild("DoomShared")
+		local config=shared and shared:FindFirstChild("Config")
+		if not config then return end
+		local ok,data=pcall(require,config)
+		local id=ok and data.UiArt and data.UiArt[mode=="loading" and "launch" or "afk"]
+		if not id or id<=0 then return end
+		-- Keep the transparent image drawable while fetching: Roblox may leave
+		-- IsLoaded false forever for a hidden ImageLabel, despite a cached asset.
+		painting=make("ImageLabel",root,{Name="RefugePainting",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Active=false,ZIndex=z+5,Image="rbxassetid://"..tostring(id),ScaleType=Enum.ScaleType.Crop})
+		painting:SetAttribute("ReferenceArt",mode=="loading" and "launch" or "afk")
+		-- Preserve the heroes on the left on tall screens, without stretching.
+		if width/height<1 then painting.ImageRectOffset=Vector2.zero; painting.ImageRectSize=Vector2.new(640,576) end
+		artConnection=painting:GetPropertyChangedSignal("IsLoaded"):Connect(function()
+			if painting.IsLoaded then showPainting() end
+		end)
+		if painting.IsLoaded then showPainting() end
+		-- Roblox does not always notify IsLoaded. The asynchronous fetch is an
+		-- alternative completion signal; it never controls DoomReady or rewards.
+		task.spawn(function()
+			pcall(function()
+				game:GetService("ContentProvider"):PreloadAsync({painting.Image},function(_,status)
+					if status==Enum.AssetFetchStatus.Success then showPainting() end
+				end)
+			end)
+		end)
 	end
-	gradient(frame(canvas,"Harbour",0,376,1150,100,Color3.new(1,1,1),z),Color3.fromRGB(28,74,92),Color3.fromRGB(14,34,54))
-	for i=1,8 do line(canvas,"WaterReflection",640+(i*63)%420,388+i*8,720+(i*63)%420,388+i*8,2,P.blue,z,0.8) end
-	-- Perspective deck and skylight: broad shapes, very few luminous strokes.
-	frame(canvas,"Deck",0,476,1150,164,Color3.fromRGB(17,30,49),z+1)
-	line(canvas,"HorizonRail",0,476,1150,476,5,Color3.fromRGB(71,104,126),z+1)
-	for i=-2,8 do line(canvas,"DeckSeam",480,476,i*210,640,2,Color3.fromRGB(36,54,73),z+1) end
-	for i=1,4 do line(canvas,"DeckCrossSeam",0,476+i*i*10,1150,476+i*i*10,2,Color3.fromRGB(36,54,73),z+1) end
-	for _,x in ipairs({-20,1050}) do
-		frame(canvas,"WindowRib",x,0,62,483,P.ink,z+2,x<0 and -9 or 9)
-		frame(canvas,"RibInlay",x+26,20,5,396,P.steel,z+2,x<0 and -9 or 9)
-	end
-	frame(canvas,"Ceiling",0,0,1150,22,P.ink,z+2)
-	line(canvas,"CeilingLight",72,24,1030,24,3,accent,z+2,0.5)
-	-- A dimensional reactor is the visual signature, not another flat window.
-	-- Eight armour segments, an inset ring, and a printed resource emblem.
-	ellipse(canvas,"ReactorShadow",110,482,388,40,P.ink,z+2,0.05)
-	frame(canvas,"ReactorFoot",182,443,252,35,P.steel,z+3)
-	frame(canvas,"ReactorPlinth",150,474,316,18,P.ink,z+3)
-	line(canvas,"PlinthLight",178,476,438,476,3,accent,z+4,0.2)
-	ellipse(canvas,"PortalRim",127,112,360,360,P.ink,z+3)
-	ellipse(canvas,"PortalSteel",139,124,336,336,P.steel,z+3)
-	ellipse(canvas,"PortalAccent",151,136,312,312,accent,z+3)
-	ellipse(canvas,"PortalWell",157,142,300,300,P.ink,z+3)
-	gradient(ellipse(canvas,"PortalInterior",171,156,272,272,Color3.new(1,1,1),z+3),accent:Lerp(P.navy,0.68),P.navy,45)
-	for i=0,7 do
-		local a=math.rad(i*45)
-		local x,y=307+math.cos(a)*171,292+math.sin(a)*171
-		local plate=frame(canvas,"RingArmour",x,y,51,21,P.steel,z+4,i*45+90)
-		plate.AnchorPoint=Vector2.new(0.5,0.5)
-		line(canvas,"ArmourLight",x-9*math.sin(a),y+9*math.cos(a),x+9*math.sin(a),y-9*math.cos(a),3,accent,z+5)
-	end
-	for i=0,5 do
-		local a=math.rad(i*60+15)
-		line(canvas,"InnerCircuit",307+math.cos(a)*113,292+math.sin(a)*113,307+math.cos(a)*99,292+math.sin(a)*99,3,accent,z+4,0.3)
-	end
-	if mode=="gold" then
-		-- An embossed coin, drawn as solid metal with an offset edge and mint mark.
-		ellipse(canvas,"CoinEdge",241,228,146,146,Color3.fromRGB(151,89,26),z+5)
-		ellipse(canvas,"CoinFace",229,216,146,146,P.gold,z+5)
-		ellipse(canvas,"CoinInset",242,229,120,120,Color3.fromRGB(218,145,31),z+5)
-		ellipse(canvas,"CoinCenter",248,235,108,108,Color3.fromRGB(255,200,64),z+5)
-		line(canvas,"MintMark",312,256,295,321,13,Color3.fromRGB(157,95,21),z+6)
-		line(canvas,"CoinShine",264,244,285,237,4,P.cream,z+6)
-		for _,p in ipairs({{191,402},{399,380}}) do
-			ellipse(canvas,"StoredCoin",p[1],p[2],46,17,Color3.fromRGB(174,113,31),z+4)
-			ellipse(canvas,"StoredCoinTop",p[1],p[2]-5,46,17,P.gold,z+4)
-		end
-	else
-		local color=mode=="xp" and Color3.fromRGB(138,219,255) or P.blue
-		local gem=frame(canvas,"DimensionalCrystal",307,289,98,98,color,z+5,45)
-		gem.AnchorPoint=Vector2.new(0.5,0.5)
-		gradient(gem,P.cream,color:Lerp(P.violet,0.5),45)
-		local inner=frame(canvas,"CrystalFacet",307,289,58,58,accent,z+6,45)
-		inner.AnchorPoint=Vector2.new(0.5,0.5)
-		line(canvas,"CrystalRidge",307,220,307,358,3,P.cream,z+7,0.25)
-		for _,p in ipairs({{227,232},{394,333}}) do
-			local shard=frame(canvas,"OrbitShard",p[1],p[2],17,17,color,z+5,45)
-			shard.AnchorPoint=Vector2.new(0.5,0.5)
+	local function clean(model)
+		for _,item in ipairs(model:GetDescendants()) do
+			if item:IsA("BasePart") then item.Anchored=true; item.CanCollide=false; item.CanTouch=false; item.CanQuery=false
+			elseif item:IsA("LuaSourceContainer") or item:IsA("ProximityPrompt") or item:IsA("BillboardGui") or item:IsA("SurfaceGui") then item:Destroy() end
 		end
 	end
-	-- Inks and small stars feel printed, rather than adding bloom to the world.
-	for i=0,6 do line(canvas,"ComicAccent",70+i*14,538,90+i*14,524,2,accent,z+2,0.5) end
-	for i=1,24 do ellipse(canvas,"Halftone",35+(i%8)*13,545+math.floor(i/8)*13,3,3,P.muted,z+2,0.8) end
-	-- The quiet right side is reserved for the live information panel.
-	-- Keep the packaged fallback until the real image is ready. Config can
-	-- replicate later than ReplicatedFirst; its arrival never blocks the cover.
-	task.defer(function()
-		local shared=game:GetService("ReplicatedStorage"):WaitForChild("DoomShared",12)
-		local source=shared and shared:WaitForChild("Config",12)
-		if not source or not root.Parent then return end
-		local config=require(source)
-		local id=config.UiArt and config.UiArt.observatory or 0
-		if id<=0 then return end
-		local illustration=make("ImageLabel",root,{Name="ObservatoryPainting",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,Active=false,ZIndex=z+7,
-			Image="rbxassetid://"..id,ScaleType=Enum.ScaleType.Crop})
-		local function loaded() canvas.Visible=illustration.IsLoaded~=true end
-		illustration:GetPropertyChangedSignal("IsLoaded"):Connect(loaded); loaded()
+	local function populate()
+		if not root.Parent then return end
+		requestPainting()
+		if painting and painting.IsLoaded then showPainting() end
+		if artReady then return end
+		local lobby=workspace:FindFirstChild("DoomLobby")
+		if lobby and not filled then
+			-- Prioritize the finished tower and plaza; a fixed part budget avoids
+			-- cloning the entire island or its gameplay objects into every screen.
+			local count=0
+			for _,name in ipairs({"HeroTower","HeroBeacon","HeroesHQ","HeroStatues","SummonHeroesHall","SummonBasesHall"}) do
+				local source=lobby:FindFirstChild(name)
+				for _,item in ipairs(source and source:GetDescendants() or {}) do
+					if count<280 and item:IsA("BasePart") and (item.Transparency or 0)<1 and (item.Position-Vector3.new(0,0,480)).Magnitude<180 then
+						local copy=item:Clone(); clean(copy)
+						copy.Anchored=true; copy.CanCollide=false; copy.CanTouch=false; copy.CanQuery=false
+						copy.Parent=world; count+=1
+					end
+				end
+			end
+			filled=count>0
+			view:SetAttribute("ActualLobbyParts",count)
+		end
+		local templates=game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
+		if templates and not heroes then
+			local made=0
+			for i,id in ipairs(mode=="gold" and {"ironman","captain"} or {"thor","ironman"}) do
+				local source=templates:FindFirstChild(id)
+				if root:FindFirstChild("ActualHero_"..id) then made+=1
+				elseif source then
+					local portrait=make("ViewportFrame",root,{Name="ActualHero_"..id,Position=UDim2.fromScale(i==1 and 0.015 or 0.24,0.28),Size=UDim2.fromScale(0.34,0.66),BackgroundTransparency=1,ZIndex=z+4,
+						Ambient=Color3.fromRGB(190,206,222),LightColor=Color3.fromRGB(255,238,207),LightDirection=Vector3.new(-1,-0.7,-1)})
+					local heroWorld=make("WorldModel",portrait,{Name="ActualHeroModel"})
+					local model=source:Clone(); clean(model); model.Parent=heroWorld
+					local cf,bounds=model:GetBoundingBox()
+					local focus=cf.Position+Vector3.new(0,bounds.Y*0.04,0)
+					local span=math.max(bounds.Y,bounds.X,5)
+					local cam=make("Camera",portrait,{FieldOfView=32})
+					cam.CFrame=CFrame.lookAt(focus+Vector3.new(span*(i==1 and 0.46 or -0.46),span*0.1,-span*1.95),focus)
+					portrait.CurrentCamera=cam; portrait:SetAttribute("HeroId",id); made+=1
+				end
+			end
+			heroes=made==2
+		end
+	end
+	populate()
+	-- ReplicatedFirst can precede the world/templates. Poll with no yielding,
+	-- then disconnect both on success and destruction (also across resizes).
+	local connection
+	local nextCheck=0
+	if not artReady then
+		connection=game:GetService("RunService").RenderStepped:Connect(function()
+			if os.clock()<nextCheck then return end
+			nextCheck=os.clock()+0.5
+			populate()
+			if artReady and connection then connection:Disconnect(); connection=nil end
+		end)
+	end
+	root.Destroying:Connect(function()
+		if connection then connection:Disconnect(); connection=nil end
+		if artConnection then artConnection:Disconnect(); artConnection=nil end
 	end)
-	local shade=make("Frame",root,{Name="ReadingShade",Position=UDim2.fromScale(0.47,0),Size=UDim2.fromScale(0.53,1),BackgroundColor3=P.ink,BackgroundTransparency=0.12,BorderSizePixel=0,Active=false,ZIndex=z+8})
-	make("UIGradient",shade,{Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.4,0.12),NumberSequenceKeypoint.new(1,0)}),Rotation=0})
+	local shade=make("Frame",root,{Name="ReadingShade",Position=UDim2.fromScale(0.40,0),Size=UDim2.fromScale(0.60,1),BackgroundColor3=P.ink,BackgroundTransparency=0.04,BorderSizePixel=0,Active=false,ZIndex=z+6})
+	make("UIGradient",shade,{Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.43,0.08),NumberSequenceKeypoint.new(1,0)}),Rotation=0})
+	frame(root,"LaunchEdge",width-5,0,5,height,accent,z+7)
 	return root
 end
 
@@ -193,8 +201,11 @@ function ScreenArt.Loading(parent, T, size, UI)
 	label("SplashTip",T("DICA  •  O primeiro herói da equipe define seu poder na partida.","TIP  •  Your first equipped hero sets your power in battle."),height-48,48,small and 13 or 15,P.muted,true)
 	local function step(elapsed,worldLoaded,ready,reduced)
 		if not root.Parent then return end
-		local phase=(ready and worldLoaded) and 3 or (worldLoaded and 2 or 1)
+		local phase=ready and 3 or (worldLoaded and 2 or 1)
 		status.Text=phase==3 and T("Tudo pronto. Vamos defender!","All set. Time to defend!") or (phase==2 and T("Conectando seu perfil…","Connecting your profile…") or T("Carregando o refúgio…","Loading the refuge…"))
+		if elapsed>=15 and not ready then
+			status.Text=T("A conexão está demorando. Tentando novamente…","Connection is taking longer. Retrying…")
+		end
 		for i,item in ipairs(steps) do item.TextColor3=i<=phase and P.blue or P.muted end
 		if phase==3 then slider.Position=UDim2.fromScale(0,0); slider.Size=UDim2.fromScale(1,1)
 		else slider.Size=UDim2.fromScale(0.22,1); slider.Position=UDim2.fromScale(reduced and 0.39 or (0.78*((elapsed*0.38)%1)),0) end

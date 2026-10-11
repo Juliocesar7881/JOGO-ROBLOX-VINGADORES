@@ -18,7 +18,7 @@ return {
 	MaxPartySize = 4,
 	-- Text-free, authored comic art. Sources, prompts and delivery hashes:
 	-- assets/ui/illustrated/manifest.json. IDs are set only after Studio upload.
-	UiArt = {window=117794482905127,button=91879736431596,icons=76122046230704,observatory=93095245078402,chests=137153627143583,card=77752406707285},
+	UiArt = {window=117794482905127,button=91879736431596,icons=76122046230704,observatory=93095245078402,chests=137153627143583,card=77752406707285,launch=113377652302568,afk=126038966446275},
 	BaseHP = 100,
 	-- Match Gold each commander starts a run with (enemies drop the rest).
 	StartCash = 600,

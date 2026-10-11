@@ -286,4 +286,13 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M29.1 Praça em camadas, jardins curvos, lanternas e monumentos com armaduras próprias; torre e invocação em azul-marinho/dourado, globo orbital e horizonte rochoso. Vistas dos mapas e funções existentes preservadas.
 - [x] M29.2 Placar físico da arena com moldura, troféu, divisões coloridas por mapa, título montado e estado vazio ilustrado. Recordes reais substituem o pódio; títulos e estados em português/inglês.
 - [x] M29.3 Regressões de circulação, bases dos jardins, apoios das placas e estados do placar; suíte completa verde. Preview real 4.433 peças contra teto de 4.500, sem elevar orçamento.
+
 - [x] M29.4 Código `fb65172` no main, suíte completa exit 0 (72,56 s); circulação nas quatro pontes/passagem e duas lojas verificadas com personagem real. 20 capturas PC/horizontal PT/vertical EN sem cortes de texto ou erros detectados; placa PT/EN e cinco nomes longos por divisão conferidos. Cinco heróis/104 inimigos: 60 FPS, p95 17,92 ms na RTX 4060 Ti. WorldBuilder sincronizado seletivamente, 40 fontes comparadas, preview 4.433 peças. Publicado no place 97132875544830 em 11/10 às 11:05:12 local/14:05:12 UTC, `PublishSuccessful` confirmado; Studio em edição. Galeria Desktop `Multiverse_Lobby_2026-10-11/INDICE.html`; relatório `REFINAMENTO_LOBBY_CONCEITO_2026-10-11.md`.
+
+## M30 — Primeira entrada, pinturas fiéis e recrutamento, 11/10
+
+- [x] M30.1 Corrigida transição Lobby sem perfil para Lobby com perfil; prontidão após montar o HUD, duas tentativas de Sync no máximo e resposta antiga descartada. Carregador não espera assets opcionais; regressões em seis formatos.
+- [x] M30.2 Duas pinturas geradas a partir da torre/praça/globo/estação AFK e dois heróis reais; fontes/prompts/hashes no manifesto, IDs reais carregados no Studio. Textos e controles nativos, reserva com modelos do jogo e remoção de duplicação ao carregar.
+- [x] M30.3 Recibo com modelo real, entrada curta, assinatura do herói e raridade; nenhuma segunda abertura/fanfarra após a roleta. Cinco finais Sonniss com mix/acento limitado, mute/cancelamento e chat recolhido durante a recompensa.
+- [~] M30.4 Suíte completa verde, PC/horizontal PT/vertical EN conferidos; baú ganho 0→1 com uma fanfarra, cliques reais e AFK, recrutamento a 60 FPS. Finalizar commit/push e publicação no place 97132875544830. Galeria Desktop `Multiverse_Recrutamento_Entrada_2026-10-11/INDICE.html`, relatório `REFINAMENTO_RECRUTAMENTO_ENTRADA_2026-10-11.md`.
+- [ ] M30.5 Conferir primeira entrada no cliente publicado em rede/dispositivo reais e preferência do jogador para as novas artes/animação/mix; não confundir essa validação com o perfil temporário do Studio.

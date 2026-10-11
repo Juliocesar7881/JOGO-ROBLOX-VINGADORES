@@ -611,3 +611,22 @@ p95 17,92 ms na RTX 4060 Ti. WorldBuilder sincronizado seletivamente,
 40 fontes comparadas e publicação no mesmo lugar da equipe em **11/10/2026
 às 11:05:12 local (14:05:12 UTC)**, `PublishSuccessful` confirmado.
 Studio em edição; galeria no Desktop `Multiverse_Lobby_2026-10-11/INDICE.html`.
+
+## 22. Primeira entrada, pinturas fiéis e recrutamento — 11/10
+
+O carregador agora reconstrói o lobby quando o primeiro perfil chega,
+mesmo sem mudança de fase. Prontidão após montar o HUD, tentativas de
+leitura limitadas e respostas antigas descartadas evitam a cobertura
+presa. Imagens e áudio opcionais não bloqueiam a entrada.
+
+Duas pinturas geradas com referências do lobby e dos modelos reais
+substituem o observatório da inicialização/conexão e do AFK. Texto,
+contadores e controles continuam nativos. O prêmio usa o modelo 3D real,
+entrada curta e pose própria, com cinco finais Sonniss; sem segunda
+abertura de baú ou fanfarra depois da roleta.
+
+Fila M30; fontes, prompts, IDs e aceite em
+[`REFINAMENTO_RECRUTAMENTO_ENTRADA_2026-10-11.md`](REFINAMENTO_RECRUTAMENTO_ENTRADA_2026-10-11.md).
+Suíte completa verde e revisão no Studio. Commit/push e publicação final
+em andamento; primeira entrada no cliente publicado/dispositivo real
+continua como aceite separado.

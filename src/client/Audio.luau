@@ -23,7 +23,7 @@ for _, name in pairs(AMBIENCE) do VOLUME[name] = 0.1 end
 -- speakers, quieter with distance, and none from beyond earshot.
 local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.3, 3, 90, 3
 Audio.Ambiences = AMBIENCE
-local BANK_LIMITS = {ui=3,events=4,summon=2,combat=6,powers=3,boss=2,world=2}
+local BANK_LIMITS = {ui=3,events=4,summon=2,rewardAccent=2,combat=6,powers=3,boss=2,world=2}
 local WEAPON_BANK = {
 	hulk="heavy", capmen="heavy", beast="punch", shangchi="punch", ironfist="punch", antman="punch",
 	captain="metal", panther="swift", wolverine="swift", daredevil="swift", blade="swift",
@@ -92,6 +92,16 @@ local REWARDS = {
 	epic = {name="rewardEpic", notes={{"shotTech",0.6,0.055,0},{"shotMagic",0.84,0.09,0.06},{"shotMagic",1.12,0.10,0.22},{"shotMagic",1.33,0.09,0.38}}},
 	legendary = {name="rewardLegendary", notes={{"shotMelee",0.9,0.075,0},{"shotMagic",0.75,0.11,0},{"shotMagic",1,0.11,0.18},{"shotMagic",1.5,0.10,0.36},{"shotMagic",1.19,0.075,0.36}}},
 	mythic = {name="rewardMythic", notes={{"shotBlast",0.82,0.07,0},{"shotMagic",0.5,0.10,0.02},{"shotMagic",0.75,0.10,0.16},{"shotMagic",1,0.11,0.30},{"shotMagic",1.5,0.10,0.5},{"shotMagic",1.26,0.075,0.5}}},
+}
+
+-- The uploaded rarity fanfare owns the melody. A restrained, separate
+-- texture gives rarer discoveries weight without restarting that fanfare.
+local REWARD_MIX = {
+	common = {volume=.18,duck=.45},
+	rare = {volume=.20,duck=.8,accent="upgrade",gain=.045,delay=.10},
+	epic = {volume=.22,duck=1.3,accent="powerMagic",gain=.065,delay=.14},
+	legendary = {volume=.24,duck=1.6,accent="bossDown",gain=.075,delay=.18},
+	mythic = {volume=.25,duck=2.2,accent="powerBlast",gain=.085,delay=.22},
 }
 
 function Audio.new(getState)
@@ -169,7 +179,7 @@ function Audio:_bankPlay(name, options)
 	if not entry or not self:_allowed(true, options.interface and "click" or nil) then return false end
 	local template = self:_bankSound(entry.asset)
 	if not template or template.IsLoaded == false then return false end
-	local channel = bankChannel(entry.asset)
+	local channel = options.channel or bankChannel(entry.asset)
 	self.bankPools, self.bankIndex, self.bankVariants = self.bankPools or {}, self.bankIndex or {}, self.bankVariants or {}
 	local pool = self.bankPools[channel] or {}; self.bankPools[channel] = pool
 	local index = (self.bankIndex[channel] or 0) % (BANK_LIMITS[channel] or 2) + 1
@@ -434,6 +444,7 @@ function Audio:Summon(action, rarity)
 		self.summonEpoch = (self.summonEpoch or 0) + 1
 		for _, voice in pairs(self.summonVoices or {}) do voice:Stop() end
 		self:_stopBank("summon")
+		self:_stopBank("rewardAccent")
 		if action == "cancel" then return end
 	end
 	if not self:_allowed(true, "chest") then return end
@@ -470,7 +481,17 @@ function Audio:Summon(action, rarity)
 		self.summonEpoch = (self.summonEpoch or 0) + 1
 		local epoch = self.summonEpoch
 		self:_stopBank("summon")
-		if self:_bankPlay(cue.name, {interface=true,volume=.19,duck=.6}) then return end
+		local mix=REWARD_MIX[rarity] or REWARD_MIX.common
+		self:_stopBank("rewardAccent")
+		if self:_bankPlay(cue.name, {interface=true,volume=mix.volume,duck=mix.duck}) then
+			if mix.accent then
+				task.delay(mix.delay,function()
+					if self.summonEpoch~=epoch then return end
+					self:_bankPlay(mix.accent,{interface=true,channel="rewardAccent",volume=mix.gain,pitch=.9})
+				end)
+			end
+			return
+		end
 		if ((Config.Audio or {})[cue.name] or 0) > 0 then
 			play("reward", cue.name, 1, 0.20)
 			return

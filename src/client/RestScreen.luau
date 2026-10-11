@@ -19,7 +19,7 @@ function RestScreen.new(UI, parent, T, Catalog, size, kind, callbacks)
 	backdrop.Size=UDim2.new(1,0,1,80)
 	local function label(parent,name,text,x,y,width,height,fs,color,display)
 		return UI.fit(UI.label(parent,text,{Name=name,Position=UDim2.fromOffset(x,y),Size=UDim2.fromOffset(width,height),TextSize=fs,
-			TextColor3=color or C.text,Font=display and UI.Fonts.display or UI.Fonts.body,TextWrapped=true,ZIndex=72}),11)
+			TextColor3=color or C.text,TextStrokeColor3=C.background,TextStrokeTransparency=0.4,Font=display and UI.Fonts.display or UI.Fonts.body,TextWrapped=true,ZIndex=72}),11)
 	end
 	label(root,"AfkBrand",T("MULTIVERSO / REFÚGIO","MULTIVERSE / REFUGE"),portrait and 20 or 32,short and 16 or 28,w-40,24,13,C.muted)
 	local title=kind=="gold" and T("Farm de Ouro AFK","AFK Gold Farm") or T("Farm de XP AFK","AFK XP Farm")

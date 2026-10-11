@@ -1626,12 +1626,9 @@ end
 
 local function applyState(nextState)
 	if type(nextState) ~= "table" then return end
-	-- The first snapshot with a profile means the interface is ready: the loading
-	-- screen in ReplicatedFirst (src/first) may leave.
-	if not kit.readySignalled and nextState.profile then
-		kit.readySignalled = true
-		pcall(function() player:SetAttribute("DoomReady", true) end)
-	end
+	-- Sync may beat the profile load on a cold join. Lobby -> Lobby with the
+	-- first profile is still a screen transition: the placeholder must rebuild.
+	local firstProfile = nextState.profile ~= nil and not (state and state.profile)
 	local previousPhase = state and state.phase
 	local previousLevel = state and state.profile and state.profile.level
 	local previousGold = state and state.profile and state.profile.gold
@@ -1644,7 +1641,7 @@ local function applyState(nextState)
 	local phaseChanged = previousPhase ~= state.phase and not ((previousPhase == "Wave" or previousPhase == "Preparing") and activeMatch())
 	if phaseChanged then celebrate:Clear() end
 	if state.phase ~= "Results" then kit.resultsCelebrated = false end
-	if phaseChanged or kind ~= layoutKind or language ~= previousLanguage or not refs.wave and activeMatch() then
+	if firstProfile or phaseChanged or kind ~= layoutKind or language ~= previousLanguage or not refs.wave and activeMatch() then
 		layoutKind = kind
 		render()
 		if phaseChanged and state.phase ~= "Results" then frameCommanderView(activeMatch()) end
@@ -1679,6 +1676,12 @@ local function applyState(nextState)
 	end
 	nameplates:Update(state.players)
 	if state.notice then showToast(state.notice) end
+	-- Handoff only after the real HUD mounted successfully, never just because
+	-- a packet arrived. Optional images/audio are not prerequisites for entry.
+	if not kit.readySignalled and state.profile and not refs.loading then
+		kit.readySignalled = true
+		pcall(function() player:SetAttribute("DoomReady", true) end)
+	end
 end
 
 -- In Studio the screen review (Review.luau) may hold real snapshots while a
@@ -2055,6 +2058,7 @@ RunService.RenderStepped:Connect(function(dt)
 		-- the base upgrade, a tower's card) the chat steps aside, and comes
 		-- back when it closes. The review's own chat switch is left alone.
 		local busy = contextPanel ~= nil or (state ~= nil and state.phase == "Results") or refs.protocolPanel ~= nil
+			or celebrate:Busy()
 			or afk.eco or overlays:FindFirstChild("AfkScreen", true) ~= nil or overlays:FindFirstChild("LoadingSplash", true) ~= nil or refs.loading ~= nil
 			or overlays:FindFirstChild("CommanderSheet") ~= nil or overlays:FindFirstChild("BaseUpgrade") ~= nil
 			or (refs.towerPanel ~= nil and refs.towerPanel.Parent ~= nil and refs.towerPanel.Visible == true)
@@ -2143,13 +2147,26 @@ watchCamera()
 applyScreenScale()
 render()
 
-task.spawn(function()
-	while not state or not state.profile do
-		local response = request("Sync", {}, true)
-		if response and response.ok and response.data then applyState(response.data) end
-		if not state or not state.profile then task.wait(2) end
-	end
+-- A yielded first InvokeServer used to block the entire retry loop. Sync is
+-- read-only: allow one independent retry, with at most two outstanding calls.
+-- State events can complete the handoff too; late replies cannot resurrect
+-- the placeholder or replace the already mounted profile with stale data.
+kit.syncPending,kit.syncNext=0,0
+kit.syncAttempt=function()
+	if state and state.profile or kit.syncPending>=2 then return end
+	kit.syncPending+=1
+	task.spawn(function()
+		local response=request("Sync",{},true)
+		kit.syncPending-=1
+		if not (state and state.profile) and response and response.ok and response.data then applyState(response.data) end
+	end)
+end
+kit.syncConnection=RunService.RenderStepped:Connect(function()
+	if state and state.profile then kit.syncConnection:Disconnect();kit.syncConnection=nil;return end
+	if os.clock()>=kit.syncNext then kit.syncNext=os.clock()+2;kit.syncAttempt() end
 end)
+kit.syncNext=os.clock()+2
+kit.syncAttempt()
 
 -- Studio-only screen review: fixture screens and server scenes driven from
 -- the command bar by tools/studio_review.py. A live server never loads it.

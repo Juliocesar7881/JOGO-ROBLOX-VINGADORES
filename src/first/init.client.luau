@@ -58,7 +58,9 @@ connection=RunService.RenderStepped:Connect(function()
 	resize()
 	local ready=player:GetAttribute("DoomReady")==true
 	if view then view.Step(now-started,game:IsLoaded(),ready,false) end
-	if (ready and game:IsLoaded()) or now>=deadline then leave() end
+	-- DoomReady is emitted after the real HUD renders. IsLoaded can still
+	-- wait on optional replicated content and must not cover a playable game.
+	if ready or now>=deadline then leave() end
 end)
 -- The hard deadline includes world loading, not just the profile wait.
 task.delay(60,leave)

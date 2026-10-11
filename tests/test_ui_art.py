@@ -35,7 +35,9 @@ def main():
                     for column in range(columns):
                         tile = image.crop((column*w, row*h, (column+1)*w, (row+1)*h))
                         assert tile.getchannel("A").getextrema() == (0, 255), (name, row, column)
-    print("PASS illustrated HUD: six shipped textures, original hashes, alpha, IDs and 22 atlas cells")
+    assert manifest["assets"]["launch"]["references"]
+    assert manifest["assets"]["afk"]["references"]
+    print(f"PASS illustrated HUD: {len(ids)} shipped textures, game references, original hashes, alpha, IDs and 22 atlas cells")
 
 
 if __name__ == "__main__":

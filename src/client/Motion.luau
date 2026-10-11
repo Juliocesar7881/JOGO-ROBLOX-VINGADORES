@@ -275,6 +275,19 @@ function Motion.Perform(live, since, mode)
 	local yaw, lift, squash = 0, 0, 0
 	if mode == "rest" or since < 0 then
 		pose.breathe = 0
+	elseif mode == "arrival" then
+		-- A grounded entrance, then the real hero's signature. No full spin,
+		-- repeated chest jump or universal arms-up cheer for every character.
+		local u=clamp(since/0.65,0,1)
+		yaw=-0.28*(1-u)^3
+		lift=0.35*math.sin(math.pi*u)
+		if since>0.65 and since<0.9 then squash=math.sin(math.pi*(since-0.65)/0.25)*0.35 end
+		local cycle=(since-0.9)%4.2
+		if since>0.9 and cycle<0.8 then
+			pose.fire=math.sin(math.pi*cycle/0.8)
+			pose.fireProgress=cycle/0.8
+		end
+		pose.count=math.floor(math.max(0,since-0.9)/4.2)
 	elseif mode == "idle" then
 		local sinceTap = live.tapAt and since - live.tapAt or math.huge
 		local cycle = (since + 0.6) % 3.6
@@ -314,7 +327,7 @@ function Motion.Perform(live, since, mode)
 	if squash > 0 and rig.joints.Root then rig.joints.Root.Transform = CFrame.new(0, -0.45 * squash, 0) * rig.joints.Root.Transform end
 	rig.root.CFrame = live.baseRoot * CFrame.new(0, lift, 0) * CFrame.Angles(0, yaw, 0)
 	Motion.Solve(rig)
-	local swing = mode == "rest" and 0 or (mode == "idle" and 0.3 or 0.45) * math.sin(since * 0.8)
+	local swing = mode == "rest" and 0 or (mode == "arrival" and 0.12 or (mode == "idle" and 0.3 or 0.45)) * math.sin(since * 0.8)
 	local offset = CFrame.Angles(0, swing, 0) * live.offset
 	live.camera.CFrame = CFrame.lookAt(live.focus + offset, live.focus)
 end
