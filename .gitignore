@@ -9,6 +9,9 @@ dist/
 # Screenshots taken while reviewing the game in Studio.
 test-results/
 *.png
+# Authored production HUD artwork, including deterministic Roblox deliveries.
+!assets/ui/illustrated/*.png
+!assets/ui/illustrated/roblox/*.png
 # Editor and OS noise.
 .vscode/
 deployment/local.json

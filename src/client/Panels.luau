@@ -346,7 +346,7 @@ function Panels.new(ctx)
 				{Name="SummonSelect_"..id,Position=UDim2.fromOffset((i-1)*tileWidth+6,chosen and 6 or 8),Size=UDim2.fromOffset(tileWidth-12,tileH),BackgroundColor3=chosen and color:Lerp(UI.Skin.body,0.15) or color:Lerp(UI.Skin.body,0.7)})
 			UI.stroke(tile,chosen and Color3.new(1,1,1) or C.ink,chosen and 3.5 or 2.5)
 			UI.cardSkin(tile,chosen and color or color:Lerp(UI.Skin.body,0.55))
-			UI.illustration(tile,"crate",color,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=wide and UDim2.fromOffset(50,38) or UDim2.fromOffset(46,40)})
+			UI.illustration(tile,"crate",color,{Rarity=id,AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=wide and UDim2.fromOffset(64,38) or UDim2.fromOffset(46,40)})
 			UI.oneLine(UI.label(tile,L(def.name),{Position=UDim2.fromOffset(4,wide and 41 or 44),Size=UDim2.new(1,-8,0,wide and 20 or 22),TextWrapped=false,TextSize=wide and 15 or 12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center}),10)
 			local price=UI.chip(tile,number(def.cost),C.ink,{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-5),Size=UDim2.new(1,-18,0,wide and 24 or 22),TextSize=wide and 16 or 14,TextColor3=C.gold})
 			price.Name="ChestPrice"
@@ -415,7 +415,7 @@ function Panels.new(ctx)
 			-- One row: chest, name and balance, then the action on the right.
 			local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirming and 74 or 128),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
 			if not confirming then quantityRow(purchase,76,42) end
-			UI.illustration(purchase,"crate",color,{Position=UDim2.fromOffset(6,8),Size=UDim2.fromOffset(62,56)})
+			UI.illustration(purchase,"crate",color,{Rarity=id,Position=UDim2.fromOffset(6,8),Size=UDim2.fromOffset(62,56)})
 			UI.oneLine(UI.label(purchase,Catalog.Upper(L(chest.name)),{Name="SummonChestName",Position=UDim2.fromOffset(74,8),Size=UDim2.new(0.5,-78,0,24),TextSize=16,Font=UI.Fonts.display}),9)
 			UI.oneLine(UI.label(purchase,number(p.gold)..T(" Ouro"," Gold"),{Name="SummonBalance",Position=UDim2.fromOffset(74,32),Size=UDim2.new(0.5,-78,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.gold}),9)
 			if chest.pity then
@@ -433,26 +433,30 @@ function Panels.new(ctx)
 				if not eligible or pending.OpenChest then UI.disabled(button) end
 			end
 		else
-			local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirming and 196 or 236),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
-			if not confirming then quantityRow(purchase,100,46) end
-			UI.illustration(purchase,"crate",color,{Position=UDim2.fromOffset(10,8),Size=UDim2.fromOffset(92,82)})
-			UI.label(purchase,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(110,10),Size=UDim2.new(1,-120,0,32),TextSize=22,Font=UI.Fonts.display,TextWrapped=true})
-			UI.label(purchase,T("Você tem ","You have ")..number(p.gold)..T(" Ouro"," Gold"),{Name="SummonBalance",Position=UDim2.fromOffset(110,44),Size=UDim2.new(1,-120,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold})
+			-- Reserve the controls first; the illustration uses the remaining
+			-- space, including in a short Studio viewport or laptop window.
+			local purchaseH=math.min(394,galleryHeight+34)
+			local artH=purchaseH-234
+			local purchase=UI.roundFrame(purchaseParent,{Name="SummonPurchase",Size=UDim2.new(1,-6,0,confirming and purchaseH-40 or purchaseH),BackgroundColor3=color:Lerp(C.panel,0.6)},color)
+			if not confirming then quantityRow(purchase,artH+98,46) end
+			UI.illustration(purchase,"crate",color,{Rarity=id,AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,12),Size=UDim2.fromOffset(artH*1.125,artH)})
+			UI.oneLine(UI.label(purchase,Catalog.Upper(L(chest.name)),{Position=UDim2.fromOffset(14,artH+14),Size=UDim2.new(1,-28,0,32),TextSize=25,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center}),15)
+			UI.oneLine(UI.label(purchase,T("Você tem ","You have ")..number(p.gold)..T(" Ouro"," Gold"),{Name="SummonBalance",Position=UDim2.fromOffset(14,artH+48),Size=UDim2.new(1,-28,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold,TextXAlignment=Enum.TextXAlignment.Center}),11)
 			if chest.pity then
 				-- The guarantee as a bar that fills.
 				local count=(p.pity or {})[id] or 0
-				UI.label(purchase,forced and T("★ Garantia ativa!","★ Guarantee active!") or (T("Garantia ","Guarantee ")..L(Catalog.Rarities[chest.pity.minimum].name).."+ "..count.."/"..chest.pity.after),{Position=UDim2.fromOffset(110,68),Size=UDim2.new(1,-120,0,18),TextSize=12,Font=UI.Fonts.display,TextColor3=forced and C.gold or C.muted})
-				local fill=UI.bar(purchase,C.gold,UDim2.fromOffset(110,88),UDim2.new(1,-122,0,8))
+				UI.label(purchase,forced and T("★ Garantia ativa!","★ Guarantee active!") or (T("Garantia ","Guarantee ")..L(Catalog.Rarities[chest.pity.minimum].name).."+ "..count.."/"..chest.pity.after),{Position=UDim2.fromOffset(14,artH+72),Size=UDim2.new(1,-28,0,18),TextSize=12,Font=UI.Fonts.display,TextColor3=forced and C.gold or C.muted})
+				local fill=UI.bar(purchase,C.gold,UDim2.fromOffset(14,artH+90),UDim2.new(1,-28,0,5))
 				fill.Size=UDim2.fromScale(math.clamp(count/chest.pity.after,0,1),1)
 			end
 			if confirming then
-				UI.label(purchase,(count>1 and ("x"..count.."  •  ") or "")..T("Sobra: ","Left: ")..number((p.gold or 0)-chest.cost*count)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(12,100),Size=UDim2.new(1,-24,0,26),TextSize=15,Font=UI.Fonts.display})
-				local confirm=UI.button(purchase,T("Confirmar!","Confirm!"),openChest,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(10,132),Size=UDim2.new(0.6,-14,0,54),BackgroundColor3=C.green,TextSize=19})
+				UI.label(purchase,(count>1 and ("x"..count.."  •  ") or "")..T("Sobra: ","Left: ")..number((p.gold or 0)-chest.cost*count)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(12,artH+98),Size=UDim2.new(1,-24,0,26),TextSize=15,Font=UI.Fonts.display})
+				local confirm=UI.button(purchase,T("Confirmar!","Confirm!"),openChest,{Name="ConfirmChest_"..id,Position=UDim2.fromOffset(10,artH+130),Size=UDim2.new(0.6,-14,0,54),BackgroundColor3=C.green,TextSize=19})
 				if not eligible then UI.disabled(confirm) end
-				UI.secondary(purchase,T("Voltar","Back"),function() kit.confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.6,0,0,132),Size=UDim2.new(0.4,-10,0,54),TextSize=16})
+				UI.secondary(purchase,T("Voltar","Back"),function() kit.confirmChest=nil; renderContext() end,{Name="CancelChest",Position=UDim2.new(0.6,0,0,artH+130),Size=UDim2.new(0.4,-10,0,54),TextSize=16})
 			else
 				local button=UI.button(purchase,pending.OpenChest and T("Invocando…","Summoning…") or T("Invocar • ","Summon • ")..priceText,function() kit.confirmChest=id; renderContext() end,
-					{Name="OpenChest_"..id,Position=UDim2.fromOffset(10,160),Size=UDim2.new(1,-20,0,64),BackgroundColor3=C.green,TextSize=22})
+					{Name="OpenChest_"..id,Position=UDim2.fromOffset(10,artH+158),Size=UDim2.new(1,-20,0,64),BackgroundColor3=C.green,TextSize=22})
 				if not eligible or pending.OpenChest then UI.disabled(button) end
 			end
 		end
@@ -868,7 +872,7 @@ function Panels.new(ctx)
 		-- Free chest: opens on the spot, then makes you wait.
 		local chest = rewards.freeChest
 		local freeCard = UI.roundFrame(body, {Name = "FreeChestCard", Size = UDim2.new(1, -6, 0, 104), BackgroundColor3 = chest.ready and C.gold:Lerp(C.panel, 0.55) or C.card}, chest.ready and C.gold or C.stroke)
-		UI.illustration(freeCard, "crate", chest.ready and C.gold or C.muted, {Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(92, 82)})
+		UI.illustration(freeCard, "crate", chest.ready and C.gold or C.muted, {Rarity=chest.chestId,Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(92, 82)})
 		UI.fit(UI.label(freeCard, T("Baú grátis", "Free chest"), {Name = "FreeChestTitle", Position = UDim2.fromOffset(112, 14), Size = UDim2.new(1, -250, 0, 32), Font = UI.Fonts.display, TextSize = 24}), 12)
 		UI.fit(UI.label(freeCard, chest.ready and T("Pronto para abrir!", "Ready to open!") or (T("Volta em ", "Back in ") .. math.floor(chest.remaining / 3600) .. "h " .. math.floor((chest.remaining % 3600) / 60) .. "m"), {Position = UDim2.fromOffset(112, 50), Size = UDim2.new(1, -250, 0, 26), TextSize = 16, Font = UI.Fonts.display, TextColor3 = chest.ready and C.cream or C.muted}), 11)
 		local claimFree = UI.button(freeCard, T("Abrir!", "Open!"), function()

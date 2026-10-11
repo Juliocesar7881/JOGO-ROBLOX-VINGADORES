@@ -55,6 +55,7 @@ def main() -> None:
         "test_ip_safety.py",
         "test_no_emoji.py",
         "test_ui_layout.py",
+        "test_ui_art.py",
         "test_audio.py",
         "test_sound_bank.py",
         "test_release.py",

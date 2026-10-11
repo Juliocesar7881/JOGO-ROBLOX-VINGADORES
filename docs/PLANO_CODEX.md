@@ -570,3 +570,16 @@ fila M27. Galeria no Desktop:
 `Multiverse_Telas_Completas_2026-10-10/INDICE.html`.
 Reconexão prolongada, DataStore publicado e aparelho físico continuam no
 checklist; os testes desta entrega não certificam esses fluxos.
+
+## 20. Arte ilustrada nos HUDs — 11/10
+
+O pedido seguinte exige arte raster no jogo, aproximando o acabamento das
+propostas. Seis imagens próprias foram produzidas, importadas e integradas
+às janelas, botões, cartas, navegação, invocação, inicialização e AFK.
+As letras, números e áreas de toque continuam nativos e dinâmicos.
+
+Relatório e aceite:
+[`REFINAMENTO_HUD_ILUSTRADO_2026-10-11.md`](REFINAMENTO_HUD_ILUSTRADO_2026-10-11.md),
+fila M28. Fontes, prompts e IDs em `assets/ui/illustrated/`. Não confundir
+os modelos reais dos retratos com os personagens inventados nas propostas.
+Revisão e publicação em andamento, registradas no relatório.

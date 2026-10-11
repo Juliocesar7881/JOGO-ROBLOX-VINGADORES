@@ -598,6 +598,65 @@ local function session(screen)
 		UI.reducedMotion=previousMotion
 		host:Destroy()
 	end)
+	step("illustrated HUD downloads, atlas crops and fallback",function()
+		local UI=require(clientModules.UI)
+		local host=UI.frame(playerGui,{Name="IllustratedProbe",Size=UDim2.fromOffset(320,220)})
+		local icon=UI.icon(host,"hero",UI.Colors.gold)
+		local raster=icon:FindFirstChild("Illustrated_icons")
+		check(raster and raster.Active==false and raster.ImageRectSize.X==256,tag..": a passive atlas replaces the hero symbol")
+		raster.IsLoaded=false; raster:GetPropertyChangedSignal("IsLoaded"):Fire()
+		local fallback=false
+		for _,child in ipairs(icon:GetChildren()) do if child~=raster and child:IsA("GuiObject") then fallback=fallback or child.Visible end end
+		check(raster.Visible and fallback,tag..": an unloaded image stays drawable and retains native art while downloading")
+		raster.IsLoaded=true; raster:GetPropertyChangedSignal("IsLoaded"):Fire()
+		fallback=false
+		for _,child in ipairs(icon:GetChildren()) do if child~=raster and child:IsA("GuiObject") then fallback=fallback or child.Visible end end
+		check(raster.Visible and not fallback,tag..": successful loading hides only the native symbol")
+		for _,kind in ipairs({"hero","base","star","shop","gift","scroll","gear","trophy","xp","wave","damage","range","chest","home","play","shield"}) do
+			local symbol=UI.icon(host,kind,UI.Colors.gold):FindFirstChild("Illustrated_icons")
+			check(symbol and symbol.ImageRectOffset.X+symbol.ImageRectSize.X<=1024 and symbol.ImageRectOffset.Y+symbol.ImageRectSize.Y<=1024,tag..": atlas crop is bounded: "..kind)
+		end
+		for _,rarity in ipairs({"supply","rare","epic","legendary","cosmic","base_supply","base_rare","base_epic","base_legendary","base_cosmic"}) do
+			local chest=UI.illustration(host,"crate",UI.Colors.blue,{Rarity=rarity}):FindFirstChild("Illustrated_chests")
+			check(chest and chest:GetAttribute("ArtRarity")==rarity and chest.ImageRectOffset.X+chest.ImageRectSize.X<=1023 and chest.ImageRectOffset.Y+chest.ImageRectSize.Y<=682,tag..": chest rarity maps to a valid authored crop: "..rarity)
+		end
+		local button=UI.button(host,"Live caption",nil)
+		local plate=button.ComicShell.IllustratedPlate
+		plate.IsLoaded=false; plate:GetPropertyChangedSignal("IsLoaded"):Fire()
+		check(button.Text=="Live caption" and button.ComicShell.Enamel.Visible,tag..": slow image loading preserves native live controls")
+		plate.IsLoaded=true; plate:GetPropertyChangedSignal("IsLoaded"):Fire()
+		check(button.Text=="Live caption" and not button.ComicShell.Enamel.Visible,tag..": the loaded plate leaves the caption intact")
+		local short=UI.button(host,"Skip walk",nil,{Size=UDim2.fromOffset(160,24),ZIndex=2})
+		check(short.Caption and short.Caption.Text=="Skip walk" and short.Caption.ZIndex>=short.ComicShell.ZIndex,tag..": a short control keeps its caption above the opaque illustration")
+		button.BackgroundColor3=UI.Colors.green;button:GetPropertyChangedSignal("BackgroundColor3"):Fire()
+		check(plate.ImageColor3==UI.Colors.green,tag..": selection colour reaches the illustrated button")
+		local stage=UI.portraitStage(host,UI.Colors.blue,{Size=UDim2.fromOffset(100,100)})
+		UI.heroPortrait(stage,"ironman",nil,UI.Colors.blue,{Name="AlreadyStaged"})
+		check(not stage:FindFirstChild("AlreadyStaged_Art"),tag..": a framed hero card avoids a second overlapping frame")
+		check(stage.ComicShell.IllustratedPlate.ImageColor3==UI.Colors.blue,tag..": the hero supplies the portrait identity colour")
+		local Skin=require(clientModules.IllustratedSkin)
+		local previousProvider=services.ContentProvider
+		local fetches,ready=0,0
+		services.ContentProvider={PreloadAsync=function(_,urls,callback)
+			if urls[1]=="rbxasset://illustrated-completion-probe" then
+				fetches+=1
+				callback(urls[1],Enum.AssetFetchStatus.Success)
+			end
+		end}
+		for _=1,2 do
+			local delayed=UI.create("ImageLabel",{Image="rbxasset://illustrated-completion-probe",IsLoaded=false},host)
+			Skin.loaded(delayed,function(loaded) if loaded then ready+=1 end end)
+		end
+		flush()
+		check(fetches==1 and ready==2,tag..": one asynchronous completion updates all atlas copies without an IsLoaded notification ("..fetches.." fetches, "..ready.." copies)")
+		services.ContentProvider=previousProvider
+		local Config=require(shared.Config)
+		local previous=Config.UiArt.icons;Config.UiArt.icons=0
+		local native=UI.icon(host,"hero",UI.Colors.gold)
+		check(not native:FindFirstChild("Illustrated_icons") and #native:GetChildren()>0,tag..": a missing asset retains a usable native symbol")
+		Config.UiArt.icons=previous
+		host:Destroy()
+	end)
 	local main
 	for _, child in ipairs(gui:GetChildren()) do
 		if rawget(child, "__class") == "Frame" and child.ZIndex ~= 50 then main = child end

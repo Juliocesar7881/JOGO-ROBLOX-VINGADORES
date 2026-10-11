@@ -271,3 +271,10 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M27.1 Ouro e XP com cenário próprio, contadores separados, estados honestos de pagamento e ações completas; arte nativa visível com 3D desligado. Pagamentos naturais, Mostrar jogo e Voltar ao lobby conferidos no Studio.
 - [x] M27.2 Mesma arte na inicialização e conexão, prontidão real e prazo de saída incluindo mundo; regressões em seis formatos, inclusive perfil chegando antes do cenário e rotação da tela AFK.
 - [x] M27.3 Suíte completa verde, 32 capturas PC/celular emulado/inglês sem cortes detectados. 39 fontes conferidas, cinco módulos sincronizados e lobby 4.455 peças. Publicado no place 97132875544830 em 10/10 às 14:06:51 local (17:06:51 UTC), `PublishSuccessful` confirmado. Studio em edição; galeria no Desktop e relatório `REFINAMENTO_TELAS_COMPLETAS_2026-10-10.md`. Celular físico/reconexão/sessão prolongada continuam no checklist.
+
+## M28 — Arte ilustrada integrada aos HUDs, 11/10
+
+- [x] M28.1 Seis texturas próprias produzidas e importadas: moldura, botão, carta, 16 ícones, seis baús e observatório. Fontes, prompts, entregas e hashes em `assets/ui/illustrated/`; IDs em Config. Texto e controles continuam nativos.
+- [x] M28.2 Aplicação compartilhada ao catálogo de telas; retratos sem molduras duplicadas e com cor do herói, compra com espaço reservado para os controles e baú adaptável. Fallback imediato, conclusão assíncrona por URL, sem espera de rede na inicialização. Árvore mantém fundo desfocado.
+- [~] M28.3 codex-illustrated-huds-20261011: suíte e revisão de 41 cenas no PC/celular emulado/inglês, cliques reais, carga de combate, galeria, sincronização e publicação oficial. Relatório `REFINAMENTO_HUD_ILUSTRADO_2026-10-11.md`.
+- [ ] M28.4 Validação de preferência visual e toque no aparelho físico. Modelos reais continuam nos retratos; anatomia das propostas depende de M22.7. Memória prolongada e quatro jogadores continuam no checklist de lançamento.

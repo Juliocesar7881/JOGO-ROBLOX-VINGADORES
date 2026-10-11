@@ -1,4 +1,9 @@
--- UI primitives shared by the lobby and match controller. No external assets required.
+-- UI primitives shared by the lobby and match controller.
+local Illustrated
+local function skin()
+	if not Illustrated then Illustrated=require(script.Parent:WaitForChild("IllustratedSkin")) end
+	return Illustrated
+end
 local UI = {}
 -- A held touch opens a card, rather than also equipping it on release.
 local heldTooltipTouches = setmetatable({}, { __mode = "k" })
@@ -182,12 +187,35 @@ end
 -- The reference mockups use cut metal corners, an ink contour and an inset
 -- enamel face. Six flat pieces form an actual octagon at any aspect ratio;
 -- the corners are transparent, not black squares painted over the world.
--- These are native UI objects: no external images, upload or baked captions.
+-- The native construction is retained beneath the text-free authored plate.
+function UI.artPlate(frame, kind, tint)
+	local shell=frame:FindFirstChild("ComicShell") or frame
+	local old=shell:FindFirstChild("IllustratedPlate")
+	if old then old:Destroy() end
+	local art=skin().plate(shell,kind,tint,{Name="IllustratedPlate",ZIndex=shell.ZIndex})
+	if not art then return end
+	art:SetAttribute("ArtPlate",kind)
+	local function color() if kind~="window" then art.ImageColor3=frame.BackgroundColor3 end end
+	local recolor=frame:GetPropertyChangedSignal("BackgroundColor3"):Connect(color)
+	art.Destroying:Connect(function() recolor:Disconnect() end)
+	color()
+	skin().loaded(art,function(loaded)
+		for _,name in ipairs({"InkContour","MetalRim","Enamel"}) do
+			local native=shell:FindFirstChild(name); if native then native.Visible=not loaded end
+		end
+		for _,name in ipairs({"Studs","Shine","Sheen","CardPrint"}) do
+			local native=frame:FindFirstChild(name); if native then native.Visible=not loaded end
+		end
+	end)
+	return art
+end
+
 function UI.angular(frame, tint, options)
 	options=options or {}
 	local existing=frame:FindFirstChild("ComicShell")
 	if existing then
 		UI.stroke(frame,tint,3)
+		if options.art then UI.artPlate(frame,options.art,frame.BackgroundColor3) end
 		return existing
 	end
 	local z=math.max(0,(frame.ZIndex or 1)-1)
@@ -234,6 +262,7 @@ function UI.angular(frame, tint, options)
 		gradient:GetPropertyChangedSignal("Rotation"):Connect(refresh)
 	end
 	refresh()
+	UI.artPlate(frame,options.art or "button",frame.BackgroundColor3)
 	return root
 end
 
@@ -323,8 +352,9 @@ function UI.button(parent, text, callback, properties)
 			return ok and value or nil
 		end
 		local height, width = offsetOf("Y") or 44, offsetOf("X")
-		if text ~= "" and height >= 30 then
-			-- Studs behind the words, the words in a caption on top.
+		if text ~= "" then
+			-- A separate live caption stays above the opaque plate even on
+			-- short controls such as the tutorial's walk-skip button.
 			UI.studs(button, height, width, button.ZIndex)
 			local caption = UI.create("TextLabel", {Name = "Caption", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Active = false, ZIndex = button.ZIndex}, button)
 			for _, name in ipairs(CAPTION_PROPERTIES) do pcall(function() caption[name] = button[name] end) end
@@ -430,6 +460,7 @@ function UI.icon(parent, kind, tint, properties)
 	local defaults = {Name = "Icon_" .. kind, BackgroundTransparency = 1, Size = UDim2.fromOffset(24, 24), Active = false}
 	for key, value in pairs(properties or {}) do defaults[key] = value end
 	local root = UI.frame(parent, defaults)
+	local raster=skin().icon(root,kind)
 	tint = tint or UI.Colors.text
 	local function shape(x, y, w, h, rotation, color, radius)
 		local child = UI.frame(root, {Position = UDim2.fromScale(x, y), Size = UDim2.fromScale(w, h), Rotation = rotation or 0, BackgroundColor3 = color or tint, Active = false, ZIndex = root.ZIndex})
@@ -576,14 +607,29 @@ function UI.icon(parent, kind, tint, properties)
 		shape(0.3, 0.4, 0.41, 0.19, -4)
 		shape(0.47, 0.47, 0.18, 0.44, 29)
 	end
+	if raster then skin().loaded(raster,function(loaded)
+		-- Keep the image drawable while downloading. Hiding an unloaded image
+		-- can defer its request indefinitely in the Roblox client.
+		raster.Visible=true
+		for _,child in ipairs(root:GetChildren()) do if child~=raster and child:IsA("GuiObject") then child.Visible=not loaded end end
+	end) end
 	return root
 end
 
--- Small, authored colour illustrations. Built-in shapes stay sharp at every
--- resolution and need no uploaded image or external icon dependency.
+-- Authored atlas illustrations with an immediate native-shape fallback.
 function UI.illustration(parent, kind, tint, properties)
 	local root=UI.frame(parent,{Name="Illustration_"..kind,BackgroundTransparency=1,Size=UDim2.fromOffset(44,44),Active=false})
-	for k,v in pairs(properties or {}) do root[k]=v end
+	for k,v in pairs(properties or {}) do if k~="Rarity" then root[k]=v end end
+	local raster
+	if kind=="crate" then
+		local rarity=properties and properties.Rarity
+		if not rarity then
+			local choices={common=Color3.fromRGB(160,162,170),rare=UI.Colors.blue,epic=UI.Colors.violet,legendary=UI.Colors.gold,mythic=UI.Colors.red}
+			local best=math.huge
+			for id,color in pairs(choices) do local delta=(tint.R-color.R)^2+(tint.G-color.G)^2+(tint.B-color.B)^2; if delta<best then best,rarity=delta,id end end
+		end
+		raster=skin().chest(root,rarity)
+	else raster=skin().icon(root,kind) end
 	local ink=Color3.fromRGB(34,42,43)
 	local gold=Color3.fromRGB(247,195,83)
 	local cream=Color3.fromRGB(255,239,192)
@@ -612,7 +658,7 @@ function UI.illustration(parent, kind, tint, properties)
 		shape(.53,.31,.15,.07,cream,2,8)
 		shape(.42,.51,.16,.04,ink,1)
 		shape(.43,.71,.14,.14,cream,20)
-	elseif kind=="star" then
+	elseif kind=="star" or kind=="talents" then
 		shape(.44,.29,.12,.56,tint,3)
 		shape(.21,.42,.38,.065,tint,2,-32)
 		shape(.47,.38,.34,.065,tint,2,32)
@@ -679,6 +725,10 @@ function UI.illustration(parent, kind, tint, properties)
 	else
 		UI.icon(root,kind,tint,{Size=UDim2.fromScale(1,1)})
 	end
+	if raster then skin().loaded(raster,function(loaded)
+		raster.Visible=true
+		for _,child in ipairs(root:GetChildren()) do if child~=raster and child:IsA("GuiObject") then child.Visible=not loaded end end
+	end) end
 	return root
 end
 
@@ -720,7 +770,7 @@ end
 -- A comic trading-card stage. The silhouette has room to breathe and its
 -- rarity supplies the light; fine hatching sits away from the face.
 function UI.cardSkin(frame,tint)
-	frame.BackgroundColor3=tint:Lerp(UI.Colors.ink,0.25)
+	frame.BackgroundColor3=tint
 	local corner=frame:FindFirstChildOfClass("UICorner")
 	if corner then corner.CornerRadius=UDim.new(0,12) else UI.corner(frame,12) end
 	local shade=frame:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient",{},frame)
@@ -733,7 +783,7 @@ function UI.cardSkin(frame,tint)
 			BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.89,Active=false,ZIndex=0})
 	end
 	UI.frame(art,{Name="CardFoot",Position=UDim2.fromScale(0,0.76),Size=UDim2.fromScale(1,0.24),BackgroundColor3=UI.Colors.ink,BackgroundTransparency=0.28,Active=false,ZIndex=0})
-	UI.angular(frame,tint:Lerp(UI.Colors.cream,0.45),{cut=9})
+	UI.angular(frame,tint:Lerp(UI.Colors.cream,0.45),{cut=9,art="card"})
 	frame.BackgroundTransparency=1
 	return art
 end
@@ -941,11 +991,11 @@ function UI.roundIcon(parent, name, caption, color, icon, callback, properties)
 	local shine = UI.frame(disc, {Name = "Shine", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.07), Size = UDim2.fromScale(0.62, 0.22), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.72, Active = false})
 	UI.corner(shine, 100)
 	if type(icon) == "function" then icon(disc)
-	elseif icon == "hero" then
+	elseif icon == "hero" and not skin().available("icons") then
 		local templates=game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
 		local source=templates and (templates:FindFirstChild("ironman") or templates:FindFirstChild("Hero_ironman"))
 		UI.heroPortrait(disc,"ironman",source,color,{Name="NavIcon",Position=UDim2.fromOffset(4,3),Size=UDim2.new(1,-8,1,-captionH-6),NoBackdrop=true,ZIndex=2})
-	elseif icon then UI.illustration(disc, icon, color, {Name = "NavIcon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5,0,0.5,-captionH/2), Size = UDim2.new(0.72,0,0.72,-captionH/2)}) end
+	elseif icon then UI.illustration(disc, icon=="star" and "talents" or icon, color, {Name = "NavIcon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5,0,0.5,-captionH/2), Size = UDim2.new(0.72,0,0.72,-captionH/2)}) end
 	if captionH > 0 then
 		local caption=UI.label(button, caption, {Name = "Caption", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, -12, 0, captionH), BackgroundColor3=UI.Colors.ink,BackgroundTransparency=0.12,TextSize = 14, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, TextTruncate = Enum.TextTruncate.None,ZIndex=3})
 		UI.oneLine(caption,10)
@@ -1062,7 +1112,11 @@ function UI.heroPortraitLive(parent, heroId, source, tint, properties)
 		LightDirection = Vector3.new(-1, -0.6, -1), BackgroundTransparency = 1,
 	}
 	for key, value in pairs(properties or {}) do if key~="FullFigure" and key~="NoBackdrop" then defaults[key] = value end end
-	local backing=not (properties and properties.NoBackdrop) and UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
+	local parentShell=parent:FindFirstChild("ComicShell")
+	local parentPlate=parentShell and parentShell:FindFirstChild("IllustratedPlate")
+	local staged=parentPlate and parentPlate:GetAttribute("ArtPlate")=="card"
+	if staged then parentPlate.ImageColor3=tint end
+	local backing=not staged and not (properties and properties.NoBackdrop) and UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
 	local viewportFrame = UI.create("ViewportFrame", defaults, parent)
 	viewportFrame.Destroying:Connect(function() if backing and backing.Parent then backing:Destroy() end end)
 	UI.corner(viewportFrame, 8)
@@ -1088,7 +1142,11 @@ function UI.heroPortrait(parent, heroId, source, tint, properties)
 		LightDirection = Vector3.new(-1, -0.6, -1), BackgroundTransparency = 1,
 	}
 	for key, value in pairs(properties or {}) do if key~="FullFigure" and key~="NoBackdrop" then defaults[key] = value end end
-	local backing=not (properties and properties.NoBackdrop) and UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
+	local parentShell=parent:FindFirstChild("ComicShell")
+	local parentPlate=parentShell and parentShell:FindFirstChild("IllustratedPlate")
+	local staged=parentPlate and parentPlate:GetAttribute("ArtPlate")=="card"
+	if staged then parentPlate.ImageColor3=tint end
+	local backing=not staged and not (properties and properties.NoBackdrop) and UI.portraitStage(parent,tint,{Name=defaults.Name.."_Art",Position=defaults.Position or UDim2.new(),Size=defaults.Size,AnchorPoint=defaults.AnchorPoint or Vector2.new(),ZIndex=defaults.ZIndex or 1})
 	local viewportFrame = UI.create("ViewportFrame", defaults, parent)
 	viewportFrame.Destroying:Connect(function() if backing and backing.Parent then backing:Destroy() end end)
 	UI.corner(viewportFrame, 8)
@@ -1567,6 +1625,12 @@ function UI.titleRibbon(parent, text, tint, properties)
 	for index=0,2 do
 		UI.parallelogram(root,UI.Colors.ink,{Name="RibbonCut",Position=UDim2.fromOffset(width-22-index*8,height-13),Size=UDim2.fromOffset(4,8),ZIndex=z+1})
 	end
+	local illustrated=skin().plate(root,"button",tint,{Name="IllustratedTitle",ZIndex=z})
+	if illustrated then skin().loaded(illustrated,function(loaded)
+		for _,child in ipairs(root:GetChildren()) do
+			if child~=illustrated and child:IsA("GuiObject") and child.Name~=(properties.TitleName or "RibbonTitle") then child.Visible=not loaded end
+		end
+	end) end
 	local title = UI.label(root, text, {Name = properties.TitleName or "RibbonTitle", Position = UDim2.fromOffset(math.floor(height * 0.42) + (properties.textInset or 0), 0),
 		Size = UDim2.new(1, -math.floor(height * 0.9) - (properties.textInset or 0), 1, -2), Font = UI.Fonts.display, TextSize = properties.TextSize or 32,
 		TextColor3 = UI.Colors.text, TextXAlignment = Enum.TextXAlignment.Left, TextScaled = false, ZIndex = z + 1})
@@ -1617,7 +1681,7 @@ function UI.windowSkin(frame, tint, kind)
 	for _,side in ipairs({0,1}) do
 		UI.frame(sheen,{Name="FrameTerminal",AnchorPoint=Vector2.new(side,1),Position=UDim2.new(side,side==0 and 16 or -16,1,-7),Size=UDim2.fromOffset(34,3),BackgroundColor3=tint,Active=false,ZIndex=0})
 	end
-	UI.angular(frame,tint:Lerp(UI.Colors.gold,0.28),{cut=18})
+	UI.angular(frame,tint:Lerp(UI.Colors.gold,0.28),{cut=18,art="window"})
 	frame.BackgroundTransparency=1
 	return border
 end

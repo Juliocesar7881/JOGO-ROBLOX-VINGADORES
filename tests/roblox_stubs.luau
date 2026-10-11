@@ -83,6 +83,7 @@ V2.__eq = function(a, b) return a.X == b.X and a.Y == b.Y end
 function V2_METHODS:Dot(other) return self.X * other.X + self.Y * other.Y end
 function V2_METHODS:Lerp(other, t) return v2(self.X + (other.X - self.X) * t, self.Y + (other.Y - self.Y) * t) end
 Vector2 = { new = v2, zero = v2(0, 0), one = v2(1, 1), xAxis = v2(1, 0), yAxis = v2(0, 1) }
+Rect = { new = function(x1,y1,x2,y2) return {Min=v2(x1,y1),Max=v2(x2,y2)} end }
 
 --==============================================================================
 -- CFrame: translation plus a 3x3 rotation, composed properly
@@ -291,6 +292,9 @@ local function newInstance(className)
 	rawset(self, "__children", {})
 	rawset(self, "__attributes", {})
 	rawset(self, "__id", instanceCount)
+	if className == "ImageLabel" or className == "ImageButton" then
+		rawget(self,"__props").IsLoaded=true
+	end
 	if className == "Sound" then
 		local props = rawget(self, "__props")
 		-- Deterministic audio loading; tests may set IsLoaded=false explicitly.

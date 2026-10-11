@@ -1,5 +1,5 @@
--- Original, entirely native comic scenery. ReplicatedFirst carries it so a
--- cold join never waits for an image, the world or the player's profile.
+-- Immediate native fallback plus the authored observatory illustration.
+-- A cold join never waits for the texture, world or player's profile to draw.
 -- Static 2D art also remains visible with 3D rendering disabled in AFK mode.
 local ScreenArt = {}
 local P = {
@@ -131,6 +131,20 @@ function ScreenArt.Draw(parent, mode, width, height, z)
 	for i=0,6 do line(canvas,"ComicAccent",70+i*14,538,90+i*14,524,2,accent,z+2,0.5) end
 	for i=1,24 do ellipse(canvas,"Halftone",35+(i%8)*13,545+math.floor(i/8)*13,3,3,P.muted,z+2,0.8) end
 	-- The quiet right side is reserved for the live information panel.
+	-- Keep the packaged fallback until the real image is ready. Config can
+	-- replicate later than ReplicatedFirst; its arrival never blocks the cover.
+	task.defer(function()
+		local shared=game:GetService("ReplicatedStorage"):WaitForChild("DoomShared",12)
+		local source=shared and shared:WaitForChild("Config",12)
+		if not source or not root.Parent then return end
+		local config=require(source)
+		local id=config.UiArt and config.UiArt.observatory or 0
+		if id<=0 then return end
+		local illustration=make("ImageLabel",root,{Name="ObservatoryPainting",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,Active=false,ZIndex=z+7,
+			Image="rbxassetid://"..id,ScaleType=Enum.ScaleType.Crop})
+		local function loaded() canvas.Visible=illustration.IsLoaded~=true end
+		illustration:GetPropertyChangedSignal("IsLoaded"):Connect(loaded); loaded()
+	end)
 	local shade=make("Frame",root,{Name="ReadingShade",Position=UDim2.fromScale(0.47,0),Size=UDim2.fromScale(0.53,1),BackgroundColor3=P.ink,BackgroundTransparency=0.12,BorderSizePixel=0,Active=false,ZIndex=z+8})
 	make("UIGradient",shade,{Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.4,0.12),NumberSequenceKeypoint.new(1,0)}),Rotation=0})
 	return root

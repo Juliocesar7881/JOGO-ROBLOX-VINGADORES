@@ -31,7 +31,7 @@ function RestScreen.new(UI, parent, T, Catalog, size, kind, callbacks)
 	local ch=short and 270 or 380
 	local card=UI.frame(root,{Name="AfkDashboard",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(portrait and 0.5 or 0.745,portrait and 0.61 or 0.56),Size=UDim2.fromOffset(cw,ch),BackgroundColor3=C.panel,ZIndex=71})
 	if portrait then card.Position=UDim2.new(0.5,0,0,math.min(h*0.61,h-82-ch/2)) end
-	UI.angular(card,tint,{cut=16})
+	UI.windowSkin(card,tint,"rewards")
 	local pad=short and 16 or 24
 	local inner=cw-pad*2
 	local function field(name,text,y,height,fs,color,display)

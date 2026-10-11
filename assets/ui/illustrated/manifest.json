@@ -1,0 +1,142 @@
+{
+  "tool": "image_gen built-in via imagegen skill",
+  "date": "2026-10-11",
+  "place_id": 97132875544830,
+  "text_baked": false,
+  "assets": {
+    "window": {
+      "roblox_id": 117794482905127,
+      "prompt": "Text-free premium comic navy panel with thin gold/silver cut metal corners, cyan inserts, quiet navy centre, ink halftone. Source style references 04-squad and 07-chests.",
+      "generated_file": "exec-81275bc3-f66c-478b-82a6-00fc53600786.png",
+      "source": {
+        "file": "window.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "sha256": "2059ea3e21222a6a88e38a19d61ec523d3c9b5551b5d8159959f0ee24cc0a52e"
+      },
+      "delivery": {
+        "file": "roblox/md_window.png",
+        "size": [
+          1024,
+          683
+        ],
+        "sha256": "dfbd52791e3965c271ecd5417c5815a59a977dcd2888b430eeb226b01767e45d"
+      }
+    },
+    "button": {
+      "roblox_id": 91879736431596,
+      "prompt": "Neutral grayscale wide metal button, alpha outside, bevel cut corners. Revision: bright pearl white/silver face, restrained halftone at ends, calm centre, no text.",
+      "generated_file": "exec-44a70219-76d5-4e7b-b428-6be66ae6e317.png",
+      "source": {
+        "file": "button.png",
+        "size": [
+          2172,
+          724
+        ],
+        "sha256": "2105975665bc1772d1660ba64a9109b6f823289a2bcabb78b702188d536c1690"
+      },
+      "delivery": {
+        "file": "roblox/md_button.png",
+        "size": [
+          1024,
+          341
+        ],
+        "sha256": "d5770a22d4b15d7f56e495f05bb7ebb614b41ae3d741c520e756e770da49dcb6"
+      }
+    },
+    "icons": {
+      "roblox_id": 76122046230704,
+      "prompt": "4x4 transparent atlas of 16 distinct objects: helmet, base, talent nodes, coins, gift, mission clipboard, gear, trophy, XP star, vortex, damage burst, reticle, chest, home, play, shield. Bold comic ink and dimensional materials, no letters.",
+      "generated_file": "exec-4eca0e88-4e82-4439-be6d-a3d6d4e38294.png",
+      "source": {
+        "file": "icons.png",
+        "size": [
+          1254,
+          1254
+        ],
+        "sha256": "3ca4baae67b238fe3feb8083d5a4e619d0da373fce9c5e8bf22c42103116826f"
+      },
+      "delivery": {
+        "file": "roblox/md_icons.png",
+        "size": [
+          1024,
+          1024
+        ],
+        "sha256": "28ab1a595396297d452c8833ecc2b4f56f5fe685b8c18071f29d03b09cdfe675"
+      },
+      "grid": [
+        4,
+        4
+      ]
+    },
+    "observatory": {
+      "roblox_id": 93095245078402,
+      "prompt": "Original forest island dimensional observatory at twilight. Reactor and stylized armored defenders on the left, quiet sky/city/ocean on right for live UI. No HUD, text or logos.",
+      "generated_file": "exec-7472b767-0f6f-4f7b-b107-f287ac474fce.png",
+      "source": {
+        "file": "observatory.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "sha256": "dec0351a9a1c939e4540c2ba3d1952e4c6f64ca98ffff89826cc6680d9194426"
+      },
+      "delivery": {
+        "file": "roblox/md_observatory.png",
+        "size": [
+          1024,
+          683
+        ],
+        "sha256": "2247f17a219a7533a52942ca7c167e78876d9bbd02ed1a6f3665d8bc95afe280"
+      }
+    },
+    "chests": {
+      "roblox_id": 137153627143583,
+      "prompt": "3x2 chest atlas: common wood, rare blue, epic purple, legendary gold, cosmic purple, green resources. Alpha outside each object, preserve exact grid and placement, no captions.",
+      "generated_file": "exec-52763ba8-f352-48f0-b067-e0445deaecb0.png",
+      "source": {
+        "file": "chests.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "sha256": "d6b7a0dc75172401951f82522d0cb044c38f1194d1898c795109d2381a16c3ed"
+      },
+      "delivery": {
+        "file": "roblox/md_chests.png",
+        "size": [
+          1023,
+          682
+        ],
+        "sha256": "b9f91d5164fd0452bed62eec6a82282075813559c80f1e3fe18a5240741d3dba"
+      },
+      "grid": [
+        3,
+        2
+      ]
+    },
+    "card": {
+      "roblox_id": 77752406707285,
+      "prompt": "Square neutral grayscale tintable card. Revision: thin polished silver frame and ink contour, broad bright calm radial rays from lower centre, no large dots, dirt, text, hero or emblem.",
+      "generated_file": "exec-f2de6a00-70e6-4cd4-a899-29d143eb8bcb.png",
+      "source": {
+        "file": "card.png",
+        "size": [
+          1254,
+          1254
+        ],
+        "sha256": "c78553014186ca2e0a0260d7383620b91442cab3d1aefb5f8a7bdbc6ee007472"
+      },
+      "delivery": {
+        "file": "roblox/md_card.png",
+        "size": [
+          1024,
+          1024
+        ],
+        "sha256": "b96b4130f8d30dbdcd8153a13ce8a40b49851654411ef897e4edbee94099f702"
+      }
+    }
+  }
+}
