@@ -152,3 +152,12 @@ em 76,72 segundos (`test-results/icon-dedup-suite-result.json`). A varredura
 no Studio encontrou 418 imagens de símbolos/baús nas 41 cenas e nenhum desenho
 antigo junto delas (`test-results/icon-dedup/audit.json`). Onze capturas PC
 estão em `test-results/icon-dedup/pc/`.
+
+Revisão adicional de iniciante, missões e recibo em PC/celular horizontal:
+seis capturas em `test-results/icon-dedup/phone/`, sem erro ou estouro de texto
+detectado. Código **a7b4b1f** enviado ao `main`. Somente `UI.luau` sincronizado;
+40 fontes conferidas com prefixo anterior preservado. Lobby reconstruído
+com 4.455 peças. Publicado no place **97132875544830** em **11/10/2026 às
+09:00:47 local (12:00:47 UTC)**, confirmado por `Go to PublishSuccessful`
+no log da janela oficial. Evidência: `test-results/icon-dedup/publication.json`.
+Studio deixado em modo de edição.
