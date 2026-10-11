@@ -84,7 +84,7 @@ após os ajustes do recibo/revisão: saída 0, 72,58 s, com 1.295–1.301
 verificações por formato no cliente. Oito capturas adicionais do recibo e
 quatro da roleta também passaram; a própria revisão usa prêmios elegíveis.
 O baú grátis real levou o contador de 0 para 1, com uma fanfarra, retrato
-visível e sem segunda abertura. Publicação em andamento.
+visível e sem segunda abertura. Publicação conferida, conforme entrega abaixo.
 
 Régua aplicada às telas alteradas: leitura 4, acabamento 4, consistência 4,
 clareza 4 e recompensa 4. A avaliação não atribui nota nova ao combate ou
@@ -101,4 +101,14 @@ teleporte e entrada fria em produção, já registrados na fila de lançamento.
 
 Oito módulos sincronizados seletivamente no place **97132875544830**;
 40 fontes comparadas, preservando o prefixo de papel existente no servidor.
-Commit/push, revisão final e publicação pendentes.
+Código `8cf1334` enviado ao `main`; suíte que condicionou o commit: saída 0,
+71.89 s. Quatro destaques da garantia Cósmica conferidos por clique
+real, preservando o limiar de 15. Recibo e roleta refeitos após os ajustes;
+48 capturas totais nas varreduras, sem erros/cortes de texto reportados.
+
+Lobby de edição reconstruído com 4.433 peças, dentro do orçamento; 40
+fontes comparadas novamente antes de publicar. Publicado no mesmo place
+**97132875544830 em 11/10/2026 às 16:47:04 local (19:47:04 UTC)**, com
+`Go to PublishSuccessful` novo confirmado no log do Studio. Studio em edição.
+Evidência de publicação: `test-results/rarity-refinement/publication.json` e
+na galeria do Desktop. Configurações da experiência e Creator Hub preservados.

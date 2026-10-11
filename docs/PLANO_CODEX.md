@@ -643,4 +643,8 @@ destaques da garantia marcados e roleta de prêmio com itens elegíveis.
 
 Fila M31 e aceite em
 [`REFINAMENTO_RARIDADES_2026-10-11.md`](REFINAMENTO_RARIDADES_2026-10-11.md).
-Suíte completa verde; revisão final e publicação em andamento.
+Código `8cf1334` no `main`, suíte completa verde, 48 capturas e cliques reais
+conferidos. Oito módulos sincronizados seletivamente, 40 fontes comparadas,
+preview com 4.433 peças. Publicado no place da equipe em **11/10/2026 às 16:47:04 local
+(19:47:04 UTC)**, com `PublishSuccessful` confirmado; Studio em edição.
+Galeria Desktop `Multiverse_Raridades_2026-10-11/INDICE.html`.
