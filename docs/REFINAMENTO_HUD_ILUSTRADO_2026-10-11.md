@@ -20,9 +20,9 @@ nas imagens. `tools/prepare_ui_art.py` apenas reduz resolução para entrega no
 Roblox; preserva os originais e a divisibilidade dos atlas.
 
 Importação feita pelo Gerenciador de ativos no place **97132875544830**.
-IDs consumidos pelo jogo estão em `Config.UiArt`. As quatro primeiras
-importações de resolução original foram substituídas pelos arquivos `md_*`
-de resolução controlada e não são usadas no código.
+IDs consumidos pelo jogo estão em `Config.UiArt`. Importações provisórias
+foram substituídas pelos seis arquivos `md_*` selecionados, de resolução
+controlada, e seus IDs antigos não são usados no código.
 
 ## Matriz de aceite
 
@@ -34,7 +34,7 @@ de resolução controlada e não são usadas no código.
 | Comparação de todas as telas | Verificado no jogo | 41 capturas PC, 41 horizontal PT e 41 vertical EN; galeria antes/proposta/depois no Desktop |
 | Interação, idioma e recursos | Verificado no jogo | Suíte completa verde, navegação real, seis formatos automáticos; sem espera de rede para desenhar |
 | Desempenho | Verificado no jogo | Cinco torres e 114 inimigos visíveis: 60 FPS, p95 18,10 ms na RTX 4060 Ti |
-| Sincronização e publicação oficial | Pendente | Confirmar fontes e `PublishSuccessful` |
+| Sincronização e publicação oficial | Verificado no jogo | Seis módulos sincronizados seletivamente, 40 fontes iguais ao repo; `PublishSuccessful` no mesmo place |
 
 ## O que a inspeção realmente corrigiu
 
@@ -58,7 +58,8 @@ Esses quatro casos foram novamente fotografados nos três formatos.
 
 ## Testes e evidências
 
-`python tools/test.py` terminou com código **0**. Inclui compilação, 632.736
+`python tools/test.py` terminou com código **0**, em 66,66 segundos na rodada
+antes do commit. Inclui compilação, 632.736
 asserções de regras/economia, 6.937 verificações de layout, 6.137 do mundo,
 2.968 do servidor e 1.577 da simulação; seis execuções do cliente entre
 1.057 e 1.063 verificações cada. Nenhum teste foi enfraquecido.
@@ -99,6 +100,24 @@ Evidência local:
   com prefixo de papel do servidor anterior preservado.
 - `C:/Users/loops/Desktop/Multiverse_HUDs_Ilustrados_2026-10-11/INDICE.html`
   — galeria comparativa, capturas integrais e assets.
+
+## Entrega no projeto da equipe
+
+Código e assets no `main`: **a17f8a0**, enviado ao origin. As seis fontes
+modificadas foram sincronizadas com destino obrigatório **97132875544830**.
+As 40 fontes do lugar foram comparadas ao repositório antes e depois; o
+prefixo de papel do servidor, anterior à entrega, foi preservado. Nenhum
+script do parceiro foi substituído por uma versão diferente. Preview do
+lobby reconstruído com 4.455 peças, abaixo do teto de 4.500.
+
+Publicado nesse mesmo lugar em **11/10/2026, às 02:07:16 local
+(05:07:16 UTC)**. Evidência no log da janela oficial:
+`2026-10-11T05:07:16.735Z ... Go to PublishSuccessful`.
+Registro completo em `test-results/illustrated-publication.json`.
+O place foi novamente conferido em modo de edição após a publicação.
+Nenhuma configuração de público, preço ou colaboração foi alterada.
+Antes do commit deste registro, a suíte completa terminou novamente com
+código 0, em 57,67 segundos (`test-results/illustrated-suite-postpublish.json`).
 
 ## Avaliação e limites
 

@@ -582,4 +582,11 @@ Relatório e aceite:
 [`REFINAMENTO_HUD_ILUSTRADO_2026-10-11.md`](REFINAMENTO_HUD_ILUSTRADO_2026-10-11.md),
 fila M28. Fontes, prompts e IDs em `assets/ui/illustrated/`. Não confundir
 os modelos reais dos retratos com os personagens inventados nas propostas.
-Revisão e publicação em andamento, registradas no relatório.
+Código `a17f8a0` no main, suíte completa verde, 41 cenas em PC/horizontal PT/
+vertical EN e revisões finais sem cortes de texto/erros detectados. Cliques
+reais, baú grátis, compra com Ouro e controles AFK verificados; cinco heróis
+e 114 inimigos a 60 FPS, p95 18,10 ms na RTX 4060 Ti. Seis módulos
+sincronizados seletivamente, 40 fontes conferidas, preview 4.455 peças.
+Publicado no mesmo place da equipe em 11/10 às 02:07:16 local (05:07:16 UTC),
+`PublishSuccessful` confirmado. Studio em edição. Galeria no Desktop:
+`Multiverse_HUDs_Ilustrados_2026-10-11/INDICE.html`.
