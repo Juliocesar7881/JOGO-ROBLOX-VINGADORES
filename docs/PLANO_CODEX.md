@@ -603,3 +603,11 @@ Fila M29; implementação, testes, capturas e publicação em
 [`REFINAMENTO_LOBBY_CONCEITO_2026-10-11.md`](REFINAMENTO_LOBBY_CONCEITO_2026-10-11.md).
 Preview com 4.433 peças dentro do teto de 4.500. As vistas dos mapas,
 filas, custos e regras existentes foram preservados.
+
+Código `fb65172` no main, suíte completa verde. Quatro pontes, passagem
+da torre e duas lojas físicas conferidas; 20 capturas PC/celular emulado e
+placar PT/EN sem cortes detectados. Cinco heróis e 104 inimigos a 60 FPS,
+p95 17,92 ms na RTX 4060 Ti. WorldBuilder sincronizado seletivamente,
+40 fontes comparadas e publicação no mesmo lugar da equipe em **11/10/2026
+às 11:05:12 local (14:05:12 UTC)**, `PublishSuccessful` confirmado.
+Studio em edição; galeria no Desktop `Multiverse_Lobby_2026-10-11/INDICE.html`.

@@ -40,7 +40,7 @@ recompensas continuam sob as verificações existentes do servidor.
 
 | Checagem | Resultado |
 |---|---|
-| Suíte completa `python tools/test.py` | Exit 0, 73,17 s; repetida na cadeia do commit |
+| Suíte completa `python tools/test.py` | Exit 0, 72,56 s na cadeia do commit `fb65172` |
 | Mundo com dublês | 4.424 peças; todas as verificações aprovadas |
 | Reconstrução nativa no Studio | 4.433 peças, teto mantido em 4.500 |
 | Acessos novos | Varredura das quatro direções em três faixas, sem decoração nova obstruindo |
@@ -80,6 +80,12 @@ o catálogo inteiro como finalizado a partir desta revisão do lobby.
 
 ## Publicação
 
-Sincronizado seletivamente no lugar oficial, em modo de edição. Publicação
-será registrada aqui após conferir o resultado nativo final e a confirmação
-`PublishSuccessful` do log do Studio.
+Código **`fb65172`** enviado ao `main`. Somente `WorldBuilder.luau` foi
+sincronizado; as 40 fontes foram comparadas, preservando o prefixo de papel
+anterior do servidor. Preview reconstruído com 4.433 peças.
+
+Publicado no mesmo lugar da equipe **97132875544830** em **11/10/2026 às
+11:05:12 local (14:05:12 UTC)**. Confirmação nova no log da janela alvo:
+`2026-10-11T14:05:11.582Z ... Go to PublishSuccessful`.
+Registro completo em `test-results/lobby-design/publication.json`, também
+copiado para a galeria. Studio conferido e deixado em modo de edição.
