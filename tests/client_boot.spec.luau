@@ -2909,8 +2909,9 @@ local function session(screen)
 		check(desk:FindFirstChildOfClass("ProximityPrompt").ObjectText=="CHOOSE MAP",
 			tag..": service prompt changes language")
 		local summon=village.HeroesHQ:FindFirstChild("SummonSign")
-		local title,subtitle=summon:FindFirstChild("Title",true),summon:FindFirstChild("Subtitle",true)
-		check(title.Text=="SUMMONING" and subtitle.Text=="HERO AND BASE CHESTS",tag..": summoning sign changes language")
+		local title=summon:FindFirstChild("Title",true)
+		check(title and title.Text=="SUMMONING",tag..": summoning sign changes language")
+		check(village.Chest_rare.SummonHeader:FindFirstChild("Title",true).Text=="SUMMON HEROES" and village.Chest_base_rare.SummonHeader:FindFirstChild("Title",true).Text=="SUMMON BASES",tag..": both mounted summon headers change language")
 		check(localPlayer.PlayerGui.PortalPicture_normal.MapTitle.Text==Catalog.Maps.manhattan.name.en,tag..": cloned map picture is localized")
 		local status=village.Portal_normal.QueueSign2.QueueBoard.QueueStatus
 		status:SetAttribute("LobbyTextPT","4/4 • LOTADO"); status:SetAttribute("LobbyTextEN","4/4 • FULL"); status.Text="4/4 • LOTADO"

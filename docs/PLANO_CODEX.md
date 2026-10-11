@@ -590,3 +590,16 @@ sincronizados seletivamente, 40 fontes conferidas, preview 4.455 peças.
 Publicado no mesmo place da equipe em 11/10 às 02:07:16 local (05:07:16 UTC),
 `PublishSuccessful` confirmado. Studio em edição. Galeria no Desktop:
 `Multiverse_HUDs_Ilustrados_2026-10-11/INDICE.html`.
+
+## 21. Lobby do conceito e placa da arena — 11/10
+
+Praça em camadas, jardins curvos, monumentos com armaduras próprias,
+torre e salões de invocação em azul-marinho/dourado, globo orbital e
+horizonte rochoso. A placa da arena recebeu moldura, troféu, divisões por
+mapa e estado vazio ilustrado. Os recordes reais substituem a arte de
+pódio, com nomes completos ajustados ao espaço e localização PT/EN.
+
+Fila M29; implementação, testes, capturas e publicação em
+[`REFINAMENTO_LOBBY_CONCEITO_2026-10-11.md`](REFINAMENTO_LOBBY_CONCEITO_2026-10-11.md).
+Preview com 4.433 peças dentro do teto de 4.500. As vistas dos mapas,
+filas, custos e regras existentes foram preservados.

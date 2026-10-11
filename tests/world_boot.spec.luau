@@ -154,6 +154,50 @@ do
 		check(windows==4,name.." has framed glazing on both side walls")
 	end
 end
+-- Close-up architectural detail must leave the four routes and the service
+-- approach usable. Sweep a player's body through each compass entrance.
+do
+	local hub, floor = WorldBuilder.HQ.hub, WorldBuilder.HQ.groundY
+	local blocked = {}
+	local obstacles = {}
+	for _, item in ipairs(lobby:GetDescendants()) do
+		if item:IsA("BasePart") and item.CanCollide and (string.find(item.Name,"Garden") or string.find(item.Name,"Statue") or string.find(item.Name,"Lantern")) then
+			table.insert(obstacles,item)
+		end
+	end
+	for _, direction in ipairs({v3(1,0,0),v3(-1,0,0),v3(0,0,1),v3(0,0,-1)}) do
+		local side=v3(-direction.Z,0,direction.X)
+		for distance=10,68,2 do for _, lane in ipairs({-5,0,5}) do
+			local at=hub+direction*distance+side*lane+v3(0,floor+2.7,0)
+			for _,p in ipairs(obstacles) do
+				local localPoint=p.CFrame:Inverse()*at
+				if math.abs(localPoint.X)<p.Size.X/2+1 and math.abs(localPoint.Y)<p.Size.Y/2+1.7 and math.abs(localPoint.Z)<p.Size.Z/2+1 then table.insert(blocked,p.Name) end
+			end
+		end end
+	end
+	check(#blocked==0,"plaza entrance routes clear for a player's body: "..table.concat(blocked,","))
+	local gardens=0
+	for _,garden in ipairs(lobby.HeroesHQ:GetChildren()) do if garden.Name=="PlazaGarden" then
+		gardens+=1
+		for _,p in ipairs(garden:GetChildren()) do if p.Name=="GardenFoundation" then
+			check(p.CanCollide and p.Position.Y-p.Size.Y/2<=floor+.01 and p.Position.Y+p.Size.Y/2>=floor+1.45,"curved planter foundation reaches the ground")
+		end end
+	end end
+	check(gardens==4,"four gardens frame the plaza without filling its entrances")
+	for _,name in ipairs({"Chest_rare","Chest_base_rare"}) do
+		local hall=lobby[name]
+		local pane=hall:FindFirstChild("SummonPortalPane")
+		check(pane and pane:FindFirstChild("PortalSwirl") and not pane.CanCollide,"summon portal art animates without blocking entry")
+		check(not hall:FindFirstChild("PrizeBeam"),"summon hall has a mounted crest instead of an unsupported prize beam")
+		local header=hall.SummonHeader.SignBack
+		local joins=0
+		for _,p in ipairs(hall:GetChildren()) do if p.Name=="HallHeaderSupport" then
+			local at=header.CFrame:Inverse()*p.Position
+			if math.abs(at.X)<header.Size.X/2 and math.abs(at.Y)<header.Size.Y/2 and math.abs(at.Z)<header.Size.Z/2+p.Size.Z/2 then joins+=1 end
+		end end
+		check(joins==2,"summon header rests on both physical supports")
+	end
+end
 do
 	local root={Position=v3(165,-30,380),AssemblyLinearVelocity=v3(0,-70,0)}
 	local moves=0
@@ -492,6 +536,21 @@ do
 	check(columns.hydra and columns.hydra:find("Campeão") ~= nil, "the arena shows the top ranked player of each map")
 	check(columns.wakanda == "Seja o primeiro!", "an empty ranked map invites the first player")
 	check(columns.latveria == "Carregando…", "a map without fresh data keeps its previous text")
+	local arena = lobby:FindFirstChild("Scoreboard_arena")
+	local arenaArt = arena and arena:FindFirstChild("ArenaArtwork", true)
+	check(arenaArt ~= nil and arenaArt.BackgroundColor3.R == 1 and arenaArt.BackgroundColor3.G == 1 and arenaArt.BackgroundColor3.B == 1, "arena gradient uses a neutral base so its blue face never multiplies to black")
+	check(arena and arena:FindFirstChild("ArenaTitle", true):IsA("TextLabel"), "arena identity is mounted inside the board rather than floating above it")
+	for _, column in ipairs(world.arenaColumns or {}) do
+		local head = column.label.Parent:FindFirstChild("MapTitle", true)
+		check(head and head:GetAttribute("LobbyTextEN") == Catalog.Upper(Catalog.Maps[column.mapId].name.en), "arena division title follows the viewer's language: " .. column.mapId)
+		check(column.label.Position.Y.Offset + column.label.Size.Y.Offset <= column.label.Parent.Size.Y.Offset, "arena records and empty invitation stay inside their division: " .. column.mapId)
+		check(column.label.TextScaled and not column.label.TextWrapped, "five arena records keep each full username on its own line: " .. column.mapId)
+		if column.mapId == "wakanda" then
+			check(column.label:GetAttribute("LobbyTextEN") == "Be the first!" and column.label.Parent.PodiumArtwork.Visible, "empty arena division has a localized invitation and podium artwork")
+		elseif column.mapId == "hydra" then
+			check(column.label:GetAttribute("LobbyTextEN"):find("Campeão") ~= nil and not column.label.Parent.PodiumArtwork.Visible, "real arena records replace the empty podium without invented scores")
+		end
+	end
 	for _, name in ipairs({ "CampaignTerrace", "ArenaFloor", "AfkFloor", "AcademyPlaza", "ExpeditionPlaza", "LatveriaPlaza", "TowerPlaza", "MarketFloor", "HangarFloor", "CommandFloor", "ArmoryFloor" }) do
 		local floor = hq and hq:FindFirstChild(name)
 		check(floor ~= nil and floor.CanCollide, "area has its own walkable floor: " .. name)

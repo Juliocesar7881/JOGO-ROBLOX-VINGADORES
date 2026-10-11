@@ -63,6 +63,16 @@ arquitetura. Hologramas e nave podem flutuar intencionalmente; pilares de
 concreto não. Cenário sólido, sem props bloqueando pontes, filas ou cliques.
 Apoios e circulação são testados. Teto atual: 4.500 peças no lobby.
 
+O refinamento de 11/10 aplica o conceito aprovado à praça e aos marcos:
+azul-marinho estrutural, pedra cinza clara, cornijas e filetes dourados,
+ciano em linhas estreitas e vegetação em jardins curvos. Estátuas têm
+armaduras próprias e bases em camadas; torre e invocação compartilham
+pilares, bandeiras e letreiros sustentados. O placar da arena deve parecer
+um painel de torneio, com divisões por mapa e estado vazio desenhado,
+sem inventar resultados. Preserve esse padrão e redistribua peças de
+decoração distante antes de aumentar a contagem. Evidências e limites em
+`REFINAMENTO_LOBBY_CONCEITO_2026-10-11.md`.
+
 Trabalhar composição e formas inclinadas antes de acrescentar adornos.
 Avaliar chegada, passagem e distritos na altura do jogador. Uma vista aérea
 não demonstra travessia. O movimento é local, limitado e respeita Menos
