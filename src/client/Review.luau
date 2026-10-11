@@ -275,12 +275,11 @@ function Review.start(api)
 				end
 			elseif stage == "reel" then
 				-- Three chests in a row: the case-style reel, then the prize cards.
+				local fillers = Rules.ChestOutcomes("rare",0,{})
 				local picks = {}
-				for _, id in ipairs(Catalog.HeroOrder) do
-					if #picks < 3 then table.insert(picks, { heroId = id, rarity = Catalog.Heroes[id].rarity, duplicate = #picks == 1, refundGold = 150, refundMastery = 60, cards = 3, cost = 1000 }) end
+				for _, entry in ipairs(fillers) do
+					if #picks < 3 then table.insert(picks, { heroId = entry.id, rarity = entry.rarity, duplicate = #picks == 1, refundGold = 150, refundMastery = 60, cards = 3, cost = 1000 }) end
 				end
-				local fillers = {}
-				for _, id in ipairs(Catalog.HeroOrder) do table.insert(fillers, { id = id, rarity = Catalog.Heroes[id].rarity, chance = 1 }) end
 				api.celebrate:Reel(picks, "rare", { fillers = fillers })
 			elseif stage == "herocard" then
 				local id = p.loadout[1]
@@ -295,7 +294,7 @@ function Review.start(api)
 					if rarity == "legendary" and not legendary then legendary = id end
 					if rarity == "common" and not common then common = id end
 				end
-				local result = stage == "revealbase" and { baseId = Catalog.BaseOrder[#Catalog.BaseOrder], rarity = "epic", duplicate = false, refundGold = 0 }
+				local result = stage == "revealbase" and { baseId = Catalog.BaseOrder[#Catalog.BaseOrder], rarity = Catalog.Bases[Catalog.BaseOrder[#Catalog.BaseOrder]].rarity, duplicate = false, refundGold = 0 }
 					or stage == "revealcommon" and { heroId = common, rarity = "common", duplicate = true, refundGold = 150, refundMastery = 60 }
 					or { heroId = legendary, rarity = "legendary", duplicate = false, refundGold = 0, refundMastery = 0 }
 				-- Review the actual post-reel receipt, not the retired second opening.

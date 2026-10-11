@@ -291,7 +291,7 @@ function Panels.new(ctx)
 	kit.selectedChest ="rare"
 	local premiumCategory="hero"
 	local inventoryFilter="owned"
-	kit.inventoryView ={query="",rarity="all",sort="collection",leaderPick=false}
+	kit.inventoryView ={query="",rarity="all",role="all",sort="collection",leaderPick=false}
 	-- The summon counter: a row of treasure chests by tier, the chosen one big
 	-- with its buy button and guarantee, and everyone it can give with clean
 	-- odds. Chests cost the Gold earned in battle.
@@ -352,19 +352,7 @@ function Panels.new(ctx)
 			price.Name="ChestPrice"
 		end
 
-		local forced=chest.pity and ((p.pity or {})[kit.selectedChest] or 0)+1>=chest.pity.after
-		local minimum=forced and table.find(Catalog.RarityOrder,chest.pity.minimum) or 1
-		local total=0; local outcomes={}
-		for index,rarity in ipairs(Catalog.RarityOrder) do if index>=minimum then total+=chest.odds[rarity] or 0 end end
-		for index,rarity in ipairs(Catalog.RarityOrder) do
-			local weight=index>=minimum and (chest.odds[rarity] or 0) or 0
-			if weight>0 then
-				local pool=Rules.ChestPool(rarity,collection); local fresh={}
-				for _,id in ipairs(pool) do if not owned[id] then table.insert(fresh,id) end end
-				local candidates=#fresh>0 and fresh or pool
-				for _,id in ipairs(pool) do table.insert(outcomes,{id=id,rarity=rarity,chance=contains(candidates,id) and weight/total/#candidates*100 or 0}) end
-			end
-		end
+		local outcomes,forced=Rules.ChestOutcomes(kit.selectedChest,(p.pity or {})[kit.selectedChest] or 0,owned)
 		local purchaseParent, galleryParent=body,body
 		local galleryHeight=254
 		if wide then
@@ -445,7 +433,7 @@ function Panels.new(ctx)
 			if chest.pity then
 				-- The guarantee as a bar that fills.
 				local count=(p.pity or {})[id] or 0
-				UI.label(purchase,forced and T("★ Garantia ativa!","★ Guarantee active!") or (T("Garantia ","Guarantee ")..L(Catalog.Rarities[chest.pity.minimum].name).."+ "..count.."/"..chest.pity.after),{Position=UDim2.fromOffset(14,artH+72),Size=UDim2.new(1,-28,0,18),TextSize=12,Font=UI.Fonts.display,TextColor3=forced and C.gold or C.muted})
+				UI.label(purchase,forced and T("Garantia ativa!","Guarantee active!") or (T("Garantia ","Guarantee ")..count.."/"..chest.pity.after),{Name="SummonGuarantee",Position=UDim2.fromOffset(14,artH+72),Size=UDim2.new(1,-28,0,18),TextSize=12,Font=UI.Fonts.display,TextColor3=forced and C.gold or C.muted})
 				local fill=UI.bar(purchase,C.gold,UDim2.fromOffset(14,artH+90),UDim2.new(1,-28,0,5))
 				fill.Size=UDim2.fromScale(math.clamp(count/chest.pity.after,0,1),1)
 			end
@@ -482,7 +470,7 @@ function Panels.new(ctx)
 			end
 		end
 		local caption=UI.frame(galleryParent,{Name="SummonOddsCaption",Position=UDim2.fromOffset(0,featuredH),Size=UDim2.new(1,-6,0,30),BackgroundTransparency=1})
-		UI.label(caption,T("Pode vir neste baú","In this chest"),{Size=UDim2.new(1,0,1,0),TextSize=20,Font=UI.Fonts.display,TextColor3=C.cream})
+		UI.label(caption,forced and T("Destaques garantidos","Guaranteed features") or T("Pode vir neste baú","In this chest"),{Size=UDim2.new(1,0,1,0),TextSize=20,Font=UI.Fonts.display,TextColor3=C.cream})
 		local cols=wide and 2 or math.max(2,math.floor(width/145))
 		local pitch,tileH=wide and 64 or 128,wide and 56 or 116
 		local gallery=UI.scroll(galleryParent,{Name="SummonOdds",Position=UDim2.fromOffset(0,32+featuredH),Size=UDim2.new(1,-6,0,galleryHeight-featuredH),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,math.ceil(#outcomes/cols)*pitch+6),ScrollBarThickness=5,ScrollBarImageColor3=tint})
@@ -496,6 +484,7 @@ function Panels.new(ctx)
 			UI.stroke(card,mine and C.ink or Color3.new(1,1,1),mine and 2.5 or 3)
 			UI.cardSkin(card,rarityColor)
 			portrait(card,outcome.id,{Position=UDim2.fromOffset(4,wide and 4 or 22),Size=wide and UDim2.fromOffset(44,48) or UDim2.new(1,-8,0,70)})
+			if outcome.guaranteed then UI.icon(card,"star",C.gold,{Name="GuaranteedFeature_"..outcome.id,Position=UDim2.fromOffset(4,wide and 2 or 24),Size=UDim2.fromOffset(16,16),ZIndex=4}) end
 			-- The chance on top, big; NEW for what the account does not own yet.
 			local odds=UI.label(card,UI.percent(outcome.chance,ctx.language()),{Name="ChestOdds_"..outcome.id,Position=wide and UDim2.new(1,-62,0,14) or UDim2.fromOffset(4,2),Size=wide and UDim2.fromOffset(58,28) or UDim2.new(1,-8,0,22),TextSize=19,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,BackgroundTransparency=wide and 0.15 or 1,BackgroundColor3=C.ink})
 			UI.oneLine(odds,11);UI.corner(odds,8)
@@ -506,7 +495,8 @@ function Panels.new(ctx)
 			UI.outline(name,2)
 			if not isBase then UI.hover(card,function(box) if kit.heroTooltip then kit.heroTooltip(box,outcome.id) end end,320) end
 		end
-		smallText(body,isBase and T("Base repetida vira Ouro.","A duplicate base becomes Gold.") or T("Herói repetido vira Ouro e maestria. Heróis novos têm prioridade.","A duplicate hero becomes Gold and mastery. New heroes come first."),0,30)
+		if chest.pity then smallText(body,T("A garantia entrega um dos destaques com estrela.","The guarantee awards one of the starred featured items."),0,28) end
+		smallText(body,isBase and T("Base repetida vira Ouro.","A duplicate base becomes Gold.") or T("Repetidos rendem Ouro, maestria, estrelas e cartas.","Duplicates grant Gold, mastery, stars and cards."),0,30)
 		resultCard()
 		if p.paidRandomRestricted then
 			UI.section(body,T("Escolha garantida","Guaranteed choice"),T("Esta conta compra sem sorteio: escolha exatamente o que receber.","This account buys without a draw: choose exactly what you get."))
@@ -1019,7 +1009,7 @@ function Panels.new(ctx)
 	end
 
 	-- The team and collection: five hero slots, then the hero cards.
-	-- the only filters are the owned/all tabs and one row of rarity chips.
+	-- Three collectible rarities, and practical roles for building a squad.
 	local function contextSquad(body)
 		local p=profile()
 		local screen=screenSize()
@@ -1063,7 +1053,13 @@ function Panels.new(ctx)
 			UI.label(power,T("Poder do líder: ","Leader power: ")..L(Catalog.Abilities[Catalog.Heroes[leader].ability].name),{Position=UDim2.fromOffset(34,0),Size=UDim2.new(1,-34,1,0),Font=UI.Fonts.display,TextColor3=C.gold,TextSize=17,TextWrapped=true})
 		end
 		local owned=0
-		for _,id in ipairs(Catalog.HeroOrder) do if (p.heroes or {})[id] then owned+=1 end end
+		local counts={}
+		for _,id in ipairs(Catalog.HeroOrder) do
+			local rarity=Catalog.Heroes[id].rarity
+			counts[rarity]=counts[rarity] or {owned=0,total=0}
+			counts[rarity].total+=1
+			if (p.heroes or {})[id] then owned+=1;counts[rarity].owned+=1 end
+		end
 		local filterRow=wide and UI.row(body,50) or body
 		if wide then filterRow.Name="FilterRow" end
 		local tabsHost=wide and UI.frame(filterRow,{Name="TabsHost",Size=UDim2.new(0.42,0,1,0),BackgroundTransparency=1}) or body
@@ -1083,8 +1079,21 @@ function Panels.new(ctx)
 			local words=chip:FindFirstChild("Caption")
 			if words and width<520 then UI.textLimit(words,13,7) end
 			if active then UI.stroke(chip,Color3.new(1,1,1),3) end
+			if rarity then
+				chip:SetAttribute("OwnedCount",counts[id].owned)
+				chip:SetAttribute("TotalCount",counts[id].total)
+				UI.hover(chip,L(rarity.name).."  "..counts[id].owned.."/"..counts[id].total,200)
+			end
 		end
-		local entries=UI.collectionEntries(Catalog,p,{query="",rarity=kit.inventoryView.rarity,sort="collection",ownership=inventoryFilter},ctx.language())
+		local roles=UI.row(body,44);roles.Name="HeroRoleFilters"
+		local roleOptions={"all","air","area","control","support"}
+		for index,id in ipairs(roleOptions) do
+			local def=Catalog.HeroRoles[id]
+			local active=kit.inventoryView.role==id
+			UI.button(roles,def and L(def.name) or T("Funções","Roles"),function() kit.inventoryView.role=id; renderContext() end,
+				{Name="HeroRole_"..id,Position=UDim2.new((index-1)/#roleOptions,0,0,0),Size=UDim2.new(1/#roleOptions,-6,0,40),TextSize=13,BackgroundColor3=active and C.blue or UI.Skin.slot})
+		end
+		local entries=UI.collectionEntries(Catalog,p,{query="",rarity=kit.inventoryView.rarity,role=kit.inventoryView.role,sort="collection",ownership=inventoryFilter},ctx.language())
 		-- The detail beside the grid (wide) or above it (narrow): the hero tapped,
 		-- or the leader until one is tapped.
 		local shown=kit.inventoryView.choice
@@ -1132,7 +1141,10 @@ function Panels.new(ctx)
 			return pick
 		end
 		if not wide and shown then detail(body,shown,true) end
-		if #entries==0 then UI.section(body,T("Nenhum herói aqui","No heroes here"),T("Abra baús na Invocação para ganhar heróis.","Open chests at the Summon halls to get heroes.")) end
+		if #entries==0 then
+			UI.section(body,T("Nenhum herói neste filtro","No heroes match"),T("Troque a função ou veja todos os heróis.","Change the role or view all heroes."))
+			UI.secondary(body,T("Limpar filtros","Clear filters"),function() kit.inventoryView.rarity="all";kit.inventoryView.role="all";renderContext() end,{Name="ClearHeroFilters",Size=UDim2.new(1,-6,0,44),TextSize=17})
+		end
 		local area=UI.frame(body,{Name="HeroArea",Size=UDim2.new(1,-6,0,math.max(rowsH,wide and 392 or 0)),BackgroundTransparency=1})
 		local gallery=UI.frame(area,{Name="HeroGallery",Size=UDim2.fromOffset(gridW,rowsH),BackgroundTransparency=1})
 		for index,id in ipairs(entries) do

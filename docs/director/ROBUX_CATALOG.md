@@ -1,5 +1,10 @@
 # Robux — o que existe no Creator Hub (01/10/2026)
 
+Atualização de 11/10: a coleção foi unificada em Comum/Raro/Lendário.
+Os preços individuais existentes foram preservados, sem alterar o Creator
+Hub. As referências a preços por cinco raridades abaixo são históricas;
+para um produto novo, consulte `Catalog.Products.Heroes[heroId].price`.
+
 Experiência: Multiverse Doomsday Tower Defense (universe 10768165352).
 Conta: LoopsDev7881. IDs já gravados em `src/shared/Config.luau`
 (`Products.Passes`, `Products.Consumables`, `Products.Heroes`).

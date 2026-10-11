@@ -633,3 +633,14 @@ peças. Publicado no mesmo lugar da equipe em **11/10/2026 às 15:44:01 local
 (18:44:01 UTC)**, com `PublishSuccessful` confirmado. Studio em edição;
 primeira entrada no cliente publicado/dispositivo real continua como aceite
 separado.
+
+## 23. Três raridades e escolha por função — 11/10
+
+Coleção unificada em Comum (16 heróis), Raro (15) e Lendário (12), também
+aplicada às bases e cartas. Economia individual e grupos de aquisição
+preservados; posse e progressão não exigem migração. Filtros por função,
+destaques da garantia marcados e roleta de prêmio com itens elegíveis.
+
+Fila M31 e aceite em
+[`REFINAMENTO_RARIDADES_2026-10-11.md`](REFINAMENTO_RARIDADES_2026-10-11.md).
+Suíte completa verde; revisão final e publicação em andamento.

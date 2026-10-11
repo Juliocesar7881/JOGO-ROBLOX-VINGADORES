@@ -547,10 +547,10 @@ end
 function PlayerService:_grantHero(profile, heroId, now, options)
 	options = options or {}
 	local hero = self.catalog.Heroes[heroId]
-	local rarity = self.catalog.Rarities[hero.rarity]
+	local economy = hero.economy
 	if profile.heroes[heroId] then
-		local refund = options.refundGold or rarity.duplicate.gold
-		local mastery = options.mastery == nil and rarity.duplicate.mastery or options.mastery
+		local refund = options.refundGold or economy.duplicate.gold
+		local mastery = options.mastery == nil and economy.duplicate.mastery or options.mastery
 		profile.gold += refund
 		local owned = profile.heroes[heroId]
 		owned.xp += mastery
@@ -559,7 +559,7 @@ function PlayerService:_grantHero(profile, heroId, now, options)
 		-- the hero's rank ladder.
 		local before = math.clamp(math.floor(tonumber(owned.stars) or 0), 0, self.catalog.Stars.max)
 		owned.stars = math.min(self.catalog.Stars.max, before + 1)
-		local cards = self.catalog.HeroCards.copiesPerDuplicate[hero.rarity] or 1
+		local cards = economy.cards
 		owned.copies = (owned.copies or 0) + cards
 		return true, { gold = refund, mastery = mastery, stars = owned.stars, starGained = owned.stars > before, cards = cards, copies = owned.copies, rank = owned.rank or 1 }
 	end
@@ -567,7 +567,7 @@ function PlayerService:_grantHero(profile, heroId, now, options)
 	profile.abilities[heroId] = 1
 	if #profile.loadout < MAX_LOADOUT then table.insert(profile.loadout, heroId) end
 	if tableCount(profile.heroes) >= #self.catalog.HeroOrder then achievement(profile, "allHeroes", "Coleção completa", "Full collection", now) end
-	if hero.rarity == "mythic" then achievement(profile, "mythic:" .. heroId, "Lenda cósmica: " .. hero.name.pt, "Cosmic legend: " .. hero.name.en, now) end
+	if hero.cosmicAchievement then achievement(profile, "mythic:" .. heroId, "Lenda cósmica: " .. hero.name.pt, "Cosmic legend: " .. hero.name.en, now) end
 	return false, { gold = 0, mastery = 0 }
 end
 
@@ -585,7 +585,7 @@ function PlayerService:_openChest(profile, chestId, rolls, now)
 		duplicate=profile.bases[outcome.baseId]==true
 		refund={gold=0,mastery=0}
 		if duplicate then
-			refund.gold=math.min(math.floor(chest.cost*0.4),self.catalog.Rarities[outcome.rarity].duplicate.gold)
+			refund.gold=math.min(math.floor(chest.cost*0.4),self.catalog.Bases[outcome.baseId].economy.duplicate.gold)
 			profile.gold+=refund.gold
 		else profile.bases[outcome.baseId]=true end
 	else duplicate, refund = self:_grantHero(profile, outcome.heroId, now) end

@@ -218,7 +218,7 @@ for i=1,10 do clock+=.001;reel:Summon('tick') end
 assert(summonPlays==before,'A fast frame cannot queue a burst of ticks')
 clock+=.05;reel:Summon('tick');assert(summonPlays==before+1,'The next crossed tile can tick independently of pickups')
 local patterns={}
-for _,rarity in ipairs({'common','rare','epic','legendary','mythic'}) do
+for _,rarity in ipairs({'common','rare','legendary'}) do
  delayed={};reel:Summon('start');reel:Summon('reward',rarity)
  local immediate=summonPlays
  for _,fn in ipairs(delayed) do fn() end
@@ -232,20 +232,20 @@ for _,rarity in ipairs({'common','rare','epic','legendary','mythic'}) do
 end
 local voices=0;for _ in pairs(reel.summonVoices) do voices+=1 end
 assert(voices<=8,'The whole summon uses at most eight reusable voices')
-delayed={};reel:Summon('reward','mythic');reel:Summon('cancel');before=summonPlays
+delayed={};reel:Summon('reward','legendary');reel:Summon('cancel');before=summonPlays
 for _,fn in ipairs(delayed) do fn() end
 assert(summonPlays==before,'Leaving a scene cancels pending reward layers')
-delayed={};reel:Summon('reward','mythic');settings.interface=false;before=summonPlays
+delayed={};reel:Summon('reward','legendary');settings.interface=false;before=summonPlays
 for _,fn in ipairs(delayed) do fn() end
 reel:Summon('tick');reel:Summon('reward','common')
 assert(summonPlays==before,'Interface mute also cancels delayed summon audio')
-settings.interface=true;settings.effects=false;reel:Summon('start');reel:Summon('reward','epic')
+settings.interface=true;settings.effects=false;reel:Summon('start');reel:Summon('reward','rare')
 assert(summonPlays==before,'Effects mute applies to the reel')
 settings.effects=true;Config.Audio.reelTick=85;clock+=1;reel:Summon('tick')
 assert(tick.SoundId=='rbxassetid://85' and not tick.PlaybackRegionsEnabled and tick.PlaybackSpeed==1,'The reference tick replaces the fallback without truncation or altered pitch')
-Config.Audio.rewardMythic=86;delayed={};before=summonPlays;reel:Summon('reward','mythic')
+Config.Audio.rewardLegendary=86;delayed={};before=summonPlays;reel:Summon('reward','legendary')
 assert(summonPlays==before+1 and #delayed==0 and reel.summonVoices.reward.SoundId=='rbxassetid://86','A dedicated ending replaces all layers with one sound')
-print('PASS summon audio: independent ticks, five rarity signatures, voice limits, mute, cancellation and upload replacement')
+print('PASS summon audio: independent ticks, three rarity signatures, voice limits, mute, cancellation and upload replacement')
 -- Private atlases: actual region selection, fallback while downloading,
 -- family-specific weapons/powers, independent settings and bounded reuse.
 for index,key in ipairs({'sfxUi','sfxEvents','sfxSummon','sfxCombat','sfxPowers','sfxBoss','sfxWorld'}) do Config.Audio[key]=900+index end
@@ -298,7 +298,7 @@ bank:Ambience('ambGamma');assert(bank.bankAmbientVoice==reactor,'Snapshots do no
 bank:Ambience('ambHydra');assert(not reactor.IsPlaying and bank.bankAmbientVoice~=reactor,'Changing maps stops the old ambience')
 bank:Ambience(nil);assert(not bank.bankPools.world[2].IsPlaying,'Returning stops the ambient region')
 local rarityStarts={}
-for _,rarity in ipairs({'common','rare','epic','legendary','mythic'}) do
+for _,rarity in ipairs({'common','rare','legendary'}) do
  bank:Summon('start');clock+=.1;bank:Summon('tick');delayed={};before=summonPlays
  bank:Summon('reward',rarity)
  assert(summonPlays==before+1,'The rarity fanfare starts exactly once')
@@ -310,7 +310,7 @@ for _,rarity in ipairs({'common','rare','epic','legendary','mythic'}) do
  assert(not bank.bankPools.rewardAccent or #bank.bankPools.rewardAccent<=2,'Reward textures have a separate bounded two-voice pool')
 end
 bank:Summon('cancel');for _,channel in ipairs({'summon','rewardAccent'}) do for _,sound in ipairs(bank.bankPools[channel] or {}) do assert(not sound.IsPlaying,'Cancel stops the fanfare and its texture') end end
-delayed={};bank:Summon('reward','mythic');bank:Summon('cancel');before=summonPlays
+delayed={};bank:Summon('reward','legendary');bank:Summon('cancel');before=summonPlays
 for _,fn in ipairs(delayed) do fn() end
 assert(summonPlays==before,'A pending rarity texture cannot survive cancellation')
 clock+=1;bank:Talent('hover');bank:Summon('start');bank:Cue('collect')
@@ -322,7 +322,7 @@ assert(not bank.bankAmbientVoice.IsPlaying,'Effects mute immediately stops loopi
 settings.effects=true;bank:Music('lobby');clock+=2;bank:Cue('boss');bank:Step()
 assert(bank.sounds.lobby.Volume<.16,'Boss cue briefly makes room in the music')
 clock+=1;bank:Step();assert(bank.sounds.lobby.Volume==.16,'Music returns after the priority cue')
-print('PASS Sonniss banks: regions, variations, loading fallback, weapon/power identity, budgets, loops, five endings and live mute')
+print('PASS Sonniss banks: regions, variations, loading fallback, weapon/power identity, budgets, loops, three endings and live mute')
 '''.replace('__AUDIO__', source).replace('__BANK__', bank_source)
 with tempfile.TemporaryDirectory(prefix='doom-audio-') as temp:
     path = Path(temp) / 'audio.luau'

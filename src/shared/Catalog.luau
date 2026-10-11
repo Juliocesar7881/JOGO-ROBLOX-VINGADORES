@@ -1034,4 +1034,77 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 	end
 end
 
+-- Three collectible rarities. Authoring tiers above are historical acquisition
+-- groups: preserve each item's economy and each chest's exact draw/guarantee
+-- pool before merging their presentation. No saved hero/base/chest ID changes.
+local acquisitionOrder = Catalog.RarityOrder
+local acquisitionRarities = Catalog.Rarities
+local mergedRarity = { common="common", rare="common", epic="rare", legendary="legendary", mythic="legendary" }
+for _, id in ipairs(Catalog.ChestOrder) do
+	local chest = Catalog.Chests[id]
+	local sourceOdds, sourcePity = chest.odds, chest.pity
+	local floor = sourcePity and table.find(acquisitionOrder,sourcePity.minimum) or 4
+	chest.groups, chest.odds = {}, {common=0,rare=0,legendary=0}
+	local items = chest.kind=="base" and Catalog.Bases or Catalog.Heroes
+	local order = chest.kind=="base" and Catalog.BaseOrder or Catalog.HeroOrder
+	for index, rarity in ipairs(acquisitionOrder) do
+		local pool, size = {}, 0
+		for _, itemId in ipairs(order) do
+			local item=items[itemId]
+			if item.rarity==rarity then
+				size+=1
+				if not item.starter then table.insert(pool,itemId) end
+			end
+		end
+		local weight=sourceOdds[rarity] or 0
+		chest.groups[index]={weight=weight,items=pool,size=size,top=index>=floor}
+		chest.odds[mergedRarity[rarity]]+=weight
+	end
+	if sourcePity then chest.pity={after=sourcePity.after,minimum=mergedRarity[sourcePity.minimum]} end
+end
+for _, id in ipairs(Catalog.HeroOrder) do
+	local hero=Catalog.Heroes[id]
+	local original=hero.rarity
+	local economy=acquisitionRarities[original]
+	hero.recruitmentGroup=table.find(acquisitionOrder,original)
+	hero.economy={abilityCost=economy.abilityCost,duplicate=economy.duplicate,cards=Catalog.HeroCards.copiesPerDuplicate[original],placeLimit=economy.placeLimit}
+	hero.cosmicAchievement=original=="mythic"
+	hero.rarity=mergedRarity[original]
+	local product=Catalog.Products.Heroes[id]
+	if product then product.rarity=hero.rarity end
+end
+for _, id in ipairs(Catalog.BaseOrder) do
+	local base=Catalog.Bases[id]
+	base.recruitmentGroup=table.find(acquisitionOrder,base.rarity)
+	base.economy={duplicate=acquisitionRarities[base.rarity].duplicate}
+	base.rarity=mergedRarity[base.rarity]
+end
+Catalog.RarityOrder={"common","rare","legendary"}
+Catalog.Rarities={
+	common={id="common",name=text("Comum","Common"),color={190,200,212}},
+	rare={id="rare",name=text("Raro","Rare"),color={84,170,255}},
+	legendary={id="legendary",name=text("Lendário","Legendary"),color={255,188,62}},
+}
+Catalog.HeroCards.copiesPerDuplicate=nil -- Per-hero compensation stays intact.
+-- Match cards use the same three names without changing their draw weights.
+Catalog.CardRarityWeight={common=60,rare=30,legendary=10}
+for _, card in pairs(Catalog.Cards) do if card.rarity=="epic" then card.rarity="legendary" end end
+local chestNames={supply=text("Suprimentos","Supplies"),rare=text("Baú da Aliança","Alliance chest"),
+	epic=text("Baú da Vanguarda","Vanguard chest"),legendary=text("Baú das Lendas","Legends chest"),cosmic=text("Baú Cósmico","Cosmic chest")}
+for id,name in pairs(chestNames) do
+	Catalog.Chests[id].name=name
+	Catalog.Chests["base_"..id].name=name
+end
+Catalog.Chests.rare.description=text("Uma nova força para sua equipe. Veja as chances de cada herói.","A new force for your squad. Check each hero's odds.")
+Catalog.Products.Consumables.starterPack.description=text("Uma vez por conta: Gigante Furioso (raro) + 5.000 de Ouro.","Once per account: Raging Giant (rare) + 5,000 Gold.")
+Catalog.HeroRoles={air={name=text("Antiaéreo","Anti-air")},area={name=text("Área","Area")},control={name=text("Controle","Control")},support={name=text("Apoio","Support")}}
+for _,hero in pairs(Catalog.Heroes) do
+	hero.roles={
+		air=hero.air==true,
+		area=hero.attack=="splash" or hero.attack=="beam" or hero.attack=="mine" or (hero.chain or 1)>1,
+		control=(hero.slow or 0)>0 or (hero.stun or 0)>0 or (hero.knockback or 0)>0 or hero.attack=="mine",
+		support=(hero.supportBoost or 0)>0 or hero.attack=="support",
+	}
+end
+
 return Catalog

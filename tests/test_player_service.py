@@ -27,6 +27,7 @@ def main():
         "__CATALOG__": root / "src" / "shared" / "Catalog.luau",
         "__RULES__": root / "src" / "shared" / "Rules.luau",
         "__SERVICE__": root / "src" / "server" / "PlayerService.luau",
+        "__RARITY_BASELINE__": root / "tests" / "rarity_baseline.luau",
     }.items():
         body = path.read_text(encoding="utf-8").replace(CATALOG_REQUIRE, "Catalog")
         source = source.replace(token, "(function()\n" + body + "\nend)()")

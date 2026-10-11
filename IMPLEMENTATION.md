@@ -1,5 +1,28 @@
 # Integration contract
 
+## Three collectible rarities — 11/10/2026
+
+Heroes and bases use only `common`, `rare`, `legendary` in the catalog and
+committed chest results. Former common/rare merge into common, epic becomes
+rare, and legendary/mythic merge into legendary. Match cards use the same
+three names, retaining their 60/30/10 draw weights.
+
+This is a presentation consolidation, not an economy reset. Hero/base IDs,
+owned progression, chest IDs/prices, individual acquisition odds, fresh-item
+preference, pity thresholds/reset eligibility, duplicate compensation,
+ability upgrade prices and configured direct product prices are preserved.
+Per-item `economy` data replaces formulas tied to collectible rarity.
+`chest.groups` retain the authored acquisition pools; `Rules.ChestOutcomes`
+and `RollChest` share their eligibility and guarantee logic. Effective odds
+show the exact current distribution, including zero for owned items while
+their pool still contains new ones. A star marks guarantee-eligible items.
+No saved-profile migration or new network action is required.
+
+The collection adds client-only role filters for the ordinary attack's
+anti-air, area, control and support capabilities. They never equip a hero,
+spend Gold or change a server decision. Historical sections below describe
+the catalog before this consolidation where they mention five rarities.
+
 ## Invocação física e filas por destino — 27/09/2026
 
 O mercado tem dois salões: **Invocar heróis** (`Chest_rare`) e **Invocar bases**

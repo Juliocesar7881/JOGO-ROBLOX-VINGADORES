@@ -1,5 +1,11 @@
 # Balanceamento
 
+Nota de 11/10/2026: as cinco raridades das medições históricas abaixo foram
+unificadas em Comum (16 heróis), Raro (15) e Lendário (12). Atributos de
+combate, custos individuais e probabilidades por item foram preservados.
+As médias antigas continuam históricas; use as três categorias atuais em
+novas medições.
+
 Como o balanceamento é medido, os números atuais e como reproduzi-los. Todos
 os números abaixo vêm de simulações automatizadas (um bot jogando de
 verdade, fora do Roblox) e datam do commit em que este arquivo foi escrito —

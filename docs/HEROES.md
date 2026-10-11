@@ -3,14 +3,14 @@
 Gerado por `tools/gen_heroes_doc.luau` a partir de `src/shared/Catalog.luau` e
 `src/shared/Rules.luau` — não edite este arquivo à mão, rode o gerador de novo.
 
-Heróis só chegam à conta pelos baús do lobby (Baú Raro, 1.000 Ouro; Baú
-Lendário, 2.000 Ouro) ou pela compra direta na Loja Robux. Cada herói tem uma
+São 43 heróis em três raridades: Comum, Raro e Lendário. Heróis chegam
+pelos cinco baús do lobby ou pela compra direta na Loja Robux. Cada herói tem uma
 única habilidade, e é sempre a do herói no **slot 1** da formação que o
 comandante usa em combate — por isso o slot 1 é visualmente destacado na UI.
-Habilidades lendárias e míticas são **ultimates**: além do efeito principal,
+Habilidades dos heróis lendários são **ultimates**: além do efeito principal,
 elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 
-## Comum — 79 Robux (compra direta)
+## Comum — 16 heróis
 
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -18,11 +18,6 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Olho de Águia** — Longo alcance e alvos prioritários | 180 | único (ar) | 27 | 33 | 1.60s | Tiro Mortal |
 | **Homem-Asa** — Ataque rápido contra voadores | 220 | único (ar) | 16 | 30 | 0.68s | Comando Aéreo |
 | **Soldado de Prata** — Perfuração de armadura | 300 | único | 28 | 28 | 1.00s | Emboscada |
-
-## Raro — 199 Robux (compra direta)
-
-| Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
-| --- | --- | --- | --- | --- | --- | --- |
 | **Aranha Urbana** — Desaceleração e controle | 280 | área | 14 | 24 | 1.10s | Rede Gigante |
 | **Viúva Sombria** — Revela camuflados e marca alvos | 260 | único (ar) | 18 | 25 | 0.75s | Marca da Viúva |
 | **Homem Miúdo** — Ataques rápidos e pisões | 380 | único | 22 | 26 | 0.70s | Partículas Quânticas |
@@ -36,7 +31,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Acrobata Peludo** — Impactos curtos contra hordas | 270 | área | 15 | 18 | 0.95s | Salto selvagem |
 | **Cavaleiro Lunar** — Revela camuflados na rota | 310 | único (ar) | 34 | 25 | 1.05s | Luz da Lua |
 
-## Épico — 449 Robux (compra direta)
+## Raro — 15 heróis
 
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -56,7 +51,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Rei dos Mares** — Marés que atrasam e empurram | 430 | área | 19 | 25 | 1.40s | Maremoto |
 | **Caçador da Noite** — Minas e armadilhas na estrada | 380 | mine | 40 | 26 | 1.50s | Bomba de Fumaça |
 
-## Lendário — 999 Robux (compra direta)
+## Lendário — 12 heróis
 
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -64,25 +59,21 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Bruxa do Caos** — Dano mágico persistente em área | 650 | queima contínua (ar) | 34 | 26 | 1.80s | Feitiço Rubi ⚡ (ultimate) |
 | **Doutor Místico** — Controle espacial e suporte mágico | 560 | área (ar) | 36 | 28 | 1.50s | Dilatação do Tempo ⚡ (ultimate) |
 | **Motoqueiro Chama** — Fogo fantasma persistente | 620 | queima contínua | 28 | 26 | 1.40s | Fogo Fantasma ⚡ (ultimate) |
+| **Capitã Estelar** — Feixe cósmico devastador | 780 | feixe (ar) | 68 | 30 | 1.50s | Nova Fotônica ⚡ (ultimate) |
+| **Surfista Cósmico** — Energia cósmica encadeada | 800 | corrente (ar) | 34 | 32 | 1.20s | Julgamento Cósmico ⚡ (ultimate) |
 | **Deusa do Clima** — Relâmpagos e defesa aérea | 600 | corrente (ar) | 40 | 34 | 1.40s | Olho da tempestade ⚡ (ultimate) |
+| **Psíquica Radiante** — Explosões de energia psíquica | 760 | área (ar) | 44 | 30 | 1.30s | Chama Aurora ⚡ (ultimate) |
 | **Guardião Cósmico** — Feixe cósmico antiaéreo | 590 | feixe (ar) | 48 | 32 | 1.05s | Supernova ⚡ (ultimate) |
 | **Guardião Verde** — Construções de energia e controle | 600 | área (ar) | 30 | 28 | 1.50s | Construção Esmeralda ⚡ (ultimate) |
 | **Velocista Rubro** — Golpes ultrarrápidos | 560 | corrente (ar) | 11 | 24 | 0.18s | Supervelocidade ⚡ (ultimate) |
-
-## Mítico — 1999 Robux (compra direta)
-
-| Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
-| --- | --- | --- | --- | --- | --- | --- |
-| **Capitã Estelar** — Feixe cósmico devastador | 780 | feixe (ar) | 68 | 30 | 1.50s | Nova Fotônica ⚡ (ultimate) |
-| **Surfista Cósmico** — Energia cósmica encadeada | 800 | corrente (ar) | 34 | 32 | 1.20s | Julgamento Cósmico ⚡ (ultimate) |
-| **Psíquica Radiante** — Explosões de energia psíquica | 760 | área (ar) | 44 | 30 | 1.30s | Chama Aurora ⚡ (ultimate) |
 | **Titã Solar** — Visão de calor e força suprema | 800 | feixe (ar) | 50 | 32 | 1.30s | Fúria Solar ⚡ (ultimate) |
 
 ## Habilidades
 
 Toda habilidade tem 5 ranks (`Catalog.AbilityRanks`); cada rank melhora poder
 e/ou duração em 18% e reduz a recarga em até 4%, com o custo em Ouro e a
-maestria exigida crescendo por rank e multiplicados pela raridade do herói
+maestria exigida crescendo por rank. O multiplicador de custo de cada herói
+foi preservado na unificação (`hero.economy.abilityCost`)
 (`Rules.AbilityUpgrade`). Os valores abaixo são do **rank 1**.
 
 | Habilidade | Herói | Recarga | Descrição (rank 1) |

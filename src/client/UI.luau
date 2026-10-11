@@ -1186,6 +1186,7 @@ function UI.collectionEntries(catalog,profile,options,language)
 		local owned=(profile.heroes or {})[id]
 		local searchable=UI.searchKey(id.." "..def.name.pt.." "..def.name.en.." "..def.role.pt.." "..def.role.en)
 		if (options.ownership=="all" or owned) and (options.rarity=="all" or options.rarity==def.rarity)
+			and (not options.role or options.role=="all" or (def.roles and def.roles[options.role]))
 			and (query=="" or string.find(searchable,query,1,true)) then table.insert(entries,id) end
 	end
 	local function key(id)

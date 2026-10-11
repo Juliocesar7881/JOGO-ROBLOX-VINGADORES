@@ -11,6 +11,7 @@
 -- flash, the colour strobing while the chest charges, shaking and confetti,
 -- and shortens the reveal, but still shows exactly the same result.
 local Catalog = require(game:GetService("ReplicatedStorage"):WaitForChild("DoomShared"):WaitForChild("Catalog"))
+local Rules = require(game:GetService("ReplicatedStorage"):WaitForChild("DoomShared"):WaitForChild("Rules"))
 local Motion = require(script.Parent:WaitForChild("Motion"))
 
 local Celebrate = {}
@@ -22,8 +23,8 @@ local CONFETTI = {
 	Color3.fromRGB(255, 206, 82), Color3.fromRGB(255, 129, 134), Color3.fromRGB(120, 212, 255),
 	Color3.fromRGB(135, 235, 113), Color3.fromRGB(203, 170, 255), Color3.fromRGB(255, 159, 215),
 }
--- Pieces of confetti per rarity: a common hero is still a hero, a mythic is a party.
-local CONFETTI_BY_TIER = { 8, 16, 28, 44, 64 }
+-- Three collectible rarities: the top tier keeps its celebratory weight.
+local CONFETTI_BY_TIER = { 8, 28, 56 }
 
 local function clamp01(x) return math.clamp(x, 0, 1) end
 local function lerp(a, b, t) return a + (b - a) * t end
@@ -289,7 +290,7 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 		UI.fit(label,14)
 		return label
 	end
-	words("RecruitKicker",self:_t(result.baseId and {pt="ARSENAL / NOVA DESCOBERTA",en="ARSENAL / NEW DISCOVERY"} or {pt="MULTIVERSO / RECRUTAMENTO",en="MULTIVERSE / RECRUITMENT"}),18,26,14,Color3.fromRGB(180,201,219))
+	words("RecruitKicker",self:_t(result.baseId and {pt="ARSENAL / RECRUTAMENTO",en="ARSENAL / RECRUITMENT"} or {pt="MULTIVERSO / RECRUTAMENTO",en="MULTIVERSE / RECRUITMENT"}),18,26,14,Color3.fromRGB(180,201,219))
 	local rarityLabel=words("RevealRarity",Catalog.Upper(self:_t(rarity.name)).."!",52,36,25,tint)
 	UI.oneLine(rarityLabel,16)
 	words("RevealName",self:_t(def.name),portrait and 94 or 104,portrait and 54 or 80,portrait and 32 or 38)
@@ -305,7 +306,7 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 	end
 	if result.shiny then statusText=self:_t({pt="BRILHANTE!  ",en="SHINY!  "})..statusText end
 	words("RevealStatus",statusText,portrait and 170 or 212,56,result.duplicate and 20 or 27,result.duplicate and CHEST_GOLD or tint:Lerp(WHITE,0.35))
-	words("RecruitSaved",self:_t({pt="Adicionado à sua coleção",en="Added to your collection"}),portrait and 238 or 290,26,16,Color3.fromRGB(180,201,219))
+	words("RecruitSaved",self:_t(result.duplicate and {pt="Recompensa do repetido recebida",en="Duplicate rewards received"} or {pt="Adicionado à sua coleção",en="Added to your collection"}),portrait and 238 or 290,26,16,Color3.fromRGB(180,201,219))
 	local continueButton=UI.button(root,self:_t({pt="CONTINUAR",en="CONTINUE"}),function() self:_closeReveal() end,{
 		Name="RevealContinue",AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-18),Size=UDim2.fromOffset(math.min(screen.X-32,300),52),BackgroundColor3=tint,TextSize=22,Visible=true,ZIndex=95})
 	-- The reel owns the impact sound; direct grants own it here. A receipt
@@ -328,7 +329,7 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 				particle.frame.Position=UDim2.fromOffset(cx+math.cos(particle.angle+t*0.12)*distance,cy+math.sin(particle.angle+t*0.12)*distance)
 			end
 		end
-		-- A capped pose update costs the same for common and mythic heroes.
+		-- A capped pose update costs the same across all three rarities.
 		if performer and t>=nextPose then
 			nextPose=t+1/30
 			pcall(Motion.Perform,performer,t,lowFX and "rest" or "arrival")
@@ -370,13 +371,7 @@ function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, f
 	if not fillers then
 		-- Reward chests use the same eligible collection as shop chests. These
 		-- are visual decoys only; the server's committed result stays final.
-		fillers = {}
-		local catalog = chest.kind == "base" and Catalog.Bases or Catalog.Heroes
-		for id, def in pairs(catalog) do
-			if (chest.odds[def.rarity] or 0) > 0 then
-				table.insert(fillers, {id=id,rarity=def.rarity,chance=chest.odds[def.rarity]})
-			end
-		end
+		fillers = Rules.ChestOutcomes(chest.id,0,{})
 	end
 	local prizeRarity = Catalog.Rarities[result.rarity] or Catalog.Rarities.common
 	local prizeTier = table.find(Catalog.RarityOrder, prizeRarity.id) or 1

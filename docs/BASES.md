@@ -1,37 +1,38 @@
-# Bases, reforços e recrutamento — versão 2026.4
+# Bases, reforços e recrutamento — 11/10/2026
 
-A coleção agora tem **36 heróis e 11 bases**. Cada comandante equipa uma base
+A coleção tem **43 heróis e 11 bases**, em três raridades: Comum, Raro e
+Lendário. Cada comandante equipa uma base
 no lobby; suas torres continuam usando os cinco espaços de heróis. A base
 gratuita é o Posto da Resistência.
 
 ## Como jogar
 
-1. No HUD do lobby, abra **Heróis → Minhas bases** para escolher sua base.
-2. A loja de baús tem abas **Heróis / Bases**. Os dois pisos verdes do lobby
-   levam às respectivas coleções. Só a confirmação de abertura gasta Ouro.
+1. No HUD do lobby, abra **Base** no menu esquerdo para escolher sua base.
+2. Os salões **Invocar heróis / Invocar bases** têm coleções separadas.
+   Só a confirmação de abertura gasta Ouro.
 3. Na partida, toque em **BASE / EVOLUIR**, na barra de vida. Compare renda,
    vida e defesa antes de melhorar.
-4. Melhorias gastam **Energia da partida**. Ouro é a moeda persistente para
+4. Melhorias gastam **Ouro da partida**. Ouro do lobby é a moeda persistente para
    recrutamento e habilidades; a fazenda não fabrica Ouro permanente.
 
 ## Bases
 
-| Base | Raridade | Estilo | Energia por onda, nível 1 |
+| Base | Raridade | Estilo | Ouro da partida por onda, nível 1 |
 |---|---|---|---:|
 | Posto da Resistência | Comum, gratuito | Equilibrado | 20 |
-| Oficina Stark | Comum | Gerador | 45 |
+| Oficina de Ferro | Comum | Gerador | 45 |
 | Horta de suprimentos | Comum | Fazenda | 40 |
-| Bunker S.H.I.E.L.D. | Raro | Barricada | 20 |
-| Arsenal Stark | Raro | Canhão | 20 |
-| Quartel de Wakanda | Épico | Soldados | 25 |
-| Reator de vibranium | Épico | Gerador | 65 |
-| Cidadela de Asgard | Lendário | Barricada | 28 |
+| Bunker da Agência | Comum | Barricada | 20 |
+| Arsenal de Ferro | Comum | Canhão | 20 |
+| Quartel da Selva | Raro | Soldados | 25 |
+| Reator de cristal | Raro | Gerador | 65 |
+| Cidadela Celeste | Lendário | Barricada | 28 |
 | Porta-aviões da Resistência | Lendário | Soldados | 32 |
-| Sanctum Sanctorum | Mítico | Canhão mágico | 30 |
-| Jardim de Yggdrasil | Mítico | Fazenda | 85 |
+| Santuário Arcano | Lendário | Canhão mágico | 30 |
+| Jardim da Árvore-Mundo | Lendário | Fazenda | 85 |
 
 Todas têm cinco níveis por partida. Custos para chegar aos níveis 2–5:
-**450 / 950 / 1.800 / 3.200 Energia**. Renda e defesas crescem com o nível;
+**450 / 950 / 1.800 / 3.200 Ouro da partida**. Renda e defesas crescem com o nível;
 cada melhoria acrescenta 12 pontos ao bônus de vida. Melhorar acrescenta
 somente a nova capacidade de vida, sem curar todo o dano anterior.
 
@@ -53,31 +54,32 @@ recupera o mesmo módulo da partida. Os níveis reiniciam na próxima partida.
 
 ## Cinco baús por coleção
 
-| Tipo | Ouro | Comum | Raro | Épico | Lendário | Mítico | Garantia |
-|---|---:|---:|---:|---:|---:|---:|---|
-| Suprimentos | 400 | 75% | 23% | 2% | — | — | — |
-| Raro | 1.000 | 34% | 44% | 20% | 2% | — | — |
-| Épico | 1.500 | — | 45% | 47% | 7% | 1% | Épico+ na 8ª abertura sem obter Épico+ |
-| Lendário | 2.000 | — | 30% | 42% | 22% | 6% | Lendário+ na 10ª sem obter Lendário+ |
-| Cósmico | 5.000 | — | — | 45% | 43% | 12% | Mítico na 15ª sem obter Mítico |
+| Tipo | Ouro | Comum | Raro | Lendário | Garantia |
+|---|---:|---:|---:|---:|---|
+| Suprimentos | 400 | 98% | 2% | — | — |
+| Aliança | 1.000 | 78% | 20% | 2% | — |
+| Vanguarda | 1.500 | 45% | 47% | 8% | Destaque na 8ª abertura sem obter um destaque |
+| Lendas | 2.000 | 30% | 42% | 28% | Lendário na 10ª sem obter um lendário |
+| Cósmico | 5.000 | — | 45% | 55% | Destaque na 15ª sem obter um destaque |
 
 São dez produtos de recrutamento com Ouro, cinco em cada coleção. As
 garantias têm contadores independentes por baú e coleção. A interface mostra
-as chances efetivas quando a garantia está ativa. Dentro da raridade
-sorteada, itens ainda não possuídos têm prioridade; os iniciais não aparecem.
+as chances efetivas quando a garantia está ativa; uma estrela marca quais
+itens contam como destaque. Os grupos de aquisição originais conservam
+chances por item e prioridade de itens novos; os iniciais não aparecem.
 Bases repetidas devolvem o menor valor entre 40% do custo e a compensação
-da raridade. Heróis repetidos mantêm a compensação existente em Ouro/maestria.
+original por base. Heróis repetidos mantêm a compensação existente em
+Ouro/maestria/cartas/estrelas, independente da nova cor da coleção.
 As restrições da conta a itens aleatórios pagos valem para ambas as coleções.
 
-## Conteúdo novo
+## Referência do elenco
 
-Wolverine, Ciclope, Tempestade, Jean Grey, Homem de Gelo, Gambit, Noturno,
-Fera, Psylocke, Deadpool, Cavaleiro da Lua e Nova: habilidades de líder com
-cinco ranks, especializações e detalhes próprios nos modelos procedurais.
+Habilidades de líder com cinco ranks, especializações e detalhes próprios
+nos modelos procedurais.
 Referência gerada completa em [HEROES.md](HEROES.md).
 
 Há 15 variantes de inimigos, distribuídas entre capangas de Manhattan,
-mutantes Gama, soldados HYDRA, saqueadores de vibranium e Doombots.
+mutantes Gama, soldados Sombra, saqueadores de cristal e robôs do Tirano.
 Elas herdam as famílias comum/corredor/blindado, com identidade visual por
 mapa e mesmos atributos/recompensas da família. Não são novos chefes:
 os cinco chefes anteriores continuam nas ondas 10, 20, 30, 40 e 50.

@@ -14,6 +14,8 @@ local function approx(actual, expected, message)
 	check(math.abs(actual - expected) < 0.000001, (message or "Approximate equality failed") .. ": " .. tostring(actual) .. " vs " .. tostring(expected))
 end
 
+require("../tests/rarity_compatibility")(check,equal,approx)
+
 --==============================================================================
 -- Catalog shape
 --==============================================================================
@@ -83,24 +85,19 @@ for _, id in Catalog.HeroOrder do
 	else
 		local product = Catalog.Products.Heroes[id]
 		check(product ~= nil, "A purchasable hero has a product: " .. id)
-		equal(product.price, Catalog.Rarities[hero.rarity].robux, "Robux price follows rarity: " .. id)
+		check(product.price > 0 and product.rarity==hero.rarity, "Explicit existing price and current rarity: " .. id)
 		equal(product.id, 0, "Unconfigured hero products stay disabled: " .. id)
 	end
 end
-equal(rarityCount.common, 4, "Commons"); equal(rarityCount.rare, 12, "Rares"); equal(rarityCount.epic, 15, "Epics")
-equal(rarityCount.legendary, 8, "Legendaries"); equal(rarityCount.mythic, 4, "Mythics")
+equal(rarityCount.common, 16, "Commons"); equal(rarityCount.rare, 15, "Rares")
+equal(rarityCount.legendary, 12, "Legendaries")
 check(Catalog.Heroes.ironman.starter and Catalog.Heroes.hawkeye.starter, "Iron Man and Hawkeye are the starters")
 local starters = 0
 for _, id in Catalog.HeroOrder do if Catalog.Heroes[id].starter then starters += 1 end end
 equal(starters, 2, "Exactly two starters")
 
--- Rarer heroes cost more Robux and more gold to improve.
-for index = 2, #Catalog.RarityOrder do
-	local lower, higher = Catalog.Rarities[Catalog.RarityOrder[index - 1]], Catalog.Rarities[Catalog.RarityOrder[index]]
-	check(higher.robux > lower.robux, "Robux price rises with rarity")
-	check(higher.abilityCost > lower.abilityCost, "Ability upgrades cost more for rarer heroes")
-	check(higher.duplicate.gold > lower.duplicate.gold, "Duplicates of rarer heroes refund more")
-end
+-- Economy is per hero; merging collectible colours must not rebalance combat.
+for _,id in ipairs(Catalog.HeroOrder) do check(Catalog.Heroes[id].economy.abilityCost>0,"Explicit hero economy: "..id) end
 
 -- Branch data reproduces the behaviour the game was balanced around.
 equal(Rules.TowerStats("ironman", 5, 1).attack, "splash", "Iron Man missiles")
@@ -289,7 +286,7 @@ do
 		local rarity = Catalog.Heroes[id].rarity
 		byRarity[rarity] = math.max(byRarity[rarity] or 0, Rules.GuaranteedPrice(id))
 	end
-	check(byRarity.mythic > byRarity.legendary and byRarity.legendary > byRarity.epic and byRarity.epic > byRarity.common, "rarer heroes cost more to guarantee")
+	check(byRarity.legendary > byRarity.rare and byRarity.rare > byRarity.common, "rarer hero groups cost more to guarantee")
 	check(Rules.GuaranteedPrice("nobody") == nil, "unknown items have no price")
 end
 
@@ -651,15 +648,12 @@ for _, chestId in Catalog.ChestOrder do
 	for rarity in chest.odds do check(Catalog.Rarities[rarity] ~= nil, "Known rarity in " .. chestId .. " odds") end
 end
 equal(Catalog.Chests.legendary.cost, Catalog.Chests.rare.cost * 2, "The rare chest costs half of the legendary chest")
-check(Catalog.Chests.rare.odds.mythic == 0 and Catalog.Chests.rare.odds.legendary <= 2, "The rare chest barely holds a top hero")
-check(Catalog.Chests.legendary.odds.common == 0, "The legendary chest never wastes a common")
+check(Catalog.Chests.rare.odds.legendary <= 2, "The Alliance chest barely holds a top hero")
+equal(Catalog.Chests.legendary.odds.common,30,"Legends chest keeps its former entry-tier pool")
 -- The best heroes come from the legendary chest, and the best of them are the rarest.
 check(Catalog.Chests.legendary.odds.legendary > Catalog.Chests.rare.odds.legendary, "Legendaries are far likelier in the legendary chest")
-check(Catalog.Chests.legendary.odds.mythic > Catalog.Chests.rare.odds.mythic, "Only the legendary chest holds mythics")
-local ordered = { "rare", "epic", "legendary", "mythic" }
-check(Catalog.Chests.legendary.odds.epic > Catalog.Chests.legendary.odds.legendary and Catalog.Chests.legendary.odds.legendary > Catalog.Chests.legendary.odds.mythic,
-	"Inside the legendary chest, better rarities are less likely")
-check(Catalog.Chests.rare.odds.rare > Catalog.Chests.rare.odds.epic and Catalog.Chests.rare.odds.epic > Catalog.Chests.rare.odds.legendary, "Inside the rare chest, better rarities are less likely")
+check(Catalog.Chests.legendary.odds.rare > Catalog.Chests.legendary.odds.legendary,"Legends chest keeps top items less likely than the middle group")
+check(Catalog.Chests.rare.odds.common > Catalog.Chests.rare.odds.rare and Catalog.Chests.rare.odds.rare > Catalog.Chests.rare.odds.legendary,"Alliance chest shows three descending odds")
 
 -- Chest pools never contain a starter, and cover every other hero exactly once.
 do
@@ -679,9 +673,9 @@ end
 -- Deterministic edges of the draw.
 do
 	local low = Rules.RollChest("legendary", 0, 0, 0, {})
-	equal(low.rarity, "rare", "The lowest roll in the legendary chest is a rare")
+	equal(low.rarity, "common", "The lowest roll in the Legends chest is common")
 	local high = Rules.RollChest("legendary", 0.999999, 0, 0, {})
-	equal(high.rarity, "mythic", "The highest roll in the legendary chest is a mythic")
+	equal(high.rarity, "legendary", "The highest roll in the Legends chest is legendary")
 	local rareLow = Rules.RollChest("rare", 0, 0, 0, {})
 	equal(rareLow.rarity, "common", "The lowest roll in the rare chest is a common")
 	check(Catalog.Heroes[rareLow.heroId].rarity == "common" and not Catalog.Heroes[rareLow.heroId].starter, "A common draw is a chestable common")
@@ -716,20 +710,20 @@ end
 -- Duplicates: a chest prefers something new, and only repeats once that rarity is complete.
 do
 	local ownedAllEpics = {}
-	for _, id in Rules.ChestPool("epic") do ownedAllEpics[id] = true end
-	local pool = Rules.ChestPool("epic")
+	for _, id in Rules.ChestPool("rare") do ownedAllEpics[id] = true end
+	local pool = Rules.ChestPool("rare")
 	local missing = pool[3]
 	ownedAllEpics[missing] = nil
 	for step = 0, 99 do
 		local result = Rules.RollChest("legendary", 0.65, step / 100, 0, ownedAllEpics)
-		equal(result.rarity, "epic", "Fixture rolls an epic")
+		equal(result.rarity, "rare", "Fixture rolls the merged middle rarity")
 		equal(result.heroId, missing, "The one missing epic is always the one delivered")
 		check(not result.duplicate, "A new hero is not a duplicate")
 	end
 	ownedAllEpics[missing] = true
 	local dupe = Rules.RollChest("legendary", 0.65, 0.4, 0, ownedAllEpics)
 	check(dupe.duplicate, "A completed rarity yields a duplicate")
-	check(Catalog.Heroes[dupe.heroId].rarity == "epic", "The duplicate still keeps its rarity")
+	check(Catalog.Heroes[dupe.heroId].rarity == "rare", "The duplicate still keeps its rarity")
 end
 
 -- Pity: the tenth legendary chest without a top hero is guaranteed to be one.
@@ -738,14 +732,14 @@ do
 	equal(chest.pity.after, 10, "Pity threshold")
 	for step = 0, 99 do
 		local result = Rules.RollChest("legendary", step / 100, 0.5, chest.pity.after - 1, {})
-		check(result.rarity == "legendary" or result.rarity == "mythic", "Pity guarantees a legendary or better")
+		equal(result.rarity,"legendary","Pity guarantees the top collectible rarity")
 		check(result.pity and result.top, "The result reports the pity")
 	end
 	local normal = Rules.RollChest("legendary", 0.05, 0.5, chest.pity.after - 2, {})
 	check(not normal.pity, "Pity is not triggered early")
 	local mythics = 0
 	for step = 0, 999 do
-		if Rules.RollChest("legendary", step / 1000, 0.5, chest.pity.after - 1, {}).rarity == "mythic" then mythics += 1 end
+		if Catalog.Heroes[Rules.RollChest("legendary", step / 1000, 0.5, chest.pity.after - 1, {}).heroId].cosmicAchievement then mythics += 1 end
 	end
 	check(mythics > 0 and mythics < 300, "A pity opening keeps mythic the rarest outcome")
 	check(Catalog.Chests.rare.pity == nil, "The rare chest has no pity")
@@ -795,12 +789,12 @@ end
 
 -- Offers follow the rarity weights: commons are far likelier than epics.
 do
-	local counts = { common = 0, rare = 0, epic = 0 }
+	local counts = { common = 0, rare = 0, legendary = 0 }
 	for seed = 1, 3000 do
 		for _, id in Rules.CardOffers(seed, 10, 1, {}) do counts[Catalog.Cards[id].rarity] += 1 end
 	end
-	check(counts.common > counts.rare and counts.rare > counts.epic, "Card rarity weighting favours the common cards")
-	check(counts.epic > 0, "Epic cards do appear")
+	check(counts.common > counts.rare and counts.rare > counts.legendary, "Card weighting keeps common cards more frequent")
+	check(counts.legendary > 0, "Renamed top cards retain their old weighting")
 end
 
 -- A slowing hero slows harder with every level.

@@ -229,15 +229,11 @@ function Rules.GuaranteedPrice(itemId)
 	local def = hero or base
 	if not def then return nil end
 	local kind = if hero then "hero" else "base"
-	local count = 0
-	for _, id in ipairs(if hero then Catalog.HeroOrder else Catalog.BaseOrder) do
-		local other = if hero then Catalog.Heroes[id] else Catalog.Bases[id]
-		if other.rarity == def.rarity then count += 1 end
-	end
 	local best
 	for _, chest in pairs(Catalog.Chests) do
 		local chestKind = if chest.kind == "base" then "base" else "hero"
-		local odds = chest.odds and chest.odds[def.rarity] or 0
+		local group = chest.groups[def.recruitmentGroup]
+		local odds, count = group.weight, group.size
 		if chestKind == kind and odds > 0 and count > 0 then
 			local price = chest.cost / (odds / 100 / count)
 			if not best or price < best then best = price end
@@ -578,7 +574,7 @@ function Rules.AbilityUpgrade(hero, currentRank)
 	local ranks = Catalog.AbilityRanks
 	local nextRank = math.clamp(math.floor(number(currentRank, 1)), 1, ranks.max) + 1
 	if nextRank > ranks.max then return nil end
-	local multiplier = Catalog.Rarities[hero.rarity].abilityCost
+	local multiplier = hero.economy.abilityCost
 	return { rank = nextRank, cost = math.floor(ranks.cost[nextRank] * multiplier + 0.5), mastery = ranks.mastery[nextRank] }
 end
 
@@ -742,48 +738,66 @@ function Rules.ChestPool(rarity, kind)
 	return pool
 end
 
--- Opens a chest from three random numbers in [0,1), so the outcome is a pure
--- function that can be tested against the published odds.
---   rarityRoll picks the rarity; heroRoll picks the hero inside it.
---   A hero you do not own yet is always preferred over one you do, so a chest
---   only hands you a duplicate once that rarity is complete.
---   pity counts legendary-chest openings without a top hero: when it reaches
---   the chest's threshold the next opening is guaranteed to be one.
--- Returns { rarity, heroId, duplicate, pity }.
+local function chestWeights(chest,pity)
+	local forced=chest.pity~=nil and number(pity,0)+1>=chest.pity.after
+	local total=0
+	for _,group in ipairs(chest.groups) do if not forced or group.top then total+=group.weight end end
+	return forced,total
+end
+
+local function chestCandidates(group,owned)
+	local fresh={}
+	for _,id in ipairs(group.items) do if not owned[id] then table.insert(fresh,id) end end
+	return if #fresh>0 then fresh else group.items
+end
+
+-- Exact displayed odds share the same pools and guarantee as the server roll.
+-- Merging colours must not make an expensive hero easier to draw, or reset an
+-- existing pity counter. Unowned-first still applies inside each authored pool.
+function Rules.ChestOutcomes(chestId,pity,owned)
+	local chest=Catalog.Chests[chestId]
+	assert(chest,"Unknown chest")
+	owned=owned or {}
+	local forced,total=chestWeights(chest,pity)
+	local items=chest.kind=="base" and Catalog.Bases or Catalog.Heroes
+	local outcomes={}
+	for _,group in ipairs(chest.groups) do
+		if group.weight>0 and (not forced or group.top) then
+			local candidates=chestCandidates(group,owned)
+			for _,id in ipairs(group.items) do
+				table.insert(outcomes,{id=id,rarity=items[id].rarity,
+					chance=table.find(candidates,id) and group.weight/total/#candidates*100 or 0,
+					guaranteed=chest.pity~=nil and group.top})
+			end
+		end
+	end
+	return outcomes,forced
+end
+
+-- Two pre-transaction rolls choose an authored pool and then an item. The
+-- returned rarity is its current collectible rarity, independent of its price.
 function Rules.RollChest(chestId, rarityRoll, heroRoll, pity, owned)
 	local chest = Catalog.Chests[chestId]
 	assert(chest, "Unknown chest")
 	owned = owned or {}
 	rarityRoll = math.clamp(number(rarityRoll, 0), 0, 0.999999)
 	heroRoll = math.clamp(number(heroRoll, 0), 0, 0.999999)
-	local order, forced = Catalog.RarityOrder, false
-	local floorIndex = 1
-	if chest.pity and number(pity, 0) + 1 >= chest.pity.after then
-		forced = true
-		floorIndex = table.find(order, chest.pity.minimum) or 1
-	end
-	local total = 0
-	for index, rarity in ipairs(order) do
-		if index >= floorIndex then total += chest.odds[rarity] or 0 end
-	end
+	local forced,total=chestWeights(chest,pity)
 	local target, chosen = rarityRoll * total, nil
-	for index, rarity in ipairs(order) do
-		local weight = if index >= floorIndex then (chest.odds[rarity] or 0) else 0
+	for _,group in ipairs(chest.groups) do
+		local weight = if not forced or group.top then group.weight else 0
 		if weight > 0 then
-			chosen = rarity
+			chosen = group
 			if target < weight then break end
 			target -= weight
 		end
 	end
-	local pool = Rules.ChestPool(chosen, chest.kind)
-	local fresh = {}
-	for _, id in ipairs(pool) do if not owned[id] then table.insert(fresh, id) end end
-	local candidates = if #fresh > 0 then fresh else pool
+	local candidates=chestCandidates(chosen,owned)
 	local heroId = candidates[math.floor(heroRoll * #candidates) + 1]
-	local topIndex = table.find(order, chest.pity and chest.pity.minimum or "legendary") or #order
+	local items=chest.kind=="base" and Catalog.Bases or Catalog.Heroes
 	return {
-		rarity = chosen, heroId = chest.kind~="base" and heroId or nil, baseId = chest.kind=="base" and heroId or nil, itemId=heroId, duplicate = owned[heroId] == true,
-		pity = forced, top = (table.find(order, chosen) or 1) >= topIndex,
+		rarity = items[heroId].rarity, heroId = chest.kind~="base" and heroId or nil, baseId = chest.kind=="base" and heroId or nil, itemId=heroId, duplicate = owned[heroId] == true,
+		pity = forced, top = chosen.top,
 	}
 end
 

@@ -296,3 +296,9 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M30.3 Recibo com modelo real, entrada curta, assinatura do herói e raridade; nenhuma segunda abertura/fanfarra após a roleta. Cinco finais Sonniss com mix/acento limitado, mute/cancelamento e chat recolhido durante a recompensa.
 - [x] M30.4 Código `b9e022a` no main, suíte completa exit 0 (75,33 s), PC/horizontal PT/vertical EN conferidos; baú ganho 0→1 com uma fanfarra, cliques reais e AFK, recrutamento a 60 FPS, p95 17,97 ms. Oito fontes sincronizadas seletivamente, 40 comparadas, preview 4.433 peças. Publicado no place 97132875544830 em 11/10 às 15:44:01 local/18:44:01 UTC, `PublishSuccessful` confirmado; Studio em edição. Galeria Desktop `Multiverse_Recrutamento_Entrada_2026-10-11/INDICE.html`, relatório `REFINAMENTO_RECRUTAMENTO_ENTRADA_2026-10-11.md`.
 - [ ] M30.5 Conferir primeira entrada no cliente publicado em rede/dispositivo reais e preferência do jogador para as novas artes/animação/mix; não confundir essa validação com o perfil temporário do Studio.
+
+## M31 — Três raridades e escolha por função, 11/10
+
+- [x] M31.1 Comum/Raro/Lendário para 43 heróis, 11 bases e cartas de partida; cores, nomes e sons consistentes. Preservar preços, progressão, chances individuais, preferência de aquisição, limiares e reinício da garantia.
+- [x] M31.2 Filtros de antiaéreo/área/controle/apoio, contagens na dica e Limpar filtros; chances efetivas compartilhadas com o sorteio e destaques da garantia marcados. Roleta de prêmio sem iniciais ou itens indisponíveis.
+- [~] M31.3 codex-rarity-refinement-20261011: suíte completa verde, regressão histórica de sorteios/economia e seis formatos. Oito fontes sincronizadas, 40 comparadas; finalizar conferência visual, cliques reais, commit/push e publicar no place 97132875544830. Relatório `REFINAMENTO_RARIDADES_2026-10-11.md`.

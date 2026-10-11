@@ -191,9 +191,9 @@ service.random = scriptedRolls(0, 0)
 local masteryBefore = service:Get(p1).heroes.falcon.xp + service:Get(p1).heroes.bucky.xp
 local _, thirdOk, third = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
 check(thirdOk, "A third common opening resolves")
-check(third.gold == 8000 - 1000 + Catalog.Rarities.common.duplicate.gold, "A duplicate refunds gold by rarity")
+check(third.gold == 8000 - 1000 + Catalog.Heroes[third.result.heroId].economy.duplicate.gold, "A duplicate refunds its per-hero Gold")
 check(third.result.duplicate and third.result.refundGold == 150 and third.result.refundMastery == 60, "The reply reports the duplicate refund")
-check(third.heroes.falcon.xp + third.heroes.bucky.xp == masteryBefore + Catalog.Rarities.common.duplicate.mastery, "A duplicate becomes mastery on that hero")
+check(third.heroes.falcon.xp + third.heroes.bucky.xp == masteryBefore + Catalog.Heroes[third.result.heroId].economy.duplicate.mastery, "A duplicate becomes mastery on that hero")
 check(#third.loadout == 4, "A duplicate never takes a slot")
 check(third.result.starGained == true and third.result.stars == 1 and (third.heroes.falcon.stars or 0) + (third.heroes.bucky.stars or 0) == 1,
 	"A duplicate adds one star to that hero and the reply says so")
@@ -230,8 +230,8 @@ check(stores.Tests.values.p_1.loadout[1] == "falcon", "The ability slot is durab
 service.random = scriptedRolls(0.9, 0)
 local _, epicOk, epic = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
 local epicHero
-for id in pairs(epic.heroes) do if Catalog.Heroes[id].rarity == "epic" then epicHero = id end end
-check(epicOk and epicHero ~= nil, "A high roll in the rare chest is an epic")
+for id in pairs(epic.heroes) do if Catalog.Heroes[id].rarity == "rare" then epicHero = id end end
+check(epicOk and epicHero ~= nil, "A high roll in the Alliance chest is now rare")
 check(epic.pity.legendary == 0, "The rare chest keeps no pity counter")
 for opening = 1, 9 do
 	service:Award(p1, "pity-gold-" .. opening, { gold = 2000 })
@@ -242,7 +242,7 @@ for opening = 1, 9 do
 	check(legendaryOk, "Legendary opening " .. opening)
 	check(snapshot.pity.legendary == opening, "Each miss raises pity, opening " .. opening)
 	local spent = goldBeforeOpen - snapshot.gold
-	check(spent <= 2000 and spent >= 2000 - Catalog.Rarities.rare.duplicate.gold, "The legendary chest costs 2,000 (a duplicate refunds part)")
+	check(spent <= 2000 and spent >= 1700, "The low entry pool of the Legends chest keeps its original refund")
 end
 service:Award(p1, "chest-gold-2", { gold = 30000 })
 service.random = scriptedRolls(0, 0.3)
@@ -269,7 +269,7 @@ do
 	local ownedAfter = 0
 	for _ in pairs(service:Get(p1).heroes) do ownedAfter += 1 end
 	check(replayOk, "A chest survives a lost response")
-	check(service:Get(p1).gold >= goldNow - 1000 and service:Get(p1).gold <= goldNow - 1000 + Catalog.Rarities.legendary.duplicate.gold, "A replayed callback cannot charge twice")
+	check(service:Get(p1).gold >= goldNow - 1000 and service:Get(p1).gold <= goldNow - 1000 + 1200, "A replayed callback cannot charge twice")
 	check(ownedAfter == ownedNow or ownedAfter == ownedNow + 1, "A replayed callback cannot add two heroes")
 end
 
@@ -1139,7 +1139,7 @@ end
 	for _, owned in pairs(localOnly.memoryProfiles.p_91.heroes) do owned.copies = 0 end
 	localOnly.random = scriptedRolls(0, 0, 0)
 	local _, dupOk, dup = localOnly:Handle(fan, "OpenChest", { chestId = "rare" }, true)
-	check(dupOk and dup.result.duplicate == true and dup.result.cards == Catalog.HeroCards.copiesPerDuplicate.common, "A duplicate pays the cards its rarity is worth")
+	check(dupOk and dup.result.duplicate == true and dup.result.cards == Catalog.Heroes[dup.result.heroId].economy.cards, "A duplicate pays its original per-hero compensation")
 	local dupHero = dup.result.heroId
 	check(dup.heroes[dupHero].copies == dup.result.cards, "The cards are kept on the hero: " .. tostring(dupHero) .. " has " .. tostring(dup.heroes[dupHero].copies) .. ", result " .. tostring(dup.result.cards) .. " copies " .. tostring(dup.result.copies))
 	-- Rank up: cards and Gold, no top.
@@ -1186,4 +1186,17 @@ end
 	check(service:Get(keeper).heroes.ironman.alloc.damage == 0 and service:Get(keeper).heroes.ironman.alloc.speed == 0, "Points beyond the rank are discarded on load")
 end)()
 
+-- A colour merge preserves the actual grant, including an existing rank,
+-- allocation, shiny appearance, copies and stars, for every owned hero.
+do
+	local baseline=__RARITY_BASELINE__
+	for id,old in pairs(baseline.heroes) do
+		local owned={xp=100,level=1,stars=2,rank=3,copies=7,alloc={damage=1,speed=1,range=0},shiny=true}
+		local profile={gold=1234,heroes={[id]=owned},abilities={[id]=2},loadout={id}}
+		local duplicate,refund=service:_grantHero(profile,id,1700000000)
+		check(duplicate and refund.gold==old.duplicateGold and refund.mastery==old.duplicateMastery and refund.cards==old.cards,"Existing grant values survive rarity merge: "..id)
+		check(profile.gold==1234+old.duplicateGold and owned.xp==100+old.duplicateMastery,"Gold and mastery are paid exactly: "..id)
+		check(owned.copies==7+old.cards and owned.stars==3 and owned.rank==3 and owned.shiny and owned.alloc.damage==1 and profile.abilities[id]==2 and profile.loadout[1]==id,"Owned progression is intact: "..id)
+	end
+end
 print("PASS PlayerService: " .. checks .. " assertions (real module, mocked Roblox persistence and purchases)")

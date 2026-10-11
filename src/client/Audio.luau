@@ -83,25 +83,21 @@ local ACTION_STEMS = {
 	snare = {"shotArrow", 1.45, 0.065, 4, -12, -24},
 }
 
--- Five reward signatures, from a short confirmation to a layered fanfare.
+-- Three reward signatures, from a short confirmation to a layered fanfare.
 -- Values: existing owned sample, pitch, volume, delay. Dedicated uploads
 -- replace the whole signature, never layer a second ending over it.
 local REWARDS = {
 	common = {name="rewardCommon", notes={{"click",0.82,0.10,0},{"click",1.1,0.07,0.075}}},
-	rare = {name="rewardRare", notes={{"shotMagic",0.75,0.095,0},{"shotMagic",1,0.11,0.15}}},
-	epic = {name="rewardEpic", notes={{"shotTech",0.6,0.055,0},{"shotMagic",0.84,0.09,0.06},{"shotMagic",1.12,0.10,0.22},{"shotMagic",1.33,0.09,0.38}}},
+	rare = {name="rewardRare", notes={{"shotTech",0.6,0.055,0},{"shotMagic",0.84,0.09,0.06},{"shotMagic",1.12,0.10,0.22},{"shotMagic",1.33,0.09,0.38}}},
 	legendary = {name="rewardLegendary", notes={{"shotMelee",0.9,0.075,0},{"shotMagic",0.75,0.11,0},{"shotMagic",1,0.11,0.18},{"shotMagic",1.5,0.10,0.36},{"shotMagic",1.19,0.075,0.36}}},
-	mythic = {name="rewardMythic", notes={{"shotBlast",0.82,0.07,0},{"shotMagic",0.5,0.10,0.02},{"shotMagic",0.75,0.10,0.16},{"shotMagic",1,0.11,0.30},{"shotMagic",1.5,0.10,0.5},{"shotMagic",1.26,0.075,0.5}}},
 }
 
 -- The uploaded rarity fanfare owns the melody. A restrained, separate
 -- texture gives rarer discoveries weight without restarting that fanfare.
 local REWARD_MIX = {
 	common = {volume=.18,duck=.45},
-	rare = {volume=.20,duck=.8,accent="upgrade",gain=.045,delay=.10},
-	epic = {volume=.22,duck=1.3,accent="powerMagic",gain=.065,delay=.14},
+	rare = {volume=.22,duck=1.3,accent="powerMagic",gain=.065,delay=.14},
 	legendary = {volume=.24,duck=1.6,accent="bossDown",gain=.075,delay=.18},
-	mythic = {volume=.25,duck=2.2,accent="powerBlast",gain=.085,delay=.22},
 }
 
 function Audio.new(getState)
