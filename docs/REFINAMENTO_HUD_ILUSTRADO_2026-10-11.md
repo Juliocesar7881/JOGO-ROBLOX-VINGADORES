@@ -184,5 +184,14 @@ de texto foi acusado nas revisões. Isso não substitui o teste em celular físi
 Evidências em `test-results/borders/`, especialmente
 `horizontal/01-newcomer.png`, `live/talent-toast.png` e `live/geometry.json`.
 Suíte em `test-results/borders-suite-result.json`. Apenas
-`src/client/IllustratedSkin.luau` sincronizado com o place **97132875544830**;
-registro de publicação será acrescentado após confirmação no log do Studio.
+`src/client/IllustratedSkin.luau` sincronizado com o place **97132875544830**.
+
+Código **9508be2** enviado ao `main`. As 40 fontes foram conferidas antes e
+depois da sincronização, preservando o prefixo anterior de papel do servidor.
+Preview do lobby reconstruído com 4.455 peças. Publicado nesse mesmo place
+em **11/10/2026 às 09:32:52 local (12:32:52 UTC)**, com
+`2026-10-11T12:32:52.866Z ... Go to PublishSuccessful` confirmado no log da
+janela oficial. Registro em `test-results/borders/publication.json`.
+Studio deixado em modo de edição.
+Suíte completa repetida antes do commit deste registro: código 0 em
+75,05 segundos (`test-results/borders-postpublish-suite-result.json`).
