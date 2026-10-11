@@ -17,7 +17,7 @@ place 97132875544830. Os IDs usados pelo jogo ficam em `Config.UiArt`.
 
 | Imagem | Uso real | Recorte |
 |---|---|---|
-| window | Janelas, avisos e painel AFK | SliceCenter (110,100)-(914,583), escala 0,26 |
+| window | Janelas, avisos e painel AFK | SliceCenter (352,180)-(672,503), escala máxima 0,26; cantos adaptados à altura |
 | button | Botões, abas, fitas e menu lateral | Gutter removido (0,36), tamanho 1024x241; slice (110,70)-(914,171) |
 | card | Cartas, retratos e vitrines | SliceCenter (90,90)-(934,934), escala 0,17; cor aplicada em runtime |
 | icons | Navegação e recursos da interface | Atlas 4x4, células 256x256 |
@@ -43,3 +43,9 @@ quadro. `tests/test_ui_art.py` verifica hashes, resoluções, transparência,
 recortes e concordância com Config; o roteiro de cliente testa também a
 conclusão assíncrona sem evento IsLoaded, texto vivo e ausência de dupla
 moldura.
+
+As placas ajustam `SliceScale` quando mudam de tamanho, descontando os
+`UIScale` dos ancestrais. As duas extremidades cabem integralmente mesmo
+nos avisos baixos e botões curtos. A moldura estica somente sua área central
+sem ornamentos; os cantos e as terminações das faixas decorativas são
+preservados. O ajuste usa eventos de tamanho, sem trabalho por quadro.

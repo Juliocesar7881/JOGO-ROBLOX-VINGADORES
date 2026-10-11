@@ -50,19 +50,46 @@ function Skin.loaded(item,callback)
 end
 function Skin.plate(parent,kind,tint,properties)
 	local imageProperties={ScaleType=Enum.ScaleType.Slice}
+	local textureSize
 	if kind=="window" then
-		imageProperties.SliceCenter=Rect.new(110,100,914,583); imageProperties.SliceScale=0.26
+		-- Stretch only the quiet centre; the complete ornamental ends stay intact.
+		textureSize=Vector2.new(1024,683)
+		imageProperties.SliceCenter=Rect.new(352,180,672,503); imageProperties.SliceScale=0.26
 	elseif kind=="card" then
+		textureSize=Vector2.new(1024,1024)
 		imageProperties.SliceCenter=Rect.new(90,90,934,934); imageProperties.SliceScale=0.17
 		imageProperties.ImageColor3=tint
 	else
 		-- Ignore the transparent top/bottom gutters of the authored button.
+		textureSize=Vector2.new(1024,241)
 		imageProperties.ImageRectOffset=Vector2.new(0,36); imageProperties.ImageRectSize=Vector2.new(1024,241)
 		imageProperties.SliceCenter=Rect.new(110,70,914,171); imageProperties.SliceScale=0.17
 		imageProperties.ImageColor3=tint
 	end
 	for key,value in pairs(properties or {}) do imageProperties[key]=value end
-	return image(parent,kind,imageProperties)
+	local item=image(parent,kind,imageProperties)
+	if not item then return nil end
+	local maximum=item.SliceScale
+	local centre=kind=="window" and 12 or 6
+	local function resize()
+		local size=item.AbsoluteSize
+		if size.X<=0 or size.Y<=0 then return end
+		-- AbsoluteSize includes ancestor UIScales; SliceScale uses logical pixels.
+		local factor,cursor=1,item
+		while cursor do
+			local scale=cursor:FindFirstChildOfClass("UIScale")
+			if scale then factor*=scale.Scale end
+			cursor=cursor.Parent
+		end
+		if factor<=0 then return end
+		local slice=item.SliceCenter
+		local caps=Vector2.new(slice.Min.X+textureSize.X-slice.Max.X,slice.Min.Y+textureSize.Y-slice.Max.Y)
+		item.SliceScale=math.max(0.01,math.min(maximum,(size.X/factor-centre)/caps.X,(size.Y/factor-centre)/caps.Y))
+	end
+	local signal=item:GetPropertyChangedSignal("AbsoluteSize"):Connect(resize)
+	item.Destroying:Connect(function() signal:Disconnect() end)
+	resize()
+	return item
 end
 function Skin.icon(parent,kind,properties)
 	local index=icons[kind]

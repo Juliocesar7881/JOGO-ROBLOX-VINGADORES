@@ -161,3 +161,28 @@ com 4.455 peças. Publicado no place **97132875544830** em **11/10/2026 às
 09:00:47 local (12:00:47 UTC)**, confirmado por `Go to PublishSuccessful`
 no log da janela oficial. Evidência: `test-results/icon-dedup/publication.json`.
 Studio deixado em modo de edição.
+
+## Correção das extremidades dos avisos — 11/10
+
+O tutorial e a notificação de talento bloqueado pareciam cortados à direita.
+A área esticada da textura atravessava os ornamentos da moldura, e cantos
+de tamanho fixo não se adaptavam às faixas mais baixas. `IllustratedSkin`
+agora preserva as duas extremidades completas e estica somente o centro
+sem ornamentos. A espessura dos cantos acompanha o espaço disponível,
+considerando os `UIScale` dos ancestrais, e volta ao tamanho original quando
+a placa cresce. O ajuste compartilhado atende avisos, janelas, cartas e
+botões; usa eventos de tamanho, sem processamento por quadro.
+
+Suíte completa verde em 57,84 segundos, com regressões em seis formatos.
+No Studio oficial, 24 combinações de tamanho/escala e seus redimensionamentos
+passaram pelas verificações de geometria. Um clique real no talento bloqueado
+reproduziu o mesmo aviso da captura do jogador, com ambas as bordas completas.
+Foram conferidas 19 capturas: PC e celular horizontal em português, seleção
+PC/vertical em inglês e a notificação real. Nenhum erro de script ou estouro
+de texto foi acusado nas revisões. Isso não substitui o teste em celular físico.
+
+Evidências em `test-results/borders/`, especialmente
+`horizontal/01-newcomer.png`, `live/talent-toast.png` e `live/geometry.json`.
+Suíte em `test-results/borders-suite-result.json`. Apenas
+`src/client/IllustratedSkin.luau` sincronizado com o place **97132875544830**;
+registro de publicação será acrescentado após confirmação no log do Studio.

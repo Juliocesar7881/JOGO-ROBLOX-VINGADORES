@@ -54,6 +54,7 @@ local baseNew = Instance.new
 Instance = { new = function(className, parent)
 	local created = baseNew(className, parent)
 	if className == "Frame" then created.AbsoluteSize = Vector2.new(SCREEN.w, SCREEN.h) end
+	if className == "ImageLabel" then created.AbsoluteSize = Vector2.new(0,0) end
 	return created
 end }
 
@@ -645,6 +646,29 @@ local function session(screen)
 		check(not stage:FindFirstChild("AlreadyStaged_Art"),tag..": a framed hero card avoids a second overlapping frame")
 		check(stage.ComicShell.IllustratedPlate.ImageColor3==UI.Colors.blue,tag..": the hero supplies the portrait identity colour")
 		local Skin=require(clientModules.IllustratedSkin)
+		local plateHost=UI.frame(host,{Name="PlateResizeProbe"})
+		local plateScale=UI.create("UIScale",{Scale=1},plateHost)
+		for _,factor in ipairs({0.65,1,1.3,1.6}) do
+			plateScale.Scale=factor
+			for _,case in ipairs({{"window",600,84},{"window",640,66},{"window",400,46},{"window",560,420},{"button",160,24},{"card",24,24}}) do
+				local art=Skin.plate(plateHost,case[1],UI.Colors.gold)
+				art.AbsoluteSize=Vector2.new(case[2]*factor,case[3]*factor)
+				art:GetPropertyChangedSignal("AbsoluteSize"):Fire()
+				local texture=case[1]=="window" and Vector2.new(1024,683) or (case[1]=="card" and Vector2.new(1024,1024) or Vector2.new(1024,241))
+				local slice=art.SliceCenter
+				local gap=case[1]=="window" and 12 or 6
+				check((slice.Min.X+texture.X-slice.Max.X)*art.SliceScale<=case[2]-gap+0.01,tag..": illustrated ends fit the logical width at scale "..factor)
+				check((slice.Min.Y+texture.Y-slice.Max.Y)*art.SliceScale<=case[3]-gap+0.01,tag..": illustrated corners fit short HUDs at scale "..factor)
+				if case[1]=="window" then
+					check(slice.Min.X>=352 and slice.Min.X==texture.X-slice.Max.X and slice.Min.Y==texture.Y-slice.Max.Y,tag..": both complete window ends are preserved symmetrically")
+				end
+				art.AbsoluteSize=Vector2.new(800*factor,500*factor)
+				art:GetPropertyChangedSignal("AbsoluteSize"):Fire()
+				check(math.abs(art.SliceScale-(case[1]=="window" and 0.26 or 0.17))<0.0001,tag..": enlarged plates recover their authored border size")
+				art:Destroy()
+			end
+		end
+		plateHost:Destroy()
 		local previousProvider=services.ContentProvider
 		local fetches,ready=0,0
 		services.ContentProvider={PreloadAsync=function(_,urls,callback)
