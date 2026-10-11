@@ -627,6 +627,9 @@ abertura de baú ou fanfarra depois da roleta.
 
 Fila M30; fontes, prompts, IDs e aceite em
 [`REFINAMENTO_RECRUTAMENTO_ENTRADA_2026-10-11.md`](REFINAMENTO_RECRUTAMENTO_ENTRADA_2026-10-11.md).
-Suíte completa verde e revisão no Studio. Commit/push e publicação final
-em andamento; primeira entrada no cliente publicado/dispositivo real
-continua como aceite separado.
+Código `b9e022a` no `main`, suíte completa verde e revisão no Studio.
+Oito fontes sincronizadas seletivamente, 40 comparadas e preview com 4.433
+peças. Publicado no mesmo lugar da equipe em **11/10/2026 às 15:44:01 local
+(18:44:01 UTC)**, com `PublishSuccessful` confirmado. Studio em edição;
+primeira entrada no cliente publicado/dispositivo real continua como aceite
+separado.

@@ -79,7 +79,7 @@ escondem durante roleta/recibo para não cobrir o prêmio.
 
 | Aceite | Evidência |
 |---|---|
-| Suíte completa | `tools/test.py` exit 0; seis roteiros completos do cliente em 54,9 s, 1.211–1.217 verificações por roteiro |
+| Suíte completa | `tools/test.py` exit 0 antes do commit de código, 75,33 s no total; seis roteiros completos do cliente, 1.211–1.217 verificações por roteiro |
 | Primeira entrada | Casos de ordem de chegada, tentativa independente, resposta antiga, prontidão e imagens atrasadas aprovados; novo playtest entrou com `DoomReady`, sem cobertura restante |
 | Arte no cliente real | Dois IDs carregados; inicialização, conexão e Ouro/XP AFK fotografados no Studio |
 | Layout | Nove cenas em PC, horizontal PT e vertical EN; três rodadas com saída 0 e sem cortes de texto ou erros detectados |
@@ -112,6 +112,13 @@ não certifica acabamento de todos os modelos jogáveis.
 
 ## Entrega
 
-Código e testes concluídos, sincronização seletiva de oito fontes no place
-**97132875544830**. As 40 fontes foram comparadas, preservando o prefixo de
-papel já existente no servidor. Commit/push e publicação final pendentes.
+Código **`b9e022a`** enviado ao `main`, com sincronização seletiva de oito
+fontes no place **97132875544830**. As 40 fontes foram comparadas antes e
+depois de refazer o preview, preservando o prefixo de papel já existente no
+servidor. Lobby salvo com 4.433 peças, dentro do teto de 4.500.
+
+Publicado nesse mesmo lugar da equipe em **11/10/2026 às 15:44:01 local
+(18:44:01 UTC)**. O log confirmou `Go to PublishSuccessful` às
+18:44:00.880 UTC. Registro em
+`test-results/recruitment-entrance/publication.json`, também copiado para a
+galeria do Desktop. Studio deixado em modo de edição.
