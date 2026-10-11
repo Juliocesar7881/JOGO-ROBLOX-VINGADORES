@@ -604,21 +604,31 @@ local function session(screen)
 		local icon=UI.icon(host,"hero",UI.Colors.gold)
 		local raster=icon:FindFirstChild("Illustrated_icons")
 		check(raster and raster.Active==false and raster.ImageRectSize.X==256,tag..": a passive atlas replaces the hero symbol")
-		raster.IsLoaded=false; raster:GetPropertyChangedSignal("IsLoaded"):Fire()
-		local fallback=false
-		for _,child in ipairs(icon:GetChildren()) do if child~=raster and child:IsA("GuiObject") then fallback=fallback or child.Visible end end
-		check(raster.Visible and fallback,tag..": an unloaded image stays drawable and retains native art while downloading")
-		raster.IsLoaded=true; raster:GetPropertyChangedSignal("IsLoaded"):Fire()
-		fallback=false
-		for _,child in ipairs(icon:GetChildren()) do if child~=raster and child:IsA("GuiObject") then fallback=fallback or child.Visible end end
-		check(raster.Visible and not fallback,tag..": successful loading hides only the native symbol")
+		local function onlyArtwork(root,art)
+			return art and #root:GetChildren()==1 and root:GetChildren()[1]==art and art.Visible~=false
+		end
+		for _,loaded in ipairs({false,true,false,true}) do
+			raster.IsLoaded=loaded; raster:GetPropertyChangedSignal("IsLoaded"):Fire();flush()
+			check(onlyArtwork(icon,raster),tag..": an atlas icon has no legacy drawing at any download state: "..tostring(loaded))
+		end
 		for _,kind in ipairs({"hero","base","star","shop","gift","scroll","gear","trophy","xp","wave","damage","range","chest","home","play","shield"}) do
-			local symbol=UI.icon(host,kind,UI.Colors.gold):FindFirstChild("Illustrated_icons")
+			local root=UI.icon(host,kind,UI.Colors.gold)
+			local symbol=root:FindFirstChild("Illustrated_icons")
 			check(symbol and symbol.ImageRectOffset.X+symbol.ImageRectSize.X<=1024 and symbol.ImageRectOffset.Y+symbol.ImageRectSize.Y<=1024,tag..": atlas crop is bounded: "..kind)
+			check(onlyArtwork(root,symbol),tag..": only the atlas symbol is constructed: "..kind)
+			local illustration=UI.illustration(host,kind,UI.Colors.gold)
+			check(onlyArtwork(illustration,illustration:FindFirstChild("Illustrated_icons")),tag..": an illustration does not nest another icon or native drawing: "..kind)
+		end
+		for _,kind in ipairs({"hero","talents","shop","gift","scroll","gear"}) do
+			local nav=UI.roundIcon(host,"NavProbe_"..kind,"Caption",UI.Colors.gold,kind,nil)
+			local root=nav.Disc:FindFirstChild("NavIcon")
+			check(onlyArtwork(root,root:FindFirstChild("Illustrated_icons")) and nav.Caption.Text=="Caption",tag..": navigation keeps one icon and its live caption: "..kind)
 		end
 		for _,rarity in ipairs({"supply","rare","epic","legendary","cosmic","base_supply","base_rare","base_epic","base_legendary","base_cosmic"}) do
-			local chest=UI.illustration(host,"crate",UI.Colors.blue,{Rarity=rarity}):FindFirstChild("Illustrated_chests")
+			local root=UI.illustration(host,"crate",UI.Colors.blue,{Rarity=rarity})
+			local chest=root:FindFirstChild("Illustrated_chests")
 			check(chest and chest:GetAttribute("ArtRarity")==rarity and chest.ImageRectOffset.X+chest.ImageRectSize.X<=1023 and chest.ImageRectOffset.Y+chest.ImageRectSize.Y<=682,tag..": chest rarity maps to a valid authored crop: "..rarity)
+			check(onlyArtwork(root,chest),tag..": authored chests contain no old chest drawing: "..rarity)
 		end
 		local button=UI.button(host,"Live caption",nil)
 		local plate=button.ComicShell.IllustratedPlate
@@ -654,7 +664,11 @@ local function session(screen)
 		local previous=Config.UiArt.icons;Config.UiArt.icons=0
 		local native=UI.icon(host,"hero",UI.Colors.gold)
 		check(not native:FindFirstChild("Illustrated_icons") and #native:GetChildren()>0,tag..": a missing asset retains a usable native symbol")
+		local nativeIllustration=UI.illustration(host,"hero",UI.Colors.gold)
+		check(not nativeIllustration:FindFirstChild("Illustrated_icons") and #nativeIllustration:GetChildren()>0,tag..": an illustration without an asset still has its native symbol")
 		Config.UiArt.icons=previous
+		local unmapped=UI.icon(host,"clock",UI.Colors.gold)
+		check(not unmapped:FindFirstChild("Illustrated_icons") and #unmapped:GetChildren()>0,tag..": a symbol outside the atlas remains visible")
 		host:Destroy()
 	end)
 	local main

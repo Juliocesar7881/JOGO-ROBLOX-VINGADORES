@@ -46,8 +46,9 @@ dimensionar a ilustração, inclusive em janelas de laptop mais baixas.
 
 No Studio, uma imagem oculta antes de carregar podia nunca solicitar sua
 textura. Também houve conclusão em cache sem notificação de `IsLoaded`.
-As imagens agora continuam desenháveis durante o download, com arte nativa
-visível por baixo; uma conclusão assíncrona por URL atualiza todas as cópias.
+Na entrega inicial, as imagens continuavam desenháveis durante o download,
+com arte nativa visível por baixo; uma conclusão assíncrona por URL atualizava
+todas as cópias. A correção abaixo substitui esse mecanismo para ícones e baús.
 Os sinais são desconectados quando os elementos são destruídos.
 
 A revisão encontrou a legenda do botão curto “Pular a caminhada” coberta
@@ -134,3 +135,20 @@ dependências do checklist de lançamento; a revisão emulada não os substitui.
 Memória em sessão prolongada, reconexão e DataStore publicado não foram
 certificados por este playtest. As telas de combate da galeria são fixtures;
 a carga real tem evidência separada. A preferência visual final é do jogador.
+
+## Correção dos ícones duplicados — 11/10, manhã
+
+O jogador mostrou símbolos antigos sobrepostos às novas imagens na navegação,
+nas opções, no contador de Ouro e na estrela do tutorial. `UI.icon` e
+`UI.illustration` agora constroem somente a imagem quando existe uma entrada
+no atlas configurado. O desenho antigo não é criado nem durante o download,
+eliminando a dependência de `IsLoaded` para evitar sobreposição. Símbolos sem
+entrada no atlas ou sem ID continuam usando o desenho nativo. Legendas,
+contadores e alvos de clique permanecem separados da arte.
+
+Regressões cobrem os 16 símbolos, seis botões de navegação, dez tipos de baú,
+mudanças de carregamento e ausência de asset. Suíte completa com código 0
+em 76,72 segundos (`test-results/icon-dedup-suite-result.json`). A varredura
+no Studio encontrou 418 imagens de símbolos/baús nas 41 cenas e nenhum desenho
+antigo junto delas (`test-results/icon-dedup/audit.json`). Onze capturas PC
+estão em `test-results/icon-dedup/pc/`.

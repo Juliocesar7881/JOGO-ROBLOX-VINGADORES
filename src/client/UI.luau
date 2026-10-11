@@ -454,13 +454,15 @@ function UI.disabled(button)
 	button.TextColor3 = UI.Colors.muted
 end
 
--- Friendly HUD symbols made from a handful of flat shapes. Every symbol is
--- decorative; its neighbouring text button remains the single tap target.
+-- An authored icon has a single visual layer, even while Roblox downloads it.
+-- Native shapes are built only for symbols without an atlas entry or asset ID.
+-- Every symbol is decorative; neighbouring text remains the tap target.
 function UI.icon(parent, kind, tint, properties)
 	local defaults = {Name = "Icon_" .. kind, BackgroundTransparency = 1, Size = UDim2.fromOffset(24, 24), Active = false}
 	for key, value in pairs(properties or {}) do defaults[key] = value end
 	local root = UI.frame(parent, defaults)
 	local raster=skin().icon(root,kind)
+	if raster then return root end
 	tint = tint or UI.Colors.text
 	local function shape(x, y, w, h, rotation, color, radius)
 		local child = UI.frame(root, {Position = UDim2.fromScale(x, y), Size = UDim2.fromScale(w, h), Rotation = rotation or 0, BackgroundColor3 = color or tint, Active = false, ZIndex = root.ZIndex})
@@ -607,16 +609,10 @@ function UI.icon(parent, kind, tint, properties)
 		shape(0.3, 0.4, 0.41, 0.19, -4)
 		shape(0.47, 0.47, 0.18, 0.44, 29)
 	end
-	if raster then skin().loaded(raster,function(loaded)
-		-- Keep the image drawable while downloading. Hiding an unloaded image
-		-- can defer its request indefinitely in the Roblox client.
-		raster.Visible=true
-		for _,child in ipairs(root:GetChildren()) do if child~=raster and child:IsA("GuiObject") then child.Visible=not loaded end end
-	end) end
 	return root
 end
 
--- Authored atlas illustrations with an immediate native-shape fallback.
+-- Authored atlas illustrations replace the old drawing, rather than cover it.
 function UI.illustration(parent, kind, tint, properties)
 	local root=UI.frame(parent,{Name="Illustration_"..kind,BackgroundTransparency=1,Size=UDim2.fromOffset(44,44),Active=false})
 	for k,v in pairs(properties or {}) do if k~="Rarity" then root[k]=v end end
@@ -630,6 +626,7 @@ function UI.illustration(parent, kind, tint, properties)
 		end
 		raster=skin().chest(root,rarity)
 	else raster=skin().icon(root,kind) end
+	if raster then return root end
 	local ink=Color3.fromRGB(34,42,43)
 	local gold=Color3.fromRGB(247,195,83)
 	local cream=Color3.fromRGB(255,239,192)
@@ -725,10 +722,6 @@ function UI.illustration(parent, kind, tint, properties)
 	else
 		UI.icon(root,kind,tint,{Size=UDim2.fromScale(1,1)})
 	end
-	if raster then skin().loaded(raster,function(loaded)
-		raster.Visible=true
-		for _,child in ipairs(root:GetChildren()) do if child~=raster and child:IsA("GuiObject") then child.Visible=not loaded end end
-	end) end
 	return root
 end
 
