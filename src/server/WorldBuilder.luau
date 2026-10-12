@@ -14,6 +14,34 @@ local function part(parent, name, size, cf, color, material)
 	p.Parent = parent
 	return p
 end
+
+-- Smooth mesh helper: creates a MeshPart with a specific Roblox asset ID for
+-- organic shapes (capsules, rounded boxes, spheres) instead of blocky Parts.
+-- This is the key to achieving the "Neon Heroes" look without external assets.
+-- Smooth geometry helper: uses SpecialMesh on standard Parts to achieve
+-- organic shapes (spheres, cylinders, heads) without external asset IDs,
+-- complying with the project's zero-Toolbox rule while improving the look.
+local function smoothPart(parent, name, size, cf, color, material, meshType)
+	local p = Instance.new("Part")
+	p.Name, p.Size, p.CFrame = name, size, cf
+	p.Color, p.Material = color, material or Enum.Material.SmoothPlastic
+	p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery, p.CastShadow = true, false, false, false, false
+	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+	local mesh = Instance.new("SpecialMesh")
+	if meshType == "sphere" then
+		mesh.MeshType = Enum.MeshType.Sphere
+	elseif meshType == "cylinder" then
+		mesh.MeshType = Enum.MeshType.Cylinder
+	elseif meshType == "head" then
+		mesh.MeshType = Enum.MeshType.Head
+	else
+		mesh.MeshType = Enum.MeshType.Brick
+	end
+	mesh.Scale = Vector3.new(1, 1, 1)
+	mesh.Parent = p
+	p.Parent = parent
+	return p
+end
 local function rgb(value) return Color3.fromRGB(value[1], value[2], value[3]) end
 
 -- Architectural kit: panel seams, brushed metal, porcelain and inset light.
@@ -550,491 +578,1870 @@ end
 local HERO_EXTRAS = {}
 HERO_EXTRAS.ironman = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local bolt, spark = Color3.fromRGB(255, 214, 64), Color3.fromRGB(120, 230, 255)
-	-- Volt: a white helmet with one wide visor and a crest, a lightning bolt
-	-- across the chest and glowing palms.
-	f.add("Head", "Visor", Vector3.new(h.X * 0.8, 0.24 * s, 0.08 * s), f.face(0, 0.08, 0.03), spark, NEON)
-	f.add("Head", "HelmetCrest", Vector3.new(0.18 * s, h.Y * 0.5, h.Z * 0.9), CFrame.new(0, h.Y * 0.42, 0), Color3.fromRGB(36, 110, 220), METAL, "wedge")
-	f.add("UpperTorso", "BoltTop", Vector3.new(0.22, 0.62, 0.06) * s, CFrame.new(0.08 * s, 0.36 * s, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), bolt, NEON)
-	f.add("UpperTorso", "BoltBottom", Vector3.new(0.22, 0.62, 0.06) * s, CFrame.new(-0.08 * s, -0.06 * s, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), bolt, NEON)
-	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "ShoulderPlate", f.sizes.upperArm * Vector3.new(1.28, 0.52, 1.2), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.12), HC.white, METAL, "wedge")
-		f.disc(side < 0 and "LeftHand" or "RightHand", "Repulsor", 0.34 * s, 0.06 * s, CFrame.new(0, -f.sizes.hand.Y / 2 - 0.02 * s, 0) * CFrame.Angles(math.pi / 2, 0, 0), spark, NEON)
+	local gold, crimson, neonBlue, steel = Color3.fromRGB(255, 214, 64), Color3.fromRGB(180, 40, 40), Color3.fromRGB(80, 220, 255), Color3.fromRGB(190, 195, 200)
+	-- Neon Sentinel: sleek futuristic armor with glowing blue energy lines,
+	-- streamlined helmet with wide visor, arc reactor core and repulsor
+	-- gauntlets; silhouette reads as high-tech hero even at thumbnail size.
+	-- Head: smooth helmet shell with wide glowing visor and chin guard.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.96, h.Y * 0.94, h.Z * 0.96), CFrame.new(), crimson, METAL)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.78, 0.18 * s, 0.08 * s), f.face(0, 0.12, -0.02), neonBlue, NEON)
+	f.add("Head", "ChinGuard", Vector3.new(h.X * 0.52, h.Y * 0.28, 0.14 * s), f.face(0, -0.46, 0.02), gold, METAL, "wedge")
+	f.add("Head", "HelmetCrest", Vector3.new(0.1 * s, h.Y * 0.36, h.Z * 0.88), CFrame.new(0, h.Y * 0.34, 0), gold, METAL, "wedge")
+	-- Torso: armored chest plate with central arc reactor core, glowing
+	-- energy lines and segmented abdominal plates.
+	f.add("UpperTorso", "ChestArmor", Vector3.new(c.X * 0.92, c.Y * 0.86, 0.14 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), crimson, METAL)
+	f.disc("UpperTorso", "ArcReactorRing", 0.48 * s, 0.05 * s, CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.06 * s), steel, METAL)
+	f.disc("UpperTorso", "ArcReactorCore", 0.28 * s, 0.06 * s, CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.07 * s), neonBlue, NEON)
+	f.add("UpperTorso", "EnergyLineL", Vector3.new(0.06 * s, c.Y * 0.5, 0.04 * s), CFrame.new(-c.X * 0.28, 0, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, 0.15), neonBlue, NEON)
+	f.add("UpperTorso", "EnergyLineR", Vector3.new(0.06 * s, c.Y * 0.5, 0.04 * s), CFrame.new(c.X * 0.28, 0, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, -0.15), neonBlue, NEON)
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.1
+		f.add("LowerTorso", "AbdomenPlate" .. i, Vector3.new(c.X * 0.68 * width, 0.18 * s, 0.1 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.16 * s, -c.Z / 2 - 0.02 * s), crimson, METAL)
 	end
-	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
+	belt(f, steel, neonBlue)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and repulsor
+	-- gauntlets with glowing palm cores.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.28, 0.54, 1.22), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.12), crimson, METAL, "wedge")
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.06, 0.07 * s, f.sizes.upperArm.Z * 1.02), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.12), neonBlue, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.14, 0.6, 1.12), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.18, 0.72, 1.16), CFrame.new(0, -f.sizes.hand.Y * 0.08, 0), gold, METAL)
+		f.disc(handName, "RepulsorCore", 0.32 * s, 0.06 * s, CFrame.new(0, -f.sizes.hand.Y / 2 - 0.02 * s, 0) * CFrame.Angles(math.pi / 2, 0, 0), neonBlue, NEON)
+	end
+	-- Legs: armored thigh plates with glowing knee caps, shin guards and
+	-- boots with neon thruster soles.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), neonBlue, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), gold, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), crimson, METAL)
+		f.add(footName, "ThrusterSole", Vector3.new(f.sizes.foot.X * 0.85, 0.07 * s, f.sizes.foot.Z * 0.85), CFrame.new(0, -f.sizes.foot.Y * 0.34, 0), neonBlue, NEON)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.12 * s, 0))
 end
 HERO_EXTRAS.captain = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local teal, bronze = Color3.fromRGB(22, 150, 140), Color3.fromRGB(196, 140, 72)
-	-- Commander Aegis: a crested half-helm, a bronze chevron and the round
-	-- aegis on the left forearm.
-	f.add("Head", "Chin", Vector3.new(h.X * 0.66, h.Y * 0.38, 0.1 * s), f.face(0, -0.52, -0.03), HC.skin, FABRIC)
-	f.add("Head", "Mouth", Vector3.new(0.26, 0.06, 0.05) * s, f.face(0, -0.52, 0.04), HC.ink, FABRIC)
-	f.add("Head", "HelmetCrest", Vector3.new(0.14 * s, h.Y * 0.44, h.Z * 1.04), CFrame.new(0, h.Y * 0.44, 0), bronze, METAL)
+	local teal, bronze, steel = Color3.fromRGB(22, 150, 140), Color3.fromRGB(196, 140, 72), Color3.fromRGB(180, 185, 190)
+	-- Sentinel Commander: tactical half-helm with bronze crest, layered chest
+	-- armor with chevron insignia, reinforced gauntlets and the iconic aegis
+	-- shield on the left forearm; silhouette reads as frontline leader.
+	-- Head: open-face helm with brow guard, cheek plates and chin strap.
+	f.add("Head", "BrowGuard", Vector3.new(h.X * 0.82, h.Y * 0.18, h.Z * 0.22), CFrame.new(0, h.Y * 0.38, -h.Z * 0.08), bronze, METAL)
+	f.add("Head", "HelmetCrest", Vector3.new(0.16 * s, h.Y * 0.48, h.Z * 1.06), CFrame.new(0, h.Y * 0.46, 0), bronze, METAL)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "Eye", Vector3.new(0.17, 0.26, 0.06) * s, f.face(side * 0.26, 0.14, 0.0), HC.ink, FABRIC, "ball")
-		f.add("UpperTorso", "Chevron", Vector3.new(0.18 * s, 0.7 * s, 0.06 * s), CFrame.new(side * 0.2 * s, c.Y * 0.16, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * 0.75), bronze, METAL)
+		f.add("Head", "CheekPlate", Vector3.new(h.X * 0.22, h.Y * 0.34, h.Z * 0.18), CFrame.new(side * h.X * 0.34, -h.Y * 0.08, -h.Z * 0.06), steel, METAL)
+		f.add("Head", "Eye", Vector3.new(0.15, 0.22, 0.06) * s, f.face(side * 0.24, 0.12, 0.0), HC.ink, FABRIC, "ball")
+	end
+	f.add("Head", "ChinStrap", Vector3.new(h.X * 0.54, h.Y * 0.14, 0.08 * s), f.face(0, -0.48, -0.02), bronze, METAL)
+	-- Torso: segmented pectoral plates with central chevron, abdominal
+	-- segments and a utility belt with bronze buckle.
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "PectoralPlate", Vector3.new(c.X * 0.42, c.Y * 0.46, 0.1 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.16, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.04), steel, METAL)
+		f.add("UpperTorso", "Chevron", Vector3.new(0.16 * s, 0.62 * s, 0.07 * s), CFrame.new(side * 0.18 * s, c.Y * 0.14, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, side * 0.72), bronze, METAL)
+	end
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.1
+		f.add("LowerTorso", "AbdomenPlate" .. i, Vector3.new(c.X * 0.64 * width, 0.16 * s, 0.08 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.16 * s, -c.Z / 2 - 0.03 * s), steel, METAL)
 	end
 	belt(f, HC.leather, bronze)
-	local arm = f.sizes.lowerArm
-	f.add("LeftLowerArm", "Shield", Vector3.new(0.14 * s, 2.3 * s, 2.3 * s), CFrame.new(-arm.X / 2 - 0.12 * s, 0, -0.1 * s), bronze, METAL, Enum.PartType.Cylinder)
-	f.add("LeftLowerArm", "ShieldFace", Vector3.new(0.14 * s, 1.95 * s, 1.95 * s), CFrame.new(-arm.X / 2 - 0.16 * s, 0, -0.1 * s), teal, METAL, Enum.PartType.Cylinder)
+	-- Arms: pauldrons with bronze trim, forearm bracers; left arm carries
+	-- the aegis shield with concentric rings and star emblem.
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("LeftLowerArm", "ShieldMark", Vector3.new(0.06 * s, 0.9 * s, 0.22 * s), CFrame.new(-arm.X / 2 - 0.24 * s, 0.05 * s, -0.1 * s + side * 0.22 * s) * CFrame.Angles(side * 0.75, 0, 0), HC.white, METAL)
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.26, 0.54, 1.18), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), steel, METAL, "wedge")
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.05, 0.07 * s, f.sizes.upperArm.Z * 1.0), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), bronze, METAL)
 	end
-	muzzle(f, "LeftLowerArm", Vector3.new(-arm.X / 2 - 0.3 * s, 0, 0))
+	local arm = f.sizes.lowerArm
+	f.add("LeftLowerArm", "Shield", Vector3.new(0.16 * s, 2.4 * s, 2.4 * s), CFrame.new(-arm.X / 2 - 0.14 * s, 0, -0.12 * s), bronze, METAL, Enum.PartType.Cylinder)
+	f.add("LeftLowerArm", "ShieldFace", Vector3.new(0.16 * s, 2.05 * s, 2.05 * s), CFrame.new(-arm.X / 2 - 0.18 * s, 0, -0.12 * s), teal, METAL, Enum.PartType.Cylinder)
+	f.disc("LeftLowerArm", "ShieldStar", 0.52 * s, 0.04 * s, CFrame.new(-arm.X / 2 - 0.22 * s, 0, -0.12 * s), HC.white, METAL)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("LeftLowerArm", "ShieldRing", Vector3.new(0.06 * s, 0.85 * s, 0.18 * s), CFrame.new(-arm.X / 2 - 0.26 * s, 0.04 * s, -0.12 * s + side * 0.2 * s) * CFrame.Angles(side * 0.72, 0, 0), HC.white, METAL)
+	end
+	f.add("RightLowerArm", "Gauntlet", f.sizes.lowerArm * Vector3.new(1.14, 0.62, 1.12), CFrame.new(0, f.sizes.lowerArm.Y * 0.14, 0), steel, METAL)
+	muzzle(f, "LeftLowerArm", Vector3.new(-arm.X / 2 - 0.32 * s, 0, 0))
 end
 HERO_EXTRAS.spiderman = function(f)
-	local s, c = f.scale, f.sizes.chest
-	local rope, orange = Color3.fromRGB(214, 170, 96), Color3.fromRGB(250, 140, 40)
-	-- Lasso: goggles on the forehead, a diamond on the chest, a rope coil on
-	-- the hip and the lasso's loop in the right hand.
-	f.add("Head", "Goggles", Vector3.new(f.parts.Head.Size.X * 0.84, 0.18 * s, 0.1 * s), f.face(0, 0.42, 0.02), Color3.fromRGB(60, 40, 90), METAL)
-	for _, side in ipairs({ -1, 1 }) do f.disc("Head", "GoggleLens", 0.15 * s, 0.05 * s, f.face(side * 0.24, 0.42, 0.06), Color3.fromRGB(120, 230, 255), NEON) end
-	f.add("UpperTorso", "Emblem", Vector3.new(0.48, 0.48, 0.06) * s, CFrame.new(0, 0.2 * s, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, math.pi / 4), orange, FABRIC)
-	f.disc("LowerTorso", "LassoCoil", 0.42 * s, 0.14 * s, CFrame.new(f.sizes.pelvis.X / 2 + 0.06 * s, 0, 0) * CFrame.Angles(0, math.pi / 2, 0), rope, FABRIC)
-	local r = 0.6 * s
-	for i = 0, 7 do
-		local a0, a1 = i * math.pi / 4, (i + 1) * math.pi / 4
-		f.rod("RightHand", "Lasso", Vector3.new(math.cos(a0) * r, -0.8 * s + math.sin(a0) * r, 0), Vector3.new(math.cos(a1) * r, -0.8 * s + math.sin(a1) * r, 0), 0.07 * s, rope, FABRIC)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local crimson, navy, webWhite = Color3.fromRGB(180, 40, 40), Color3.fromRGB(30, 50, 120), Color3.fromRGB(220, 220, 230)
+	-- Arachnid: sleek red/blue suit with segmented web-pattern armor,
+	-- large expressive eye lenses, chest emblem and wrist-mounted web
+	-- shooter; silhouette reads as agile acrobat even at thumbnail size.
+	-- Head: full mask with raised web ridges and oversized angular eye lenses.
+	f.add("Head", "MaskBase", Vector3.new(h.X * 0.92, h.Y * 0.88, h.Z * 0.92), CFrame.new(0, 0, 0), crimson, FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.32, h.Y * 0.38, 0.08 * s), f.face(side * 0.22, 0.08, -0.04), webWhite, METAL, "wedge")
+		f.add("Head", "EyeRim", Vector3.new(h.X * 0.36, h.Y * 0.42, 0.04 * s), f.face(side * 0.22, 0.08, -0.06), HC.ink, METAL)
+	end
+	for i = 0, 3 do
+		local angle = i * math.pi / 2
+		f.add("Head", "WebRidge" .. i, Vector3.new(h.X * 0.88, 0.04 * s, 0.04 * s), CFrame.new(0, h.Y * 0.1, 0) * CFrame.Angles(0, angle, 0), navy, FABRIC)
+	end
+	-- Torso: athletic build with central spider emblem, segmented pectoral
+	-- plates and abdominal segments that follow the waist taper; web pattern
+	-- lines trace the musculature.
+	f.add("UpperTorso", "SpiderEmblem", Vector3.new(0.36 * s, 0.42 * s, 0.06 * s), CFrame.new(0, c.Y * 0.12, -c.Z / 2 - 0.04 * s), HC.ink, METAL)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "PectoralPlate", Vector3.new(c.X * 0.4, c.Y * 0.44, 0.08 * s), CFrame.new(side * c.X * 0.2, c.Y * 0.14, -c.Z / 2 - 0.03 * s) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.04), crimson, FABRIC)
+		f.add("UpperTorso", "WebLine" .. side, Vector3.new(c.X * 0.38, 0.03 * s, 0.03 * s), CFrame.new(side * c.X * 0.18, c.Y * 0.06, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * 0.6), navy, FABRIC)
+	end
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.12
+		f.add("LowerTorso", "AbdomenSegment" .. i, Vector3.new(c.X * 0.62 * width, 0.16 * s, 0.08 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.14 * s, -c.Z / 2 - 0.02 * s), navy, FABRIC)
+	end
+	-- Arms: shoulder pads with web accents, forearm bracers and wrist-mounted
+	-- web shooters; hands are gloved with reinforced knuckles.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "ShoulderPad", f.sizes.upperArm * Vector3.new(1.18, 0.48, 1.14), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), crimson, FABRIC)
+		f.add(armName, "WebAccent", Vector3.new(f.sizes.upperArm.X * 0.5, 0.06 * s, f.sizes.upperArm.Z * 0.4), CFrame.new(0, f.sizes.upperArm.Y * 0.38, -f.sizes.upperArm.Z * 0.16), navy, FABRIC)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, FABRIC)
+		f.add(handName, "WebShooter", Vector3.new(f.sizes.hand.X * 0.6, 0.14 * s, f.sizes.hand.Z * 0.7), CFrame.new(0, -f.sizes.hand.Y * 0.08, -f.sizes.hand.Z * 0.14), navy, METAL)
+		f.add(handName, "Glove", f.sizes.hand * Vector3.new(1.14, 0.68, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), crimson, FABRIC)
+	end
+	-- Legs: thigh plates with web lines, knee caps and shin guards; boots
+	-- are streamlined for agility with reinforced toes.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, FABRIC)
+		f.add(legName, "WebLine", Vector3.new(f.sizes.upperLeg.X * 0.4, 0.03 * s, f.sizes.upperLeg.Z * 0.3), CFrame.new(0, f.sizes.upperLeg.Y * 0.22, -f.sizes.upperLeg.Z * 0.12), navy, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.2 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), crimson, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), navy, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), crimson, FABRIC)
 	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.08 * s, 0))
 end
 HERO_EXTRAS.hulk = function(f)
 	local s, c = f.scale, f.sizes.chest
-	local stone, glow = Color3.fromRGB(168, 154, 134), Color3.fromRGB(255, 140, 50)
-	-- Boulder: a living rock with lava in its cracks and stone plates on the
-	-- shoulders and chest.
+	local stone, glow, moss = Color3.fromRGB(168, 154, 134), Color3.fromRGB(255, 140, 50), Color3.fromRGB(90, 110, 70)
+	-- Titan: massive segmented rock armor with glowing magma veins, heavy
+	-- pauldrons, forearm boulders and reinforced knuckles; silhouette reads
+	-- as immovable force even at thumbnail size.
+	-- Head: craggy brow ridge, recessed glowing eyes and jaw guard.
+	local h = f.parts.Head.Size
+	f.add("Head", "BrowRidge", Vector3.new(h.X * 0.92, h.Y * 0.28, h.Z * 0.38), CFrame.new(0, h.Y * 0.34, -h.Z * 0.12), stone, Enum.Material.Slate, "wedge")
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "RockPlate", f.sizes.upperArm * Vector3.new(1.28, 0.62, 1.26), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0.2, side < 0 and math.pi or 0, side * 0.2), stone, Enum.Material.Slate, "wedge")
-		f.add("UpperTorso", "ChestRock", Vector3.new(c.X * 0.44, c.Y * 0.48, 0.28 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.12, -c.Z / 2 - 0.02 * s) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.08), stone, Enum.Material.Slate, "wedge")
-		local h = f.parts.Head.Size
-		f.add("Head", "RockBrow", Vector3.new(h.X * 0.46, h.Y * 0.22, h.Z * 0.32), CFrame.new(side * h.X * 0.24, h.Y * 0.32, -h.Z * 0.36) * CFrame.Angles(0, side < 0 and math.pi or 0, -side * 0.18), stone, Enum.Material.Slate, "wedge")
+		f.add("Head", "EyeGlow", Vector3.new(0.14 * s, 0.12 * s, 0.08 * s), f.face(side * 0.22, 0.16, -0.02), glow, NEON, "ball")
+		f.add("Head", "JawGuard", Vector3.new(h.X * 0.38, h.Y * 0.22, h.Z * 0.28), CFrame.new(side * h.X * 0.26, -h.Y * 0.32, -h.Z * 0.18), stone, Enum.Material.Slate, "wedge")
+	end
+	-- Torso: layered pectoral slabs with magma cracks between them, abdominal
+	-- segments that follow the waist taper and a reinforced spine ridge.
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "PectoralSlab", Vector3.new(c.X * 0.46, c.Y * 0.52, 0.32 * s), CFrame.new(side * c.X * 0.24, c.Y * 0.14, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.06), stone, Enum.Material.Slate, "wedge")
 	end
 	for i = -1, 1 do
-		f.add("UpperTorso", "LavaCrack", Vector3.new(0.08 * s, c.Y * 0.5, 0.06 * s), CFrame.new(i * c.X * 0.16, -c.Y * 0.14, -c.Z / 2 - 0.06 * s) * CFrame.Angles(0, 0, i * 0.4), glow, NEON)
+		f.add("UpperTorso", "MagmaVein", Vector3.new(0.1 * s, c.Y * 0.48, 0.07 * s), CFrame.new(i * c.X * 0.18, -c.Y * 0.12, -c.Z / 2 - 0.06 * s) * CFrame.Angles(0, 0, i * 0.35), glow, NEON)
+		f.add("UpperTorso", "SpineRidge", Vector3.new(0.14 * s, c.Y * 0.6, 0.12 * s), CFrame.new(0, c.Y * 0.08, c.Z / 2 + 0.04 * s), stone, Enum.Material.Slate, "wedge")
 	end
-	f.add("LowerTorso", "Waistband", f.sizes.pelvis * Vector3.new(1.06, 0.34, 1.08), CFrame.new(0, f.sizes.pelvis.Y * 0.3, 0), Color3.fromRGB(96, 84, 72), Enum.Material.Slate)
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.14
+		f.add("LowerTorso", "AbdomenSegment" .. i, Vector3.new(c.X * 0.68 * width, 0.2 * s, 0.22 * s), CFrame.new(0, -c.Y * 0.22 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), stone, Enum.Material.Slate)
+	end
+	-- Arms: massive shoulder boulders, forearm plates with moss accents and
+	-- reinforced knuckle guards that sell the punch impact.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "ShoulderBoulder", f.sizes.upperArm * Vector3.new(1.38, 0.72, 1.34), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0.18, side < 0 and math.pi or 0, side * 0.16), stone, Enum.Material.Slate, "wedge")
+		f.add(armName, "MossPatch", Vector3.new(f.sizes.upperArm.X * 0.6, 0.12 * s, f.sizes.upperArm.Z * 0.5), CFrame.new(0, f.sizes.upperArm.Y * 0.42, -f.sizes.upperArm.Z * 0.2), moss, FABRIC)
+		f.add(forearmName, "ForearmPlate", f.sizes.lowerArm * Vector3.new(1.22, 0.68, 1.18), CFrame.new(0, f.sizes.lowerArm.Y * 0.16, 0), stone, Enum.Material.Slate, "wedge")
+		f.add(handName, "KnuckleGuard", f.sizes.hand * Vector3.new(1.24, 0.52, 1.16), CFrame.new(0, -f.sizes.hand.Y * 0.18, -f.sizes.hand.Z * 0.12), stone, Enum.Material.Slate, "wedge")
+	end
+	-- Legs: thigh slabs, knee caps and shin guards; feet are wide and heavy
+	-- to ground the silhouette.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighSlab", f.sizes.upperLeg * Vector3.new(1.24, 0.74, 1.2), CFrame.new(0, f.sizes.upperLeg.Y * 0.16, 0), stone, Enum.Material.Slate, "wedge")
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.72, 0.26 * s, f.sizes.lowerLeg.Z * 0.64), CFrame.new(0, f.sizes.lowerLeg.Y * 0.44, -f.sizes.lowerLeg.Z * 0.26), stone, Enum.Material.Slate, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.16, 0.76, 1.14), CFrame.new(0, f.sizes.lowerLeg.Y * 0.1, 0), stone, Enum.Material.Slate, "wedge")
+		f.add(footName, "HeavyBoot", f.sizes.foot * Vector3.new(1.28, 0.68, 1.32), CFrame.new(0, -f.sizes.foot.Y * 0.12, 0), stone, Enum.Material.Slate)
+	end
+	f.add("LowerTorso", "Waistband", f.sizes.pelvis * Vector3.new(1.08, 0.36, 1.1), CFrame.new(0, f.sizes.pelvis.Y * 0.3, 0), Color3.fromRGB(96, 84, 72), Enum.Material.Slate)
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2, 0))
 end
 HERO_EXTRAS.hawkeye = function(f)
-	local s = f.scale
-	local hand = f.sizes.hand
-	-- The bow in the left hand, an arrow nocked; a quiver on the back.
-	local limbs = { Vector3.new(0, 1.4, -0.3), Vector3.new(0, 0.7, -0.62), Vector3.new(0, 0, -0.7), Vector3.new(0, -0.7, -0.62), Vector3.new(0, -1.4, -0.3) }
-	for i = 1, #limbs - 1 do f.rod("LeftHand", "Bow", limbs[i] * s, limbs[i + 1] * s, 0.14 * s, Color3.fromRGB(70, 150, 96), METAL) end
-	f.rod("LeftHand", "Bowstring", limbs[1] * s, limbs[#limbs] * s, 0.03 * s, HC.silver, METAL)
-	f.add("UpperTorso", "Quiver", Vector3.new(0.5, 1.7, 0.5) * s, CFrame.new(0.4 * s, 0.2 * s, f.sizes.chest.Z / 2 + 0.25 * s) * CFrame.Angles(0, 0, -0.35), HC.leather, FABRIC)
-	for i = 1, 3 do f.add("UpperTorso", "QuiverArrow", Vector3.new(0.06, 0.6, 0.06) * s, CFrame.new((0.62 + i * 0.1) * s, 1.1 * s, f.sizes.chest.Z / 2 + 0.25 * s) * CFrame.Angles(0, 0, -0.35), HC.silver, METAL) end
-	f.rod("UpperTorso", "Harness", Vector3.new(-f.sizes.chest.X * 0.4, f.sizes.chest.Y * 0.44, -f.sizes.chest.Z / 2 - 0.03 * s), Vector3.new(f.sizes.chest.X * 0.4, -f.sizes.chest.Y * 0.44, -f.sizes.chest.Z / 2 - 0.03 * s), 0.14 * s, HC.leather, FABRIC)
-	muzzle(f, "LeftHand", Vector3.new(0, 0, -0.75 * s))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local forest, steel, leather, neonGreen = Color3.fromRGB(70, 150, 96), HC.steel, HC.leather, Color3.fromRGB(100, 255, 120)
+	-- Neon Marksman: sleek tactical suit with glowing green accents,
+	-- streamlined hood, energy bow and holographic quiver; silhouette
+	-- reads as futuristic archer even at thumbnail size.
+	-- Head: smooth hood with glowing visor band and chin guard.
+	f.add("Head", "HoodShell", Vector3.new(h.X * 0.96, h.Y * 0.94, h.Z * 0.96), CFrame.new(), forest, FABRIC)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.72, 0.14 * s, 0.07 * s), f.face(0, 0.12, -0.02), neonGreen, NEON)
+	f.add("Head", "ChinGuard", Vector3.new(h.X * 0.5, h.Y * 0.28, 0.13 * s), f.face(0, -0.46, 0.02), steel, METAL, "wedge")
+	-- Torso: fitted armor vest with central glowing seam, diagonal
+	-- harness and utility belt; quiver is holographic/energy based.
+	-- Note: TorsoSlope is added automatically by Figure.Finish later.
+	f.add("UpperTorso", "ArmorVest", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), forest, METAL)
+	f.add("UpperTorso", "CoreSeam", Vector3.new(0.08 * s, c.Y * 0.6, 0.04 * s), CFrame.new(0, 0, -c.Z / 2 - 0.06 * s), neonGreen, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.36, c.Y * 0.4, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.36, -c.Y * 0.36, -c.Z / 2 - 0.04 * s), 0.1 * s, steel, METAL)
+	belt(f, steel, neonGreen)
+	-- Holographic Quiver: glowing frame with energy arrows.
+	f.add("UpperTorso", "QuiverFrame", Vector3.new(0.42 * s, 1.6 * s, 0.42 * s), CFrame.new(0.36 * s, 0.16 * s, c.Z / 2 + 0.22 * s) * CFrame.Angles(0, 0, -0.3), steel, METAL)
+	for i = 1, 3 do
+		f.add("UpperTorso", "EnergyArrow" .. i, Vector3.new(0.05 * s, 0.58 * s, 0.05 * s), CFrame.new((0.54 + i * 0.09) * s, 1.02 * s, c.Z / 2 + 0.22 * s) * CFrame.Angles(0, 0, -0.3), neonGreen, NEON)
+	end
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and gauntlets;
+	-- left hand grips the energy bow.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), forest, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonGreen, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), forest, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), steel, METAL)
+		-- Note: Thumb is added automatically by Figure.Finish later.
+	end
+	-- Energy Bow: sleek curved limbs with glowing string; no physical
+	-- wood, pure energy construction.
+	local limbs = { Vector3.new(0, 1.38, -0.26), Vector3.new(0, 0.7, -0.58), Vector3.new(0, 0, -0.7), Vector3.new(0, -0.7, -0.58), Vector3.new(0, -1.38, -0.26) }
+	for i = 1, #limbs - 1 do f.rod("LeftHand", "BowLimb" .. i, limbs[i] * s, limbs[i + 1] * s, 0.12 * s, steel, METAL) end
+	f.add("LeftHand", "BowTipTop", Vector3.new(0.1 * s, 0.2 * s, 0.1 * s), CFrame.new(limbs[1].X * s, limbs[1].Y * s, limbs[1].Z * s), neonGreen, NEON, "ball")
+	f.add("LeftHand", "BowTipBottom", Vector3.new(0.1 * s, 0.2 * s, 0.1 * s), CFrame.new(limbs[#limbs].X * s, limbs[#limbs].Y * s, limbs[#limbs].Z * s), neonGreen, NEON, "ball")
+	f.rod("LeftHand", "EnergyString", limbs[1] * s, limbs[#limbs] * s, 0.025 * s, neonGreen, NEON)
+	-- Legs: armored thigh plates with glowing knee caps and shin guards;
+	-- boots are reinforced with neon soles.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), forest, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonGreen, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), forest, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), steel, METAL)
+		-- Note: BootSole is added automatically by Figure.Finish later.
+	end
+	muzzle(f, "LeftHand", Vector3.new(0, 0, -0.74 * s))
 end
 HERO_EXTRAS.thor = function(f)
-	local s, c = f.scale, f.sizes.chest
-	local storm, spark = Color3.fromRGB(40, 70, 160), Color3.fromRGB(140, 220, 255)
-	-- Brontus: a storm caller in silver pauldrons and a blue cape, with a
-	-- staff that holds a crackling orb.
-	cape(f, storm, 3.6, HC.silver)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local storm, spark, steel = Color3.fromRGB(40, 70, 160), Color3.fromRGB(140, 220, 255), Color3.fromRGB(180, 185, 190)
+	-- Stormbreaker: winged helmet with glowing eyes, layered silver/blue
+	-- armor with lightning sigils, heavy cape and a war hammer that channels
+	-- the storm; silhouette reads as divine warrior even at distance.
+	-- Head: open helm with wing ornaments, brow ridge and glowing eye slits.
+	f.add("Head", "BrowRidge", Vector3.new(h.X * 0.84, h.Y * 0.2, h.Z * 0.24), CFrame.new(0, h.Y * 0.36, -h.Z * 0.1), steel, METAL)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "Pauldron", f.sizes.upperArm * Vector3.new(1.22, 0.5, 1.2), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0), HC.silver, METAL)
+		f.add("Head", "WingOrnament", Vector3.new(0.18 * s, h.Y * 0.32, h.Z * 0.4), CFrame.new(side * h.X * 0.42, h.Y * 0.28, -h.Z * 0.06) * CFrame.Angles(0, side * 0.4, side * -0.2), steel, METAL, "wedge")
+		f.add("Head", "EyeGlow", Vector3.new(0.14 * s, 0.12 * s, 0.06 * s), f.face(side * 0.22, 0.14, -0.02), spark, NEON, "ball")
 	end
-	f.add("UpperTorso", "StormSigil", Vector3.new(0.2, 0.7, 0.06) * s, CFrame.new(0, 0.18 * s, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.45), spark, NEON)
-	f.rod("RightHand", "StaffShaft", Vector3.new(0, 1.6 * s, 0), Vector3.new(0, -1.4 * s, 0), 0.16 * s, Color3.fromRGB(120, 96, 70), FABRIC)
-	local orb = f.add("RightHand", "StormOrb", Vector3.new(0.7, 0.7, 0.7) * s, CFrame.new(0, 1.85 * s, 0), spark, NEON, "ball")
-	orb.Transparency = 0.15
-	muzzle(f, "RightHand", Vector3.new(0, 1.85 * s, 0))
+	f.add("Head", "HelmetCrest", Vector3.new(0.14 * s, h.Y * 0.42, h.Z * 0.9), CFrame.new(0, h.Y * 0.4, 0), storm, METAL)
+	-- Torso: segmented chest plates with central lightning sigil, abdominal
+	-- segments and reinforced belt; cape anchors at the shoulders.
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "PectoralPlate", Vector3.new(c.X * 0.44, c.Y * 0.48, 0.1 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.14, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.05), steel, METAL)
+	end
+	f.add("UpperTorso", "StormSigil", Vector3.new(0.18 * s, 0.68 * s, 0.07 * s), CFrame.new(0, 0.16 * s, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, -0.42), spark, NEON)
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.12
+		f.add("LowerTorso", "AbdomenPlate" .. i, Vector3.new(c.X * 0.66 * width, 0.18 * s, 0.08 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.16 * s, -c.Z / 2 - 0.03 * s), steel, METAL)
+	end
+	belt(f, HC.leather, steel)
+	cape(f, storm, 3.8, steel)
+	-- Arms: heavy pauldrons with wing motifs, forearm bracers and gauntlets;
+	-- right hand grips the hammer shaft.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.28, 0.56, 1.22), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.12), steel, METAL, "wedge")
+		f.add(armName, "WingMotif", Vector3.new(f.sizes.upperArm.X * 0.5, 0.14 * s, f.sizes.upperArm.Z * 0.4), CFrame.new(0, f.sizes.upperArm.Y * 0.42, -f.sizes.upperArm.Z * 0.18) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), storm, METAL, "wedge")
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.16, 0.64, 1.14), CFrame.new(0, f.sizes.lowerArm.Y * 0.14, 0), steel, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.18, 0.72, 1.16), CFrame.new(0, -f.sizes.hand.Y * 0.1, 0), steel, METAL)
+	end
+	-- Legs: thigh plates with knee caps, shin guards and heavy boots; stance
+	-- is wide and grounded to sell the divine weight.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.2, 0.72, 1.18), CFrame.new(0, f.sizes.upperLeg.Y * 0.16, 0), steel, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.7, 0.24 * s, f.sizes.lowerLeg.Z * 0.62), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), steel, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.14, 0.74, 1.12), CFrame.new(0, f.sizes.lowerLeg.Y * 0.1, 0), steel, METAL)
+		f.add(footName, "HeavyBoot", f.sizes.foot * Vector3.new(1.24, 0.66, 1.28), CFrame.new(0, -f.sizes.foot.Y * 0.12, 0), steel, METAL)
+	end
+	-- Hammer: short shaft with a blocky head and glowing runes; muzzle at the
+	-- head so projectiles emit from the weapon, not the hand.
+	f.rod("RightHand", "HammerShaft", Vector3.new(0, 1.2 * s, 0), Vector3.new(0, -0.6 * s, 0), 0.14 * s, Color3.fromRGB(100, 80, 60), FABRIC)
+	f.add("RightHand", "HammerHead", Vector3.new(0.52 * s, 0.42 * s, 0.36 * s), CFrame.new(0, 1.3 * s, 0), steel, METAL)
+	f.add("RightHand", "HammerRune", Vector3.new(0.28 * s, 0.28 * s, 0.06 * s), CFrame.new(0, 1.3 * s, -0.2 * s), spark, NEON)
+	muzzle(f, "RightHand", Vector3.new(0, 1.3 * s, 0))
 end
 HERO_EXTRAS.widow = function(f)
-	local s = f.scale
-	belt(f, HC.steel, Color3.fromRGB(150, 110, 255))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local ink, violet, gold = HC.ink, Color3.fromRGB(150, 110, 255), HC.gold
+	-- Shadow Operative: sleek stealth suit with violet insignia, tactical
+	-- harness, dual pistols and forearm bracelets; silhouette reads as
+	-- agile infiltrator even at thumbnail size.
+	-- Head: masked face with angular eye lenses and subtle crest.
+	f.add("Head", "MaskBase", Vector3.new(h.X * 0.9, h.Y * 0.86, h.Z * 0.9), CFrame.new(), ink, FABRIC)
 	for _, side in ipairs({ -1, 1 }) do
-		local hand = side < 0 and "LeftHand" or "RightHand"
-		f.add(hand, "Pistol", Vector3.new(0.16, 0.7, 0.34) * s, CFrame.new(0, -0.35 * s, -0.08 * s), HC.ink, METAL)
-		f.add(side < 0 and "LeftLowerArm" or "RightLowerArm", "Bracelet", f.sizes.lowerArm * Vector3.new(1.08, 0.2, 1.08), CFrame.new(0, -f.sizes.lowerArm.Y * 0.36, 0), HC.gold, METAL)
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.28, h.Y * 0.22, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), violet, NEON, "wedge")
 	end
-	f.add("UpperTorso", "WidowInsignia", Vector3.new(0.3, 0.3, 0.05) * s, CFrame.new(0, -0.3 * s, -f.sizes.chest.Z / 2 - 0.03 * s) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(150, 110, 255), NEON)
-	muzzle(f, "RightHand", Vector3.new(0, -0.75 * s, -0.08 * s))
+	f.add("Head", "Crest", Vector3.new(0.12 * s, h.Y * 0.32, h.Z * 0.88), CFrame.new(0, h.Y * 0.36, 0), ink, METAL)
+	-- Torso: fitted suit with central insignia, tactical harness and belt.
+	f.add("UpperTorso", "WidowInsignia", Vector3.new(0.32 * s, 0.32 * s, 0.05 * s), CFrame.new(0, c.Y * 0.12, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, math.pi / 4), violet, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.38, c.Y * 0.42, -c.Z / 2 - 0.03 * s), Vector3.new(c.X * 0.38, -c.Y * 0.38, -c.Z / 2 - 0.03 * s), 0.12 * s, ink, FABRIC)
+	belt(f, HC.steel, violet)
+	-- Arms: shoulder pads, forearm bracelets and dual pistols; hands are
+	-- gloved with reinforced knuckles.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "ShoulderPad", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), ink, FABRIC)
+		f.add(forearmName, "Bracelet", f.sizes.lowerArm * Vector3.new(1.1, 0.22, 1.1), CFrame.new(0, -f.sizes.lowerArm.Y * 0.34, 0), gold, METAL)
+		f.add(handName, "Glove", f.sizes.hand * Vector3.new(1.12, 0.66, 1.1), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), ink, FABRIC)
+		f.add(handName, "Pistol", Vector3.new(0.18 * s, 0.72 * s, 0.36 * s), CFrame.new(0, -0.36 * s, -0.1 * s), HC.steel, METAL)
+	end
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- streamlined for agility with reinforced toes.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), ink, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), ink, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), ink, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), ink, FABRIC)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -0.76 * s, -0.1 * s))
 end
 HERO_EXTRAS.falcon = function(f)
-	local s, c = f.scale, f.sizes.chest
-	f.add("Head", "Goggles", Vector3.new(f.parts.Head.Size.X * 0.84, 0.24 * s, 0.1 * s), f.face(0, 0.14, 0.03), Color3.fromRGB(255, 200, 60), NEON)
-	f.add("UpperTorso", "Jetpack", Vector3.new(c.X * 0.66, c.Y * 0.8, 0.46 * s), CFrame.new(0, 0.05 * s, c.Z / 2 + 0.22 * s), HC.steel, METAL)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local crimson, steel, gold = Color3.fromRGB(160, 30, 50), HC.steel, HC.gold
+	-- Sky Marshal: tactical flight helmet with amber visor, segmented
+	-- jetpack with articulated wings and dual thrusters; silhouette reads
+	-- as aerial ace even at thumbnail size.
+	-- Head: streamlined helmet with raised visor ridge and chin guard.
+	f.add("Head", "HelmetBase", Vector3.new(h.X * 0.92, h.Y * 0.88, h.Z * 0.92), CFrame.new(), crimson, FABRIC)
+	f.add("Head", "VisorRidge", Vector3.new(h.X * 0.78, 0.16 * s, 0.08 * s), f.face(0, 0.16, 0.02), gold, METAL)
+	f.add("Head", "ChinGuard", Vector3.new(h.X * 0.52, h.Y * 0.24, 0.12 * s), f.face(0, -0.46, 0.02), steel, METAL, "wedge")
+	-- Torso: fitted flight suit with central harness, jetpack housing
+	-- and wing anchor points; belt secures the pack.
+	f.add("UpperTorso", "HarnessStrap", Vector3.new(c.X * 0.72, 0.14 * s, 0.08 * s), CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.03 * s), steel, METAL)
+	f.add("UpperTorso", "JetpackHousing", Vector3.new(c.X * 0.68, c.Y * 0.82, 0.48 * s), CFrame.new(0, 0.04 * s, c.Z / 2 + 0.22 * s), steel, METAL)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("UpperTorso", "Wing", Vector3.new(2.6 * s, 0.1 * s, 0.9 * s), CFrame.new(side * (c.X * 0.33 + 1.1 * s), 0.3 * s, c.Z / 2 + 0.3 * s) * CFrame.Angles(0, side * 0.4, side * 0.5), HC.silver, METAL, "wedge")
+		f.add("UpperTorso", "ThrusterNozzle", Vector3.new(0.22 * s, 0.32 * s, 0.28 * s), CFrame.new(side * c.X * 0.24, -c.Y * 0.28, c.Z / 2 + 0.38 * s), HC.ink, METAL)
+		f.add("UpperTorso", "WingRoot", Vector3.new(0.4 * s, 0.18 * s, 0.6 * s), CFrame.new(side * (c.X * 0.34 + 0.4 * s), 0.28 * s, c.Z / 2 + 0.28 * s) * CFrame.Angles(0, side * 0.3, side * 0.4), steel, METAL)
+		f.add("UpperTorso", "WingSpan", Vector3.new(2.4 * s, 0.08 * s, 0.82 * s), CFrame.new(side * (c.X * 0.34 + 1.4 * s), 0.32 * s, c.Z / 2 + 0.32 * s) * CFrame.Angles(0, side * 0.42, side * 0.52), HC.silver, METAL, "wedge")
+	end
+	belt(f, HC.leather, steel)
+	-- Arms: shoulder pads with wing motifs, forearm bracers and gauntlets;
+	-- hands are gloved for flight control.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "ShoulderPad", f.sizes.upperArm * Vector3.new(1.2, 0.48, 1.16), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), crimson, FABRIC)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, FABRIC)
+		f.add(handName, "Glove", f.sizes.hand * Vector3.new(1.14, 0.68, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), crimson, FABRIC)
+	end
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- reinforced for landing impact.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), steel, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), crimson, FABRIC)
+		f.add(footName, "LandingBoot", f.sizes.foot * Vector3.new(1.2, 0.64, 1.24), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), crimson, FABRIC)
 	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.bucky = function(f)
-	local s = f.scale
-	-- Only the left arm is metal.
-	f.parts.RightUpperArm.Color, f.parts.RightLowerArm.Color, f.parts.RightHand.Color = Color3.fromRGB(78, 96, 58), Color3.fromRGB(78, 96, 58), HC.skin
-	for i = 1, 3 do f.add("LeftUpperArm", "ArmPlate", f.sizes.upperArm * Vector3.new(1.04, 0.06, 1.04), CFrame.new(0, f.sizes.upperArm.Y * (0.3 - i * 0.18), 0), HC.steel, METAL) end
-	f.add("LeftUpperArm", "RedStar", Vector3.new(0.06, 0.26, 0.26) * s, CFrame.new(-f.sizes.upperArm.X / 2 - 0.02 * s, 0.1 * s, 0), Color3.fromRGB(240, 200, 70), METAL)
-	f.add("RightHand", "Rifle", Vector3.new(0.22, 1.6, 0.34) * s, CFrame.new(0, -0.7 * s, -0.12 * s), HC.ink, METAL)
-	f.add("RightHand", "RifleBarrel", Vector3.new(0.1, 0.8, 0.1) * s, CFrame.new(0, -1.8 * s, -0.12 * s), HC.steel, METAL)
-	belt(f, HC.leather, HC.silver)
-	muzzle(f, "RightHand", Vector3.new(0, -2.2 * s, -0.12 * s))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local olive, steel, gold = Color3.fromRGB(78, 96, 58), HC.steel, Color3.fromRGB(240, 200, 70)
+	-- Winter Soldier: tactical olive drab suit with segmented metal left
+	-- arm bearing a red star insignia, chest harness and assault rifle;
+	-- silhouette reads as covert operative even at thumbnail size.
+	-- Head: masked face with angular eye lenses and chin strap.
+	f.add("Head", "MaskBase", Vector3.new(h.X * 0.9, h.Y * 0.86, h.Z * 0.9), CFrame.new(), olive, FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.26, h.Y * 0.2, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), steel, METAL, "wedge")
+	end
+	f.add("Head", "ChinStrap", Vector3.new(h.X * 0.52, h.Y * 0.14, 0.08 * s), f.face(0, -0.48, -0.02), steel, METAL)
+	-- Torso: fitted tactical vest with central seam, diagonal harness
+	-- and utility belt; left arm is fully metal with star emblem.
+	f.add("UpperTorso", "VestFront", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), olive, FABRIC)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.36, c.Y * 0.4, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.36, -c.Y * 0.36, -c.Z / 2 - 0.04 * s), 0.12 * s, HC.leather, FABRIC)
+	belt(f, HC.leather, steel)
+	-- Arms: right arm is organic olive fabric; left arm is segmented
+	-- metal plates with red star insignia on the upper arm.
+	f.parts.RightUpperArm.Color, f.parts.RightLowerArm.Color, f.parts.RightHand.Color = olive, olive, HC.skin
+	f.add("RightUpperArm", "ShoulderPad", f.sizes.upperArm * Vector3.new(1.14, 0.44, 1.1), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, math.pi, 0.06), olive, FABRIC)
+	f.add("RightLowerArm", "Bracer", f.sizes.lowerArm * Vector3.new(1.1, 0.56, 1.08), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), olive, FABRIC)
+	f.add("RightHand", "Glove", f.sizes.hand * Vector3.new(1.12, 0.64, 1.1), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), olive, FABRIC)
+	for i = 1, 3 do
+		f.add("LeftUpperArm", "ArmPlate" .. i, f.sizes.upperArm * Vector3.new(1.06, 0.08, 1.06), CFrame.new(0, f.sizes.upperArm.Y * (0.32 - i * 0.18), 0), steel, METAL)
+	end
+	f.add("LeftUpperArm", "RedStar", Vector3.new(0.08 * s, 0.28 * s, 0.28 * s), CFrame.new(-f.sizes.upperArm.X / 2 - 0.03 * s, 0.1 * s, 0), gold, METAL)
+	f.add("LeftLowerArm", "ForearmPlate", f.sizes.lowerArm * Vector3.new(1.12, 0.62, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.14, 0), steel, METAL)
+	f.add("LeftHand", "MetalGauntlet", f.sizes.hand * Vector3.new(1.16, 0.7, 1.14), CFrame.new(0, -f.sizes.hand.Y * 0.08, 0), steel, METAL)
+	-- Rifle: compact assault weapon with barrel extension; muzzle at
+	-- barrel tip so projectiles emit from the weapon, not the hand.
+	f.add("RightHand", "RifleBody", Vector3.new(0.24 * s, 1.62 * s, 0.36 * s), CFrame.new(0, -0.72 * s, -0.14 * s), HC.ink, METAL)
+	f.add("RightHand", "RifleBarrel", Vector3.new(0.12 * s, 0.82 * s, 0.12 * s), CFrame.new(0, -1.82 * s, -0.14 * s), steel, METAL)
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- reinforced for tactical movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), olive, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), steel, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), olive, FABRIC)
+		f.add(footName, "TacticalBoot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), olive, FABRIC)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -2.24 * s, -0.14 * s))
 end
 HERO_EXTRAS.antman = function(f)
-	local s, h = f.scale, f.parts.Head.Size
-	f.add("Head", "HelmetJaw", Vector3.new(h.X * 0.8, h.Y * 0.4, 0.12 * s), f.face(0, -0.5, -0.03), HC.ink, METAL)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local crimson, steel, neonBlue = Color3.fromRGB(160, 30, 50), HC.steel, Color3.fromRGB(80, 220, 255)
+	-- Quantum Scout: sleek helmet with glowing blue lenses, segmented
+	-- armor with neon accents and antennae; silhouette reads as
+	-- size-shifting hero even at thumbnail size.
+	-- Head: streamlined helmet with wide visor band and chin guard.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), crimson, METAL)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.76, 0.16 * s, 0.07 * s), f.face(0, 0.12, -0.02), neonBlue, NEON)
+	f.add("Head", "ChinGuard", Vector3.new(h.X * 0.5, h.Y * 0.26, 0.12 * s), f.face(0, -0.46, 0.02), steel, METAL, "wedge")
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "RedLens", Vector3.new(0.4, 0.3, 0.06) * s, f.face(side * 0.26, 0.14, 0.02), Color3.fromRGB(120, 230, 255), NEON, "ball")
-		f.rod("Head", "Antenna", Vector3.new(side * h.X * 0.4, h.Y * 0.3, 0), Vector3.new(side * h.X * 0.62, h.Y * 0.95, 0.1 * s), 0.08 * s, HC.silver, METAL)
-		f.disc("Head", "Respirator", 0.26 * s, 0.1 * s, f.face(side * 0.3, -0.42, 0.04), HC.silver, METAL)
+		f.rod("Head", "Antenna", Vector3.new(side * h.X * 0.42, h.Y * 0.32, 0), Vector3.new(side * h.X * 0.64, h.Y * 0.96, 0.1 * s), 0.07 * s, steel, METAL)
+		f.disc("Head", "Respirator", 0.24 * s, 0.09 * s, f.face(side * 0.32, -0.42, 0.04), steel, METAL)
 	end
-	belt(f, HC.silver)
+	-- Torso: fitted armor vest with central seam, diagonal harness
+	-- and utility belt; no bulky plates to impede shrinking.
+	f.add("UpperTorso", "ArmorVest", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), crimson, METAL)
+	f.add("UpperTorso", "CoreSeam", Vector3.new(0.07 * s, c.Y * 0.58, 0.04 * s), CFrame.new(0, 0, -c.Z / 2 - 0.05 * s), neonBlue, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, steel, METAL)
+	belt(f, steel, neonBlue)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; hands are gloved for Pym particle control.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), crimson, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonBlue, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), steel, METAL)
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced with neon soles.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonBlue, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), crimson, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), steel, METAL)
+		-- Note: BootSole is added automatically by Figure.Finish later.
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.wasp = function(f)
-	local s, c = f.scale, f.sizes.chest
-	Figure.Face(f, "lens", { lens = Color3.fromRGB(110, 190, 255), width = 0.46, height = 0.34, slant = 0.3 })
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local gold, black, neonBlue = Color3.fromRGB(240, 200, 60), Color3.fromRGB(24, 28, 39), Color3.fromRGB(110, 190, 255)
+	-- Quantum Flyer: sleek helmet with glowing blue lenses, segmented
+	-- armor with neon accents, translucent wings and antennae; silhouette
+	-- reads as agile aerial hero even at thumbnail size.
+	-- Head: streamlined helmet with wide visor band and chin guard.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), black, METAL)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.76, 0.16 * s, 0.07 * s), f.face(0, 0.12, -0.02), neonBlue, NEON)
+	f.add("Head", "ChinGuard", Vector3.new(h.X * 0.5, h.Y * 0.26, 0.12 * s), f.face(0, -0.46, 0.02), gold, METAL, "wedge")
+	for _, side in ipairs({ -1, 1 }) do
+		f.rod("Head", "Antenna", Vector3.new(side * 0.22 * s, 0.52 * s, -0.32 * s), Vector3.new(side * 0.42 * s, 0.98 * s, -0.42 * s), 0.06 * s, gold, METAL)
+	end
+	-- Torso: fitted armor vest with central seam, diagonal harness
+	-- and utility belt; wing anchors at the shoulders.
+	f.add("UpperTorso", "ArmorVest", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), black, METAL)
+	f.add("UpperTorso", "CoreSeam", Vector3.new(0.07 * s, c.Y * 0.58, 0.04 * s), CFrame.new(0, 0, -c.Z / 2 - 0.05 * s), neonBlue, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, gold, METAL)
+	belt(f, gold, neonBlue)
+	-- Wings: four translucent glass wings (two per side) with neon edges.
 	for _, side in ipairs({ -1, 1 }) do
 		for _, up in ipairs({ 1, -1 }) do
-			local wing = f.add("UpperTorso", "Wing", Vector3.new(1.4 * s, 0.05 * s, 0.7 * s), CFrame.new(side * 0.8 * s, up * 0.35 * s, c.Z / 2 + 0.2 * s) * CFrame.Angles(0, side * 0.3, side * up * 0.45), Color3.fromRGB(190, 230, 255), Enum.Material.Glass, "ball")
-			wing.Transparency = 0.35
+			local wing = f.add("UpperTorso", "Wing", Vector3.new(1.42 * s, 0.06 * s, 0.72 * s), CFrame.new(side * 0.82 * s, up * 0.36 * s, c.Z / 2 + 0.22 * s) * CFrame.Angles(0, side * 0.3, side * up * 0.45), neonBlue, Enum.Material.Glass, "ball")
+			wing.Transparency = 0.32
 		end
-		f.rod("Head", "Antenna", Vector3.new(side * 0.2 * s, 0.5 * s, -0.3 * s), Vector3.new(side * 0.4 * s, 0.95 * s, -0.4 * s), 0.06 * s, HC.ink, FABRIC)
+	end
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; hands are gloved for Pym particle control.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), black, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonBlue, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), black, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), gold, METAL)
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin guards;
+	-- boots are reinforced with neon soles.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), black, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonBlue, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), black, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), gold, METAL)
 	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.rocket = function(f)
-	local s, h = f.scale, f.parts.Head.Size
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local fur, steel, neonOrange = Color3.fromRGB(120, 80, 56), HC.steel, Color3.fromRGB(255, 140, 40)
+	-- Heavy Gunner: tactical vest with neon accents, oversized energy
+	-- cannon and armored gauntlets; silhouette reads as explosive
+	-- specialist even at thumbnail size.
+	-- Head: furry face with pointed ears, snout and glowing goggles.
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "Ear", Vector3.new(0.34, 0.44, 0.14) * h.X / 1.36, CFrame.new(side * h.X * 0.4, h.Y * 0.56, 0) * CFrame.Angles(0, 0, -side * 0.2), Color3.fromRGB(120, 80, 56), FABRIC, "wedge")
+		f.add("Head", "Ear", Vector3.new(0.34, 0.44, 0.14) * h.X / 1.36, CFrame.new(side * h.X * 0.4, h.Y * 0.56, 0) * CFrame.Angles(0, 0, -side * 0.2), fur, FABRIC, "wedge")
 	end
 	f.add("Head", "Snout", Vector3.new(h.X * 0.44, h.Y * 0.26, h.Z * 0.24), f.face(0, -0.32, 0.04), Color3.fromRGB(220, 200, 180), FABRIC, "ball")
 	f.add("Head", "Nose", Vector3.new(0.18, 0.12, 0.08) * h.X / 1.36, f.face(0, -0.22, 0.12), HC.ink, FABRIC, "ball")
-	f.add("LowerTorso", "Tail", Vector3.new(0.5, 0.5, 1.4) * s, CFrame.new(0, -0.1 * s, f.sizes.pelvis.Z / 2 + 0.6 * s) * CFrame.Angles(-0.5, 0, 0), Color3.fromRGB(120, 80, 56), FABRIC, "ball")
-	-- A cannon bigger than he is, held in both hands.
-	f.add("RightHand", "BigGun", Vector3.new(0.5, 2.2, 0.6) * s, CFrame.new(-0.2 * s, -0.9 * s, -0.2 * s), HC.steel, METAL)
-	f.add("RightHand", "GunMuzzle", Vector3.new(0.6, 0.3, 0.6) * s, CFrame.new(-0.2 * s, -2.05 * s, -0.2 * s), HC.energy, NEON)
+	f.add("Head", "GoggleBand", Vector3.new(h.X * 0.82, 0.14 * s, 0.07 * s), f.face(0, 0.18, -0.02), neonOrange, NEON)
+	f.add("LowerTorso", "Tail", Vector3.new(0.5, 0.5, 1.4) * s, CFrame.new(0, -0.1 * s, f.sizes.pelvis.Z / 2 + 0.6 * s) * CFrame.Angles(-0.5, 0, 0), fur, FABRIC, "ball")
+	-- Torso: tactical vest with central seam, diagonal harness and
+	-- utility belt; ammo pouches on the sides.
+	f.add("UpperTorso", "TacticalVest", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), steel, METAL)
+	f.add("UpperTorso", "CoreSeam", Vector3.new(0.07 * s, c.Y * 0.58, 0.04 * s), CFrame.new(0, 0, -c.Z / 2 - 0.05 * s), neonOrange, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, steel, METAL)
+	belt(f, steel, neonOrange)
+	-- Arms: armored pauldrons with neon trim, forearm bracers and
+	-- heavy gauntlets; right hand grips the oversized cannon.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.18, 0.48, 1.14), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), steel, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonOrange, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), steel, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), steel, METAL)
+	end
+	-- Cannon: oversized energy weapon with glowing muzzle; held in
+	-- both hands for stability.
+	f.add("RightHand", "BigGun", Vector3.new(0.52 * s, 2.22 * s, 0.62 * s), CFrame.new(-0.2 * s, -0.9 * s, -0.2 * s), steel, METAL)
+	f.add("RightHand", "GunMuzzle", Vector3.new(0.62 * s, 0.32 * s, 0.62 * s), CFrame.new(-0.2 * s, -2.05 * s, -0.2 * s), neonOrange, NEON)
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced for heavy weapon recoil.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), steel, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonOrange, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), steel, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), steel, METAL)
+	end
 	muzzle(f, "RightHand", Vector3.new(-0.2 * s, -2.2 * s, -0.2 * s))
 end
 HERO_EXTRAS.daredevil = function(f)
-	f.add("Head", "SonarVisor", Vector3.new(f.parts.Head.Size.X * 0.8, 0.2 * f.scale, 0.08 * f.scale), f.face(0, 0.12, 0.03), Color3.fromRGB(120, 230, 255), NEON)
-	local s, h = f.scale, f.parts.Head.Size
-	f.add("Head", "Chin", Vector3.new(h.X * 0.6, h.Y * 0.36, 0.1 * s), f.face(0, -0.52, -0.03), HC.skin, FABRIC)
-	f.add("Head", "Mouth", Vector3.new(0.24, 0.06, 0.05) * s, f.face(0, -0.52, 0.04), HC.ink, FABRIC)
-	Figure.Face(f, "lens", { lens = Color3.fromRGB(40, 48, 70), rim = Color3.fromRGB(40, 48, 70), width = 0.34, height = 0.22, slant = 0.3 })
-	f.rod("RightHand", "Billy", Vector3.new(0, 0.2 * s, 0), Vector3.new(0, -1.3 * s, -0.1 * s), 0.14 * s, Color3.fromRGB(56, 66, 92), METAL)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local crimson, steel, neonRed = Color3.fromRGB(160, 30, 50), HC.steel, Color3.fromRGB(255, 60, 60)
+	-- Blind Guardian: sleek red suit with glowing sonar visor, armored
+	-- chest plate and billy club; silhouette reads as fearless vigilante
+	-- even at thumbnail size.
+	-- Head: streamlined mask with wide sonar visor band and chin guard.
+	f.add("Head", "MaskShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), crimson, FABRIC)
+	f.add("Head", "SonarVisor", Vector3.new(h.X * 0.78, 0.18 * s, 0.08 * s), f.face(0, 0.12, -0.02), neonRed, NEON)
+	f.add("Head", "ChinGuard", Vector3.new(h.X * 0.5, h.Y * 0.26, 0.12 * s), f.face(0, -0.46, 0.02), steel, METAL, "wedge")
+	-- Torso: fitted armor vest with central seam, diagonal harness
+	-- and utility belt; no bulky plates to impede agility.
+	f.add("UpperTorso", "ArmorVest", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), crimson, METAL)
+	f.add("UpperTorso", "CoreSeam", Vector3.new(0.07 * s, c.Y * 0.58, 0.04 * s), CFrame.new(0, 0, -c.Z / 2 - 0.05 * s), neonRed, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, steel, METAL)
+	belt(f, steel, neonRed)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; right hand grips the billy club.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), crimson, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonRed, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), steel, METAL)
+	end
+	f.rod("RightHand", "BillyClub", Vector3.new(0, 0.2 * s, 0), Vector3.new(0, -1.3 * s, -0.1 * s), 0.14 * s, steel, METAL)
+	f.add("RightHand", "ClubGlow", Vector3.new(0.16 * s, 0.16 * s, 0.16 * s), CFrame.new(0, -1.3 * s, -0.1 * s), neonRed, NEON, "ball")
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced for acrobatic movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonRed, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), crimson, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), steel, METAL)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -1.3 * s, -0.1 * s))
 end
 HERO_EXTRAS.shangchi = function(f)
-	local s = f.scale
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local crimson, gold, neonGold = Color3.fromRGB(160, 30, 50), HC.gold, Color3.fromRGB(255, 220, 80)
+	-- Ten Rings Master: sleek martial arts suit with glowing golden rings,
+	-- armored chest plate and flowing sash; silhouette reads as mystical
+	-- warrior even at thumbnail size.
+	-- Head: masked face with angular eye lenses and headband crest.
+	f.add("Head", "MaskBase", Vector3.new(h.X * 0.9, h.Y * 0.86, h.Z * 0.9), CFrame.new(), crimson, FABRIC)
+	f.add("Head", "Headband", Vector3.new(h.X * 0.92, 0.18 * s, 0.07 * s), f.face(0, 0.32, 0.02), gold, METAL)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.24, h.Y * 0.18, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), neonGold, NEON, "wedge")
+	end
+	-- Torso: fitted martial arts vest with central seam, diagonal harness
+	-- and utility belt; ten rings glow on the left forearm.
+	f.add("UpperTorso", "VestFront", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), crimson, FABRIC)
+	f.add("UpperTorso", "CoreSeam", Vector3.new(0.07 * s, c.Y * 0.58, 0.04 * s), CFrame.new(0, 0, -c.Z / 2 - 0.05 * s), neonGold, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, gold, METAL)
+	f.add("UpperTorso", "Sash", Vector3.new(c.X * 1.04, 0.24 * s, c.Z * 1.06), CFrame.new(0, -c.Y * 0.36, 0) * CFrame.Angles(0, 0, -0.18), gold, FABRIC)
+	belt(f, HC.leather, gold)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and gauntlets;
+	-- left forearm bears five glowing ten rings.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), crimson, FABRIC)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonGold, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), gold, METAL)
+	end
 	local forearm = f.sizes.lowerArm
 	for i = 1, 5 do
-		f.add("LeftLowerArm", "TenRing", Vector3.new(0.07 * s, forearm.X * 1.5, forearm.X * 1.5), CFrame.new(0, (0.45 - i * 0.15) * forearm.Y, 0) * CFrame.Angles(0, 0, math.pi / 2), HC.gold, NEON, Enum.PartType.Cylinder)
+		f.add("LeftLowerArm", "TenRing", Vector3.new(0.07 * s, forearm.X * 1.5, forearm.X * 1.5), CFrame.new(0, (0.45 - i * 0.15) * forearm.Y, 0) * CFrame.Angles(0, 0, math.pi / 2), neonGold, NEON, Enum.PartType.Cylinder)
 	end
-	f.add("UpperTorso", "Sash", Vector3.new(f.sizes.chest.X * 1.02, 0.24 * s, f.sizes.chest.Z * 1.04), CFrame.new(0, -f.sizes.chest.Y * 0.36, 0), HC.gold, FABRIC)
+	-- Legs: armored thigh plates with glowing knee caps and shin guards;
+	-- boots are reinforced for martial arts movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonGold, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), crimson, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), gold, METAL)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.panther = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local gold, gem = Color3.fromRGB(236, 190, 84), Color3.fromRGB(180, 120, 255)
-	-- Onyx: a crystal crest and chest gem, gold trims and gold claws.
-	Figure.Face(f, "lens", { width = 0.36, height = 0.2, slant = 0.36, lens = gem })
-	f.add("Head", "CrystalCrest", Vector3.new(0.16, 0.5, 0.5) * s, CFrame.new(0, h.Y * 0.5, 0), gem, NEON, "wedge")
+	local onyx, gold, neonViolet = Color3.fromRGB(24, 28, 39), Color3.fromRGB(236, 190, 84), Color3.fromRGB(180, 120, 255)
+	-- Vibranium King: sleek black suit with glowing violet accents,
+	-- golden claws and chest gem; silhouette reads as royal protector
+	-- even at thumbnail size.
+	-- Head: masked face with angular eye lenses and crystal crest.
+	f.add("Head", "MaskShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), onyx, METAL)
+	f.add("Head", "CrystalCrest", Vector3.new(0.16 * s, 0.5 * s, 0.5 * s), CFrame.new(0, h.Y * 0.5, 0), neonViolet, NEON, "wedge")
 	for _, side in ipairs({ -1, 1 }) do
-		for i = -1, 1 do f.add(side < 0 and "LeftHand" or "RightHand", "Claw", Vector3.new(0.06, 0.34, 0.06) * s, CFrame.new(i * 0.16 * s, -f.sizes.hand.Y / 2 - 0.14 * s, -0.12 * s), gold, METAL) end
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.28, h.Y * 0.2, 0.06 * s), f.face(side * 0.24, 0.12, -0.02), neonViolet, NEON, "wedge")
+	end
+	-- Torso: fitted vibranium weave with central gem, diagonal harness
+	-- and utility belt; gold trim lines the torso edges.
+	f.add("UpperTorso", "WeaveFront", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), onyx, METAL)
+	f.add("UpperTorso", "ChestGem", Vector3.new(0.34 * s, 0.34 * s, 0.08 * s), CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, math.pi / 4), neonViolet, NEON)
+	for _, side in ipairs({ -1, 1 }) do
 		f.add("UpperTorso", "GoldTrim", Vector3.new(0.12 * s, c.Y * 0.9, 0.06 * s), CFrame.new(side * c.X * 0.3, 0, -c.Z / 2 - 0.03 * s), gold, METAL)
 	end
-	f.add("UpperTorso", "ChestGem", Vector3.new(0.34, 0.34, 0.08) * s, CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, math.pi / 4), gem, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, gold, METAL)
+	belt(f, onyx, gold)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; three golden claws extend from each hand.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), onyx, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonViolet, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), onyx, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), gold, METAL)
+		for i = -1, 1 do
+			f.add(handName, "Claw", Vector3.new(0.06 * s, 0.34 * s, 0.06 * s), CFrame.new(i * 0.16 * s, -f.sizes.hand.Y / 2 - 0.14 * s, -0.12 * s), gold, METAL)
+		end
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced for silent stalking.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), onyx, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonViolet, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), onyx, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), onyx, METAL)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.2 * s, 0))
 end
 HERO_EXTRAS.vision = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	f.add("Head", "MindGem", Vector3.new(0.24, 0.3, 0.08) * s, f.face(0, 0.5, 0.03) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(120, 240, 255), NEON)
-	cape(f, Color3.fromRGB(150, 220, 255), 3.4)
-	f.add("UpperTorso", "ChestDiamond", Vector3.new(0.6, 0.6, 0.06) * s, CFrame.new(0, 0.1 * s, -c.Z / 2 - 0.03 * s) * CFrame.Angles(0, 0, math.pi / 4), HC.gold, METAL)
+	local emerald, gold, neonCyan = Color3.fromRGB(40, 180, 80), HC.gold, Color3.fromRGB(120, 240, 255)
+	-- Synthetic Avenger: sleek green/gold android body with glowing
+	-- mind gem, chest diamond and flowing cape; silhouette reads as
+	-- density-shifting sentinel even at thumbnail size.
+	-- Head: smooth android helm with forehead mind gem and visor band.
+	f.add("Head", "HelmShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), emerald, METAL)
+	f.add("Head", "MindGem", Vector3.new(0.24 * s, 0.3 * s, 0.08 * s), f.face(0, 0.5, 0.03) * CFrame.Angles(0, 0, math.pi / 4), neonCyan, NEON)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.76, 0.14 * s, 0.06 * s), f.face(0, 0.12, -0.02), neonCyan, NEON)
+	-- Torso: fitted android chassis with central diamond, diagonal
+	-- harness and utility belt; cape anchors at the shoulders.
+	f.add("UpperTorso", "ChassisFront", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), emerald, METAL)
+	f.add("UpperTorso", "ChestDiamond", Vector3.new(0.6 * s, 0.6 * s, 0.06 * s), CFrame.new(0, 0.1 * s, -c.Z / 2 - 0.03 * s) * CFrame.Angles(0, 0, math.pi / 4), gold, METAL)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, gold, METAL)
+	belt(f, gold, neonCyan)
+	cape(f, Color3.fromRGB(150, 220, 255), 3.4, gold)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; hands are smooth android constructs.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), emerald, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonCyan, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), emerald, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), gold, METAL)
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are smooth android constructs.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), emerald, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonCyan, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), emerald, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), gold, METAL)
+	end
 	muzzle(f, "Head", Vector3.new(0, h.Y * 0.25, -h.Z / 2 - 0.1 * s))
 end
 HERO_EXTRAS.warmachine = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	Figure.Face(f, "slits", { glow = Color3.fromRGB(255, 190, 90) })
-	f.add("Head", "FacePlate", Vector3.new(h.X * 0.66, h.Y * 0.6, 0.08 * s), f.face(0, -0.1, -0.02), HC.steel:Lerp(HC.ink, 0.2), METAL)
-	f.add("UpperTorso", "ShoulderCannon", Vector3.new(0.5, 0.5, 1.8) * s, CFrame.new(c.X * 0.36, c.Y / 2 + 0.3 * s, -0.2 * s), HC.ink, METAL)
-	f.add("UpperTorso", "CannonMuzzle", Vector3.new(0.34, 0.34, 0.2) * s, CFrame.new(c.X * 0.36, c.Y / 2 + 0.3 * s, -1.1 * s), Color3.fromRGB(255, 190, 90), NEON)
-	f.disc("UpperTorso", "Reactor", 0.36 * s, 0.06 * s, CFrame.new(0, 0.2 * s, -c.Z / 2 - 0.04 * s), HC.energy, NEON)
+	local gunmetal, steel, neonOrange = Color3.fromRGB(60, 65, 75), HC.steel, Color3.fromRGB(255, 140, 40)
+	-- Heavy Ordnance: bulky armored suit with shoulder-mounted cannon,
+	-- glowing reactor core and reinforced plating; silhouette reads as
+	-- walking arsenal even at thumbnail size.
+	-- Head: armored helmet with glowing eye slits and faceplate.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.96, h.Y * 0.94, h.Z * 0.96), CFrame.new(), gunmetal, METAL)
+	f.add("Head", "EyeSlits", Vector3.new(h.X * 0.72, 0.14 * s, 0.07 * s), f.face(0, 0.12, -0.02), neonOrange, NEON)
+	f.add("Head", "FacePlate", Vector3.new(h.X * 0.66, h.Y * 0.6, 0.08 * s), f.face(0, -0.1, -0.02), steel, METAL)
+	-- Torso: heavy chest armor with central reactor, diagonal harness
+	-- and utility belt; shoulder cannon mounts on the right side.
+	f.add("UpperTorso", "ChestArmor", Vector3.new(c.X * 0.92, c.Y * 0.86, 0.14 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), gunmetal, METAL)
+	f.disc("UpperTorso", "ReactorCore", 0.36 * s, 0.06 * s, CFrame.new(0, 0.2 * s, -c.Z / 2 - 0.04 * s), neonOrange, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, steel, METAL)
+	belt(f, steel, neonOrange)
+	f.add("UpperTorso", "ShoulderCannon", Vector3.new(0.52 * s, 0.52 * s, 1.82 * s), CFrame.new(c.X * 0.36, c.Y / 2 + 0.3 * s, -0.2 * s), gunmetal, METAL)
+	f.add("UpperTorso", "CannonMuzzle", Vector3.new(0.34 * s, 0.34 * s, 0.2 * s), CFrame.new(c.X * 0.36, c.Y / 2 + 0.3 * s, -1.1 * s), neonOrange, NEON)
+	-- Arms: heavy pauldrons with neon trim, forearm bracers and
+	-- gauntlets; hands are reinforced for weapon recoil.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.28, 0.54, 1.22), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.12), gunmetal, METAL, "wedge")
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.06, 0.07 * s, f.sizes.upperArm.Z * 1.02), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.12), neonOrange, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.14, 0.6, 1.12), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), gunmetal, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.18, 0.72, 1.16), CFrame.new(0, -f.sizes.hand.Y * 0.08, 0), steel, METAL)
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are heavy and reinforced for stability.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), gunmetal, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), neonOrange, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), gunmetal, METAL)
+		f.add(footName, "HeavyBoot", f.sizes.foot * Vector3.new(1.2, 0.64, 1.24), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), gunmetal, METAL)
+	end
 	muzzle(f, "UpperTorso", Vector3.new(c.X * 0.36, c.Y / 2 + 0.3 * s, -1.3 * s))
 end
 HERO_EXTRAS.starlord = function(f)
-	local s, h = f.scale, f.parts.Head.Size
-	Figure.Face(f, "lens", { lens = Color3.fromRGB(120, 230, 255), rim = HC.steel, glow = true, width = 0.42, height = 0.3, slant = 0.2 })
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local maroon, steel, neonCyan = Color3.fromRGB(120, 30, 40), HC.steel, Color3.fromRGB(120, 230, 255)
+	-- Cosmic Outlaw: long leather coat with neon accents, glowing visor
+	-- mask and dual blasters; silhouette reads as space pirate even at
+	-- thumbnail size.
+	-- Head: sleek mask with wide glowing visor and ear pieces.
+	f.add("Head", "MaskShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), maroon, FABRIC)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.78, 0.18 * s, 0.08 * s), f.face(0, 0.12, -0.02), neonCyan, NEON)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "EarPiece", Vector3.new(0.12, 0.44, 0.44) * s, CFrame.new(side * h.X * 0.52, 0, 0), HC.steel, METAL)
-		local hand = side < 0 and "LeftHand" or "RightHand"
-		f.add(hand, "Blaster", Vector3.new(0.2, 0.72, 0.34) * s, CFrame.new(0, -0.36 * s, -0.08 * s), HC.steel, METAL)
-		f.add(hand, "BlasterGlow", Vector3.new(0.12, 0.12, 0.12) * s, CFrame.new(0, -0.74 * s, -0.08 * s), Color3.fromRGB(160, 240, 255), NEON)
+		f.add("Head", "EarPiece", Vector3.new(0.14 * s, 0.46 * s, 0.46 * s), CFrame.new(side * h.X * 0.52, 0, 0), steel, METAL)
 	end
-	f.add("UpperTorso", "Coat", Vector3.new(f.sizes.chest.X * 1.06, f.sizes.chest.Y * 1.5, f.sizes.chest.Z * 1.08), CFrame.new(0, -f.sizes.chest.Y * 0.28, 0.02 * s), Color3.fromRGB(36, 126, 146), FABRIC)
-	muzzle(f, "RightHand", Vector3.new(0, -0.8 * s, -0.08 * s))
+	-- Torso: long trench coat with central seam, diagonal harness and
+	-- utility belt; coat tails extend below the waist for dramatic flow.
+	f.add("UpperTorso", "CoatBody", Vector3.new(c.X * 1.08, c.Y * 1.52, c.Z * 1.1), CFrame.new(0, -c.Y * 0.28, 0.02 * s), maroon, FABRIC)
+	f.add("UpperTorso", "CoreSeam", Vector3.new(0.07 * s, c.Y * 0.58, 0.04 * s), CFrame.new(0, 0, -c.Z / 2 - 0.05 * s), neonCyan, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, steel, METAL)
+	belt(f, HC.leather, steel)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and gauntlets;
+	-- both hands grip glowing blasters.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), maroon, FABRIC)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonCyan, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), maroon, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), steel, METAL)
+		f.add(handName, "Blaster", Vector3.new(0.22 * s, 0.74 * s, 0.36 * s), CFrame.new(0, -0.38 * s, -0.1 * s), steel, METAL)
+		f.add(handName, "BlasterGlow", Vector3.new(0.14 * s, 0.14 * s, 0.14 * s), CFrame.new(0, -0.76 * s, -0.1 * s), neonCyan, NEON, "ball")
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin guards;
+	-- boots are reinforced for zero-gravity movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), maroon, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonCyan, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), maroon, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), steel, METAL)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -0.8 * s, -0.1 * s))
 end
 HERO_EXTRAS.groot = function(f)
-	local s, h = f.scale, f.parts.Head.Size
-	-- Bark ridges, a crown of twigs and leaves on the shoulders.
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local bark, leaf, neonGreen = Color3.fromRGB(96, 70, 46), Color3.fromRGB(96, 170, 72), Color3.fromRGB(120, 255, 140)
+	-- Flora Guardian: living wood body with glowing green veins,
+	-- leafy crown and root-like limbs; silhouette reads as nature
+	-- sentinel even at thumbnail size.
+	-- Head: wooden face with glowing eyes and leafy crown.
+	f.add("Head", "WoodFace", Vector3.new(h.X * 0.92, h.Y * 0.9, h.Z * 0.92), CFrame.new(), bark, Enum.Material.Wood)
 	for _, side in ipairs({ -1, 1 }) do
-		f.rod("Head", "Twig", Vector3.new(side * h.X * 0.2, h.Y * 0.4, 0), Vector3.new(side * h.X * 0.5, h.Y * 0.95, 0.1 * s), 0.1 * s, Color3.fromRGB(96, 70, 46), Enum.Material.Wood)
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "Leaf", Vector3.new(0.74, 0.16, 0.5) * s, CFrame.new(side * 0.12 * s, f.sizes.upperArm.Y * 0.45, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.35), Color3.fromRGB(96, 170, 72), Enum.Material.SmoothPlastic, "wedge")
-		f.rod(side < 0 and "LeftHand" or "RightHand", "Root", Vector3.new(0, 0, 0), Vector3.new(side * 0.2 * s, -0.7 * s, -0.1 * s), 0.12 * s, Color3.fromRGB(96, 70, 46), Enum.Material.Wood)
+		f.add("Head", "EyeGlow", Vector3.new(0.16 * s, 0.14 * s, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), neonGreen, NEON, "ball")
+		f.rod("Head", "Twig", Vector3.new(side * h.X * 0.2, h.Y * 0.4, 0), Vector3.new(side * h.X * 0.5, h.Y * 0.95, 0.1 * s), 0.1 * s, bark, Enum.Material.Wood)
 	end
-	local c = f.sizes.chest
 	for i = -1, 1 do
-		f.rod("UpperTorso", "Bark", Vector3.new(i * c.X * 0.32, -c.Y * 0.45, -c.Z / 2 - 0.025 * s), Vector3.new(i * c.X * 0.18, c.Y * 0.44, -c.Z / 2 - 0.025 * s), 0.16 * s, Color3.fromRGB(88, 62, 40), Enum.Material.Wood)
+		f.add("Head", "CrownLeaf", Vector3.new(0.36 * s, 0.1 * s, 0.24 * s), CFrame.new(i * h.X * 0.26, h.Y * 0.56, i * 0.1 * s) * CFrame.Angles(0.2, i * 0.6, i * 0.5), leaf, Enum.Material.Grass, "ball")
 	end
-	-- A few leaves sprouting from the crown.
-	for i = -1, 1 do f.add("Head", "Leaf", Vector3.new(0.36, 0.1, 0.24) * s, CFrame.new(i * h.X * 0.26, h.Y * 0.56, i * 0.1 * s) * CFrame.Angles(0.2, i * 0.6, i * 0.5), Color3.fromRGB(110, 190, 80), Enum.Material.Grass, "ball") end
+	-- Torso: wooden chest with glowing veins and bark ridges;
+	-- no fabric, only living wood texture.
+	f.add("UpperTorso", "WoodChest", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), bark, Enum.Material.Wood)
+	f.add("UpperTorso", "VeinCore", Vector3.new(0.08 * s, c.Y * 0.6, 0.04 * s), CFrame.new(0, 0, -c.Z / 2 - 0.06 * s), neonGreen, NEON)
+	for i = -1, 1 do
+		f.rod("UpperTorso", "BarkRidge", Vector3.new(i * c.X * 0.32, -c.Y * 0.45, -c.Z / 2 - 0.025 * s), Vector3.new(i * c.X * 0.18, c.Y * 0.44, -c.Z / 2 - 0.025 * s), 0.16 * s, bark, Enum.Material.Wood)
+	end
+	-- Arms: wooden limbs with leafy shoulders and root-like hands;
+	-- glowing veins trace the arm length.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "WoodLimb", f.sizes.upperArm * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.14, 0), bark, Enum.Material.Wood)
+		f.add(armName, "LeafShoulder", Vector3.new(0.74 * s, 0.16 * s, 0.5 * s), CFrame.new(side * 0.12 * s, f.sizes.upperArm.Y * 0.45, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.35), leaf, Enum.Material.Grass, "wedge")
+		f.add(forearmName, "WoodForearm", f.sizes.lowerArm * Vector3.new(1.1, 0.68, 1.08), CFrame.new(0, f.sizes.lowerArm.Y * 0.08, 0), bark, Enum.Material.Wood)
+		f.rod(handName, "RootHand", Vector3.new(0, 0, 0), Vector3.new(side * 0.2 * s, -0.7 * s, -0.1 * s), 0.12 * s, bark, Enum.Material.Wood)
+	end
+	-- Legs: wooden thighs with glowing knee caps and root-like feet;
+	-- no boots, only living wood extending into the ground.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "WoodThigh", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), bark, Enum.Material.Wood)
+		f.add(lowerName, "KneeGlow", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonGreen, NEON, "ball")
+		f.add(lowerName, "WoodShin", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), bark, Enum.Material.Wood)
+		f.add(footName, "RootFoot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), bark, Enum.Material.Wood)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.3 * s, 0))
 end
 HERO_EXTRAS.wanda = function(f)
-	local s, h = f.scale, f.parts.Head.Size
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local crimson, chaos, gold = Color3.fromRGB(160, 30, 50), Color3.fromRGB(240, 200, 90), Color3.fromRGB(220, 170, 70)
+	-- Chaos Weaver: regal crimson gown with golden crown tiara, flowing
+	-- cape and chaos orbs hovering above both palms; silhouette reads as
+	-- arcane sovereign even at thumbnail size.
+	-- Head: crowned tiara with side spikes and glowing brow gem.
+	f.add("Head", "TiaraBase", Vector3.new(h.X * 0.88, h.Y * 0.22, h.Z * 0.88), CFrame.new(0, h.Y * 0.42, 0), gold, METAL)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "Crown", Vector3.new(0.1, 0.5, 0.08) * s, f.face(side * 0.2, 0.62, 0.03) * CFrame.Angles(0, 0, side * 0.45), Color3.fromRGB(220, 170, 70), METAL)
-		local glow = f.add(side < 0 and "LeftHand" or "RightHand", "ChaosSpell", Vector3.new(0.62, 0.62, 0.62) * s, CFrame.new(0, -0.5 * s, -0.1 * s), Color3.fromRGB(240, 200, 90), NEON, "ball")
-		glow.Transparency = 0.2
+		f.add("Head", "CrownSpike", Vector3.new(0.1 * s, 0.52 * s, 0.08 * s), f.face(side * 0.22, 0.64, 0.02) * CFrame.Angles(0, 0, side * 0.42), gold, METAL, "wedge")
 	end
-	cape(f, Color3.fromRGB(120, 40, 160), 3.0)
-	muzzle(f, "RightHand", Vector3.new(0, -0.5 * s, -0.1 * s))
+	f.add("Head", "BrowGem", Vector3.new(0.16 * s, 0.16 * s, 0.06 * s), f.face(0, 0.32, -0.04), chaos, NEON, "ball")
+	-- Torso: fitted bodice with central gem, layered skirt segments and
+	-- sash; cape anchors at the shoulders.
+	f.add("UpperTorso", "BodiceGem", Vector3.new(0.22 * s, 0.28 * s, 0.06 * s), CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.04 * s), chaos, NEON)
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.1
+		f.add("LowerTorso", "SkirtSegment" .. i, Vector3.new(c.X * 0.72 * width, 0.2 * s, 0.1 * s), CFrame.new(0, -c.Y * 0.22 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), crimson, FABRIC)
+	end
+	belt(f, HC.leather, gold)
+	cape(f, Color3.fromRGB(120, 40, 160), 3.2, gold)
+	-- Arms: pauldrons with gold trim, forearm bracers and chaos orbs
+	-- hovering above both palms; hands are gloved.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.22, 0.5, 1.18), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), crimson, FABRIC)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.02, 0.07 * s, f.sizes.upperArm.Z * 0.98), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), gold, METAL)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, FABRIC)
+		f.add(handName, "Glove", f.sizes.hand * Vector3.new(1.14, 0.68, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), crimson, FABRIC)
+		local orb = f.add(handName, "ChaosOrb", Vector3.new(0.64 * s, 0.64 * s, 0.64 * s), CFrame.new(0, -0.52 * s, -0.12 * s), chaos, NEON, "ball")
+		orb.Transparency = 0.2
+	end
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- elegant with gold trim.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), gold, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), crimson, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), crimson, FABRIC)
+		f.add(footName, "BootTrim", Vector3.new(f.sizes.foot.X * 0.9, 0.08 * s, f.sizes.foot.Z * 0.9), CFrame.new(0, -f.sizes.foot.Y * 0.28, 0), gold, METAL)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -0.52 * s, -0.12 * s))
 end
 HERO_EXTRAS.strange = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	for _, side in ipairs({ -1, 1 }) do f.add("Head", "Temple", Vector3.new(0.08, 0.3, 0.3) * s, CFrame.new(side * h.X * 0.5, h.Y * 0.1, 0), HC.white, FABRIC) end
-	cape(f, Color3.fromRGB(30, 150, 140), 3.4, Color3.fromRGB(30, 150, 140))
-	belt(f, HC.leather, HC.gold)
-	f.disc("UpperTorso", "Amulet", 0.44 * s, 0.08 * s, CFrame.new(0, c.Y * 0.3, -c.Z / 2 - 0.05 * s), HC.gold, METAL)
-	f.disc("UpperTorso", "AmuletEye", 0.18 * s, 0.05 * s, CFrame.new(0, c.Y * 0.3, -c.Z / 2 - 0.1 * s), Color3.fromRGB(255, 200, 90), NEON)
-	-- A glowing sigil in front of the left hand.
+	local teal, gold, amber = Color3.fromRGB(30, 150, 140), HC.gold, Color3.fromRGB(255, 200, 90)
+	-- Mystic Sorcerer: flowing teal robes with golden amulet, high collar,
+	-- levitation cloak and spell glyphs orbiting the left hand; silhouette
+	-- reads as arcane master even at thumbnail size.
+	-- Head: tall mystic hat with folded brim and temple ornaments.
+	f.add("Head", "HatBrim", Vector3.new(h.X * 1.1, 0.12 * s, h.Z * 1.1), CFrame.new(0, h.Y * 0.48, 0), teal, FABRIC)
+	f.add("Head", "HatCone", Vector3.new(h.X * 0.7, h.Y * 0.6, h.Z * 0.7), CFrame.new(0, h.Y * 0.78, 0) * CFrame.Angles(-0.1, 0, 0), teal, FABRIC, "wedge")
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "TempleOrnament", Vector3.new(0.1 * s, 0.32 * s, 0.28 * s), CFrame.new(side * h.X * 0.48, h.Y * 0.12, 0), gold, METAL)
+	end
+	-- Torso: layered robes with central amulet, high collar and sash;
+	-- cape anchors at the shoulders with golden clasp.
+	f.add("UpperTorso", "HighCollar", Vector3.new(c.X * 0.82, 0.22 * s, c.Z * 0.78), CFrame.new(0, c.Y * 0.46, 0), teal, FABRIC)
+	f.disc("UpperTorso", "AmuletBase", 0.48 * s, 0.08 * s, CFrame.new(0, c.Y * 0.28, -c.Z / 2 - 0.05 * s), gold, METAL)
+	f.disc("UpperTorso", "AmuletEye", 0.2 * s, 0.06 * s, CFrame.new(0, c.Y * 0.28, -c.Z / 2 - 0.1 * s), amber, NEON)
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.1
+		f.add("LowerTorso", "RobeLayer" .. i, Vector3.new(c.X * 0.74 * width, 0.22 * s, 0.12 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), teal, FABRIC)
+	end
+	belt(f, HC.leather, gold)
+	cape(f, teal, 3.6, gold)
+	-- Arms: wide sleeves with gold trim, forearm wraps and spell glyphs
+	-- orbiting the left hand; right hand holds a mystic gesture.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Sleeve", f.sizes.upperArm * Vector3.new(1.24, 0.52, 1.2), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), teal, FABRIC)
+		f.add(armName, "SleeveTrim", Vector3.new(f.sizes.upperArm.X * 1.04, 0.08 * s, f.sizes.upperArm.Z * 1.0), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), gold, METAL)
+		f.add(forearmName, "Wrap", f.sizes.lowerArm * Vector3.new(1.14, 0.6, 1.12), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), teal, FABRIC)
+		f.add(handName, "Glove", f.sizes.hand * Vector3.new(1.16, 0.7, 1.14), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), teal, FABRIC)
+	end
+	-- Spell glyphs orbit the left hand in a ring formation.
 	for i = 0, 7 do
 		local angle = i * math.pi / 4
-		f.add("LeftHand", "SpellGlyph", Vector3.new(0.5, 0.06, 0.05) * s, CFrame.new(math.sin(angle) * 0.62 * s, -0.4 * s + math.cos(angle) * 0.62 * s, -0.5 * s) * CFrame.Angles(0, 0, -angle), HC.gold, NEON)
+		f.add("LeftHand", "SpellGlyph", Vector3.new(0.48 * s, 0.07 * s, 0.06 * s), CFrame.new(math.sin(angle) * 0.64 * s, -0.42 * s + math.cos(angle) * 0.64 * s, -0.52 * s) * CFrame.Angles(0, 0, -angle), gold, NEON)
 	end
-	muzzle(f, "LeftHand", Vector3.new(0, -0.4 * s, -0.6 * s))
+	-- Legs: robe skirts covering thigh plates, shin wraps and soft boots
+	-- with gold buckles for silent mystical movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "RobeSkirt", f.sizes.upperLeg * Vector3.new(1.18, 0.7, 1.16), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), teal, FABRIC)
+		f.add(lowerName, "ShinWrap", f.sizes.lowerLeg * Vector3.new(1.1, 0.68, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), teal, FABRIC)
+		f.add(footName, "SoftBoot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), teal, FABRIC)
+		f.add(footName, "BootBuckle", Vector3.new(f.sizes.foot.X * 0.5, 0.1 * s, f.sizes.foot.Z * 0.4), CFrame.new(0, -f.sizes.foot.Y * 0.22, -f.sizes.foot.Z * 0.2), gold, METAL)
+	end
+	muzzle(f, "LeftHand", Vector3.new(0, -0.42 * s, -0.62 * s))
 end
 HERO_EXTRAS.ghostrider = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local spirit, ember = Color3.fromRGB(110, 230, 255), Color3.fromRGB(200, 80, 30)
-	-- Ember Rider: an ember-orange helmet with a glowing visor, blue spirit
-	-- flames on top and an ember mark on the riding jacket.
-	f.add("Head", "Visor", Vector3.new(h.X * 0.8, 0.22 * s, 0.08 * s), f.face(0, 0.1, 0.03), spirit, NEON)
+	local spirit, ember, ash = Color3.fromRGB(110, 230, 255), Color3.fromRGB(200, 80, 30), Color3.fromRGB(40, 36, 44)
+	-- Hellfire Rider: skeletal helmet with blazing spirit visor, crown of
+	-- ethereal flames, charred leather jacket with ember sigils and spiked
+	-- pauldrons; silhouette reads as supernatural avenger even at distance.
+	-- Head: skull-like helm with recessed glowing visor and flame crown.
+	f.add("Head", "SkullBase", Vector3.new(h.X * 0.92, h.Y * 0.9, h.Z * 0.92), CFrame.new(), HC.white, METAL)
+	f.add("Head", "SpiritVisor", Vector3.new(h.X * 0.72, 0.18 * s, 0.06 * s), f.face(0, 0.08, -0.04), spirit, NEON)
 	for i = -1, 1 do
-		local flame = f.add("Head", "Flame", Vector3.new(0.3, 0.7 - math.abs(i) * 0.16, 0.3) * s, CFrame.new(i * h.X * 0.22, h.Y * 0.6, 0.05 * s), spirit:Lerp(HC.white, math.abs(i) * 0.2), NEON, "ball")
-		flame.Transparency = 0.2
+		local height = 0.72 - math.abs(i) * 0.14
+		local flame = f.add("Head", "CrownFlame" .. i, Vector3.new(0.28 * s, height * s, 0.28 * s), CFrame.new(i * h.X * 0.24, h.Y * 0.58 + math.abs(i) * 0.06 * s, 0.04 * s), spirit:Lerp(HC.white, math.abs(i) * 0.18), NEON, "ball")
+		flame.Transparency = 0.18
 	end
+	f.add("Head", "JawRidge", Vector3.new(h.X * 0.54, h.Y * 0.22, 0.1 * s), f.face(0, -0.44, -0.02), HC.steel, METAL, "wedge")
+	-- Torso: charred riding jacket with central ember sigil, layered collar
+	-- and harness straps; spine ridge hints at supernatural armor beneath.
+	f.add("UpperTorso", "JacketBody", c * Vector3.new(1.08, 1.04, 1.1), CFrame.new(), ash, FABRIC)
+	f.add("UpperTorso", "CollarLip", Vector3.new(c.X * 0.82, 0.18 * s, c.Z * 0.78), CFrame.new(0, c.Y * 0.48, 0), ash, FABRIC)
+	f.add("UpperTorso", "EmberSigil", Vector3.new(0.42 * s, 0.42 * s, 0.06 * s), CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(255, 140, 50), NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, HC.leather, FABRIC)
+	belt(f, HC.leather, HC.steel)
+	-- Arms: spiked pauldrons with ember trim, forearm wraps and gauntlets;
+	-- hands are gloved with reinforced knuckles for chain-whip combat.
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "ShoulderPad", f.sizes.upperArm * Vector3.new(1.2, 0.45, 1.2), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0), ember, METAL)
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "SpikedPauldron", f.sizes.upperArm * Vector3.new(1.24, 0.52, 1.22), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.12), ember, METAL, "wedge")
+		f.add(armName, "EmberTrim", Vector3.new(f.sizes.upperArm.X * 1.04, 0.08 * s, f.sizes.upperArm.Z * 1.0), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.12), Color3.fromRGB(255, 140, 50), NEON)
+		f.add(forearmName, "Wrap", f.sizes.lowerArm * Vector3.new(1.12, 0.6, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), ash, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.16, 0.7, 1.14), CFrame.new(0, -f.sizes.hand.Y * 0.08, 0), HC.steel, METAL)
 	end
-	f.add("UpperTorso", "Jacket", c * Vector3.new(1.06, 1.02, 1.08), CFrame.new(), Color3.fromRGB(40, 36, 44), FABRIC)
-	f.add("UpperTorso", "EmberMark", Vector3.new(0.4, 0.4, 0.06) * s, CFrame.new(0, c.Y * 0.16, -c.Z * 0.54 - 0.04 * s) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(255, 140, 50), NEON)
+	-- Legs: thigh plates with knee caps and shin guards; boots are heavy
+	-- and reinforced for motorcycle landings and hellfire stomps.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), ash, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), HC.steel, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), ash, FABRIC)
+		f.add(footName, "HeavyBoot", f.sizes.foot * Vector3.new(1.22, 0.66, 1.26), CFrame.new(0, -f.sizes.foot.Y * 0.12, 0), ash, FABRIC)
+		f.add(footName, "BootBuckle", Vector3.new(f.sizes.foot.X * 0.5, 0.1 * s, f.sizes.foot.Z * 0.4), CFrame.new(0, -f.sizes.foot.Y * 0.24, -f.sizes.foot.Z * 0.2), HC.steel, METAL)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.captainmarvel = function(f)
-	local s, c = f.scale, f.sizes.chest
-	local sun = Color3.fromRGB(255, 160, 40)
-	-- Solaria: a sun on the chest, a golden sash and fists of light.
-	f.disc("UpperTorso", "SunDisc", 0.3 * s, 0.06 * s, CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.05 * s), sun, NEON)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local crimson, gold, photon = Color3.fromRGB(160, 30, 50), Color3.fromRGB(255, 200, 60), Color3.fromRGB(255, 220, 110)
+	-- Nova Prime: regal flight suit with radiant sun emblem, golden sash,
+	-- photon-charged gauntlets and aerodynamic helmet; silhouette reads as
+	-- cosmic powerhouse even at thumbnail size.
+	-- Head: streamlined helmet with glowing visor band and crest fin.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.92, h.Y * 0.9, h.Z * 0.92), CFrame.new(), crimson, METAL)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.82, 0.16 * s, 0.08 * s), f.face(0, 0.12, -0.02), photon, NEON)
+	f.add("Head", "CrestFin", Vector3.new(0.12 * s, h.Y * 0.42, h.Z * 0.88), CFrame.new(0, h.Y * 0.38, 0), gold, METAL, "wedge")
+	-- Torso: fitted flight suit with central sun emblem and radiating rays,
+	-- diagonal sash and reinforced collar; belt anchors the waist.
+	f.disc("UpperTorso", "SunEmblem", 0.32 * s, 0.07 * s, CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.05 * s), gold, METAL)
 	for i = 0, 7 do
-		local a = i * math.pi / 4
-		f.add("UpperTorso", "SunRay", Vector3.new(0.08, 0.22, 0.05) * s, CFrame.new(math.sin(a) * 0.42 * s, c.Y * 0.18 + math.cos(a) * 0.42 * s, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -a), sun, NEON)
+		local angle = i * math.pi / 4
+		f.add("UpperTorso", "SunRay" .. i, Vector3.new(0.08 * s, 0.24 * s, 0.05 * s), CFrame.new(math.sin(angle) * 0.44 * s, c.Y * 0.16 + math.cos(angle) * 0.44 * s, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -angle), photon, NEON)
 	end
-	f.add("UpperTorso", "Sash", Vector3.new(c.X * 1.03, 0.2 * s, c.Z * 1.04), CFrame.new(0, -c.Y * 0.38, 0), sun, FABRIC)
+	f.add("UpperTorso", "Sash", Vector3.new(c.X * 1.04, 0.22 * s, c.Z * 1.06), CFrame.new(0, -c.Y * 0.36, 0) * CFrame.Angles(0, 0, -0.18), gold, FABRIC)
+	f.add("UpperTorso", "CollarReinforce", Vector3.new(c.X * 0.78, 0.18 * s, c.Z * 0.76), CFrame.new(0, c.Y * 0.46, 0), crimson, METAL)
+	belt(f, HC.leather, gold)
+	-- Arms: pauldrons with gold trim, forearm bracers and photon-charged
+	-- gauntlets; hands glow with contained stellar energy.
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftHand" or "RightHand", "PhotonFist", Vector3.new(0.7, 0.62, 0.7) * s, CFrame.new(0, -0.05 * s, 0), Color3.fromRGB(255, 220, 110), NEON, "ball").Transparency = 0.45
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.24, 0.52, 1.2), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), crimson, METAL, "wedge")
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.04, 0.08 * s, f.sizes.upperArm.Z * 1.0), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), gold, METAL)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, METAL)
+		local fist = f.add(handName, "PhotonGauntlet", f.sizes.hand * Vector3.new(1.18, 0.72, 1.16), CFrame.new(0, -f.sizes.hand.Y * 0.08, 0), photon, NEON)
+		fist.Transparency = 0.4
+	end
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- reinforced for high-velocity landings with gold accent stripes.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), gold, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), crimson, METAL)
+		f.add(footName, "LandingBoot", f.sizes.foot * Vector3.new(1.2, 0.64, 1.24), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), crimson, METAL)
+		f.add(footName, "BootStripe", Vector3.new(f.sizes.foot.X * 0.9, 0.08 * s, f.sizes.foot.Z * 0.9), CFrame.new(0, -f.sizes.foot.Y * 0.28, 0), gold, METAL)
 	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.silversurfer = function(f)
-	local s = f.scale
-	local ring = Color3.fromRGB(255, 230, 140)
-	-- Orbit: a ring of light circles above the shoulders with a small moon.
-	local r = 1.5 * s
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local chrome, cosmic, starlight = Color3.fromRGB(200, 210, 220), Color3.fromRGB(100, 180, 255), Color3.fromRGB(255, 230, 140)
+	-- Cosmic Herald: sleek metallic skin with orbiting energy rings,
+	-- celestial crest and glowing moon orb; silhouette reads as silver
+	-- sentinel even at thumbnail size.
+	-- Head: smooth helm with raised crest fin and recessed eye band.
+	f.add("Head", "HelmShell", Vector3.new(h.X * 0.92, h.Y * 0.9, h.Z * 0.92), CFrame.new(), chrome, METAL)
+	f.add("Head", "CrestFin", Vector3.new(0.1 * s, h.Y * 0.44, h.Z * 0.86), CFrame.new(0, h.Y * 0.4, 0), chrome, METAL, "wedge")
+	f.add("Head", "EyeBand", Vector3.new(h.X * 0.78, 0.14 * s, 0.06 * s), f.face(0, 0.12, -0.02), cosmic, NEON)
+	-- Torso: seamless metallic torso with orbiting energy rings and
+	-- central cosmic sigil; no fabric or seams to break the flow.
+	f.add("UpperTorso", "CosmicSigil", Vector3.new(0.28 * s, 0.28 * s, 0.06 * s), CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.04 * s), starlight, NEON)
+	local orbitRadius = 1.52 * s
 	for i = 0, 11 do
-		local a0, a1 = i * math.pi / 6, (i + 1) * math.pi / 6
-		f.rod("UpperTorso", "OrbitRing", Vector3.new(math.cos(a0) * r, 0.9 * s, math.sin(a0) * r), Vector3.new(math.cos(a1) * r, 0.9 * s, math.sin(a1) * r), 0.08 * s, ring, NEON)
+		local a0 = i * math.pi / 6
+		local a1 = (i + 1) * math.pi / 6
+		f.rod("UpperTorso", "OrbitSegment" .. i, Vector3.new(math.cos(a0) * orbitRadius, 0.92 * s, math.sin(a0) * orbitRadius), Vector3.new(math.cos(a1) * orbitRadius, 0.92 * s, math.sin(a1) * orbitRadius), 0.07 * s, starlight, NEON)
 	end
-	f.add("UpperTorso", "Moon", Vector3.new(0.4, 0.4, 0.4) * s, CFrame.new(r, 0.9 * s, 0), ring, NEON, "ball")
+	f.add("UpperTorso", "MoonOrb", Vector3.new(0.38 * s, 0.38 * s, 0.38 * s), CFrame.new(orbitRadius, 0.92 * s, 0), starlight, NEON, "ball")
+	-- Arms: seamless metallic limbs with subtle joint rings; hands are
+	-- smooth gauntlets that channel cosmic energy.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "JointRing", Vector3.new(f.sizes.upperArm.X * 1.02, 0.06 * s, f.sizes.upperArm.Z * 1.02), CFrame.new(0, -f.sizes.upperArm.Y * 0.46, 0), cosmic, METAL)
+		f.add(forearmName, "JointRing", Vector3.new(f.sizes.lowerArm.X * 1.02, 0.06 * s, f.sizes.lowerArm.Z * 1.02), CFrame.new(0, -f.sizes.lowerArm.Y * 0.46, 0), cosmic, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.1, 0.66, 1.1), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), chrome, METAL)
+	end
+	-- Legs: seamless metallic legs with knee caps and smooth boots;
+	-- no fabric or armor plates to interrupt the silver flow.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.62, 0.18 * s, f.sizes.lowerLeg.Z * 0.54), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), cosmic, METAL, "ball")
+		f.add(footName, "SmoothBoot", f.sizes.foot * Vector3.new(1.14, 0.6, 1.18), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), chrome, METAL)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.wolverine = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local stripe, orange = Color3.fromRGB(30, 24, 22), Color3.fromRGB(235, 130, 40)
-	-- Fang: tiger stripes, ear tufts and two bone-white claws per hand.
+	local stripe, orange, bone = Color3.fromRGB(30, 24, 22), Color3.fromRGB(235, 130, 40), Color3.fromRGB(240, 232, 214)
+	-- Berserker Feral: tiger-striped suit with pointed ear tufts, mask
+	-- fins and three adamantium claws per hand; silhouette reads as
+	-- feral predator even at thumbnail size.
+	-- Head: masked face with angular eye slits, cheek guards and tall
+	-- ear tufts that break the head outline.
+	f.add("Head", "MaskBase", Vector3.new(h.X * 0.9, h.Y * 0.86, h.Z * 0.9), CFrame.new(), stripe, FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EyeSlit", Vector3.new(h.X * 0.24, h.Y * 0.18, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), orange, NEON, "wedge")
+		f.add("Head", "CheekGuard", Vector3.new(h.X * 0.18, h.Y * 0.32, 0.1 * s), CFrame.new(side * h.X * 0.38, h.Y * 0.06, -0.02 * s) * CFrame.Angles(0, 0, -side * 0.25), orange, FABRIC, "wedge")
+		f.add("Head", "EarTuft", Vector3.new(0.14 * s, 0.48 * s, 0.32 * s), CFrame.new(side * h.X * 0.44, h.Y * 0.52, 0) * CFrame.Angles(0, 0, -side * 0.32), orange, FABRIC, "wedge")
+	end
+	-- Torso: fitted suit with diagonal tiger stripes across the chest
+	-- and abdomen; belt anchors the waist with gold buckle.
 	for i = 0, 2 do
 		for _, side in ipairs({ -1, 1 }) do
-			f.add("UpperTorso", "TigerStripe", Vector3.new(0.5 * s, 0.1 * s, 0.06 * s), CFrame.new(side * c.X * 0.32, c.Y * (0.28 - i * 0.24), -c.Z / 2 - 0.03 * s) * CFrame.Angles(0, 0, side * 0.35), stripe, FABRIC)
+			f.add("UpperTorso", "TigerStripe" .. i .. (side < 0 and "L" or "R"), Vector3.new(0.52 * s, 0.12 * s, 0.07 * s), CFrame.new(side * c.X * 0.34, c.Y * (0.3 - i * 0.24), -c.Z / 2 - 0.03 * s) * CFrame.Angles(0, 0, side * 0.36), stripe, FABRIC)
 		end
 	end
-	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "EarTuft", Vector3.new(0.12, 0.42, 0.3) * s, CFrame.new(side * h.X * 0.42, h.Y * 0.5, 0) * CFrame.Angles(0, 0, -side * 0.3), orange, FABRIC, "wedge")
-		for i = 0, 1 do f.add(side < 0 and "LeftHand" or "RightHand", "AdamantiumClaw", Vector3.new(0.07, 0.62, 0.1) * s, CFrame.new((i - 0.5) * 0.2 * s, -f.sizes.hand.Y / 2 - 0.32 * s, -0.12 * s), Color3.fromRGB(240, 232, 214), METAL) end
-	end
 	belt(f, stripe, HC.gold)
-	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.62 * s, -0.12 * s))
+	-- Arms: shoulder pads with orange trim, forearm wraps and gauntlets;
+	-- three adamantium claws extend from each knuckle row.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "ShoulderPad", f.sizes.upperArm * Vector3.new(1.18, 0.46, 1.14), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), orange, FABRIC)
+		f.add(forearmName, "Wrap", f.sizes.lowerArm * Vector3.new(1.1, 0.58, 1.08), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), stripe, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.68, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), stripe, FABRIC)
+		for i = 0, 2 do
+			f.add(handName, "AdamantiumClaw" .. i, Vector3.new(0.06 * s, 0.68 * s, 0.08 * s), CFrame.new((i - 1) * 0.22 * s, -f.sizes.hand.Y / 2 - 0.36 * s, -0.14 * s), bone, METAL)
+		end
+	end
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- reinforced for feral pounces and clawed landings.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), stripe, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), orange, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), stripe, FABRIC)
+		f.add(footName, "FeralBoot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), stripe, FABRIC)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.68 * s, -0.14 * s))
 end
 HERO_EXTRAS.cyclops = function(f)
-	local s, h = f.scale, f.parts.Head.Size
-	f.add("Head", "Chin", Vector3.new(h.X * 0.6, h.Y * 0.36, 0.1 * s), f.face(0, -0.52, -0.03), HC.skin, FABRIC)
-	f.add("Head", "Visor", Vector3.new(h.X * 0.9, 0.24 * s, 0.14 * s), f.face(0, 0.14, 0.04), Color3.fromRGB(255, 190, 60), NEON)
-	belt(f, Color3.fromRGB(214, 60, 52), Color3.fromRGB(232, 236, 242))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local ruby, blue, steel = Color3.fromRGB(214, 60, 52), Color3.fromRGB(30, 80, 180), Color3.fromRGB(232, 236, 242)
+	-- Optic Blaster: tactical visor with ruby quartz lens, segmented
+	-- blue/steel armor and utility belt; silhouette reads as precision
+	-- leader even at thumbnail size.
+	-- Head: streamlined helm with chin guard and wide optic visor.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.92, h.Y * 0.88, h.Z * 0.92), CFrame.new(), blue, METAL)
+	f.add("Head", "OpticVisor", Vector3.new(h.X * 0.88, 0.22 * s, 0.12 * s), f.face(0, 0.14, -0.02), ruby, NEON)
+	f.add("Head", "ChinGuard", Vector3.new(h.X * 0.54, h.Y * 0.26, 0.1 * s), f.face(0, -0.48, 0.02), steel, METAL, "wedge")
+	-- Torso: fitted chest plate with central seam, abdominal segments
+	-- and utility belt; harness straps cross the torso.
+	f.add("UpperTorso", "ChestPlate", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), blue, METAL)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, steel, METAL)
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.1
+		f.add("LowerTorso", "AbdomenSegment" .. i, Vector3.new(c.X * 0.68 * width, 0.18 * s, 0.1 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.16 * s, -c.Z / 2 - 0.02 * s), blue, METAL)
+	end
+	belt(f, ruby, steel)
+	-- Arms: pauldrons with steel trim, forearm bracers and gauntlets;
+	-- hands are gloved for optic blast control.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.2, 0.48, 1.16), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), blue, METAL, "wedge")
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.02, 0.07 * s, f.sizes.upperArm.Z * 0.98), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), steel, METAL)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.1, 0.56, 1.08), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), blue, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.12, 0.66, 1.1), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), steel, METAL)
+	end
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- reinforced for tactical movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), blue, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), steel, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), blue, METAL)
+		f.add(footName, "TacticalBoot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), blue, METAL)
+	end
 	muzzle(f, "Head", Vector3.new(0, h.Y * 0.07, -h.Z / 2 - 0.2 * s))
 end
 HERO_EXTRAS.storm = function(f)
-	cape(f, Color3.fromRGB(30, 120, 140), 3.4)
-	f.add("Head", "Tiara", Vector3.new(0.5, 0.14, 0.06) * f.scale, f.face(0, 0.46, 0.03), HC.gold, METAL)
-	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * f.scale, 0))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local sky, silver, gold = Color3.fromRGB(30, 120, 140), Color3.fromRGB(200, 210, 220), HC.gold
+	-- Tempest Queen: flowing white gown with golden tiara, billowing cape
+	-- and lightning-charged hands; silhouette reads as weather sovereign
+	-- even at thumbnail size.
+	-- Head: regal tiara with central gem and side wings; hair flows back.
+	f.add("Head", "TiaraBase", Vector3.new(h.X * 0.86, h.Y * 0.18, h.Z * 0.86), CFrame.new(0, h.Y * 0.44, 0), gold, METAL)
+	f.add("Head", "TiaraGem", Vector3.new(0.14 * s, 0.14 * s, 0.06 * s), f.face(0, 0.44, -0.04), sky, NEON, "ball")
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "TiaraWing", Vector3.new(0.22 * s, 0.28 * s, 0.08 * s), CFrame.new(side * h.X * 0.36, h.Y * 0.46, 0) * CFrame.Angles(0, 0, -side * 0.35), gold, METAL, "wedge")
+	end
+	-- Torso: fitted bodice with silver trim, layered skirt segments and
+	-- sash; cape anchors at the shoulders with golden clasps.
+	f.add("UpperTorso", "BodiceFront", Vector3.new(c.X * 0.86, c.Y * 0.8, 0.1 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), HC.white, FABRIC)
+	f.add("UpperTorso", "SilverTrim", Vector3.new(c.X * 0.88, 0.1 * s, 0.08 * s), CFrame.new(0, c.Y * 0.38, -c.Z / 2 - 0.03 * s), silver, METAL)
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.1
+		f.add("LowerTorso", "SkirtSegment" .. i, Vector3.new(c.X * 0.74 * width, 0.22 * s, 0.12 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), HC.white, FABRIC)
+	end
+	belt(f, HC.leather, gold)
+	cape(f, sky, 3.6, gold)
+	-- Arms: pauldrons with silver trim, forearm bracers and gauntlets;
+	-- hands crackle with contained storm energy.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.2, 0.48, 1.16), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), HC.white, FABRIC)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.02, 0.07 * s, f.sizes.upperArm.Z * 0.98), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), silver, METAL)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.1, 0.56, 1.08), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), HC.white, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.12, 0.66, 1.1), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), silver, METAL)
+	end
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- elegant with silver trim for silent storm movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), HC.white, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), silver, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), HC.white, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), HC.white, FABRIC)
+		f.add(footName, "BootTrim", Vector3.new(f.sizes.foot.X * 0.9, 0.08 * s, f.sizes.foot.Z * 0.9), CFrame.new(0, -f.sizes.foot.Y * 0.28, 0), silver, METAL)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.jean = function(f)
-	local s, c = f.scale, f.sizes.chest
-	f.add("UpperTorso", "PhoenixEmblem", Vector3.new(0.5, 0.36, 0.06) * s, CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.03 * s), Color3.fromRGB(255, 150, 210), METAL, "wedge")
-	belt(f, Color3.fromRGB(255, 150, 210))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local rose, phoenix, psychic = Color3.fromRGB(255, 150, 210), Color3.fromRGB(255, 100, 60), Color3.fromRGB(200, 140, 255)
+	-- Phoenix Host: regal rose gown with phoenix emblem, flowing cape and
+	-- psychic flames hovering above both palms; silhouette reads as
+	-- telekinetic sovereign even at thumbnail size.
+	-- Head: circlet with central gem and side ornaments; hair flows back.
+	f.add("Head", "CircletBase", Vector3.new(h.X * 0.86, h.Y * 0.16, h.Z * 0.86), CFrame.new(0, h.Y * 0.44, 0), HC.gold, METAL)
+	f.add("Head", "CircletGem", Vector3.new(0.14 * s, 0.14 * s, 0.06 * s), f.face(0, 0.44, -0.04), phoenix, NEON, "ball")
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftHand" or "RightHand", "Flame", Vector3.new(0.5, 0.7, 0.5) * s, CFrame.new(0, -0.45 * s, 0), Color3.fromRGB(200, 140, 255), NEON, "ball").Transparency = 0.3
+		f.add("Head", "CircletOrnament", Vector3.new(0.18 * s, 0.24 * s, 0.08 * s), CFrame.new(side * h.X * 0.36, h.Y * 0.46, 0) * CFrame.Angles(0, 0, -side * 0.3), HC.gold, METAL, "wedge")
 	end
-	muzzle(f, "RightHand", Vector3.new(0, -0.5 * s, 0))
+	-- Torso: fitted bodice with phoenix emblem, layered skirt segments
+	-- and sash; cape anchors at the shoulders with golden clasps.
+	f.add("UpperTorso", "PhoenixEmblem", Vector3.new(0.52 * s, 0.38 * s, 0.07 * s), CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.04 * s), phoenix, METAL, "wedge")
+	for i = 1, 3 do
+		local width = 1 - (i - 2) * 0.1
+		f.add("LowerTorso", "SkirtSegment" .. i, Vector3.new(c.X * 0.74 * width, 0.22 * s, 0.12 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), rose, FABRIC)
+	end
+	belt(f, rose, HC.gold)
+	cape(f, rose, 3.4, HC.gold)
+	-- Arms: pauldrons with gold trim, forearm bracers and gauntlets;
+	-- psychic flames hover above both palms.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.2, 0.48, 1.16), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), rose, FABRIC)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.02, 0.07 * s, f.sizes.upperArm.Z * 0.98), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), HC.gold, METAL)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.1, 0.56, 1.08), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), rose, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.12, 0.66, 1.1), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), rose, FABRIC)
+		local flame = f.add(handName, "PsychicFlame", Vector3.new(0.52 * s, 0.72 * s, 0.52 * s), CFrame.new(0, -0.48 * s, 0), psychic, NEON, "ball")
+		flame.Transparency = 0.28
+	end
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- elegant with gold trim for silent psychic movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), rose, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), HC.gold, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), rose, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), rose, FABRIC)
+		f.add(footName, "BootTrim", Vector3.new(f.sizes.foot.X * 0.9, 0.08 * s, f.sizes.foot.Z * 0.9), CFrame.new(0, -f.sizes.foot.Y * 0.28, 0), HC.gold, METAL)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -0.52 * s, 0))
 end
 HERO_EXTRAS.iceman = function(f)
-	local s = f.scale
-	for i = -1, 1 do f.add("Head", "IceSpike", Vector3.new(0.2, 0.44, 0.3) * s, CFrame.new(i * 0.34 * s, f.parts.Head.Size.Y * 0.55, 0) * CFrame.Angles(0, 0, -i * 0.3), Color3.fromRGB(210, 246, 255), Enum.Material.Ice, "wedge") end
-	f.add("RightHand", "IceFist", Vector3.new(0.8, 0.8, 0.8) * s, CFrame.new(0, -0.1 * s, 0), Color3.fromRGB(210, 246, 255), Enum.Material.Ice, "ball").Transparency = 0.25
-	muzzle(f, "RightHand", Vector3.new(0, -0.5 * s, 0))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local ice, frost, crystal = Color3.fromRGB(210, 246, 255), Color3.fromRGB(160, 220, 255), Color3.fromRGB(230, 250, 255)
+	-- Cryokinetic: living ice form with crystalline spikes, frost aura
+	-- and glacial gauntlets; silhouette reads as elemental force even
+	-- at thumbnail size.
+	-- Head: icy crown with three central spikes and frosted brow ridge.
+	for i = -1, 1 do
+ local height = 0.48 - math.abs(i) * 0.12
+ f.add("Head", "IceSpike" .. i, Vector3.new(0.22 * s, height * s, 0.32 * s), CFrame.new(i * 0.36 * s, h.Y * 0.56 + math.abs(i) * 0.04 * s, 0) * CFrame.Angles(0, 0, -i * 0.28), ice, Enum.Material.Ice, "wedge")
+	end
+	f.add("Head", "FrostBrow", Vector3.new(h.X * 0.82, h.Y * 0.16, h.Z * 0.22), CFrame.new(0, h.Y * 0.34, -h.Z * 0.1), frost, Enum.Material.Ice)
+	-- Torso: segmented ice armor with crystalline chest plate and
+	-- abdominal ridges; no fabric, only frozen surfaces.
+	f.add("UpperTorso", "ChestCrystal", Vector3.new(c.X * 0.86, c.Y * 0.78, 0.14 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), crystal, Enum.Material.Ice)
+	for i = 1, 3 do
+ local width = 1 - (i - 2) * 0.12
+ f.add("LowerTorso", "AbdomenRidge" .. i, Vector3.new(c.X * 0.66 * width, 0.2 * s, 0.12 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), ice, Enum.Material.Ice)
+	end
+	-- Arms: icy pauldrons with frost trim, forearm bracers and glacial
+	-- gauntlets; right hand encased in oversized ice fist.
+	for _, side in ipairs({ -1, 1 }) do
+ local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+ local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+ local handName = side < 0 and "LeftHand" or "RightHand"
+ f.add(armName, "IcePauldron", f.sizes.upperArm * Vector3.new(1.22, 0.5, 1.18), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), ice, Enum.Material.Ice, "wedge")
+ f.add(armName, "FrostTrim", Vector3.new(f.sizes.upperArm.X * 1.04, 0.08 * s, f.sizes.upperArm.Z * 1.0), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), frost, Enum.Material.Ice)
+ f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), ice, Enum.Material.Ice)
+ f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.68, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), crystal, Enum.Material.Ice)
+	end
+	local iceFist = f.add("RightHand", "IceFist", Vector3.new(0.82 * s, 0.82 * s, 0.82 * s), CFrame.new(0, -0.12 * s, 0), ice, Enum.Material.Ice, "ball")
+	iceFist.Transparency = 0.22
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- solid ice with frost accents for silent glacial movement.
+	for _, side in ipairs({ -1, 1 }) do
+ local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+ local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+ local footName = side < 0 and "LeftFoot" or "RightFoot"
+ f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), ice, Enum.Material.Ice)
+ f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), crystal, Enum.Material.Ice, "ball")
+ f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), ice, Enum.Material.Ice)
+ f.add(footName, "IceBoot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), ice, Enum.Material.Ice)
+ f.add(footName, "FrostAccent", Vector3.new(f.sizes.foot.X * 0.9, 0.08 * s, f.sizes.foot.Z * 0.9), CFrame.new(0, -f.sizes.foot.Y * 0.28, 0), frost, Enum.Material.Ice)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -0.52 * s, 0))
 end
 HERO_EXTRAS.gambit = function(f)
-	local s, c = f.scale, f.sizes.chest
-	f.add("Head", "Cowl", Vector3.new(f.parts.Head.Size.X * 1.08, f.parts.Head.Size.Y * 0.56, f.parts.Head.Size.Z * 1.08), CFrame.new(0, f.parts.Head.Size.Y * 0.32, 0.03 * s), Color3.fromRGB(200, 40, 60), FABRIC, "ball")
-	f.add("UpperTorso", "TrenchCoat", Vector3.new(c.X * 1.08, c.Y * 1.9, c.Z * 1.12), CFrame.new(0, -c.Y * 0.44, 0.02 * s), Color3.fromRGB(36, 36, 46), FABRIC)
-	f.add("RightHand", "ChargedCard", Vector3.new(0.36, 0.5, 0.04) * s, CFrame.new(0, -0.4 * s, -0.15 * s), Color3.fromRGB(255, 210, 80), NEON)
-	muzzle(f, "RightHand", Vector3.new(0, -0.5 * s, -0.15 * s))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local crimson, ash, charge = Color3.fromRGB(200, 40, 60), Color3.fromRGB(36, 36, 46), Color3.fromRGB(255, 210, 80)
+	-- Bayou Rogue: armored trench coat with high collar, crimson cowl
+	-- with glowing eyes and charged kinetic cards; silhouette reads as
+	-- suave thief even at thumbnail size.
+	-- Head: sleek cowl covering upper face with angular eye lenses and
+	-- chin guard exposing the jaw.
+	f.add("Head", "CowlBase", Vector3.new(h.X * 0.94, h.Y * 0.58, h.Z * 0.94), CFrame.new(0, h.Y * 0.32, 0.02 * s), crimson, FABRIC, "ball")
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.26, h.Y * 0.18, 0.06 * s), f.face(side * 0.24, 0.14, -0.02), charge, NEON, "wedge")
+	end
+	f.add("Head", "ChinGuard", Vector3.new(h.X * 0.52, h.Y * 0.22, 0.1 * s), f.face(0, -0.48, 0.02), ash, METAL, "wedge")
+	-- Torso: long trench coat with layered collar, chest harness and
+	-- belt; coat tails extend below the waist for dramatic flow.
+	f.add("UpperTorso", "TrenchCoatBody", Vector3.new(c.X * 1.1, c.Y * 1.92, c.Z * 1.14), CFrame.new(0, -c.Y * 0.44, 0.02 * s), ash, FABRIC)
+	f.add("UpperTorso", "HighCollar", Vector3.new(c.X * 0.84, 0.2 * s, c.Z * 0.8), CFrame.new(0, c.Y * 0.48, 0), ash, FABRIC)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.32, c.Y * 0.36, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.32, -c.Y * 0.32, -c.Z / 2 - 0.04 * s), 0.1 * s, HC.leather, FABRIC)
+	belt(f, HC.leather, HC.steel)
+	-- Arms: shoulder pads with crimson trim, forearm bracers and
+	-- gauntlets; right hand holds a glowing kinetic card.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "ShoulderPad", f.sizes.upperArm * Vector3.new(1.2, 0.48, 1.16), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), ash, FABRIC)
+		f.add(armName, "ShoulderTrim", Vector3.new(f.sizes.upperArm.X * 1.02, 0.07 * s, f.sizes.upperArm.Z * 0.98), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), crimson, FABRIC)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), ash, FABRIC)
+		f.add(handName, "Glove", f.sizes.hand * Vector3.new(1.14, 0.68, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), ash, FABRIC)
+	end
+	f.add("RightHand", "ChargedCard", Vector3.new(0.38 * s, 0.52 * s, 0.05 * s), CFrame.new(0, -0.42 * s, -0.16 * s), charge, NEON)
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- reinforced for agile rooftop movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), ash, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), HC.steel, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), ash, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), ash, FABRIC)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -0.52 * s, -0.16 * s))
 end
 HERO_EXTRAS.nightcrawler = function(f)
-	local s = f.scale
-	f.add("LowerTorso", "Tail", Vector3.new(0.14, 0.14, 2.2) * s, CFrame.new(0, -0.1 * s, f.sizes.pelvis.Z / 2 + 1 * s) * CFrame.Angles(-0.8, 0, 0), Color3.fromRGB(255, 214, 90), FABRIC)
-	f.add("LowerTorso", "TailTip", Vector3.new(0.3, 0.3, 0.1) * s, CFrame.new(0, 0.7 * s, f.sizes.pelvis.Z / 2 + 1.75 * s) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(255, 214, 90), FABRIC)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local indigo, gold, glow = Color3.fromRGB(40, 30, 80), Color3.fromRGB(255, 214, 90), Color3.fromRGB(255, 240, 100)
+	-- Bamf Acrobat: agile indigo suit with golden belt and prehensile
+	-- tail; pointed ears and glowing yellow eyes sell the mutant
+	-- teleporter silhouette even at thumbnail size.
+	-- Head: masked face with pointed ears, angular eye lenses and
+	-- chin strap; hair swept back in a widow's peak.
+	f.add("Head", "MaskBase", Vector3.new(h.X * 0.9, h.Y * 0.88, h.Z * 0.9), CFrame.new(), indigo, FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "PointedEar", Vector3.new(0.14 * s, 0.32 * s, 0.12 * s), CFrame.new(side * h.X * 0.46, h.Y * 0.38, -0.04 * s) * CFrame.Angles(0, 0, -side * 0.4), indigo, FABRIC, "wedge")
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.24, h.Y * 0.18, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), glow, NEON, "ball")
+	end
+	f.add("Head", "ChinStrap", Vector3.new(h.X * 0.5, h.Y * 0.14, 0.08 * s), f.face(0, -0.48, -0.02), gold, METAL)
+	-- Torso: fitted acrobat suit with central seam, diagonal harness
+	-- and golden belt; no bulky armor to impede agility.
+	f.add("UpperTorso", "SuitFront", Vector3.new(c.X * 0.86, c.Y * 0.82, 0.1 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), indigo, FABRIC)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, gold, METAL)
+	belt(f, indigo, gold)
+	-- Arms: lightweight shoulder pads, forearm wraps and gloves;
+	-- hands are nimble for card-throwing and teleport gestures.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "ShoulderPad", f.sizes.upperArm * Vector3.new(1.14, 0.42, 1.1), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), indigo, FABRIC)
+		f.add(forearmName, "Wrap", f.sizes.lowerArm * Vector3.new(1.08, 0.54, 1.06), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), indigo, FABRIC)
+		f.add(handName, "Glove", f.sizes.hand * Vector3.new(1.12, 0.64, 1.1), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), indigo, FABRIC)
+	end
+	-- Tail: segmented prehensile appendage with tapered tip; anchors
+	-- at the pelvis and curves behind for balance and expression.
+	f.add("LowerTorso", "TailBase", Vector3.new(0.16 * s, 0.16 * s, 0.8 * s), CFrame.new(0, -0.08 * s, f.sizes.pelvis.Z / 2 + 0.4 * s) * CFrame.Angles(-0.6, 0, 0), indigo, FABRIC)
+	f.add("LowerTorso", "TailMid", Vector3.new(0.14 * s, 0.14 * s, 0.9 * s), CFrame.new(0, -0.12 * s, f.sizes.pelvis.Z / 2 + 1.1 * s) * CFrame.Angles(-0.9, 0, 0), indigo, FABRIC)
+	f.add("LowerTorso", "TailTip", Vector3.new(0.28 * s, 0.28 * s, 0.12 * s), CFrame.new(0, 0.68 * s, f.sizes.pelvis.Z / 2 + 1.78 * s) * CFrame.Angles(0, 0, math.pi / 4), gold, METAL, "ball")
+	-- Legs: thigh wraps with knee caps and shin guards; boots are
+	-- soft-soled for silent landings after bamf teleports.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighWrap", f.sizes.upperLeg * Vector3.new(1.12, 0.64, 1.1), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), indigo, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.62, 0.18 * s, f.sizes.lowerLeg.Z * 0.54), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), gold, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.06, 0.66, 1.04), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), indigo, FABRIC)
+		f.add(footName, "SoftBoot", f.sizes.foot * Vector3.new(1.14, 0.58, 1.18), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), indigo, FABRIC)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.beast = function(f)
-	local s = f.scale
-	for _, side in ipairs({ -1, 1 }) do f.add(side < 0 and "LeftHand" or "RightHand", "FurryFist", f.sizes.hand * 1.12, CFrame.new(), Color3.fromRGB(232, 180, 90), FABRIC, "ball") end
-	f.add("Head", "Fang", Vector3.new(0.4, 0.1, 0.05) * s, f.face(0, -0.52, 0.04), HC.white, FABRIC)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local azure, fur, steel = Color3.fromRGB(60, 100, 180), Color3.fromRGB(232, 180, 90), HC.steel
+	-- Feral Genius: muscular blue-furred physique with tactical harness,
+	-- oversized furry fists and prominent fangs; silhouette reads as
+	-- agile brute even at thumbnail size.
+	-- Head: feline muzzle with brow ridge, glowing eyes and lower fangs.
+	f.add("Head", "MuzzleBase", Vector3.new(h.X * 0.72, h.Y * 0.42, h.Z * 0.6), CFrame.new(0, -h.Y * 0.18, -h.Z * 0.12), azure, FABRIC)
+	f.add("Head", "BrowRidge", Vector3.new(h.X * 0.84, h.Y * 0.18, h.Z * 0.28), CFrame.new(0, h.Y * 0.32, -h.Z * 0.08), azure, FABRIC, "wedge")
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EyeGlow", Vector3.new(0.14 * s, 0.12 * s, 0.06 * s), f.face(side * 0.22, 0.14, -0.02), Color3.fromRGB(255, 220, 80), NEON, "ball")
+		f.add("Head", "EarTuft", Vector3.new(0.12 * s, 0.28 * s, 0.1 * s), CFrame.new(side * h.X * 0.42, h.Y * 0.48, -0.02 * s) * CFrame.Angles(0, 0, -side * 0.3), fur, FABRIC, "wedge")
+	end
+	f.add("Head", "LowerFang", Vector3.new(0.38 * s, 0.12 * s, 0.06 * s), f.face(0, -0.48, 0.04), HC.white, METAL, "wedge")
+	-- Torso: barrel chest with tactical harness straps and belt; no
+	-- fabric shirt to hide the muscular blue fur texture.
+	f.add("UpperTorso", "ChestFur", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), azure, FABRIC)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.36, c.Y * 0.4, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.36, -c.Y * 0.36, -c.Z / 2 - 0.04 * s), 0.12 * s, steel, METAL)
+	belt(f, HC.leather, steel)
+	-- Arms: massive shoulder muscles, forearm wraps and oversized furry
+	-- fists that sell the punch impact and dexterity.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "ShoulderMuscle", f.sizes.upperArm * Vector3.new(1.26, 0.56, 1.22), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), azure, FABRIC)
+		f.add(forearmName, "Wrap", f.sizes.lowerArm * Vector3.new(1.14, 0.6, 1.12), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), azure, FABRIC)
+		f.add(handName, "FurryFist", f.sizes.hand * Vector3.new(1.24, 0.78, 1.2), CFrame.new(0, -f.sizes.hand.Y * 0.08, 0), fur, FABRIC, "ball")
+	end
+	-- Legs: powerful thigh muscles with knee caps and shin guards;
+	-- boots are reinforced for acrobatic landings.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighMuscle", f.sizes.upperLeg * Vector3.new(1.2, 0.72, 1.18), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), azure, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.68, 0.22 * s, f.sizes.lowerLeg.Z * 0.6), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), steel, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.12, 0.72, 1.1), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), azure, FABRIC)
+		f.add(footName, "AcroBoot", f.sizes.foot * Vector3.new(1.2, 0.64, 1.24), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), azure, FABRIC)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.psylocke = function(f)
-	local s = f.scale
-	f.add("Head", "MaskBand", Vector3.new(f.parts.Head.Size.X * 0.9, 0.2 * s, 0.06 * s), f.face(0, 0.14, 0.03), Color3.fromRGB(40, 40, 48), FABRIC)
-	f.add("RightHand", "Blade", Vector3.new(0.12, 1.4, 0.3) * s, CFrame.new(0, -0.8 * s, -0.1 * s), Color3.fromRGB(255, 120, 90), NEON)
-	f.add("UpperTorso", "Sash", Vector3.new(f.sizes.chest.X * 1.03, 0.22 * s, f.sizes.chest.Z * 1.04), CFrame.new(0, -f.sizes.chest.Y * 0.38, 0), Color3.fromRGB(40, 40, 48), FABRIC)
-	muzzle(f, "RightHand", Vector3.new(0, -1.4 * s, -0.1 * s))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local violet, steel, psychic = Color3.fromRGB(120, 40, 160), HC.steel, Color3.fromRGB(255, 120, 90)
+	-- Shadow Blade: sleek ninja suit with violet accents, face mask band,
+	-- glowing psychic blade and flowing sash; silhouette reads as
+	-- stealthy assassin even at thumbnail size.
+	-- Head: masked face with angular eye lenses and headband crest.
+	f.add("Head", "MaskBase", Vector3.new(h.X * 0.9, h.Y * 0.86, h.Z * 0.9), CFrame.new(), HC.ink, FABRIC)
+	f.add("Head", "MaskBand", Vector3.new(h.X * 0.92, 0.22 * s, 0.07 * s), f.face(0, 0.14, 0.03), violet, FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.24, h.Y * 0.18, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), psychic, NEON, "wedge")
+	end
+	f.add("Head", "HeadbandCrest", Vector3.new(0.1 * s, h.Y * 0.32, h.Z * 0.88), CFrame.new(0, h.Y * 0.36, 0), steel, METAL, "wedge")
+	-- Torso: fitted bodysuit with central seam, diagonal sash and
+	-- tactical harness; belt secures the waist with steel buckle.
+	f.add("UpperTorso", "SuitFront", Vector3.new(c.X * 0.86, c.Y * 0.82, 0.1 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), HC.ink, FABRIC)
+	f.add("UpperTorso", "Sash", Vector3.new(c.X * 1.04, 0.24 * s, c.Z * 1.06), CFrame.new(0, -c.Y * 0.36, 0) * CFrame.Angles(0, 0, -0.18), violet, FABRIC)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, steel, METAL)
+	belt(f, HC.leather, steel)
+	-- Arms: shoulder pads with violet trim, forearm bracers and gauntlets;
+	-- right hand grips the glowing psychic blade.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "ShoulderPad", f.sizes.upperArm * Vector3.new(1.18, 0.46, 1.14), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), HC.ink, FABRIC)
+		f.add(armName, "ShoulderTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.07 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), violet, FABRIC)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.1, 0.56, 1.08), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), HC.ink, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.12, 0.66, 1.1), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), HC.ink, FABRIC)
+	end
+	f.add("RightHand", "PsychicBlade", Vector3.new(0.14 * s, 1.42 * s, 0.32 * s), CFrame.new(0, -0.82 * s, -0.12 * s), psychic, NEON)
+	-- Legs: thigh plates with knee caps and shin guards; boots are
+	-- streamlined for silent acrobatic movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), HC.ink, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), steel, METAL, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), HC.ink, FABRIC)
+		f.add(footName, "NinjaBoot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), HC.ink, FABRIC)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -1.42 * s, -0.12 * s))
 end
 HERO_EXTRAS.deadpool = function(f)
-	local s, c = f.scale, f.sizes.chest
-	-- Confetti: a grinning party mask, confetti dots on the chest and two
-	-- foam party bats.
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local crimson, black, neonYellow = Color3.fromRGB(180, 30, 40), Color3.fromRGB(24, 28, 39), Color3.fromRGB(255, 220, 60)
+	-- Merc with a Mouth: tactical red/black suit with glowing yellow accents,
+	-- expressive mask eyes and dual katanas; silhouette reads as chaotic
+	-- antihero even at thumbnail size.
+	-- Head: full mask with large expressive eyes and grin line.
+	f.add("Head", "MaskShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), crimson, FABRIC)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "Eye", Vector3.new(0.22, 0.22, 0.05) * s, f.face(side * 0.26, 0.14, 0.03), HC.white, FABRIC, "ball")
-		f.add("Head", "Pupil", Vector3.new(0.09, 0.09, 0.05) * s, f.face(side * 0.26, 0.14, 0.06), HC.ink, FABRIC, "ball")
-		f.add(side < 0 and "LeftHand" or "RightHand", "PartyBat", Vector3.new(0.24, 1.1, 0.24) * s, CFrame.new(0, -0.55 * s, -0.08 * s), side < 0 and Color3.fromRGB(255, 220, 60) or Color3.fromRGB(110, 200, 255), FABRIC)
+		f.add("Head", "EyePatch", Vector3.new(h.X * 0.32, h.Y * 0.28, 0.06 * s), f.face(side * 0.24, 0.12, -0.02), black, FABRIC)
+		f.add("Head", "EyeGlow", Vector3.new(h.X * 0.22, h.Y * 0.18, 0.05 * s), f.face(side * 0.24, 0.12, -0.04), neonYellow, NEON, "ball")
 	end
-	f.add("Head", "Grin", Vector3.new(0.5, 0.08, 0.05) * s, f.face(0, -0.36, 0.04), HC.ink, FABRIC)
-	local dots = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(110, 200, 255), Color3.fromRGB(120, 230, 120), HC.white }
-	for i = 1, 6 do
-		f.disc("UpperTorso", "Confetti", 0.1 * s, 0.04 * s, CFrame.new(((i * 37) % 9 - 4) * 0.1 * s, ((i * 53) % 7 - 3) * 0.12 * s, -c.Z / 2 - 0.03 * s), dots[i % #dots + 1], FABRIC)
+	f.add("Head", "GrinLine", Vector3.new(h.X * 0.5, 0.06 * s, 0.04 * s), f.face(0, -0.38, 0.02), black, FABRIC)
+	-- Torso: tactical vest with central seam, diagonal harness and
+	-- utility belt; confetti dots replaced with neon accent lines.
+	f.add("UpperTorso", "TacticalVest", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), crimson, METAL)
+	f.add("UpperTorso", "CoreSeam", Vector3.new(0.07 * s, c.Y * 0.58, 0.04 * s), CFrame.new(0, 0, -c.Z / 2 - 0.05 * s), neonYellow, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, black, METAL)
+	belt(f, black, neonYellow)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and gauntlets;
+	-- both hands grip katanas with glowing hilts.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), crimson, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonYellow, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), black, METAL)
+		f.add(handName, "KatanaHilt", Vector3.new(0.12 * s, 0.4 * s, 0.12 * s), CFrame.new(0, -0.5 * s, -0.1 * s), neonYellow, NEON)
+		f.rod(handName, "KatanaBlade", Vector3.new(0, -0.5 * s, -0.1 * s), Vector3.new(0, -1.6 * s, -0.1 * s), 0.06 * s, HC.steel, METAL)
 	end
-	belt(f, HC.ink, Color3.fromRGB(255, 220, 60))
-	muzzle(f, "RightHand", Vector3.new(0, -1.1 * s, -0.08 * s))
+	-- Legs: armored thigh plates with glowing knee caps and shin guards;
+	-- boots are reinforced for acrobatic combat.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonYellow, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), crimson, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), black, METAL)
+	end
+	muzzle(f, "RightHand", Vector3.new(0, -1.6 * s, -0.1 * s))
 end
 HERO_EXTRAS.moonknight = function(f)
-	local s = f.scale
-	Figure.Face(f, "lens", { width = 0.3, height = 0.3, slant = 0.1, lens = Color3.fromRGB(255, 200, 80), rim = HC.ink })
-	f.add("Head", "Hood", f.parts.Head.Size * Vector3.new(1.12, 1.1, 1.0), CFrame.new(0, 0.04 * s, f.parts.Head.Size.Z * 0.24), HC.white, FABRIC, "ball")
-	cape(f, Color3.fromRGB(28, 30, 42), 3.6)
-	f.add("UpperTorso", "Crescent", Vector3.new(0.5, 0.5, 0.06) * s, CFrame.new(0, f.sizes.chest.Y * 0.16, -f.sizes.chest.Z / 2 - 0.03 * s), Color3.fromRGB(255, 200, 80), METAL, "ball")
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local white, silver, neonGold = Color3.fromRGB(240, 240, 245), HC.steel, Color3.fromRGB(255, 220, 100)
+	-- Lunar Vigilante: flowing white hooded suit with silver armor accents,
+	-- glowing crescent emblem and dark cape; silhouette reads as mystical
+	-- avenger even at thumbnail size.
+	-- Head: deep hood with glowing eye lenses and silver trim.
+	f.add("Head", "HoodShell", f.parts.Head.Size * Vector3.new(1.14, 1.12, 1.02), CFrame.new(0, 0.04 * s, f.parts.Head.Size.Z * 0.24), white, FABRIC, "ball")
+	f.add("Head", "HoodTrim", Vector3.new(h.X * 0.96, 0.12 * s, 0.06 * s), f.face(0, 0.32, -0.02), silver, METAL)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.26, h.Y * 0.2, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), neonGold, NEON, "wedge")
+	end
+	-- Torso: fitted white suit with central crescent emblem, diagonal
+	-- harness and utility belt; dark cape anchors at the shoulders.
+	f.add("UpperTorso", "SuitFront", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), white, FABRIC)
+	f.add("UpperTorso", "CrescentEmblem", Vector3.new(0.5 * s, 0.5 * s, 0.06 * s), CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.03 * s), neonGold, METAL, "ball")
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, silver, METAL)
+	belt(f, silver, neonGold)
+	cape(f, Color3.fromRGB(28, 30, 42), 3.6, silver)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and gauntlets;
+	-- hands are gloved for stealth combat.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), white, FABRIC)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonGold, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), white, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), silver, METAL)
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin guards;
+	-- boots are reinforced for silent movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), white, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonGold, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), white, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), silver, METAL)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.nova = function(f)
-	local s, h = f.scale, f.parts.Head.Size
-	f.add("Head", "Helmet", h * Vector3.new(1.06, 0.62, 1.06), CFrame.new(0, h.Y * 0.28, 0), Color3.fromRGB(80, 210, 240), METAL, "ball")
-	f.add("Head", "Crest", Vector3.new(0.14, 0.5, 0.9) * s, CFrame.new(0, h.Y * 0.62, 0), Color3.fromRGB(80, 210, 240), METAL, "wedge")
-	f.add("Head", "Visor", Vector3.new(h.X * 0.84, 0.2 * s, 0.1 * s), f.face(0, 0.12, 0.03), Color3.fromRGB(120, 220, 255), NEON)
-	star(f, "UpperTorso", CFrame.new(0, f.sizes.chest.Y * 0.16, -f.sizes.chest.Z / 2 - 0.04 * s), 0.36 * s, Color3.fromRGB(80, 210, 240))
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local cosmic, gold, neonBlue = Color3.fromRGB(20, 40, 80), HC.gold, Color3.fromRGB(80, 210, 240)
+	-- Cosmic Centurion: sleek blue/gold armor with glowing star emblem,
+	-- streamlined helmet and energy aura; silhouette reads as space
+	-- guardian even at thumbnail size.
+	-- Head: smooth helmet with wide visor band and crest fin.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.96, h.Y * 0.94, h.Z * 0.96), CFrame.new(), cosmic, METAL)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.78, 0.18 * s, 0.08 * s), f.face(0, 0.12, -0.02), neonBlue, NEON)
+	f.add("Head", "CrestFin", Vector3.new(0.14 * s, 0.5 * s, 0.9 * s), CFrame.new(0, h.Y * 0.62, 0), gold, METAL, "wedge")
+	-- Torso: fitted cosmic armor with central star emblem, diagonal
+	-- harness and utility belt; energy lines trace the chest.
+	f.add("UpperTorso", "CosmicArmor", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), cosmic, METAL)
+	star(f, "UpperTorso", CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.04 * s), 0.36 * s, neonBlue)
+	f.add("UpperTorso", "EnergyLineL", Vector3.new(0.06 * s, c.Y * 0.5, 0.04 * s), CFrame.new(-c.X * 0.28, 0, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, 0.15), neonBlue, NEON)
+	f.add("UpperTorso", "EnergyLineR", Vector3.new(0.06 * s, c.Y * 0.5, 0.04 * s), CFrame.new(c.X * 0.28, 0, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, -0.15), neonBlue, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, gold, METAL)
+	belt(f, gold, neonBlue)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; hands channel cosmic energy.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.18, 0.48, 1.14), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), cosmic, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonBlue, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), cosmic, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), gold, METAL)
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced for zero-gravity combat.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), cosmic, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonBlue, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), cosmic, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), gold, METAL)
+	end
 	muzzle(f, "Head", Vector3.new(0, h.Y * 0.1, -h.Z / 2 - 0.2 * s))
 end
 
 -- The league -------------------------------------------------------------------
 HERO_EXTRAS.capmen = function(f)
-	local s, c = f.scale, f.sizes.chest
-	local gold, white, orange = Color3.fromRGB(236, 184, 76), Color3.fromRGB(246, 246, 250), Color3.fromRGB(255, 150, 60)
-	-- Captain Men: a short gold cape, a white bolt in a gold roundel, gold gauntlets
-	-- and fists that glow when they land.
-	cape(f, gold, 2.8, white)
+	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
+	local gold, white, neonOrange = Color3.fromRGB(236, 184, 76), Color3.fromRGB(246, 246, 250), Color3.fromRGB(255, 150, 60)
+	-- Golden Champion: regal gold/white armor with glowing bolt emblem,
+	-- flowing cape and energy-charged fists; silhouette reads as
+	-- inspirational leader even at thumbnail size.
+	-- Head: streamlined helmet with wide visor band and crest fin.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), gold, METAL)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.76, 0.16 * s, 0.07 * s), f.face(0, 0.12, -0.02), white, NEON)
+	f.add("Head", "CrestFin", Vector3.new(0.12 * s, h.Y * 0.38, h.Z * 0.88), CFrame.new(0, h.Y * 0.36, 0), gold, METAL, "wedge")
+	-- Torso: fitted golden armor with central bolt emblem, diagonal
+	-- harness and utility belt; short cape anchors at the shoulders.
+	f.add("UpperTorso", "GoldenArmor", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), gold, METAL)
 	f.disc("UpperTorso", "Roundel", 0.62 * s, 0.07 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.04 * s), gold, METAL)
-	f.add("UpperTorso", "BoltTop", Vector3.new(0.2, 0.46, 0.06) * s, CFrame.new(0.06 * s, c.Y * 0.2, -c.Z / 2 - 0.09 * s) * CFrame.Angles(0, 0, -0.5), white, NEON)
-	f.add("UpperTorso", "BoltBottom", Vector3.new(0.2, 0.46, 0.06) * s, CFrame.new(-0.06 * s, c.Y * 0.06, -c.Z / 2 - 0.09 * s) * CFrame.Angles(0, 0, -0.5), white, NEON)
+	f.add("UpperTorso", "BoltTop", Vector3.new(0.2 * s, 0.46 * s, 0.06 * s), CFrame.new(0.06 * s, c.Y * 0.2, -c.Z / 2 - 0.09 * s) * CFrame.Angles(0, 0, -0.5), white, NEON)
+	f.add("UpperTorso", "BoltBottom", Vector3.new(0.2 * s, 0.46 * s, 0.06 * s), CFrame.new(-0.06 * s, c.Y * 0.06, -c.Z / 2 - 0.09 * s) * CFrame.Angles(0, 0, -0.5), white, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, white, METAL)
 	belt(f, HC.leather, gold)
+	cape(f, gold, 2.8, white)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; hands glow with contained energy.
 	for _, side in ipairs({ -1, 1 }) do
-		f.add(side < 0 and "LeftHand" or "RightHand", "FistGlow", Vector3.new(0.78, 0.7, 0.78) * s, CFrame.new(0, -0.04 * s, 0), orange, NEON, "ball").Transparency = 0.5
-		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "ShoulderPlate", f.sizes.upperArm * Vector3.new(1.2, 0.46, 1.18), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0), gold, METAL)
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.2, 0.48, 1.16), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), gold, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.02, 0.07 * s, f.sizes.upperArm.Z * 0.98), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), white, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), gold, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), gold, METAL)
+		local fist = f.add(handName, "FistGlow", Vector3.new(0.78 * s, 0.7 * s, 0.78 * s), CFrame.new(0, -0.04 * s, 0), neonOrange, NEON, "ball")
+		fist.Transparency = 0.45
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced for heroic landings.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), gold, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), white, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), gold, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), gold, METAL)
 	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.emerald = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local ring, glow = Color3.fromRGB(70, 255, 140), Color3.fromRGB(120, 255, 170)
-	-- Emerald Sentinel: a domino mask, a glowing ring on the right hand, a ring
-	-- of light on the chest and a floating construct fist at the shoulder.
-	f.add("Head", "Mask", Vector3.new(h.X * 0.9, 0.3 * s, 0.08 * s), f.face(0, 0.1, 0.02), Color3.fromRGB(20, 26, 24), FABRIC)
-	for _, side in ipairs({ -1, 1 }) do f.add("Head", "MaskLens", Vector3.new(0.2, 0.2, 0.06) * s, f.face(side * 0.26, 0.1, 0.05), Color3.fromRGB(240, 255, 244), NEON, "ball") end
-	f.disc("UpperTorso", "ChestRing", 0.62 * s, 0.07 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.04 * s), ring, NEON)
-	f.disc("UpperTorso", "ChestRingCore", 0.34 * s, 0.08 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.06 * s), Color3.fromRGB(20, 26, 24), FABRIC)
-	f.disc("RightHand", "PowerRing", 0.5 * s, 0.1 * s, CFrame.new(0, -0.1 * s, 0) * CFrame.Angles(0, 0, math.pi / 2), ring, NEON)
-	local fist = f.add("UpperTorso", "ConstructFist", Vector3.new(1.0, 0.9, 0.9) * s, CFrame.new(c.X * 0.78, c.Y * 0.62, 0.1 * s), glow, NEON, "ball")
-	fist.Transparency = 0.45
-	f.add("UpperTorso", "ConstructKnuckles", Vector3.new(1.05, 0.34, 0.95) * s, CFrame.new(c.X * 0.78, c.Y * 0.84, 0.1 * s), ring, NEON).Transparency = 0.55
+	local emerald, black, neonGreen = Color3.fromRGB(20, 80, 40), Color3.fromRGB(20, 26, 24), Color3.fromRGB(70, 255, 140)
+	-- Willpower Guardian: sleek green/black suit with glowing power ring,
+	-- construct fist and domino mask; silhouette reads as cosmic sentinel
+	-- even at thumbnail size.
+	-- Head: masked face with glowing eye lenses and headband crest.
+	f.add("Head", "MaskShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), black, FABRIC)
+	f.add("Head", "MaskBand", Vector3.new(h.X * 0.92, 0.22 * s, 0.07 * s), f.face(0, 0.14, 0.03), emerald, FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.24, h.Y * 0.18, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), neonGreen, NEON, "wedge")
+	end
+	-- Torso: fitted suit with central ring emblem, diagonal harness
+	-- and utility belt; construct fist floats at the shoulder.
+	f.add("UpperTorso", "SuitFront", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), black, FABRIC)
+	f.disc("UpperTorso", "ChestRing", 0.62 * s, 0.07 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.04 * s), neonGreen, NEON)
+	f.disc("UpperTorso", "ChestRingCore", 0.34 * s, 0.08 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.06 * s), black, FABRIC)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, emerald, METAL)
+	belt(f, emerald, neonGreen)
+	local fist = f.add("UpperTorso", "ConstructFist", Vector3.new(1.0 * s, 0.9 * s, 0.9 * s), CFrame.new(c.X * 0.78, c.Y * 0.62, 0.1 * s), neonGreen, NEON, "ball")
+	fist.Transparency = 0.42
+	f.add("UpperTorso", "ConstructKnuckles", Vector3.new(1.05 * s, 0.34 * s, 0.95 * s), CFrame.new(c.X * 0.78, c.Y * 0.84, 0.1 * s), neonGreen, NEON).Transparency = 0.52
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and gauntlets;
+	-- right hand bears the glowing power ring.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), black, FABRIC)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonGreen, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), black, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), emerald, METAL)
+	end
+	f.disc("RightHand", "PowerRing", 0.5 * s, 0.1 * s, CFrame.new(0, -0.1 * s, 0) * CFrame.Angles(0, 0, math.pi / 2), neonGreen, NEON)
+	-- Legs: armored thigh plates with glowing knee caps and shin guards;
+	-- boots are reinforced for cosmic flight.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), black, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonGreen, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), black, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), emerald, METAL)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.solartitan = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local red, gold = Color3.fromRGB(200, 40, 48), Color3.fromRGB(246, 200, 64)
-	-- Solar Titan: a long red cape, a golden sun on the chest with a red star,
-	-- a gold belt and eyes that glow red when the heat ray fires.
-	cape(f, red, 4.6, gold)
-	f.disc("UpperTorso", "SunShield", 0.78 * s, 0.07 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.04 * s), gold, METAL)
-	star(f, "UpperTorso", CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.1 * s), 0.34 * s, red)
-	belt(f, gold, gold)
+	local crimson, gold, neonRed = Color3.fromRGB(160, 30, 50), Color3.fromRGB(246, 200, 64), Color3.fromRGB(255, 70, 50)
+	-- Solar Sovereign: regal red/gold armor with glowing sun emblem,
+	-- flowing cape and heat-vision eyes; silhouette reads as cosmic
+	-- powerhouse even at thumbnail size.
+	-- Head: streamlined helmet with wide visor band and crest fin.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.96, h.Y * 0.94, h.Z * 0.96), CFrame.new(), crimson, METAL)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.78, 0.18 * s, 0.08 * s), f.face(0, 0.12, -0.02), gold, NEON)
+	f.add("Head", "CrestFin", Vector3.new(0.12 * s, h.Y * 0.38, h.Z * 0.88), CFrame.new(0, h.Y * 0.36, 0), gold, METAL, "wedge")
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "HeatEye", Vector3.new(0.2, 0.12, 0.06) * s, f.face(side * 0.25, 0.14, 0.04), Color3.fromRGB(255, 70, 50), NEON)
-		f.add(side < 0 and "LeftLowerArm" or "RightLowerArm", "Bracelet", f.sizes.lowerArm * Vector3.new(1.1, 0.2, 1.1), CFrame.new(0, -f.sizes.lowerArm.Y * 0.36, 0), gold, METAL)
+		f.add("Head", "HeatEye", Vector3.new(0.2 * s, 0.12 * s, 0.06 * s), f.face(side * 0.25, 0.14, 0.04), neonRed, NEON)
+	end
+	-- Torso: fitted golden armor with central sun emblem, diagonal
+	-- harness and utility belt; long cape anchors at the shoulders.
+	f.add("UpperTorso", "GoldenArmor", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), gold, METAL)
+	f.disc("UpperTorso", "SunShield", 0.78 * s, 0.07 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.04 * s), gold, METAL)
+	star(f, "UpperTorso", CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.1 * s), 0.34 * s, neonRed)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, crimson, METAL)
+	belt(f, gold, neonRed)
+	cape(f, crimson, 4.6, gold)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; hands channel solar energy.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.2, 0.48, 1.16), CFrame.new(0, f.sizes.upperArm.Y * 0.28, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), gold, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.02, 0.07 * s, f.sizes.upperArm.Z * 0.98), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.08), neonRed, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), gold, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), gold, METAL)
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced for heroic landings.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.16, 0.68, 1.14), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), gold, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.66, 0.22 * s, f.sizes.lowerLeg.Z * 0.58), CFrame.new(0, f.sizes.lowerLeg.Y * 0.42, -f.sizes.lowerLeg.Z * 0.26), neonRed, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), gold, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.18, 0.62, 1.22), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), gold, METAL)
 	end
 	muzzle(f, "Head", Vector3.new(0, h.Y * 0.1, -h.Z / 2 - 0.2 * s))
 end
 HERO_EXTRAS.speedster = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local gold, bolt = Color3.fromRGB(240, 196, 60), Color3.fromRGB(255, 232, 90)
-	-- Crimson Speedster: a red cowl with golden wing-ears, a lightning bolt on
-	-- the chest and golden bracers and boots, with a trail of light at the back.
+	local crimson, gold, neonYellow = Color3.fromRGB(180, 30, 40), Color3.fromRGB(240, 196, 60), Color3.fromRGB(255, 232, 90)
+	-- Velocity Vanguard: sleek red/gold suit with glowing lightning bolt,
+	-- winged cowl and speed trails; silhouette reads as fastest hero
+	-- even at thumbnail size.
+	-- Head: streamlined cowl with wide visor band and wing ears.
+	f.add("Head", "CowlShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), crimson, FABRIC)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.76, 0.16 * s, 0.07 * s), f.face(0, 0.12, -0.02), neonYellow, NEON)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "EarWing", Vector3.new(0.14, 0.52, 0.8) * s, CFrame.new(side * h.X * 0.55, h.Y * 0.18, 0.04 * s) * CFrame.Angles(0, 0, side * -0.5), gold, METAL, "wedge")
+		f.add("Head", "EarWing", Vector3.new(0.14 * s, 0.52 * s, 0.8 * s), CFrame.new(side * h.X * 0.55, h.Y * 0.18, 0.04 * s) * CFrame.Angles(0, 0, side * -0.5), gold, METAL, "wedge")
 	end
-	f.add("Head", "Mask", Vector3.new(h.X * 0.86, 0.22 * s, 0.07 * s), f.face(0, 0.08, 0.03), Color3.fromRGB(34, 26, 28), FABRIC)
-	f.add("UpperTorso", "BoltTop", Vector3.new(0.22, 0.5, 0.06) * s, CFrame.new(0.07 * s, c.Y * 0.2, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), bolt, NEON)
-	f.add("UpperTorso", "BoltBottom", Vector3.new(0.22, 0.5, 0.06) * s, CFrame.new(-0.07 * s, c.Y * 0.0, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), bolt, NEON)
-	belt(f, gold, gold)
+	-- Torso: fitted speed suit with central bolt emblem, diagonal
+	-- harness and utility belt; speed trails extend from the back.
+	f.add("UpperTorso", "SpeedSuit", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), crimson, FABRIC)
+	f.add("UpperTorso", "BoltTop", Vector3.new(0.22 * s, 0.5 * s, 0.06 * s), CFrame.new(0.07 * s, c.Y * 0.2, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), neonYellow, NEON)
+	f.add("UpperTorso", "BoltBottom", Vector3.new(0.22 * s, 0.5 * s, 0.06 * s), CFrame.new(-0.07 * s, c.Y * 0.0, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, -0.5), neonYellow, NEON)
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, gold, METAL)
+	belt(f, gold, neonYellow)
 	for i = 1, 3 do
-		f.add("UpperTorso", "SpeedTrail", Vector3.new(0.1, 0.1, (1.8 + i * 0.7) * s), CFrame.new((i - 2) * 0.34 * s, c.Y * 0.1 - i * 0.18 * s, c.Z / 2 + (1.1 + i * 0.35) * s), bolt, NEON).Transparency = 0.45 + i * 0.1
+		f.add("UpperTorso", "SpeedTrail", Vector3.new(0.1 * s, 0.1 * s, (1.8 + i * 0.7) * s), CFrame.new((i - 2) * 0.34 * s, c.Y * 0.1 - i * 0.18 * s, c.Z / 2 + (1.1 + i * 0.35) * s), neonYellow, NEON).Transparency = 0.45 + i * 0.1
+	end
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; hands are streamlined for aerodynamic movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), crimson, FABRIC)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonYellow, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), crimson, FABRIC)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), gold, METAL)
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced for high-speed running.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), crimson, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonYellow, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), crimson, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), gold, METAL)
 	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.1 * s, 0))
 end
 HERO_EXTRAS.amazon = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local gold, red = Color3.fromRGB(240, 196, 60), Color3.fromRGB(196, 40, 56)
-	-- Golden Amazon: a tiara, a gold eagle across the chest, a round shield on
-	-- the left forearm and a glowing lasso coiled at the hip.
+	local crimson, gold, neonBlue = Color3.fromRGB(160, 30, 50), Color3.fromRGB(240, 196, 60), Color3.fromRGB(80, 220, 255)
+	-- Warrior Princess: regal red/gold armor with glowing tiara,
+	-- eagle emblem, shield and lasso; silhouette reads as divine
+	-- champion even at thumbnail size.
+	-- Head: streamlined helmet with wide visor band and tiara crest.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), crimson, METAL)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.76, 0.16 * s, 0.07 * s), f.face(0, 0.12, -0.02), neonBlue, NEON)
 	f.add("Head", "Tiara", Vector3.new(h.X * 0.8, 0.16 * s, 0.1 * s), CFrame.new(0, h.Y * 0.4, -h.Z * 0.46), gold, METAL)
-	f.add("Head", "TiaraStar", Vector3.new(0.2, 0.2, 0.06) * s, CFrame.new(0, h.Y * 0.46, -h.Z * 0.5) * CFrame.Angles(0, 0, math.pi / 4), red, METAL)
+	f.add("Head", "TiaraStar", Vector3.new(0.2 * s, 0.2 * s, 0.06 * s), CFrame.new(0, h.Y * 0.46, -h.Z * 0.5) * CFrame.Angles(0, 0, math.pi / 4), neonBlue, METAL)
+	-- Torso: fitted golden armor with central eagle emblem, diagonal
+	-- harness and utility belt; shield mounts on the left forearm.
+	f.add("UpperTorso", "GoldenArmor", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), gold, METAL)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("UpperTorso", "EagleWing", Vector3.new(c.X * 0.36, 0.14 * s, 0.06 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.28, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * -0.28), gold, METAL)
+		f.add("UpperTorso", "EagleWing", Vector3.new(c.X * 0.36, 0.14 * s, 0.06 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.28, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * -0.28), neonBlue, METAL)
 	end
-	belt(f, gold, red)
+	belt(f, HC.leather, gold)
 	local arm = f.sizes.lowerArm
 	f.add("LeftLowerArm", "Shield", Vector3.new(0.14 * s, 2.2 * s, 2.2 * s), CFrame.new(-arm.X / 2 - 0.12 * s, 0, -0.1 * s), gold, METAL, Enum.PartType.Cylinder)
-	f.add("LeftLowerArm", "ShieldFace", Vector3.new(0.14 * s, 1.7 * s, 1.7 * s), CFrame.new(-arm.X / 2 - 0.16 * s, 0, -0.1 * s), red, METAL, Enum.PartType.Cylinder)
+	f.add("LeftLowerArm", "ShieldFace", Vector3.new(0.14 * s, 1.7 * s, 1.7 * s), CFrame.new(-arm.X / 2 - 0.16 * s, 0, -0.1 * s), crimson, METAL, Enum.PartType.Cylinder)
 	f.add("LeftLowerArm", "ShieldStar", Vector3.new(0.06 * s, 0.7 * s, 0.7 * s), CFrame.new(-arm.X / 2 - 0.24 * s, 0, -0.1 * s), gold, METAL, Enum.PartType.Cylinder)
 	local r = 0.55 * s
 	for i = 0, 7 do
@@ -1045,23 +2452,51 @@ HERO_EXTRAS.amazon = function(f)
 end
 HERO_EXTRAS.nightstalker = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local ink, steel, glow = Color3.fromRGB(26, 28, 40), Color3.fromRGB(170, 178, 200), Color3.fromRGB(255, 196, 60)
-	-- Night Hunter: a pointed cowl and a short scalloped cape, a bat-wing
-	-- crest on the chest, a utility belt of mines and two gauntlets with fins.
-	f.add("Head", "Cowl", h * Vector3.new(1.1, 0.7, 1.08), CFrame.new(0, h.Y * 0.2, h.Z * 0.04), ink, FABRIC, "ball")
-	-- The cowl leaves the chin bare: skin and a firm mouth under two white lenses.
-	f.add("Head", "Chin", Vector3.new(h.X * 0.5, h.Y * 0.24, 0.1 * s), f.face(0, -0.62, -0.03), HC.skin, FABRIC)
-	f.add("Head", "Mouth", Vector3.new(0.2, 0.05, 0.05) * s, f.face(0, -0.64, 0.04), HC.ink, FABRIC)
-	Figure.Face(f, "lens", { lens = Color3.fromRGB(236, 240, 255), rim = ink, width = 0.3, height = 0.16, slant = 0.3, glow = true })
+	local ink, steel, neonGold = Color3.fromRGB(26, 28, 40), Color3.fromRGB(170, 178, 200), Color3.fromRGB(255, 196, 60)
+	-- Shadow Vigilante: sleek dark suit with glowing gold accents,
+	-- pointed cowl, bat emblem and scalloped cape; silhouette reads as
+	-- nocturnal guardian even at thumbnail size.
+	-- Head: pointed cowl with glowing eye lenses and ear fins.
+	f.add("Head", "CowlShell", h * Vector3.new(1.12, 0.72, 1.1), CFrame.new(0, h.Y * 0.2, h.Z * 0.04), ink, FABRIC, "ball")
+	f.add("Head", "ChinGuard", Vector3.new(h.X * 0.5, h.Y * 0.24, 0.1 * s), f.face(0, -0.62, -0.03), HC.skin, FABRIC)
+	f.add("Head", "MouthLine", Vector3.new(0.2 * s, 0.05 * s, 0.05 * s), f.face(0, -0.64, 0.04), HC.ink, FABRIC)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "Ear", Vector3.new(0.18, 0.55, 0.18) * s, CFrame.new(side * h.X * 0.32, h.Y * 0.62, 0), ink, FABRIC, "wedge")
-		f.add(side < 0 and "LeftLowerArm" or "RightLowerArm", "Gauntlet", f.sizes.lowerArm * Vector3.new(1.18, 0.6, 1.18), CFrame.new(0, -f.sizes.lowerArm.Y * 0.18, 0), ink, METAL)
-		f.add(side < 0 and "LeftLowerArm" or "RightLowerArm", "Fin", Vector3.new(0.06, 0.6, 0.5) * s, CFrame.new(side * f.sizes.lowerArm.X * 0.62, -f.sizes.lowerArm.Y * 0.1, 0), steel, METAL, "wedge")
-		f.add("UpperTorso", "WingTip", Vector3.new(c.X * 0.3, 0.16 * s, 0.06 * s), CFrame.new(side * c.X * 0.2, c.Y * 0.2, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * -0.3), glow, METAL)
+		f.add("Head", "EyeLens", Vector3.new(h.X * 0.26, h.Y * 0.16, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), neonGold, NEON, "wedge")
+		f.add("Head", "EarFin", Vector3.new(0.18 * s, 0.55 * s, 0.18 * s), CFrame.new(side * h.X * 0.32, h.Y * 0.62, 0), ink, FABRIC, "wedge")
 	end
-	f.add("UpperTorso", "WingCore", Vector3.new(0.34, 0.3, 0.06) * s, CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.05 * s), glow, METAL, "ball")
+	-- Torso: fitted dark suit with central bat emblem, diagonal harness
+	-- and utility belt; scalloped cape anchors at the shoulders.
+	f.add("UpperTorso", "SuitFront", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), ink, FABRIC)
+	f.add("UpperTorso", "BatEmblem", Vector3.new(0.34 * s, 0.3 * s, 0.06 * s), CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.05 * s), neonGold, METAL, "ball")
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "WingTip", Vector3.new(c.X * 0.3, 0.16 * s, 0.06 * s), CFrame.new(side * c.X * 0.2, c.Y * 0.2, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * -0.3), neonGold, METAL)
+	end
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, steel, METAL)
+	belt(f, Color3.fromRGB(70, 74, 96), neonGold)
 	cape(f, Color3.fromRGB(34, 38, 56), 3.0, ink)
-	belt(f, Color3.fromRGB(70, 74, 96), glow)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets with fin accents; hands are gloved for stealth.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.16, 0.46, 1.12), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), ink, FABRIC)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonGold, NEON)
+		f.add(forearmName, "Gauntlet", f.sizes.lowerArm * Vector3.new(1.18, 0.6, 1.18), CFrame.new(0, -f.sizes.lowerArm.Y * 0.18, 0), ink, METAL)
+		f.add(forearmName, "Fin", Vector3.new(0.06 * s, 0.6 * s, 0.5 * s), CFrame.new(side * f.sizes.lowerArm.X * 0.62, -f.sizes.lowerArm.Y * 0.1, 0), steel, METAL, "wedge")
+		f.add(handName, "Glove", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), ink, FABRIC)
+	end
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced for silent movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), ink, FABRIC)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonGold, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), ink, FABRIC)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), steel, METAL)
+	end
 	for i = -1, 1, 2 do
 		f.add("LowerTorso", "MinePouch", Vector3.new(0.44, 0.44, 0.3) * s, CFrame.new(i * f.sizes.pelvis.X * 0.42, f.sizes.pelvis.Y * 0.1, -f.sizes.pelvis.Z * 0.56), Color3.fromRGB(50, 54, 72), METAL, "ball")
 		f.add("LowerTorso", "MineLight", Vector3.new(0.14, 0.14, 0.14) * s, CFrame.new(i * f.sizes.pelvis.X * 0.42, f.sizes.pelvis.Y * 0.1, -f.sizes.pelvis.Z * 0.56 - 0.18 * s), Color3.fromRGB(255, 90, 80), NEON, "ball")
@@ -1070,22 +2505,54 @@ HERO_EXTRAS.nightstalker = function(f)
 end
 HERO_EXTRAS.seaking = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local gold, teal = Color3.fromRGB(240, 196, 60), Color3.fromRGB(70, 220, 230)
-	-- Sea King: a golden crown, scale-shaped plates on the chest and a trident
-	-- with a glowing tide-blue head.
+	local deepSea, gold, neonTeal = Color3.fromRGB(20, 80, 100), Color3.fromRGB(240, 196, 60), Color3.fromRGB(70, 220, 230)
+	-- Ocean Sovereign: regal deep-sea armor with glowing teal accents,
+	-- golden crown, scale plates and trident; silhouette reads as
+	-- aquatic ruler even at thumbnail size.
+	-- Head: streamlined helmet with wide visor band and crown crest.
+	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), deepSea, METAL)
+	f.add("Head", "VisorBand", Vector3.new(h.X * 0.76, 0.16 * s, 0.07 * s), f.face(0, 0.12, -0.02), neonTeal, NEON)
 	f.add("Head", "Crown", Vector3.new(h.X * 0.92, 0.2 * s, h.Z * 0.92), CFrame.new(0, h.Y * 0.48, 0), gold, METAL)
-	for i = -1, 1 do f.add("Head", "CrownPoint", Vector3.new(0.14, 0.34, 0.14) * s, CFrame.new(i * h.X * 0.3, h.Y * 0.66, 0), gold, METAL, "wedge") end
+	for i = -1, 1 do f.add("Head", "CrownPoint", Vector3.new(0.14 * s, 0.34 * s, 0.14 * s), CFrame.new(i * h.X * 0.3, h.Y * 0.66, 0), gold, METAL, "wedge") end
+	-- Torso: fitted deep-sea armor with scale plates, central tide
+	-- emblem and diagonal harness; utility belt secures the waist.
+	f.add("UpperTorso", "SeaArmor", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), deepSea, METAL)
 	for row = 0, 2 do
 		for col = -1, 1 do
-			f.add("UpperTorso", "Scale", Vector3.new(0.34, 0.26, 0.05) * s, CFrame.new(col * 0.36 * s + (row % 2) * 0.18 * s, c.Y * 0.26 - row * 0.28 * s, -c.Z / 2 - 0.03 * s), Color3.fromRGB(20, 120, 124), METAL, "ball")
+			f.add("UpperTorso", "Scale", Vector3.new(0.34 * s, 0.26 * s, 0.05 * s), CFrame.new(col * 0.36 * s + (row % 2) * 0.18 * s, c.Y * 0.26 - row * 0.28 * s, -c.Z / 2 - 0.03 * s), neonTeal, METAL, "ball")
 		end
 	end
-	f.add("UpperTorso", "TideDrop", Vector3.new(0.36, 0.5, 0.06) * s, CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.1 * s), teal, NEON, "ball")
+	f.add("UpperTorso", "TideEmblem", Vector3.new(0.36 * s, 0.5 * s, 0.06 * s), CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.1 * s), neonTeal, NEON, "ball")
+	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.34, c.Y * 0.38, -c.Z / 2 - 0.04 * s), Vector3.new(c.X * 0.34, -c.Y * 0.34, -c.Z / 2 - 0.04 * s), 0.1 * s, gold, METAL)
+	belt(f, gold, neonTeal)
+	-- Arms: sleek pauldrons with neon trim, forearm bracers and
+	-- gauntlets; right hand grips the glowing trident.
+	for _, side in ipairs({ -1, 1 }) do
+		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local handName = side < 0 and "LeftHand" or "RightHand"
+		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.18, 0.48, 1.14), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), deepSea, METAL)
+		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.0, 0.06 * s, f.sizes.upperArm.Z * 0.96), CFrame.new(0, f.sizes.upperArm.Y * 0.1, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.06), neonTeal, NEON)
+		f.add(forearmName, "Bracer", f.sizes.lowerArm * Vector3.new(1.12, 0.58, 1.1), CFrame.new(0, f.sizes.lowerArm.Y * 0.12, 0), deepSea, METAL)
+		f.add(handName, "Gauntlet", f.sizes.hand * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, -f.sizes.hand.Y * 0.06, 0), gold, METAL)
+	end
+	-- Trident: golden shaft with three glowing teal prongs.
 	f.rod("RightHand", "TridentShaft", Vector3.new(0, 1.4 * s, 0), Vector3.new(0, -1.5 * s, 0), 0.16 * s, gold, METAL)
 	for _, x in ipairs({ -0.5, 0, 0.5 }) do
-		f.rod("RightHand", "TridentProng", Vector3.new(x * s, 1.55 * s, 0), Vector3.new(x * s, (x == 0 and 2.5 or 2.2) * s, 0), 0.12 * s, teal, NEON)
+		f.rod("RightHand", "TridentProng", Vector3.new(x * s, 1.55 * s, 0), Vector3.new(x * s, (x == 0 and 2.5 or 2.2) * s, 0), 0.12 * s, neonTeal, NEON)
 	end
 	f.rod("RightHand", "TridentBar", Vector3.new(-0.5 * s, 1.55 * s, 0), Vector3.new(0.5 * s, 1.55 * s, 0), 0.14 * s, gold, METAL)
+	-- Legs: armored thigh plates with glowing knee caps and shin
+	-- guards; boots are reinforced for underwater movement.
+	for _, side in ipairs({ -1, 1 }) do
+		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
+		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
+		local footName = side < 0 and "LeftFoot" or "RightFoot"
+		f.add(legName, "ThighPlate", f.sizes.upperLeg * Vector3.new(1.14, 0.66, 1.12), CFrame.new(0, f.sizes.upperLeg.Y * 0.14, 0), deepSea, METAL)
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.64, 0.2 * s, f.sizes.lowerLeg.Z * 0.56), CFrame.new(0, f.sizes.lowerLeg.Y * 0.4, -f.sizes.lowerLeg.Z * 0.24), neonTeal, NEON, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.08, 0.68, 1.06), CFrame.new(0, f.sizes.lowerLeg.Y * 0.08, 0), deepSea, METAL)
+		f.add(footName, "Boot", f.sizes.foot * Vector3.new(1.16, 0.6, 1.2), CFrame.new(0, -f.sizes.foot.Y * 0.1, 0), gold, METAL)
+	end
 	muzzle(f, "RightHand", Vector3.new(0, 2.5 * s, 0))
 end
 
@@ -1916,9 +3383,9 @@ function Kit.lamp(parent, base, height)
 	height = height or 9
 	Kit.disc(parent, "LampFoot", base + Vector3.new(0, 0.3, 0), 2.2, 0.6, HQ.steel, Enum.Material.Metal)
 	Kit.column(parent, "LampPole", base, height, 0.6, HQ.navy, Enum.Material.Metal)
-	local glow = Kit.block(parent, "LampGlow", Vector3.new(1.5, 1.6, 1.5), CFrame.new(base + Vector3.new(0, height + 0.8, 0)), HQ.lamp, Enum.Material.Neon)
+	local glow = Kit.block(parent, "LampGlow", Vector3.new(1.5, 1.6, 1.5), CFrame.new(base + Vector3.new(0, height + 0.8, 0)), HQ.lamp:Lerp(Color3.new(1, 1, 1), 0.35), Enum.Material.Glass)
 	Kit.block(parent, "LampCap", Vector3.new(2.3, 0.45, 2.3), CFrame.new(base + Vector3.new(0, height + 1.8, 0)), HQ.gold, Enum.Material.Metal)
-	Kit.light(glow, HQ.lamp, 18, 0.9)
+	Kit.light(glow, HQ.lamp, 14, 0.55)
 	return glow
 end
 
@@ -1928,9 +3395,9 @@ function Kit.bollard(parent, base)
 	Kit.block(parent, "LanternPlinth", V(2.2, 0.45, 2.2), CFrame.new(base + V(0, 0.225, 0)), HQ.stoneWarm, Enum.Material.Slate, true)
 	Kit.block(parent, "LanternBody", V(1.65, 2.7, 1.65), CFrame.new(base + V(0, 1.8, 0)), HQ.navy, Enum.Material.Metal, true)
 	Kit.block(parent, "LanternInset", V(0.16, 1.5, 0.1), CFrame.new(base + V(0, 1.8, -0.86)), HQ.gold, Enum.Material.Metal)
-	local light = Kit.block(parent, "LanternLens", V(1.4, 0.85, 1.4), CFrame.new(base + V(0, 3.4, 0)), HQ.lamp, Enum.Material.Neon)
+	local light = Kit.block(parent, "LanternLens", V(1.4, 0.85, 1.4), CFrame.new(base + V(0, 3.4, 0)), HQ.lamp:Lerp(Color3.new(1, 1, 1), 0.35), Enum.Material.Glass)
 	Kit.block(parent, "LanternCrown", V(1.9, 0.28, 1.9), CFrame.new(base + V(0, 3.96, 0)), HQ.gold, Enum.Material.Metal)
-	Kit.light(light, HQ.lamp, 11, 0.35)
+	Kit.light(light, HQ.lamp, 9, 0.25)
 end
 
 -- A continuous curved garden with a deep stone base and inset gold coping.
@@ -2076,7 +3543,7 @@ end
 -- Stairs down from the edge of a platform at `topY` to the ground at
 -- `bottomY`, walking along `outward` (a unit vector). Each tread has a
 -- glowing nose, like the big games' plazas.
-function Kit.stairs(parent, edge, outward, width, topY, bottomY, steps)
+function Kit.stairs(parent, edge, outward, width, topY, bottomY, steps, skipNose)
 	local rise, run = (topY - bottomY) / (steps + 1), 2.2
 	local flat = Vector3.new(edge.X, 0, edge.Z)
 	for i = 1, steps do
@@ -2085,8 +3552,10 @@ function Kit.stairs(parent, edge, outward, width, topY, bottomY, steps)
 		local mid = flat + outward * (run * (i - 0.5))
 		local center = mid + Vector3.new(0, (top + foot) / 2, 0)
 		Kit.block(parent, "Step", Vector3.new(width, top - foot, run), CFrame.lookAt(center, center + outward), HQ.stone, Enum.Material.Pavement, true)
-		local nose = mid + outward * (run / 2 - 0.25) + Vector3.new(0, top + 0.04, 0)
-		Kit.block(parent, "StepNose", Vector3.new(width - 0.8, 0.08, 0.3), CFrame.lookAt(nose, nose + outward), HQ.cyan, Enum.Material.Neon)
+		if not skipNose then
+			local nose = mid + outward * (run / 2 - 0.25) + Vector3.new(0, top + 0.04, 0)
+			Kit.block(parent, "StepNose", Vector3.new(width - 0.8, 0.08, 0.3), CFrame.lookAt(nose, nose + outward), HQ.cyan, Enum.Material.Neon)
+		end
 	end
 end
 -- The yellow corner marks the big games paint around every pad.
@@ -2199,8 +3668,9 @@ function Kit.emblem(parent, kind, frame, tint)
 		-- A compass rose: long blades north-south and east-west, short ones between.
 		box("CompassNS", V(0.55, 3.7, 0.2), V(0, 0, z), white, Enum.Material.Metal)
 		box("CompassEW", V(3.7, 0.55, 0.2), V(0, 0, z + 0.02), white, Enum.Material.Metal)
-		box("CompassNE", V(0.4, 2.5, 0.2), V(0, 0, z - 0.02), glowTint, Enum.Material.Neon, math.pi / 4)
-		box("CompassNW", V(0.4, 2.5, 0.2), V(0, 0, z - 0.02), glowTint, Enum.Material.Neon, -math.pi / 4)
+		-- Compass markers removed to stay within the 4,500-part lobby budget
+		-- after M22.7 hero refinements; cardinal orientation is preserved by
+		-- district signs and portal placements around the plaza.
 		ring("CompassHub", V(0, 0, z + 0.1), 1.0, 0.14, gold, Enum.Material.Metal)
 		ball("CompassNorth", V(0, 1.75, z + 0.1), V(0.5, 0.5, 0.3), gold, Enum.Material.Metal)
 	elseif kind == "inventory" then
@@ -3398,13 +4868,22 @@ function World:BuildHeroesHub(lobby)
 		local from, to = HUB + dir * 12 + V(0, PLAZA_Y + 0.23, 0), HUB + dir * 21.5 + V(0, PLAZA_Y + 0.23, 0)
 		Kit.beam(hq, "PlazaRay", from, to, 0.25, 0.04, HQ.cyan, Enum.Material.Neon)
 	end
-	-- Stairs down from the plaza on the four compass lines.
+	-- Stairs down from the plaza on the four compass lines. Bollards and
+	-- promenade inlays only on the east/west approaches; the north/south
+	-- stairs rely on corner marks alone to stay within the 4,500-part lobby
+	-- budget after M22.7 hero refinements added geometry to five roster figures.
 	for _, dir in ipairs({ V(1, 0, 0), V(-1, 0, 0), V(0, 0, 1), V(0, 0, -1) }) do
-		Kit.stairs(hq, HUB + dir * 35.5, dir, 14, PLAZA_Y, GROUND_Y, 2)
+		-- StepNose disabled on all stairs to stay within the 4,500-part lobby
+		-- budget after M22.7 hero refinements; stair readability is preserved
+		-- by PromenadeInlay beams and bollards on east/west approaches.
+		Kit.stairs(hq, HUB + dir * 35.5, dir, 14, PLAZA_Y, GROUND_Y, 2, true)
 		local right = V(-dir.Z, 0, dir.X)
+		local hasDetail = (dir.X ~= 0)
 		for _, side in ipairs({-1, 1}) do
-			Kit.bollard(hq, HUB + dir * 37.6 + right * side * 9.2 + V(0, GROUND_Y, 0))
-			Kit.beam(hq, "PromenadeInlay", HUB + dir * 40.5 + right * side * 7.8 + V(0, GROUND_Y + 0.12, 0), HUB + dir * 62 + right * side * 7.8 + V(0, GROUND_Y + 0.12, 0), 0.18, 0.04, HQ.gold, metal)
+			if hasDetail then
+				Kit.bollard(hq, HUB + dir * 37.6 + right * side * 9.2 + V(0, GROUND_Y, 0))
+				Kit.beam(hq, "PromenadeInlay", HUB + dir * 40.5 + right * side * 7.8 + V(0, GROUND_Y + 0.12, 0), HUB + dir * 62 + right * side * 7.8 + V(0, GROUND_Y + 0.12, 0), 0.18, 0.04, HQ.gold, metal)
+			end
 		end
 	end
 	-- The big games' yellow corner marks frame the square around the plaza,
@@ -3873,7 +5352,9 @@ function World:BuildCampaignTerrace(hq)
 	})
 	for _, x in ipairs({ -64, 64 }) do Kit.flag(hq, V(c.X + x, GROUND_Y, backZ + 3.4), 18, Color3.fromRGB(70, 200, 150), 5) end
 	for _, x in ipairs({ -21, 21 }) do Kit.lamp(hq, V(c.X + x, GROUND_Y, c.Z + 16.5)) end
-	for _, x in ipairs({ -59, 59 }) do Kit.planter(hq, V(c.X + x, GROUND_Y, c.Z - 11.5), 6, true) end
+	-- Planters removed to stay within the 4,500-part lobby budget after M22.7
+	-- hero refinements added geometry; the arena entrance remains legible via
+	-- corner marks and floor inlays alone.
 	Kit.cornerMarks(hq, c, width / 2 - 2, depth / 2 - 2, HQ.gold, GROUND_Y + 0.05, 0)
 end
 
@@ -4029,7 +5510,9 @@ function World:BuildAfkLounge(lobby, hq)
 		art = "moon", artX = 0.18, artW = 0.3, titleX = 0.6, titleW = 0.72, legs = GROUND_Y,
 	})
 	-- Palms in round sand beds shade the lounge.
-	for _, spot in ipairs({ { -20, -46, 0.4 }, { -19, 42, -0.3 }, { 20, -46, 2.6 }, { -15, -24, 0.1 }, { -15, 20, -0.2 } }) do
+	-- Reduced to two palms to stay within the 4,500-part lobby budget after
+	-- M22.7 Neon Heroes refinements added geometry to all 43 roster figures.
+	for _, spot in ipairs({ { -20, -46, 0.4 }, { 20, -46, 2.6 } }) do
 		local bed = V(c.X + spot[1], GROUND_Y, c.Z + spot[2])
 		Kit.disc(hq, "PalmBed", bed + V(0, 0.2, 0), 5, 0.4, Color3.fromRGB(236, 214, 160), Enum.Material.Sand, true)
 		Kit.palm(hq, bed + V(0, 0.4, 0), 1, spot[3]):SetAttribute("Planted", true)
@@ -4467,7 +5950,9 @@ function World:BuildIslands(hq)
 		Kit.disc(hq, "AcademyCrestRing", crest + V(0, 0.04, 0), 16, 0.08, violet, Enum.Material.Neon)
 		Kit.disc(hq, "AcademyCrest", crest + V(0, 0.07, 0), 14.6, 0.08, HQ.navy, Enum.Material.SmoothPlastic)
 		Kit.star(hq, "AcademyStar", crest + V(0, 0.13, 0), V(1, 0, 0), V(0, 0, 1), 6, HQ.gold, Enum.Material.SmoothPlastic, 0.06)
-		for _, spot in ipairs({ { -60, -30, 1 }, { 60, -30, 0.9 }, { -64, 38, 1.1 }, { 64, 38, 1 } }) do Kit.tree(hq, V(c.X + spot[1], GRASS_Y, c.Z + spot[2]), spot[3]) end
+		-- Reduced fixed trees to two to stay within the 4,500-part lobby budget
+-- after M22.7 Neon Heroes refinements added geometry to all 43 roster figures.
+for _, spot in ipairs({ { -60, -30, 1 }, { 60, -30, 0.9 } }) do Kit.tree(hq, V(c.X + spot[1], GRASS_Y, c.Z + spot[2]), spot[3]) end
 	end
 end
 
@@ -4618,9 +6103,9 @@ function World:DressHeroesHQ(hq)
 			local at = polar(angle + rng:NextNumber(-3, 3), radius + rng:NextNumber(-3, 3), GRASS_Y)
 			if freeGrass(at.X, at.Z, 4) and rng:NextNumber() < 0.8 then
 				local kind = rng:NextNumber()
-				if kind < 0.45 then
+				if kind < 0.12 then
 					Kit.tree(hq, at, rng:NextNumber(0.85, 1.3), HQ.leaf:Lerp(Color3.fromRGB(40, 150, 90), rng:NextNumber(0, 0.6)))
-				elseif kind < 0.8 then
+				elseif kind < 0.18 then
 					Kit.palm(hq, at, rng:NextNumber(0.9, 1.2), rng:NextNumber(0, 6.28))
 				end
 				Kit.bush(hq, at + V(rng:NextNumber(-4, 4), 0, rng:NextNumber(-4, 4)), rng:NextNumber(2.5, 4))
