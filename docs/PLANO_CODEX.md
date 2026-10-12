@@ -684,5 +684,12 @@ recarga, preços e progressão preservados.
 Figurinos/silhuetas por herói continuam M22.7; carga ativa e demais
 assinaturas continuam M22.9/M33.5. As medições desta rodada foram invalidadas
 pelo Studio em segundo plano e não comprovam 60 FPS. Galeria Desktop
-`Multiverse_Modelos_Combate_2026-10-11/INDICE.html`; publicação registrada no
-relatório após confirmação do log.
+`Multiverse_Modelos_Combate_2026-10-11/INDICE.html`; detalhes da revisão e
+publicação no relatório.
+
+Código `f636a9a` no main, suíte completa verde (87,38 s), 20 capturas de
+interface sem corte de texto/erro detectado. Quatro módulos sincronizados,
+40 fontes comparadas e lobby salvo com 4.481 peças. Publicado no place da
+equipe em **11/10 às 23:42:32 local (12/10 02:42:32 UTC)**, com
+`PublishSuccessful` confirmado; Studio em edição. Medição de carga ativa
+e acabamento próprio dos figurinos permanecem abertos.

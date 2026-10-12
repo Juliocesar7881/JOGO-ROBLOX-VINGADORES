@@ -43,7 +43,7 @@ recalcular estatísticas durante toda a recarga.
 | Três fases de cinco heróis em combate nativo | `test-results/anatomy/live/poses-audit.json`: 23 preparações, 25 tiros e 15 poses observadas na rodada final |
 | Formas e figurinos no Studio | `test-results/anatomy/showroom/`: 43 heróis, seis chefes, seis famílias e três detalhes |
 | Revisão dos retratos/HUDs | Herói, equipe, torre e prêmio em PC, horizontal PT e vertical EN |
-| Orçamento de peças | Lobby 4.472 no dublê; comuns até 39 e chefes até 46, abaixo dos limites existentes |
+| Orçamento de peças | Lobby 4.481 no Studio/4.472 no dublê; comuns até 39 e chefes até 46, abaixo dos limites existentes |
 
 As 20 capturas de interface das rodadas finais não acusaram corte de texto
 ou erro de script: quatro PC, oito horizontal PT e oito vertical EN
@@ -79,9 +79,16 @@ do Studio ou pela emulação de tamanho de tela.
 
 ## Entrega
 
-Suíte completa, commit, contagem nativa e publicação serão registrados após
-conferência no mesmo place da equipe, 97132875544830. Sincronização seletiva
-de WorldBuilder, MatchService, Motion e Effects; nenhuma configuração da
-experiência foi alterada.
+Código **`f636a9a`** enviado ao `main`, com suíte completa verde na cadeia do
+commit (87,38 s). Publicado no mesmo place da equipe **97132875544830** em
+**11/10/2026 às 23:42:32 local (12/10 às 02:42:32 UTC)**, com
+`Go to PublishSuccessful` confirmado no log do Studio. Sincronização seletiva
+de WorldBuilder, MatchService, Motion e Effects; 40 fontes comparadas com o
+repositório e prefixo Standalone preservado.
+
+Lobby salvo reconstruído com **4.481 peças**, abaixo do teto de 4.500, e
+Studio deixado em edição. Nenhuma configuração da experiência foi alterada.
+Comprovantes: `test-results/anatomy/publication.json`, `final-audit.json` e
+`preview-counts.txt`. A medição de carga ativa continua pendente em M33.5.
 
 Galeria local: `C:/Users/loops/Desktop/Multiverse_Modelos_Combate_2026-10-11/INDICE.html`.
