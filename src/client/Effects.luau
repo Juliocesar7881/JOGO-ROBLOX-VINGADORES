@@ -340,7 +340,10 @@ end
 function Effects:_recoil(towerId, interval)
 	local model = self:_towerModel(towerId)
 	local pose = model and self:_record(model)
-	if pose then pose.firedAt, pose.active, pose.fireCount = self.clock, true, (pose.fireCount or 0) + 1 end
+	if pose then
+		pose.firedAt, pose.active, pose.fireCount = self.clock, true, (pose.fireCount or 0) + 1
+		pose.windupAt, pose.windupDuration = nil, nil
+	end
 	if pose and type(interval)=="number" and interval>0 then
 		local state=self.getState()
 		pose.attackInterval=interval/math.max(1,state and state.match and state.match.speed or 1)
@@ -403,6 +406,7 @@ function Effects:_record(model)
 		-- A jointed figure is posed here, joint by joint, in its own style.
 		if figure:GetAttribute("HeroRig") then
 			record.rig = Motion.Joints(figure)
+			record.emitterRig = Motion.Rig(figure)
 			record.poseStyle = figure:GetAttribute("PoseStyle")
 		end
 	end
@@ -452,7 +456,7 @@ function Effects:_registerIdle()
 	end
 end
 
-function Effects:_turnTowers(dt)
+function Effects:_turnTowers(dt, onlyModel)
 	local state = self.getState()
 	local reduced = state and state.profile and state.profile.settings and state.profile.settings.lowFX
 	if self.clock >= (self.idleScanAt or 0) then
@@ -463,6 +467,7 @@ function Effects:_turnTowers(dt)
 	local eye = camera and camera.CFrame.Position
 	for index = #self.aimsOrder, 1, -1 do
 		local model = self.aimsOrder[index]
+		if onlyModel and model ~= onlyModel then continue end
 		local record = self.aims[model]
 		if model.Parent == nil or not record then
 			if record then for _, star in ipairs(record.stars or {}) do star:Destroy() end end
@@ -471,7 +476,8 @@ function Effects:_turnTowers(dt)
 			continue
 		end
 		local age = record.firedAt and self.clock - record.firedAt or math.huge
-		local impact,prepare,fireProgress=Motion.AttackEnvelope(age,record.attackInterval,record.poseStyle)
+		local impact,_,fireProgress=Motion.AttackEnvelope(age,record.attackInterval,record.poseStyle)
+		local prepare=Motion.WindupEnvelope(record.windupAt and self.clock-record.windupAt or math.huge,record.windupDuration)
 		if not state or state.phase~="Wave" then prepare=0 end
 		local firing = impact>0 or prepare>0
 		local castAge = record.castAt and self.clock - record.castAt or 1
@@ -984,7 +990,10 @@ function Effects:_heroShot(event, lowFX)
 	if muzzle then from = muzzle.Position end
 	-- Final art names its own emission point.
 	local attachment = model and model:FindFirstChild("Muzzle", true)
-	if attachment and attachment:IsA("Attachment") and typeof(attachment.WorldPosition) == "Vector3" then from = attachment.WorldPosition end
+	if attachment and attachment:IsA("Attachment") and typeof(attachment.WorldPosition) == "Vector3" then
+		local record = self.aims[model]
+		from = Motion.Point(record and record.emitterRig,attachment.Parent,attachment.Position) or attachment.WorldPosition
+	end
 	local color = UI.color(event.color)
 	local white = Color3.fromRGB(218, 246, 255)
 	local delta = target - from
@@ -1166,11 +1175,27 @@ function Effects:Handle(event)
 	if type(event)~="table" then return end
 	-- A frame's shots arrive together; each is drawn like a lone Shot.
 	if event.kind == "Shots" then
+		for _, windup in ipairs(event.windups or {}) do
+			if type(windup) == "table" then windup.kind="Windup" self:Handle(windup) end
+		end
 		for _, shot in ipairs(event.shots or {}) do
 			if type(shot) == "table" then
 				shot.kind = "Shot"
 				self:Handle(shot)
 			end
+		end
+		return
+	end
+	if event.kind == "Windup" then
+		if typeof(event.to) ~= "Vector3" or type(event.duration) ~= "number" or event.duration <= 0 then return end
+		local state = self.getState()
+		if not state or state.phase ~= "Wave" or (state.profile and state.profile.settings.lowFX) then return end
+		self:_aim(event.towerId,event.to)
+		local model = self:_towerModel(event.towerId)
+		local record = model and self:_record(model)
+		if record then
+			record.windupAt = self.clock
+			record.windupDuration = math.min(0.3,event.duration)/math.max(1,state.match and state.match.speed or 1)
 		end
 		return
 	end
@@ -1459,6 +1484,10 @@ function Effects:Handle(event)
 		local state = self.getState()
 		self:_aim(event.towerId, event.to)
 		self:_recoil(event.towerId,event.interval)
+		-- Pose before reading the attachment: otherwise a projectile originates
+		-- at the previous frame's lowered hand while the hero is already firing.
+		local firingModel = self:_towerModel(event.towerId)
+		if firingModel then self:_turnTowers(0,firingModel) end
 		local camera = workspace.CurrentCamera
 		if self.audio and camera and typeof(event.to) == "Vector3" then
 			local model = self:_towerModel(event.towerId)

@@ -666,6 +666,49 @@ end
 
 local function distanceBetween(a, b) return (a - b).Magnitude end
 
+print("--- cosmetic windups preserve authoritative attacks ---")
+do
+	local match, player = stage()
+	local tower = place(match, player, "ironman")
+	local enemy = spawn(match, "brute", 0, 100)
+	enemy.position = tower.position + v3(0, 0, -4)
+	local events = {}
+	match.remotes.FX.FireClient = function(_, _, event) table.insert(events, event) end
+	local stats = match:_towerStats(tower)
+	tower.nextAttack = match.elapsed + 1
+	local deadline, hp, cash = tower.nextAttack, enemy.hp, match.participants[player.UserId].cash
+	match:_windup(tower, stats)
+	check(#events == 0, "windup cannot start early")
+	match.elapsed = deadline - math.min(0.2, stats.interval * 0.2)
+	match:BeginShots()
+	match:_windup(tower, stats)
+	match:_windup(tower, stats)
+	match:FlushShots()
+	local batch = events[1]
+	check(#events == 1 and batch.kind == "Shots" and #batch.shots == 0 and #batch.windups == 1, "one preparation is batched even on a frame without shots")
+	check(batch.windups[1].towerId == tower.id and batch.windups[1].duration > 0, "preparation carries a real tower and remaining simulation time")
+	check(enemy.hp == hp and tower.nextAttack == deadline and (tower.attacks or 0) == 0
+		and match.participants[player.UserId].cash == cash, "preparation changes no health, deadline, attack count or money")
+	match.elapsed = deadline
+	check(match:_attack(tower, stats) and enemy.hp < hp, "confirmed attack still damages at its original deadline")
+	-- No animation for an empty lane or an ineligible (air/cloaked) target.
+	for _, id in ipairs({"flyer", "stealth"}) do
+		tower.nextAttack += 1
+		match.elapsed = tower.nextAttack - 0.1
+		enemy.def, enemy.revealUntil = Catalog.Enemies[id], 0
+		enemy.position = tower.position + v3(stats.range - 1, 0, 0)
+		local before = #events
+		match:_windup(tower, {range=stats.range,interval=1,air=false,reveal=false})
+		check(#events == before, "windup respects target eligibility: " .. id)
+	end
+	match.enemies = {}
+	tower.nextAttack += 1
+	match.elapsed = tower.nextAttack - 0.1
+	local before = #events
+	match:_windup(tower, stats)
+	check(#events == before, "empty lane creates no preparation")
+end
+
 print("--- authoritative tower combat totals ---")
 do
 	local match, player = stage()

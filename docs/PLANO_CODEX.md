@@ -671,3 +671,18 @@ jogadores, sessão prolongada e D1/D7 seguem no
 [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md). Anatomia/peso do catálogo
 completo continuam M22.7/M22.9. Galeria Desktop
 `Multiverse_Retencao_2026-10-11/INDICE.html`.
+
+## 25. Anatomia e preparação dos ataques — 11/10
+
+Fila M33 e relatório em
+[`REFINAMENTO_MODELOS_COMBATE_2026-10-11.md`](REFINAMENTO_MODELOS_COMBATE_2026-10-11.md).
+Tronco, cintura, membros, mãos e pés refinados nos modelos existentes;
+preparação com alvo válido, impacto/recuperação e emissão na pose atual.
+Três fases de cinco heróis observadas em combate real do Studio. Dano,
+recarga, preços e progressão preservados.
+
+Figurinos/silhuetas por herói continuam M22.7; carga ativa e demais
+assinaturas continuam M22.9/M33.5. As medições desta rodada foram invalidadas
+pelo Studio em segundo plano e não comprovam 60 FPS. Galeria Desktop
+`Multiverse_Modelos_Combate_2026-10-11/INDICE.html`; publicação registrada no
+relatório após confirmação do log.

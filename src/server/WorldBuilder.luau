@@ -330,7 +330,8 @@ function Figure.Build(parent, spec, colors, material)
 	end
 	-- Authored Roblox body meshes soften corners and taper shoulders into the
 	-- waist without adding BaseParts or changing the joint/weapon contract.
-	for _, name in ipairs({"UpperTorso","LowerTorso","LeftHand","RightHand","LeftFoot","RightFoot"}) do
+	for _, name in ipairs({"UpperTorso","LowerTorso","LeftHand","RightHand","LeftFoot","RightFoot",
+		"LeftUpperArm","RightUpperArm","LeftLowerArm","RightLowerArm","LeftUpperLeg","RightUpperLeg","LeftLowerLeg","RightLowerLeg"}) do
 		local bodyPart=parts[name]
 		local mesh=Instance.new("SpecialMesh")
 		mesh.Name="BodyContour"
@@ -340,6 +341,43 @@ function Figure.Build(parent, spec, colors, material)
 	end
 	model:SetAttribute("BodyFinish","contoured")
 	return figure
+end
+
+-- A narrow core plus two authored wedges gives a real shoulder-to-waist
+-- silhouette. Keep the rig part's bounds intact: costumes, shoulders and
+-- emission attachments are authored against them. Finish after the costume
+-- chooses its colours/materials, including enemy faction tints.
+function Figure.Finish(f, detailed, compact)
+	local c = f.sizes.chest
+	local core = f.parts.UpperTorso:FindFirstChild("BodyContour")
+	core.MeshType, core.Scale = Enum.MeshType.Brick, Vector3.new(compact and 1 or 0.76, 1, 1)
+	for _, side in ipairs({ -1, 1 }) do
+		local chest = f.parts.UpperTorso
+		local basis = CFrame.fromMatrix(Vector3.new(side * c.X * 0.44, 0, 0),
+			Vector3.new(0, 0, side), Vector3.new(side, 0, 0), Vector3.new(0, 1, 0))
+		if not compact then
+			local slope = f.add("UpperTorso", "TorsoSlope", Vector3.new(c.Z, c.X * 0.12, c.Y), basis,
+				chest.Color, chest.Material, "wedge")
+			slope:SetAttribute("Tint", chest:GetAttribute("Tint"))
+		end
+		local name = side < 0 and "Left" or "Right"
+		for _, segment in ipairs({"UpperArm","LowerArm","UpperLeg","LowerLeg"}) do
+			local contour = f.parts[name .. segment]:FindFirstChild("BodyContour")
+			contour.MeshType = Enum.MeshType.Head
+			contour.Scale = Vector3.new(0.96, 1, 0.96)
+		end
+		if detailed then
+			local hand, foot = f.parts[name .. "Hand"], f.parts[name .. "Foot"]
+			f.add(name .. "Hand", "Thumb", hand.Size * Vector3.new(0.33, 0.65, 0.52),
+				CFrame.new(-side * hand.Size.X * 0.48, hand.Size.Y * 0.08, -hand.Size.Z * 0.12)
+					* CFrame.Angles(0, 0, -side * 0.22), hand.Color, hand.Material, "head")
+			f.add(name .. "Foot", "BootSole", foot.Size * Vector3.new(1.02, 0.28, 1.04),
+				CFrame.new(0, -foot.Size.Y * 0.37, 0), foot.Color:Lerp(FIGURE_INK, 0.38), foot.Material, "head")
+		end
+	end
+	local hips = f.parts.LowerTorso:FindFirstChild("BodyContour")
+	hips.MeshType, hips.Scale = Enum.MeshType.Head, Vector3.new(0.94, 0.96, 0.96)
+	f.model:SetAttribute("BodyFinish", "sculpted")
 end
 
 -- Faces. "smile" and "grin" are the classic Roblox face (two dark ovals and a
@@ -1081,6 +1119,7 @@ function Figure.Hero(parent, heroId, hero, scale)
 	if not DRAWN_FACE[heroId] then Figure.Face(figure, look.face or "smile", look.faceOptions) end
 	local extras = HERO_EXTRAS[heroId]
 	if extras then extras(figure) end
+	Figure.Finish(figure, true)
 	if not figure.model:FindFirstChild("Muzzle", true) then muzzle(figure, "RightHand", Vector3.new(0, -figure.sizes.hand.Y / 2 - 0.1 * figure.scale, 0)) end
 	return figure
 end
@@ -1558,6 +1597,9 @@ function Figure.Enemy(parent, def)
 			end
 		end
 	end
+	-- The disposable illusion already carries the boss's coat/horns. Preserve
+	-- its 40-part crowd budget rather than duplicating an obscured torso edge.
+	Figure.Finish(figure, def.boss == true, def.id == "illusion")
 	Figure.Release(figure)
 	return figure
 end

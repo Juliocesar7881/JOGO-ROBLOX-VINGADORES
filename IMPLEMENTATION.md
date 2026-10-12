@@ -15,6 +15,14 @@ only a confirmed Shot creates an impact. Missing intervals keep the existing
 fallback. Predicting a windup never applies damage, fires a projectile or
 consumes resources. `lowFX` suppresses the added motion.
 
+Live preparation uses server-only FX `Windup {towerId,to,duration}` (simulation
+seconds), batched in optional `Shots.windups`. It is emitted once near an
+existing cooldown deadline only if an eligible target exists. It changes no
+deadline, target reservation, damage or resource. A confirmed Shot clears the
+windup; expiry, phase change, stun and lowFX suppress it. The first attack
+remains immediate. Client emission resolves the authored Motor6D/Weld chain
+at the impact pose, avoiding a one-frame stale attachment position.
+
 Analytics progression uses `(player, path, status, level, levelName, fields)`.
 Failures are throttled for 30 seconds per event category, without disabling
 other telemetry or gameplay. Session milestones are server-observed, once

@@ -41,6 +41,8 @@ do
 		local _,ended=Motion.AttackEnvelope(2,1,style)
 		check(ended==0,style..": no perpetual windup after combat ends")
 	end
+	check(Motion.WindupEnvelope(0.19,0.2)>0.98,"confirmed anticipation approaches its full pose")
+	check(Motion.WindupEnvelope(0.3,0.2)==0 and Motion.WindupEnvelope(math.huge,nil)==0,"expired/missing windup cannot stick")
 	local camera={ViewportSize={X=800,Y=600},WorldToViewportPoint=function(_,point) return point,point.Z>0 end}
 	check(InteractionHud.InView(camera,v3(400,300,1),270,66),"Whole billboard fits at screen center")
 	check(not InteractionHud.InView(camera,v3(100,300,1),270,66),"Left edge cannot cut billboard")
@@ -124,6 +126,15 @@ do
 			check(hand.Position.Y > head.Position.Y, "a cheer lifts the hand above the head, got " .. tostring(hand.Position.Y - head.Position.Y))
 			check(math.abs((hand.Position - shoulder.Position).Magnitude - shoulderToHand) < 0.35 * shoulderToHand, "the arm keeps its length while it moves")
 			check(hand.Position.Y > restY + 1.5, "the hand really travelled")
+			local muzzle = copy:FindFirstChild("Muzzle",true)
+			if muzzle then
+				local expected = (muzzle.Parent.CFrame*CFrame.new(muzzle.Position)).Position
+				local stale = muzzle.Parent.CFrame
+				muzzle.Parent.CFrame = stale*CFrame.new(100,0,0)
+				local resolved = Motion.Point(rig,muzzle.Parent,muzzle.Position)
+				check((resolved-expected).Magnitude<0.001,"emission resolves the current pose despite a stale physics attachment")
+				Motion.Solve(rig)
+			end
 			-- Moving the root carries the whole figure with it.
 			local rootAt = rig.root.Position
 			rig.root.CFrame = rig.root.CFrame * CFrame.new(0, 3, 0)
@@ -1075,6 +1086,15 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 			local piece=portrait:FindFirstChild(name,true)
 			check(piece and piece:FindFirstChild("BodyContour"),heroId..": body contour without extra parts: "..name)
 		end
+		local slopes, thumbs, soles = 0, 0, 0
+		for _,piece in ipairs(portrait:GetDescendants()) do
+			if piece.Name=="TorsoSlope" then
+				slopes+=1
+				check(piece:IsA("WedgePart") and piece:FindFirstChild("Fit").Part0.Name=="UpperTorso",heroId..": tapered silhouette follows the chest joint")
+			elseif piece.Name=="Thumb" then thumbs+=1
+			elseif piece.Name=="BootSole" then soles+=1 end
+		end
+		check(slopes==2 and thumbs==2 and soles==2,heroId..": finished torso, hands and boots share the portrait rig")
 	end
 end
 world:Build("manhattan")

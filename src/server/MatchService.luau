@@ -118,12 +118,15 @@ end
 -- one event per frame instead of hundreds per second.
 function Match:BeginShots()
 	self.shotBuffer = self.shotBuffer or {}
+	self.windupBuffer = self.windupBuffer or {}
 end
 
 function Match:FlushShots()
-	local shots = self.shotBuffer
-	self.shotBuffer = nil
-	if shots and #shots > 0 then self:_fx({kind="Shots",shots=shots}) end
+	local shots, windups = self.shotBuffer, self.windupBuffer
+	self.shotBuffer, self.windupBuffer = nil, nil
+	if (shots and #shots > 0) or (windups and #windups > 0) then
+		self:_fx({kind="Shots",shots=shots or {},windups=windups})
+	end
 end
 
 function Match:_notice(pt, en, tone)
@@ -563,6 +566,25 @@ function Match:_canTarget(tower, enemy, stats)
 		return distance<=math.min(stats.range,CLOAK_SIGHT)
 	end
 	return distance<=stats.range
+end
+
+-- Cosmetic anticipation on a scheduled attack, once per cooldown. A real
+-- eligible enemy must exist. No target is reserved, no hit is predicted and
+-- the actual attack still selects its target at the unchanged deadline.
+function Match:_windup(tower, stats)
+	if tower.windupFor == tower.nextAttack then return end
+	local remaining = tower.nextAttack - self.elapsed
+	local lead = math.min(0.23, stats.interval * 0.25)
+	if remaining <= 0 or remaining > lead then return end
+	tower.windupFor = tower.nextAttack
+	for _, enemy in pairs(self.enemies) do
+		if self:_canTarget(tower, enemy, stats) then
+			local height = self.world.AimHeight and self.world:AimHeight(enemy.enemyId) or (enemy.def.air and 8 or 2)
+			local event = {kind="Windup",towerId=tower.id,to=enemy.position+Vector3.new(0,height,0),duration=remaining}
+			if self.windupBuffer then event.kind=nil table.insert(self.windupBuffer,event) else self:_fx(event) end
+			return
+		end
+	end
 end
 
 function Match:_attack(tower, stats)
@@ -1451,9 +1473,17 @@ function Match:Step(dt)
 			end
 		end
 		for _,tower in pairs(self.towers) do
-			if (tower.stunnedUntil or 0)<=self.elapsed and tower.nextAttack<=self.elapsed then
+			-- Build combat stats only at the attack deadline or the first short
+			-- anticipation window, not on every simulation tick during cooldown.
+			local due = tower.nextAttack<=self.elapsed
+			local anticipating = tower.windupFor~=tower.nextAttack and tower.nextAttack-self.elapsed<=0.23
+			if (tower.stunnedUntil or 0)<=self.elapsed and (due or anticipating) then
 				local stats=self:_towerStats(tower)
-				if self:_attack(tower,stats) then tower.nextAttack=self.elapsed+stats.interval else tower.nextAttack=self.elapsed+0.2 end
+				if due then
+					if self:_attack(tower,stats) then tower.nextAttack=self.elapsed+stats.interval else tower.nextAttack=self.elapsed+0.2 end
+				else
+					self:_windup(tower,stats)
+				end
 			end
 		end
 		self:_flushSplits()

@@ -41,14 +41,29 @@ end
 function Motion.Rig(model)
 	local root = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart", true)
 	if not root then return nil end
-	local children = {}
+	local children, parents = {}, {}
 	for _, item in ipairs(model:GetDescendants()) do
 		if (item:IsA("Motor6D") or item:IsA("Weld")) and item.Part0 and item.Part1 then
 			children[item.Part0] = children[item.Part0] or {}
 			table.insert(children[item.Part0], item)
+			parents[item.Part1] = item
 		end
 	end
-	return { root = root, children = children, joints = Motion.Joints(model) }
+	return { root = root, children = children, parents = parents, joints = Motion.Joints(model) }
+end
+
+-- Motor6D.Transform is applied by physics after the render callback. Resolve
+-- just this chain for a shot emitted in the same callback, without teleporting
+-- the live rig or waiting a frame for Attachment.WorldPosition to catch up.
+function Motion.Point(rig, host, position)
+	if not rig or not host then return nil end
+	local frame, part = CFrame.new(position), host
+	while rig.parents[part] do
+		local joint = rig.parents[part]
+		frame = joint.C0 * (joint:IsA("Motor6D") and joint.Transform or IDENTITY) * (joint.C1 or IDENTITY):Inverse() * frame
+		part = joint.Part0
+	end
+	return (part.CFrame * frame).Position
 end
 
 -- Places every part from the root outward: each child sits where its parent's
@@ -147,8 +162,8 @@ end
 -- A tower hero's pose this frame. pose: fire, cast, hop (0..1 envelopes),
 -- stunned, breathe (idle -1..1), style (Catalog-driven attack kind).
 -- Impact starts on the confirmed shot, then settles with a long recovery for
--- heavy attacks. Preparation predicts only the next cosmetic pose from the
--- server's interval; it never creates a shot or changes damage timing.
+-- heavy attacks. Live preparation comes from the server's Windup cue; only
+-- portraits use the optional interval prediction. Neither creates a hit.
 function Motion.AttackEnvelope(age, interval, style)
 	local heavy=style=="smash" or style=="strike" or style=="slash"
 	local duration=math.min(heavy and 0.55 or 0.32,math.max(0.12,(interval or 1)*0.7))
@@ -163,6 +178,12 @@ function Motion.AttackEnvelope(age, interval, style)
 	return impact,prepare,progress
 end
 
+function Motion.WindupEnvelope(age, duration)
+	if not duration or duration <= 0 or age < 0 or age >= duration then return 0 end
+	local t = math.clamp(age / duration, 0, 1)
+	return t * t * (3 - 2 * t)
+end
+
 function Motion.Hero(joints, pose)
 	local fire, cast, hop, breathe = pose.fire or 0, pose.cast or 0, pose.hop or 0, pose.breathe or 0
 	local prepare=pose.prepare or 0
@@ -172,6 +193,8 @@ function Motion.Hero(joints, pose)
 	local rShoulder, rRoll, rElbow = 0.08, 0.12, 0.18
 	local waist, neck = 0.03 * breathe, -0.02 * breathe
 	local twist, lift = 0, 0
+	local progress = math.clamp(pose.fireProgress or 0, 0, 1)
+	local recover = sin(progress * pi) * (1 - progress)
 	if style == "bow" then
 		lShoulder, lRoll, lElbow = 1.1+0.35*prepare, 0, 0
 		rShoulder, rRoll, rElbow = 1.0+0.3*prepare+0.15*fire, 0.3, 0.7+1.2*prepare-0.5*fire
@@ -181,9 +204,10 @@ function Motion.Hero(joints, pose)
 		rShoulder, rElbow = 0.7 + 0.85 * fire, 0.2 * (1 - fire)
 		lRoll, rRoll = -0.1, 0.1
 	elseif style == "smash" then
-		lShoulder, rShoulder = 0.2+2.5*prepare+0.5*fire, 0.2+2.5*prepare+0.5*fire
-		lElbow, rElbow = 0.35+0.55*prepare, 0.35+0.55*prepare
-		waist=waist+0.14*prepare-0.38*fire
+		lShoulder, rShoulder = 0.2+2.5*prepare+0.5*fire+0.35*recover, 0.2+2.5*prepare+0.5*fire+0.35*recover
+		lElbow, rElbow = 0.35+0.55*prepare+0.7*recover, 0.35+0.55*prepare+0.7*recover
+		lRoll, rRoll = -0.15-0.12*prepare, 0.15+0.12*prepare
+		waist=waist+0.14*prepare-0.38*fire+0.12*recover
 	elseif style == "punch" then
 		-- Alternating jabs: the side that swings changes with every attack, the other
 		-- fist stays up as a guard and the waist turns into the blow.
@@ -211,9 +235,10 @@ function Motion.Hero(joints, pose)
 		waist = waist - 0.12 * fire
 		twist=-0.35*prepare+0.45*fire
 	elseif style == "magic" then
-		lShoulder, rShoulder = 0.5 + 1.0 * fire, 0.5 + 1.0 * fire
+		lShoulder, rShoulder = 0.5 + 1.0 * fire+0.25*prepare, 0.5 + 1.0 * fire+0.25*prepare
 		lRoll, rRoll = -0.25+0.2*fire-0.5*prepare, 0.25-0.2*fire+0.5*prepare
-		lElbow, rElbow = 0.6 * (1 - fire), 0.6 * (1 - fire)
+		lElbow, rElbow = 0.6 * (1 - fire)+0.9*prepare, 0.6 * (1 - fire)+0.9*prepare
+		waist=waist+0.08*prepare-0.07*fire
 	elseif style == "beam" then
 		lShoulder, rShoulder = 0.2 + 1.35 * fire, 0.2 + 1.35 * fire
 		lRoll, rRoll = -0.1, 0.1
@@ -252,7 +277,7 @@ function Motion.Hero(joints, pose)
 	set(joints, "Neck", angles(neck, 0, 0))
 	-- A slight crouch when landing a heavy blow or bracing a cast; a flier's legs
 	-- trail behind it instead.
-	local brace = (style == "smash" and fire * 0.35 or 0) + 0.2 * cast
+	local brace = (style == "smash" and (fire * 0.35+prepare*0.18+recover*0.12) or 0) + 0.2 * cast
 	local trail = lift > 0 and 0.35 or 0
 	set(joints, "LeftHip", angles(brace + trail, 0, -0.05))
 	set(joints, "RightHip", angles(brace + trail * 0.8, 0, 0.05))
