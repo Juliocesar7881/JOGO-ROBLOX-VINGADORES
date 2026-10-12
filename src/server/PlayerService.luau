@@ -800,6 +800,7 @@ function PlayerService:Snapshot(player)
 	end
 	if record.passes.vip then result.titles.vip = copy(VIP_TITLE) end
 	if result.title ~= "" and not result.titles[result.title] then result.title = "" end
+	result.nextGoal = self.rules.NextGoal(result)
 	return result
 end
 

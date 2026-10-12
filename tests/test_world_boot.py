@@ -13,6 +13,7 @@ TOKENS = {
     "__CATALOG__": Path("src/shared/Catalog.luau"),
     "__WORLD__": Path("src/server/WorldBuilder.luau"),
     "__MOTION__": Path("src/client/Motion.luau"),
+    "__INTERACTION__": Path("src/client/InteractionHud.luau"),
 }
 
 

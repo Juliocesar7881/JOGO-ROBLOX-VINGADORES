@@ -634,7 +634,7 @@ function Match:_attack(tower, stats)
 	-- The figure's own chest when the world knows it; otherwise the old heights.
 	local visualHeight = (self.world.AimHeight and self.world:AimHeight(target.enemyId)) or (target.def.air and 8 or target.def.boss and 4.2 or target.enemyId=="brute" and 2.9 or 2)
 	local shot={kind="Shot",from=tower.position+Vector3.new(0,4,0),to=mineAt and mineAt+Vector3.new(0,0.4,0) or target.position+Vector3.new(0,visualHeight,0),color=Color3.fromRGB(c[1],c[2],c[3]),towerId=tower.id,heroId=tower.heroId,style=attack,stomp=stomp,
-		armored=(target.def.armor or 0)>=0.25 or nil}
+		armored=(target.def.armor or 0)>=0.25 or nil,interval=stats.interval}
 	-- Inside a frame's batch every shot rides in one Shots event; alone (tests,
 	-- a stray call) it goes out at once.
 	if self.shotBuffer then shot.kind=nil table.insert(self.shotBuffer,shot) else self:_fx(shot) end

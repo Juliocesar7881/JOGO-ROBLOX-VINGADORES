@@ -337,10 +337,14 @@ end
 
 -- Attack poses use authored shoulder joints, including attached weapons.
 -- Every transform starts from the rest pose; repeated shots cannot drift.
-function Effects:_recoil(towerId)
+function Effects:_recoil(towerId, interval)
 	local model = self:_towerModel(towerId)
 	local pose = model and self:_record(model)
 	if pose then pose.firedAt, pose.active, pose.fireCount = self.clock, true, (pose.fireCount or 0) + 1 end
+	if pose and type(interval)=="number" and interval>0 then
+		local state=self.getState()
+		pose.attackInterval=interval/math.max(1,state and state.match and state.match.speed or 1)
+	end
 	local ring = model and model:FindFirstChild("PowerRing")
 	if not ring or ring:GetAttribute("Recoiling") then return end
 	local function canonical()
@@ -466,8 +470,10 @@ function Effects:_turnTowers(dt)
 			table.remove(self.aimsOrder, index)
 			continue
 		end
-		local age = record.firedAt and self.clock - record.firedAt or 1
-		local firing = age < 0.42
+		local age = record.firedAt and self.clock - record.firedAt or math.huge
+		local impact,prepare,fireProgress=Motion.AttackEnvelope(age,record.attackInterval,record.poseStyle)
+		if not state or state.phase~="Wave" then prepare=0 end
+		local firing = impact>0 or prepare>0
 		local castAge = record.castAt and self.clock - record.castAt or 1
 		local casting = castAge < 0.75
 		local hopAge = record.hopAt and self.clock - record.hopAt or 1
@@ -479,16 +485,16 @@ function Effects:_turnTowers(dt)
 			for _, star in ipairs(record.stars) do star:Destroy() end
 			record.stars = nil
 		end
-		if record.active or casting or hopping or stunned or idle or record.posed then
+		if record.active or firing or casting or hopping or stunned or idle or record.posed then
 			local delta = ((record.target - record.yaw + math.pi) % (2 * math.pi)) - math.pi
 			local settled = math.abs(delta) < 0.01
 			record.yaw = settled and record.target or record.yaw + delta * math.min(1, dt * 14)
-			local pulse = firing and math.sin(math.clamp(age / 0.42, 0, 1) * math.pi) or 0
+			local pulse = impact
 			local cast = casting and math.sin(math.clamp(castAge / 0.75, 0, 1) * math.pi) or 0
 			local hop = hopping and math.sin(math.clamp(hopAge / 0.55, 0, 1) * math.pi) or 0
 			local breathe = idle and math.sin(self.clock * 2.1 + record.breath) * 0.05 * record.scale or 0
 			local slump = stunned and 1 or 0
-			if reduced then pulse, cast, hop = 0, 0, 0 end
+			if reduced then pulse, prepare, cast, hop = 0, 0, 0, 0 end
 			local melee = record.heroId == "hulk" or record.heroId == "thor" or record.heroId == "groot" or record.heroId == "shangchi" or record.heroId == "capmen" or record.heroId == "speedster"
 			local magic = record.heroId == "wanda" or record.heroId == "strange" or record.heroId == "silversurfer" or record.heroId == "emerald"
 			-- Upgrades lift the whole figure off the pedestal; everything else
@@ -503,7 +509,7 @@ function Effects:_turnTowers(dt)
 				if record.hopAt ~= record.playedHop and hopping then record.playedHop = record.hopAt; playArt(record, record.figure, "UpgradeAnimation") end
 				if record.rig then
 					Motion.Hero(record.rig, {
-						fire = pulse, fireProgress = firing and math.clamp(age / 0.42, 0, 1) or 0, cast = cast, hop = hop,
+						fire = pulse, prepare=prepare, fireProgress=fireProgress, cast = cast, hop = hop,
 						breathe = idle and math.sin(self.clock * 2.1 + record.breath) or 0, stunned = stunned, style = record.poseStyle,
 						count = record.fireCount or 0, t = self.clock,
 					})
@@ -1452,7 +1458,7 @@ function Effects:Handle(event)
 	elseif event.kind == "Shot" then
 		local state = self.getState()
 		self:_aim(event.towerId, event.to)
-		self:_recoil(event.towerId)
+		self:_recoil(event.towerId,event.interval)
 		local camera = workspace.CurrentCamera
 		if self.audio and camera and typeof(event.to) == "Vector3" then
 			local model = self:_towerModel(event.towerId)

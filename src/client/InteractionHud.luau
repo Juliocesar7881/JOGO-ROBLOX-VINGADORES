@@ -2,6 +2,17 @@
 -- No rewards or connection state are created here: the controller supplies them.
 local InteractionHud = {}
 
+-- Billboard sizes are real pixels. Only draw a card when its whole rectangle
+-- fits; proximity/key handling stays owned by Roblox even while it is hidden.
+function InteractionHud.InView(camera, position, width, height, margin)
+	if not camera or not position then return false end
+	local point, visible=camera:WorldToViewportPoint(position)
+	local viewport=camera.ViewportSize
+	margin=margin or 8
+	return visible and point.Z>0 and point.X-width/2>=margin and point.X+width/2<=viewport.X-margin
+		and point.Y-height/2>=margin and point.Y+height/2<=viewport.Y-margin
+end
+
 function InteractionHud.afk(UI, parent, width, T, callbacks)
 	local C = UI.Colors
 	callbacks = callbacks or {}

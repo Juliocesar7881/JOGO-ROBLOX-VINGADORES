@@ -882,7 +882,23 @@ renderLobby = function()
 		-- the strip would only repeat it.
 		local firstChest=type(p.stats)=="table" and (p.stats.chests or 0)==0 and not p.paidRandomRestricted
 		if not newcomer then
-			if canOpenChest() and not firstChest then
+			local goal=p.nextGoal
+			-- The server supplies the action and progress. The client only routes
+			-- a tap to the existing panel or physical destination.
+			local errands=(firstChest and ((p.gold or 0)>=Catalog.Chests.rare.cost or p.rewards and p.rewards.freeChest and p.rewards.freeChest.ready))
+				or (type(p.stats)=="table" and (p.stats.matches or 0)<=1 and next(p.campaign or {})==nil)
+			if errands then
+				-- TutorialCard owns this objective; do not repeat it in the strip.
+			elseif goal then
+				local target=goal.target or {}
+				local progress=(goal.total or 1)>1 and ("  "..tostring(goal.progress).."/"..tostring(goal.total)) or ""
+				key="goal:"..goal.id..progress
+				suggestion={L(goal.text)..progress,function()
+					if target.portal then routePreview.goPortal(target.portal)
+					elseif target.chest then routePreview.goShop(target.chest)
+					elseif target.panel then openContext(target.panel,{hud=true}) end
+				end}
+			elseif canOpenChest() and not firstChest then
 				key,suggestion="chest",{T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."),function() routePreview.goShop() end}
 			elseif tonumber(p.rewards and p.rewards.claimable) and p.rewards.claimable>0 then
 				key,suggestion="gifts",{T("Tem prêmios esperando por você!","You have gifts waiting!"),function() openContext("rewards",{hud=true}) end}
@@ -900,7 +916,7 @@ renderLobby = function()
 		local hint=refs.firstVisitHint
 		hint:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(0,22)
 		hint:FindFirstChild("Border").Color=C.gold
-		UI.label(hint,suggestion[1],{Name="GuideTip",Position=UDim2.fromOffset(16,0),Size=UDim2.new(1,-32,1,0),TextSize=compact and 14 or 16,Font=UI.Fonts.display,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None,TextXAlignment=Enum.TextXAlignment.Center})
+		UI.fit(UI.label(hint,suggestion[1],{Name="GuideTip",Position=UDim2.fromOffset(16,0),Size=UDim2.new(1,-32,1,0),TextSize=compact and 14 or 16,Font=UI.Fonts.display,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None,TextXAlignment=Enum.TextXAlignment.Center}),11)
 		refs.firstVisitHint.Visible=not state.elevator and contextPanel==nil
 	end
 	kit.rebuildSuggestion(true)
@@ -1834,6 +1850,17 @@ end)
 local customPrompts = not (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
 kit.interactionHud = require(script:WaitForChild("InteractionHud"))
 local promptViews = {}
+kit.updatePromptVisibility=function()
+	local camera=workspace.CurrentCamera
+	for prompt,view in pairs(promptViews) do
+		local anchor=view.gui.Adornee
+		local position=anchor and (anchor:IsA("Attachment") and anchor.WorldPosition or anchor:IsA("BasePart") and anchor.Position)
+		if position and camera then
+			position+=camera.CFrame:VectorToWorldSpace(view.gui.StudsOffset)+view.gui.StudsOffsetWorldSpace
+			view.gui.Enabled=kit.interactionHud.InView(camera,position,view.gui.Size.X.Offset,view.gui.Size.Y.Offset)
+		else view.gui.Enabled=false end
+	end
+end
 local function stylePrompt(prompt)
 	if customPrompts then pcall(function() prompt.Style = Enum.ProximityPromptStyle.Custom end) end
 end
@@ -2050,6 +2077,8 @@ RunService.RenderStepped:Connect(function(dt)
 	kit.sheet:Sync()
 	kit.movement:Step(dt or 1 / 60)
 	kit.tutorial:Step(dt or 1 / 60)
+	kit.updatePromptVisibility()
+	matchHud.stepUpgradeBoards()
 	if os.clock() >= kit.afkBannerAt then
 		kit.afkBannerAt = os.clock() + 0.25
 		updateAfkBanner()

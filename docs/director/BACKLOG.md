@@ -302,3 +302,14 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M31.1 Comum/Raro/Lendário para 43 heróis, 11 bases e cartas de partida; cores, nomes e sons consistentes. Preservar preços, progressão, chances individuais, preferência de aquisição, limiares e reinício da garantia.
 - [x] M31.2 Filtros de antiaéreo/área/controle/apoio, contagens na dica e Limpar filtros; chances efetivas compartilhadas com o sorteio e destaques da garantia marcados. Roleta de prêmio sem iniciais ou itens indisponíveis.
 - [x] M31.3 Código `8cf1334` no main; suíte completa saída 0 (71.89 s), regressão de 35.280 sorteios/economia, 48 capturas PC/horizontal PT/vertical EN sem cortes ou erros detectados. Filtros por clique real sem alterar perfil; três finais sonoros carregados, cancelamento/mute e baú ganho 0→1 com uma fanfarra. Quatro destaques Cósmicos conferidos. Oito módulos sincronizados seletivamente, 40 fontes comparadas, preview 4.433 peças. Publicado no place 97132875544830 em 11/10/2026 às 16:47:04 local (19:47:04 UTC), `PublishSuccessful` confirmado; Studio em edição. Galeria Desktop e relatório `REFINAMENTO_RARIDADES_2026-10-11.md`.
+
+
+## M32 — Retenção, aceites de lançamento e combate, 11/10
+
+- [x] M32.1 Analytics com assinatura correta, falhas isoladas/retry e milestones por sessão/coorte. Teste de API estrita; Studio excluído.
+- [x] M32.2 Próximo objetivo derivado pelo servidor e no resultado, prioridade ao baú gratuito no guia; sem nova economia ou requisição.
+- [x] M32.3 Avisos 3D inteiros no viewport e atualização por quadro, limite de duas melhorias; regressões em seis formatos.
+- [x] M32.4 Preparação/impacto/recuperação por família e contornos sem peças extras; M22.7/M22.9 não encerrados por essa fatia.
+- [x] M32.5 Auditor de configuração e checklist atualizados: 26 produtos de heróis/temporada pendentes, VIP fora de venda confirmado, roteiro de testes reais e retenção.
+- [~] M32.6 Revisão Studio, suíte final, commit/push e publicação no lugar oficial — codex-retention-20261011.
+- [ ] M32.7 Aceite externo: conta nova publicada, celular físico, quatro jogadores, compras reais, sessão prolongada e D1/D7. Usar RELEASE_CHECKLIST e RETENCAO_LANCAMENTO_2026-10-11.md.

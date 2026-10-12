@@ -29,6 +29,7 @@ function Analytics.new(enabled)
 	self.enabled = enabled ~= false and not RunService:IsStudio()
 	self.keys = self.enabled and fieldKeys() or nil
 	self.counts = {}
+	self.failures, self.retryAt, self.sessions = {}, {}, {}
 	return self
 end
 
@@ -45,10 +46,48 @@ end
 function Analytics:_call(name, callback)
 	self.counts[name] = (self.counts[name] or 0) + 1
 	if not self.enabled then return end
+	if os.clock() < (self.retryAt[name] or 0) then return end
 	local ok, problem = pcall(callback)
 	if not ok then
-		self.enabled = false
-		warn("[Analytics] disabled after a failure in " .. name .. ": " .. tostring(problem))
+		-- A transient limit or one invalid event must not silence every funnel.
+		self.failures[name] = (self.failures[name] or 0) + 1
+		self.retryAt[name] = os.clock() + 30
+		warn("[Analytics] retry in 30s for " .. name .. ": " .. tostring(problem))
+	else
+		self.retryAt[name] = nil
+	end
+end
+
+function Analytics:BeginSession(player)
+	self.sessions[player.UserId] = { started = os.clock(), seen = {} }
+end
+
+function Analytics:ProfileReady(player, returning)
+	local session=self.sessions[player.UserId]
+	if not session then return end
+	session.cohort=returning and "returning" or "new"
+	self:Milestone(player,"ProfileReadySeconds")
+end
+
+-- Once per connection, in seconds since joining. These are observed events,
+-- not client claims; AFK time is never mistaken for a completed match.
+function Analytics:Milestone(player, name, mapId, modeId)
+	local session = self.sessions[player.UserId]
+	if not session or session.seen[name] then return end
+	session.seen[name] = true
+	self:Custom(player, name, math.max(0, os.clock() - session.started), mapId, modeId,session.cohort)
+end
+
+function Analytics:EndSession(player)
+	self.sessions[player.UserId] = nil
+end
+
+function Analytics:MatchStarted(player, mapId, modeId)
+	local session = self.sessions[player.UserId]
+	if not session then return end
+	session.matches = (session.matches or 0) + 1
+	if session.matches <= 2 then
+		self:Milestone(player, session.matches == 1 and "FirstMatchSeconds" or "SecondMatchSeconds", mapId, modeId)
 	end
 end
 
@@ -90,9 +129,9 @@ function Analytics:Progression(player, mapId, modeId, status, wave)
 			player,
 			tostring(mapId),
 			progression,
-			self:_fields(modeId, wave),
 			math.max(1, math.floor(tonumber(wave) or 1)),
-			tostring(modeId)
+			tostring(modeId),
+			self:_fields(modeId, wave)
 		)
 	end)
 end

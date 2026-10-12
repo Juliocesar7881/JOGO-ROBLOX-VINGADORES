@@ -1,5 +1,26 @@
 # Integration contract
 
+## Retention guidance and attack timing — 11/10/2026
+
+`profile.nextGoal` is a derived snapshot field, never a saved reward or an
+incoming request. It contains bilingual `text`/`detail`, `progress`, `total`
+and one target (`panel`, chest ID or destination ID). The server derives it
+from committed tutorial, reward, mission, talent and campaign progress. The
+client routes it to existing screens/physical portals. It changes no cost,
+reward, unlock, progression or receipt semantics.
+
+`Shot.interval` optionally carries the server's attack interval in seconds.
+The client adjusts the cosmetic preparation/recovery to the snapshot speed;
+only a confirmed Shot creates an impact. Missing intervals keep the existing
+fallback. Predicting a windup never applies damage, fires a projectile or
+consumes resources. `lowFX` suppresses the added motion.
+
+Analytics progression uses `(player, path, status, level, levelName, fields)`.
+Failures are throttled for 30 seconds per event category, without disabling
+other telemetry or gameplay. Session milestones are server-observed, once
+per connection and carry a `new`/`returning` cohort (prior match history).
+Studio remains excluded from live analytics.
+
 ## Three collectible rarities — 11/10/2026
 
 Heroes and bases use only `common`, `rare`, `legendary` in the catalog and

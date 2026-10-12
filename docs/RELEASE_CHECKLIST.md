@@ -1,73 +1,91 @@
-# Checklist de lançamento — o que só o dono pode fazer
+# Lançamento e retenção — estado conferido em 11/10/2026
 
-Tudo que o código e os testes cobrem já está no `main` e no lugar da equipe
-(place 97132875544830). Esta lista é o que **não** dá para automatizar com
-segurança: contas, termos, dinheiro e decisões de marca. Cada item diz quem
-faz e como conferir.
+Projeto oficial: place **97132875544830**, universo **10768165352**.
+Código no `main`; fonte da verdade em `src/`. Publicar uma atualização nesse
+lugar não muda o público da experiência. Testes locais não comprovam compras,
+rede, aparelho físico ou retenção.
 
-## 1. Antes de qualquer teste com jogadores
+## Código e apresentação
 
-- [ ] **Aceitar os termos atualizados do Roblox** no Creator Hub ("Updated
-  Agreements", em vigor em 01/11/2026). Sem isso o Creator Hub não deixa
-  criar mais produtos.
-- [ ] **Pacote VIP**: Monetização → Passes → Pacote VIP visual → Vendas →
-  ligar "Item for sale" e pôr 299. O passe e o ID já existem e estão no código.
-- [ ] **Criar os 19 produtos de herói que faltam** (lista em
-  `docs/director/ROBUX_CATALOG.md`; o fluxo está descrito lá) e gravar os IDs
-  em `src/shared/Config.luau → Products.Heroes`. Até lá esses heróis aparecem
-  como "Preço indisponível" na loja (sem erro).
-- [x] **Enviar os áudios** (03/10: feito pelo Studio; IDs em `assets/audio/uploads.json` e `Config.Audio`). Falta só conferir a trilha `battle`, que estava em moderação; se for negada, `python tools/generate_audio.py` e `python tools/studio_upload_audio.py --window-handle <hwnd> battle`. Ao publicar para o público, confira no Creator Hub que os 27 áudios estão aprovados e liberados para a experiência.
-- [ ] **Título e ícone da experiência**: nome "Multiverse Doomsday" (ou o que
-  o dono escolher), ícone e miniaturas próprios, descrição em português.
-  Imagens de divulgação 1920×1080 do próprio jogo (sem interface do Studio)
-  já geradas em `assets/store/` por `python tools/store_media.py` (lobby, equipe,
-  revelação de herói, baús, vitória): é só escolher e enviar na aba Mídia da
-  experiência; refaça com o Studio aberto se algo mudar.
-  Nenhuma imagem de terceiros.
-- [ ] **Faixa etária / questionário de conteúdo** da experiência.
+- [x] 43 heróis, 11 bases, seis mapas; três raridades; campanha, competitivo,
+  Cartas e treinamento. Missões, login, presentes de tempo, baú gratuito,
+  coleção, talentos, temporada e cooperação já existem.
+- [x] HUD com arte própria, modelos reais nos retratos e fallback de rede.
+  Carregador não depende de downloads opcionais. Recrutamento com uma única
+  roleta/finalização, incluindo baús ganhos.
+- [x] Sete bancos Sonniss configurados: interface, eventos, invocação, combate,
+  poderes, chefes e ambiente. Esses bancos já foram enviados.
+- [x] Próximo objetivo pelo progresso salvo, baú gratuito antes da primeira
+  compra com Ouro e objetivo no resultado; analytics corrigido e medição
+  dos tempos até torre, poder, baú, resultado e segunda partida.
+- [ ] Primeira entrada no cliente publicado, conta nova e rede real: abrir
+  uma vez, carregar perfil, concluir treino, sair e reentrar. O perfil
+  temporário do Studio não fecha esse item.
+- [ ] Clareza com jogadores: objetivo, funções dos heróis, custos/alcance e
+  recarga sem explicação externa. Anatomia e peso dos golpes continuam em
+  M22.7/M22.9 até revisão completa do catálogo.
 
-## 2. Compras (com uma conta alternativa, nunca a principal)
+## Configuração e monetização
 
-- [ ] Comprar cada passe e cada pacote uma vez e conferir: o item chega, o
-  recibo não se repete ao reentrar, a loja marca "✓ JÁ É SEU".
-- [ ] **Pacote Inicial**: comprar duas vezes; a segunda só paga Ouro (o herói
-  vem uma vez por conta).
-- [ ] Passe 3x: o botão da partida passa de 2x para 3x; sem o passe, recusa.
-- [ ] Região restrita a itens aleatórios: baús só por Ouro (já é assim); conferir
-  com uma conta de menor de idade.
+Auditoria: `python tools/audit_launch.py --output test-results/launch-audit.json`.
+Ela executa o catálogo atual; ID preenchido não comprova venda nem entrega.
 
-## 3. Lugares e viagem (precisam de lugares publicados)
+- [x] Metadados dos 24 IDs configurados consultados pelo MarketplaceService
+  em 11/10. Drone, Treinamento e Velocidade 3x estão à venda pelos preços do
+  catálogo. Quinze produtos de heróis e cinco consumíveis possuem metadados.
+- [ ] **VIP:** ID existente, mas `IsForSale=false` confirmado em 11/10.
+  Habilitar no Creator Hub com o preço do catálogo (299), depois conferir
+  no jogo. Não aceitar contratos em nome do dono.
+- [ ] **Temporada:** passe ID zero; preço do catálogo 399. Criar/configurar
+  depois de resolver os termos que o Creator Hub eventualmente exigir.
+- [ ] **26 produtos de heróis sem ID**, entre 41 compráveis. Lista atual em
+  `docs/director/ROBUX_CATALOG.md` e no auditor. Dois iniciais não precisam
+  de produto. As rotas de aquisição com recursos do jogo permanecem.
+- [ ] Confirmar pessoalmente contratos pendentes, se ainda aparecerem. O
+  registro de 01/10 relata “Updated Agreements”; nenhuma aceitação automática.
+- [ ] Compra real de cada passe/produto em conta de teste: entrega única,
+  saldo, cancelamento, saída/reentrada e recibo repetido. Pacote Inicial:
+  segunda compra concede apenas a compensação de Ouro.
+- [ ] Conta sujeita à restrição de itens aleatórios: conferir política e
+  rotas permitidas; sorteio pago é recusado pelo servidor quando restrito.
+- [ ] Música de batalha: ID dedicado antigo ainda sujeito à moderação;
+  cliente tem fallback de ação. Verificar aprovação/acesso antes da troca.
+  Declarações de autoria são confirmadas pessoalmente pelo dono.
 
-- [ ] Publicar lobby, partida e AFK como lugares (`docs/DEPLOYMENT.md`) e pôr os
-  IDs em `deployment/local.json`; rodar
-  `python tools/release.py --config deployment/local.json --check`.
-- [ ] Teste de portal: 1 jogador e grupo de 4 entram numa fila, viajam para o
-  lugar da partida e voltam.
-- [ ] Reconexão no meio da partida (fechar e reabrir o app).
+## Cooperação, persistência e implantação
 
-## 4. Aparelhos reais (o que o computador não prova)
+- [x] Lugar atual em **Standalone**, lobby e partida no mesmo servidor.
+  IDs Lobby/Match/AFK separados são zero; `deployment/local.json` ausente.
+  Isso não equivale a três lugares publicados ou teleporte validado.
+- [ ] Quatro jogadores reais: fila simultânea, quinto recusado, sair/voltar,
+  pronto/velocidade em grupo, poderes, vitória/derrota, recompensas e replay.
+- [ ] Fechar o cliente na partida e reabrir; conferir progresso e reconexão.
+  Repetir com rede interrompida; nenhum perfil pode ser zerado.
+- [ ] Se adotar lugares separados: publicar no mesmo universo, usar IDs
+  reais e seguir `docs/DEPLOYMENT.md`. Portal com 1 e 4 pessoas, falha de
+  transferência e retorno. Não inventar IDs nem substituir isso pelo build.
+- [ ] Sessão de 30–60 minutos com replays e AFK: acompanhar memória,
+  instâncias, sons e efeitos ativos; verificar estabilização e limpeza.
 
-- [ ] **Celular de entrada** (Android antigo): FPS no lobby e numa partida de
-  onda 30+; o jogo reduz os efeitos sozinho abaixo de 27 FPS (veja o aviso);
-  se o lobby (3.351 peças) pesar, ligar StreamingEnabled em um lugar de cópia
-  e testar antes.
-- [ ] Toque: colocar herói, melhorar, arrastar a câmera, painéis longos.
-- [ ] Tela pequena (667×375) e notch: nada coberto pelos botões do Roblox.
-- [ ] Sons: ouvir os "jingles" de moedas, baú, chefe, vitória, derrota.
+## Aparelhos e página
 
-## 5. Marca e legal
+- [ ] Android de entrada/iPhone físico: FPS no lobby/ondas densas, toque longo,
+  colocar/melhorar, mirar Q, arrastar árvore/câmera e notch. Emulação comprova
+  layout; não comprova desempenho nem gestos no aparelho.
+- [ ] Ouvir em fone/alto-falante: golpes e poderes distintos, música abaixo
+  das informações importantes, opções de som e efeitos funcionando.
+- [ ] Página: miniaturas fiéis, título/descrição localizados e questionário
+  de conteúdo. Materiais em `assets/store/` e `docs/STORE_PAGE.md`.
+- [ ] Decisão final de marca pelo dono. Não alterar audiência, preços nem
+  colaboradores como parte da publicação de código.
 
-- [ ] Ler `docs/HEROES.md` e confirmar os nomes originais; trocar o que não
-  agradar (é só dado no `Catalog.luau`; o teste `tests/test_ip_safety.py` avisa
-  se algum nome de terceiros voltar).
-- [ ] Conferir o nome no repositório/README e se quer renomear a pasta.
-- [ ] Política de privacidade e termos do jogo, se for pedir.
+## Aceite de retenção
 
-## 6. Publicar (só o dono)
-
-- [ ] `python tools/test.py` verde; revisar `git log` desde a última versão.
-- [ ] Publicar a partir do Studio (Arquivo → Publicar no Roblox) no lugar da
-  equipe; marcar a experiência como pública **só depois** dos itens 1 a 4.
-- [ ] Vigiar a primeira hora: Analytics → funil "Tutorial", quedas e compras.
-
-- Texto pronto da página da experiência (título, descrição pt/en, tags, nota da v1.0): `docs/STORE_PAGE.md`.
+- [ ] 10–20 pessoas novas jogando sem orientação: observar hesitação e
+  abandono. Roteiro em `docs/RETENCAO_LANCAMENTO_2026-10-11.md`.
+- [ ] Eventos no Analytics publicado; Studio não envia eventos reais.
+  Separar novos/retornando e comparar a mesma versão/origem/dispositivo.
+- [ ] D1 depois do dia seguinte e D7 após uma semana, anotando volume e
+  origem da amostra. AFK não comprova envolvimento em combate.
+- [ ] Corrigir o maior abandono observado antes de ampliar divulgação e
+  repetir o teste. Publicação não garante viralização.

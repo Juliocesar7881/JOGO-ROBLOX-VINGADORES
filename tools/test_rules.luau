@@ -15,6 +15,7 @@ local function approx(actual, expected, message)
 end
 
 require("../tests/rarity_compatibility")(check,equal,approx)
+require("../tests/next_goal")(check,equal)
 
 --==============================================================================
 -- Catalog shape

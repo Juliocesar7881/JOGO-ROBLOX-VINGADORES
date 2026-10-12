@@ -105,6 +105,7 @@ local function rotate(r, vector)
 end
 
 CF.__index = function(self, key)
+	if key == "VectorToWorldSpace" then return function(cf,vector) return rotate(rawget(cf,"r"),vector) end end
 	if key == "Position" or key == "p" then return rawget(self, "p") end
 	if key == "X" then return rawget(self, "p").X end
 	if key == "Y" then return rawget(self, "p").Y end
@@ -292,6 +293,7 @@ local function newInstance(className)
 	rawset(self, "__children", {})
 	rawset(self, "__attributes", {})
 	rawset(self, "__id", instanceCount)
+	if className=="BillboardGui" then rawget(self,"__props").StudsOffsetWorldSpace=v3(0,0,0) end
 	if className == "ImageLabel" or className == "ImageButton" then
 		rawget(self,"__props").IsLoaded=true
 	end

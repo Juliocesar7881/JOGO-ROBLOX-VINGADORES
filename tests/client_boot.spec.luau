@@ -344,6 +344,13 @@ local function session(screen)
 	local rays = {}
 	camera.ScreenPointToRay = function(_, x, y) table.insert(rays, { space = "screen", x = x, y = y }) return { Origin = v3(0, 80, 60), Direction = v3(0, -1, 0) } end
 	camera.ViewportPointToRay = function(_, x, y) table.insert(rays, { space = "viewport", x = x, y = y }) return { Origin = v3(0, 80, 60), Direction = v3(0, -1, 0) } end
+	camera.WorldToViewportPoint=function(self,position)
+		local relative=self.CFrame:Inverse()*position
+		local depth=-relative.Z
+		local f=self.ViewportSize.Y/(2*math.tan(math.rad(70)/2))
+		local point=v3(self.ViewportSize.X/2+relative.X*f/math.max(0.001,depth),self.ViewportSize.Y/2-relative.Y*f/math.max(0.001,depth),depth)
+		return point,depth>0 and point.X>=0 and point.X<=self.ViewportSize.X and point.Y>=0 and point.Y<=self.ViewportSize.Y
+	end
 	workspace.CurrentCamera = camera
 	local rayHit = nil
 	workspace.Raycast = function() return rayHit end
@@ -2208,6 +2215,13 @@ local function session(screen)
 		fresh.gold = 1500
 		fresh.stats = { waves = 12, bosses = 1, wins = 1, matches = 1, goldEarned = 400, chests = 0 }
 		fresh.campaign = {}
+		fresh.rewards={freeChest={ready=true},claimable=1}
+		push(lobbySnapshot(fresh))
+		frames(1/30,3)
+		local freeText=named(gui,"TutorialText")
+		check(freeText and string.find(freeText.Text,"grátis",1,true)~=nil,tag..": first chest points to free reward before spending")
+		fresh.rewards.freeChest.ready=false
+		fresh.rewards.claimable=0
 		push(lobbySnapshot(fresh))
 		frames(1 / 30, 3)
 		local function errand()
@@ -2234,6 +2248,17 @@ local function session(screen)
 		-- Back to the battle the next steps expect.
 		push(matchSnapshot(veteranProfile(), "Wave"))
 		frames(1 / 30, 2)
+	end)
+
+	step("committed next goal changes with campaign progress",function()
+		local p=veteranProfile()
+		p.stats={chests=2,matches=5};p.rewards={claimable=0,freeChest={ready=false}}
+		p.talentPoints=0;p.quests={};p.gold=0;p.campaign={manhattan={normal=true}}
+		p.nextGoal=Rules.NextGoal(p)
+		push(lobbySnapshot(p));frames(1/30,2)
+		local text=named(gui,"GuideTip")
+		check(text and string.find(text.Text,"Complexo Gama",1,true)~=nil and string.find(text.Text,"1/6",1,true)~=nil,tag..": lobby shows server-supplied next sector and real progress")
+		push(matchSnapshot(veteranProfile(),"Wave"));frames(1/30,2)
 	end)
 
 	step("the map of the day wears a ribbon in the play menu", function()
@@ -2336,6 +2361,11 @@ local function session(screen)
 	end
 
 	step("quick upgrades leave the horde visible and prioritize selection", function()
+		-- This test isolates selection/budget from camera position; the edge
+		-- transition below exercises the real per-frame visibility integration.
+		local oldProjection=camera.WorldToViewportPoint
+		local clipped=false
+		camera.WorldToViewportPoint=function() return v3(clipped and 1 or camera.ViewportSize.X/2,camera.ViewportSize.Y/2,1),true end
 		local snapshot = matchSnapshot(profile, "Wave")
 		for index = 5, 6 do
 			local tower = table.clone(snapshot.match.towers[1])
@@ -2355,6 +2385,11 @@ local function session(screen)
 		check(playerGui.Upgrade_t6.Enabled == false, tag .. ": a distant unselected hero has no floating label")
 		check(selectTower("t6") ~= nil and playerGui.Upgrade_t6.Enabled, tag .. ": selecting that hero makes its upgrade visible")
 		check(countVisible() == 2, tag .. ": selection keeps the same label budget")
+		clipped=true;frames(1/60,1)
+		check(countVisible()==0,tag..": camera movement hides clipped upgrade cards on the same frame")
+		clipped=false;frames(1/60,1)
+		check(countVisible()==2,tag..": fully visible cards return without another server snapshot")
+		camera.WorldToViewportPoint=oldProjection
 		click("X")
 		push(matchSnapshot(profile, "Wave"))
 		check(playerGui:FindFirstChild("Upgrade_t6") == nil, tag .. ": removing a tower cleans its contextual label")

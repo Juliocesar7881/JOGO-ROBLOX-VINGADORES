@@ -873,4 +873,73 @@ function Rules.CardTotals(owned)
 	return totals
 end
 
+-- One attainable next action, derived from committed account state. No new
+-- currency, countdown, obligation or saved profile flag is introduced.
+function Rules.NextGoal(profile)
+	if type(profile) ~= "table" then return nil end
+	local function goal(id, pt, en, target, progress, total, detailPt, detailEn)
+		return {id=id, text={pt=pt,en=en}, target=target, progress=progress or 0, total=total or 1,
+			detail={pt=detailPt or "",en=detailEn or ""}}
+	end
+	if profile.tutorialComplete ~= true then
+		return goal("training", "Aprenda a defender", "Learn to defend", {portal="training"})
+	end
+	local rewards = profile.rewards or {}
+	if rewards.freeChest and rewards.freeChest.ready then
+		return goal("freeChest", "Seu baú grátis está pronto", "Your free chest is ready", {panel="rewards"},1,1)
+	end
+	if (rewards.claimable or 0) > 0 then
+		return goal("rewards", "Resgate suas recompensas", "Claim your rewards", {panel="rewards"},1,1)
+	end
+	local ids = {}
+	for id in pairs(profile.quests or {}) do table.insert(ids,id) end
+	table.sort(ids)
+	for _, id in ipairs(ids) do
+		local quest = profile.quests[id]
+		if not quest.claimed and (quest.target or 0)>0 and (quest.progress or 0)>=quest.target then
+			return goal("quest:"..id,"Missão concluída: resgate o prêmio","Mission complete: claim your reward",{panel="quests"},quest.target,quest.target)
+		end
+	end
+	if (profile.talentPoints or 0)>0 then
+		return goal("talents","Fortaleça seu comandante","Strengthen your commander",{panel="talents"},1,1)
+	end
+	-- A trained newcomer can recruit with earned Gold, never with a Robux
+	-- prompt. Restricted accounts keep the campaign as their next action.
+	if (profile.stats and profile.stats.chests or 0)==0 and not profile.paidRandomRestricted then
+		local chest=Catalog.Chests.rare
+		if (profile.gold or 0)>=chest.cost then
+			return goal("firstChest","Recrute seu próximo herói","Recruit your next hero",{chest="rare"},chest.cost,chest.cost)
+		end
+	end
+	local completed, total=0,0
+	local nextDestination, nextMap
+	for _, id in ipairs(Catalog.DestinationOrder) do
+		local destination=Catalog.Destinations[id]
+		if destination.modeId=="normal" then
+			total+=1
+			local record=(profile.campaign or {})[destination.mapId]
+			if record and record.normal then completed+=1
+			elseif not nextDestination then nextDestination,nextMap=id,Catalog.Maps[destination.mapId] end
+		end
+	end
+	if nextDestination then
+		return goal("campaign:"..nextDestination,"Conquiste "..nextMap.name.pt,"Conquer "..nextMap.name.en,
+			{portal=nextDestination},completed,total,"Vença a campanha para abrir novos desafios.","Win the campaign to open new challenges.")
+	end
+	-- At endgame highlight the nearest unfinished daily/weekly mission, with
+	-- stable ordering and its real progress, instead of advertising another chest.
+	local nearest, fraction=-1,-1
+	for _, id in ipairs(ids) do
+		local q=profile.quests[id]
+		if not q.claimed and (q.target or 0)>0 then
+			local ratio=(q.progress or 0)/q.target
+			if ratio>fraction then nearest,fraction=q,ratio end
+		end
+	end
+	if type(nearest)=="table" then
+		return goal("mission:"..nearest.id,nearest.name.pt,nearest.name.en,{panel="quests"},nearest.progress,nearest.target)
+	end
+	return goal("cards","Experimente o modo Cartas","Try Cards mode",{portal="cards"},0,1)
+end
+
 return Rules

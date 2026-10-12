@@ -328,6 +328,17 @@ function Figure.Build(parent, spec, colors, material)
 		local size = parts.Head.Size
 		return CFrame.new(x * size.X / 2, y * size.Y / 2, -size.Z / 2 - (lift or 0))
 	end
+	-- Authored Roblox body meshes soften corners and taper shoulders into the
+	-- waist without adding BaseParts or changing the joint/weapon contract.
+	for _, name in ipairs({"UpperTorso","LowerTorso","LeftHand","RightHand","LeftFoot","RightFoot"}) do
+		local bodyPart=parts[name]
+		local mesh=Instance.new("SpecialMesh")
+		mesh.Name="BodyContour"
+		mesh.MeshType=(name=="UpperTorso" or name=="LowerTorso") and Enum.MeshType.Torso or Enum.MeshType.Head
+		mesh.Scale=name=="LowerTorso" and Vector3.new(1,0.94,0.96) or Vector3.one
+		mesh.Parent=bodyPart
+	end
+	model:SetAttribute("BodyFinish","contoured")
 	return figure
 end
 

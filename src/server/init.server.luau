@@ -177,6 +177,7 @@ local function logMatchStart()
 	for _, entry in ipairs(match:Roster()) do
 		local member = Players:GetPlayerByUserId(entry.userId)
 		if member then
+			analytics:MatchStarted(member, match.mapId, match.modeId)
 			analytics:Progression(member, match.mapId, match.modeId, "Start", 1)
 			local profile = profiles:Snapshot(member)
 			if profile then analytics:Composition(member, profile.loadout, match.mapId) end
@@ -197,6 +198,7 @@ match.onFinish = function(victory)
 			local waves = results and results.waves or match.completedWaves
 			local gold = results and results.gold or 0
 			analytics:MatchFinished(member, mapId, modeId, victory, waves, seconds, gold)
+			analytics:Milestone(member, "FirstResultSeconds", mapId, modeId)
 			-- Match Gold actually picked up per minute: how well the magnet and
 			-- the collecting habit work in real play.
 			local p = match.participants[member.UserId]
@@ -540,6 +542,8 @@ local function route(player, action, payload)
 			sendToLobby(player)
 		end
 		if ok == true and action == "PlayAgain" and match.running then logMatchStart() end
+		if ok == true and action == "PlaceTower" then analytics:Milestone(player, "FirstTowerSeconds", match.mapId, match.modeId) end
+		if ok == true and action == "CastSkill" then analytics:Milestone(player, "FirstPowerSeconds", match.mapId, match.modeId) end
 		if ok == true and action == "PlaceTower" and match.modeId == "tutorial" and not tutorialTower[player.UserId] then
 			tutorialTower[player.UserId] = true
 			analytics:TutorialStep(player, 2, "FirstTower")
@@ -576,6 +580,7 @@ local function route(player, action, payload)
 			if action == "OpenChest" and type(result) == "table" then
 				for _, opened in ipairs(result.batch or { result }) do
 					analytics:Custom(player, "ChestOpened", opened.cost, opened.chestId, opened.rarity, opened.heroId)
+					analytics:Milestone(player, "FirstChestSeconds", opened.chestId, opened.rarity)
 					if not opened.duplicate and opened.heroId then
 						analytics:HeroUnlocked(player, tostring(opened.heroId), data.level, minutesPlayed(player))
 					end
@@ -719,6 +724,7 @@ local function onPlayerAdded(player)
 	if joined[player.UserId] then return end
 	joined[player.UserId] = true
 	sessionStart[player.UserId] = os.clock()
+	analytics:BeginSession(player)
 	cosmetics:Bind(player)
 	player.CharacterAdded:Connect(function()
 		task.defer(placeCharacter, player)
@@ -736,6 +742,7 @@ local function onPlayerAdded(player)
 		return
 	end
 	refreshPresence(player)
+	analytics:ProfileReady(player, profile.stats and (profile.stats.matches or 0) > 0)
 	-- Joined through a friend's invite: PlayerService decides who is paid.
 	if role ~= "Match" then
 		local okJoin, join = pcall(function() return player:GetJoinData() end)
@@ -788,6 +795,7 @@ Players.PlayerRemoving:Connect(function(player)
 	notices[player.UserId] = nil
 	travelling[player.UserId] = nil
 	pcall(function() profiles:Release(player) end)
+	analytics:EndSession(player)
 end)
 
 for _, player in ipairs(Players:GetPlayers()) do

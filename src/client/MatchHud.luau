@@ -3,6 +3,7 @@
 -- card choice, the base upgrade and the results screen. Every number shown
 -- is one the server sent; every button is an intent through ctx.act.
 local CardArt = require(script.Parent:WaitForChild("CardArt"))
+local InteractionHud = require(script.Parent:WaitForChild("InteractionHud"))
 local MatchHud = {}
 
 function MatchHud.new(ctx)
@@ -209,11 +210,13 @@ function MatchHud.new(ctx)
 	-- heroes remain selectable through their models; level 4 opens the branch
 	-- panel. Billboards belong to this player and survive HUD re-layouts.
 	local upgradeBoards = {}
+	local upgradeCandidates={}
 	local function clearUpgradeBoards()
 		for id, board in pairs(upgradeBoards) do
 			board.gui:Destroy()
 			upgradeBoards[id] = nil
 		end
+		upgradeCandidates={}
 	end
 
 	local function towerAnchor(id)
@@ -225,6 +228,17 @@ function MatchHud.new(ctx)
 		return nil
 	end
 
+	local function stepUpgradeBoards()
+		local camera,shown=workspace.CurrentCamera,0
+		for _,candidate in ipairs(upgradeCandidates) do
+			local gui=candidate.board.gui
+			local anchor=gui.Adornee
+			local fits=gui.Parent~=nil and camera~=nil and anchor~=nil and InteractionHud.InView(camera,
+				anchor.Position+camera.CFrame:VectorToWorldSpace(gui.StudsOffset),gui.Size.X.Offset,gui.Size.Y.Offset)
+			gui.Enabled=shown<2 and fits
+			if gui.Enabled then shown+=1 end
+		end
+	end
 	local function updateUpgradeBoards(match)
 		local seen, candidates = {}, {}
 		local selected = ctx.selectedTower and ctx.selectedTower()
@@ -283,7 +297,8 @@ function MatchHud.new(ctx)
 			if a.score == b.score then return a.id < b.id end
 			return a.score < b.score
 		end)
-		for index, candidate in ipairs(candidates) do candidate.board.gui.Enabled = index <= 2 end
+		upgradeCandidates=candidates
+		stepUpgradeBoards()
 		for id, board in pairs(upgradeBoards) do
 			if not seen[id] then
 				board.gui:Destroy()
@@ -634,13 +649,16 @@ function MatchHud.new(ctx)
 				UI.label(card, "+" .. number(gain.xp) .. " XP", {Position = UDim2.new(0.62, 0, 0, y), Size = UDim2.new(0.38, -12, 0, 26), TextSize = 17, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Right})
 			end
 		end
-		UI.label(content,T("Próximo objetivo: evolua a habilidade do líder ou recrute nos baús.","Next goal: upgrade your leader ability or recruit from chests."),{Size=UDim2.new(1,-6,0,36),TextWrapped=true,TextColor3=C.muted,TextSize=13})
+		local goal=profile().nextGoal
+		local goalText=goal and L(goal.text) or T("Evolua a habilidade do líder ou recrute nos baús.","Upgrade your leader ability or recruit from chests.")
+		if goal and (goal.total or 1)>1 then goalText..="  "..tostring(goal.progress).."/"..tostring(goal.total) end
+		UI.fit(UI.label(content,T("Próximo objetivo: ","Next goal: ")..goalText,{Name="ResultNextGoal",Size=UDim2.new(1,-6,0,40),TextWrapped=true,TextColor3=C.cream,TextSize=15,Font=UI.Fonts.display}),11)
 		welcomePanel(panel)
 	end
 
 	return {
 		towerStatsText = towerStatsText, towerPanel = towerPanel,
-		clearUpgradeBoards = clearUpgradeBoards, updateUpgradeBoards = updateUpgradeBoards,
+		clearUpgradeBoards = clearUpgradeBoards, updateUpgradeBoards = updateUpgradeBoards,stepUpgradeBoards=stepUpgradeBoards,
 		protocolModal = protocolModal, cardStats = cardStats, openBaseUpgrade = openBaseUpgrade, renderResults = renderResults,
 	}
 end

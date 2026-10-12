@@ -146,8 +146,26 @@ end
 
 -- A tower hero's pose this frame. pose: fire, cast, hop (0..1 envelopes),
 -- stunned, breathe (idle -1..1), style (Catalog-driven attack kind).
+-- Impact starts on the confirmed shot, then settles with a long recovery for
+-- heavy attacks. Preparation predicts only the next cosmetic pose from the
+-- server's interval; it never creates a shot or changes damage timing.
+function Motion.AttackEnvelope(age, interval, style)
+	local heavy=style=="smash" or style=="strike" or style=="slash"
+	local duration=math.min(heavy and 0.55 or 0.32,math.max(0.12,(interval or 1)*0.7))
+	local progress=math.clamp(age/duration,0,1)
+	local impact=(1-progress)^2
+	local prepare=0
+	local lead=math.min(heavy and 0.23 or 0.15,math.max(0.04,(interval or 1)*0.25))
+	if interval and age>=interval-lead and age<interval then
+		local t=math.clamp((age-interval+lead)/lead,0,1)
+		prepare=t*t*(3-2*t)
+	end
+	return impact,prepare,progress
+end
+
 function Motion.Hero(joints, pose)
 	local fire, cast, hop, breathe = pose.fire or 0, pose.cast or 0, pose.hop or 0, pose.breathe or 0
+	local prepare=pose.prepare or 0
 	local style = pose.style or "shoot"
 	-- Resting: arms a little away from the body, a slow breath.
 	local lShoulder, lRoll, lElbow = 0.08, -0.12, 0.18
@@ -155,19 +173,17 @@ function Motion.Hero(joints, pose)
 	local waist, neck = 0.03 * breathe, -0.02 * breathe
 	local twist, lift = 0, 0
 	if style == "bow" then
-		lShoulder, lRoll, lElbow = 1.45 * (0.35 + 0.65 * fire), 0, 0
-		rShoulder, rRoll, rElbow = 1.3 * (0.3 + 0.7 * fire), 0.3, 1.9 * fire
+		lShoulder, lRoll, lElbow = 1.1+0.35*prepare, 0, 0
+		rShoulder, rRoll, rElbow = 1.0+0.3*prepare+0.15*fire, 0.3, 0.7+1.2*prepare-0.5*fire
+		twist=-0.2*prepare+0.08*fire
 	elseif style == "dual" or style == "rifle" then
 		lShoulder, lElbow = 0.6 + 0.9 * fire, 0.3 * (1 - fire)
 		rShoulder, rElbow = 0.7 + 0.85 * fire, 0.2 * (1 - fire)
 		lRoll, rRoll = -0.1, 0.1
 	elseif style == "smash" then
-		-- Both fists up and down: weight goes into the waist.
-		local progress = pose.fireProgress or fire
-		local raise = progress < 0.45 and progress / 0.45 or math.max(0, 1 - (progress - 0.45) / 0.3)
-		lShoulder, rShoulder = 0.2 + 2.6 * raise, 0.2 + 2.6 * raise
-		lElbow, rElbow = 0.5 + 0.4 * raise, 0.5 + 0.4 * raise
-		waist = waist + (progress > 0.45 and -0.35 * (1 - raise) or 0.12 * raise)
+		lShoulder, rShoulder = 0.2+2.5*prepare+0.5*fire, 0.2+2.5*prepare+0.5*fire
+		lElbow, rElbow = 0.35+0.55*prepare, 0.35+0.55*prepare
+		waist=waist+0.14*prepare-0.38*fire
 	elseif style == "punch" then
 		-- Alternating jabs: the side that swings changes with every attack, the other
 		-- fist stays up as a guard and the waist turns into the blow.
@@ -179,7 +195,7 @@ function Motion.Hero(joints, pose)
 			rShoulder, rRoll, rElbow = 0.3 + 1.6 * fire, -0.05, 0.9 * (1 - fire)
 			lShoulder, lRoll, lElbow = 0.9, -0.1, 1.4
 		end
-		twist = (leftJab and -0.4 or 0.4) * fire
+		twist = (leftJab and -0.5 or 0.5) * (fire-0.45*prepare)
 		waist = waist - 0.08 * fire
 	elseif style == "fly" then
 		-- Hovering: the body floats on a slow bob with the legs trailing; the arms
@@ -190,12 +206,13 @@ function Motion.Hero(joints, pose)
 		waist = waist + 0.1
 		lift = 1.25 + 0.18 * sin((pose.t or 0) * 2.2)
 	elseif style == "strike" or style == "slash" then
-		rShoulder, rRoll, rElbow = 0.3 + 1.5 * fire, 0.1 - 0.5 * fire, 0.9 * (1 - fire)
+		rShoulder, rRoll, rElbow = 0.3+1.5*fire+1.8*prepare, 0.1-0.65*fire+0.35*prepare, 0.9*(1-fire)
 		lShoulder, lElbow = 0.5, 1.2
 		waist = waist - 0.12 * fire
+		twist=-0.35*prepare+0.45*fire
 	elseif style == "magic" then
 		lShoulder, rShoulder = 0.5 + 1.0 * fire, 0.5 + 1.0 * fire
-		lRoll, rRoll = -0.25 + 0.2 * fire, 0.25 - 0.2 * fire
+		lRoll, rRoll = -0.25+0.2*fire-0.5*prepare, 0.25-0.2*fire+0.5*prepare
 		lElbow, rElbow = 0.6 * (1 - fire), 0.6 * (1 - fire)
 	elseif style == "beam" then
 		lShoulder, rShoulder = 0.2 + 1.35 * fire, 0.2 + 1.35 * fire
@@ -207,9 +224,9 @@ function Motion.Hero(joints, pose)
 		lShoulder, lElbow = 0.3 + 1.1 * fire, 1.2 * fire
 	else
 		-- Point and shoot: the right arm levels at the target and kicks back.
-		local recoil = fire > 0.6 and (fire - 0.6) * 0.5 or 0
-		rShoulder, rRoll, rElbow = 0.1 + 1.45 * fire + recoil, 0.12 * (1 - fire), 0.18 * (1 - fire)
+		rShoulder, rRoll, rElbow = 0.65+0.75*prepare+0.95*fire, 0.12*(1-fire), 0.18+0.32*fire
 		lShoulder, lElbow = 0.1 + 0.2 * fire, 0.3
+		waist=waist+0.08*fire-0.03*prepare
 	end
 	if cast > 0 then
 		-- The leader's power: both arms thrown up.
@@ -235,8 +252,7 @@ function Motion.Hero(joints, pose)
 	set(joints, "Neck", angles(neck, 0, 0))
 	-- A slight crouch when landing a heavy blow or bracing a cast; a flier's legs
 	-- trail behind it instead.
-	local progress = pose.fireProgress or 0
-	local brace = (style == "smash" and progress > 0.45 and fire * 0.35 or 0) + 0.2 * cast
+	local brace = (style == "smash" and fire * 0.35 or 0) + 0.2 * cast
 	local trail = lift > 0 and 0.35 or 0
 	set(joints, "LeftHip", angles(brace + trail, 0, -0.05))
 	set(joints, "RightHip", angles(brace + trail * 0.8, 0, 0.05))
@@ -273,6 +289,15 @@ function Motion.Perform(live, since, mode)
 	local clamp = math.clamp
 	local pose = { style = live.style, t = since, breathe = math.sin(since * 2.2) }
 	local yaw, lift, squash = 0, 0, 0
+	local function signature(age)
+		-- Portraits include the preparation before the confirmed-impact pose.
+		if age<0.23 then
+			local t=math.clamp(age/0.23,0,1)
+			pose.prepare=t*t*(3-2*t)
+		else
+			pose.fire,pose.prepare,pose.fireProgress=Motion.AttackEnvelope(age-0.23,1,live.style)
+		end
+	end
 	if mode == "rest" or since < 0 then
 		pose.breathe = 0
 	elseif mode == "arrival" then
@@ -284,17 +309,16 @@ function Motion.Perform(live, since, mode)
 		if since>0.65 and since<0.9 then squash=math.sin(math.pi*(since-0.65)/0.25)*0.35 end
 		local cycle=(since-0.9)%4.2
 		if since>0.9 and cycle<0.8 then
-			pose.fire=math.sin(math.pi*cycle/0.8)
-			pose.fireProgress=cycle/0.8
+			signature(cycle)
 		end
 		pose.count=math.floor(math.max(0,since-0.9)/4.2)
 	elseif mode == "idle" then
 		local sinceTap = live.tapAt and since - live.tapAt or math.huge
 		local cycle = (since + 0.6) % 3.6
 		if sinceTap < 0.7 then
-			pose.fire, pose.fireProgress = math.sin(math.pi * sinceTap / 0.7), sinceTap / 0.7
+			signature(sinceTap)
 		elseif cycle > 2.9 then
-			pose.fire, pose.fireProgress = math.sin(math.pi * (cycle - 2.9) / 0.7), (cycle - 2.9) / 0.7
+			signature(cycle-2.9)
 		end
 		pose.count = math.floor((since + 0.6) / 3.6) + (live.taps or 0)
 	elseif since < 0.9 then
@@ -318,8 +342,7 @@ function Motion.Perform(live, since, mode)
 		local cycle = (since - 2.7) % 2.4
 		pose.cast = clamp(1 - (since - 2.7) / 0.5, 0, 1)
 		if cycle < 0.7 then
-			pose.fire = math.sin(math.pi * cycle / 0.7)
-			pose.fireProgress = cycle / 0.7
+			signature(cycle)
 		end
 		pose.count = math.floor((since - 2.7) / 2.4)
 	end

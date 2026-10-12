@@ -79,6 +79,12 @@ function Tutorial:_firstErrands(state, root)
 		return { id = "campaign", number = 2, total = 2, text = T("Boa! A partida começa em instantes.", "Nice! The match starts in a moment.") }
 	end
 	local cost = ctx.Catalog.Chests.rare.cost
+	if (stats.chests or 0)==0 and profile.rewards and profile.rewards.freeChest and profile.rewards.freeChest.ready then
+		local navigation=ctx.refs().navigation
+		local rewards=navigation and navigation.rewards
+		return {id="freeChest",number=1,total=2,gui=rewards and rewards.button,
+			text=T("Resgate seu baú grátis em PRÊMIOS","Claim your free chest in REWARDS")}
+	end
 	if (stats.chests or 0) == 0 and (profile.gold or 0) >= cost and not profile.paidRandomRestricted then
 		local target = self:_padOf("Chest_rare", "ShopEntryPad")
 		if target then

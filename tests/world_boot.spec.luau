@@ -11,6 +11,7 @@ local v3 = Stubs.v3
 local Catalog = __CATALOG__
 local WorldBuilder = __WORLD__
 local Motion = __MOTION__
+local InteractionHud = __INTERACTION__
 
 local checks, failures = 0, 0
 local function check(condition, label)
@@ -27,6 +28,28 @@ local function countClass(root, className)
 		if child:IsA(className) then total += 1 end
 	end
 	return total
+end
+
+do
+	for _,style in ipairs({"smash","strike","slash","bow","shoot","magic","punch"}) do
+		local impact,prepare=Motion.AttackEnvelope(0,1,style)
+		check(impact==1 and prepare==0,style..": impact on confirmed shot")
+		local recovered=Motion.AttackEnvelope(0.6,1,style)
+		check(recovered==0,style..": recovery completes before next attack")
+		local _,windup=Motion.AttackEnvelope(0.99,1,style)
+		check(windup>0.9,style..": prepares the next cosmetic pose")
+		local _,ended=Motion.AttackEnvelope(2,1,style)
+		check(ended==0,style..": no perpetual windup after combat ends")
+	end
+	local camera={ViewportSize={X=800,Y=600},WorldToViewportPoint=function(_,point) return point,point.Z>0 end}
+	check(InteractionHud.InView(camera,v3(400,300,1),270,66),"Whole billboard fits at screen center")
+	check(not InteractionHud.InView(camera,v3(100,300,1),270,66),"Left edge cannot cut billboard")
+	check(not InteractionHud.InView(camera,v3(700,300,1),270,66),"Right edge cannot cut billboard")
+	check(not InteractionHud.InView(camera,v3(400,30,1),270,66),"Top edge cannot cut billboard")
+	check(not InteractionHud.InView(camera,v3(400,580,1),270,66),"Bottom edge cannot cut billboard")
+	check(not InteractionHud.InView(camera,v3(400,300,-1),270,66),"Behind-camera billboards are hidden")
+	camera.ViewportSize={X=375,Y=667}
+	check(not InteractionHud.InView(camera,v3(400,300,1),270,66),"Resize recomputes visible rectangle")
 end
 
 --==============================================================================
@@ -1048,6 +1071,10 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 		check(joints >= 15, heroId .. " is a jointed figure, got " .. joints .. " joints")
 		local head = portrait:FindFirstChild("Head", true)
 		check(head and head:FindFirstChildOfClass("SpecialMesh") ~= nil, heroId .. " has the classic rounded head")
+		for _,name in ipairs({"UpperTorso","LowerTorso","LeftHand","RightHand","LeftFoot","RightFoot"}) do
+			local piece=portrait:FindFirstChild(name,true)
+			check(piece and piece:FindFirstChild("BodyContour"),heroId..": body contour without extra parts: "..name)
+		end
 	end
 end
 world:Build("manhattan")
