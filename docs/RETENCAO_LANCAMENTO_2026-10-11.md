@@ -70,6 +70,20 @@ Notas: leitura 4, acabamento UI 4, consistência 4, objetivo 4, recompensa 4,
 desempenho PC 4. Anatomia/combate seguem 3 até a revisão completa M22.7/M22.9;
 essa entrega melhora poses e contornos, sem declarar o catálogo finalizado.
 
+## Publicação
+
+Código **`fd58c0b`** enviado ao `main`, suíte completa verde na cadeia do
+commit (68,53 s). Publicado no place oficial **97132875544830** em
+**11/10/2026 às 21:33:00 local (12/10 às 00:33:00 UTC)**, com
+`Go to PublishSuccessful` no log do Studio. Lobby salvo reconstruído com
+4.433 peças; 40 fontes comparadas antes e depois. Studio em modo de edição.
+Audiência, preços e colaboradores não foram alterados.
+
+Comprovante: `test-results/retention/publication.json`.
+Galeria: `C:/Users/loops/Desktop/Multiverse_Retencao_2026-10-11/INDICE.html`.
+O checklist mantém abertas as configurações e validações externas; não
+interpretar esta publicação como aceite de 100% do lançamento ou retenção.
+
 ## Roteiro de teste com jogadores
 
 1. Recrutar 10–20 pessoas que não conhecem o jogo; registrar versão, aparelho

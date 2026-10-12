@@ -648,3 +648,26 @@ conferidos. Oito módulos sincronizados seletivamente, 40 fontes comparadas,
 preview com 4.433 peças. Publicado no place da equipe em **11/10/2026 às 16:47:04 local
 (19:47:04 UTC)**, com `PublishSuccessful` confirmado; Studio em edição.
 Galeria Desktop `Multiverse_Raridades_2026-10-11/INDICE.html`.
+
+## 24. Retenção, aceites de lançamento e combate — 11/10
+
+Fila M32 e relatório em
+[`RETENCAO_LANCAMENTO_2026-10-11.md`](RETENCAO_LANCAMENTO_2026-10-11.md).
+Analytics corrigido e tempos por sessão/coorte; próximo objetivo calculado
+pelo servidor, baú gratuito prioritário no guia e objetivo no resultado.
+Avisos 3D inteiros com atualização por quadro; preparação/impacto/recuperação
+por família de ataque e contornos dos modelos sem novas peças.
+
+Código `fd58c0b` no `main`, suíte completa verde e 21 cenas no Studio.
+Combate com cinco heróis/80–104 inimigos: 60 FPS, p95 até 18,28 ms em três
+amostras de quatro segundos no PC. 12 módulos sincronizados seletivamente,
+40 fontes comparadas e preview 4.433 peças. Publicado no mesmo lugar da
+equipe em **11/10/2026 às 21:33:00 local (12/10 às 00:33:00 UTC)**,
+`PublishSuccessful` confirmado; Studio em edição.
+
+Auditoria atualizada: 26 produtos de heróis sem ID, temporada sem passe e
+VIP fora de venda. Esses aceites, compras reais, celular físico, quatro
+jogadores, sessão prolongada e D1/D7 seguem no
+[`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md). Anatomia/peso do catálogo
+completo continuam M22.7/M22.9. Galeria Desktop
+`Multiverse_Retencao_2026-10-11/INDICE.html`.
