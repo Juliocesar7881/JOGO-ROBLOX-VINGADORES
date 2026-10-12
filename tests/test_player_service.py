@@ -25,6 +25,7 @@ def main():
     source = (root / "tests" / "player_service.spec.luau").read_text(encoding="utf-8")
     for token, path in {
         "__CATALOG__": root / "src" / "shared" / "Catalog.luau",
+        "__CONFIG__": root / "src" / "shared" / "Config.luau",
         "__RULES__": root / "src" / "shared" / "Rules.luau",
         "__SERVICE__": root / "src" / "server" / "PlayerService.luau",
         "__RARITY_BASELINE__": root / "tests" / "rarity_baseline.luau",

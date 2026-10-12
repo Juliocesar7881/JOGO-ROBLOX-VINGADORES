@@ -1199,4 +1199,29 @@ do
 		check(owned.copies==7+old.cards and owned.stars==3 and owned.rank==3 and owned.shiny and owned.alloc.damage==1 and profile.abilities[id]==2 and profile.loadout[1]==id,"Owned progression is intact: "..id)
 	end
 end
+-- Exercise the official registry against fake storage, with no Roblox purchase.
+-- Every configured hero ID must grant exactly that hero and survive a replay.
+do
+	local official = __CONFIG__
+	official.DataStoreName, official.StudioMemory = "OfficialCommerceTests", false
+	local wasStudio = isStudio
+	isStudio = false
+	local shop = PlayerService.new(official, Catalog, nil, Rules)
+	local index = 950
+	for heroId, product in pairs(official.Products.Heroes) do
+		check(Catalog.Products.Heroes[heroId] ~= nil and product.id > 0, "Official ID belongs to a purchasable hero: "..heroId)
+		index += 1
+		local buyer = player(index)
+		check(shop:Load(buyer) ~= nil, "Official registry test buyer loaded")
+		local receipt = {PlayerId=index, ProductId=product.id, PurchaseId="official-"..heroId}
+		check(shop:_receipt(receipt) == "granted", "Official receipt grants: "..heroId)
+		local granted = shop:Get(buyer)
+		check(granted.heroes[heroId] ~= nil and granted.abilities[heroId] == 1, "Correct hero and ability delivered: "..heroId)
+		local gold, copies = granted.gold, granted.heroes[heroId].copies
+		check(shop:_receipt(receipt) == "granted", "Official receipt replay acknowledged: "..heroId)
+		local replayed = shop:Get(buyer)
+		check(replayed.gold == gold and replayed.heroes[heroId].copies == copies, "Official receipt replay grants nothing twice: "..heroId)
+	end
+	isStudio = wasStudio
+end
 print("PASS PlayerService: " .. checks .. " assertions (real module, mocked Roblox persistence and purchases)")

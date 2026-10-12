@@ -1,46 +1,16 @@
-# Robux — auditoria de 11/10/2026
+# Robux — configuração executada em 12/10/2026
 
-O catálogo atual tem **41 heróis compráveis; 15 IDs configurados e 26 faltantes**.
-Os dois heróis iniciais não precisam de produto. A seção de 01/10 abaixo é
-histórica: não usar a antiga contagem de 19 nem os nomes antigos para criar
-produtos novos. Preços abaixo são os individuais atuais, preservados na
-consolidação de raridades; não recalcular apenas pelo nome da raridade.
+**41/41 heróis, cinco passes e cinco consumíveis cadastrados.** Os cinco
+passes estão à venda, incluindo VIP e Temporada. Preços padrão menores,
+nomes atuais e descrições atualizados no Creator Hub; IDs reais em Config.
+Heróis Comum/Raro/Lendário: 9/29/79 Robux. Passes 19–49; pacotes 5–79.
+O cliente mostra a cotação regional do Roblox, não o preço antigo do servidor.
 
-Consulta ao MarketplaceService em 11/10: os 24 IDs existentes responderam.
-Drone/Treinamento/3x estão à venda; **VIP ainda fora de venda**, temporada ID 0.
-Isso verifica metadados, não compra real ou recibo. Nenhum termo foi aceito.
-
-Gerar relatório atualizado: `python tools/audit_launch.py --output test-results/launch-audit.json`.
-
-| Chave interna | Nome atual | Preço do catálogo (Robux) |
-|---|---|---|
-| Passes.season | Passe de Temporada | 399 |
-| Heroes.amazon | Amazona Dourada | 449 |
-| Heroes.beast | Acrobata Peludo | 199 |
-| Heroes.capmen | Capitão Men | 449 |
-| Heroes.captainmarvel | Capitã Estelar | 1999 |
-| Heroes.cyclops | Olho Rubi | 199 |
-| Heroes.deadpool | Mercenário Falante | 449 |
-| Heroes.emerald | Guardião Verde | 999 |
-| Heroes.gambit | Mestre das Cartas | 449 |
-| Heroes.ghostrider | Motoqueiro Chama | 999 |
-| Heroes.groot | Gigante Verde | 449 |
-| Heroes.iceman | Gelo Vivo | 199 |
-| Heroes.jean | Psíquica Radiante | 1999 |
-| Heroes.moonknight | Cavaleiro Lunar | 199 |
-| Heroes.nightcrawler | Teleportador Azul | 199 |
-| Heroes.nightstalker | Caçador da Noite | 449 |
-| Heroes.nova | Guardião Cósmico | 999 |
-| Heroes.psylocke | Ninja Psíquica | 449 |
-| Heroes.seaking | Rei dos Mares | 449 |
-| Heroes.silversurfer | Surfista Cósmico | 1999 |
-| Heroes.solartitan | Titã Solar | 1999 |
-| Heroes.speedster | Velocista Rubro | 999 |
-| Heroes.storm | Deusa do Clima | 999 |
-| Heroes.strange | Doutor Místico | 999 |
-| Heroes.thor | Deus do Trovão | 999 |
-| Heroes.wanda | Bruxa do Caos | 999 |
-| Heroes.wolverine | Garra de Aço | 449 |
+Registro vigente e evidências: [CONFIGURACAO_COMERCIAL_2026-10-12.md](../CONFIGURACAO_COMERCIAL_2026-10-12.md).
+Exportação completa: `assets/store/release-2026-10-12/catalog.json`.
+Metadados salvos não comprovam compra real. Nenhum contrato foi aceito ou taxa
+paga automaticamente. Os registros abaixo são históricos, não instruções
+para recadastrar produtos nem aplicar os preços antigos.
 
 ## Registro histórico — 01/10/2026
 

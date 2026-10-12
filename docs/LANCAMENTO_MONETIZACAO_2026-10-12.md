@@ -33,7 +33,7 @@ salvamento e retenção tenham sido aprovados em produção.
    mudar o nome não comprova autorização do visual. Usar personagens próprios
    ou conteúdo autorizado, conforme as [diretrizes de propriedade intelectual](https://create.roblox.com/docs/production/publishing/ip-guidelines).
 
-## Monetização existente e incompleta
+## Auditoria inicial de monetização — substituída pela execução abaixo
 
 Auditor do catálogo executado em 12/10:
 
@@ -89,3 +89,19 @@ As dez pastas `Multiverse_*` antes na Área de Trabalho foram movidas intactas
 para `test-results/galerias/`, com contagens e bytes conferidos. Manifesto em
 `test-results/galerias/movimentacao-2026-10-12.json`. Novas entregas devem ir
 para essa pasta; a preferência foi registrada no AGENTS.md.
+
+## Execução comercial posterior — 12/10
+
+O dono autorizou completar os cadastros e reduzir os preços. **Todos os 41
+produtos de herói, cinco passes e cinco pacotes estão cadastrados**, com IDs
+reais; VIP ativado e Temporada criada. Heróis 9/29/79 Robux, passes 19–49 e
+pacotes 5–79; preço regional consultado no cliente. Página com descrição base
+em inglês, português/espanhol manuais e 17 idiomas automáticos habilitados.
+Registro vigente: [CONFIGURACAO_COMERCIAL_2026-10-12.md](CONFIGURACAO_COMERCIAL_2026-10-12.md).
+
+Alcance confirmado no painel: **Public, 16+ e amigos de confiança**. Para
+ampliar ainda faltam identidade e autenticação em duas etapas da conta;
+o painel também mostra taxa reembolsável não submetida / alternativa de
+0/250 jogadores engajados. Nenhuma verificação pessoal, contrato ou taxa foi
+tratada automaticamente. Compras reais e os aceites externos continuam
+separados; a tabela de 15/41 acima registra apenas a situação anterior.

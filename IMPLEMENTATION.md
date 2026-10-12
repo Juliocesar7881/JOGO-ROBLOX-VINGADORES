@@ -328,7 +328,9 @@ Esta seção substitui os contratos históricos de habilidades e compras abaixo.
   herói possuído, Ouro, maestria e rank esperado. `UpgradeTalent {talentId}` e
   `ResetTalents {}` administram a árvore de pontos da conta.
 - `ProductInfo {kind="hero"|"pass"|"product",key}` retorna preço/ID da
-  plataforma; sem configuração, nenhuma compra é oferecida.
+  plataforma e valida a disponibilidade da compra no servidor. O cliente
+  consulta `GetProductInfoAsync` para exibir o preço regional do jogador;
+  sem configuração, preço válido ou item à venda, nenhuma compra é oferecida.
 - `CastSkill {skillId?,position?,towerId?}` só aceita a ativa do líder, com
   alvo e recarga validados. Snapshot `match.ability` fornece ID, herói, rank,
   alvo, raio, recarga restante/total. Não há `SetSkills` nem `BuySkill`.

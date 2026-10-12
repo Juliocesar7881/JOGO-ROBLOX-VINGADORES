@@ -471,7 +471,18 @@ fetchProducts = function()
 				if productInfo[cacheKey] == nil then
 					local response = request("ProductInfo", {kind = group.kind, key = key}, true)
 					-- No answer at all can be retried; a refusal means it is not on sale.
-					productInfo[cacheKey] = response == nil and "retry" or response.ok and response.data or false
+					local info = response and response.ok and response.data
+					if type(info) == "table" then
+						-- The server authorizes the item; only a client lookup sees this
+						-- player's regional price. Never advertise a stale global price.
+						local ok, localInfo = pcall(function()
+							return MarketplaceService:GetProductInfoAsync(info.id, group.kind == "pass" and Enum.InfoType.GamePass or Enum.InfoType.Product)
+						end)
+						local price = ok and type(localInfo) == "table" and localInfo.PriceInRobux
+						if not ok then productInfo[cacheKey] = "retry"
+						elseif type(price) ~= "number" or price ~= price or price < 0 or price == math.huge or localInfo.IsForSale == false then productInfo[cacheKey] = false
+						else productInfo[cacheKey] = {id = info.id, price = price, name = info.name} end
+					else productInfo[cacheKey] = response == nil and "retry" or false end
 					fetched = true
 					task.wait(0.18)
 				end

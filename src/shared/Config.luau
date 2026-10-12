@@ -35,18 +35,43 @@ return {
 	CollectRadius = 8,
 	Products = {
 		Passes = {
-			-- Created in the Creator Hub by the director (2026-10-01). The VIP
-			-- pass exists but its price still has to be switched on there.
+			-- Five passes enabled in the official Creator Hub (2026-10-12).
 			collector = { id = 2004326420 }, training = { id = 2001722936 },
-			vip = { id = 2003954466 }, speed3 = { id = 2001776936 }, season = { id = 0 },
+			vip = { id = 2003954466 }, speed3 = { id = 2001776936 }, season = { id = 2026575250 },
 		},
 		Consumables = {
 			gold1000 = { id = 3715833438 }, gold5000 = { id = 3715833690 }, gold12000 = { id = 3715833842 }, gold30000 = { id = 3715833975 },
 			starterPack = { id = 3715833256 },
 		},
-		-- One developer product per purchasable hero (Creator Hub, 2026-10-01).
-		-- Heroes without an id here are not on sale yet.
+		-- All 41 direct hero products registered in the official Creator Hub.
+		-- Two starter heroes remain free; receipts use these stable IDs.
 		Heroes = {
+			seaking = { id = 3718187883 },
+			captainmarvel = { id = 3718187847 },
+			emerald = { id = 3718187811 },
+			groot = { id = 3718187771 },
+			iceman = { id = 3718187741 },
+			wolverine = { id = 3718187710 },
+			moonknight = { id = 3718187669 },
+			strange = { id = 3718187623 },
+			nova = { id = 3718187579 },
+			nightcrawler = { id = 3718187550 },
+			solartitan = { id = 3718186894 },
+			capmen = { id = 3718186861 },
+			nightstalker = { id = 3718186834 },
+			gambit = { id = 3718186805 },
+			beast = { id = 3718186763 },
+			wanda = { id = 3718186734 },
+			speedster = { id = 3718186702 },
+			thor = { id = 3718186668 },
+			ghostrider = { id = 3718186629 },
+			psylocke = { id = 3718186588 },
+			silversurfer = { id = 3718186558 },
+			cyclops = { id = 3718186531 },
+			storm = { id = 3718186499 },
+			jean = { id = 3718186464 },
+			deadpool = { id = 3718186419 },
+			amazon = { id = 3718184374 },
 			falcon = { id = 3715834320 }, bucky = { id = 3715834397 },
 			spiderman = { id = 3715834470 }, widow = { id = 3715834541 }, antman = { id = 3715834624 },
 			wasp = { id = 3715834861 }, rocket = { id = 3715834932 }, daredevil = { id = 3715835002 }, shangchi = { id = 3715835053 },

@@ -693,3 +693,15 @@ interface sem corte de texto/erro detectado. Quatro módulos sincronizados,
 equipe em **11/10 às 23:42:32 local (12/10 02:42:32 UTC)**, com
 `PublishSuccessful` confirmado; Studio em edição. Medição de carga ativa
 e acabamento próprio dos figurinos permanecem abertos.
+
+## Configuração comercial — 12/10/2026
+
+Pedido explícito do dono: completar a loja, baratear as compras e configurar
+a página no projeto oficial. Fila M34 e registro em
+[CONFIGURACAO_COMERCIAL_2026-10-12.md](CONFIGURACAO_COMERCIAL_2026-10-12.md).
+Todos os 41 produtos de herói, cinco passes e cinco pacotes cadastrados;
+heróis 9/29/79 Robux, passes 19–49, pacotes 5–79, com cotação regional no
+cliente. VIP ativado, Temporada criada. Página localizada e recomendação
+permitida; identidade/2FA e requisitos de ampliação continuam pessoais.
+As referências anteriores a VIP fora de venda, Temporada sem ID e 26
+produtos faltantes são históricas e foram resolvidas neste lote.

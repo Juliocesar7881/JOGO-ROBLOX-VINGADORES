@@ -529,7 +529,7 @@ function Panels.new(ctx)
 			UI.candy(slim)
 			UI.label(slim,Catalog.Upper(L(pack.name)).."  •  "..T("Só uma vez","One time only"),{Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-170,0,24),Font=UI.Fonts.display,TextSize=16,TextColor3=C.gold})
 			UI.label(slim,L(Catalog.Heroes[pack.heroId].name).." + "..UI.format(pack.gold)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(12,32),Size=UDim2.new(1,-170,0,34),TextWrapped=true,TextSize=13})
-			local fast=UI.button(slim,ready and ("R$ "..tostring(info.price)) or T("Carregando…","Loading…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(1,-150,0,14),Size=UDim2.fromOffset(138,44),BackgroundColor3=C.green,TextSize=16})
+			local fast=UI.button(slim,ready and (tostring(info.price).." Robux") or T("Carregando…","Loading…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(1,-150,0,14),Size=UDim2.fromOffset(138,44),BackgroundColor3=C.green,TextSize=16})
 			if not ready then UI.disabled(fast) end
 			return
 		end
@@ -539,7 +539,7 @@ function Panels.new(ctx)
 		UI.chip(row,T("Só uma vez","One time only"),C.red,{Position=UDim2.fromOffset(120,10),Size=UDim2.fromOffset(120,22),TextSize=12})
 		UI.label(row,Catalog.Upper(L(pack.name)),{Position=UDim2.fromOffset(120,34),Size=UDim2.new(1,-130,0,28),Font=UI.Fonts.display,TextSize=22,TextColor3=C.gold})
 		UI.oneLine(UI.label(row,L(Catalog.Heroes[pack.heroId].name).." + "..UI.format(pack.gold)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(120,60),Size=UDim2.new(1,-130,0,22),Font=UI.Fonts.display,TextSize=16}),10)
-		local buy=UI.button(row,ready and ("R$ "..tostring(info.price)) or T("Carregando preço…","Loading price…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(0,120,1,-46),Size=UDim2.new(1,-132,0,40),BackgroundColor3=C.green,TextSize=17})
+		local buy=UI.button(row,ready and (tostring(info.price).." Robux") or T("Carregando preço…","Loading price…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(0,120,1,-46),Size=UDim2.new(1,-132,0,40),BackgroundColor3=C.green,TextSize=17})
 		if not ready then UI.disabled(buy) end
 	end
 
@@ -560,12 +560,14 @@ function Panels.new(ctx)
 				return a<b
 			end)
 			-- Gold packs say how good a deal they are: the best Gold per Robux wears
-			-- a badge, and the pack most people take (Catalog popular) another.
+			-- a badge; the suggested pack has a separate recommendation.
 			local bestGold,bestRatio
 			if group.kind=="product" then
 				for key,def in pairs(group.items) do
-					if def.gold and key~="starterPack" and def.price and def.price>0 then
-						local ratio=def.gold/def.price
+					local quote=productInfo["product:"..key]
+					local price=type(quote)=="table" and quote.price
+					if def.gold and key~="starterPack" and price and price>0 then
+						local ratio=def.gold/price
 						if not bestRatio or ratio>bestRatio then bestGold,bestRatio=key,ratio end
 					end
 				end
@@ -594,17 +596,17 @@ function Panels.new(ctx)
 				local isGold=group.kind=="product" and def.gold~=nil
 				local goldHeadingBottom=0
 				if isGold then
-					local badge=key==bestGold and {T("Melhor valor","Best value"),C.green} or def.popular and {T("Mais popular","Most popular"),C.coral} or nil
+					local badge=key==bestGold and {T("Melhor valor","Best value"),C.green} or def.popular and {T("Sugestão","Recommended"),C.coral} or nil
 					local used=0
 					if badge then
 						UI.chip(row,badge[1],badge[2],{Name="Badge_"..key,Position=UDim2.fromOffset(left,topY),Size=UDim2.fromOffset(122,20),TextSize=12})
 						used=130
 					end
 					-- The Gold per Robux comes from the price the platform reports.
-					local price=type(info)=="table" and tonumber(info.price) or def.price
+					local price=type(info)=="table" and tonumber(info.price)
 					if price and price>0 then
 						local valueY=topY+(narrowGold and badge and 22 or 0)
-						UI.fit(UI.label(row,T("≈ ","≈ ")..UI.format(math.floor(def.gold/price+0.5))..T(" Ouro por R$"," Gold per R$"),{Name="Value_"..key,Position=UDim2.fromOffset(left+(narrowGold and 0 or used),valueY),Size=UDim2.new(1,-left-(narrowGold and 64 or used+12),0,narrowGold and 26 or 20),TextSize=13,TextColor3=C.cream}),10)
+						UI.fit(UI.label(row,T("≈ ","≈ ")..UI.format(math.floor(def.gold/price+0.5))..T(" Ouro por Robux"," Gold per Robux"),{Name="Value_"..key,Position=UDim2.fromOffset(left+(narrowGold and 0 or used),valueY),Size=UDim2.new(1,-left-(narrowGold and 64 or used+12),0,narrowGold and 26 or 20),TextSize=13,TextColor3=C.cream}),10)
 						goldHeadingBottom=valueY+26
 					end
 				end
@@ -624,7 +626,7 @@ function Panels.new(ctx)
 				end
 				local cacheKey=group.kind..":"..key
 				local ready=type(info)=="table"
-				local label=owned and T("✓ Já é seu","✓ Yours") or ready and ("R$ "..tostring(info.price))
+				local label=owned and T("✓ Já é seu","✓ Yours") or ready and (tostring(info.price).." Robux")
 					or info=="retry" and T("Tentar de novo","Try again") or info==nil and T("Carregando preço…","Loading price…") or T("Indisponível","Unavailable")
 				local buy=UI.button(row,label,function()
 					if info=="retry" and not owned then productInfo[cacheKey]=nil; fetchProducts(); renderContext(); return end

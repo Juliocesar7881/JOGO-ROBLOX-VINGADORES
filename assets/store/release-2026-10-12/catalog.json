@@ -1,0 +1,512 @@
+[
+  {
+    "category": "Passes",
+    "key": "training",
+    "id": 2001722936,
+    "price": 29,
+    "namePt": "Treinamento acelerado",
+    "nameEn": "Accelerated Training",
+    "descriptionPt": "+25% de XP de conta e de maestria.",
+    "descriptionEn": "+25% account and mastery XP."
+  },
+  {
+    "category": "Passes",
+    "key": "speed3",
+    "id": 2001776936,
+    "price": 19,
+    "namePt": "Velocidade 3x",
+    "nameEn": "3x Speed",
+    "descriptionPt": "Libera 3x nas partidas. A partida acelera quando todo o grupo escolhe 3x.",
+    "descriptionEn": "Unlocks 3x in matches. The match speeds up when the whole squad picks 3x."
+  },
+  {
+    "category": "Passes",
+    "key": "season",
+    "id": 2026575250,
+    "price": 49,
+    "namePt": "Passe de Temporada",
+    "nameEn": "Season Pass",
+    "descriptionPt": "Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.",
+    "descriptionEn": "The season's premium track: double the Gold, more chests and an exclusive title."
+  },
+  {
+    "category": "Passes",
+    "key": "collector",
+    "id": 2004326420,
+    "price": 19,
+    "namePt": "Drone coletor",
+    "nameEn": "Collector Drone",
+    "descriptionPt": "Coleta suas moedas automaticamente. Não aumenta o Ouro total.",
+    "descriptionEn": "Collects your coins automatically. Does not increase total Gold."
+  },
+  {
+    "category": "Passes",
+    "key": "vip",
+    "id": 2003954466,
+    "price": 29,
+    "namePt": "Pacote VIP visual",
+    "nameEn": "VIP Style Pack",
+    "descriptionPt": "Título, emote, trilha e aparência especial do drone.",
+    "descriptionEn": "Title, emote, trail and special drone appearance."
+  },
+  {
+    "category": "Consumables",
+    "key": "gold12000",
+    "id": 3715833842,
+    "price": 39,
+    "namePt": "12.000 de Ouro",
+    "nameEn": "12,000 Gold",
+    "descriptionPt": "Adiciona 12000 de Ouro ao seu perfil para recrutamento e evolução. Ouro de perfil, não dinheiro da partida.",
+    "descriptionEn": "Adds 12000 Gold to your profile for recruitment and progression. Profile Gold, not match cash."
+  },
+  {
+    "category": "Consumables",
+    "key": "gold30000",
+    "id": 3715833975,
+    "price": 79,
+    "namePt": "30.000 de Ouro",
+    "nameEn": "30,000 Gold",
+    "descriptionPt": "Adiciona 30000 de Ouro ao seu perfil para recrutamento e evolução. Ouro de perfil, não dinheiro da partida.",
+    "descriptionEn": "Adds 30000 Gold to your profile for recruitment and progression. Profile Gold, not match cash."
+  },
+  {
+    "category": "Consumables",
+    "key": "gold5000",
+    "id": 3715833690,
+    "price": 19,
+    "namePt": "5.000 de Ouro",
+    "nameEn": "5,000 Gold",
+    "descriptionPt": "Adiciona 5000 de Ouro ao seu perfil para recrutamento e evolução. Ouro de perfil, não dinheiro da partida.",
+    "descriptionEn": "Adds 5000 Gold to your profile for recruitment and progression. Profile Gold, not match cash."
+  },
+  {
+    "category": "Consumables",
+    "key": "gold1000",
+    "id": 3715833438,
+    "price": 5,
+    "namePt": "1.000 de Ouro",
+    "nameEn": "1,000 Gold",
+    "descriptionPt": "Adiciona 1000 de Ouro ao seu perfil para recrutamento e evolução. Ouro de perfil, não dinheiro da partida.",
+    "descriptionEn": "Adds 1000 Gold to your profile for recruitment and progression. Profile Gold, not match cash."
+  },
+  {
+    "category": "Consumables",
+    "key": "starterPack",
+    "id": 3715833256,
+    "price": 19,
+    "namePt": "Pacote Inicial",
+    "nameEn": "Starter Pack",
+    "descriptionPt": "Uma vez por conta: Gigante Furioso (raro) + 5.000 de Ouro.",
+    "descriptionEn": "Once per account: Raging Giant (rare) + 5,000 Gold."
+  },
+  {
+    "category": "Heroes",
+    "key": "deadpool",
+    "id": 3718186419,
+    "price": 29,
+    "namePt": "Mercenário Falante",
+    "nameEn": "Chatty Mercenary",
+    "descriptionPt": "Desbloqueia Mercenário Falante na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Chatty Mercenary in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "jean",
+    "id": 3718186464,
+    "price": 79,
+    "namePt": "Psíquica Radiante",
+    "nameEn": "Radiant Psychic",
+    "descriptionPt": "Desbloqueia Psíquica Radiante na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Radiant Psychic in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "amazon",
+    "id": 3718184374,
+    "price": 29,
+    "namePt": "Amazona Dourada",
+    "nameEn": "Golden Amazon",
+    "descriptionPt": "Desbloqueia Amazona Dourada na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Golden Amazon in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "warmachine",
+    "id": 3715835379,
+    "price": 29,
+    "namePt": "Soldado Blindado",
+    "nameEn": "Armored Trooper",
+    "descriptionPt": "Desbloqueia Soldado Blindado na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Armored Trooper in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "storm",
+    "id": 3718186499,
+    "price": 79,
+    "namePt": "Deusa do Clima",
+    "nameEn": "Weather Goddess",
+    "descriptionPt": "Desbloqueia Deusa do Clima na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Weather Goddess in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "cyclops",
+    "id": 3718186531,
+    "price": 9,
+    "namePt": "Olho Rubi",
+    "nameEn": "Ruby Eye",
+    "descriptionPt": "Desbloqueia Olho Rubi na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Ruby Eye in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "silversurfer",
+    "id": 3718186558,
+    "price": 79,
+    "namePt": "Surfista Cósmico",
+    "nameEn": "Cosmic Surfer",
+    "descriptionPt": "Desbloqueia Surfista Cósmico na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Cosmic Surfer in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "daredevil",
+    "id": 3715835002,
+    "price": 9,
+    "namePt": "Vigilante Cego",
+    "nameEn": "Blind Vigilante",
+    "descriptionPt": "Desbloqueia Vigilante Cego na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Blind Vigilante in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "psylocke",
+    "id": 3718186588,
+    "price": 29,
+    "namePt": "Ninja Psíquica",
+    "nameEn": "Psychic Ninja",
+    "descriptionPt": "Desbloqueia Ninja Psíquica na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Psychic Ninja in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "ghostrider",
+    "id": 3718186629,
+    "price": 79,
+    "namePt": "Motoqueiro Chama",
+    "nameEn": "Flaming Rider",
+    "descriptionPt": "Desbloqueia Motoqueiro Chama na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Flaming Rider in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "captain",
+    "id": 3715835121,
+    "price": 29,
+    "namePt": "Capitão Escudo",
+    "nameEn": "Captain Shield",
+    "descriptionPt": "Desbloqueia Capitão Escudo na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Captain Shield in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "thor",
+    "id": 3718186668,
+    "price": 79,
+    "namePt": "Deus do Trovão",
+    "nameEn": "Thunder God",
+    "descriptionPt": "Desbloqueia Deus do Trovão na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Thunder God in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "speedster",
+    "id": 3718186702,
+    "price": 79,
+    "namePt": "Velocista Rubro",
+    "nameEn": "Crimson Speedster",
+    "descriptionPt": "Desbloqueia Velocista Rubro na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Crimson Speedster in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "wanda",
+    "id": 3718186734,
+    "price": 79,
+    "namePt": "Bruxa do Caos",
+    "nameEn": "Chaos Witch",
+    "descriptionPt": "Desbloqueia Bruxa do Caos na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Chaos Witch in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "beast",
+    "id": 3718186763,
+    "price": 9,
+    "namePt": "Acrobata Peludo",
+    "nameEn": "Furry Acrobat",
+    "descriptionPt": "Desbloqueia Acrobata Peludo na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Furry Acrobat in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "bucky",
+    "id": 3715834397,
+    "price": 9,
+    "namePt": "Soldado de Prata",
+    "nameEn": "Silver Soldier",
+    "descriptionPt": "Desbloqueia Soldado de Prata na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Silver Soldier in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "rocket",
+    "id": 3715834932,
+    "price": 9,
+    "namePt": "Guaxinim Atirador",
+    "nameEn": "Raccoon Gunner",
+    "descriptionPt": "Desbloqueia Guaxinim Atirador na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Raccoon Gunner in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "spiderman",
+    "id": 3715834470,
+    "price": 9,
+    "namePt": "Aranha Urbana",
+    "nameEn": "Urban Spider",
+    "descriptionPt": "Desbloqueia Aranha Urbana na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Urban Spider in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "wasp",
+    "id": 3715834861,
+    "price": 9,
+    "namePt": "Abelha Rainha",
+    "nameEn": "Queen Bee",
+    "descriptionPt": "Desbloqueia Abelha Rainha na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Queen Bee in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "gambit",
+    "id": 3718186805,
+    "price": 29,
+    "namePt": "Mestre das Cartas",
+    "nameEn": "Card Master",
+    "descriptionPt": "Desbloqueia Mestre das Cartas na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Card Master in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "widow",
+    "id": 3715834541,
+    "price": 9,
+    "namePt": "Viúva Sombria",
+    "nameEn": "Shadow Widow",
+    "descriptionPt": "Desbloqueia Viúva Sombria na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Shadow Widow in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "nightstalker",
+    "id": 3718186834,
+    "price": 29,
+    "namePt": "Caçador da Noite",
+    "nameEn": "Night Hunter",
+    "descriptionPt": "Desbloqueia Caçador da Noite na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Night Hunter in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "capmen",
+    "id": 3718186861,
+    "price": 29,
+    "namePt": "Capitão Men",
+    "nameEn": "Captain Men",
+    "descriptionPt": "Desbloqueia Capitão Men na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Captain Men in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "solartitan",
+    "id": 3718186894,
+    "price": 79,
+    "namePt": "Guardião Solar",
+    "nameEn": "Solar Guardian",
+    "descriptionPt": "Desbloqueia Guardião Solar na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Solar Guardian in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "falcon",
+    "id": 3715834320,
+    "price": 9,
+    "namePt": "Homem-Asa",
+    "nameEn": "Wingman",
+    "descriptionPt": "Desbloqueia Homem-Asa na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Wingman in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "nightcrawler",
+    "id": 3718187550,
+    "price": 9,
+    "namePt": "Teleportador Azul",
+    "nameEn": "Blue Teleporter",
+    "descriptionPt": "Desbloqueia Teleportador Azul na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Blue Teleporter in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "antman",
+    "id": 3715834624,
+    "price": 9,
+    "namePt": "Homem Miúdo",
+    "nameEn": "Tiny Man",
+    "descriptionPt": "Desbloqueia Homem Miúdo na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Tiny Man in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "vision",
+    "id": 3715835303,
+    "price": 29,
+    "namePt": "Androide Prisma",
+    "nameEn": "Prism Android",
+    "descriptionPt": "Desbloqueia Androide Prisma na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Prism Android in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "panther",
+    "id": 3715835190,
+    "price": 29,
+    "namePt": "Rei Pantera",
+    "nameEn": "Panther King",
+    "descriptionPt": "Desbloqueia Rei Pantera na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Panther King in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "nova",
+    "id": 3718187579,
+    "price": 79,
+    "namePt": "Guardião Cósmico",
+    "nameEn": "Cosmic Guardian",
+    "descriptionPt": "Desbloqueia Guardião Cósmico na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Cosmic Guardian in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "shangchi",
+    "id": 3715835053,
+    "price": 9,
+    "namePt": "Mestre dos Anéis",
+    "nameEn": "Ring Master",
+    "descriptionPt": "Desbloqueia Mestre dos Anéis na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Ring Master in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "strange",
+    "id": 3718187623,
+    "price": 79,
+    "namePt": "Doutor Místico",
+    "nameEn": "Doctor Mystic",
+    "descriptionPt": "Desbloqueia Doutor Místico na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Doctor Mystic in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "moonknight",
+    "id": 3718187669,
+    "price": 9,
+    "namePt": "Cavaleiro Lunar",
+    "nameEn": "Lunar Knight",
+    "descriptionPt": "Desbloqueia Cavaleiro Lunar na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Lunar Knight in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "starlord",
+    "id": 3715835477,
+    "price": 29,
+    "namePt": "Pirata Estelar",
+    "nameEn": "Star Pirate",
+    "descriptionPt": "Desbloqueia Pirata Estelar na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Star Pirate in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "wolverine",
+    "id": 3718187710,
+    "price": 29,
+    "namePt": "Garra de Aço",
+    "nameEn": "Steel Claw",
+    "descriptionPt": "Desbloqueia Garra de Aço na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Steel Claw in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "hulk",
+    "id": 3715835244,
+    "price": 29,
+    "namePt": "Gigante Furioso",
+    "nameEn": "Raging Giant",
+    "descriptionPt": "Desbloqueia Gigante Furioso na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Raging Giant in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "iceman",
+    "id": 3718187741,
+    "price": 9,
+    "namePt": "Gelo Vivo",
+    "nameEn": "Living Ice",
+    "descriptionPt": "Desbloqueia Gelo Vivo na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Living Ice in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "groot",
+    "id": 3718187771,
+    "price": 29,
+    "namePt": "Gigante Verde",
+    "nameEn": "Forest Giant",
+    "descriptionPt": "Desbloqueia Gigante Verde na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Forest Giant in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "emerald",
+    "id": 3718187811,
+    "price": 79,
+    "namePt": "Guardião Verde",
+    "nameEn": "Emerald Guard",
+    "descriptionPt": "Desbloqueia Guardião Verde na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Emerald Guard in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "captainmarvel",
+    "id": 3718187847,
+    "price": 79,
+    "namePt": "Capitã Estelar",
+    "nameEn": "Star Captain",
+    "descriptionPt": "Desbloqueia Capitã Estelar na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Star Captain in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  },
+  {
+    "category": "Heroes",
+    "key": "seaking",
+    "id": 3718187883,
+    "price": 29,
+    "namePt": "Rei dos Mares",
+    "nameEn": "Sea King",
+    "descriptionPt": "Desbloqueia Rei dos Mares na sua coleção. Compra direta, sem sorteio. Se já possuir, recebe a compensação de duplicata do jogo.",
+    "descriptionEn": "Unlocks Sea King in your collection. Direct purchase, no random draw. If already owned, grants the in-game duplicate compensation."
+  }
+]

@@ -66,7 +66,7 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Guardião Cósmico** — Feixe cósmico antiaéreo | 590 | feixe (ar) | 48 | 32 | 1.05s | Supernova ⚡ (ultimate) |
 | **Guardião Verde** — Construções de energia e controle | 600 | área (ar) | 30 | 28 | 1.50s | Construção Esmeralda ⚡ (ultimate) |
 | **Velocista Rubro** — Golpes ultrarrápidos | 560 | corrente (ar) | 11 | 24 | 0.18s | Supervelocidade ⚡ (ultimate) |
-| **Titã Solar** — Visão de calor e força suprema | 800 | feixe (ar) | 50 | 32 | 1.30s | Fúria Solar ⚡ (ultimate) |
+| **Guardião Solar** — Visão de calor e força suprema | 800 | feixe (ar) | 50 | 32 | 1.30s | Fúria Solar ⚡ (ultimate) |
 
 ## Habilidades
 
@@ -116,7 +116,7 @@ foi preservado na unificação (`hero.economy.abilityCost`)
 | Supernova ⚡ | Guardião Cósmico | 75s | Explosão: 38% da vida em 30 studs; revela e marca (+12% dano). Chefes resistem. |
 | Indestrutível | Capitão Men | 80s | Um escudo absorve 30 de dano ao núcleo por 12 s e o núcleo recupera 8 de vida. |
 | Construção Esmeralda ⚡ | Guardião Verde | 80s | ULTIMATE: uma gaiola de energia paralisa por 3 s em 36 studs, puxa os inimigos 10 studs para trás e derrete 30% da armadura. Chefes resistem. |
-| Fúria Solar ⚡ | Titã Solar | 85s | ULTIMATE: uma explosão de calor varre 55 studs: 50% da vida máxima de cada inimigo, atordoa por 2 s e queima 30% em 5 s. Chefes sofrem bem menos. |
+| Fúria Solar ⚡ | Guardião Solar | 85s | ULTIMATE: uma explosão de calor varre 55 studs: 50% da vida máxima de cada inimigo, atordoa por 2 s e queima 30% em 5 s. Chefes sofrem bem menos. |
 | Supervelocidade ⚡ | Velocista Rubro | 80s | ULTIMATE: o mundo desacelera para a sua equipe. Todas as suas torres atacam 40% mais rápido por 10 s e todos os inimigos andam 50% mais devagar por 6 s. |
 | Laço da Verdade | Amazona Dourada | 60s | Revela camuflados e faz alvos sofrerem +30% de dano por 10 s em 40 studs, e derrete 30% da armadura. |
 | Maremoto | Rei dos Mares | 70s | Uma onda empurra os inimigos 30 studs para trás em 45 studs e os desacelera em 50% depois. Chefes não saem do lugar. |

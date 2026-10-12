@@ -312,6 +312,10 @@ local function session(screen)
 	function guiService:GetGuiInset() return Vector2.new(0, 58), Vector2.new(0, 0) end
 	local prompts = {}
 	local market = {
+		GetProductInfoAsync = function(_, id)
+			local prices = {[777]=19, [778]=23, [779]=0, [780]=15, [781]=31, [782]=63}
+			return {PriceInRobux=prices[id], IsForSale=id~=779}
+		end,
 		PromptGamePassPurchase = function(_, _, id) table.insert(prompts, "pass:" .. tostring(id)) end,
 		PromptProductPurchase = function(_, _, id) table.insert(prompts, "product:" .. tostring(id)) end,
 	}
@@ -389,6 +393,8 @@ local function session(screen)
 		actionPayloads[action] = payload
 		if action == "Sync" then return { ok = true, data = current } end
 		if action == "ProductInfo" then
+			local goldIds={gold1000=779,gold5000=780,gold12000=781,gold30000=782}
+			if goldIds[payload.key] then return {ok=true,data={id=goldIds[payload.key],price=999}} end
 			if payload.key == "vip" then return { ok = true, data = { id = 777, price = 299, name = "VIP" } } end
 			-- The training pass price never answers until the test says so.
 			if payload.key == "training" and not collectorPrice then return nil end
@@ -1065,20 +1071,20 @@ local function session(screen)
 		check(retry~=nil and retry.Text=="Tentar de novo",tag..": a price with no answer offers a retry, got "..tostring(retry and retry.Text))
 		click("Ouro")
 		local unsold=named(gui,"Buy_product:gold1000")
-		check(unsold~=nil and unsold.Text=="Indisponível",tag..": a product that is not configured reads unavailable")
+		check(unsold~=nil and unsold.Text=="Indisponível",tag..": client off-sale status overrides a server quote")
 		-- The Gold packs rank themselves: the biggest pack is the best deal and
-		-- the mid pack is the one most people take; each pack states Gold per R$.
-		check(named(gui,"Badge_gold30000")~=nil and named(gui,"Badge_gold5000")~=nil and named(gui,"Badge_gold1000")==nil and named(gui,"Badge_gold12000")==nil,tag..": only the best-value and the most-popular Gold pack wear a badge")
-		check(named(gui,"Badge_gold30000").Text=="Melhor valor" and named(gui,"Badge_gold5000").Text=="Mais popular",tag..": the badges read best value and most popular")
+		-- the mid pack is recommended; each available pack states Gold per Robux.
+		check(named(gui,"Badge_gold30000")~=nil and named(gui,"Badge_gold5000")~=nil and named(gui,"Badge_gold1000")==nil and named(gui,"Badge_gold12000")==nil,tag..": only the best-value and the recommended Gold pack wear a badge")
+		check(named(gui,"Badge_gold30000").Text=="Melhor valor" and named(gui,"Badge_gold5000").Text=="Sugestão",tag..": regional prices determine best value; recommendations do not claim popularity")
 		local valueLine=named(gui,"Value_gold12000")
-		check(valueLine~=nil and string.find(valueLine.Text,"20",1,true)~=nil,tag..": a pack states its Gold per Robux, got "..tostring(valueLine and valueLine.Text))
+		check(valueLine~=nil and string.find(valueLine.Text,"387",1,true)~=nil,tag..": a pack states Gold per regional Robux, got "..tostring(valueLine and valueLine.Text))
 		click("Passes")
 		retry=named(gui,"Buy_pass:training")
 		collectorPrice=true
 		if retry then retry.Activated:Fire(); flush() end
 		frames(0.5, 4)
 		local priced=named(gui,"Buy_pass:training")
-		check(priced~=nil and string.find(priced.Text,"149",1,true)~=nil,tag..": retrying loads the price, got "..tostring(priced and priced.Text))
+		check(priced~=nil and priced.Text=="23 Robux",tag..": retrying loads the client regional price, not the server price, got "..tostring(priced and priced.Text))
 		leaderboardDown=true
 		-- Checked right away: a place-bound panel closes once the commander is
 		-- far from its totem, as this one is.

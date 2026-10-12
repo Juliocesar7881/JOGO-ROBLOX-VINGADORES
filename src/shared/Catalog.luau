@@ -98,11 +98,11 @@ Catalog.DailyFeature = { bonus = 0.25 }
 -- shine (cosmetic only: no stat changes). Drawn with the chest's rolls.
 Catalog.ShinyChance = 1 / 40
 Catalog.Rarities = {
-	common = { id = "common", name = text("Comum", "Common"), color = { 190, 200, 212 }, robux = 79, placeLimit = 8, abilityCost = 1, duplicate = { gold = 150, mastery = 60 } },
-	rare = { id = "rare", name = text("Raro", "Rare"), color = { 84, 170, 255 }, robux = 199, placeLimit = 6, abilityCost = 1.4, duplicate = { gold = 300, mastery = 120 } },
-	epic = { id = "epic", name = text("Épico", "Epic"), color = { 176, 108, 255 }, robux = 449, placeLimit = 5, abilityCost = 2, duplicate = { gold = 600, mastery = 250 } },
-	legendary = { id = "legendary", name = text("Lendário", "Legendary"), color = { 255, 188, 62 }, robux = 999, placeLimit = 4, abilityCost = 3, duplicate = { gold = 1200, mastery = 500 } },
-	mythic = { id = "mythic", name = text("Mítico", "Mythic"), color = { 255, 84, 112 }, robux = 1999, placeLimit = 3, abilityCost = 4.5, duplicate = { gold = 2500, mastery = 1000 } },
+	common = { id = "common", name = text("Comum", "Common"), color = { 190, 200, 212 }, robux = 9, placeLimit = 8, abilityCost = 1, duplicate = { gold = 150, mastery = 60 } },
+	rare = { id = "rare", name = text("Raro", "Rare"), color = { 84, 170, 255 }, robux = 9, placeLimit = 6, abilityCost = 1.4, duplicate = { gold = 300, mastery = 120 } },
+	epic = { id = "epic", name = text("Épico", "Epic"), color = { 176, 108, 255 }, robux = 29, placeLimit = 5, abilityCost = 2, duplicate = { gold = 600, mastery = 250 } },
+	legendary = { id = "legendary", name = text("Lendário", "Legendary"), color = { 255, 188, 62 }, robux = 79, placeLimit = 4, abilityCost = 3, duplicate = { gold = 1200, mastery = 500 } },
+	mythic = { id = "mythic", name = text("Mítico", "Mythic"), color = { 255, 84, 112 }, robux = 79, placeLimit = 3, abilityCost = 4.5, duplicate = { gold = 2500, mastery = 1000 } },
 }
 
 --==============================================================================
@@ -871,7 +871,7 @@ local league = {
 	},
 	solartitan = {
 		id = "solartitan", rarity = "mythic", ability = "solarWrath",
-		name = text("Titã Solar", "Solar Titan"), role = text("Visão de calor e força suprema", "Heat vision and supreme strength"), cost = 800,
+		name = text("Guardião Solar", "Solar Guardian"), role = text("Visão de calor e força suprema", "Heat vision and supreme strength"), cost = 800,
 		description = text("Voa sobre o campo e varre a linha inimiga com raios de calor.", "Flies over the field and sweeps the enemy line with heat rays."),
 		damage = 50, range = 32, interval = 1.3, color = { 70, 140, 255 }, attack = "beam", damageType = "tech", air = true, beamWidth = 3,
 		branches = {
@@ -1007,20 +1007,20 @@ end
 
 Catalog.Products = {
 	Passes = {
-		collector = { id = 0, price = 149, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold.") },
-		training = { id = 0, price = 199, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP.") },
-		speed3 = { id = 0, price = 149, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. A partida acelera quando todo o grupo escolhe 3x.", "Unlocks 3x in matches. The match speeds up when the whole squad picks 3x.") },
-		season = { id = 0, price = 399, name = text("Passe de Temporada", "Season Pass"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title.") },
-		vip = { id = 0, price = 299, name = text("Pacote VIP visual", "VIP Style Pack"), description = text("Título, emote, trilha e aparência especial do drone.", "Title, emote, trail and special drone appearance.") },
+		collector = { id = 0, price = 19, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold.") },
+		training = { id = 0, price = 29, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP.") },
+		speed3 = { id = 0, price = 19, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. A partida acelera quando todo o grupo escolhe 3x.", "Unlocks 3x in matches. The match speeds up when the whole squad picks 3x.") },
+		season = { id = 0, price = 49, name = text("Passe de Temporada", "Season Pass"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title.") },
+		vip = { id = 0, price = 29, name = text("Pacote VIP visual", "VIP Style Pack"), description = text("Título, emote, trilha e aparência especial do drone.", "Title, emote, trail and special drone appearance.") },
 	},
 	Consumables = {
-		gold1000 = { id = 0, price = 79, gold = 1000, name = text("1.000 de Ouro", "1,000 Gold") },
-		gold5000 = { id = 0, price = 299, gold = 5000, popular = true, name = text("5.000 de Ouro", "5,000 Gold") },
-		gold12000 = { id = 0, price = 599, gold = 12000, name = text("12.000 de Ouro", "12,000 Gold") },
-		gold30000 = { id = 0, price = 1299, gold = 30000, name = text("30.000 de Ouro", "30,000 Gold") },
+		gold1000 = { id = 0, price = 5, gold = 1000, name = text("1.000 de Ouro", "1,000 Gold") },
+		gold5000 = { id = 0, price = 19, gold = 5000, popular = true, name = text("5.000 de Ouro", "5,000 Gold") },
+		gold12000 = { id = 0, price = 39, gold = 12000, name = text("12.000 de Ouro", "12,000 Gold") },
+		gold30000 = { id = 0, price = 79, gold = 30000, name = text("30.000 de Ouro", "30,000 Gold") },
 		-- Once per account: an epic hero and Gold. Bought again (a second
 		-- prompt racing the first), it is paid in Gold instead of the hero.
-		starterPack = { id = 0, price = 99, gold = 5000, heroId = "hulk", repeatGold = 2500, name = text("Pacote Inicial", "Starter Pack"),
+		starterPack = { id = 0, price = 19, gold = 5000, heroId = "hulk", repeatGold = 2500, name = text("Pacote Inicial", "Starter Pack"),
 			description = text("Uma vez por conta: Gigante Furioso (épico) + 5.000 de Ouro.", "Once per account: Raging Giant (epic) + 5,000 Gold.") },
 	},
 	-- One product per purchasable hero, priced by rarity. The two starter

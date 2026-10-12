@@ -11,13 +11,14 @@ Galerias foram movidas da Área de Trabalho para `test-results/galerias/`.
 
 ## Acesso público e alcance
 
-- [ ] Conferir Audience e Audience > Reach na conta do dono. Atualização de
-  código publicada não comprova acesso público para cada faixa etária.
-  A captura anterior mostrava alcance limitado a 16+ e amigos de confiança.
-- [ ] Concluir o questionário e as verificações exigidas pela plataforma.
-  A documentação atual diferencia acesso 16+ do acesso a todas as idades,
-  incluindo Kids/Select; não presumir que selecionar Public libera ambos.
-  Fonte: [requisitos oficiais](https://create.roblox.com/docs/production/publishing/publish-games-and-places#publishing-requirements).
+- [x] Audience e Audience > Reach conferidos em 12/10: Public, alcance
+  **16+ e amigos de confiança**; classificação Minimal, questionário completo.
+  Exclusão das recomendações desmarcada. Isso não libera todas as idades.
+- [ ] O dono concluir identidade e autenticação em duas etapas exigidas pela
+  conta. Idade por câmera aparece concluída; alcance ainda mostra taxa
+  reembolsável não submetida / alternativa de 0/250 jogadores engajados.
+  Nenhum documento, senha, contrato ou pagamento foi tratado automaticamente.
+  [Requisitos oficiais](https://create.roblox.com/docs/production/publishing/publish-games-and-places#publishing-requirements).
 
 ## Código e apresentação
 
@@ -44,17 +45,13 @@ Galerias foram movidas da Área de Trabalho para `test-results/galerias/`.
 Auditoria: `python tools/audit_launch.py --output test-results/launch-audit.json`.
 Ela executa o catálogo atual; ID preenchido não comprova venda nem entrega.
 
-- [x] Metadados dos 24 IDs configurados consultados pelo MarketplaceService
-  em 11/10. Drone, Treinamento e Velocidade 3x estão à venda pelos preços do
-  catálogo. Quinze produtos de heróis e cinco consumíveis possuem metadados.
-- [ ] **VIP:** ID existente, mas `IsForSale=false` reconfirmado pela API pública em 12/10.
-  Habilitar no Creator Hub com o preço do catálogo (299), depois conferir
-  no jogo. Não aceitar contratos em nome do dono.
-- [ ] **Temporada:** passe ID zero; preço do catálogo 399. Criar/configurar
-  depois de resolver os termos que o Creator Hub eventualmente exigir.
-- [ ] **26 produtos de heróis sem ID**, entre 41 compráveis. Lista atual em
-  `docs/director/ROBUX_CATALOG.md` e no auditor. Dois iniciais não precisam
-  de produto. As rotas de aquisição com recursos do jogo permanecem.
+- [x] **51 itens cadastrados** no Creator Hub e Config: 41 heróis, cinco
+  passes e cinco consumíveis; 26 produtos e Temporada criados em 12/10,
+  anteriores atualizados. Auditor sem IDs faltantes; cinco passes à venda.
+- [x] **Preços reduzidos** autorizados pelo dono: heróis 9/29/79 Robux;
+  passes 19–49; Ouro 5/19/39/79 e Pacote Inicial 19. VIP ativado por 29.
+  Cliente usa cotação regional, sem anunciar preço antigo/global.
+  Registro em [CONFIGURACAO_COMERCIAL_2026-10-12.md](CONFIGURACAO_COMERCIAL_2026-10-12.md).
 - [ ] Confirmar pessoalmente contratos pendentes, se ainda aparecerem. O
   registro de 01/10 relata “Updated Agreements”; nenhuma aceitação automática.
 - [ ] Compra real de cada passe/produto em conta de teste: entrega única,
@@ -88,10 +85,11 @@ Ela executa o catálogo atual; ID preenchido não comprova venda nem entrega.
   layout; não comprova desempenho nem gestos no aparelho.
 - [ ] Ouvir em fone/alto-falante: golpes e poderes distintos, música abaixo
   das informações importantes, opções de som e efeitos funcionando.
-- [ ] Página: miniaturas fiéis, título/descrição localizados e questionário
-  de conteúdo. Materiais em `assets/store/` e `docs/STORE_PAGE.md`.
-- [ ] Decisão final de marca pelo dono. Não alterar audiência, preços nem
-  colaboradores como parte da publicação de código.
+- [x] Página: nome/descrição base em inglês, português e espanhol manuais,
+  17 idiomas automáticos habilitados; ícone/miniatura atuais preservados.
+  Questionário Minimal preenchido. Fontes em `assets/store/release-2026-10-12/`.
+- [ ] Decisão final de marca pelo dono. Preços e metadados foram autorizados
+  explicitamente em 12/10; colaboradores não foram alterados.
 
 ## Aceite de retenção
 

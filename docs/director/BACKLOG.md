@@ -322,3 +322,11 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M33.4 Código `f636a9a` no main, suíte completa verde (87,38 s), 20 capturas PC/horizontal PT/vertical EN sem erro ou overflow; 23 preparações/25 tiros e três fases de cinco heróis observadas no Studio. Quatro módulos sincronizados seletivamente, 40 fontes comparadas e preview 4.481 peças. Publicado no place 97132875544830 em 11/10 às 23:42:32 local (12/10 02:42:32 UTC), PublishSuccessful confirmado; Studio em edição. M33.5/M33.6 e aceites externos permanecem abertos.
 - [!] M33.5 Medição de carga ativa pendente: duas tentativas invalidadas pelo Studio em segundo plano (~15 FPS), segunda também sem inimigos. Não declarar 60 FPS deste lote. Repetir quando houver foco estável, cinco heróis e pelo menos 80 inimigos.
 - [ ] M33.6 Continuar figurinos/rostos e silhuetas próprios por herói (M22.7), depois demais assinaturas de ataque (M22.9). Acabamento de personagens e combate permanecem 3/5 até esses aceites; celular físico e sessão prolongada separados.
+
+## M34 — Loja acessível e configuração comercial, 12/10
+
+- [x] M34.1 26 produtos faltantes e Temporada criados no universo oficial; 51 IDs reais, nomes/descrições conferidos. VIP ativado, cinco passes à venda. Sem duplicar IDs existentes.
+- [x] M34.2 Preços menores em Catalog e Creator Hub: heróis 9/29/79, passes 19–49, pacotes 5–79 Robux. Cliente consulta preço regional e valor real dos pacotes; servidor mantém política/entrega. Testes de 41 recibos oficiais e replay.
+- [x] M34.3 Página fiel: título limpo, descrição base EN e PT/ES manuais, 17 idiomas automáticos habilitados, gênero correto e exclusão de recomendações desmarcada. Minimal e alcance Public/16+ confirmados.
+- [ ] M34.4 Suíte final, sincronização seletiva, conferência nativa e publicação do código no place 97132875544830; organizar catálogo nativo Shop depois que os novos IDs estiverem publicados.
+- [ ] M34.5 Identidade/2FA e requisitos de ampliação pessoal; compras reais, celular físico, quatro jogadores, reconexão, sessão longa e D1/D7. Não declarar esses aceites por testes simulados ou metadados.
