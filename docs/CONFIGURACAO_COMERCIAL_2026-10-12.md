@@ -70,11 +70,39 @@ oficial de herói entrega o herói correto e repetir o recibo não entrega duas
 vezes. Testes do cliente verificam preço regional divergente do servidor,
 produto fora de venda, nova tentativa e comparação de pacotes em seis telas.
 
-Estado de publicação, capturas do Studio e catálogo nativo serão registrados
-nesta seção após a conferência final. Galeria e evidências ficam em
-`test-results/galerias/Configuracao_Comercial_2026-10-12/`, nunca no Desktop.
-Metadados e testes simulados não substituem compras reais, celular físico,
-quatro jogadores, reconexão, sessão longa ou a medição D1/D7.
+
+Código **b089b43** enviado ao `main` e publicado no lugar oficial em
+**12/10/2026 às 14:12:16 local (17:12:16 UTC)**. `Go to PublishSuccessful`
+confirmado no log do Studio. Quatro módulos sincronizados seletivamente;
+40 fontes comparadas com o repositório, prefixo de papel preservado e lobby
+reconstruído com **4.481 peças**, abaixo do teto de 4.500.
+
+Suíte completa **exit 0 em 63,83 s**; PlayerService com **910 asserções**,
+incluindo entrega/replay dos 41 IDs oficiais. Revisão nativa em seis cenas,
+14 capturas finais em PC PT, PC EN e vertical 375×667 EN, sem erro/overflow
+acusado pela ferramenta. Compras ficam desativadas no perfil temporário do
+Studio; essas imagens comprovam layout, não uma transação real.
+
+MarketplaceService confirmou os **51 IDs/nomes à venda**. As cotações
+consultadas não excedem os preços padrão; alguns itens já retornam valor
+menor. Não apresentar a cotação de uma sessão como preço universal.
+Nenhuma compra real foi realizada.
+
+**Shop nativo publicado**, confirmado por “Shop published”: todos os 51
+itens listados, organizados em **Heróis / Heroes (41), Passes (5), Ouro /
+Gold (4) e Pacotes / Packs (1)**. O botão global adicional permanece
+desligado; a navegação própria do jogo já tem a loja.
+
+Depois da publicação, o Studio perdeu acesso ao mesmo lugar com **RCC-273**
+(“Você não tem mais acesso a esta experiência”). A reconexão não restabeleceu
+a sessão. Isso impediu concluir os ícones externos individuais planejados;
+o protótipo foi rejeitado e não foi enviado. Arte própria da loja interna,
+ícone e miniatura existentes da experiência permanecem. O Studio terminou
+na Home; não declarar que foi deixado no lugar em modo de edição.
+
+Evidências: `test-results/galerias/Configuracao_Comercial_2026-10-12/INDICE.html`,
+`publication.json`, `evidence.json` e `commerce-marketplace.json`. As pendências
+pessoais e os testes reais continuam no checklist de lançamento.
 
 ## Registro completo
 

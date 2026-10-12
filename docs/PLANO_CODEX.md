@@ -705,3 +705,10 @@ cliente. VIP ativado, Temporada criada. Página localizada e recomendação
 permitida; identidade/2FA e requisitos de ampliação continuam pessoais.
 As referências anteriores a VIP fora de venda, Temporada sem ID e 26
 produtos faltantes são históricas e foram resolvidas neste lote.
+
+Código `b089b43` publicado no mesmo place em 12/10/2026 às 14:12:16 local
+(17:12:16 UTC), `PublishSuccessful` confirmado; suíte completa verde,
+40 fontes comparadas e 14 capturas finais. Shop nativo publicado com os
+51 itens listados em quatro categorias. Depois, o Studio perdeu acesso
+com RCC-273; ícones externos individuais ficaram pendentes e o Studio
+terminou na Home. A publicação anterior foi confirmada antes desse erro.

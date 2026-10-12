@@ -52,6 +52,12 @@ Ela executa o catálogo atual; ID preenchido não comprova venda nem entrega.
   passes 19–49; Ouro 5/19/39/79 e Pacote Inicial 19. VIP ativado por 29.
   Cliente usa cotação regional, sem anunciar preço antigo/global.
   Registro em [CONFIGURACAO_COMERCIAL_2026-10-12.md](CONFIGURACAO_COMERCIAL_2026-10-12.md).
+- [x] Código b089b43 publicado no place oficial em 12/10 às 14:12:16 local;
+  Shop nativo publicado, 51 itens listados em quatro categorias. 51 IDs/nomes
+  e estado de venda conferidos pelo MarketplaceService. Nenhuma compra real.
+- [ ] Ícones externos individuais opcionais: ainda usam imagem padrão.
+  Protótipo não enviado; Studio perdeu acesso após publicação (RCC-273).
+  Arte interna e imagens existentes da experiência preservadas.
 - [ ] Confirmar pessoalmente contratos pendentes, se ainda aparecerem. O
   registro de 01/10 relata “Updated Agreements”; nenhuma aceitação automática.
 - [ ] Compra real de cada passe/produto em conta de teste: entrega única,
