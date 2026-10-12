@@ -1,9 +1,23 @@
-# Lançamento e retenção — estado conferido em 11/10/2026
+# Lançamento e retenção — configuração reconferida em 12/10/2026
 
 Projeto oficial: place **97132875544830**, universo **10768165352**.
 Código no `main`; fonte da verdade em `src/`. Publicar uma atualização nesse
 lugar não muda o público da experiência. Testes locais não comprovam compras,
 rede, aparelho físico ou retenção.
+
+Prioridade de lançamento e monetização em
+[`LANCAMENTO_MONETIZACAO_2026-10-12.md`](LANCAMENTO_MONETIZACAO_2026-10-12.md).
+Galerias foram movidas da Área de Trabalho para `test-results/galerias/`.
+
+## Acesso público e alcance
+
+- [ ] Conferir Audience e Audience > Reach na conta do dono. Atualização de
+  código publicada não comprova acesso público para cada faixa etária.
+  A captura anterior mostrava alcance limitado a 16+ e amigos de confiança.
+- [ ] Concluir o questionário e as verificações exigidas pela plataforma.
+  A documentação atual diferencia acesso 16+ do acesso a todas as idades,
+  incluindo Kids/Select; não presumir que selecionar Public libera ambos.
+  Fonte: [requisitos oficiais](https://create.roblox.com/docs/production/publishing/publish-games-and-places#publishing-requirements).
 
 ## Código e apresentação
 
@@ -33,7 +47,7 @@ Ela executa o catálogo atual; ID preenchido não comprova venda nem entrega.
 - [x] Metadados dos 24 IDs configurados consultados pelo MarketplaceService
   em 11/10. Drone, Treinamento e Velocidade 3x estão à venda pelos preços do
   catálogo. Quinze produtos de heróis e cinco consumíveis possuem metadados.
-- [ ] **VIP:** ID existente, mas `IsForSale=false` confirmado em 11/10.
+- [ ] **VIP:** ID existente, mas `IsForSale=false` reconfirmado pela API pública em 12/10.
   Habilitar no Creator Hub com o preço do catálogo (299), depois conferir
   no jogo. Não aceitar contratos em nome do dono.
 - [ ] **Temporada:** passe ID zero; preço do catálogo 399. Criar/configurar

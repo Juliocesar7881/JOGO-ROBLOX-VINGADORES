@@ -37,3 +37,13 @@ syncing everything can overwrite a file your partner just pushed into Studio.
 
 The player-facing language is Portuguese (`{ pt = ..., en = ... }` for every
 string). Reply to the humans in Portuguese.
+
+## Generated deliveries
+
+- The owner does not want project folders on the Desktop. Save galleries,
+  screenshots and review bundles under `test-results/galerias/` in this repo
+  (gitignored), and link to that location in replies. Use the Desktop only
+  when explicitly requested for that specific delivery.
+- The ten previous `Multiverse_*` Desktop folders were moved intact into
+  `test-results/galerias/` on 12/10/2026. Historical reports may still mention
+  the old paths; their folder names and relative gallery links are preserved.
