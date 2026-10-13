@@ -37,6 +37,16 @@ offset constante em relação ao pódio, e 42 itens da aba Heróis/pacote inicia
 com preço real, zero carregando/retry/indisponíveis após conclusão. Consultas
 reais adicionais confirmaram VIP 29, Ouro 1.000 por 5 e pacote inicial 19
 Robux. Isso verifica consulta/exibição; nenhuma compra foi realizada.
+Uma segunda sessão limpa confirmou novamente os 42 preços da aba e os nove
+itens restantes (cinco passes/quatro pacotes de Ouro), todos à venda.
+As revisões fixas de layout interceptam requisições e podem mostrar
+Indisponível propositalmente; a consulta comercial foi verificada em sessão
+separada, fora dessas telas simuladas.
+
+PC e celular horizontal em PT, PC e celular vertical em EN: 14 capturas de
+layout sem overflow/erro. Doze capturas das placas em PT/EN; os seis títulos
+e status couberam na medição nativa. Suíte completa verde, world boot com
+7.898 checagens e seis roteiros completos do cliente (7.971 checagens).
 
 Capturas ficam em
 `test-results/galerias/Placas_Precos_2026-10-12/`, sem pasta no Desktop.
@@ -51,6 +61,10 @@ as fontes do Studio foram comparadas antes da sincronização. Nenhuma fonte
 desconhecida de outra sessão foi substituída. O commit deste lote inclui
 somente as correções solicitadas; as demais edições locais permanecem locais.
 
+Código **0358559** enviado ao `main`, junto com o commit anterior do Claude.
 Seis módulos sincronizados seletivamente no place **97132875544830**;
-o módulo novo é ProductQuotes. Conferência visual final e publicação em
-andamento; a confirmação será registrada aqui e no LOG.
+o módulo novo é ProductQuotes. Todas as 41 fontes do Studio conferidas contra
+os arquivos de trabalho, preservando as quatro edições locais anteriores.
+Publicado em **12/10/2026 às 23:14:09 local** (13/10 às 02:14:09 UTC), com
+`Go to PublishSuccessful` confirmado no log da janela oficial. Evidência em
+`test-results/lobby-prices-20261012/publication.json`. Studio em edição.
