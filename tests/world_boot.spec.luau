@@ -331,6 +331,8 @@ do
 	check(lobby:FindFirstChild("HeroTower") and lobby.HeroTower:FindFirstChild("TowerShaft") ~= nil, "the tower rises over the north road")
 	local statues = lobby:FindFirstChild("HeroStatues")
 	check(statues and statues:FindFirstChild("Statue_ironman") and statues:FindFirstChild("Statue_captain"), "two golden statues greet the plaza")
+	check(statues.Statue_ironman:FindFirstChild("StatueReactor") and not statues.Statue_ironman:FindFirstChild("StatueShield"),"reactor monument carries the armoured hero's equipment")
+	check(statues.Statue_captain:FindFirstChild("StatueShield") and statues.Statue_captain:FindFirstChild("StatueHelmet"):FindFirstChild("MonumentContour"),"shield monument keeps its signature and a sculpted helmet")
 	local outpost = hq and hq:FindFirstChild("ShieldOutpost")
 	for _, name in ipairs({ "QuinjetHull", "HelicarrierHull", "RadarDish", "CommandModule", "ArmoryDepot" }) do
 		check(outpost and outpost:FindFirstChild(name, true) ~= nil, "S.H.I.E.L.D. set piece: " .. name)
@@ -1106,6 +1108,20 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 	check(portrait and portrait:FindFirstChild("UpperTorso", true) ~= nil, heroId .. " has a portrait torso")
 	check(portrait and portrait:FindFirstChild("Head", true) ~= nil, heroId .. " has a portrait head")
 	if portrait then
+		for _,side in ipairs({"Left","Right"}) do
+			for _,segment in ipairs({"UpperArm","LowerArm","UpperLeg","LowerLeg"}) do
+				local limb=portrait:FindFirstChild(side..segment,true)
+				local contour=limb and limb:FindFirstChild("BodyContour")
+				check(contour and contour.Scale.Y>=1,heroId..": limb silhouette reaches the joint: "..side..segment)
+			end
+		end
+		if heroId=="ironman" then
+			local hosts={}
+			for _,item in ipairs(portrait:GetDescendants()) do
+				if item.Name=="Bracer" then hosts[item.Fit.Part0.Name]=true end
+			end
+			check(hosts.LeftLowerArm and hosts.RightLowerArm,"matching armour on different limbs is never deduplicated")
+		end
 		for _, piece in ipairs(portrait:GetDescendants()) do
 			if piece:IsA("BasePart") then check(piece:GetAttribute("HeroVisual") == true, heroId .. " portrait excludes world furniture") end
 		end

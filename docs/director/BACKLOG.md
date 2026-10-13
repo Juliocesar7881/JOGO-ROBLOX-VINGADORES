@@ -338,3 +338,10 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M35.1 Seis placas orientadas para a praça e apoiadas atrás dos balcões; título/status separados, texto curto e estrela acompanhando o emblema inteiro. Regressões de geometria, animação e localização.
 - [x] M35.2 Preços da aba visível atualizam independentemente, com três consultas, timeout/retry e descarte de resposta antiga. Pacote inicial sem carregamento eterno; Studio mostra preços reais como teste sem permitir compra.
 - [x] M35.3 Código 0358559 no main; suíte completa verde, 7.898 checagens de mundo e seis roteiros completos do cliente. Placas PT/EN, 14 telas PC/celular sem erro/overflow, estrela com offset constante e 51 preços reais conferidos. Seis módulos sincronizados, 41 fontes comparadas, lobby 4.499 peças. Publicado no place 97132875544830 em 12/10 às 23:14:09 local (13/10 02:14:09 UTC), PublishSuccessful confirmado; Studio em edição. Alterações locais anteriores do Claude preservadas. Relatório REFINAMENTO_PLACAS_PRECOS_2026-10-12.md e galeria test-results/galerias/Placas_Precos_2026-10-12.
+
+## M36 — Heróis, estátuas e navegação, 13/10
+
+- [x] M36.1 Árvore sem retratos laterais e Voltar fixo na ficha; regressões nos seis formatos.
+- [x] M36.2 Acabamento dos 43 figurinos e dos dois monumentos, sem aumentar orçamento; suíte completa verde.
+- [x] M36.3 Catálogo completo, ficha rolada PC/celular, estátuas e combate conferidos no Studio; fontes verificadas e publicação oficial confirmada em 13/10 às 18:00:25 local. Relatório REFINAMENTO_HEROIS_NAVEGACAO_2026-10-13.md e galeria Herois_Navegacao_2026-10-13.
+- [ ] M36.4 Direção de arte futura: diferenciar silhuetas individuais além da estrutura compartilhada (roster-02/09.png); ajustar truncamento preexistente do detalhe de poder no celular vertical (hero-scrolled-vertical-en.png). Evidências na galeria M36; não são regressões de navegação.

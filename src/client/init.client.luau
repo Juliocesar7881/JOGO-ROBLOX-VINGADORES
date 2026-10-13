@@ -594,6 +594,12 @@ renderContext = function()
 		UI.list(body,10)
 	end
 	body.ScrollBarImageColor3=tint
+	if contextPanel.kind=="hero" then
+		-- Navigation belongs to the window, outside its scrolling details.
+		local navigation=UI.frame(panel,{Name="HeroNavigation",Position=UDim2.fromOffset(16,48),Size=UDim2.new(1,-32,0,50),BackgroundTransparency=1,ZIndex=5})
+		UI.secondary(navigation,T("‹ Voltar","‹ Back"),function() openContext("inventory",{hud=true}) end,{Name="BackToInventory",Position=UDim2.fromOffset(0,2),Size=UDim2.fromOffset(140,44),TextSize=18,BackgroundColor3=UI.Skin.bodyTop,ZIndex=6})
+		body.Position,body.Size=UDim2.fromOffset(16,102),UDim2.new(1,-32,1,-116)
+	end
 	if bare then
 		body.Position,body.Size=UDim2.fromOffset(0,0),UDim2.fromScale(1,1)
 	end

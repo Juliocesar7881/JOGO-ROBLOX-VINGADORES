@@ -116,7 +116,6 @@ function Panels.new(ctx)
 		local owned = (p.heroes or {})[id]
 		local rarity = Catalog.Rarities[def.rarity]
 		local tint = UI.color(rarity.color)
-		UI.secondary(body,T("‹ Voltar","‹ Back"),function() openContext("inventory",{hud=true}) end,{Name="BackToInventory",Size=UDim2.fromOffset(130,42),TextSize=18,BackgroundColor3=UI.Skin.bodyTop})
 		-- On a short screen the actions come right under a smaller showcase: the
 		-- panel opens on what you can do, and the numbers wait below.
 		local short = UI.sizeClass(screenSize().X, screenSize().Y).short
@@ -1339,10 +1338,6 @@ function Panels.new(ctx)
 			-- The world stays visible through the controller's menu blur.
 			local plaque=UI.frame(stage,{Name="TalentTitlePlate",AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=UDim2.new(1,compact and -230 or -330,0,compact and 36 or 48),BackgroundColor3=C.background,Active=false,ZIndex=1})
 			UI.angular(plaque,C.gold,{cut=12})
-			if not compact then
-				heroPortrait(stage,"capmen",{Name="TalentChampionFortune",Position=UDim2.new(0,0,0.24,0),Size=UDim2.new(0.17,0,0.55,0),FullFigure=true,NoBackdrop=true,ImageTransparency=0.18,ZIndex=0})
-				heroPortrait(stage,"thor",{Name="TalentChampionCommand",Position=UDim2.new(0.83,0,0.24,0),Size=UDim2.new(0.17,0,0.55,0),FullFigure=true,NoBackdrop=true,ImageTransparency=0.18,ZIndex=0})
-			end
 			local heading = UI.label(stage, T("Árvore de Evolução", "Talent Tree"), {Name = "TalentHeading", Position = UDim2.fromOffset(compact and 128 or 160, compact and 4 or 10), Size = UDim2.new(1, compact and -194 or -240, 0, compact and 34 or 42),
 				Font = UI.Fonts.display, TextSize = compact and 26 or 38, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3})
 			UI.oneLine(heading, compact and 14 or 20)

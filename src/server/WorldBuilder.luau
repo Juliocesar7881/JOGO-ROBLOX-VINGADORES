@@ -2560,6 +2560,85 @@ end
 local DRAWN_FACE = { nightstalker = true, ironman = true, captain = true, spiderman = true, antman = true, wasp = true, daredevil = true, panther = true,
 	warmachine = true, starlord = true, ghostrider = true, wolverine = true, cyclops = true, deadpool = true, moonknight = true, nova = true }
 
+-- Finish the entire roster from its authored costume. Undersuits follow the
+-- armour above them, rather than exposing unrelated bright balls at joints.
+-- No extra BaseParts: portraits and a crowded match share this same budget.
+local function finishHeroCostume(f)
+	local rounded = {"HelmetShell", "ChestArmor", "ChestPlate", "Breastplate", "Bracer", "Gauntlet", "ShinGuard", "ThighPlate", "Boot", "HeavyBoot", "ShoulderGuard", "ShoulderPad", "BeltBuckle"}
+	local roundSet = {}; for _, name in ipairs(rounded) do roundSet[name] = true end
+	local cover, seen = {}, {}
+	local chestFront=-f.sizes.chest.Z/2
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if not piece:IsA("BasePart") then continue end
+		local fit = piece:FindFirstChild("Fit")
+		if not fit then continue end
+		local host = fit.Part0
+		-- Remove accidentally repeated costume plates at the exact same pose.
+		local signature = host.Name .. piece.Name .. tostring(fit.C0) .. tostring(piece.Size)
+		if seen[signature] then piece:Destroy(); continue end
+		seen[signature] = true
+		if roundSet[piece.Name] and piece:IsA("Part") and piece.Shape == Enum.PartType.Block and not piece:FindFirstChildOfClass("SpecialMesh") then
+			local bevel = Instance.new("SpecialMesh")
+			bevel.Name, bevel.MeshType, bevel.Parent = "CostumeContour", Enum.MeshType.Head, piece
+		end
+		if piece.Material ~= NEON and not string.find(piece.Name,"Cape") and not string.find(piece.Name,"Hair") then
+			local ratio = Vector3.new(piece.Size.X/host.Size.X,piece.Size.Y/host.Size.Y,piece.Size.Z/host.Size.Z)
+			local volume = ratio.X * ratio.Y * ratio.Z
+			local chestPlate=host.Name=="UpperTorso" and fit.C0.Position.Z < -host.Size.Z*0.3 and ratio.X>0.55 and ratio.Y>0.4 and ratio.Z<0.5
+			if chestPlate then
+				-- Flat costume panels follow the tapered torso silhouette instead
+				-- of forming a square bib with a differently coloured frame.
+				cover[host]={volume=2,color=piece.Color}
+				chestFront=math.min(chestFront,fit.C0.Position.Z-piece.Size.Z/2)
+				if piece:IsA("Part") and piece.Shape==Enum.PartType.Block then
+					local bevel=piece:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
+					bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",Enum.MeshType.Torso,piece
+				end
+			end
+			if ratio.X <= 1.5 and ratio.Y <= 1.3 and ratio.Z <= 1.5 and volume > 0.5 and (not cover[host] or volume > cover[host].volume) then
+				cover[host] = {volume=volume, color=piece.Color}
+			end
+			if ratio.X<=1.5 and ratio.Y<=1.3 and ratio.Z<=1.5 and volume>0.35 and piece:IsA("Part") and piece.Shape==Enum.PartType.Block and not piece:FindFirstChildOfClass("SpecialMesh") then
+				local bevel=Instance.new("SpecialMesh")
+				bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",Enum.MeshType.Head,piece
+			end
+			local contour=piece:FindFirstChild("CostumeContour")
+			if contour and (string.find(host.Name,"Arm") or string.find(host.Name,"Leg")) then contour.MeshType=Enum.MeshType.Torso end
+		end
+		-- Secondary luminous piping should read as enamel; eyes and power
+		-- sources keep their glow and their individual colour signatures.
+		if piece.Material == NEON and (string.find(piece.Name,"Trim") or string.find(piece.Name,"Sole") or string.find(piece.Name,"Knee") or string.find(piece.Name,"Line")) then
+			piece.Material, piece.Reflectance = METAL, 0.04
+		end
+	end
+	for name, body in pairs(f.parts) do
+		if name == "HumanoidRootPart" then continue end
+		if cover[body] then body.Color = cover[body].color:Lerp(FIGURE_INK,0.18) end
+		local contour = body:FindFirstChild("BodyContour")
+		if contour and (string.find(name,"Arm") or string.find(name,"Leg")) then
+			contour.MeshType = Enum.MeshType.Torso
+			contour.Scale = Vector3.new(1,1.12,1)
+		end
+		-- Flat matte cloth stays legible in small portraits; the repeating
+		-- fabric texture otherwise overwhelms seams and costume colours.
+		if body.Material == Enum.Material.Fabric then
+			body.Material = Enum.Material.SmoothPlastic
+		end
+		body.Reflectance = math.min(body.Reflectance or 0,0.06)
+	end
+	for _,piece in ipairs(f.model:GetChildren()) do
+		local fit=piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+		if fit and fit.Part0==f.parts.UpperTorso and fit.C0.Position.Z < -f.sizes.chest.Z*0.35 then
+			local accent=string.find(piece.Name,"Core") or string.find(piece.Name,"Reactor") or string.find(piece.Name,"Line") or string.find(piece.Name,"Emblem") or string.find(piece.Name,"Mark") or string.find(piece.Name,"Gem")
+			if accent and fit.C0.Position.Z>chestFront-0.08*f.scale then
+				fit.C0=fit.C0+Vector3.new(0,0,chestFront-0.08*f.scale-fit.C0.Position.Z)
+				piece.CFrame=fit.Part0.CFrame*fit.C0
+			end
+		end
+	end
+	f.model:SetAttribute("CostumeFinish","tailored")
+end
+
 function Figure.Hero(parent, heroId, hero, scale)
 	local look = HERO_LOOK[heroId] or { colors = { chest = rgb(hero.color) } }
 	local spec = table.clone(look.body or {})
@@ -2587,6 +2666,7 @@ function Figure.Hero(parent, heroId, hero, scale)
 	local extras = HERO_EXTRAS[heroId]
 	if extras then extras(figure) end
 	Figure.Finish(figure, true)
+	finishHeroCostume(figure)
 	if not figure.model:FindFirstChild("Muzzle", true) then muzzle(figure, "RightHand", Vector3.new(0, -figure.sizes.hand.Y / 2 - 0.1 * figure.scale, 0)) end
 	return figure
 end
@@ -5205,16 +5285,33 @@ function World:BuildHeroStatues(lobby)
 		-- rig formerly enlarged here had neither a shoulder nor a boot silhouette.
 		local origin = CFrame.new(foot + V(0, 3, 0)) * CFrame.Angles(0, math.pi, 0)
 		local teal = spec[1] == "ironman"
-		local enamel = teal and Color3.fromRGB(21, 161, 155) or Color3.fromRGB(37, 102, 191)
-		local edging = teal and HQ.gold or HQ.trim
+		local enamel = teal and Color3.fromRGB(172, 38, 48) or Color3.fromRGB(22, 137, 145)
+		local edging = teal and HQ.gold or Color3.fromRGB(211, 223, 224)
+		figure:SetAttribute("MonumentFinish", "sculpted")
+		figure:SetAttribute("HeroId", spec[1])
 		local function armor(name, size, offset, tint, roll)
-			return Kit.block(figure, name, size, origin * CFrame.new(offset) * CFrame.Angles(0, 0, roll or 0), tint, Enum.Material.Metal, true)
+			local at = CFrame.new(offset) * CFrame.Angles(0, 0, roll or 0)
+			-- A guarded asymmetric stance, with each arm still attached at its
+			-- shoulder. The reactor hand and shield arm lead their silhouettes.
+			if math.abs(offset.X)>3.8 then
+				local side=math.sign(offset.X)
+				local pivot=CFrame.new(side*4.15,10,0)
+				local pitch=(teal and side>0) and -0.42 or (not teal and side<0) and -0.24 or 0.08
+				at=pivot*CFrame.Angles(pitch,0,-side*0.06)*pivot:Inverse()*at
+			end
+			local made=Kit.block(figure,name,size,origin*at,tint,Enum.Material.Metal,true)
+			made.Reflectance=0.04
+			if name~="StatueChestInset" and name~="StatueBackSpine" and name~="StatueVisor" and name~="StatueBrow" then
+				local bevel=Instance.new("SpecialMesh")
+				bevel.Name,bevel.MeshType,bevel.Parent="MonumentContour",Enum.MeshType.Head,made
+			end
+			return made
 		end
 		armor("StatuePelvis", V(4.5, 1.6, 2.5), V(0, 5.3, 0), enamel)
 		armor("StatueWaist", V(4.9, 0.6, 2.7), V(0, 6.25, 0), edging)
-		armor("StatueBreastplate", V(6.4, 4.3, 3), V(0, 8.7, 0), enamel).CastShadow = true
+		armor("StatueBreastplate", V(5.8, 4.3, 3), V(0, 8.7, 0), enamel).CastShadow = true
 		armor("StatueCollar", V(4.5, 0.55, 3.2), V(0, 11.05, 0), edging)
-		armor("StatueChestInset", V(4.7, 2.9, 0.16), V(0, 8.9, -1.58), enamel:Lerp(HQ.navy, 0.15))
+		armor("StatueChestInset", V(3.9, 2.35, 0.16), V(0, 8.9, -1.58), enamel:Lerp(HQ.navy, 0.3))
 		armor("StatueBackSpine", V(0.6, 3.5, 0.25), V(0, 8.7, 1.63), edging)
 		for _, side in ipairs({-1, 1}) do
 			armor("StatueBoot", V(2.05, 1.4, 3), V(side * 1.27, 0.7, -0.25), enamel)
@@ -5231,17 +5328,18 @@ function World:BuildHeroStatues(lobby)
 			bevel.Name, bevel.Size, bevel.CFrame = "StatueArmourBevel", V(1, 4.3, 3), origin * CFrame.new(side * 3.65, 8.7, 0) * CFrame.Angles(0, 0, side * math.pi / 2)
 			bevel.Color, bevel.Material, bevel.Anchored, bevel.CanCollide, bevel.CastShadow, bevel.Parent = enamel, Enum.Material.Metal, true, true, false, figure
 		end
-		Kit.column(figure, "StatueHelmet", (origin * CFrame.new(0, 11.35, 0)).Position, 3.2, 3.5, enamel, Enum.Material.Metal, true).CastShadow = true
-		armor("StatueVisor", V(2.8, 0.6, 0.25), V(0, 13.1, -1.74), HQ.navy)
+		armor("StatueHelmet", V(3.25,3.2,3.2), V(0,12.95,0), enamel).CastShadow=true
+		armor("StatueVisor", V(2.5, 0.36, 0.25), V(0, 13.1, -1.61), teal and HQ.cyan or HQ.navy)
 		armor("StatueBrow", V(3.05, 0.28, 0.35), V(0, 13.55, -1.77), edging)
 		if teal then
 			armor("StatueCrest", V(0.6, 1.2, 3.8), V(0, 14.4, 0), HQ.gold)
-			local shield = origin * CFrame.new(5.5, 6.8, -1.1) * CFrame.Angles(0, 0, -0.18)
+			local core=origin*CFrame.new(0,9.25,-1.76)*CFrame.Angles(0,math.pi/2,0)
+			Kit.block(figure,"StatueReactorRim",V(0.22,1.65,1.65),core,HQ.gold,Enum.Material.Metal).Shape=Enum.PartType.Cylinder
+			Kit.block(figure,"StatueReactor",V(0.28,1.18,1.18),core,HQ.cyan,Enum.Material.Metal).Shape=Enum.PartType.Cylinder
+		else
+			local shield = origin * CFrame.new(-5.0, 7.2, -1.6) * CFrame.Angles(0, -0.24, 0.12)
 			Kit.block(figure, "StatueShield", V(0.55, 6.8, 6.8), shield * CFrame.Angles(0, math.pi / 2, 0), HQ.gold, Enum.Material.Metal, true).Shape = Enum.PartType.Cylinder
 			Kit.block(figure, "StatueShieldField", V(0.6, 5.8, 5.8), shield * CFrame.Angles(0, math.pi / 2, 0), enamel, Enum.Material.Metal).Shape = Enum.PartType.Cylinder
-		else
-			armor("StatueCrownFin", V(0.8, 0.9, 3.2), V(0, 14.7, 0), enamel)
-			armor("StatueChestMark", V(0.65, 1.8, 0.18), V(0, 8.9, -1.76), edging, -0.24)
 		end
 	end
 	return model
