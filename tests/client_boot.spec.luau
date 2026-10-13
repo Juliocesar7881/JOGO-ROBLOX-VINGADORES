@@ -396,6 +396,7 @@ local function session(screen)
 			local goldIds={gold1000=779,gold5000=780,gold12000=781,gold30000=782}
 			if goldIds[payload.key] then return {ok=true,data={id=goldIds[payload.key],price=999}} end
 			if payload.key == "vip" then return { ok = true, data = { id = 777, price = 299, name = "VIP" } } end
+			if payload.key == "speed3" then return { ok = true, data = { id = 777, price = 299, name = "3x Speed", preview = true } } end
 			-- The training pass price never answers until the test says so.
 			if payload.key == "training" and not collectorPrice then return nil end
 			if payload.key == "training" then return { ok = true, data = { id = 778, price = 149, name = "Training" } } end
@@ -474,6 +475,36 @@ local function session(screen)
 	end
 	local effectsScript = clientModules.Effects
 	local reviewScript = clientModules.Review
+	step("shop quotes complete independently and time out safely", function()
+		local Quotes = require(clientModules.ProductQuotes)
+		local jobs, timers, cache, updates = {}, {}, {}, 0
+		local quotes = Quotes.new({
+			catalog = {Heroes = {}, Passes = {a = {price=1}, b = {price=2}, c = {price=3}, d = {price=4}}, Consumables = {gold = {price=1}}},
+			cache = cache, profile = function() return {} end,
+			quote = function(kind, key) return {price=17, kind=kind, key=key} end,
+			spawn = function(fn) table.insert(jobs, fn) end,
+			delay = function(seconds, fn) check(seconds == 12, tag .. ": bounded Marketplace wait"); table.insert(timers, fn) end,
+			updated = function() updates += 1 end,
+		})
+		quotes:Fetch("pass")
+		check(#jobs == 3, tag .. ": Marketplace concurrency is bounded")
+		quotes:Fetch("product")
+		jobs[2]()
+		check(cache["pass:a"] == nil and cache["pass:b"].price == 17 and updates == 1, tag .. ": a stalled quote cannot block a ready price")
+		jobs[4]()
+		check(cache["product:gold"] ~= nil and cache["pass:d"] == nil, tag .. ": changing tabs prioritizes visible products")
+		timers[1]()
+		check(cache["pass:a"] == "retry", tag .. ": a quote that never completes becomes retryable")
+		cache["pass:a"] = nil
+		quotes:Fetch("pass")
+		jobs[5]()
+		local fresh, count = cache["pass:a"], updates
+		jobs[1]()
+		check(cache["pass:a"] == fresh and updates == count, tag .. ": a late timed-out quote cannot overwrite a retried price")
+		quotes.ctx.quote = function() return false end
+		jobs[6]()
+		check(cache["pass:d"] == false, tag .. ": off-sale status is preserved rather than retried forever")
+	end)
 	loaded[shared.Config] = nil
 	step("cold-join art works before the client and always dismisses",function()
 		local originalDelay=task.delay
@@ -835,6 +866,13 @@ local function session(screen)
 		check(highlights == 0, tag .. ": removed hero statues leave no equipped world highlights")
 		local boardText = lobby.Board_quests.Panel.Board:FindFirstChildOfClass("TextLabel").Text
 		check(string.find(boardText, "1 PRONTA", 1, true) ~= nil, tag .. ": the mission board tells this viewer a reward is waiting, got " .. boardText)
+		check(lobby.Board_quests.Panel.Board.Title.Text == "MISSÕES" and not string.find(boardText, "MISSÕES", 1, true), tag .. ": mission status cannot overwrite or duplicate its title")
+		local medal = lobby.HubServices:FindFirstChild("DeskEmblem_leaderboard")
+		local star = medal and medal:FindFirstChild("PodiumStar", true)
+		local podium = medal and medal:FindFirstChild("PodiumFirst")
+		local before = star and podium and star.Position - podium.Position
+		frames(0.17, 3)
+		check(before and ((star.Position - podium.Position) - before).Magnitude < 0.001, tag .. ": Hall of Fame star stays attached while the medal bobs")
 		-- Each portal's sign names what stepping in starts for this viewer.
 		local nextMap = "random"
 		local campaignSign = localPlayer.PlayerGui.PortalPicture_normal.MapRules.Text
@@ -1065,10 +1103,16 @@ local function session(screen)
 		click("Passes")
 		check(countNamed(gui,"PremiumTabs_pass")==1,tag..": premium pass tab stays accessible")
 		-- A price that never answered offers a retry; one that is not on sale says so.
-		-- Prices are fetched one by one; wait for the whole list.
+		-- Available products update independently of a missing quote.
 		frames(0.5, 20)
 		local retry=named(gui,"Buy_pass:training")
 		check(retry~=nil and retry.Text=="Tentar de novo",tag..": a price with no answer offers a retry, got "..tostring(retry and retry.Text))
+		check(named(gui,"Buy_product:starterPack").Text=="Indisponível",tag..": an unavailable starter pack cannot remain loading")
+		local preview = named(gui,"Buy_pass:speed3")
+		check(preview and preview.Text == "19 Robux • Teste", tag .. ": a Studio preview still displays the actual regional price")
+		local beforePrompts = #prompts
+		preview.Activated:Fire()
+		check(#prompts == beforePrompts, tag .. ": a Studio preview cannot open a real purchase even if activated")
 		click("Ouro")
 		local unsold=named(gui,"Buy_product:gold1000")
 		check(unsold~=nil and unsold.Text=="Indisponível",tag..": client off-sale status overrides a server quote")
@@ -3067,9 +3111,9 @@ local function session(screen)
 		check(findButton(gui, "Settings") ~= nil, tag .. ": the HUD speaks English after the switch")
 		local village=workspace:FindFirstChild("DoomLobby")
 		local desk=village:FindFirstChild("Board_maps").PrimaryPart
-		check(desk.Board:FindFirstChildOfClass("TextLabel").Text:find("CHOOSE MAP",1,true)~=nil,
+		check(desk.Board.Title.Text=="MAPS" and desk.Board.Status.Text=="Choose your destination",
 			tag..": service desk signage changes language")
-		check(desk:FindFirstChildOfClass("ProximityPrompt").ObjectText=="CHOOSE MAP",
+		check(desk:FindFirstChildOfClass("ProximityPrompt").ObjectText=="MAPS",
 			tag..": service prompt changes language")
 		local summon=village.HeroesHQ:FindFirstChild("SummonSign")
 		local title=summon:FindFirstChild("Title",true)

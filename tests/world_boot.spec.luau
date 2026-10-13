@@ -154,6 +154,39 @@ check(countClass(lobby, "BasePart") > 40,
 	"the lobby has real geometry, got " .. tostring(countClass(lobby, "BasePart")) .. " parts")
 check(lobby:FindFirstChild("LobbySpawn") ~= nil, "the lobby has a spawn point")
 check(world.lobbySpawn ~= nil, "the spawn position is recorded for MovePlayer")
+do
+	for _, id in ipairs({"maps", "inventory", "bases", "talents", "quests", "leaderboard"}) do
+		local board = lobby:FindFirstChild("Board_" .. id)
+		local panel = board and board:FindFirstChild("Panel")
+		local surface = panel and panel:FindFirstChild("Board")
+		local face = panel and -panel.CFrame.LookVector
+		local towardPlaza = panel and (v3(0, panel.Position.Y, 480) - panel.Position).Unit
+		check(surface and surface.Face == Enum.NormalId.Back and face:Dot(towardPlaza) > 0.98, id .. ": readable screen faces the central plaza")
+		local frame = board and board:GetAttribute("ServiceFrame")
+		local localAt = frame and frame:Inverse() * panel.Position
+		check(localAt and math.abs(localAt.X) < 0.01 and localAt.Z < 0 and localAt.Z > -2 and panel.Size.X <= 9.2, id .. ": screen stays between its rear supports, behind the counter")
+		local connected = false
+		for _, mount in ipairs(lobby.HubServices:GetChildren()) do
+			if mount.Name == "ServiceScreenMount" then
+				local delta = panel.CFrame:Inverse() * mount.Position
+				if math.abs(delta.X) <= (panel.Size.X + mount.Size.X) / 2 and math.abs(delta.Y) <= (panel.Size.Y + mount.Size.Y) / 2
+					and math.abs(delta.Z) <= (panel.Size.Z + mount.Size.Z) / 2 then connected = true end
+			end
+		end
+		check(connected, id .. ": sign physically meets its support instead of floating in front of it")
+		check(surface and surface.Title.TextSize > surface.Status.TextSize and surface.Title:GetAttribute("LobbyTextEN") ~= nil, id .. ": short localized title has its own visual hierarchy")
+	end
+	local emblems = 0
+	for _, model in ipairs(lobby.HubServices:GetChildren()) do
+		if model:IsA("Model") and string.sub(model.Name, 1, 11) == "DeskEmblem_" then
+			emblems += 1
+			for _, piece in ipairs(model:GetDescendants()) do
+				if piece:IsA("BasePart") then check(piece:GetAttribute("Bob") == 0.35, model.Name .. ": every compound piece follows the medal") end
+			end
+		end
+	end
+	check(emblems == 6, "all six service medals share a complete animation")
+end
 -- The bay used to contain a 360-stud square void before any battle existed.
 do
 	local fills=rawget(workspace.Terrain,"__fills") or {}

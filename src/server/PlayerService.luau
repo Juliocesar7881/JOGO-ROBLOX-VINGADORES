@@ -1058,7 +1058,6 @@ end
 local PRODUCT_CATEGORY = { pass = "Passes", product = "Consumables", hero = "Heroes" }
 
 function PlayerService:_productInfo(payload, record)
-	if self.memory then return false, "Compras desativadas no modo de memória do Studio. / Purchases are off in Studio memory mode." end
 	local category = PRODUCT_CATEGORY[payload.kind]
 	local product = category and type(payload.key) == "string" and self.products[category][payload.key]
 	if not product or not integer(product.id, 1, 9007199254740991) then return false, "Produto ainda não configurado. / Product not set up yet." end
@@ -1070,7 +1069,8 @@ function PlayerService:_productInfo(payload, record)
 		return MarketplaceService:GetProductInfoAsync(product.id, category == "Passes" and Enum.InfoType.GamePass or Enum.InfoType.Product)
 	end)
 	if not ok or type(info) ~= "table" or not integer(info.PriceInRobux, 0, 1000000000) or info.IsForSale == false then return false, "Preço indisponível. Tente novamente. / Price unavailable. Try again." end
-	return true, { id = product.id, price = info.PriceInRobux, name = info.Name or product.name, kind = payload.kind, key = payload.key }
+	-- Memory profiles may inspect real prices, but never prompt or process a purchase.
+	return true, { id = product.id, price = info.PriceInRobux, name = info.Name or product.name, kind = payload.kind, key = payload.key, preview = self.memory == true }
 end
 
 function PlayerService:_receipt(receipt)

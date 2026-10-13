@@ -517,8 +517,11 @@ function Panels.new(ctx)
 		if not pack or profile().starterPack then return end
 		local info=productInfo["product:starterPack"]
 		local ready=type(info)=="table"
+		local label=ready and (tostring(info.price).." Robux"..(info.preview and T(" • Teste"," • Preview") or ""))
+			or info=="retry" and T("Tentar de novo","Try again") or info==nil and T("Carregando preço…","Loading price…") or T("Indisponível","Unavailable")
 		local function purchase()
-			if not ready then return end
+			if info=="retry" then productInfo["product:starterPack"]=nil; fetchProducts(premiumCategory); renderContext(); return end
+			if not ready or info.preview then return end
 			local ok=pcall(function() MarketplaceService:PromptProductPurchase(player,info.id) end)
 			if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
 		end
@@ -529,8 +532,8 @@ function Panels.new(ctx)
 			UI.candy(slim)
 			UI.label(slim,Catalog.Upper(L(pack.name)).."  •  "..T("Só uma vez","One time only"),{Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-170,0,24),Font=UI.Fonts.display,TextSize=16,TextColor3=C.gold})
 			UI.label(slim,L(Catalog.Heroes[pack.heroId].name).." + "..UI.format(pack.gold)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(12,32),Size=UDim2.new(1,-170,0,34),TextWrapped=true,TextSize=13})
-			local fast=UI.button(slim,ready and (tostring(info.price).." Robux") or T("Carregando…","Loading…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(1,-150,0,14),Size=UDim2.fromOffset(138,44),BackgroundColor3=C.green,TextSize=16})
-			if not ready then UI.disabled(fast) end
+			local fast=UI.button(slim,label,purchase,{Name="Buy_product:starterPack",Position=UDim2.new(1,-150,0,14),Size=UDim2.fromOffset(138,44),BackgroundColor3=C.green,TextSize=16})
+			if not ready and info~="retry" or ready and info.preview then UI.disabled(fast) end
 			return
 		end
 		local row=UI.roundFrame(body,{Name="StarterPack",Size=UDim2.new(1,-6,0,132),BackgroundColor3=C.gold:Lerp(C.panel,0.45)},C.gold)
@@ -539,8 +542,8 @@ function Panels.new(ctx)
 		UI.chip(row,T("Só uma vez","One time only"),C.red,{Position=UDim2.fromOffset(120,10),Size=UDim2.fromOffset(120,22),TextSize=12})
 		UI.label(row,Catalog.Upper(L(pack.name)),{Position=UDim2.fromOffset(120,34),Size=UDim2.new(1,-130,0,28),Font=UI.Fonts.display,TextSize=22,TextColor3=C.gold})
 		UI.oneLine(UI.label(row,L(Catalog.Heroes[pack.heroId].name).." + "..UI.format(pack.gold)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(120,60),Size=UDim2.new(1,-130,0,22),Font=UI.Fonts.display,TextSize=16}),10)
-		local buy=UI.button(row,ready and (tostring(info.price).." Robux") or T("Carregando preço…","Loading price…"),purchase,{Name="Buy_product:starterPack",Position=UDim2.new(0,120,1,-46),Size=UDim2.new(1,-132,0,40),BackgroundColor3=C.green,TextSize=17})
-		if not ready then UI.disabled(buy) end
+		local buy=UI.button(row,label,purchase,{Name="Buy_product:starterPack",Position=UDim2.new(0,120,1,-46),Size=UDim2.new(1,-132,0,40),BackgroundColor3=C.green,TextSize=17})
+		if not ready and info~="retry" or ready and info.preview then UI.disabled(buy) end
 	end
 
 	local function contextPremium(body)
@@ -626,15 +629,15 @@ function Panels.new(ctx)
 				end
 				local cacheKey=group.kind..":"..key
 				local ready=type(info)=="table"
-				local label=owned and T("✓ Já é seu","✓ Yours") or ready and (tostring(info.price).." Robux")
+				local label=owned and T("✓ Já é seu","✓ Yours") or ready and (tostring(info.price).." Robux"..(info.preview and T(" • Teste"," • Preview") or ""))
 					or info=="retry" and T("Tentar de novo","Try again") or info==nil and T("Carregando preço…","Loading price…") or T("Indisponível","Unavailable")
 				local buy=UI.button(row,label,function()
-					if info=="retry" and not owned then productInfo[cacheKey]=nil; fetchProducts(); renderContext(); return end
-					if not ready or owned then return end
+					if info=="retry" and not owned then productInfo[cacheKey]=nil; fetchProducts(premiumCategory); renderContext(); return end
+					if not ready or owned or info.preview then return end
 					local ok=pcall(function() if group.kind=="pass" then MarketplaceService:PromptGamePassPurchase(player,info.id) else MarketplaceService:PromptProductPurchase(player,info.id) end end)
 					if not ok then showToast(T("Falha ao abrir compra.","Could not open purchase."),true) end
 				end,{Name="Buy_"..cacheKey,Position=UDim2.new(0,left,1,-buttonH-(slim and 6 or 10)),Size=UDim2.new(1,-left-12,0,buttonH),BackgroundColor3=owned and C.card or C.green,TextSize=slim and 17 or 21})
-				if owned or (not ready and info~="retry") then UI.disabled(buy) end
+				if owned or (not ready and info~="retry") or ready and info.preview then UI.disabled(buy) end
 				-- Everything can be inspected before it is paid for.
 				local open=kit.shopInfo==cacheKey
 				UI.button(row,open and "X" or "i",function() kit.shopInfo=open and nil or cacheKey; renderContext() end,{Name="ProductInfo_"..key,AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,slim and 4 or 8),Size=UDim2.fromOffset(slim and 38 or 44,slim and 38 or 44),BackgroundColor3=open and C.red or C.blue,TextSize=22})
@@ -668,7 +671,7 @@ function Panels.new(ctx)
 				end
 			end
 		end
-		fetchProducts()
+		fetchProducts(premiumCategory)
 	end
 
 	local function contextShop(body, data)

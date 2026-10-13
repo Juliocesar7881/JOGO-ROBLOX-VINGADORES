@@ -603,8 +603,9 @@ check(localOnly:StudioGrant(p4, {"ironman", "hulk"}) and localOnly:Save(p4), "A 
 check(localOnly:Get(p4).tutorialComplete and localOnly:Get(p4).campaign.gamma.normal, "Review unlock survives an automatic memory save")
 check(localOnly:Get(p4).heroes.hulk ~= nil and localOnly:Get(p4).loadout[2] == "hulk", "Review heroes survive the next memory transaction")
 check(localOnly:_receipt({ PlayerId = 4, ProductId = 101, PurchaseId = "studio-purchase" }) == "pending", "Memory mode cannot acknowledge real purchases")
-local _, studioPurchase = localOnly:Handle(p4, "ProductInfo", { kind = "product", key = "gold1000" }, true)
-check(not studioPurchase, "Studio memory shop disabled")
+local _, studioQuoteOK, studioQuote = localOnly:Handle(p4, "ProductInfo", { kind = "product", key = "gold1000" }, true)
+check(studioQuoteOK and studioQuote.preview == true and studioQuote.price == 87, "Studio memory can preview live prices without enabling a purchase")
+check(productInfo.preview == false, "Live-game quotes do not carry the Studio purchase restriction")
 
 -- Talent points are derived from earned levels, never bought or client supplied.
 check(localOnly:Snapshot(p4).talentPoints == 0, "Level one starts with zero talent points")

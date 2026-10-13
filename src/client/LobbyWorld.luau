@@ -105,7 +105,7 @@ function LobbyWorld.new(ctx)
 		local board = lobby:FindFirstChild("Board_quests")
 		local panel = board and board:FindFirstChild("Panel")
 		local surface = panel and panel:FindFirstChild("Board")
-		local label = surface and surface:FindFirstChildOfClass("TextLabel")
+		local label = surface and surface:FindFirstChild("Status")
 		if not label then return end
 		local active, ready = 0, 0
 		for _, quest in pairs(p.quests or {}) do
@@ -116,13 +116,13 @@ function LobbyWorld.new(ctx)
 		end
 		local status
 		if ready > 0 then
-			status = tostring(ready) .. T(" PRONTA(S) PARA RESGATAR", " READY TO CLAIM")
+			status = tostring(ready) .. (ready == 1 and T(" PRONTA PARA RESGATAR", " READY TO CLAIM") or T(" PRONTAS PARA RESGATAR", " READY TO CLAIM"))
 		elseif active > 0 then
 			status = tostring(active) .. T(" EM ANDAMENTO", " IN PROGRESS")
 		else
 			status = T("TREINE PARA RECEBER MISSÕES", "TRAIN TO RECEIVE MISSIONS")
 		end
-		label.Text = T("MISSÕES", "MISSIONS") .. "\n" .. status
+		label.Text = status
 		label.TextColor3 = ready > 0 and C.gold or Color3.fromRGB(230, 240, 244)
 	end
 

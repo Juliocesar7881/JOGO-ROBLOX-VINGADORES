@@ -331,6 +331,10 @@ Esta seção substitui os contratos históricos de habilidades e compras abaixo.
   plataforma e valida a disponibilidade da compra no servidor. O cliente
   consulta `GetProductInfoAsync` para exibir o preço regional do jogador;
   sem configuração, preço válido ou item à venda, nenhuma compra é oferecida.
+  Respostas incluem `preview=true` somente para perfis em memória do Studio:
+  o cliente mostra o preço com indicação de teste e bloqueia o prompt; recibos
+  continuam recusados nesse modo. Consultas da aba visível são independentes,
+  com até três em andamento, limite de 12 s e repetição manual após timeout.
 - `CastSkill {skillId?,position?,towerId?}` só aceita a ativa do líder, com
   alvo e recarga validados. Snapshot `match.ability` fornece ID, herói, rank,
   alvo, raio, recarga restante/total. Não há `SetSkills` nem `BuySkill`.

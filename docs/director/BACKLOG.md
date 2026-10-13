@@ -332,3 +332,9 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [ ] M34.5 Identidade/2FA e requisitos de ampliação pessoal; compras reais, celular físico, quatro jogadores, reconexão, sessão longa e D1/D7. Não declarar esses aceites por testes simulados ou metadados.
 
 - [!] M34.6 Ícones externos individuais opcionais: protótipo nativo rejeitado, não enviado. Studio perdeu acesso ao place oficial depois da publicação (RCC-273); reconexão não restaurou a sessão. Arte interna e ícone/miniatura da experiência preservados. Retomar somente após restabelecer o acesso oficial.
+
+## M35 — Placas do lobby e preços progressivos, 12/10
+
+- [x] M35.1 Seis placas orientadas para a praça e apoiadas atrás dos balcões; título/status separados, texto curto e estrela acompanhando o emblema inteiro. Regressões de geometria, animação e localização.
+- [x] M35.2 Preços da aba visível atualizam independentemente, com três consultas, timeout/retry e descarte de resposta antiga. Pacote inicial sem carregamento eterno; Studio mostra preços reais como teste sem permitir compra.
+- [~] M35.3 Revisão nativa PC/celular PT/EN, suíte completa e publicação no place oficial. Sessão codex-lobby-prices-20261012; relatório REFINAMENTO_PLACAS_PRECOS_2026-10-12.md.

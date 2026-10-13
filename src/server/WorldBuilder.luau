@@ -3721,7 +3721,11 @@ function Kit.emblem(parent, kind, frame, tint)
 		Kit.star(model, "EmblemStar", frame * V(0, 0, z + 0.1), frame.RightVector, frame.UpVector, 1.7, gold, Enum.Material.Metal, 0.16)
 	end
 	for _, item in ipairs(model:GetDescendants()) do
-		if item:IsA("BasePart") then item.CastShadow = false end
+		if item:IsA("BasePart") then
+			item.CastShadow = false
+			-- Include compound stars: their triangles are not made by bob().
+			Kit.animate(item, 0, 0.35)
+		end
 	end
 	return model
 end
@@ -3966,10 +3970,10 @@ local LAYOUT = {
 	},
 	kiosks = { -38, -27, -16, 16, 27 }, kioskDz = 107,
 	services = {
-		{ id = "maps", angle = 150, pt = "ESCOLHER MAPA", en = "CHOOSE MAP", color = Color3.fromRGB(110, 220, 170) },
-		{ id = "inventory", angle = 210, pt = "SUA EQUIPE", en = "YOUR TEAM", color = Color3.fromRGB(255, 150, 110) },
-		{ id = "bases", angle = 240, pt = "SUAS BASES", en = "YOUR BASES", color = Color3.fromRGB(150, 215, 140) },
-		{ id = "talents", angle = 300, pt = "ACADEMIA", en = "ACADEMY", color = Color3.fromRGB(200, 160, 255) },
+		{ id = "maps", angle = 150, pt = "MAPAS", en = "MAPS", color = Color3.fromRGB(110, 220, 170) },
+		{ id = "inventory", angle = 210, pt = "EQUIPE", en = "TEAM", color = Color3.fromRGB(255, 150, 110) },
+		{ id = "bases", angle = 240, pt = "BASES", en = "BASES", color = Color3.fromRGB(150, 215, 140) },
+		{ id = "talents", angle = 300, pt = "EVOLUÇÃO", en = "TALENTS", color = Color3.fromRGB(200, 160, 255) },
 	},
 	boards = { quests = 30, leaderboard = 60 },
 }
@@ -4467,13 +4471,27 @@ local function buildBoard(lobby, x, z, boardId, titleText, openPanel)
 	part(model, "Post", Vector3.new(1, 8, 1), CFrame.new(x, 4, z), Color3.fromRGB(40, 54, 44), Enum.Material.Metal)
 	local board = part(model, "Panel", Vector3.new(8, 5, 0.3), CFrame.new(x, 7.2, z), Color3.fromRGB(19, 27, 39), Enum.Material.Metal)
 	local surface = Instance.new("SurfaceGui")
-	surface.Name, surface.Face, surface.Parent = "Board", Enum.NormalId.Front, board
+	surface.Name, surface.Face, surface.Parent = "Board", Enum.NormalId.Back, board
 	surface.LightInfluence, surface.PixelsPerStud, surface.SizingMode = 0, 36, Enum.SurfaceGuiSizingMode.FixedSize
-	surface.CanvasSize = Vector2.new(288, 180)
+	surface.CanvasSize = Vector2.new(480, 216)
+	local bezel = Instance.new("Frame")
+	bezel.Name, bezel.Size, bezel.BorderSizePixel, bezel.BackgroundColor3, bezel.Parent = "Bezel", UDim2.fromScale(1, 1), 0, HQ.navy, surface
+	gradient(bezel, HQ.navy, HQ.ink)
+	local outline = Instance.new("UIStroke")
+	outline.Color, outline.Thickness, outline.Parent = HQ.gold, 3, bezel
 	local text = Instance.new("TextLabel")
-	text.Size, text.BackgroundTransparency = UDim2.fromScale(1, 1), 1
-	text.Font, text.TextColor3, text.TextScaled = Enum.Font.BuilderSansExtraBold, Color3.fromRGB(230, 240, 244), true
-	text.Text, text.TextWrapped, text.Parent = titleText, true, surface
+	text.Name, text.Position, text.Size, text.BackgroundTransparency = "Status", UDim2.fromOffset(16, 102), UDim2.new(1, -32, 0, 54), 1
+	text.Font, text.TextColor3, text.TextSize = Enum.Font.BuilderSansMedium, Color3.fromRGB(205, 223, 232), 29
+	text.Text, text.TextWrapped, text.Parent = "", true, surface
+	local title = Instance.new("TextLabel")
+	title.Name, title.Position, title.Size, title.BackgroundTransparency = "Title", UDim2.fromOffset(16, 24), UDim2.new(1, -32, 0, 70), 1
+	title.Font, title.TextColor3, title.TextSize = Enum.Font.FredokaOne, HQ.trim, 60
+	title.TextScaled, title.TextWrapped = true, false
+	title.Text, title.Parent = titleText, surface
+	local hint = Instance.new("TextLabel")
+	hint.Name, hint.Position, hint.Size, hint.BackgroundTransparency = "Hint", UDim2.fromOffset(16, 166), UDim2.new(1, -32, 0, 28), 1
+	hint.Font, hint.TextColor3, hint.TextSize, hint.Text = Enum.Font.BuilderSansMedium, Color3.fromRGB(184, 205, 216), 20, ""
+	hint.Parent = surface
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= board then p.CanCollide = false end end
 	board.CanCollide = false
 	model.PrimaryPart = board
@@ -5240,7 +5258,7 @@ function World:BuildServiceDesks(lobby)
 	scene.Name, scene.Parent = "HubServices", lobby
 	local function localized(target, pt, en) target:SetAttribute("LobbyTextPT", pt); target:SetAttribute("LobbyTextEN", en) end
 	-- A rounded booth, not a box: a counter with round ends (a capsule), round
-	-- posts and a shell-shaped canopy, all in the service's colour.
+	-- posts and an open sign frame, all in the service's colour.
 	local function kiosk(center, facing, color)
 		local frame = CFrame.new(center) * CFrame.Angles(0, facing, 0)
 		Kit.block(scene, "DeskBody", V(6, 2.6, 3.2), frame * CFrame.new(0, 1.3 + GROUND_Y, 0), HQ.navy, Enum.Material.Metal, true)
@@ -5254,10 +5272,7 @@ function World:BuildServiceDesks(lobby)
 			Kit.blob(scene, "DeskPostCap", V(1.1, 1.1, 1.1), CFrame.new(post.X, 9.1 + GROUND_Y, post.Z), HQ.gold, Enum.Material.Metal)
 		end
 		Kit.block(scene, "DeskStripe", V(6, 0.4, 0.2), frame * CFrame.new(0, 1.9 + GROUND_Y, 1.7), color, Enum.Material.Neon)
-		-- The canopy: a flattened half-shell with a coloured rim underneath.
-		Kit.blob(scene, "DeskCanopy", V(12, 2.2, 6), frame * CFrame.new(0, 9.4 + GROUND_Y, -0.2), HQ.navy, Enum.Material.Metal)
-		Kit.blob(scene, "DeskCanopyGlow", V(12.4, 0.5, 6.4), frame * CFrame.new(0, 9.0 + GROUND_Y, -0.2), HQ.gold, Enum.Material.Metal)
-		Kit.column(scene, "ServiceCrestSupport", (frame * CFrame.new(0, 9.1 + GROUND_Y, -0.2)).Position, 3.4, 0.65, HQ.gold, Enum.Material.Metal)
+		-- The open frame keeps the screen and its emblem unobstructed.
 		for _, side in ipairs({-1, 1}) do
 			Kit.block(scene, "ServicePierCap", V(1.5, 0.4, 1.6), frame * CFrame.new(side * 4.6, 8.8 + GROUND_Y, -1.6), HQ.gold, Enum.Material.Metal)
 		end
@@ -5268,47 +5283,43 @@ function World:BuildServiceDesks(lobby)
 	local function icon(frame, kind, tint)
 		return Kit.emblem(scene, kind, frame * CFrame.new(0, 12.6 + GROUND_Y, -0.2), tint)
 	end
-	-- A desk's local +Z looks at the hub.
-	for _, def in ipairs(LAYOUT.services) do
+	local details = {
+		maps = { "Escolha seu destino", "Choose your destination" },
+		inventory = { "Monte sua equipe", "Build your team" },
+		bases = { "Escolha sua defesa", "Choose your defense" },
+		talents = { "Fortaleça seus heróis", "Strengthen your heroes" },
+		quests = { "Jogue e ganhe prêmios", "Play and earn rewards" },
+		leaderboard = { "Ver classificação", "View leaderboard" },
+	}
+	local desks = table.clone(LAYOUT.services)
+	table.insert(desks, { id = "quests", angle = LAYOUT.boards.quests, pt = "MISSÕES", en = "MISSIONS", color = Color3.fromRGB(143, 208, 122) })
+	table.insert(desks, { id = "leaderboard", angle = LAYOUT.boards.leaderboard, pt = "SALÃO DA FAMA", en = "HALL OF FAME", color = HQ.gold })
+	-- Every desk and its Back SurfaceGui face the plaza along local +Z.
+	for _, def in ipairs(desks) do
 		local at = polar(def.angle, 54, 0)
 		local frame = kiosk(at, yawToward(at, HUB), def.color)
 		local board, text = buildBoard(lobby, at.X, at.Z, def.id, def.pt, self.openPanel)
 		local panel = board.PrimaryPart
 		local post = board:FindFirstChild("Post")
 		if post then post:Destroy() end
-		panel.CFrame = frame * CFrame.new(0, 6.2 + GROUND_Y, -1.2) * CFrame.Angles(0, math.pi, 0)
+		-- Mount above the rear of the counter, between its two posts.
+		panel.CFrame = frame * CFrame.new(0, 6.4 + GROUND_Y, -1.15)
 		panel.Color, panel.Material = HQ.navy, Enum.Material.Metal
-		Kit.block(scene, "ServiceScreenMount", V(0.45, 3.2, 0.45), frame * CFrame.new(0, 7.8 + GROUND_Y, -1.0), HQ.steel, Enum.Material.Metal)
-		text.TextScaled, text.RichText, text.TextSize = false, true, 36
-		local tint = string.format('<font color="#%02x%02x%02x">', math.floor(def.color.R * 255), math.floor(def.color.G * 255), math.floor(def.color.B * 255))
-		local how = '</font>\n<font size="17" color="#b8cdd8">'
-		localized(text, tint .. def.pt .. how .. "TOQUE OU PRESSIONE E</font>", tint .. def.en .. how .. "TAP OR PRESS E</font>")
+		panel.Size = V(9.2, 4.14, 0.3)
+		board:SetAttribute("ServiceFrame", frame)
+		Kit.block(scene, "ServiceScreenMount", V(0.45, 3.6, 0.7), frame * CFrame.new(0, 4.8 + GROUND_Y, -1.6), HQ.steel, Enum.Material.Metal)
+		local title = panel.Board.Title
+		title.TextColor3 = def.color
+		panel.Board.Bezel.UIStroke.Color = def.color
+		localized(title, def.pt, def.en)
+		localized(text, details[def.id][1], details[def.id][2])
 		text.Text = text:GetAttribute("LobbyTextPT")
+		-- Interaction instructions belong to the nearby prompt, not another
+		-- paragraph on every sign. The title remains independent of live status.
 		local prompt = panel:FindFirstChildOfClass("ProximityPrompt")
 		if prompt then localized(prompt, def.pt, def.en) end
 		icon(frame, def.id, def.color)
-	end
-	-- The two public boards: missions and the hall of fame.
-	for _, id in ipairs({ "quests", "leaderboard" }) do
-		local at = polar(LAYOUT.boards[id], 54, 0)
-		local frame = kiosk(at, yawToward(at, HUB), id == "quests" and Color3.fromRGB(143, 208, 122) or HQ.gold)
-		icon(frame, id, id == "quests" and Color3.fromRGB(143, 208, 122) or HQ.gold)
-		local board, text = buildBoard(lobby, at.X, at.Z, id, id == "quests" and "MISSÕES" or "SALÃO DA FAMA\nCarregando…", self.openPanel)
-		local post = board:FindFirstChild("Post")
-		if post then post:Destroy() end
-		board.PrimaryPart.CFrame = frame * CFrame.new(0, 6.2 + GROUND_Y, -1.2) * CFrame.Angles(0, math.pi, 0)
-		board.PrimaryPart.Color, board.PrimaryPart.Material = HQ.navy, Enum.Material.Metal
-		if id == "quests" then
-			text.TextScaled, text.RichText, text.TextSize = false, true, 36
-			text:SetAttribute("LobbyTextPT", '<font color="#8fd07a">MISSÕES</font>\n<font size="17" color="#b8cdd8">TOQUE OU PRESSIONE E</font>')
-			text:SetAttribute("LobbyTextEN", '<font color="#8fd07a">MISSIONS</font>\n<font size="17" color="#b8cdd8">TAP OR PRESS E</font>')
-			text.Text = text:GetAttribute("LobbyTextPT")
-		else
-			-- The hall of fame is rich text: a gold title, a small subtitle and one
-			-- coloured line per place (see UpdateLeaderboardBoard).
-			text.RichText = true
-			self.leaderboardText = text
-		end
+		if def.id == "leaderboard" then self.leaderboardText = text end
 	end
 	local wood = Color3.fromRGB(104, 72, 46)
 	-- Benches with real seats face the plaza between the desks.
@@ -6243,16 +6254,23 @@ end
 -- rather than trying to be personal to whoever is looking at it.
 function World:UpdateLeaderboardBoard(rows, mapName)
 	if not self.leaderboardText then return end
-	local lines = { '<font color="#FFC440">SALÃO DA FAMA</font>', '<font color="#9FD8FF">' .. upper(mapName or "MANHATTAN") .. " • SOLO</font>" }
-	local MEDALS = { "#FFC440", "#D8E0EA", "#E09A5B", "#8FE0A8", "#8FE0A8" }
-	for index, row in ipairs(rows or {}) do
-		if index > 5 then break end
-		-- A name is shown as text, never as rich-text markup.
-		local shown = string.gsub(tostring(row.name or row.userId), "[<>&]", "")
-		table.insert(lines, string.format('<font color="%s">#%d  %s — %d</font>', MEDALS[index] or "#FFFFFF", row.rank, shown, row.waves))
+	-- A single record invites interaction; the full ranking belongs in its panel.
+	local first = (rows or {})[1]
+	local pt, en = "Seu nome pode estar aqui", "Your name could be here"
+	if first then
+		local shown = string.gsub(tostring(first.name or first.userId), "[<>&]", "")
+		pt = string.format("#%d %s • %d %s", first.rank, shown, first.waves, first.waves == 1 and "onda" or "ondas")
+		en = string.format("#%d %s • %d %s", first.rank, shown, first.waves, first.waves == 1 and "wave" or "waves")
 	end
-	if #(rows or {}) == 0 then table.insert(lines, '<font color="#B8CDD8">Seja o primeiro a deixar sua marca.</font>') end
-	self.leaderboardText.Text = table.concat(lines, "\n")
+	self.leaderboardText:SetAttribute("LobbyTextPT", pt)
+	self.leaderboardText:SetAttribute("LobbyTextEN", en)
+	self.leaderboardText.Text = pt
+	local hint = self.leaderboardText.Parent:FindFirstChild("Hint")
+	if hint then
+		hint:SetAttribute("LobbyTextPT", "Toque para ver o ranking")
+		hint:SetAttribute("LobbyTextEN", "Tap to view the ranking")
+		hint.Text = "Toque para ver o ranking"
+	end
 end
 
 --==============================================================================

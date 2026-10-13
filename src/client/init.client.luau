@@ -22,6 +22,7 @@ local Motion = require(script:WaitForChild("Motion"))
 local RoutePreview = require(script:WaitForChild("RoutePreview"))
 local BuildOverlay = require(script:WaitForChild("BuildOverlay"))
 local Panels = require(script:WaitForChild("Panels"))
+local ProductQuotes = require(script:WaitForChild("ProductQuotes"))
 local LobbyWorld = require(script:WaitForChild("LobbyWorld"))
 local MatchHud = require(script:WaitForChild("MatchHud"))
 local remotes = ReplicatedStorage:WaitForChild("DoomRemotes")
@@ -62,7 +63,7 @@ local selectedTower, selectedHero, selectedSkill = nil, nil, nil
 local selectedPosition, placementValid = nil, false
 local placementPinned = false
 local layoutKind, lastProfileSignature = nil, nil
-local refs, productInfo, productFetching = {}, {}, false
+local refs, productInfo = {}, {}
 local placementRing, ghost, towerRing
 local ghostParts, ghostLift
 local contextPanel = nil
@@ -460,41 +461,32 @@ local panels = Panels.new({
 })
 local contextBuilders, loadBoard = panels.contextBuilders, panels.loadBoard
 
-fetchProducts = function()
-	if productFetching then return end
-	productFetching = true
-	task.spawn(function()
-		local fetched = false
-		for _, group in ipairs({{kind = "pass", data = Catalog.Products.Passes}, {kind = "product", data = Catalog.Products.Consumables}, {kind = "hero", data = Catalog.Products.Heroes}}) do
-			for key in pairs(group.data) do
-				local cacheKey = group.kind .. ":" .. key
-				if productInfo[cacheKey] == nil then
-					local response = request("ProductInfo", {kind = group.kind, key = key}, true)
-					-- No answer at all can be retried; a refusal means it is not on sale.
-					local info = response and response.ok and response.data
-					if type(info) == "table" then
-						-- The server authorizes the item; only a client lookup sees this
-						-- player's regional price. Never advertise a stale global price.
-						local ok, localInfo = pcall(function()
-							return MarketplaceService:GetProductInfoAsync(info.id, group.kind == "pass" and Enum.InfoType.GamePass or Enum.InfoType.Product)
-						end)
-						local price = ok and type(localInfo) == "table" and localInfo.PriceInRobux
-						if not ok then productInfo[cacheKey] = "retry"
-						elseif type(price) ~= "number" or price ~= price or price < 0 or price == math.huge or localInfo.IsForSale == false then productInfo[cacheKey] = false
-						else productInfo[cacheKey] = {id = info.id, price = price, name = info.name} end
-					else productInfo[cacheKey] = response == nil and "retry" or false end
-					fetched = true
-					task.wait(0.18)
-				end
-			end
-		end
-		productFetching = false
-		-- Re-render only when a price actually arrived. The shop panel calls
-		-- fetchProducts every time it renders, so an unconditional re-render
-		-- here rebuilt the open panel every 1.3 seconds, forever.
-		if fetched and contextPanel and (contextPanel.kind == "shop" or contextPanel.kind == "premium") and state and state.phase == "Lobby" then renderContext() end
-	end)
-end
+local quoteRefreshPending = false
+local quotes = ProductQuotes.new({
+	cache = productInfo, catalog = Catalog.Products, profile = profile,
+	quote = function(kind, key)
+		local response = request("ProductInfo", {kind = kind, key = key}, true)
+		local info = response and response.ok and response.data
+		if type(info) ~= "table" then return response == nil and "retry" or false end
+		-- The server authorizes the item. The client sees this player's price.
+		local ok, localInfo = pcall(function()
+			return MarketplaceService:GetProductInfoAsync(info.id, kind == "pass" and Enum.InfoType.GamePass or Enum.InfoType.Product)
+		end)
+		if not ok then return "retry" end
+		local price = type(localInfo) == "table" and localInfo.PriceInRobux
+		if type(price) ~= "number" or price ~= price or price < 0 or price == math.huge or localInfo.IsForSale == false then return false end
+		return {id = info.id, price = price, name = info.name, preview = info.preview == true}
+	end,
+	updated = function()
+		if quoteRefreshPending then return end
+		quoteRefreshPending = true
+		task.delay(0.12, function()
+			quoteRefreshPending = false
+			if contextPanel and (contextPanel.kind == "shop" or contextPanel.kind == "premium") and state and state.phase == "Lobby" then renderContext() end
+		end)
+	end,
+})
+fetchProducts = function(kind) quotes:Fetch(kind or "hero") end
 
 local function lobbyChrome(visible)
 	for _,name in ipairs({"LobbyPill","SettingsButton","LobbyNavigation"}) do
