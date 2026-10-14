@@ -91,16 +91,24 @@ def validate(data, expected):
 
 def config_source(source, data, expected):
     # Only validated integer IDs and catalog-derived keys are inserted into Luau.
+    # A 0 in the JSON means "not set here": the value shipped in Config.luau
+    # stays. The live products, sounds and images are configured in Config
+    # itself, so a template copied as-is must never blank them.
     lines = ['local configured = (function()', source, 'end)()']
     for key in ('UniverseId', 'LobbyPlaceId', 'MatchPlaceId', 'AfkPlaceId', 'GroupId'):
-        lines.append(f'configured.{key} = {data.get(key, 0)}')
+        value = data.get(key, 0)
+        if value:
+            lines.append(f'configured.{key} = {value}')
     for category, rows in expected['Products'].items():
-        lines.append(f'configured.Products.{category} = {{}}')
+        lines.append(f'configured.Products.{category} = configured.Products.{category} or {{}}')
         for key in rows:
             value = data.get('Products', {}).get(category, {}).get(key, {}).get('id', 0)
-            lines.append(f'configured.Products.{category}[{json.dumps(key)}] = {{ id = {value} }}')
+            if value:
+                lines.append(f'configured.Products.{category}[{json.dumps(key)}] = {{ id = {value} }}')
     for key in expected['Audio']:
-        lines.append(f'configured.Audio[{json.dumps(key)}] = {data.get("Audio", {}).get(key, 0)}')
+        value = data.get('Audio', {}).get(key, 0)
+        if value:
+            lines.append(f'configured.Audio[{json.dumps(key)}] = {value}')
     for key in expected['MapImages']:
         value = data.get('MapImages', {}).get(key, 0)
         if value:

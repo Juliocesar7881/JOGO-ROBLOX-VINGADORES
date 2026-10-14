@@ -1,5 +1,6 @@
 """Deployment validation, emitted configuration and original audio integrity."""
 import copy
+import re
 import hashlib
 import json
 import math
@@ -80,6 +81,22 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotIn('GroupId', missing)
         source = release.config_source((ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8'), data, self.template)
         harness = 'local c=(function()\n' + source + '\nend)()\nassert(c.StartCash==600 and c.MaxPartySize==4 and c.LobbyPlaceId==123 and c.MatchPlaceId==456 and c.Audio.lobby==314 and c.Products.Heroes.thor.id==271 and c.GroupId==555 and c.AfkPlaceId==0)\n'
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'config.luau'
+            path.write_text(harness, encoding='utf-8')
+            subprocess.run([str(ROOT / '.tools/luau/luau.exe'), str(path)], check=True)
+
+    def test_zero_ids_keep_the_shipped_config_values(self):
+        """A template copied as-is (every ID 0) must not blank the live IDs in Config."""
+        data = copy.deepcopy(self.template)
+        config = (ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8')
+        thor = re.search(r'thor = \{ id = (\d+) \}', config).group(1)
+        lobby = re.search(r'lobby = (\d+)', config).group(1)
+        source = release.config_source(config, data, self.template)
+        self.assertNotIn('{ id = 0 }', source)
+        self.assertNotIn('configured.Audio["lobby"] = 0', source)
+        harness = ('local c=(function()\n' + source + '\nend)()\n'
+                   f'assert(c.Products.Heroes.thor.id=={thor} and c.Audio.lobby=={lobby} and c.Products.Passes.vip.id>0, "shipped IDs survive a zero template")\n')
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'config.luau'
             path.write_text(harness, encoding='utf-8')

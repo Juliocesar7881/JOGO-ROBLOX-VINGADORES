@@ -7,13 +7,23 @@ separadamente e depois abra o arquivo reconstruído.
 
 ## IDs e pacote
 
+Desde 12/10/2026 os 51 produtos (41 heróis, cinco passes, cinco consumíveis),
+os sons e as fotos dos mapas já estão em `src/shared/Config.luau` com IDs
+reais. O `deployment/local.json` só precisa do que ainda não está lá: o
+universo e os lugares. Um `0` no JSON significa "não mexer": o gerador mantém
+o valor do `Config`, nunca o zera.
+
 1. Copie `deployment/template.json` para `deployment/local.json`.
-2. Preencha UniverseId, LobbyPlaceId e MatchPlaceId.
-3. Crie os quatro passes e os produtos repetíveis na experiência proprietária.
+2. Preencha `UniverseId` (10768165352), `LobbyPlaceId` (97132875544830, o
+   lugar atual) e `MatchPlaceId` (o lugar novo publicado a partir de
+   `dist/Doomsday-Match.rbxlx`, na mesma experiência). `AfkPlaceId` é opcional.
+3. `Products`: deixe em `0` para manter os IDs do `Config`. Só preencha se
+   criar um produto novo (um pacote, um passe de temporada) ou trocar um ID.
    Em `Products.Heroes`, cada personagem pago usa um Developer Product próprio.
    Os nomes das chaves precisam permanecer iguais aos do template.
-4. Importe os 27 arquivos de `assets/audio` e autorize a experiência. Preencha
-   `Audio`. O preço exibido pela loja continua vindo da plataforma; a configuração
+4. `Audio`: deixe em `0` para manter os sons já enviados. Preencha só o que
+   reenviar (por exemplo, uma trilha `battle` nova aprovada pela moderação). O
+   preço exibido pela loja continua vindo da plataforma; a configuração
    contém IDs, sem substituir preços por valores inventados.
 5. As seis fotos dos portais já estão importadas na conta LoopsDev7881 e
    configuradas em `Config.MapImages`. Originais e IDs ficam em
