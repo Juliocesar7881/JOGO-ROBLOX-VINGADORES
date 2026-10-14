@@ -374,6 +374,9 @@ local _, ownedHero = service:Handle(p1, "ProductInfo", { kind = "hero", key = "f
 check(not ownedHero, "A hero you own is not for sale")
 local _, starterHero = service:Handle(p1, "ProductInfo", { kind = "hero", key = "ironman" }, true)
 check(not starterHero, "A starter is never sold")
+local funnel = {}
+service.onPurchase = function(who, phase, kind, key, id) table.insert(funnel, phase .. ":" .. kind .. ":" .. tostring(key) .. ":" .. tostring(id)) end
+do
 local goldBeforeThor = service:Get(p1).gold
 local thorReceipt = { PlayerId = 1, ProductId = 302, PurchaseId = "thor-1" }
 failAfter = 1
@@ -382,10 +385,16 @@ check(service:Get(p1).heroes.thor and service:Get(p1).abilities.thor == 1, "The 
 check(service:Get(p1).gold == goldBeforeThor, "A new hero purchase gives no gold")
 local loadoutBefore = #service:Get(p1).loadout
 check(service:_receipt(thorReceipt) == "granted" and #service:Get(p1).loadout == loadoutBefore, "A replayed hero receipt is inert")
+check(funnel[1] == "start:hero:thor:302" and funnel[2] == "granted:hero:thor:302", "The funnel hears the first thor receipt start and land: " .. table.concat(funnel, ", "))
+check(funnel[3] == "start:hero:thor:302" and funnel[4] == "replay:hero:thor:302" and #funnel == 4, "A replayed receipt is reported as a replay, never as a second grant")
+service.passConnection.callback(p1, 203, false)
+check(funnel[#funnel] == "cancelled:pass:season:203", "A pass prompt closed without buying is a cancellation: " .. tostring(funnel[#funnel]))
+service.onPurchase = function() end
 -- A second purchase of a hero already owned is never wasted: it becomes gold.
 check(service:_receipt({ PlayerId = 1, ProductId = 302, PurchaseId = "thor-2" }) == "granted", "A duplicate purchase is still acknowledged")
 check(service:Get(p1).gold == goldBeforeThor + Catalog.Products.Heroes.thor.price * 10, "A duplicate purchase refunds gold, 10 per Robux")
 check(service:_receipt({ PlayerId = 1, ProductId = 302, PurchaseId = "thor-1" }) == "granted" and service:Get(p1).gold == goldBeforeThor + Catalog.Products.Heroes.thor.price * 10, "The receipt ledger stays exact")
+end
 failBefore = 3
 check(service:_receipt({ PlayerId = 1, ProductId = 301, PurchaseId = "falcon-x" }) == "pending", "A storage failure leaves a hero receipt pending")
 failBefore = 0

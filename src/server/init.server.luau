@@ -93,6 +93,19 @@ local profiles = PlayerService.new(Config, Catalog, function(player)
 	if pushState then pushState(player) end
 end, Rules, Codes)
 
+-- The purchase funnel: what was looked at, what was bought, what was walked
+-- away from, each with its SKU. A receipt's Gold is tagged IAP before it lands.
+local purchaseAnalytics
+profiles.onPurchase = function(player, phase, kind, key, id)
+	if phase == "start" then
+		goldHint[player.UserId] = { transaction = "IAP", sku = tostring(key) }
+	elseif phase == "granted" then
+		if purchaseAnalytics then purchaseAnalytics:Custom(player, "PurchaseCompleted", 1, kind, tostring(key), tostring(id)) end
+	elseif phase == "cancelled" then
+		if purchaseAnalytics then purchaseAnalytics:Custom(player, "PurchaseCancelled", 1, kind, tostring(key), tostring(id)) end
+	end
+end
+
 -- The built place ships a baseplate and a spawn so the editor viewport is not
 -- an empty void before anyone presses Play. The generated lobby replaces them.
 for _, placeholder in ipairs({ "EditorBaseplate", "EditorSpawn" }) do
@@ -119,6 +132,7 @@ end)
 
 local cosmetics = PresenceService.new()
 local analytics = AnalyticsService.new(true)
+purchaseAnalytics = analytics
 local rejoin = RejoinService.new(travelEnabled, matchPlaceId)
 
 -- What other players are allowed to see about someone: the title they equipped,
@@ -152,9 +166,10 @@ function refreshPresence(player)
 		local delta = profile.gold - previous.gold
 		if delta ~= 0 then
 			local hint = goldHint[player.UserId]
+			-- "IAP" is only ever named by a real receipt (profiles.onPurchase below).
 			local transaction = hint and hint.transaction
 				or (match:Has(player) and "Gameplay")
-				or (delta > 0 and "IAP" or "Shop")
+				or (delta > 0 and "Gameplay" or "Shop")
 			analytics:Economy(player, delta > 0, math.abs(delta), profile.gold, transaction, hint and hint.sku or nil)
 		end
 	end
@@ -593,6 +608,10 @@ local function route(player, action, payload)
 				-- How far players climb the season, and whether they hold the premium track.
 				analytics:Custom(player, "SeasonClaimed", result.level, result.claimed, data.passes and data.passes.season and "premium" or "free")
 			end
+		end
+		if action == "ProductInfo" and type(data) == "table" then
+			-- The shop asked the price of an item for this player: it was seen.
+			analytics:Custom(player, "ItemViewed", 1, tostring(payload.kind), tostring(payload.key), tostring(data.id))
 		end
 		return { ok = true, data = data }
 	end

@@ -339,6 +339,11 @@ end
 function PlayerService.new(config, catalog, onChanged, rules, codes)
 	local self = setmetatable({}, PlayerService)
 	self.config, self.catalog, self.onChanged, self.rules = config, catalog, onChanged or function() end, rules
+	-- Purchase funnel for the host's analytics: onPurchase(player, phase, kind, key, id)
+	-- with phase "start" (a receipt is about to be applied), "granted" (applied
+	-- for the first time), "replay" (already applied) or "cancelled" (the
+	-- prompt closed without buying). Never affects what is granted.
+	self.onPurchase = function() end
 	-- Server-only promo codes (src/server/Codes.luau), keyed in capitals.
 	self.codes = codes or config.Codes or {}
 	assert(rules and rules.RollChest and rules.AbilityUpgrade, "PlayerService needs the shared Rules module")
@@ -364,12 +369,20 @@ function PlayerService.new(config, catalog, onChanged, rules, codes)
 			self.heroProductById[product.id] = heroId
 		end
 	end
+	for key, product in pairs(self.products.Consumables) do product.key = product.key or key end
 	if not self.memory then self.store = DataStoreService:GetDataStore(config.DataStoreName or "DoomPlayer_v1") end
 	MarketplaceService.ProcessReceipt = function(receipt) return self:_receipt(receipt) end
+	self:_watchCancelledProducts()
 	self.passConnection = MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, wasPurchased)
-		if not wasPurchased then return end
+		if not wasPurchased then
+			for key, product in pairs(self.products.Passes) do
+				if product.id == passId then self:_purchaseEvent(player, "cancelled", "pass", key, passId) end
+			end
+			return
+		end
 		for key, product in pairs(self.products.Passes) do
 			if product.id == passId and self.records[player.UserId] then
+				self:_purchaseEvent(player, "granted", "pass", key, passId)
 				task.spawn(function()
 					local ok, owned = pcall(function() return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId) end)
 					local record = self.records[player.UserId]
@@ -1083,6 +1096,26 @@ function PlayerService:_productInfo(payload, record)
 	return true, { id = product.id, price = info.PriceInRobux, name = info.Name or product.name, kind = payload.kind, key = payload.key, preview = self.memory == true }
 end
 
+-- A purchase prompt that closed without buying (Developer Products; passes
+-- have their own signal above). Only the funnel hears about it.
+function PlayerService:_watchCancelledProducts()
+	local signal = MarketplaceService.PromptProductPurchaseFinished
+	if not signal then return end
+	self.productConnection = signal:Connect(function(userId, productId, wasPurchased)
+		if wasPurchased then return end
+		local player = Players:GetPlayerByUserId(userId)
+		if not player then return end
+		local heroId = self.heroProductById[productId]
+		local product = self.productById[productId]
+		if heroId then self:_purchaseEvent(player, "cancelled", "hero", heroId, productId)
+		elseif product then self:_purchaseEvent(player, "cancelled", product.key or "product", product.key or "product", productId) end
+	end)
+end
+
+function PlayerService:_purchaseEvent(player, phase, kind, key, id)
+	pcall(self.onPurchase, player, phase, kind, key, id)
+end
+
 function PlayerService:_receipt(receipt)
 	local pending = Enum.ProductPurchaseDecision.NotProcessedYet
 	if self.memory or self.closed or type(receipt) ~= "table" or not validId(receipt.PurchaseId) then return pending end
@@ -1091,12 +1124,17 @@ function PlayerService:_receipt(receipt)
 	local heroId = self.heroProductById[receipt.ProductId]
 	if not player or not (product or heroId) or not self.records[player.UserId] then return pending end
 	local purchaseId = receipt.PurchaseId
+	local kind, key = heroId and "hero" or "product", heroId or (product and product.key) or "product"
+	self:_purchaseEvent(player, "start", kind, key, receipt.ProductId)
+	local fresh = false
 	local ok = self:_transaction(player, function(profile, now)
+		fresh = false
 		local previous = profile._receipts[purchaseId]
 		if previous then
 			if previous.productId ~= receipt.ProductId then return false, "Recibo inconsistente." end
 			return true
 		end
+		fresh = true
 		-- Whatever was bought and the receipt that proves it are stored in ONE
 		-- atomic value before the purchase is acknowledged.
 		if heroId then
@@ -1124,6 +1162,7 @@ function PlayerService:_receipt(receipt)
 		end
 		return true
 	end, "receipt:" .. purchaseId .. ":" .. tostring(receipt.ProductId))
+	if ok then self:_purchaseEvent(player, fresh and "granted" or "replay", kind, key, receipt.ProductId) end
 	return ok and Enum.ProductPurchaseDecision.PurchaseGranted or pending
 end
 
