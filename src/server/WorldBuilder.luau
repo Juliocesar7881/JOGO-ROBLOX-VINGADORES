@@ -632,18 +632,20 @@ HERO_EXTRAS.captain = function(f)
 	-- armor with chevron insignia, reinforced gauntlets and the iconic aegis
 	-- shield on the left forearm; silhouette reads as frontline leader.
 	-- Head: open-face helm with brow guard, cheek plates and chin strap.
-	f.add("Head", "BrowGuard", Vector3.new(h.X * 0.82, h.Y * 0.18, h.Z * 0.22), CFrame.new(0, h.Y * 0.38, -h.Z * 0.08), bronze, METAL)
+	f.add("Head", "BrowGuard", Vector3.new(h.X * 0.82, h.Y * 0.18, h.Z * 0.22), CFrame.new(0, h.Y * 0.38, -h.Z / 2 - 0.02 * s), bronze, METAL)
 	f.add("Head", "HelmetCrest", Vector3.new(0.16 * s, h.Y * 0.48, h.Z * 1.06), CFrame.new(0, h.Y * 0.46, 0), bronze, METAL)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "CheekPlate", Vector3.new(h.X * 0.22, h.Y * 0.34, h.Z * 0.18), CFrame.new(side * h.X * 0.34, -h.Y * 0.08, -h.Z * 0.06), steel, METAL)
+		f.add("Head", "CheekPlate", Vector3.new(h.X * 0.22, h.Y * 0.34, h.Z * 0.18), CFrame.new(side * h.X * 0.34, -h.Y * 0.08, -h.Z / 2 - 0.02 * s), steel, METAL)
 		f.add("Head", "Eye", Vector3.new(0.15, 0.22, 0.06) * s, f.face(side * 0.24, 0.12, 0.0), HC.ink, FABRIC, "ball")
 	end
 	f.add("Head", "ChinStrap", Vector3.new(h.X * 0.54, h.Y * 0.14, 0.08 * s), f.face(0, -0.48, -0.02), bronze, METAL)
 	-- Torso: segmented pectoral plates with central chevron, abdominal
 	-- segments and a utility belt with bronze buckle.
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("UpperTorso", "PectoralPlate", Vector3.new(c.X * 0.42, c.Y * 0.46, 0.1 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.16, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.04), steel, METAL)
-		f.add("UpperTorso", "Chevron", Vector3.new(0.16 * s, 0.62 * s, 0.07 * s), CFrame.new(side * 0.18 * s, c.Y * 0.14, -c.Z / 2 - 0.05 * s) * CFrame.Angles(0, 0, side * 0.72), bronze, METAL)
+		f.add("UpperTorso", "PectoralPlate", Vector3.new(c.X * 0.45, c.Y * 0.46, 0.1 * s), CFrame.new(side * c.X * 0.23, c.Y * 0.16, -c.Z / 2 - 0.07 * s), steel, METAL)
+		-- Both halves sit in front of the armour, rather than one disappearing
+		-- into its plate when the model is enlarged.
+		f.add("UpperTorso", "Chevron", Vector3.new(0.16 * s, 0.62 * s, 0.07 * s), CFrame.new(side * 0.18 * s, c.Y * 0.14, -c.Z / 2 - 0.17 * s) * CFrame.Angles(0, 0, side * 0.72), bronze, METAL)
 	end
 	for i = 1, 3 do
 		local width = 1 - (i - 2) * 0.1
@@ -660,9 +662,10 @@ HERO_EXTRAS.captain = function(f)
 	local arm = f.sizes.lowerArm
 	f.add("LeftLowerArm", "Shield", Vector3.new(0.16 * s, 2.4 * s, 2.4 * s), CFrame.new(-arm.X / 2 - 0.14 * s, 0, -0.12 * s), bronze, METAL, Enum.PartType.Cylinder)
 	f.add("LeftLowerArm", "ShieldFace", Vector3.new(0.16 * s, 2.05 * s, 2.05 * s), CFrame.new(-arm.X / 2 - 0.18 * s, 0, -0.12 * s), teal, METAL, Enum.PartType.Cylinder)
-	f.disc("LeftLowerArm", "ShieldStar", 0.52 * s, 0.04 * s, CFrame.new(-arm.X / 2 - 0.22 * s, 0, -0.12 * s), HC.white, METAL)
+	-- The shield faces sideways (-X); its badge shares that plane and axis.
+	f.add("LeftLowerArm", "ShieldStar", Vector3.new(0.04 * s, 0.52 * s, 0.52 * s), CFrame.new(-arm.X / 2 - 0.30 * s, 0, -0.12 * s), HC.white, METAL, Enum.PartType.Cylinder)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("LeftLowerArm", "ShieldRing", Vector3.new(0.06 * s, 0.85 * s, 0.18 * s), CFrame.new(-arm.X / 2 - 0.26 * s, 0.04 * s, -0.12 * s + side * 0.2 * s) * CFrame.Angles(side * 0.72, 0, 0), HC.white, METAL)
+		f.add("LeftLowerArm", "ShieldRing", Vector3.new(0.06 * s, 0.85 * s, 0.18 * s), CFrame.new(-arm.X / 2 - 0.30 * s, 0.04 * s, -0.12 * s + side * 0.2 * s) * CFrame.Angles(side * 0.72, 0, 0), HC.white, METAL)
 	end
 	f.add("RightLowerArm", "Gauntlet", f.sizes.lowerArm * Vector3.new(1.14, 0.62, 1.12), CFrame.new(0, f.sizes.lowerArm.Y * 0.14, 0), steel, METAL)
 	muzzle(f, "LeftLowerArm", Vector3.new(-arm.X / 2 - 0.32 * s, 0, 0))
@@ -2667,6 +2670,22 @@ function Figure.Hero(parent, heroId, hero, scale)
 	if extras then extras(figure) end
 	Figure.Finish(figure, true)
 	finishHeroCostume(figure)
+	if heroId == "ironman" or heroId == "captain" then
+		-- These plated suits need continuous solid sleeves and a full waist.
+		-- A tapered torso mesh on each limb left notches and visible blue hips.
+		local suit = heroId == "ironman" and Color3.fromRGB(180,40,40) or Color3.fromRGB(22,150,140)
+		figure.parts.LowerTorso.Color = suit:Lerp(FIGURE_INK,0.18)
+		local hips = figure.parts.LowerTorso:FindFirstChild("BodyContour")
+		hips.MeshType, hips.Scale = Enum.MeshType.Brick, Vector3.one
+		for _, piece in ipairs(figure.model:GetChildren()) do
+			local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+			local host = fit and fit.Part0 or piece
+			if string.find(host.Name,"Arm") or string.find(host.Name,"Leg") then
+				local contour = piece:FindFirstChild("BodyContour") or piece:FindFirstChild("CostumeContour")
+				if contour then contour.MeshType = Enum.MeshType.Brick end
+			end
+		end
+	end
 	if not figure.model:FindFirstChild("Muzzle", true) then muzzle(figure, "RightHand", Vector3.new(0, -figure.sizes.hand.Y / 2 - 0.1 * figure.scale, 0)) end
 	return figure
 end

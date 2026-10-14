@@ -354,6 +354,23 @@ do
 			local chest = figure:FindFirstChild("UpperTorso")
 			check(chest.Size == source.UpperTorso.Size * 2, id .. ": body proportions follow the original model")
 			check(figure:FindFirstChild(id == "ironman" and "ArcReactorCore" or "Shield", true) ~= nil, id .. ": original signature equipment is present")
+			local hips = figure.LowerTorso:FindFirstChild("BodyContour")
+			check(hips.MeshType == Enum.MeshType.Brick and hips.Scale == Vector3.one, id .. ": waist has a continuous silhouette")
+			if id == "captain" then
+				local plate = figure:FindFirstChild("PectoralPlate")
+				local front = plate.Fit.C0.Position.Z - plate.Size.Z / 2
+				local marks = 0
+				for _, piece in ipairs(figure:GetChildren()) do
+					if piece.Name == "Chevron" then
+						marks += 1
+						check(piece.Fit.C0.Position.Z + piece.Size.Z / 2 < front, "both chest insignia halves sit ahead of the armour")
+					end
+				end
+				check(marks == 2, "the captain keeps both chest insignia halves")
+				local badge, face = figure.ShieldStar, figure.ShieldFace
+				check(badge.Fit.C0.Position.X < face.Fit.C0.Position.X - face.Size.X / 2, "shield badge sits on the outside face")
+				check(math.abs(badge.Fit.C0.RightVector.X) > 0.99, "shield badge and shield share their cylinder axis")
+			end
 		end
 	end
 	local outpost = hq and hq:FindFirstChild("ShieldOutpost")

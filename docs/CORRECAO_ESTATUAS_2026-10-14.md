@@ -21,3 +21,18 @@ Não houve medição nova de FPS. Fontes conferidas antes da sincronização;
 somente WorldBuilder enviado, sem sobrescrever alterações desconhecidas.
 
 Publicação e commit: consultar o registro M36.5 no LOG.
+
+## Ajuste de encaixes solicitado depois da publicação
+
+O reaproveitamento do modelo tornou visíveis falhas do figurino ampliado.
+Os dois símbolos do peito do Capitão agora ficam à frente das placas,
+com proteção frontal do elmo posicionada sobre o rosto. O emblema do escudo
+usa o mesmo eixo e a face externa do escudo. Os dois heróis recebem cintura
+com volume completo e cor do traje; contornos de braços e pernas passam a
+usar faces retas para evitar recortes de malhas de tronco sobre membros.
+
+As correções ficam no construtor compartilhado, mantendo o mesmo modelo na
+partida, retrato e estátua. Nenhuma peça foi acrescentada. Regressões conferem
+as duas metades do símbolo expostas, eixo/posição do emblema e cintura.
+Capturas em `test-results/galerias/Estatuas_Ajustadas_2026-10-14/`.
+Publicação e validação final: registro M36.6 no LOG.
