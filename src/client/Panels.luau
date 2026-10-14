@@ -851,6 +851,10 @@ function Panels.new(ctx)
 			table.insert(parts, lastChest.duplicate and T("repetido → recompensa", "duplicate → reward") or (T("novo na coleção: ", "new in collection: ") .. (hero and L(hero.name) or "")))
 		end
 		if opened > 1 then table.insert(parts, "+" .. (opened - 1) .. T(" baús abertos", " more chests opened")) end
+		for _, won in ipairs(type(paid.heroes) == "table" and paid.heroes or {}) do
+			local hero = Catalog.Heroes[won.heroId]
+			if hero then table.insert(parts, T("herói da temporada: ", "season hero: ") .. L(hero.name) .. (won.shiny and " ◆" or "")) end
+		end
 		lastRewardResult = copy(paid)
 		lastRewardResult.chest = lastChest
 		showToast(#parts > 0 and table.concat(parts, "  •  ") or T("Recompensa resgatada!", "Reward claimed!"), false)
@@ -905,7 +909,7 @@ function Panels.new(ctx)
 				line(25, entry.freeClaimed and "✓" or number(entry.free.gold), entry.freeClaimed and C.green or C.text, 24, 28)
 				local premiumText = (entry.premiumClaimed and "✓") or number(entry.premium.gold)
 				line(53, premiumText, entry.premiumClaimed and C.green or (season.owned and C.cream or C.muted), 18, 20)
-				local marks = ((entry.free.chest or entry.premium.chest) and T("Baú", "Chest") or "") .. (entry.premium.title and ((entry.free.chest or entry.premium.chest) and " + " or "") .. T("Título", "Title") or "")
+				local marks = ((entry.free.chest or entry.premium.chest) and T("Baú", "Chest") or "") .. (entry.premium.hero and ((entry.free.chest or entry.premium.chest) and " + " or "") .. T("Herói", "Hero") or "")
 				if marks ~= "" then line(73, marks, C.pink, 15, 17) end
 			end
 			local claimSeason = UI.button(seasonCard, season.claimable > 0 and (T("Resgatar ", "Claim ") .. season.claimable .. (season.claimable == 1 and T(" prêmio", " reward") or T(" prêmios", " rewards"))) or T("Jogue para subir de nível", "Play to level up"), function()
@@ -921,7 +925,7 @@ function Panels.new(ctx)
 			end, {Name = "ClaimSeason", Position = UDim2.fromOffset(12, 158), Size = UDim2.new(1, -24, 0, 48), BackgroundColor3 = season.claimable > 0 and C.green or C.card, TextSize = 20})
 			if season.claimable == 0 then UI.disabled(claimSeason) end
 			if not season.owned then
-				UI.button(seasonCard, T("Liberar trilha premium", "Unlock the premium track"), function() openContext("shop", {shopKind = "pass"}) end,
+				UI.button(seasonCard, T("Liberar trilha premium", "Unlock the premium track"), function() openContext("shop", {shopKind = "product"}) end,
 					{Name = "SeasonUnlock", Position = UDim2.fromOffset(12, 210), Size = UDim2.new(1, -24, 0, 36), BackgroundColor3 = C.violet, TextSize = 18})
 			end
 		end

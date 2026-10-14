@@ -70,13 +70,15 @@ Catalog.HeroCards = {
 -- someone who plays a match a day).
 Catalog.Season = { levels = 30, firstXp = 2000, stepXp = 200 }
 -- Each season has a name, cycling through this list (season 1 is the first).
+-- hero: the season's exclusive, paid at the top of the premium track as a
+-- shiny copy (a duplicate still pays its Gold, stars and cards).
 Catalog.SeasonThemes = {
-	{ name = text("Ilhas do Alvorecer", "Dawn Islands") },
-	{ name = text("Maré dos Cristais", "Crystal Tide") },
-	{ name = text("Noite das Estrelas", "Night of Stars") },
-	{ name = text("Tempestade Dourada", "Golden Storm") },
-	{ name = text("Cidadela de Gelo", "Frost Citadel") },
-	{ name = text("Fundição Viva", "Living Foundry") },
+	{ name = text("Ilhas do Alvorecer", "Dawn Islands"), hero = "silversurfer" },
+	{ name = text("Maré dos Cristais", "Crystal Tide"), hero = "strange" },
+	{ name = text("Noite das Estrelas", "Night of Stars"), hero = "captainmarvel" },
+	{ name = text("Tempestade Dourada", "Golden Storm"), hero = "thor" },
+	{ name = text("Cidadela de Gelo", "Frost Citadel"), hero = "vision" },
+	{ name = text("Fundição Viva", "Living Foundry"), hero = "hulk" },
 }
 -- Playing together pays: every extra commander in the match adds this much to
 -- the Gold and XP each of them earns (a party of four: +30%).
@@ -1029,6 +1031,12 @@ Catalog.Products = {
 		-- pointing at the pack with a countdown. The pack itself stays for sale.
 		starterPack = { id = 0, price = 19, gold = 5000, heroId = "hulk", repeatGold = 2500, offerSeconds = 3 * 86400, name = text("Pacote Inicial", "Starter Pack"),
 			description = text("Uma vez por conta: Gigante Furioso (épico) + 5.000 de Ouro.", "Once per account: Raging Giant (epic) + 5,000 Gold.") },
+		-- The season's premium track, bought for the season running at purchase
+		-- time (profile.season.premium). One product, reused every season; the
+		-- old permanent game pass (Passes.season) keeps unlocking every season
+		-- for whoever bought it.
+		seasonPass = { id = 0, price = 49, seasonPass = true, name = text("Passe da Temporada", "Season Pass"),
+			description = text("Trilha premium desta temporada: o dobro de Ouro, mais baús, um título e o herói brilhante da temporada no nível 30.", "This season's premium track: double the Gold, more chests, a title and the season's shiny hero at level 30.") },
 		-- A timed boost: lobby Gold from waves and victories is doubled while it
 		-- lasts. Buying it again adds another hour to the end. The server keeps
 		-- the clock (profile.boostUntil) and applies it; the client only shows it.

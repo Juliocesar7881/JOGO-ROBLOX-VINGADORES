@@ -13,6 +13,17 @@ Depois de criar, pôr o ID em `Config.Products.Consumables.goldBoost` (hoje 0:
 a loja mostra "Indisponível" até lá). O servidor já entrega e aplica o boost
 (`profile.boostUntil`), com teste.
 
+**Produto novo a cadastrar (14/10/2026):** `seasonPass` — "Passe da Temporada",
+Developer Product, preço sugerido **49 Robux**, descrição "Trilha premium desta
+temporada: o dobro de Ouro, mais baús, um título e o herói brilhante da
+temporada no nível 30." ID em `Config.Products.Consumables.seasonPass`. Um
+produto só, reutilizado a cada temporada: a compra abre a trilha premium da
+temporada que está rodando (`profile.season.premium`) e some com a troca de
+temporada. O game pass permanente `Passes.season` continua valendo em toda
+temporada para quem já comprou; pode ser retirado de venda no Creator Hub
+quando o produto existir. O herói de cada temporada está em
+`Catalog.SeasonThemes[i].hero` (nível 30 da trilha premium, cópia brilhante).
+
 Registro vigente e evidências: [CONFIGURACAO_COMERCIAL_2026-10-12.md](../CONFIGURACAO_COMERCIAL_2026-10-12.md).
 Exportação completa: `assets/store/release-2026-10-12/catalog.json`.
 Metadados salvos não comprovam compra real. Nenhum contrato foi aceito ou taxa

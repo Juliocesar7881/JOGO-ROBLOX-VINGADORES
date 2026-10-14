@@ -91,7 +91,7 @@ local config = {
 	Codes = { TESTE = { gold = 200 }, VELHO = { gold = 1, expires = 1 }, BAU = { gold = 0, chest = "rare" } },
 	Products = {
 		Passes = { collector = { id = 201 }, training = { id = 202 }, season = { id = 203 } },
-		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 }, starterPack = { id = 103 }, goldBoost = { id = 104 } },
+		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 }, starterPack = { id = 103 }, goldBoost = { id = 104 }, seasonPass = { id = 105 } },
 		Heroes = { falcon = { id = 301 }, thor = { id = 302 }, ironman = { id = 999 } },
 	},
 }
@@ -1131,7 +1131,20 @@ do
 	local _, ok5, snap5 = service:Handle(climber, "ClaimSeason", {}, true)
 	local top = snap5.result
 	check(ok5 and top.level == Catalog.Season.levels and #top.chests == 9, "Levels 3-30 open three free and six premium chests: " .. tostring(top and #top.chests))
+	local seasonHero = Rules.SeasonTheme(service:Get(climber).season).hero
+	check(#top.heroes == 1 and top.heroes[1].heroId == seasonHero and service:Get(climber).heroes[seasonHero] ~= nil and service:Get(climber).heroes[seasonHero].shiny == true, "The top of the premium track pays the season's hero, shiny")
 	check(#top.titles == 1 and service:Get(climber).titles.seasonPremium ~= nil, "The season champion title is unlocked")
+	-- The per-season pass: a product that opens this season's premium track without the permanent pass.
+	do
+		local buyer = player(86)
+		service:Load(buyer)
+		check(service:Award(buyer, "season:xp86", { xp = 4500 }), "the buyer joins the season")
+		check(service:Get(buyer).seasonStatus.owned == false and service:Get(buyer).seasonStatus.claimablePremium == 0, "Without a pass the premium track is locked")
+		check(service:_receipt({ PlayerId = 86, ProductId = 105, PurchaseId = "season-86" }) == "granted", "The season pass product is granted")
+		local bought = service:Get(buyer).seasonStatus
+		check(bought.owned == true and bought.claimablePremium == 2, "The product opens this season's premium track for the levels already reached")
+		check(service:_receipt({ PlayerId = 86, ProductId = 105, PurchaseId = "season-86" }) == "granted" and service:Get(buyer).seasonStatus.owned == true, "A replayed season receipt is inert")
+	end
 	-- Where paid random items are restricted, the premium chests become Gold.
 	do
 	local careful = player(82)

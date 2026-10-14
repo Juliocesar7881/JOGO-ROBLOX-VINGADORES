@@ -359,7 +359,7 @@ function PlayerService.new(config, catalog, onChanged, rules, codes)
 	self.productById, self.heroProductById = {}, {}
 	for _, product in pairs(self.products.Consumables) do
 		-- A consumable pays Gold, or (the boost) buys time; anything else is not sold.
-		local sells = integer(product.gold, 1, 100000000) or integer(product.boostSeconds, 1, 100000000)
+		local sells = integer(product.gold, 1, 100000000) or integer(product.boostSeconds, 1, 100000000) or product.seasonPass == true
 		if integer(product.id, 1, 9007199254740991) and sells then
 			assert(not self.productById[product.id], "Duplicate developer product ID")
 			self.productById[product.id] = product
@@ -984,12 +984,19 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			local season = self:_seasonOf(profile)
 			local status = self.rules.SeasonStatus(season, current.passes.season == true)
 			if status.claimable == 0 then return false, "Nada para resgatar na temporada. / Nothing to claim in the season." end
-			local total = { gold = 0, chests = {}, titles = {} }
+			local total = { gold = 0, chests = {}, titles = {}, heroes = {} }
 			local salt = 0
 			local function pay(level, track)
-				local reward = self.rules.SeasonReward(level, track)
+				local reward = self.rules.SeasonReward(level, track, season.id)
 				profile.gold += reward.gold
 				total.gold += reward.gold
+				if reward.hero then
+					-- The season's hero, shiny: a duplicate still pays its Gold, star and cards.
+					local duplicate, paid = self:_grantHero(profile, reward.hero, now, {})
+					profile.heroes[reward.hero].shiny = true
+					table.insert(total.heroes, { heroId = reward.hero, shiny = true, duplicate = duplicate, gold = paid and paid.gold or 0 })
+					total.gold += paid and paid.gold or 0
+				end
 				if reward.title then
 					achievement(profile, reward.title.id, reward.title.pt, reward.title.en, now, "title")
 					table.insert(total.titles, copy(reward.title))
@@ -1154,6 +1161,8 @@ function PlayerService:_receipt(receipt)
 			self:_grantHero(profile, heroId, now, { refundGold = price * GOLD_PER_ROBUX, mastery = 0 })
 		else
 			profile.gold += product.gold or 0
+			-- The season pass opens the premium track of the season running now.
+			if product.seasonPass then self:_seasonOf(profile).premium = true end
 			-- A timed boost stacks onto whatever is left of the current one.
 			if product.boostSeconds then
 				profile.boostUntil = math.max(now, math.floor(tonumber(profile.boostUntil) or 0)) + product.boostSeconds

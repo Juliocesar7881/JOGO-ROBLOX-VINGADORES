@@ -926,6 +926,13 @@ do
 	local state = Rules.NewRewardsState()
 	local profile = { rewards = state, heroes = { ironman = true, hawkeye = true } }
 	check(Rules.RewardsStatus(profile, 50 * DAY, 0, true).freeChest.cooldown < Rules.RewardsStatus(profile, 50 * DAY, 0).freeChest.cooldown, "A VIP's free chest wait is shorter")
+	-- The season's exclusive hero sits at the top of the premium track, and every theme names one that exists.
+	for index, theme in ipairs(Catalog.SeasonThemes) do
+		check(Catalog.Heroes[theme.hero] ~= nil, "season theme " .. index .. " names a real hero")
+		check(Rules.SeasonReward(Catalog.Season.levels, "premium", index).hero == theme.hero, "premium level 30 of season " .. index .. " pays its hero")
+		check(Rules.SeasonReward(Catalog.Season.levels - 1, "premium", index).hero == nil and Rules.SeasonReward(Catalog.Season.levels, "free", index).hero == nil, "no other level, and never the free track, pays the hero")
+	end
+	check(Rules.SeasonStatus({ id = 1, xp = 0, freeClaimed = 0, premiumClaimed = 0, premium = true }, false).owned, "This season's own purchase opens the premium track")
 	local status = Rules.RewardsStatus(profile, 50 * DAY, 0)
 	check(status.freeChest.ready and status.login.claimable, "A fresh profile has its free chest and login ready")
 	equal(#status.playtime.gifts, #Catalog.Rewards.playtime, "One playtime entry per configured gift")
