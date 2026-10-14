@@ -38,10 +38,16 @@
       "goldBoost": {
         "id": 0
       },
+      "legendaryBundle": {
+        "id": 0
+      },
       "seasonPass": {
         "id": 0
       },
       "starterPack": {
+        "id": 0
+      },
+      "teamBundle": {
         "id": 0
       }
     },

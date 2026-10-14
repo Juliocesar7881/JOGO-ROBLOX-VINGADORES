@@ -491,7 +491,7 @@ local MATCH_ACTIONS = {
 local QUIET_ACTIONS = { CollectCoin = true, Ping = true }
 -- Actions that move gold, so the economy can be read from the funnels instead
 -- of being inferred from balance snapshots.
-local ECONOMY_ACTIONS = { OpenChest = "Chest", UpgradeAbility = "Upgrade", ClaimQuest = "Gameplay" }
+local ECONOMY_ACTIONS = { OpenChest = "Chest", UpgradeAbility = "Upgrade", ClaimQuest = "Gameplay", PickHero = "Shop" }
 local tutorialTower = {}
 
 -- Kept as an explicit rejection for old clients. Only a server-owned

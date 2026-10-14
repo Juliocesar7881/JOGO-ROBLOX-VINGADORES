@@ -91,7 +91,7 @@ local config = {
 	Codes = { TESTE = { gold = 200 }, VELHO = { gold = 1, expires = 1 }, BAU = { gold = 0, chest = "rare" } },
 	Products = {
 		Passes = { collector = { id = 201 }, training = { id = 202 }, season = { id = 203 } },
-		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 }, starterPack = { id = 103 }, goldBoost = { id = 104 }, seasonPass = { id = 105 } },
+		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 }, starterPack = { id = 103 }, goldBoost = { id = 104 }, seasonPass = { id = 105 }, legendaryBundle = { id = 106 }, teamBundle = { id = 107 } },
 		Heroes = { falcon = { id = 301 }, thor = { id = 302 }, ironman = { id = 999 } },
 	},
 }
@@ -1145,6 +1145,36 @@ do
 		check(bought.owned == true and bought.claimablePremium == 2, "The product opens this season's premium track for the levels already reached")
 		check(service:_receipt({ PlayerId = 86, ProductId = 105, PurchaseId = "season-86" }) == "granted" and service:Get(buyer).seasonStatus.owned == true, "A replayed season receipt is inert")
 	end
+	-- Bundles: the receipt pays Gold and credits heroes by rarity; the player then chooses them one by one.
+	-- (Its own closure: the enclosing block is at Luau's local register limit.)
+	;(function()
+		local picker = player(87)
+		service:Load(picker)
+		local _, early = service:Handle(picker, "PickHero", { heroId = "thor" }, true)
+		check(not early, "Without a credit no hero can be picked")
+		local goldBefore = service:Get(picker).gold
+		check(service:_receipt({ PlayerId = 87, ProductId = 106, PurchaseId = "legendary-87" }) == "granted", "The Legendary pack is granted")
+		local after = service:Get(picker)
+		check(after.gold == goldBefore + Catalog.Products.Consumables.legendaryBundle.gold and after.heroPicks.legendary == 1, "The pack pays its Gold and one legendary pick")
+		local _, wrong = service:Handle(picker, "PickHero", { heroId = "hawkeye" }, true)
+		check(not wrong, "A credit only buys a hero of its own rarity")
+		local _, picked, pickData = service:Handle(picker, "PickHero", { heroId = "thor" }, true)
+		pickData = type(pickData) == "table" and pickData.result or {}
+		check(picked and pickData.heroId == "thor" and pickData.left == 0 and service:Get(picker).heroes.thor ~= nil and service:Get(picker).heroPicks.legendary == 0, "The pick grants the chosen legendary and spends the credit")
+		local _, spent = service:Handle(picker, "PickHero", { heroId = "wanda" }, true)
+		check(not spent and service:Get(picker).heroes.wanda == nil, "A spent credit buys nothing more")
+		check(service:_receipt({ PlayerId = 87, ProductId = 107, PurchaseId = "team-87" }) == "granted" and service:Get(picker).heroPicks.rare == 3, "The Team pack credits three rare picks")
+		check(service:_receipt({ PlayerId = 87, ProductId = 107, PurchaseId = "team-87" }) == "granted" and service:Get(picker).heroPicks.rare == 3, "A replayed pack receipt credits nothing more")
+		-- The harness may recolour heroes: take a rare one from the catalog as it stands.
+		local rareIds = {}
+		for id, hero in pairs(Catalog.Heroes) do if hero.rarity == "rare" then table.insert(rareIds, id) end end
+		table.sort(rareIds)
+		local rareId = rareIds[1]
+		local _, dupOk, dup = service:Handle(picker, "PickHero", { heroId = rareId }, true)
+		local _, againOk, again = service:Handle(picker, "PickHero", { heroId = rareId }, true)
+		dup, again = type(dup) == "table" and dup.result or {}, type(again) == "table" and again.result or {}
+		check(dupOk and not dup.duplicate and againOk and again.duplicate and again.gold == Catalog.Heroes[rareId].economy.duplicate.gold and service:Get(picker).heroPicks.rare == 1, "A rare picked twice: the second pays as a duplicate")
+	end)()
 	-- Where paid random items are restricted, the premium chests become Gold.
 	do
 	local careful = player(82)

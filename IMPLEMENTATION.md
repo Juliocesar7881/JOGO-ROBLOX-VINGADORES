@@ -645,7 +645,9 @@ sendo o Ouro **do lobby** guardado pela partida.
 encerra com `results.ended = true`), `ElevatorStart {}` (lobby, só o primeiro
 passageiro), `BuyGuaranteed {itemId}` (lobby, só contas com itens aleatórios
 pagos restritos; preço `Rules.GuaranteedPrice`), `LeaveAfk {}` (lobby, tira o
-jogador da sala AFK).
+jogador da sala AFK), `PickHero {heroId}` (lobby; gasta um crédito de
+`profile.heroPicks[raridade]` pago por um pacote Lendário/Equipe e concede o
+herói escolhido; herói já possuído paga como duplicata).
 
 **FX novo.** `WaveCash {amount}`: bônus de Ouro da partida ao fim da onda.
 `CoinRemove` passa a trazer `value`. `BossArrive {enemyId, final, position}`:

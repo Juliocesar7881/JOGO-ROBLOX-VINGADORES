@@ -299,6 +299,13 @@ local function smallText(parent, text, y, h)
 	return UI.label(parent, text, {Position = UDim2.fromOffset(14, y), Size = UDim2.new(1, -28, 0, h or 40), TextSize = 12, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.None})
 end
 
+-- Bundle heroes still to be chosen (profile.heroPicks, credits by rarity).
+local function heroPicksLeft(p)
+	local total = 0
+	for _, count in pairs(type(p.heroPicks) == "table" and p.heroPicks or {}) do total += math.max(0, math.floor(tonumber(count) or 0)) end
+	return total
+end
+
 local function heading(parent, text, y, tint)
 	return UI.label(parent, text, {Position = UDim2.fromOffset(14, y or 12), Size = UDim2.new(1, -28, 0, 26), TextSize = 17, Font = Enum.Font.BuilderSansExtraBold, TextColor3 = tint or C.text})
 end
@@ -573,7 +580,7 @@ renderContext = function()
 	titles.maps = T("Escolha seu Mapa", "Choose Your Map")
 	titles.bases=T("Minhas Bases","My Bases")
 	titles.chests=Catalog.Chests[kit.selectedChest].kind=="base" and T("Invocar Bases","Summon Bases") or T("Invocar Heróis","Summon Heroes"); titles.premium=T("Loja Robux","Robux Shop")
-	titles.inventory=T("Meus Heróis","My Heroes"); titles.modes=T("Portais","Portals"); titles.rewards=T("Prêmios Diários","Daily Rewards")
+	titles.inventory=T("Meus Heróis","My Heroes"); titles.modes=T("Portais","Portals"); titles.rewards=T("Prêmios Diários","Daily Rewards"); titles.pick=T("Escolha seu Herói","Choose Your Hero")
 	local narrow=size.X<560
 	local ribbonH=narrow and 46 or 56
 	local ribbonW=math.min(slot.w-70,narrow and 300 or 470)
@@ -914,6 +921,9 @@ renderLobby = function()
 					elseif target.chest then routePreview.goShop(target.chest)
 					elseif target.panel then openContext(target.panel,{hud=true}) end
 				end}
+			elseif heroPicksLeft(p)>0 then
+				-- A bundle paid for: its heroes are waiting to be chosen.
+				key,suggestion="pick",{T("Você tem um herói para escolher!","You have a hero to choose!"),function() openContext("pick",{hud=true}) end}
 			elseif canOpenChest() and not firstChest then
 				key,suggestion="chest",{T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."),function() routePreview.goShop() end}
 			elseif tonumber(p.rewards and p.rewards.claimable) and p.rewards.claimable>0 then

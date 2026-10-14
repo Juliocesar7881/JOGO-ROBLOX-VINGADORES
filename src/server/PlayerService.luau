@@ -22,10 +22,10 @@ local FEARLESS_WAVES = 30
 -- Purchase receipts remembered per account; older ones are dropped.
 local RECEIPTS_KEPT = 200
 local SCHEMA_VERSION = 1
-local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack", "boostUntil" }
+local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack", "boostUntil", "heroPicks" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
-local ACTIONS = { BuyGuaranteed = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
+local ACTIONS = { BuyGuaranteed = true, PickHero = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
 	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true, ClaimSeason = true,
 	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
@@ -99,7 +99,7 @@ local function newProfile(now)
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
 		pity = { legendary = 0 },
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
-		codes = {}, starterPack = false, boostUntil = 0, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
+		codes = {}, starterPack = false, boostUntil = 0, heroPicks = {}, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", languageSet = false, lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
 		quests = {}, achievements = {}, best = {},
@@ -359,7 +359,7 @@ function PlayerService.new(config, catalog, onChanged, rules, codes)
 	self.productById, self.heroProductById = {}, {}
 	for _, product in pairs(self.products.Consumables) do
 		-- A consumable pays Gold, or (the boost) buys time; anything else is not sold.
-		local sells = integer(product.gold, 1, 100000000) or integer(product.boostSeconds, 1, 100000000) or product.seasonPass == true
+		local sells = integer(product.gold, 1, 100000000) or integer(product.boostSeconds, 1, 100000000) or product.seasonPass == true or type(product.heroPicks) == "table"
 		if integer(product.id, 1, 9007199254740991) and sells then
 			assert(not self.productById[product.id], "Duplicate developer product ID")
 			self.productById[product.id] = product
@@ -915,6 +915,18 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			profile.gold -= price
 			if isHero then self:_grantHero(profile, itemId, now) else profile.bases[itemId] = true end
 			return true, { itemId = itemId, price = price }
+		elseif action == "PickHero" then
+			-- A bundle's credit: any hero of the paid rarity, the player's choice.
+			-- A hero already owned pays as a duplicate (star, Gold, cards).
+			local hero = type(payload.heroId) == "string" and self.catalog.Heroes[payload.heroId]
+			if not hero then return false, "Herói inválido. / Invalid hero." end
+			local picks = type(profile.heroPicks) == "table" and profile.heroPicks or {}
+			local left = math.floor(tonumber(picks[hero.rarity]) or 0)
+			if left <= 0 then return false, "Você não tem uma escolha de herói desta raridade. / You have no hero pick of this rarity." end
+			picks[hero.rarity] = left - 1
+			profile.heroPicks = picks
+			local duplicate, paid = self:_grantHero(profile, payload.heroId, now, {})
+			return true, { heroId = payload.heroId, rarity = hero.rarity, left = left - 1, duplicate = duplicate, gold = paid and paid.gold or 0 }
 		elseif action == "OpenChest" then
 			if record.randomRestricted then return false, "Baús indisponíveis para esta conta. / Chests unavailable for this account." end
 			local chest = type(payload.chestId) == "string" and self.catalog.Chests[payload.chestId]
@@ -1092,7 +1104,7 @@ function PlayerService:Handle(player, action, payload, inLobby)
 	local snapshot = ok and self:Snapshot(player) or nil
 	-- A chest or an ability upgrade also reports what just happened, so the
 	-- client can play the reveal instead of guessing from a diff.
-	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility" or action == "RankUpHero" or action == "SetHeroPoints" or action == "RedeemCode" or action:sub(1, 5) == "Claim") then snapshot.result = result end
+	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility" or action == "RankUpHero" or action == "SetHeroPoints" or action == "RedeemCode" or action == "PickHero" or action:sub(1, 5) == "Claim") then snapshot.result = result end
 	return true, ok, ok and snapshot or result
 end
 
@@ -1163,6 +1175,13 @@ function PlayerService:_receipt(receipt)
 			profile.gold += product.gold or 0
 			-- The season pass opens the premium track of the season running now.
 			if product.seasonPass then self:_seasonOf(profile).premium = true end
+			-- A bundle's heroes are chosen afterwards (PickHero): credits by rarity.
+			if type(product.heroPicks) == "table" then
+				profile.heroPicks = type(profile.heroPicks) == "table" and profile.heroPicks or {}
+				for rarity, count in pairs(product.heroPicks) do
+					profile.heroPicks[rarity] = math.floor(tonumber(profile.heroPicks[rarity]) or 0) + count
+				end
+			end
 			-- A timed boost stacks onto whatever is left of the current one.
 			if product.boostSeconds then
 				profile.boostUntil = math.max(now, math.floor(tonumber(profile.boostUntil) or 0)) + product.boostSeconds

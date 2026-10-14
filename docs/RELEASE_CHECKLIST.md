@@ -67,6 +67,9 @@ Ela executa o catálogo atual; ID preenchido não comprova venda nem entrega.
   `docs/director/ROBUX_CATALOG.md`) e gravar o ID em
   `Config.Products.Consumables.seasonPass`; opcional: tirar o game pass
   Temporada de venda (quem já tem continua com todas as temporadas).
+- [ ] Criar os Developer Products **Pacote Lendário** (99 Robux) e **Pacote
+  Equipe** (49 Robux), ver `docs/director/ROBUX_CATALOG.md`, e gravar os IDs em
+  `Config.Products.Consumables.legendaryBundle` / `.teamBundle`.
 - [ ] Compra real de cada passe/produto em conta de teste: entrega única,
   saldo, cancelamento, saída/reentrada e recibo repetido. Pacote Inicial:
   segunda compra concede apenas a compensação de Ouro.

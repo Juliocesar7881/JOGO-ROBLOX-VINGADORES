@@ -1042,6 +1042,13 @@ Catalog.Products = {
 		-- the clock (profile.boostUntil) and applies it; the client only shows it.
 		goldBoost = { id = 0, price = 29, boostSeconds = 3600, boostScale = 2, name = text("Ouro em dobro • 1 hora", "Double Gold • 1 hour"),
 			description = text("Por uma hora, cada onda e cada vitória pagam o dobro de Ouro. Comprar de novo soma mais uma hora.", "For one hour every wave and victory pays double Gold. Buying again adds another hour.") },
+		-- Bundles: the Gold lands at once, the heroes are chosen afterwards. The
+		-- receipt credits profile.heroPicks[rarity]; PickHero spends one credit
+		-- on any hero of that rarity (one already owned pays like a duplicate).
+		legendaryBundle = { id = 0, price = 99, gold = 12000, heroPicks = { legendary = 1 }, name = text("Pacote Lendário", "Legendary Pack"),
+			description = text("Um herói lendário à sua escolha + 12.000 de Ouro.", "One legendary hero of your choice + 12,000 Gold.") },
+		teamBundle = { id = 0, price = 49, heroPicks = { rare = 3 }, name = text("Pacote Equipe", "Team Pack"),
+			description = text("Três heróis raros à sua escolha.", "Three rare heroes of your choice.") },
 	},
 	-- One product per purchasable hero, priced by rarity. The two starter
 	-- heroes are free and never sold.

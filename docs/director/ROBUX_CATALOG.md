@@ -24,6 +24,15 @@ temporada para quem já comprou; pode ser retirado de venda no Creator Hub
 quando o produto existir. O herói de cada temporada está em
 `Catalog.SeasonThemes[i].hero` (nível 30 da trilha premium, cópia brilhante).
 
+**Produtos novos a cadastrar (14/10/2026):** `legendaryBundle` — "Pacote
+Lendário", Developer Product, **99 Robux**, descrição "Um herói lendário à sua
+escolha + 12.000 de Ouro."; `teamBundle` — "Pacote Equipe", Developer Product,
+**49 Robux**, descrição "Três heróis raros à sua escolha." IDs em
+`Config.Products.Consumables.legendaryBundle` / `.teamBundle`. O recibo paga o
+Ouro e credita escolhas por raridade (`profile.heroPicks`); o jogador escolhe
+no painel "Escolha seu Herói" (ação `PickHero`), herói já possuído vira
+estrela e Ouro como duplicata.
+
 Registro vigente e evidências: [CONFIGURACAO_COMERCIAL_2026-10-12.md](../CONFIGURACAO_COMERCIAL_2026-10-12.md).
 Exportação completa: `assets/store/release-2026-10-12/catalog.json`.
 Metadados salvos não comprovam compra real. Nenhum contrato foi aceito ou taxa

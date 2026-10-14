@@ -553,8 +553,64 @@ function Panels.new(ctx)
 		if not ready and info~="retry" or ready and info.preview then UI.disabled(buy) end
 	end
 
+	-- How many bundle heroes are still to be chosen (profile.heroPicks, by rarity).
+	local function heroPicksLeft()
+		local total=0
+		for _,count in pairs(type(profile().heroPicks)=="table" and profile().heroPicks or {}) do total+=math.max(0,math.floor(tonumber(count) or 0)) end
+		return total
+	end
+
+	-- A bundle's heroes, chosen here: one credit per hero of the paid rarity.
+	-- The server spends the credit; a hero already owned pays like a duplicate.
+	local function contextPick(body)
+		local p=profile()
+		local picks=type(p.heroPicks)=="table" and p.heroPicks or {}
+		local any=false
+		for _,rarity in ipairs(Catalog.RarityOrder) do
+			local left=math.floor(tonumber(picks[rarity]) or 0)
+			if left<=0 then continue end
+			any=true
+			local def=Catalog.Rarities[rarity]
+			local tint=UI.color(def.color)
+			local head=UI.row(body,34)
+			UI.fit(UI.label(head,(left==1 and T("Escolha 1 herói ","Choose 1 ") or T("Escolha "..left.." heróis ","Choose "..left.." "))..Catalog.Upper(L(def.name)),{Name="PickHeading_"..rarity,Size=UDim2.new(1,0,1,0),Font=UI.Fonts.display,TextSize=22,TextColor3=tint}),12)
+			local ids={}
+			for id,hero in pairs(Catalog.Heroes) do if hero.rarity==rarity then table.insert(ids,id) end end
+			-- Heroes you do not own come first; owned ones say what a duplicate pays.
+			table.sort(ids,function(a,b)
+				local oa,ob=(p.heroes or {})[a]~=nil,(p.heroes or {})[b]~=nil
+				if oa~=ob then return not oa end
+				return L(Catalog.Heroes[a].name)<L(Catalog.Heroes[b].name)
+			end)
+			for _,id in ipairs(ids) do
+				local hero=Catalog.Heroes[id]
+				local mine=(p.heroes or {})[id]~=nil
+				local row=UI.roundFrame(body,{Name="PickRow_"..id,Size=UDim2.new(1,-6,0,84),BackgroundColor3=UI.Skin.slot},tint)
+				UI.hover(row,function(box) heroTooltip(box,id) end,330)
+				heroPortrait(row,id,{Position=UDim2.fromOffset(8,6),Size=UDim2.fromOffset(72,72)})
+				UI.fit(UI.label(row,L(hero.name),{Position=UDim2.fromOffset(92,10),Size=UDim2.new(1,-260,0,28),Font=UI.Fonts.display,TextSize=20}),12)
+				local line=mine and (T("Já é seu: vira estrela e ","Already yours: a star and ")..number(def.duplicate.gold)..T(" Ouro"," Gold")) or (T("Dano ","Damage ")..tostring(hero.damage).."  •  "..T("Alcance ","Range ")..tostring(hero.range))
+				UI.fit(UI.label(row,line,{Position=UDim2.fromOffset(92,42),Size=UDim2.new(1,-260,0,24),TextSize=14,TextColor3=C.muted}),10)
+				UI.button(row,T("Escolher","Choose"),function()
+					act("PickHero",{heroId=id},function(data)
+						local result=type(data)=="table" and data.result
+						showToast(L(hero.name)..((type(result)=="table" and result.duplicate) and T(" virou estrela e Ouro."," became a star and Gold.") or T(" entrou para a sua coleção!"," joined your collection!")))
+						renderContext()
+					end)
+				end,{Name="Pick_"..id,AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-10,0.5,0),Size=UDim2.fromOffset(150,50),BackgroundColor3=mine and C.card or C.green,TextSize=18})
+			end
+		end
+		if not any then
+			UI.label(body,T("Nenhuma escolha pendente. Os pacotes Lendário e Equipe dão heróis à sua escolha.","No pick pending. The Legendary and Team packs give heroes of your choice."),{Size=UDim2.new(1,-6,0,60),TextWrapped=true,TextSize=16,TextColor3=C.muted})
+			UI.button(body,T("Ver pacotes","See packs"),function() openContext("premium",{shopKind="product"}) end,{Name="PickToShop",Size=UDim2.new(1,-6,0,48),BackgroundColor3=C.gold,TextSize=17})
+		end
+	end
+
 	local function contextPremium(body)
 	 starterOffer(body)
+	 -- Heroes bought but not yet chosen: the way to them stays on top of the shop.
+	 local picksLeft=heroPicksLeft()
+	 if picksLeft>0 then UI.button(body,picksLeft==1 and T("Você tem 1 herói para escolher","You have 1 hero to choose") or T("Você tem "..picksLeft.." heróis para escolher","You have "..picksLeft.." heroes to choose"),function() openContext("pick",{}) end,{Name="PickHeroes",Size=UDim2.new(1,-6,0,48),BackgroundColor3=C.green,TextSize=18}) end
 	 categoryTabs(body,"PremiumTabs",{{id="hero",label=T("Heróis","Heroes"),icon="hero",color=C.coral},{id="pass",label=T("Passes","Passes"),icon="star",color=C.blue},{id="product",label=T("Ouro","Gold"),icon="coin",color=C.gold}},premiumCategory,function(id) premiumCategory=id; renderContext() end)
 		for _,group in ipairs({{kind="hero",items=Catalog.Products.Heroes},{kind="pass",items=Catalog.Products.Passes},{kind="product",items=Catalog.Products.Consumables}}) do
 			if group.kind~=premiumCategory then continue end
@@ -576,7 +632,7 @@ function Panels.new(ctx)
 				for key,def in pairs(group.items) do
 					local quote=productInfo["product:"..key]
 					local price=type(quote)=="table" and quote.price
-					if def.gold and key~="starterPack" and price and price>0 then
+					if def.gold and not def.heroPicks and key~="starterPack" and price and price>0 then
 						local ratio=def.gold/price
 						if not bestRatio or ratio>bestRatio then bestGold,bestRatio=key,ratio end
 					end
@@ -603,7 +659,7 @@ function Panels.new(ctx)
 				if group.kind=="hero" then heroPortrait(row,key,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(artW,rowH-16)})
 				else UI.illustration(art,group.kind=="pass" and "star" or "coin",C.gold,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(slim and 48 or 64,slim and 48 or 64)}) end
 				if group.kind=="hero" then UI.chip(row,Catalog.Upper(L(Catalog.Rarities[Catalog.Heroes[key].rarity].name)),tint,{Position=UDim2.fromOffset(left,topY),Size=UDim2.fromOffset(96,20),TextSize=12}) end
-				local isGold=group.kind=="product" and def.gold~=nil and def.boostSeconds==nil
+				local isGold=group.kind=="product" and def.gold~=nil and def.boostSeconds==nil and def.heroPicks==nil
 				local goldHeadingBottom=0
 				if isGold then
 					local badge=key==bestGold and {T("Melhor valor","Best value"),C.green} or def.popular and {T("Sugestão","Recommended"),C.coral} or nil
@@ -1720,7 +1776,7 @@ function Panels.new(ctx)
 		bases=contextBases,
 		modes=contextModes,
 		talents = contextTalents,
-		hero = contextHero, chests = contextChests, premium = contextPremium, inventory = contextSquad, shop = contextShop,
+		hero = contextHero, chests = contextChests, premium = contextPremium, pick = contextPick, inventory = contextSquad, shop = contextShop,
 		quests = contextQuests, leaderboard = contextLeaderboard, squad = contextSquad, settings = contextSettings,
 		rewards = contextRewards,
 	}

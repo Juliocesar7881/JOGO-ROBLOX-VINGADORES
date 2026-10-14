@@ -949,6 +949,25 @@ local function session(screen)
 		check(strip == nil or string.find(strip.Text, "Pacote Inicial", 1, true) == nil, tag .. ": once the offer window closes, the strip lets it go")
 		push(lobbySnapshot(veteranProfile()))
 	end)
+	step("a bundle's hero is chosen in its own panel", function()
+		local picker = veteranProfile({ gold = 0 })
+		picker.heroPicks = { legendary = 1 }
+		picker.rewards = rewardsFixture("empty")
+		picker.talentPoints = 0
+		push(lobbySnapshot(picker))
+		local strip = named(gui, "GuideTip")
+		check(strip ~= nil and string.find(strip.Text, "escolher", 1, true) ~= nil, tag .. ": the lobby strip points at the pending hero pick, got " .. tostring(strip and strip.Text))
+		fx({ kind = "OpenPanel", panel = "premium" })
+		check(named(gui, "PickHeroes") ~= nil, tag .. ": the Robux shop keeps the way to the pending picks on top")
+		if contextOpen() then click("X") end
+		fx({ kind = "OpenPanel", panel = "pick" })
+		check(contextOpen() and named(gui, "PickHeading_legendary") ~= nil and named(gui, "Pick_thor") ~= nil, tag .. ": the pick panel lists the legendary heroes")
+		check(named(gui, "Pick_hawkeye") == nil, tag .. ": a common hero is not offered for a legendary pick")
+		clickNamed("Pick_thor")
+		check(actions[#actions] == "PickHero", tag .. ": choosing sends PickHero; the server grants")
+		if contextOpen() then click("X") end
+		push(lobbySnapshot(veteranProfile()))
+	end)
 	local openings = {
 		{ panel = "quests" }, { panel = "leaderboard" },
 		{ panel = "shop", shopKind = "pass", shopKey = "vip" }, { panel = "shop", shopKind = "pass", shopKey = "collector" },
