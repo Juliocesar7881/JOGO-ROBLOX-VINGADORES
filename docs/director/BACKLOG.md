@@ -347,3 +347,12 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [ ] M36.4 Direção de arte futura: diferenciar silhuetas individuais além da estrutura compartilhada (roster-02/09.png); ajustar truncamento preexistente do detalhe de poder no celular vertical (hero-scrolled-vertical-en.png). Evidências na galeria M36; não são regressões de navegação.
 - [x] M36.5 Estátuas usam os próprios heróis da partida em escala 2, com peças fixas e acessórios reais; modelos exclusivos e marcadores invisíveis removidos. Regressões de figurino/escala e capturas nativas, relatório CORRECAO_ESTATUAS_2026-10-14.md.
 - [x] M36.6 Encaixes dos figurinos fundadores: peito/elmo/escudo do Capitão, cintura e contornos dos membros dos dois heróis; construtor compartilhado preserva o mesmo modelo de partida e estátua, sem peças adicionais. Regressões geométricas e galeria Estatuas_Ajustadas_2026-10-14.
+
+## M37 — Plano final de lançamento, 14/10 (ver `docs/PLANO_LANCAMENTO.md`)
+
+- [ ] M37.0 Fase 0: velocidade de inimigo (Pesadelo/Corrida) aplicada; bônus de recompensa por modo/dificuldade por onda; conquista "Destemido" alcançável; teto de progressão com estrelas e cartas; baú da temporada premium vira Ouro em região restrita; poda de `_receipts`.
+- [ ] M37.1 Fase 1: `tools/release.py` nunca sobrescreve ID real com 0; lugares separados publicados pelo dono; teleporte com 1 e 4 jogadores.
+- [ ] M37.2 Fase 2: funil de compra no Analytics; Pacote Inicial com contador; pacotes (Lendário/Equipe); passe por temporada com herói exclusivo; VIP com baú a cada 3 h; boost 2x Ouro; atalho "Comprar Ouro" no baú.
+- [ ] M37.3 Fase 3: troca segura entre amigos; loja rotativa diária; evento de fim de semana; login de 28 dias; skins por maestria; presente entre amigos; modo rápido; códigos; comemoração de vitória.
+- [ ] M37.4 Fase 4: rostos por imagem; skybox próprio; materiais pintados; partículas próprias; lobby com marcos; peso de combate; silhuetas de chefes.
+- [!] M37.5 Fase 5 (dono): identidade/2FA; decisão de marca; lugares publicados; trilha de batalha; produtos novos e ícones; compras de teste; aparelho real; 4 jogadores; D1/D7.
