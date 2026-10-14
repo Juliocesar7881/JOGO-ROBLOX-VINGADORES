@@ -161,7 +161,9 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 	-- Party size and the map of the day each add to every commander's Gold and XP.
 	self.partyBonus = self.rules.PartyBonus(#members)
 	self.featuredBonus = self.config.DailyFeature == false and 1 or self.rules.FeaturedBonus(mapId, modeId, math.floor(os.time() / 86400))
-	self.rewardBonus = self.partyBonus * self.featuredBonus
+	-- A harder difficulty pays its Gold and XP over on every wave as well.
+	self.difficultyBonus = (self.catalog.Difficulties[self.difficultyId] or {rewardMultiplier=1}).rewardMultiplier or 1
+	self.rewardBonus = self.partyBonus * self.featuredBonus * self.difficultyBonus
 	self.maxBaseHP, self.recovery, self.baseWasDamaged = self.config.BaseHP, 0, false
 	self.lastStandHeal, self.lastStandUsed = 0, false
 	for _, member in ipairs(members) do
@@ -336,7 +338,7 @@ function Match:_spawn(spec)
 	local hp = def.hp * (spec.hpMultiplier or 1)
 	local routeIndex = self.routeCache[spec.pathIndex or 1] and (spec.pathIndex or 1) or 1
 	local final = def.boss and not spec.rewardless and self.rules.IsFinalWave(self.modeId, self.wave, self.mapId)
-	local enemy = {id=id,def=def,enemyId=spec.enemyId,hp=hp,maxHP=hp,progress=spec.progress or 0,
+	local enemy = {id=id,def=def,enemyId=spec.enemyId,hp=hp,maxHP=hp,progress=spec.progress or 0,speedMultiplier=spec.speedMultiplier or 1,
 		routeIndex=routeIndex,cash=spec.rewardless and 0 or (spec.cash or self.rules.KillCash(spec.enemyId)),rewardless=spec.rewardless,
 		position=self:_pathPosition(routeIndex,spec.progress or 0),slow=0,slowUntil=0,revealUntil=0,
 		mark=0,markUntil=0,armorBreak=0,armorUntil=0,nextPower=self.elapsed+(def.shock and def.shock.first or 10),summons=0,
@@ -956,7 +958,8 @@ function Match:_enemiesStep(dt)
 				end
 			end
 			if enemy.stunUntil > self.elapsed then enemy.speedNow = 0 continue end
-			local speed=enemy.def.speed
+			-- A Nightmare run and a Rush wave really are faster (Waves sets it).
+			local speed=enemy.def.speed*(enemy.speedMultiplier or 1)
 			if enemy.slowUntil>self.elapsed then speed*=1-enemy.slow else enemy.slow=0 end
 			if enemy.frenzyUntil and enemy.frenzyUntil>self.elapsed then speed*=1.2 end
 			for _,support in pairs(self.enemies) do
@@ -1075,25 +1078,24 @@ function Match:Finish(victory, ended)
 	self.world:ApplyLobbyLighting()
 	for _,p in pairs(self.participants) do
 		if not p.returned then
-			-- A harder campaign difficulty pays its victory Gold and XP over.
-			local paid=(self.catalog.Difficulties[self.difficultyId] or {rewardMultiplier=1}).rewardMultiplier
+			-- rewardBonus already carries party, map of the day and difficulty.
 			local party=self.rewardBonus
 			local bonus=0
 			if victory and p.contributed and not p.disconnectedAt then
-				bonus=math.floor(self.rules.VictoryGold(self.modeId,self.mapId) * (1+talent(p,"victoryGold")*0.02) * paid * party)
+				bonus=math.floor(self.rules.VictoryGold(self.modeId,self.mapId) * (1+talent(p,"victoryGold")*0.02) * party)
 			end
 			self:_checkpoint(p,"remaining",false)
 			if not p.disconnectedAt then
-				table.insert(self.rewardQueue,{player=p.player,id=self.runId..":final",reward={gold=bonus,xp=victory and math.floor(150*paid*party) or 0,difficultyId=self.difficultyId,
+				table.insert(self.rewardQueue,{player=p.player,id=self.runId..":final",reward={gold=bonus,xp=victory and math.floor(150*party) or 0,difficultyId=self.difficultyId,
 					mapId=self.mapId,modeId=self.modeId,victory=victory and p.contributed,tutorial=self.modeId=="tutorial",finished=true,
-					noDamage=not self.baseWasDamaged,mastery={},waves=0}})
+					noDamage=not self.baseWasDamaged,mastery={},waves=0,wavesReached=p.contributed and self.completedWaves or 0}})
 			end
 			p.goldEarned+=bonus
 			if victory and p.contributed then
 				if self.modeId=="tutorial" and not p.profile.tutorialComplete then p.goldEarned+=self.catalog.Chests.rare.cost
 				elseif self.modeId=="normal" and not ((p.profile.campaign[self.mapId] or {}).normal) then p.goldEarned+=500 end
 			end
-			p.xpEarned+=victory and 150*paid*party*(p.profile.passes and p.profile.passes.training and 1.25 or 1) or 0
+			p.xpEarned+=victory and 150*party*(p.profile.passes and p.profile.passes.training and 1.25 or 1) or 0
 			p.results={victory=victory,ended=ended==true,waves=self.completedWaves,gold=math.floor(p.goldEarned),xp=math.floor(p.xpEarned),
 				mapId=self.mapId,modeId=self.modeId,difficultyId=self.difficultyId,mastery=p.masteryEarned,startLevel=p.startLevel,cards=table.clone(p.cards),party=self.partyBonus,featured=self.featuredBonus}
 			p.coins={}

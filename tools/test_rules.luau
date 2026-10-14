@@ -207,6 +207,17 @@ approx(starred.damageBonus, 3 * Catalog.Stars.damage, "Three stars are +9% damag
 local allStars = Rules.PermanentModifiers({ heroes = { ironman = { xp = 1e9, stars = 99 } }, talents = { towerPower = 500 } }, "ironman")
 approx(allStars.damageBonus, 0.15 + Catalog.Stars.max * Catalog.Stars.damage, "Stars are clamped to the maximum and add to the capped mastery bonus")
 approx(Rules.PermanentModifiers({ heroes = { ironman = { xp = 0, stars = -4 } }, talents = {} }, "ironman").damageBonus, 0, "A negative star count is no bonus")
+-- Hero cards: the ladder has no top, the stats it adds do.
+local carded = Rules.CardBonus(1000, { damage = 400, speed = 300, range = 299 })
+approx(carded.damage, Catalog.HeroCards.cap.damage, "A thousand card ranks stop at the damage cap")
+approx(carded.speed, Catalog.HeroCards.cap.speed, "A thousand card ranks stop at the speed cap")
+approx(carded.range, Catalog.HeroCards.cap.range, "A thousand card ranks stop at the range cap")
+check(Rules.CardBonus(2, nil).damage < Catalog.HeroCards.cap.damage, "An early rank is still under the cap")
+approx(Rules.PermanentModifiers({ heroes = { ironman = { xp = 1e9, stars = 99, rank = 1000 } }, talents = { towerPower = 500 } }, "ironman").damageBonus,
+	0.15 + Catalog.Stars.max * Catalog.Stars.damage + Catalog.HeroCards.cap.damage, "Every permanent source has a ceiling, and they add up to a known number")
+equal(Rules.RunGold("normal", "manhattan", 40, true, "hard"), 2400, "Hard pays its 40-wave victory over: 1,600 x 1.5")
+equal(Rules.RunGold("normal", "manhattan", 40, true, "nightmare"), 3200, "Nightmare pays double")
+equal(Rules.RunGold("normal", "manhattan", 40, true, "normal"), 1600, "Normal pays the base")
 local stats = Rules.TowerStats("ironman", 1, nil, { damageBonus = 0.2, rangeBonus = 0.1, attackSpeedBonus = 0.25 })
 approx(stats.damage, Catalog.Heroes.ironman.damage * 1.2, "Fractional damage modifier")
 approx(stats.range, Catalog.Heroes.ironman.range * 1.1, "Fractional range modifier")

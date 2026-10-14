@@ -343,6 +343,23 @@ check(service:_receipt({ PlayerId = 1, ProductId = 101, PurchaseId = "purchase-2
 check(service:Get(p1).gold == goldBeforeReceipts + 2000, "Pending receipt grants later exactly once")
 check(service:_receipt({ PlayerId = 1, ProductId = 9999, PurchaseId = "unknown-product" }) == "pending", "Unknown products remain pending")
 check(service:_receipt({ PlayerId = 9999, ProductId = 101, PurchaseId = "offline" }) == "pending", "Offline receipts remain pending")
+-- The receipt ledger is bounded: the newest two hundred stay, the oldest go.
+do
+	local shopper = player(84)
+	service:Load(shopper)
+	local shopperGold = service:Get(shopper).gold
+	for index = 1, 230 do
+		clockOffset += 1
+		check(service:_receipt({ PlayerId = 84, ProductId = 101, PurchaseId = "bulk-" .. index }) == "granted", "bulk receipt " .. index)
+	end
+	local ledger = 0
+	for _ in pairs(stores.Tests.values.p_84._receipts) do ledger += 1 end
+	check(ledger == 200, "The ledger keeps exactly 200 receipts, got " .. ledger)
+	check(stores.Tests.values.p_84._receipts["bulk-230"] ~= nil and stores.Tests.values.p_84._receipts["bulk-1"] == nil, "The newest receipt stays, the oldest is gone")
+	check(service:_receipt({ PlayerId = 84, ProductId = 101, PurchaseId = "bulk-230" }) == "granted" and service:Get(shopper).gold == shopperGold + 230 * 1000, "A retried recent receipt is still recognised and pays nothing twice")
+	-- The clock went forward one second per receipt (so each has its own time): put it back for the leases below.
+	clockOffset -= 230
+end
 local _, productOK, productInfo = service:Handle(p1, "ProductInfo", { kind = "product", key = "gold1000" }, true)
 check(productOK and productInfo.price == 87 and productInfo.id == 101, "Actual platform price used")
 local _, unconfigured = service:Handle(p1, "ProductInfo", { kind = "product", key = "gold12000" }, true)
@@ -462,8 +479,11 @@ check(service:Get(p1).gold == goldBefore + 800 and service:Get(p1).campaign.manh
 check(service:Get(p1).achievements["medal:manhattan"] ~= nil, "No damage medal")
 service:Award(p1, "normal-repeat", { gold = 300, victory = true, finished = true, modeId = "normal", mapId = "manhattan" })
 check(service:Get(p1).gold == goldBefore + 1100, "First clear bonus cannot repeat")
-service:Award(p1, "ranked-first", { gold = 450, victory = true, finished = true, modeId = "ranked", mapId = "gamma" })
-check(service:Get(p1).campaign.gamma.ranked == true and service:Get(p1).achievements.hardWin ~= nil, "A legacy ranked clear is still recorded")
+service:Award(p1, "ranked-short", { gold = 450, victory = false, finished = true, modeId = "ranked", mapId = "gamma", wavesReached = 12 })
+check(service:Get(p1).campaign.gamma == nil or service:Get(p1).campaign.gamma.ranked ~= true, "Twelve competitive waves are no feat yet")
+check(service:Get(p1).achievements.hardWin == nil, "Fearless waits for thirty waves")
+service:Award(p1, "ranked-first", { gold = 450, victory = false, finished = true, modeId = "ranked", mapId = "gamma", wavesReached = 30 })
+check(service:Get(p1).campaign.gamma.ranked == true and service:Get(p1).achievements.hardWin ~= nil, "Thirty competitive waves held earn Fearless (a competitive run never wins)")
 service:Award(p1, "cards-first", { gold = 300, victory = true, finished = true, modeId = "cards", mapId = "hydra" })
 check(service:Get(p1).campaign.hydra.cards == true and service:Get(p1).achievements.cardsWin ~= nil, "A card-mode clear is recorded")
 check(Rules.ModeUnlocked(service:Get(p1), "ranked") and Rules.ModeUnlocked(service:Get(p1), "cards"), "The profile's own record opens the later modes")
@@ -1073,6 +1093,26 @@ do
 	local top = snap5.result
 	check(ok5 and top.level == Catalog.Season.levels and #top.chests == 9, "Levels 3-30 open three free and six premium chests: " .. tostring(top and #top.chests))
 	check(#top.titles == 1 and service:Get(climber).titles.seasonPremium ~= nil, "The season champion title is unlocked")
+	-- Where paid random items are restricted, the premium chests become Gold.
+	do
+	local careful = player(82)
+	service:Load(careful)
+	passOwners["82:203"] = true
+	service:_refreshPasses(careful)
+	service.records[careful.UserId].randomRestricted = true
+	check(service:Award(careful, "season:xp82", { xp = 100 }), "the restricted account joins the current season")
+	stores.Tests.values.p_82.season.xp = Rules.SeasonThreshold(Catalog.Season.levels)
+	local carefulGold = service:Get(careful).gold
+	local _, okR, snapR = service:Handle(careful, "ClaimSeason", {}, true)
+	local restrictedTop = snapR.result
+	local chestWorth = 0
+	for level = 1, Catalog.Season.levels do
+		local premium = Rules.SeasonReward(level, "premium")
+		if premium.chest then chestWorth += Catalog.Chests[premium.chest].cost end
+	end
+	check(okR and #restrictedTop.chests == 3, "A restricted account opens only the free track's chests: " .. tostring(restrictedTop and #restrictedTop.chests))
+	check(service:Get(careful).gold - carefulGold == restrictedTop.gold and restrictedTop.gold >= chestWorth + Rules.SeasonReward(1, "premium").gold, "The premium chests are paid as the Gold they would cost")
+	end
 	check(service:Get(climber).seasonStatus.claimable == 0, "The finished season has nothing left to claim")
 	-- A new season starts from zero.
 	local newSeasonId = service:_season()

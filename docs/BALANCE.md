@@ -184,3 +184,29 @@ vida; o amigo que convidou, se estiver no mesmo servidor, ganha **300 Ouro**, at
 **5 vezes por dia UTC**. Referência: o baú de Suprimentos custa 400 e o grupo paga
 750 uma vez. O teto diário limita contas descartáveis; se a medição mostrar abuso,
 baixar `inviterDailyCap` ou exigir uma partida concluída antes de pagar o amigo.
+
+## Fase 0 do plano de lançamento (14/10/2026)
+
+Quatro regras que o jogo prometia e não cumpria, corrigidas sem mudar números
+do `Catalog`:
+
+- **Velocidade:** `Waves.Generate` já calculava o multiplicador (Pesadelo 1,1×,
+  mutação Corrida 1,3×), mas o `MatchService` ignorava. Agora o inimigo guarda
+  `speedMultiplier` ao nascer e anda com ele.
+- **Dificuldade paga por onda:** o `rewardMultiplier` de Difícil (1,5×) e
+  Pesadelo (2×) entra no `rewardBonus` da partida, então vale no Ouro e no XP
+  de cada onda, e não só no bônus de vitória. O total de uma vitória continua o
+  mesmo de antes (o bônus já era multiplicado). `Rules.RunGold` aceita a
+  dificuldade como quinto argumento, e o cartão da fila mostra esse valor.
+- **"Sem medo do perigo":** o competitivo nunca "vence", então a conquista era
+  impossível. Agora é dada ao segurar 30 ondas numa corrida competitiva
+  (`FEARLESS_WAVES` no `PlayerService`).
+- **Teto das cartas de herói:** o posto da carta continua sem fim (sempre há o
+  que gastar), mas o bônus para em +40% de dano, +20% de velocidade e +15% de
+  alcance (`Catalog.HeroCards.cap`). Com maestria/talentos (15%) e estrelas
+  (15%), o máximo permanente de dano de um herói é +70%, um número conhecido
+  que o balanço das ondas tardias e o placar competitivo podem assumir.
+
+Também: a trilha premium da temporada paga o valor do baú em Ouro para contas
+em região com itens aleatórios pagos restritos, e a lista de recibos guarda só
+os 200 mais recentes.

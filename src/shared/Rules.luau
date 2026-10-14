@@ -364,10 +364,12 @@ function Rules.VictoryGold(modeId, mapId)
 end
 
 -- The whole lobby Gold of a run that stopped after `waves` completed waves.
-function Rules.RunGold(modeId, mapId, waves, victory)
+function Rules.RunGold(modeId, mapId, waves, victory, difficultyId)
 	local total = 0
 	for wave = 1, math.max(0, math.floor(number(waves, 0))) do total += Rules.WaveGold(modeId, wave) end
 	if victory then total += Rules.VictoryGold(modeId, mapId) end
+	local difficulty = difficultyId and Catalog.Difficulties[difficultyId]
+	if difficulty and difficulty.rewardMultiplier then total = math.floor(total * difficulty.rewardMultiplier) end
 	return total
 end
 
@@ -431,7 +433,7 @@ function Rules.CardBonus(rank, alloc)
 	local steps = math.max(1, math.floor(number(rank, 1))) - 1
 	local clean = Rules.CleanPoints(rank, alloc) or { damage = 0, speed = 0, range = 0 }
 	local result = {}
-	for _, key in ipairs(cards.stats) do result[key] = steps * cards.base[key] + clean[key] * cards.point[key] end
+	for _, key in ipairs(cards.stats) do result[key] = math.min(cards.cap[key], steps * cards.base[key] + clean[key] * cards.point[key]) end
 	return result
 end
 

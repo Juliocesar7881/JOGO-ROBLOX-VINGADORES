@@ -350,7 +350,7 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 
 ## M37 — Plano final de lançamento, 14/10 (ver `docs/PLANO_LANCAMENTO.md`)
 
-- [ ] M37.0 Fase 0: velocidade de inimigo (Pesadelo/Corrida) aplicada; bônus de recompensa por modo/dificuldade por onda; conquista "Destemido" alcançável; teto de progressão com estrelas e cartas; baú da temporada premium vira Ouro em região restrita; poda de `_receipts`.
+- [x] M37.0 (14/10: `speedMultiplier` guardado no inimigo e aplicado no movimento; `rewardBonus` inclui a dificuldade, vitória não conta duas vezes; `RunGold` aceita dificuldade e o cartão da fila mostra; "Sem medo do perigo" por 30 ondas competitivas (`wavesReached` no prêmio final); `Catalog.HeroCards.cap`; baú premium vira Ouro em região restrita; `_receipts` limitado a 200; testes em test_rules, player_service e simulação; trilha de batalha continua com o dono) Fase 0: velocidade de inimigo (Pesadelo/Corrida) aplicada; bônus de recompensa por modo/dificuldade por onda; conquista "Destemido" alcançável; teto de progressão com estrelas e cartas; baú da temporada premium vira Ouro em região restrita; poda de `_receipts`.
 - [ ] M37.1 Fase 1: `tools/release.py` nunca sobrescreve ID real com 0; lugares separados publicados pelo dono; teleporte com 1 e 4 jogadores.
 - [ ] M37.2 Fase 2: funil de compra no Analytics; Pacote Inicial com contador; pacotes (Lendário/Equipe); passe por temporada com herói exclusivo; VIP com baú a cada 3 h; boost 2x Ouro; atalho "Comprar Ouro" no baú.
 - [ ] M37.3 Fase 3: troca segura entre amigos; loja rotativa diária; evento de fim de semana; login de 28 dias; skins por maestria; presente entre amigos; modo rápido; códigos; comemoração de vitória.

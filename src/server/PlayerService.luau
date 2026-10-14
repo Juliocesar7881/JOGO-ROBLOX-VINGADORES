@@ -17,6 +17,10 @@ local function talentSpent(profile)
 end
 
 local DAY = 86400
+-- Competitive waves held in one run for the "Fearless" achievement.
+local FEARLESS_WAVES = 30
+-- Purchase receipts remembered per account; older ones are dropped.
+local RECEIPTS_KEPT = 200
 local SCHEMA_VERSION = 1
 local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
@@ -966,7 +970,13 @@ function PlayerService:Handle(player, action, payload, inLobby)
 					achievement(profile, reward.title.id, reward.title.pt, reward.title.en, now, "title")
 					table.insert(total.titles, copy(reward.title))
 				end
-				if reward.chest then
+				if reward.chest and track == "premium" and current.randomRestricted then
+					-- The premium track is paid for: where paid random items are
+					-- restricted, the chest becomes the Gold it would have cost.
+					local worth = (self.catalog.Chests[reward.chest] or {}).cost or 0
+					profile.gold += worth
+					total.gold += worth
+				elseif reward.chest then
 					-- One roll set per chest, all derived from the pre-drawn rolls so that a
 					-- replayed transaction opens the same chests.
 					salt += 1
@@ -1104,6 +1114,14 @@ function PlayerService:_receipt(receipt)
 			end
 		end
 		profile._receipts[purchaseId] = { productId = receipt.ProductId, at = now }
+		-- The ledger only has to recognise a retried receipt, which Roblox sends
+		-- within days: keep the newest entries and let the oldest go.
+		local kept = {}
+		for id, entry in pairs(profile._receipts) do table.insert(kept, { id = id, at = tonumber(entry.at) or 0 }) end
+		if #kept > RECEIPTS_KEPT then
+			table.sort(kept, function(a, b) return a.at > b.at end)
+			for index = RECEIPTS_KEPT + 1, #kept do profile._receipts[kept[index].id] = nil end
+		end
 		return true
 	end, "receipt:" .. purchaseId .. ":" .. tostring(receipt.ProductId))
 	return ok and Enum.ProductPurchaseDecision.PurchaseGranted or pending
@@ -1137,7 +1155,8 @@ function PlayerService:Award(player, awardId, reward)
 			-- A Hard or Nightmare win opens the next difficulty on this map.
 			local difficulty = self.catalog.Difficulties[reward.difficultyId or "normal"]
 			profile.campaign[reward.mapId][difficulty.winKey] = true
-		elseif won and reward.modeId == "ranked" and reward.mapId then
+		elseif reward.modeId == "ranked" and reward.mapId and (won or (tonumber(reward.wavesReached) or 0) >= FEARLESS_WAVES) then
+			-- A competitive run never ends in a victory: holding 30 waves is the feat.
 			profile.campaign[reward.mapId] = profile.campaign[reward.mapId] or {}
 			profile.campaign[reward.mapId].ranked = true
 			achievement(profile, "hardWin", "Sem medo do perigo", "Fearless", now)

@@ -744,7 +744,7 @@ renderElevator = function()
 	local waves=Rules.WaveCount(e.modeId,e.mapId)
 	local map=Catalog.Maps[e.mapId]
 	local boss=map and Catalog.Enemies[e.modeId=="tutorial" and "lizard" or map.bossId]
-	local runGold=e.modeId~="ranked" and Rules.RunGold(e.modeId,e.mapId,waves,true) or nil
+	local runGold=e.modeId~="ranked" and Rules.RunGold(e.modeId,e.mapId,waves,true,e.difficultyId) or nil
 	-- A run that pays no Gold (the training) says what it is instead of "Gold 0".
 	local mode=Catalog.Modes[e.modeId]
 	local prize=e.modeId=="ranked" and T("Ouro 25/onda","Gold 25/wave") or ((runGold or 0)>0 and (T("Ouro ","Gold ")..number(runGold)) or (mode and L(mode.name) or ""))

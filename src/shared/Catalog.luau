@@ -55,6 +55,10 @@ Catalog.HeroCards = {
 	firstCost = 2, growth = 1.5, goldPerRank = 100, pointsPerRank = 1,
 	base = { damage = 0.04, speed = 0.02, range = 0.01 },
 	point = { damage = 0.03, speed = 0.02, range = 0.015 },
+	-- The most a card can add to each stat, over the mastery/talent and star
+	-- caps (Rules.PermanentModifiers): a ceiling on power, so a year of
+	-- duplicates does not outgrow the waves or the competitive board.
+	cap = { damage = 0.40, speed = 0.20, range = 0.15 },
 	stats = { "damage", "speed", "range" },
 }
 -- The season pass: XP from matches and missions climbs 30 levels in a season
