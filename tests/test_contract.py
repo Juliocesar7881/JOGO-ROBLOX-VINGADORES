@@ -23,7 +23,7 @@ def read(relative: str) -> str:
 
 # The controller and the parts split out of it (lobby panels, lobby world, match HUD)
 # are one client.
-CLIENT = "\n".join(read(f"client/{name}.luau") for name in ("init.client", "Panels", "LobbyWorld", "MatchHud"))
+CLIENT = "\n".join(read(f"client/{name}.luau") for name in ("init.client", "Panels", "Exchange", "LobbyWorld", "MatchHud"))
 EFFECTS = read("client/Effects.luau")
 AUDIO = read("client/Audio.luau")
 BOOTSTRAP = read("server/init.server.luau")

@@ -69,7 +69,7 @@ src/server/   init.server (bootstrap/router), MatchService, PlayerService,
               PartyService, ElevatorService, WorldBuilder, PresenceService,
               AnalyticsService, RejoinService
 src/client/   init.client (controller), UI (layout + widgets), Panels (lobby
-              panels), MatchHud, LobbyWorld, Tutorial (arrow-taught training),
+              panels), Exchange (bundle hero picks + friend trade), MatchHud, LobbyWorld, Tutorial (arrow-taught training),
               Inspect (tap an enemy for its card), Effects, Audio, Nameplates,
               AutoQuality, Review (Studio only)
 tools/        build.py, test.py, setup_luau.py, gen_heroes_doc.luau, sweeps
