@@ -4,6 +4,7 @@
 -- is one the server sent; every button is an intent through ctx.act.
 local CardArt = require(script.Parent:WaitForChild("CardArt"))
 local InteractionHud = require(script.Parent:WaitForChild("InteractionHud"))
+local Motion = require(script.Parent:WaitForChild("Motion"))
 local MatchHud = {}
 
 function MatchHud.new(ctx)
@@ -383,7 +384,7 @@ function MatchHud.new(ctx)
 					UI.label(card, L(def.description), {Position = UDim2.fromOffset(10, nextY), Size = UDim2.new(1, -20, 0, room), TextSize = 14, TextColor3 = C.muted, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextYAlignment = Enum.TextYAlignment.Top, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 54})
 				end
 			end
-			UI.button(card, T("Escolher", "Choose").." • "..(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(buttonRect, cardRect), Size = dims(buttonRect), BackgroundColor3 = tint, TextSize = short and 14 or (P.stacked and 17 or 21), TextWrapped = false, TextScaled = short, ZIndex = 54})
+			UI.button(card, T("Escolher", "Choose").." • "..(rarity and L(rarity.name) or ""), function() act("ChooseCard", {cardId = id}) end, {Position = at(buttonRect, cardRect), Size = dims(buttonRect), BackgroundColor3 = tint, TextSize = short and 16 or (P.stacked and 19 or 24), TextWrapped = false, TextScaled = short, ZIndex = 54, Font = UI.Fonts.display})
 		end
 	end
 
@@ -494,7 +495,28 @@ function MatchHud.new(ctx)
 		UI.create("UISizeConstraint", {MaxSize = Vector2.new(640, 720)}, panel)
 		UI.windowSkin(panel, victory and C.green or C.blue,"results")
 		if not mobile() and ctx.heroPortrait then
-			ctx.heroPortrait(veil,victory and "capmen" or "hawkeye",{Name="ResultChampionLeft",Position=UDim2.new(0,4,0.15,0),Size=UDim2.new(0.2,0,0.72,0),FullFigure=true,NoBackdrop=true,ZIndex=0})
+			-- A win: the commander's own lead hero celebrates alive on the left with
+			-- its signature move (Motion "arrival"); a VIP's stands in a golden
+			-- spotlight with more confetti. Reduced effects keeps the still picture.
+			local p = profile()
+			local lead = victory and (p.loadout or {})[1] or nil
+			local lowFX = p.settings and p.settings.lowFX
+			local leftProperties = {Name="ResultChampionLeft",Position=UDim2.new(0,4,0.15,0),Size=UDim2.new(0.2,0,0.72,0),FullFigure=true,NoBackdrop=true,ZIndex=0}
+			local live = lead and Catalog.Heroes[lead] and not lowFX and ctx.livePortrait and ctx.livePortrait(veil, lead, leftProperties)
+			if live and Motion.Prepare(live) then
+				live.frame.Name = "ResultChampionLeft"
+				live.mode = "arrival"
+				if ctx.registerShowcase then ctx.registerShowcase(live) end
+				if p.passes and p.passes.vip then
+					local ring = UI.frame(veil, {Name="ResultVipRing", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.1,4,0.86,0), Size=UDim2.new(0.17,0,0.05,0), BackgroundColor3=C.gold, BackgroundTransparency=0.4, ZIndex=0})
+					UI.create("UICorner", {CornerRadius = UDim.new(1, 0)}, ring)
+					UI.chip(veil, "VIP", C.gold, {Name="ResultVipChip", AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.1,4,0.11,0), Size=UDim2.fromOffset(64,22), TextSize=12, ZIndex=1})
+					celebrate:Confetti(40)
+				end
+			else
+				if live then live.frame:Destroy() end
+				ctx.heroPortrait(veil,victory and "capmen" or "hawkeye",leftProperties)
+			end
 			ctx.heroPortrait(veil,victory and "thor" or "ironman",{Name="ResultChampionRight",Position=UDim2.new(0.8,-4,0.15,0),Size=UDim2.new(0.2,0,0.72,0),FullFigure=true,NoBackdrop=true,ZIndex=0})
 		end
 		-- The window's title tab, like every other screen: victory green, retry blue.

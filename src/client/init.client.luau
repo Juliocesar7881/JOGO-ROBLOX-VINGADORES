@@ -375,7 +375,7 @@ local function stepShowcases()
 		if not live.frame.Parent then
 			table.remove(showcases, index)
 		elseif (showcaseFrame + index) % 2 == 0 then
-			pcall(Motion.Perform, live, os.clock() - live.born, "idle")
+			pcall(Motion.Perform, live, os.clock() - live.born, live.mode or "idle")
 		end
 	end
 end
@@ -1282,6 +1282,7 @@ local matchHud = MatchHud.new({
 	T = T, L = L, number = number, player = player, act = act, audio = audio, celebrate = celebrate,
 	main = main, overlays = overlays, at = at, dims = dims, screenSize = screenSize, sizeClass = sizeClass, mobile = mobile,
 	heroName = heroName, colorFor = colorFor, mapName = mapName, modeName = modeName, profile = profile, heroPortrait = heroPortrait,
+	livePortrait = livePortrait, registerShowcase = registerShowcase,
 	activeMatch = activeMatch, levelProgress = levelProgress, welcomePanel = welcomePanel,
 	currentMatchLayout = currentMatchLayout, closeTowerPanel = closeTowerPanel, selectTower = selectTower,
 	selectedTower = function() return selectedTower end,
@@ -1831,6 +1832,13 @@ fxRemote.OnClientEvent:Connect(function(event)
 		elseif event.kind == "EnemyDown" and event.boss and activeMatch() then
 			local def = Catalog.Enemies[event.enemyId]
 			celebrate:Banner({pt = "CHEFE DERROTADO!", en = "BOSS DEFEATED!"}, def and def.name or nil, C.gold, {big = true, confetti = 50})
+			-- The kill has weight: a shake and a white flash, unless effects are reduced.
+			if not (profile().settings and profile().settings.lowFX) then
+				effects:Shake(0.6)
+				local flash = UI.frame(overlays, {Name = "BossFlash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.55, ZIndex = 40})
+				TweenService:Create(flash, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
+				task.delay(0.45, function() flash:Destroy() end)
+			end
 		elseif event.kind == "Ability" and event.ultimate and event.ownerId == player.UserId then
 			local def = Catalog.Abilities[event.abilityId]
 			-- Effects plays the hero's power cue below. A generic banner cue would

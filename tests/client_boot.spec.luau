@@ -1964,7 +1964,10 @@ local function session(screen)
 		check(camera.CameraType == Enum.CameraType.Scriptable, tag .. ": the camera flies to the arriving boss")
 		flush()
 		check(camera.CameraType == Enum.CameraType.Custom, tag .. ": and hands the camera back to the player")
-		fx({ kind = "EnemyDown", id = 44, enemyId = "lizard", position = v3(0, 0, 0), boss = true })
+		-- Fired without flushing: the flash removes itself on a delay the scheduler would run at once.
+		fxRemote.OnClientEvent:Fire({ kind = "EnemyDown", id = 44, enemyId = "lizard", position = v3(0, 0, 0), boss = true })
+		check(named(overlays, "BossFlash") ~= nil, tag .. ": a boss kill flashes the screen")
+		flush()
 		check(string.find(bannerTitle(), "CHEFE DERROTADO", 1, true) ~= nil, tag .. ": a fallen boss gets a big banner, got " .. bannerTitle())
 		fx({ kind = "Ability", heroId = "captainmarvel", abilityId = "photonNova", abilityKind = "blast", ultimate = true, ownerId = LOCAL_ID,
 			position = v3(0, 0, 0), radius = 60, duration = 2, color = Color3.fromRGB(255, 210, 90), points = {} })
@@ -3212,6 +3215,14 @@ local function session(screen)
 		push(results)
 		local mvp = named(gui, "MvpName")
 		check(mvp ~= nil and mvp.Text == "Ally" and named(gui, "ResultTeam_2") ~= nil, tag .. ": the end screen names the MVP and lists the squad")
+		-- A desktop win: the commander's lead hero celebrates alive; a VIP's in a golden spotlight.
+		if named(gui, "ResultChampionRight") ~= nil then
+			check(named(gui, "ResultChampionLeft") ~= nil and named(gui, "ResultVipChip") ~= nil and named(gui, "ResultVipRing") ~= nil, tag .. ": the VIP's lead hero takes the victory stage with its spotlight")
+			local plain = resultsSnapshot(veteranProfile({ passes = {} }))
+			push(plain)
+			check(named(gui, "ResultChampionLeft") ~= nil and named(gui, "ResultVipChip") == nil, tag .. ": without VIP the hero still celebrates, without the spotlight")
+			push(results)
+		end
 		local again = named(gui, "ResultPlayAgain")
 		local againRect = again and screenRect(again, gui, SCREEN)
 		check(againRect ~= nil and againRect.y + againRect.h <= view().h and againRect.h >= 44, tag .. ": PLAY AGAIN sits beside the return button without scrolling")
