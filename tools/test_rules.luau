@@ -313,6 +313,19 @@ do
 	for day = 20741, 20760 do if Rules.DailyMarket(day).offers[1].heroId ~= today.offers[1].heroId then differs = true end end
 	check(differs, "the market changes from day to day")
 	check(Rules.MarketPrice("nobody") == nil, "an unknown hero has no market price")
+	-- The weekend event: Saturday and Sunday UTC, one campaign map paying over; the next one is announced in between.
+	local saturday, sunday, monday = Rules.WeekendEvent(2 * 86400), Rules.WeekendEvent(3 * 86400 + 100), Rules.WeekendEvent(4 * 86400)
+	check(saturday.active and sunday.active and not monday.active, "the event runs Saturday and Sunday")
+	check(saturday.mapId == sunday.mapId and saturday.startsAt == 2 * 86400 and saturday.endsAt == 4 * 86400, "both days share one map and the event ends Monday 00:00 UTC")
+	check(monday.startsAt == 9 * 86400 and monday.mapId == Rules.WeekendEvent(9 * 86400).mapId, "a weekday announces next Saturday's event and its map")
+	check(Rules.EventBonus(saturday.mapId, "normal", 2 * 86400) == Catalog.Events.weekend.goldScale and Rules.EventBonus(saturday.mapId, "ranked", 2 * 86400) == 1 and Rules.EventBonus(saturday.mapId, "normal", 4 * 86400) == 1, "only the event map in campaign mode, only on the weekend, pays the event Gold")
+	check(Catalog.Maps[saturday.mapId] ~= nil and saturday.name ~= nil, "the event names a real map and a theme")
+	-- Four weeks of login prizes, ending in a legendary hero of the player's choice.
+	check(#Catalog.Rewards.login == 28 and Catalog.Rewards.login[28].heroPick == "legendary", "the login cycle is 28 days and ends in a legendary pick")
+	for index, prize in ipairs(Catalog.Rewards.login) do
+		check(prize.gold > 0 and (prize.chest == nil or Catalog.Chests[prize.chest] ~= nil) and (prize.heroPick == nil or Catalog.Rarities[prize.heroPick] ~= nil), "login prize " .. index .. " is well formed")
+		check(index % 7 ~= 0 or prize.chest ~= nil, "every seventh login day opens a chest")
+	end
 end
 
 -- AFK farm: a small, fixed pay per whole minute, and nothing for nonsense.

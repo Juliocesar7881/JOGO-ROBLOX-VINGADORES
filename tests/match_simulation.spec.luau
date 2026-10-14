@@ -110,8 +110,9 @@ warn = function() end
 -- Declared in dependency order: each inlined module captures the previous ones
 -- as upvalues, which is how the rewritten requires resolve.
 local Config = __CONFIG__
--- The map of the day would change expected rewards with the calendar: switched off here, tested apart.
+-- The map of the day and the weekend event would change expected rewards with the calendar: switched off here, tested apart.
 Config.DailyFeature = false
+Config.WeekendEvent = false
 local Catalog = __CATALOG__
 local Rules = __RULES__
 local Waves = __WAVES__
@@ -1868,6 +1869,14 @@ do
 	check(math.abs(match.rewardBonus - match.partyBonus * match.featuredBonus) < 1e-9, "and it multiplies the party bonus")
 	local plain = stage({ mapId = other, wave = 1 })
 	check(plain.featuredBonus == 1, "any other map pays as usual")
+	-- The weekend event multiplies the same way whenever the rules say it is on.
+	Config.WeekendEvent = nil
+	local weekend = Rules.WeekendEvent(os.time())
+	local eventMatch = stage({ mapId = weekend.mapId, wave = 1 })
+	check(math.abs(eventMatch.eventBonus - Rules.EventBonus(weekend.mapId, "normal", os.time())) < 1e-9, "a match on the event map carries the weekend bonus the rules give today")
+	check(math.abs(eventMatch.rewardBonus - eventMatch.partyBonus * eventMatch.featuredBonus * eventMatch.eventBonus) < 1e-9, "and it multiplies the other bonuses")
+	Config.WeekendEvent = false
+	check(stage({ mapId = weekend.mapId, wave = 1 }).eventBonus == 1, "with the event switched off nothing changes")
 	Config.DailyFeature = false
 	local off = stage({ mapId = featuredMapId, wave = 1 })
 	check(off.featuredBonus == 1, "the feature can be switched off")

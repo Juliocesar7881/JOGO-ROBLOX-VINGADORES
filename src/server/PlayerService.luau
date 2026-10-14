@@ -665,6 +665,12 @@ function PlayerService:_payReward(profile, reward, rolls, now, current)
 	end
 	if reward.title then achievement(profile, reward.title.id, reward.title.pt, reward.title.en, now, "title") end
 	if reward.chest then paid.chest = self:_openChest(profile, reward.chest, rolls, now) end
+	if reward.heroPick and self.catalog.Rarities[reward.heroPick] then
+		-- A hero of that rarity, chosen by the player afterwards (PickHero).
+		profile.heroPicks = type(profile.heroPicks) == "table" and profile.heroPicks or {}
+		profile.heroPicks[reward.heroPick] = math.floor(tonumber(profile.heroPicks[reward.heroPick]) or 0) + 1
+		paid.heroPick = reward.heroPick
+	end
 	return paid
 end
 

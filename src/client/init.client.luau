@@ -316,6 +316,9 @@ local function profileSignature()
 	-- Only the gifts page renders reward clocks. Updating those clocks must
 	-- not rebuild a shop, inventory or destination page while it is scrolled.
 	if not contextPanel or contextPanel.kind~="rewards" then presented.rewards=nil end
+	-- The weekend event's tag lives on the lobby HUD: its phase is part of the signature.
+	local event = state and state.event
+	if type(event) == "table" then presented.eventPhase = tostring(event.active) .. ":" .. tostring(event.mapId) .. ":" .. tostring(event.startsAt) end
 	local ok, encoded = pcall(HttpService.JSONEncode, HttpService, presented)
 	return ok and encoded or tostring(p.gold) .. tostring(p.level)
 end
@@ -818,6 +821,26 @@ renderElevator = function()
 end
 
 -- Persistent illustrated shortcuts complement the walk-in shops. Layout
+-- The weekend event's HUD tag: where the Gold doubles now, or when the next
+-- one starts. Redrawn on every lobby snapshot so its clock and phase follow
+-- the server (the rest of the HUD is drawn once per layout).
+local function renderEventTag()
+	local old = main:FindFirstChild("EventTag")
+	if old then old:Destroy() end
+	local event = state and state.phase == "Lobby" and state.event
+	if not event or not main:FindFirstChild("LobbyPill") then return end
+	if not (event.active or (tonumber(event.startsAt) and event.startsAt - os.time() < 3 * 86400)) then return end
+	local size = screenSize()
+	local hud = UI.lobbyLayout(size.X, size.Y)
+	local map = Catalog.Maps[event.mapId]
+	local left = math.max(0, (event.active and (tonumber(event.endsAt) or 0) or (tonumber(event.startsAt) or 0)) - os.time())
+	local clock = left >= 86400 and (math.floor(left / 86400) .. "d " .. math.floor((left % 86400) / 3600) .. "h") or (math.floor(left / 3600) .. "h " .. string.format("%02d", math.floor((left % 3600) / 60)) .. "m")
+	local text = event.active and (T("Evento: Ouro ×", "Event: Gold ×") .. tostring(event.goldScale or 2) .. T(" em ", " on ") .. (map and L(map.name) or "?") .. T("  •  acaba em ", "  •  ends in ") .. clock)
+		or (T("Evento de fim de semana em ", "Weekend event in ") .. clock)
+	local boosted = (tonumber(profile().boostUntil) or 0) > os.time()
+	UI.pill(main, text, C.coral:Lerp(C.ink, 0.25), {Name = "EventTag", Position = UDim2.new(0, hud.pill.x + 6, 0, hud.pill.y + hud.pill.h + 4 + (boosted and 28 or 0)), TextSize = 14, TextColor3 = C.coral})
+end
+
 -- reserves space for both the dock and the portal's countdown card.
 renderLobby = function()
 	local size = screenSize()
@@ -843,6 +866,7 @@ renderLobby = function()
 		UI.pill(main, T("Ouro em dobro  •  ", "Double Gold  •  ") .. math.floor(left / 60) .. " min", C.gold:Lerp(C.ink, 0.25),
 			{Name = "BoostTag", Position = UDim2.new(0, hud.pill.x + 6, 0, hud.pill.y + hud.pill.h + 4), TextSize = 14, TextColor3 = C.gold})
 	end
+	renderEventTag()
 	local track = UI.frame(pill, {Position = UDim2.new(0, 50, 1, -10), Size = UDim2.new(1, -100, 0, 6), BackgroundColor3 = C.background})
 	UI.corner(track, 3)
 	refs.levelBar = UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.violet})
@@ -1709,6 +1733,7 @@ local function applyState(nextState)
 		if refs.gold then refs.gold.Text = goldText() end
 		if refs.commander then refs.commander.Text = levelText() end
 		if refs.levelBar then refs.levelBar.Size = UDim2.fromScale(levelProgress(), 1) end
+		renderEventTag()
 		if refs.rewardsBadge then
 			local claimable=tonumber(profile().rewards and profile().rewards.claimable) or 0
 			refs.rewardsBadge.Visible=claimable>0

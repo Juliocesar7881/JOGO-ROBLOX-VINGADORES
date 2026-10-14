@@ -809,10 +809,11 @@ do
 			if def.xp then check(claimed.result.xp == def.xp, "Login xp is paid on day " .. day) end
 		end
 		check(sawChestDay == #Catalog.Rewards.login, "The last day of the cycle opens a chest, got " .. tostring(sawChestDay))
+		check(service:Get(streaker).heroPicks.legendary == 1, "The last day also credits a legendary hero of the player's choice")
 
 		clockOffset += 86400
 		local _, wrapOk, wrap = service:Handle(streaker, "ClaimLogin", {}, true)
-		check(wrapOk and wrap.result.day == 1 and wrap.result.streak == #Catalog.Rewards.login + 1, "The seven-day cycle restarts, but the streak keeps counting up")
+		check(wrapOk and wrap.result.day == 1 and wrap.result.streak == #Catalog.Rewards.login + 1, "The cycle restarts, but the streak keeps counting up")
 	end
 
 	-- Playtime gifts: how long the account has been in the game today.

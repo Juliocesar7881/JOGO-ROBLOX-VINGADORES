@@ -161,9 +161,11 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 	-- Party size and the map of the day each add to every commander's Gold and XP.
 	self.partyBonus = self.rules.PartyBonus(#members)
 	self.featuredBonus = self.config.DailyFeature == false and 1 or self.rules.FeaturedBonus(mapId, modeId, math.floor(os.time() / 86400))
+	-- The weekend event's map pays over as well (Rules.WeekendEvent).
+	self.eventBonus = self.config.WeekendEvent == false and 1 or self.rules.EventBonus(mapId, modeId, os.time())
 	-- A harder difficulty pays its Gold and XP over on every wave as well.
 	self.difficultyBonus = (self.catalog.Difficulties[self.difficultyId] or {rewardMultiplier=1}).rewardMultiplier or 1
-	self.rewardBonus = self.partyBonus * self.featuredBonus * self.difficultyBonus
+	self.rewardBonus = self.partyBonus * self.featuredBonus * self.difficultyBonus * self.eventBonus
 	self.maxBaseHP, self.recovery, self.baseWasDamaged = self.config.BaseHP, 0, false
 	self.lastStandHeal, self.lastStandUsed = 0, false
 	for _, member in ipairs(members) do
@@ -1105,7 +1107,7 @@ function Match:Finish(victory, ended)
 			end
 			p.xpEarned+=victory and 150*party*(p.profile.passes and p.profile.passes.training and 1.25 or 1) or 0
 			p.results={victory=victory,ended=ended==true,waves=self.completedWaves,gold=math.floor(p.goldEarned),xp=math.floor(p.xpEarned),
-				mapId=self.mapId,modeId=self.modeId,difficultyId=self.difficultyId,mastery=p.masteryEarned,startLevel=p.startLevel,cards=table.clone(p.cards),party=self.partyBonus,featured=self.featuredBonus}
+				mapId=self.mapId,modeId=self.modeId,difficultyId=self.difficultyId,mastery=p.masteryEarned,startLevel=p.startLevel,cards=table.clone(p.cards),party=self.partyBonus,featured=self.featuredBonus,event=self.eventBonus}
 			p.coins={}
 			self:_fx({kind="Clear"},p.player)
 		end

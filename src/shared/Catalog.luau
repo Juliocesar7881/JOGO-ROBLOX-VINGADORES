@@ -658,6 +658,11 @@ Catalog.Trade = {
 -- saver's shortcut to the hero they want, never a cheaper farm than chests.
 Catalog.Market = { rarities = { "common", "rare", "legendary" }, discount = 0.5 }
 
+-- The weekend event (Saturday and Sunday, UTC): one campaign map pays its
+-- Gold and XP over, named after a season theme; Rules.WeekendEvent picks the
+-- map and the theme from the week number, so every server and client agree.
+Catalog.Events = { weekend = { goldScale = 2, days = { [6] = true, [0] = true } } }
+
 --==============================================================================
 -- Rewards: reasons to come back
 --==============================================================================
@@ -675,10 +680,18 @@ Catalog.Rewards = {
 	-- times per UTC day at most.
 	invite = { newcomerGold = 500, inviterGold = 300, inviterDailyCap = 5, newAccountSeconds = 1800 },
 	-- One claim per UTC day. Missing a single day is forgiven; two reset the streak.
+	-- Four weeks: every seventh day a chest, and the 28th a legendary hero of
+	-- the player's choice (a pick credit, spent in the Choose Your Hero panel).
 	loginGraceDays = 2,
 	login = {
 		{ gold = 250 }, { gold = 350 }, { gold = 450, xp = 150 }, { gold = 600 },
 		{ gold = 800, xp = 300 }, { gold = 1000 }, { gold = 1500, chest = "rare" },
+		{ gold = 600 }, { gold = 700 }, { gold = 800, xp = 300 }, { gold = 900 },
+		{ gold = 1000, xp = 400 }, { gold = 1200 }, { gold = 2000, chest = "epic" },
+		{ gold = 800 }, { gold = 900 }, { gold = 1000, xp = 400 }, { gold = 1200 },
+		{ gold = 1400, xp = 500 }, { gold = 1600 }, { gold = 2500, chest = "epic" },
+		{ gold = 1000 }, { gold = 1200 }, { gold = 1500, xp = 600 }, { gold = 1800 },
+		{ gold = 2200, xp = 800 }, { gold = 2600 }, { gold = 5000, chest = "legendary", heroPick = "legendary" },
 	},
 	-- Gifts for time spent in the game today. Time resets with the UTC day.
 	playtime = {

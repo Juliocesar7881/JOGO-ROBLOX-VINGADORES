@@ -252,6 +252,8 @@ local function snapshotFor(player)
 		match = matchState,
 		results = results,
 		notice = notices[player.UserId],
+		-- The weekend event: its map, multiplier and clock (the server applies it).
+		event = Rules.WeekendEvent(os.time()),
 		-- The campaign map of the day, and what it pays on top (the server applies it).
 		featured = (function()
 			local day = math.floor(os.time() / 86400)

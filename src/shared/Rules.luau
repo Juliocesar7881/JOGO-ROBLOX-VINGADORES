@@ -384,6 +384,30 @@ function Rules.FeaturedBonus(mapId, modeId, day)
 	return 1
 end
 
+-- The weekend event: which campaign map pays Catalog.Events.weekend.goldScale
+-- this Saturday and Sunday (UTC), when it starts and ends, and its theme.
+-- Decided from the Unix day alone. Out of the weekend it describes the next.
+function Rules.WeekendEvent(now)
+	local event = Catalog.Events and Catalog.Events.weekend
+	local maps = Rules.MapsForMode("normal")
+	if not event or #maps == 0 or type(now) ~= "number" or now ~= now then return nil end
+	local day = math.floor(now / 86400)
+	local weekday = (day + 4) % 7 -- 0 = Sunday; day 0 was a Thursday
+	local active = event.days[weekday] == true
+	-- Weeks run Saturday to Friday, so both event days share one index.
+	local week = math.floor((day - 2) / 7)
+	if not active then week += 1 end
+	local theme = Rules.SeasonTheme(week % #Catalog.SeasonThemes + 1)
+	local startsAt = (week * 7 + 2) * 86400
+	return { active = active, mapId = maps[week % #maps + 1], goldScale = event.goldScale, startsAt = startsAt, endsAt = startsAt + 2 * 86400, name = theme and theme.name or nil, week = week }
+end
+
+function Rules.EventBonus(mapId, modeId, now)
+	local event = Rules.WeekendEvent(now)
+	if event and event.active and modeId == "normal" and mapId == event.mapId then return event.goldScale end
+	return 1
+end
+
 -- What a victory adds on top of the banked waves.
 function Rules.VictoryGold(modeId, mapId)
 	local rate = RUN_GOLD_PER_WAVE[modeId]

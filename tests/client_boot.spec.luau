@@ -1630,7 +1630,7 @@ local function session(screen)
 		rewardResult=nil
 		clickNamed("ClaimLogin")
 		check(asked("ClaimLogin"), tag .. ": the login streak sends its claim intent")
-		check(named(gui, "LoginDay_3") ~= nil, tag .. ": the seven-day strip renders every day")
+		check(named(gui, "LoginDay_3") ~= nil and named(gui, "LoginDay_28") ~= nil, tag .. ": the four-week calendar renders every day")
 		clickNamed("ClaimPlaytime_2")
 		check(asked("ClaimPlaytime"), tag .. ": a ready playtime gift sends its claim intent")
 		local claimedGift = named(gui, "ClaimPlaytime_1")
@@ -2421,6 +2421,17 @@ local function session(screen)
 		check(contextOpen(), tag .. ": the play menu opens")
 		check(countNamed(gui, "FeaturedRibbon") == 1, tag .. ": exactly one campaign card carries the map-of-the-day ribbon, got " .. countNamed(gui, "FeaturedRibbon"))
 		click("X")
+		-- The weekend event: its map wears a second ribbon and the HUD counts it down.
+		snapshot.event = { active = true, mapId = "gamma", goldScale = 2, startsAt = os.time() - 3600, endsAt = os.time() + 7200, name = { pt = "Tema", en = "Theme" } }
+		push(snapshot)
+		check(named(gui, "EventTag") ~= nil and string.find(named(gui, "EventTag").Text, "×2", 1, true) ~= nil, tag .. ": the lobby HUD shows the running event, got " .. tostring(named(gui, "EventTag") and named(gui, "EventTag").Text))
+		fx({ kind = "OpenPanel", panel = "modes", hud = true })
+		check(countNamed(gui, "EventRibbon") == 1, tag .. ": exactly one campaign card carries the event ribbon, got " .. countNamed(gui, "EventRibbon"))
+		click("X")
+		snapshot.event = { active = false, mapId = "gamma", goldScale = 2, startsAt = os.time() + 86400 + 3600, endsAt = os.time() + 3 * 86400 }
+		push(snapshot)
+		check(named(gui, "EventTag") ~= nil and string.find(named(gui, "EventTag").Text, "1d", 1, true) ~= nil, tag .. ": a coming event is announced with its countdown, got " .. tostring(named(gui, "EventTag") and named(gui, "EventTag").Text))
+		snapshot.event = nil
 		push(lobbySnapshot(veteranProfile()))
 		fx({ kind = "OpenPanel", panel = "modes", hud = true })
 		check(countNamed(gui, "FeaturedRibbon") == 0, tag .. ": no ribbon without a featured map")

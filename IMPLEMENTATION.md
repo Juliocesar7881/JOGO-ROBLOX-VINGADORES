@@ -663,7 +663,13 @@ vez, `tradeNotice {kind = "done"|"cancelled", heroId}`. O histórico fica em
 `Rules.DailyMarket(dia UTC)`): o snapshot traz `market {day, renewsAt, offers =
 {heroId, rarity, price, bought}}`; `BuyMarket {heroId}` (lobby, perto da loja de
 heróis) compra um herói da oferta de hoje pelo preço listado, uma vez por conta
-por dia (`profile.market`), nunca um herói já possuído.
+por dia (`profile.market`), nunca um herói já possuído. Evento de fim de
+semana (`Catalog.Events.weekend`, `Rules.WeekendEvent(now)`): o estado traz
+`event {active, mapId, goldScale, startsAt, endsAt, name}`; o servidor
+multiplica o Ouro e a XP de cada onda do mapa do evento no modo campanha
+(`MatchService.eventBonus`, `Config.WeekendEvent = false` desliga nos testes).
+Prêmio de login: 28 dias, o 28º credita `heroPicks.legendary` (`heroPick` na
+entrada do `Catalog.Rewards.login`).
 
 **FX novo.** `WaveCash {amount}`: bônus de Ouro da partida ao fim da onda.
 `CoinRemove` passa a trazer `value`. `BossArrive {enemyId, final, position}`:

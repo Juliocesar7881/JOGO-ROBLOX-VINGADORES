@@ -879,6 +879,7 @@ function Panels.new(ctx)
 			table.insert(parts, lastChest.duplicate and T("repetido → recompensa", "duplicate → reward") or (T("novo na coleção: ", "new in collection: ") .. (hero and L(hero.name) or "")))
 		end
 		if opened > 1 then table.insert(parts, "+" .. (opened - 1) .. T(" baús abertos", " more chests opened")) end
+		if paid.heroPick and Catalog.Rarities[paid.heroPick] then table.insert(parts, T("herói ", "a ") .. L(Catalog.Rarities[paid.heroPick].name) .. T(" à sua escolha", " hero of your choice")) end
 		for _, won in ipairs(type(paid.heroes) == "table" and paid.heroes or {}) do
 			local hero = Catalog.Heroes[won.heroId]
 			if hero then table.insert(parts, T("herói da temporada: ", "season hero: ") .. L(hero.name) .. (won.shiny and " ◆" or "")) end
@@ -965,15 +966,20 @@ function Panels.new(ctx)
 		-- it is checked off, except the slot about to be claimed, which is next.
 		local cycle = rewards.login.cycle
 		local lastCompletedIndex = rewards.login.streak > 0 and (((rewards.login.streak - 1) % cycle) + 1) or 0
-		local strip = UI.row(body, 92)
+		-- Seven cells a row, one row per week of the cycle.
+		local perRow = math.min(7, cycle)
+		local rows = math.ceil(cycle / perRow)
+		local strip = UI.row(body, 92 * rows + 6 * (rows - 1))
 		for day = 1, cycle do
 			local def = Catalog.Rewards.login[day]
 			local isNext = rewards.login.claimable and day == rewards.login.nextIndex
 			local done = not isNext and day <= lastCompletedIndex
-			local cell = UI.roundFrame(strip, {Name = "LoginDay_" .. day, Position = UDim2.new((day - 1) / cycle, 2, 0, 0), Size = UDim2.new(1 / cycle, -4, 1, 0),
-				BackgroundColor3 = isNext and C.gold:Lerp(C.card, 0.15) or C.card}, isNext and C.gold or C.stroke)
+			local column, rowIndex = (day - 1) % perRow, math.floor((day - 1) / perRow)
+			local cell = UI.roundFrame(strip, {Name = "LoginDay_" .. day, Position = UDim2.new(column / perRow, 2, 0, rowIndex * 98), Size = UDim2.new(1 / perRow, -4, 0, 92),
+				BackgroundColor3 = isNext and C.gold:Lerp(C.card, 0.15) or C.card}, isNext and C.gold or (def.heroPick and C.coral or C.stroke))
 			UI.label(cell, T("Dia ", "Day ") .. day, {Position = UDim2.fromOffset(0, 6), Size = UDim2.new(1, 0, 0, 20), TextSize = 16, Font = UI.Fonts.display, TextColor3 = isNext and C.gold or C.muted, TextXAlignment = Enum.TextXAlignment.Center})
-			if def.chest then UI.illustration(cell, "crate", C.pink, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 26), Size = UDim2.fromOffset(40, 36)})
+			if def.heroPick then UI.illustration(cell, "hero", C.coral, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 26), Size = UDim2.fromOffset(40, 36)})
+			elseif def.chest then UI.illustration(cell, "crate", C.pink, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 26), Size = UDim2.fromOffset(40, 36)})
 			else UI.label(cell, number(def.gold), {Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 0, 30), TextSize = 19, Font = UI.Fonts.display, TextColor3 = isNext and C.gold or C.text, TextXAlignment = Enum.TextXAlignment.Center}) end
 			if done then UI.label(cell, "✓", {Position = UDim2.fromOffset(0, 62), Size = UDim2.new(1, 0, 0, 24), TextSize = 22, Font = UI.Fonts.display, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center}) end
 		end
@@ -1671,6 +1677,13 @@ function Panels.new(ctx)
 			if featured and featured.mapId==destination.mapId and destination.modeId=="normal" then
 				-- The map of the day pays more: a ribbon on its card.
 				local ribbon=UI.label(card,"★ "..T("Mapa do dia","Map of the day").."  +"..math.floor(featured.bonus*100+0.5).."%",{Name="FeaturedRibbon",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,-8),Size=UDim2.fromOffset(176,24),BackgroundTransparency=0,BackgroundColor3=C.gold,TextColor3=C.background,TextSize=12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=3})
+				UI.corner(ribbon,12)
+			end
+			local event=ctx.state().event
+			if event and event.active and event.mapId==destination.mapId and destination.modeId=="normal" then
+				-- The weekend event's map pays over: a second ribbon, under the day's if both.
+				local stacked=featured and featured.mapId==destination.mapId
+				local ribbon=UI.label(card,"✦ "..T("Evento","Event").."  ×"..tostring(event.goldScale or 2),{Name="EventRibbon",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-10,0,stacked and 20 or -8),Size=UDim2.fromOffset(150,24),BackgroundTransparency=0,BackgroundColor3=C.coral,TextColor3=C.background,TextSize=12,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=3})
 				UI.corner(ribbon,12)
 			end
 			local button=UI.button(card,allowed and T("Encontrar portal","Find portal") or T("Ainda bloqueado","Locked for now"),function() routePreview.goPortal(id) end,{Name="FindPortal_"..id,Position=UDim2.new(0,10,1,-56),Size=UDim2.new(1,-20,0,46),BackgroundColor3=allowed and C.green or tint,TextSize=20})
