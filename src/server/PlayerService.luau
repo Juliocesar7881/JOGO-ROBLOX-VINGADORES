@@ -22,7 +22,7 @@ local FEARLESS_WAVES = 30
 -- Purchase receipts remembered per account; older ones are dropped.
 local RECEIPTS_KEPT = 200
 local SCHEMA_VERSION = 1
-local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack" }
+local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack", "boostUntil" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
 local ACTIONS = { BuyGuaranteed = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
@@ -99,7 +99,7 @@ local function newProfile(now)
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
 		pity = { legendary = 0 },
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
-		codes = {}, starterPack = false, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
+		codes = {}, starterPack = false, boostUntil = 0, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", languageSet = false, lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
 		quests = {}, achievements = {}, best = {},
@@ -358,7 +358,9 @@ function PlayerService.new(config, catalog, onChanged, rules, codes)
 	self.products = productDefinitions(config, catalog)
 	self.productById, self.heroProductById = {}, {}
 	for _, product in pairs(self.products.Consumables) do
-		if integer(product.id, 1, 9007199254740991) and integer(product.gold, 1, 100000000) then
+		-- A consumable pays Gold, or (the boost) buys time; anything else is not sold.
+		local sells = integer(product.gold, 1, 100000000) or integer(product.boostSeconds, 1, 100000000)
+		if integer(product.id, 1, 9007199254740991) and sells then
 			assert(not self.productById[product.id], "Duplicate developer product ID")
 			self.productById[product.id] = product
 		end
@@ -793,7 +795,15 @@ function PlayerService:Snapshot(player)
 	result.talentPoints = math.max(0, result.level - 1 - talentSpent(record.profile))
 	result.paidRandomRestricted = record.randomRestricted == true
 	local now = os.time()
-	result.rewards = self.rules.RewardsStatus(record.profile, now, math.clamp(now - (record.playMark or now), 0, PLAYTIME_CAP))
+	-- The welcome offer: the lobby shows the Starter Pack with a countdown for
+	-- the first days of an account that has not bought it. The server owns the
+	-- clock; the client only draws what is left.
+	local pack = self.catalog.Products.Consumables.starterPack
+	if pack and pack.offerSeconds and not record.profile.starterPack then
+		local endsAt = (tonumber(record.profile.createdAt) or now) + pack.offerSeconds
+		if endsAt > now then result.starterOfferEndsAt = endsAt end
+	end
+	result.rewards = self.rules.RewardsStatus(record.profile, now, math.clamp(now - (record.playMark or now), 0, PLAYTIME_CAP), record.passes.vip == true)
 	result.xpNext = result.level < 50 and xpThreshold(result.level + 1) or result.xp
 	result.xpFloor = xpThreshold(result.level)
 	result.season = self:_season()
@@ -946,7 +956,8 @@ function PlayerService:Handle(player, action, payload, inLobby)
 		elseif action == "ClaimFreeChest" then
 			local state, config = profile.rewards, self.catalog.Rewards.freeChest
 			if now < state.freeChestAt then return false, "O baú grátis ainda não está pronto. / The free chest is not ready yet." end
-			state.freeChestAt = now + config.cooldown
+			-- A VIP's chest comes back sooner (Catalog.Products.Passes.vip.freeChestScale).
+			state.freeChestAt = now + self.rules.FreeChestCooldown(current.passes.vip == true)
 			return true, { chest = self:_openChest(profile, config.chestId, rolls, now), gold = 0, xp = 0 }
 		elseif action == "ClaimLogin" then
 			local claim = self.rules.LoginClaim(profile.rewards, now)
@@ -1143,6 +1154,10 @@ function PlayerService:_receipt(receipt)
 			self:_grantHero(profile, heroId, now, { refundGold = price * GOLD_PER_ROBUX, mastery = 0 })
 		else
 			profile.gold += product.gold or 0
+			-- A timed boost stacks onto whatever is left of the current one.
+			if product.boostSeconds then
+				profile.boostUntil = math.max(now, math.floor(tonumber(profile.boostUntil) or 0)) + product.boostSeconds
+			end
 			-- The starter pack's hero comes once per account.
 			if product.heroId and not profile.starterPack then
 				self:_grantHero(profile, product.heroId, now, { refundGold = product.repeatGold or 0, mastery = 0 })

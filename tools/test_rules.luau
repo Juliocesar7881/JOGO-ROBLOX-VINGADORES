@@ -925,6 +925,7 @@ do
 	-- and that "claimable" really counts what the four sub-sections report ready.
 	local state = Rules.NewRewardsState()
 	local profile = { rewards = state, heroes = { ironman = true, hawkeye = true } }
+	check(Rules.RewardsStatus(profile, 50 * DAY, 0, true).freeChest.cooldown < Rules.RewardsStatus(profile, 50 * DAY, 0).freeChest.cooldown, "A VIP's free chest wait is shorter")
 	local status = Rules.RewardsStatus(profile, 50 * DAY, 0)
 	check(status.freeChest.ready and status.login.claimable, "A fresh profile has its free chest and login ready")
 	equal(#status.playtime.gifts, #Catalog.Rewards.playtime, "One playtime entry per configured gift")

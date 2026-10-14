@@ -924,6 +924,31 @@ local function session(screen)
 		fx({ kind = "OpenPanel", panel = "play", modeId = "normal" })
 		check(not contextOpen(), tag .. ": an unknown panel request opens nothing; portals are walked into")
 	end)
+	step("a short commander at the summon hall is sent to the Gold packs", function()
+		local broke = veteranProfile({ gold = 0 })
+		push(lobbySnapshot(broke))
+		fx({ kind = "OpenPanel", panel = "chests" })
+		check(contextOpen() and named(gui, "BuyGoldShortcut") ~= nil, tag .. ": without Gold the chest hall offers the Gold packs")
+		clickNamed("BuyGoldShortcut")
+		check(named(gui, "PremiumTabs_product") ~= nil and named(gui, "BuyGoldShortcut") == nil, tag .. ": the shortcut opens the Robux shop on the Gold tab")
+		-- The welcome offer: a new account sees the countdown in the shop and on the lobby strip.
+		local fresh = veteranProfile({ gold = 0 })
+		fresh.starterOfferEndsAt = os.time() + 2 * 86400 + 3600
+		fresh.rewards = rewardsFixture("empty")
+		fresh.talentPoints = 0
+		push(lobbySnapshot(fresh))
+		fx({ kind = "OpenPanel", panel = "premium" })
+		local urgency = named(gui, "StarterUrgency")
+		check(urgency ~= nil and string.find(urgency.Text, "2 dias", 1, true) ~= nil, tag .. ": the shop banner counts the offer down in days, got " .. tostring(urgency and urgency.Text))
+		if contextOpen() then click("X") end
+		local strip = named(gui, "GuideTip")
+		check(strip ~= nil and string.find(strip.Text, "Pacote Inicial", 1, true) ~= nil, tag .. ": with nothing else waiting, the lobby strip points at the welcome offer, got " .. tostring(strip and strip.Text))
+		fresh.starterOfferEndsAt = nil
+		push(lobbySnapshot(fresh))
+		strip = named(gui, "GuideTip")
+		check(strip == nil or string.find(strip.Text, "Pacote Inicial", 1, true) == nil, tag .. ": once the offer window closes, the strip lets it go")
+		push(lobbySnapshot(veteranProfile()))
+	end)
 	local openings = {
 		{ panel = "quests" }, { panel = "leaderboard" },
 		{ panel = "shop", shopKind = "pass", shopKey = "vip" }, { panel = "shop", shopKind = "pass", shopKey = "collector" },

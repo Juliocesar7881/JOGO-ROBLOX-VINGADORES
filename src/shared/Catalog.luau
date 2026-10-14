@@ -1015,7 +1015,8 @@ Catalog.Products = {
 		training = { id = 0, price = 29, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP.") },
 		speed3 = { id = 0, price = 19, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. A partida acelera quando todo o grupo escolhe 3x.", "Unlocks 3x in matches. The match speeds up when the whole squad picks 3x.") },
 		season = { id = 0, price = 49, name = text("Passe de Temporada", "Season Pass"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title.") },
-		vip = { id = 0, price = 29, name = text("Pacote VIP visual", "VIP Style Pack"), description = text("Título, emote, trilha e aparência especial do drone.", "Title, emote, trail and special drone appearance.") },
+		-- freeChestScale: the free chest comes back this much sooner for VIPs.
+		vip = { id = 0, price = 29, freeChestScale = 0.5, name = text("Pacote VIP", "VIP Pack"), description = text("Baú grátis duas vezes mais rápido, nome dourado, título, emote, trilha e drone dourado.", "Free chest twice as fast, golden name, title, emote, trail and a golden drone.") },
 	},
 	Consumables = {
 		gold1000 = { id = 0, price = 5, gold = 1000, name = text("1.000 de Ouro", "1,000 Gold") },
@@ -1024,8 +1025,15 @@ Catalog.Products = {
 		gold30000 = { id = 0, price = 79, gold = 30000, name = text("30.000 de Ouro", "30,000 Gold") },
 		-- Once per account: an epic hero and Gold. Bought again (a second
 		-- prompt racing the first), it is paid in Gold instead of the hero.
-		starterPack = { id = 0, price = 19, gold = 5000, heroId = "hulk", repeatGold = 2500, name = text("Pacote Inicial", "Starter Pack"),
+		-- offerSeconds: how long after the account's first visit the lobby keeps
+		-- pointing at the pack with a countdown. The pack itself stays for sale.
+		starterPack = { id = 0, price = 19, gold = 5000, heroId = "hulk", repeatGold = 2500, offerSeconds = 3 * 86400, name = text("Pacote Inicial", "Starter Pack"),
 			description = text("Uma vez por conta: Gigante Furioso (épico) + 5.000 de Ouro.", "Once per account: Raging Giant (epic) + 5,000 Gold.") },
+		-- A timed boost: lobby Gold from waves and victories is doubled while it
+		-- lasts. Buying it again adds another hour to the end. The server keeps
+		-- the clock (profile.boostUntil) and applies it; the client only shows it.
+		goldBoost = { id = 0, price = 29, boostSeconds = 3600, boostScale = 2, name = text("Ouro em dobro • 1 hora", "Double Gold • 1 hour"),
+			description = text("Por uma hora, cada onda e cada vitória pagam o dobro de Ouro. Comprar de novo soma mais uma hora.", "For one hour every wave and victory pays double Gold. Buying again adds another hour.") },
 	},
 	-- One product per purchasable hero, priced by rarity. The two starter
 	-- heroes are free and never sold.

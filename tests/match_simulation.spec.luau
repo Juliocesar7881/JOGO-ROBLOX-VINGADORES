@@ -547,6 +547,11 @@ if endless then
 	check(endless.results.waves >= 5, "competitive survives a few waves, got " .. tostring(endless.results.waves))
 	check(endless.picks == 0, "competitive offers no cards")
 	check(endless.results.gold == Rules.RunGold("ranked", "hydra", endless.results.waves, false), "every completed competitive wave pays its lobby Gold")
+	-- The paid Gold boost doubles what a run banks while it lasts.
+	local boosted = simulate({ mapId = "hydra", modeId = "ranked", profile = { campaign = { manhattan = { normal = true } }, boostUntil = os.time() + 7200 } })
+	check(boosted ~= nil and boosted.results.waves > 0 and boosted.results.gold == 2 * Rules.RunGold("ranked", "hydra", boosted.results.waves, false), "with the boost every wave pays double: " .. tostring(boosted and boosted.results.gold))
+	local expired = simulate({ mapId = "hydra", modeId = "ranked", profile = { campaign = { manhattan = { normal = true } }, boostUntil = os.time() - 10 } })
+	check(expired ~= nil and expired.results.gold == Rules.RunGold("ranked", "hydra", expired.results.waves, false), "an expired boost pays nothing extra")
 	print(string.format("  survived %d waves in %.1f min", endless.results.waves, endless.seconds / 60))
 end
 

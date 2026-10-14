@@ -6,6 +6,13 @@ nomes atuais e descrições atualizados no Creator Hub; IDs reais em Config.
 Heróis Comum/Raro/Lendário: 9/29/79 Robux. Passes 19–49; pacotes 5–79.
 O cliente mostra a cotação regional do Roblox, não o preço antigo do servidor.
 
+**Produto novo a cadastrar (14/10/2026):** `goldBoost` — "Ouro em dobro • 1 hora",
+Developer Product, preço sugerido **29 Robux**, descrição "Por uma hora, cada
+onda e cada vitória pagam o dobro de Ouro. Comprar de novo soma mais uma hora."
+Depois de criar, pôr o ID em `Config.Products.Consumables.goldBoost` (hoje 0:
+a loja mostra "Indisponível" até lá). O servidor já entrega e aplica o boost
+(`profile.boostUntil`), com teste.
+
 Registro vigente e evidências: [CONFIGURACAO_COMERCIAL_2026-10-12.md](../CONFIGURACAO_COMERCIAL_2026-10-12.md).
 Exportação completa: `assets/store/release-2026-10-12/catalog.json`.
 Metadados salvos não comprovam compra real. Nenhum contrato foi aceito ou taxa

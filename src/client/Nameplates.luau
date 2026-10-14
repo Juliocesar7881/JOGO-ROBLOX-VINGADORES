@@ -84,7 +84,9 @@ function Nameplates:Refresh()
 			end
 			plate.label.Text = title or ""
 			plate.label.Visible = title ~= nil
-			plate.rank.Text = level and ("NV " .. tostring(level)) or ""
+			-- A VIP's level line is gold and says so: the pass is seen by everyone.
+			plate.rank.Text = level and ((entry.vip and "VIP  •  " or "") .. "NV " .. tostring(level)) or ""
+			plate.rank.TextColor3 = entry.vip and UI.Colors.gold or UI.Colors.muted
 			plate.rank.Visible = level ~= nil
 		end
 	end

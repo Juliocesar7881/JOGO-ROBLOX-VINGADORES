@@ -994,6 +994,14 @@ function Match:_enemiesStep(dt)
 	end
 end
 
+-- A commander's paid Gold boost (Catalog.Products.Consumables.goldBoost): the
+-- server's clock against the profile's boostUntil, so it can run out mid-match.
+function Match:_goldBoost(p)
+	local boost = self.catalog.Products.Consumables.goldBoost
+	local until_ = tonumber(p.profile and p.profile.boostUntil) or 0
+	return (boost and until_ > os.time()) and (boost.boostScale or 1) or 1
+end
+
 function Match:_checkpoint(p, suffix, completed)
 	local mastery={}
 	local xp=0
@@ -1037,7 +1045,7 @@ function Match:_endWave()
 			if p.contributed and not p.disconnectedAt then
 				-- Lobby Gold for the completed wave, banked now so a later
 				-- defeat or disconnect never takes it back.
-				local banked = math.floor((self.rules.WaveGold(self.modeId, self.wave) + talent(p,"roundGold") * 2) * self.rewardBonus)
+				local banked = math.floor((self.rules.WaveGold(self.modeId, self.wave) + talent(p,"roundGold") * 2) * self.rewardBonus * self:_goldBoost(p))
 				p.waveGold += banked p.goldEarned += banked
 			end
 			self:_checkpoint(p,"wave:"..self.wave,true)
@@ -1082,7 +1090,7 @@ function Match:Finish(victory, ended)
 			local party=self.rewardBonus
 			local bonus=0
 			if victory and p.contributed and not p.disconnectedAt then
-				bonus=math.floor(self.rules.VictoryGold(self.modeId,self.mapId) * (1+talent(p,"victoryGold")*0.02) * party)
+				bonus=math.floor(self.rules.VictoryGold(self.modeId,self.mapId) * (1+talent(p,"victoryGold")*0.02) * party * self:_goldBoost(p))
 			end
 			self:_checkpoint(p,"remaining",false)
 			if not p.disconnectedAt then

@@ -35,6 +35,9 @@
       "gold5000": {
         "id": 0
       },
+      "goldBoost": {
+        "id": 0
+      },
       "starterPack": {
         "id": 0
       }

@@ -60,6 +60,9 @@ Ela executa o catálogo atual; ID preenchido não comprova venda nem entrega.
   Arte interna e imagens existentes da experiência preservadas.
 - [ ] Confirmar pessoalmente contratos pendentes, se ainda aparecerem. O
   registro de 01/10 relata “Updated Agreements”; nenhuma aceitação automática.
+- [ ] Criar o Developer Product **Ouro em dobro • 1 hora** (29 Robux, ver
+  `docs/director/ROBUX_CATALOG.md`) e gravar o ID em
+  `Config.Products.Consumables.goldBoost`.
 - [ ] Compra real de cada passe/produto em conta de teste: entrega única,
   saldo, cancelamento, saída/reentrada e recibo repetido. Pacote Inicial:
   segunda compra concede apenas a compensação de Ouro.

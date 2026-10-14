@@ -91,7 +91,7 @@ local config = {
 	Codes = { TESTE = { gold = 200 }, VELHO = { gold = 1, expires = 1 }, BAU = { gold = 0, chest = "rare" } },
 	Products = {
 		Passes = { collector = { id = 201 }, training = { id = 202 }, season = { id = 203 } },
-		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 }, starterPack = { id = 103 } },
+		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 }, starterPack = { id = 103 }, goldBoost = { id = 104 } },
 		Heroes = { falcon = { id = 301 }, thor = { id = 302 }, ironman = { id = 999 } },
 	},
 }
@@ -404,6 +404,8 @@ do
 	local pack = Catalog.Products.Consumables.starterPack
 	local before = service:Get(p1)
 	check(before.starterPack == false and not before.heroes[pack.heroId], "A new account has not bought the starter pack")
+	-- The welcome offer counts down from the account's birth, on the server's clock.
+	check(before.starterOfferEndsAt ~= nil and before.starterOfferEndsAt > os.time() and before.starterOfferEndsAt <= os.time() + pack.offerSeconds, "A new account sees the welcome offer's deadline")
 	local goldBefore = before.gold
 	check(service:_receipt({ PlayerId = 1, ProductId = 103, PurchaseId = "starter-1" }) == "granted", "The starter pack is granted")
 	local after = service:Get(p1)
@@ -413,6 +415,25 @@ do
 		"A replayed starter receipt is inert")
 	check(service:_receipt({ PlayerId = 1, ProductId = 103, PurchaseId = "starter-2" }) == "granted"
 		and service:Get(p1).gold == goldBefore + pack.gold * 2 + pack.repeatGold, "Bought again, the pack pays Gold instead of a second hero")
+	check(service:Get(p1).starterOfferEndsAt == nil, "Once bought, the welcome offer stops pointing")
+	local late = player(85)
+	service:Load(late)
+	stores.Tests.values.p_85.createdAt = os.time() - pack.offerSeconds - 10
+	local _, pokeOk = service:Handle(late, "Settings", { shake = true }, true)
+	check(pokeOk and service:Get(late).starterOfferEndsAt == nil, "An account older than the offer window sees no countdown")
+end
+
+-- The Gold boost: an hour from now, and another hour on top when bought again.
+do
+	local boost = Catalog.Products.Consumables.goldBoost
+	check(service:Get(p1).boostUntil == 0, "A new account has no boost")
+	check(service:_receipt({ PlayerId = 1, ProductId = 104, PurchaseId = "boost-1" }) == "granted", "The boost is granted")
+	check(service:Get(p1).boostUntil == os.time() + boost.boostSeconds, "The boost ends an hour from the purchase")
+	check(service:_receipt({ PlayerId = 1, ProductId = 104, PurchaseId = "boost-1" }) == "granted" and service:Get(p1).boostUntil == os.time() + boost.boostSeconds, "A replayed boost receipt adds no time")
+	check(service:_receipt({ PlayerId = 1, ProductId = 104, PurchaseId = "boost-2" }) == "granted" and service:Get(p1).boostUntil == os.time() + 2 * boost.boostSeconds, "A second boost adds its hour to the end of the first")
+	-- A boost that already ran out (the stored clock is in the past) does not anchor the next one.
+	stores.Tests.values.p_1.boostUntil = os.time() - 10
+	check(service:_receipt({ PlayerId = 1, ProductId = 104, PurchaseId = "boost-3" }) == "granted" and service:Get(p1).boostUntil == os.time() + boost.boostSeconds, "A boost bought after the old one ran out starts from now")
 end
 
 -- Some regions restrict paid random items, so Gold packs are withheld there.
@@ -743,6 +764,15 @@ do
 		service.random = scriptedRolls(0, 0)
 		local _, secondChest = service:Handle(rewarded, "ClaimFreeChest", {}, true)
 		check(secondChest, "The free chest can be claimed again after the wait")
+		-- A VIP's chest comes back in half the time, and the status says so.
+		clockOffset += Catalog.Rewards.freeChest.cooldown
+		service.records[rewarded.UserId].passes.vip = true
+		service.random = scriptedRolls(0, 0)
+		local _, vipOk, vipChest = service:Handle(rewarded, "ClaimFreeChest", {}, true)
+		check(vipOk and vipChest.rewards.freeChest.remaining == Rules.FreeChestCooldown(true) and Rules.FreeChestCooldown(true) * 2 == Catalog.Rewards.freeChest.cooldown, "A VIP waits half the time for the free chest, got " .. tostring(vipChest and vipChest.rewards.freeChest.remaining))
+		check(vipChest.rewards.freeChest.cooldown == Rules.FreeChestCooldown(true), "The status reports the VIP's shorter wait")
+		service.records[rewarded.UserId].passes.vip = nil
+		clockOffset -= Catalog.Rewards.freeChest.cooldown
 	end
 
 	-- The login streak: one a day, a missed day forgiven, two missed days reset.

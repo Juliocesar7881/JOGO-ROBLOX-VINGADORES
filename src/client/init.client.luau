@@ -829,6 +829,13 @@ renderLobby = function()
 	local star = UI.illustration(pill,"star",C.violet,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-2,0,0),Size=UDim2.fromOffset(46,46)})
 	star.ZIndex = 2
 	refs.commander = UI.fit(UI.label(pill, levelText(), {Position = UDim2.new(1, -48, 0, 0), Size = UDim2.new(0, 46, 1, -2), TextSize = compact and 12 or 14, Font = UI.Fonts.display, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3}), 9)
+	-- The paid Gold boost, while it lasts: a small gold tag under the pill.
+	local boostUntil = tonumber(profile().boostUntil) or 0
+	if boostUntil > os.time() then
+		local left = boostUntil - os.time()
+		UI.pill(main, T("Ouro em dobro  •  ", "Double Gold  •  ") .. math.floor(left / 60) .. " min", C.gold:Lerp(C.ink, 0.25),
+			{Name = "BoostTag", Position = UDim2.new(0, hud.pill.x + 6, 0, hud.pill.y + hud.pill.h + 4), TextSize = 14, TextColor3 = C.gold})
+	end
 	local track = UI.frame(pill, {Position = UDim2.new(0, 50, 1, -10), Size = UDim2.new(1, -100, 0, 6), BackgroundColor3 = C.background})
 	UI.corner(track, 3)
 	refs.levelBar = UI.frame(track, {Size = UDim2.fromScale(levelProgress(), 1), BackgroundColor3 = C.violet})
@@ -913,6 +920,12 @@ renderLobby = function()
 				key,suggestion="gifts",{T("Tem prêmios esperando por você!","You have gifts waiting!"),function() openContext("rewards",{hud=true}) end}
 			elseif (p.talentPoints or 0)>0 then
 				key,suggestion="talents",{T("Você tem pontos para gastar na EVOLUÇÃO.","You have points to spend on TALENTS."),function() openContext("talents",{}) end}
+			elseif tonumber(p.starterOfferEndsAt) and p.starterOfferEndsAt>os.time() then
+				-- Nothing waiting: the welcome offer, with how long it still points here.
+				local pack=Catalog.Products.Consumables.starterPack
+				local left=p.starterOfferEndsAt-os.time()
+				local clock=left>=86400 and (math.floor(left/86400)..T(" dias"," days")) or (math.floor(left/3600).."h "..string.format("%02d",math.floor((left%3600)/60)).."m")
+				key,suggestion="starter",{T("Pacote Inicial: ","Starter Pack: ")..L(Catalog.Heroes[pack.heroId].name).." + "..number(pack.gold)..T(" Ouro  •  termina em "," Gold  •  ends in ")..clock,function() openContext("premium",{hud=true,shopKind="product"}) end}
 			end
 		end
 		if not force and key==kit.suggestionKey and (key==nil or refs.firstVisitHint and refs.firstVisitHint.Parent) then return end
@@ -1434,7 +1447,9 @@ updateMatch = function()
 	refs.hp.Size = UDim2.fromScale(math.clamp((match.baseHP or 0) / (match.maxBaseHP or 100), 0, 1), 1)
 	refs.hp.BackgroundColor3 = (match.baseHP or 0)/math.max(1,match.maxBaseHP or 100) > 0.3 and C.green or C.red
 	-- Lobby Gold this run has banked so far: a reward, not money to spend.
-	refs.matchGold.Text = "+" .. number(match.goldEarned)
+	-- The paid Gold boost shows on the run's lobby Gold while it lasts.
+	local boosted = tonumber(profile().boostUntil) and profile().boostUntil > os.time()
+	refs.matchGold.Text = "+" .. number(match.goldEarned) .. (boosted and "  ×2" or "")
 	local towerCount = 0
 	for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId then towerCount += 1 end end
 	-- Match Gold in hand, plus what is still lying on the ground to collect.

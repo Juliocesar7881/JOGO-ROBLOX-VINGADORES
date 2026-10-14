@@ -617,13 +617,21 @@ end
 
 -- Everything the rewards panel and the lobby badge need, in one table.
 -- pendingSeconds is time played since the profile was last written.
-function Rules.RewardsStatus(profile, now, pendingSeconds)
+-- The free chest's wait, for an account with (or without) the VIP pass.
+function Rules.FreeChestCooldown(vip)
+	local base = Catalog.Rewards.freeChest.cooldown
+	local pass = Catalog.Products.Passes.vip
+	if vip and pass and pass.freeChestScale then return math.floor(base * pass.freeChestScale) end
+	return base
+end
+
+function Rules.RewardsStatus(profile, now, pendingSeconds, vip)
 	local rewards = Catalog.Rewards
 	local state = profile.rewards or Rules.NewRewardsState()
 	local status = { claimable = 0 }
 
 	local remaining = math.max(0, (state.freeChestAt or 0) - now)
-	status.freeChest = { ready = remaining == 0, remaining = remaining, chestId = rewards.freeChest.chestId, cooldown = rewards.freeChest.cooldown }
+	status.freeChest = { ready = remaining == 0, remaining = remaining, chestId = rewards.freeChest.chestId, cooldown = Rules.FreeChestCooldown(vip) }
 	if status.freeChest.ready then status.claimable += 1 end
 
 	local claim = Rules.LoginClaim(state, now)
