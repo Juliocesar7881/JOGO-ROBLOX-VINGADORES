@@ -669,7 +669,12 @@ semana (`Catalog.Events.weekend`, `Rules.WeekendEvent(now)`): o estado traz
 multiplica o Ouro e a XP de cada onda do mapa do evento no modo campanha
 (`MatchService.eventBonus`, `Config.WeekendEvent = false` desliga nos testes).
 Prêmio de login: 28 dias, o 28º credita `heroPicks.legendary` (`heroPick` na
-entrada do `Catalog.Rewards.login`).
+entrada do `Catalog.Rewards.login`). Presente entre amigos
+(`Catalog.Rewards.gift`): `SendGift {userId}` (lobby; amigo do Roblox no mesmo
+servidor, um por dia UTC em `rewards.giftDay`; o baú entra em
+`rewards.giftsPending` do amigo, que recebe `giftNotice {from}` uma vez) e
+`ClaimGift {}` abre um baú pendente; `rewards.gift {pending, sentToday,
+chestId}` no status de prêmios, pendentes contam em `claimable`.
 
 **FX novo.** `WaveCash {amount}`: bônus de Ouro da partida ao fim da onda.
 `CoinRemove` passa a trazer `value`. `BossArrive {enemyId, final, position}`:

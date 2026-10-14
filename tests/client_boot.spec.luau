@@ -111,6 +111,7 @@ local function rewardsFixture(mode)
 		login = { claimable = ready, streak = 2, cycle = #Catalog.Rewards.login, nextIndex = 3, nextStreak = 3 },
 		playtime = { seconds = ready and 700 or 60, gifts = {} },
 		collection = { owned = 5, milestones = {} },
+		gift = { pending = ready and 1 or 0, sentToday = false, chestId = Catalog.Rewards.gift.chestId },
 	}
 	for index, def in ipairs(Catalog.Rewards.playtime) do
 		table.insert(fixture.playtime.gifts, { index = index, minutes = def.minutes, gold = def.gold, xp = def.xp, chest = def.chest,
@@ -1631,6 +1632,10 @@ local function session(screen)
 		clickNamed("ClaimLogin")
 		check(asked("ClaimLogin"), tag .. ": the login streak sends its claim intent")
 		check(named(gui, "LoginDay_3") ~= nil and named(gui, "LoginDay_28") ~= nil, tag .. ": the four-week calendar renders every day")
+		clickNamed("ClaimGift")
+		check(asked("ClaimGift"), tag .. ": a friend's chest sends its claim intent")
+		clickNamed("SendGift_" .. ALLY_ID)
+		check(asked("SendGift"), tag .. ": sending a chest to the other player sends SendGift")
 		clickNamed("ClaimPlaytime_2")
 		check(asked("ClaimPlaytime"), tag .. ": a ready playtime gift sends its claim intent")
 		local claimedGift = named(gui, "ClaimPlaytime_1")

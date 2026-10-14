@@ -915,6 +915,33 @@ function Panels.new(ctx)
 		end, {Name = "ClaimFreeChest", Position = UDim2.new(1, -130, 0.5, -28), Size = UDim2.fromOffset(118, 56), BackgroundColor3 = C.green, TextSize = 20})
 		if not chest.ready then UI.disabled(claimFree) end
 
+		-- Gifts between friends: chests that friends sent wait here, and one chest
+		-- a day can be sent to a Roblox friend in this server (the server checks).
+		local gift = rewards.gift
+		if gift then
+			local pending = tonumber(gift.pending) or 0
+			if pending > 0 then
+				local card = UI.roundFrame(body, {Name = "GiftCard", Size = UDim2.new(1, -6, 0, 84), BackgroundColor3 = C.green:Lerp(C.panel, 0.6)}, C.green)
+				UI.illustration(card, "crate", C.green, {Rarity = gift.chestId, Position = UDim2.fromOffset(10, 6), Size = UDim2.fromOffset(78, 72)})
+				UI.fit(UI.label(card, pending == 1 and T("Um amigo te mandou um baú!", "A friend sent you a chest!") or (tostring(pending) .. T(" baús de amigos esperando", " chests from friends waiting")), {Position = UDim2.fromOffset(100, 24), Size = UDim2.new(1, -240, 0, 36), Font = UI.Fonts.display, TextSize = 18}), 10)
+				UI.button(card, T("Abrir!", "Open!"), function()
+					act("ClaimGift", {}, function(snapshot) rewardGiven(snapshot.result) end)
+				end, {Name = "ClaimGift", Position = UDim2.new(1, -130, 0.5, -26), Size = UDim2.fromOffset(118, 52), BackgroundColor3 = C.green, TextSize = 20})
+			end
+			UI.section(body, T("Presente para um amigo", "Gift for a friend"), gift.sentToday and T("O presente de hoje já foi enviado. Amanhã tem mais.", "Today's gift is sent. More tomorrow.") or T("Envie um baú de Suprimentos a um amigo do Roblox que esteja aqui. Um por dia, de graça.", "Send a Supplies chest to a Roblox friend who is here. One a day, free."))
+			local others = {}
+			for _, entry in ipairs(ctx.state().players or {}) do if entry.userId ~= player.UserId then table.insert(others, entry) end end
+			if #others == 0 then smallText(body, T("Ninguém mais está neste servidor agora.", "Nobody else is in this server right now."), 0, 28) end
+			for _, entry in ipairs(others) do
+				local row = UI.roundFrame(body, {Name = "GiftRow_" .. tostring(entry.userId), Size = UDim2.new(1, -6, 0, 56), BackgroundColor3 = C.card})
+				UI.fit(UI.label(row, tostring(entry.name or "?"), {Position = UDim2.fromOffset(14, 6), Size = UDim2.new(1, -170, 0, 44), Font = UI.Fonts.display, TextSize = 17}), 10)
+				local send = UI.button(row, T("Enviar", "Send"), function()
+					act("SendGift", {userId = entry.userId}, function() showToast(T("Presente enviado para ", "Gift sent to ") .. tostring(entry.name or "?") .. "!") end)
+				end, {Name = "SendGift_" .. tostring(entry.userId), AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(130, 42), BackgroundColor3 = C.blue, TextSize = 15})
+				if gift.sentToday then UI.disabled(send) end
+			end
+		end
+
 		-- Season pass: thirty levels from the XP of matches and missions. The free
 		-- track pays everyone; the premium track pays the owner of the season pass.
 		local season = profile().seasonStatus

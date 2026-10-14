@@ -1703,6 +1703,9 @@ end
 
 local function applyState(nextState)
 	if type(nextState) ~= "table" then return end
+	-- A friend's chest that just landed (profile.giftNotice): say so, the gifts page holds it.
+	local gift = type(nextState.profile) == "table" and nextState.profile.giftNotice
+	if type(gift) == "table" then showToast(tostring(gift.from or "?") .. T(" te mandou um baú! Veja em Prêmios.", " sent you a chest! See Gifts.")) end
 	-- A trade that ended on the server is told once (profile.tradeNotice).
 	local notice = type(nextState.profile) == "table" and nextState.profile.tradeNotice
 	if type(notice) == "table" then

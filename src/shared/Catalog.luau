@@ -672,6 +672,9 @@ Catalog.Events = { weekend = { goldScale = 2, days = { [6] = true, [0] = true } 
 Catalog.Rewards = {
 	-- A free chest every few hours. It never stacks: the point is to come back.
 	freeChest = { chestId = "rare", cooldown = 6 * 3600 },
+	-- A chest sent to a Roblox friend in the same server, once per UTC day; the
+	-- server pays it from nothing and the friend opens it on the gifts page.
+	gift = { chestId = "supply", perDay = 1 },
 	-- Once per account, for joining the experience's Roblox group (Config.GroupId).
 	group = { gold = 750 },
 	-- Bringing a friend. A brand-new account (no match played, created within the

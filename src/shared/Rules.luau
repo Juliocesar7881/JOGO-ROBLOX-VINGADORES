@@ -706,6 +706,11 @@ function Rules.RewardsStatus(profile, now, pendingSeconds, vip)
 		table.insert(status.playtime.gifts, entry)
 	end
 
+	-- Chests friends sent, waiting to be opened; and whether today's gift went out.
+	local pending = math.max(0, math.floor(tonumber(state.giftsPending) or 0))
+	status.gift = { pending = pending, sentToday = state.giftDay == Rules.UtcDay(now), chestId = rewards.gift and rewards.gift.chestId or nil }
+	status.claimable += pending
+
 	-- Membership lives on Roblox's servers, so the group reward is never counted
 	-- as claimable here; the panel offers it and the server checks on claim.
 	status.group = { claimed = state.groupClaimed == true, gold = rewards.group and rewards.group.gold or 0 }

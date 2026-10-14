@@ -25,11 +25,11 @@ local SCHEMA_VERSION = 1
 local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack", "boostUntil", "heroPicks" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
-local ACTIONS = { BuyGuaranteed = true, PickHero = true, BuyMarket = true, TradeOffer = true, TradeAccept = true, TradeSet = true, TradeConfirm = true, TradeCancel = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
+local ACTIONS = { BuyGuaranteed = true, PickHero = true, BuyMarket = true, SendGift = true, ClaimGift = true, TradeOffer = true, TradeAccept = true, TradeSet = true, TradeConfirm = true, TradeCancel = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
 	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true, ClaimSeason = true,
 	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
-local CHEST_ACTIONS = { OpenChest = true, ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, RedeemCode = true, ClaimSeason = true }
+local CHEST_ACTIONS = { OpenChest = true, ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, RedeemCode = true, ClaimSeason = true, ClaimGift = true }
 -- Wrong promo codes are refused before any DataStore call; past this many
 -- misses in a minute, the player is asked to wait instead of guessing.
 local CODE_MISSES_PER_MINUTE = 6
@@ -858,6 +858,8 @@ function PlayerService:Snapshot(player)
 		-- A trade that ended (done or cancelled) is told once, then forgotten.
 		if record.tradeNotice then result.tradeNotice = record.tradeNotice; record.tradeNotice = nil end
 	end
+	-- A friend's gift that just landed is told once, then it waits on the gifts page.
+	if record.giftNotice then result.giftNotice = record.giftNotice; record.giftNotice = nil end
 	return result
 end
 
@@ -867,6 +869,40 @@ end
 -- then each account commits its half under its own lock, and a failed second
 -- half undoes the first. Every rule is checked again at commit time.
 --==============================================================================
+-- A chest for a Roblox friend in this server, once per UTC day. The sender's
+-- day is spent in its own transaction, the friend's chest lands in theirs;
+-- when the second half fails the day is given back.
+function PlayerService:_sendGift(player, record, payload)
+	local gift = self.catalog.Rewards.gift
+	if not gift then return false, "Presentes desligados. / Gifts are off." end
+	local targetId = integer(payload.userId, 1, 9007199254740991) and math.floor(payload.userId)
+	local target = targetId and self.records[targetId]
+	if not target or targetId == player.UserId or target.closing or target.lost then return false, "Esse jogador não está aqui. / That player is not here." end
+	local friends = false
+	pcall(function() friends = player:IsFriendsWith(targetId) == true end)
+	if not friends then return false, "Presentes só entre amigos do Roblox. / Gifts are only between Roblox friends." end
+	local today = math.floor(os.time() / DAY)
+	if record.profile.rewards.giftDay == today then return false, "Você já enviou o presente de hoje. / You already sent today's gift." end
+	local spent, why = self:_transaction(player, function(profile, now)
+		if profile.rewards.giftDay == math.floor(now / DAY) then return false, "Você já enviou o presente de hoje. / You already sent today's gift." end
+		profile.rewards.giftDay = math.floor(now / DAY)
+		return true, { to = targetId }
+	end, nil, { silent = true })
+	if not spent then return false, why end
+	local landed = self:_transaction(target.player, function(profile)
+		profile.rewards.giftsPending = math.floor(tonumber(profile.rewards.giftsPending) or 0) + 1
+		return true, { from = player.UserId }
+	end, nil, { silent = true })
+	if not landed then
+		self:_transaction(player, function(profile) profile.rewards.giftDay = -1; return true end, nil, { silent = true })
+		return false, "Não foi possível entregar agora. Tente de novo. / Could not deliver now. Try again."
+	end
+	target.giftNotice = { from = player.DisplayName or player.Name }
+	self:_notify(target.player)
+	self:_notify(player)
+	return true, { to = targetId }
+end
+
 function PlayerService:_tradeable(profile, partnerProfile, heroId)
 	local hero = type(heroId) == "string" and self.catalog.Heroes[heroId]
 	if not hero or not profile.heroes[heroId] then return "Você não tem este herói. / You do not own this hero." end
@@ -1031,6 +1067,9 @@ function PlayerService:Handle(player, action, payload, inLobby)
 	elseif string.sub(action, 1, 5) == "Trade" then
 		local ok, result = self:_trade(player, record, action, payload)
 		return true, ok, result
+	elseif action == "SendGift" then
+		local ok, result = self:_sendGift(player, record, payload)
+		return true, ok, result
 	end
 	local code, codeEntry
 	if action == "RedeemCode" then
@@ -1167,6 +1206,13 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			-- A VIP's chest comes back sooner (Catalog.Products.Passes.vip.freeChestScale).
 			state.freeChestAt = now + self.rules.FreeChestCooldown(current.passes.vip == true)
 			return true, { chest = self:_openChest(profile, config.chestId, rolls, now), gold = 0, xp = 0 }
+		elseif action == "ClaimGift" then
+			-- A chest a friend sent (SendGift): opened here, one per claim.
+			local state, gift = profile.rewards, self.catalog.Rewards.gift
+			local pending = math.floor(tonumber(state.giftsPending) or 0)
+			if not gift or pending <= 0 then return false, "Nenhum presente esperando. / No gift waiting." end
+			state.giftsPending = pending - 1
+			return true, { chest = self:_openChest(profile, gift.chestId, rolls, now), gold = 0, xp = 0, gift = true }
 		elseif action == "ClaimLogin" then
 			local claim = self.rules.LoginClaim(profile.rewards, now)
 			if not claim then return false, "A recompensa de hoje já foi resgatada. / Today's reward was already claimed." end

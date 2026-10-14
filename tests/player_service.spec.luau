@@ -776,6 +776,32 @@ do
 		clockOffset -= Catalog.Rewards.freeChest.cooldown
 	end
 
+	-- A chest sent to a friend: once a day, lands on the friend's gifts page, opened there.
+	do
+		local giver, taker, bystander = player(61), player(62), player(63)
+		service:Load(giver); service:Load(taker); service:Load(bystander)
+		friends["61:62"], friends["62:61"] = true, true
+		local _, stranger = service:Handle(giver, "SendGift", { userId = 63 }, true)
+		check(not stranger, "A gift goes only to a Roblox friend")
+		local _, sent = service:Handle(giver, "SendGift", { userId = 62 }, true)
+		local got = service:Get(taker)
+		check(sent and got.rewards.gift.pending == 1 and got.giftNotice ~= nil and got.giftNotice.from == "Player61", "The friend's gifts page gets the chest and is told who sent it")
+		check(service:Get(taker).giftNotice == nil and service:Get(giver).rewards.gift.sentToday == true, "The notice is told once; the sender's day is spent")
+		local _, twice = service:Handle(giver, "SendGift", { userId = 62 }, true)
+		check(not twice and service:Get(taker).rewards.gift.pending == 1, "One gift a day")
+		local _, nothing = service:Handle(giver, "ClaimGift", {}, true)
+		check(not nothing, "Nothing to open without a gift")
+		service.random = scriptedRolls(0, 0)
+		local _, opened, gift = service:Handle(taker, "ClaimGift", {}, true)
+		check(opened and gift.result.chest.heroId ~= nil and gift.result.chest.chestId == Catalog.Rewards.gift.chestId and gift.rewards.gift.pending == 0, "The gift opens a Supplies chest and leaves the page")
+		local _, again = service:Handle(taker, "ClaimGift", {}, true)
+		check(not again, "A gift opens once")
+		clockOffset += 86400
+		local _, tomorrow = service:Handle(giver, "SendGift", { userId = 62 }, true)
+		check(tomorrow and service:Get(taker).rewards.gift.pending == 1, "A new day allows a new gift")
+		clockOffset -= 86400
+	end
+
 	-- The login streak: one a day, a missed day forgiven, two missed days reset.
 	do
 		local streaker = player(23)

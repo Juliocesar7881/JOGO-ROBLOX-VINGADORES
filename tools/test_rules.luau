@@ -959,6 +959,10 @@ do
 		check(Rules.SeasonReward(Catalog.Season.levels - 1, "premium", index).hero == nil and Rules.SeasonReward(Catalog.Season.levels, "free", index).hero == nil, "no other level, and never the free track, pays the hero")
 	end
 	check(Rules.SeasonStatus({ id = 1, xp = 0, freeClaimed = 0, premiumClaimed = 0, premium = true }, false).owned, "This season's own purchase opens the premium track")
+	-- A friend's gift waits on the gifts page and counts as claimable; the day's send is remembered.
+	local gifted = Rules.RewardsStatus({ rewards = { freeChestAt = 1e12, loginDay = 50, loginStreak = 1, playDay = 50, playSeconds = 0, playClaimed = {}, collection = {}, giftsPending = 2, giftDay = 50 }, heroes = {} }, 50 * DAY + 10, 0)
+	check(gifted.gift.pending == 2 and gifted.gift.sentToday == true and gifted.gift.chestId == Catalog.Rewards.gift.chestId and gifted.claimable == 2, "two gifts waiting are two claims; today's gift went out")
+	check(Rules.RewardsStatus({ rewards = Rules.NewRewardsState(), heroes = {} }, 50 * DAY, 0).gift.pending == 0, "a fresh state has no gift waiting")
 	local status = Rules.RewardsStatus(profile, 50 * DAY, 0)
 	check(status.freeChest.ready and status.login.claimable, "A fresh profile has its free chest and login ready")
 	equal(#status.playtime.gifts, #Catalog.Rewards.playtime, "One playtime entry per configured gift")
