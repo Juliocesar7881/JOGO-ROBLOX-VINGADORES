@@ -25,7 +25,7 @@ local SCHEMA_VERSION = 1
 local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack", "boostUntil", "heroPicks" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
-local ACTIONS = { BuyGuaranteed = true, PickHero = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
+local ACTIONS = { BuyGuaranteed = true, PickHero = true, TradeOffer = true, TradeAccept = true, TradeSet = true, TradeConfirm = true, TradeCancel = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
 	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true, ClaimSeason = true,
 	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
@@ -89,6 +89,15 @@ local function validList(values, maximum, predicate, allowEmpty)
 	return count == #values
 end
 
+-- Trades an account completed today (UTC), from its own ledger.
+local function tradesToday(profile, now)
+	local day, count = math.floor(now / DAY), 0
+	for _, entry in ipairs(type(profile._trades) == "table" and profile._trades or {}) do
+		if math.floor((tonumber(entry.at) or 0) / DAY) == day then count += 1 end
+	end
+	return count
+end
+
 local function newProfile(now)
 	return {
 		schemaVersion = SCHEMA_VERSION,
@@ -99,7 +108,7 @@ local function newProfile(now)
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
 		pity = { legendary = 0 },
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
-		codes = {}, starterPack = false, boostUntil = 0, heroPicks = {}, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
+		codes = {}, starterPack = false, boostUntil = 0, heroPicks = {}, _trades = {}, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", languageSet = false, lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
 		quests = {}, achievements = {}, best = {},
@@ -351,6 +360,8 @@ function PlayerService.new(config, catalog, onChanged, rules, codes)
 	self.memory = RunService:IsStudio() and config.StudioMemory == true
 	self.closed = false
 	self.records, self.gates, self.memoryProfiles, self.memoryBoards = {}, {}, {}, {}
+	-- Open trades, one session shared by both userIds (see _trade).
+	self.trades = {}
 	self.boardCache, self.nameCache = {}, {}
 	self.sessionId = (game.JobId ~= "" and game.JobId or "studio") .. ":" .. HttpService:GenerateGUID(false)
 	self.leaseSeconds = math.max(60, config.ProfileLeaseSeconds or 180)
@@ -828,7 +839,160 @@ function PlayerService:Snapshot(player)
 	if record.passes.vip then result.titles.vip = copy(VIP_TITLE) end
 	if result.title ~= "" and not result.titles[result.title] then result.title = "" end
 	result.nextGoal = self.rules.NextGoal(result)
+	if self.catalog.Trade then
+		result.trade = self:_tradeView(player.UserId)
+		result.tradesLeft = math.max(0, self.catalog.Trade.perDay - tradesToday(record.profile, now))
+		-- A trade that ended (done or cancelled) is told once, then forgotten.
+		if record.tradeNotice then result.tradeNotice = record.tradeNotice; record.tradeNotice = nil end
+	end
 	return result
+end
+
+--==============================================================================
+-- Trading between friends: one hero for one hero, never Gold. The session
+-- lives in memory (self.trades, one table for both sides) until both confirm;
+-- then each account commits its half under its own lock, and a failed second
+-- half undoes the first. Every rule is checked again at commit time.
+--==============================================================================
+function PlayerService:_tradeable(profile, partnerProfile, heroId)
+	local hero = type(heroId) == "string" and self.catalog.Heroes[heroId]
+	if not hero or not profile.heroes[heroId] then return "Você não tem este herói. / You do not own this hero." end
+	if hero.starter then return "Heróis iniciais não são trocados. / Starter heroes cannot be traded." end
+	for _, id in ipairs(profile.loadout or {}) do
+		if id == heroId then return "Tire o herói da equipe antes de trocar. / Remove the hero from your team before trading." end
+	end
+	if partnerProfile and partnerProfile.heroes[heroId] then return "Seu amigo já tem este herói. / Your friend already owns this hero." end
+	return nil
+end
+
+function PlayerService:_tradeView(userId)
+	local session = self.trades[userId]
+	if not session then return nil end
+	local partnerId = session.from == userId and session.to or session.from
+	local partner = self.records[partnerId]
+	local mine, theirs = session.offers[userId], session.offers[partnerId]
+	return {
+		id = session.id, stage = session.stage, partnerId = partnerId,
+		partnerName = partner and (partner.player.DisplayName or partner.player.Name) or "?",
+		invited = session.stage == "invited" and session.to == userId,
+		mine = mine, theirs = theirs,
+		myConfirm = session.confirmed[userId] == true, theirConfirm = session.confirmed[partnerId] == true,
+		unequal = (mine ~= nil and theirs ~= nil and self.catalog.Heroes[mine].rarity ~= self.catalog.Heroes[theirs].rarity) or false,
+		lockedUntil = session.changedAt + self.catalog.Trade.lockSeconds,
+	}
+end
+
+-- Ends a session for both sides; each is told once through its snapshot.
+function PlayerService:_endTrade(session, kind, got)
+	for _, userId in ipairs({ session.from, session.to }) do
+		if self.trades[userId] == session then self.trades[userId] = nil end
+		local record = self.records[userId]
+		if record then
+			record.tradeNotice = { kind = kind, heroId = got and got[userId] or nil }
+			if not record.closing then self:_notify(record.player) end
+		end
+	end
+end
+
+function PlayerService:_trade(player, record, action, payload)
+	local config = self.catalog.Trade
+	if not config then return false, "Trocas desligadas. / Trading is off." end
+	local userId, now = player.UserId, os.time()
+	local session = self.trades[userId]
+	if action == "TradeOffer" then
+		if session then return false, "Você já está em uma troca. / You are already trading." end
+		local targetId = integer(payload.userId, 1, 9007199254740991) and math.floor(payload.userId)
+		local target = targetId and self.records[targetId]
+		if not target or targetId == userId or target.closing or target.lost then return false, "Esse jogador não está aqui. / That player is not here." end
+		if self.trades[targetId] then return false, "Seu amigo já está em outra troca. / Your friend is already trading." end
+		local friends = false
+		pcall(function() friends = player:IsFriendsWith(targetId) == true end)
+		if not friends then return false, "Trocas só entre amigos do Roblox. / Trades are only between Roblox friends." end
+		if tradesToday(record.profile, now) >= config.perDay or tradesToday(target.profile, now) >= config.perDay then return false, "Limite de trocas de hoje atingido. / Today's trade limit was reached." end
+		session = { id = HttpService:GenerateGUID(false), from = userId, to = targetId, stage = "invited", offers = {}, confirmed = {}, changedAt = now, createdAt = now }
+		self.trades[userId], self.trades[targetId] = session, session
+		self:_notify(target.player)
+		self:_notify(player)
+		return true, { trade = self:_tradeView(userId) }
+	end
+	if not session then return false, "Nenhuma troca aberta. / No trade open." end
+	local partnerId = session.from == userId and session.to or session.from
+	local partner = self.records[partnerId]
+	if not partner or partner.closing or partner.lost then
+		self:_endTrade(session, "cancelled")
+		return false, "Seu amigo saiu. / Your friend left."
+	end
+	-- Replies never carry a snapshot: the pushes from _notify/_endTrade do, and
+	-- a snapshot here would swallow the one-time notice before it was shown.
+	if action == "TradeCancel" then
+		self:_endTrade(session, "cancelled")
+		return true, {}
+	elseif action == "TradeAccept" then
+		if session.stage ~= "invited" or session.to ~= userId then return false, "Nada para aceitar. / Nothing to accept." end
+		session.stage, session.changedAt = "open", now
+	elseif action == "TradeSet" then
+		if session.stage ~= "open" then return false, "A troca ainda não foi aceita. / The trade was not accepted yet." end
+		if payload.heroId ~= nil then
+			local why = self:_tradeable(record.profile, partner.profile, payload.heroId)
+			if why then return false, why end
+		end
+		-- Any change clears both confirms and restarts the wait.
+		session.offers[userId], session.confirmed, session.changedAt = payload.heroId, {}, now
+	elseif action == "TradeConfirm" then
+		if session.stage ~= "open" then return false, "A troca ainda não foi aceita. / The trade was not accepted yet." end
+		local mine, theirs = session.offers[userId], session.offers[partnerId]
+		if not mine or not theirs then return false, "Os dois precisam oferecer um herói. / Both must offer a hero." end
+		if now < session.changedAt + config.lockSeconds then return false, "Espere um instante depois da última mudança. / Wait a moment after the last change." end
+		if self.catalog.Heroes[mine].rarity ~= self.catalog.Heroes[theirs].rarity and payload.acceptUnequal ~= true then
+			return false, "Troca desigual: raridades diferentes. Confirme de novo para aceitar. / Unequal trade: different rarities. Confirm again to accept."
+		end
+		session.confirmed[userId] = true
+		if session.confirmed[partnerId] then
+			local ok, why = self:_executeTrade(session)
+			if not ok then return false, why end
+			return true, {}
+		end
+	end
+	self:_notify(partner.player)
+	self:_notify(player)
+	return true, { trade = self:_tradeView(userId) }
+end
+
+function PlayerService:_executeTrade(session)
+	local a, b = self.records[session.from], self.records[session.to]
+	local giveA, giveB = session.offers[session.from], session.offers[session.to]
+	-- The hero travels as it is: mastery, stars, rank, cards, shiny, ability rank.
+	local recA, rankA = copy(a.profile.heroes[giveA]), a.profile.abilities[giveA] or 1
+	local recB, rankB = copy(b.profile.heroes[giveB]), b.profile.abilities[giveB] or 1
+	local function move(profile, now, give, get, getRecord, getRank, withId)
+		local why = self:_tradeable(profile, nil, give)
+		if why then return false, why end
+		if profile.heroes[get] then return false, "Você já tem este herói. / You already own this hero." end
+		if tradesToday(profile, now) >= self.catalog.Trade.perDay then return false, "Limite de trocas de hoje atingido. / Today's trade limit was reached." end
+		profile.heroes[give], profile.abilities[give] = nil, nil
+		profile.heroes[get], profile.abilities[get] = copy(getRecord), getRank
+		profile._trades = type(profile._trades) == "table" and profile._trades or {}
+		table.insert(profile._trades, { id = session.id, with = withId, gave = give, got = get, at = now })
+		while #profile._trades > self.catalog.Trade.keep do table.remove(profile._trades, 1) end
+		return true, { gave = give, got = get }
+	end
+	local okA, whyA = self:_transaction(a.player, function(profile, now) return move(profile, now, giveA, giveB, recB, rankB, session.to) end, "trade:" .. session.id .. ":" .. tostring(session.from), { silent = true })
+	if not okA then self:_endTrade(session, "cancelled"); return false, whyA end
+	local okB, whyB = self:_transaction(b.player, function(profile, now) return move(profile, now, giveB, giveA, recA, rankA, session.from) end, "trade:" .. session.id .. ":" .. tostring(session.to), { silent = true })
+	if not okB then
+		-- Undo the first half: the hero goes back exactly as it was.
+		self:_transaction(a.player, function(profile)
+			profile.heroes[giveA], profile.abilities[giveA] = recA, rankA
+			profile.heroes[giveB], profile.abilities[giveB] = nil, nil
+			local trades = type(profile._trades) == "table" and profile._trades or {}
+			if trades[#trades] and trades[#trades].id == session.id then table.remove(trades) end
+			return true
+		end, "trade:" .. session.id .. ":undo", { silent = true })
+		self:_endTrade(session, "cancelled")
+		return false, whyB
+	end
+	self:_endTrade(session, "done", { [session.from] = giveB, [session.to] = giveA })
+	return true
 end
 
 function PlayerService:_validHeroes(profile, heroes)
@@ -851,6 +1015,9 @@ function PlayerService:Handle(player, action, payload, inLobby)
 		if not rows then return true, false, failure end
 		local key = self:_boardKey(payload.mapId, payload.size, period, payload.modeId)
 		return true, true, { rows = rows, season = self:_season(), period = period, mapId = payload.mapId, size = payload.size, version = tostring(self.config.BalanceVersion or "1"), personal = record.profile.best[key] or 0 }
+	elseif string.sub(action, 1, 5) == "Trade" then
+		local ok, result = self:_trade(player, record, action, payload)
+		return true, ok, result
 	end
 	local code, codeEntry
 	if action == "RedeemCode" then
@@ -1429,6 +1596,7 @@ function PlayerService:Release(player)
 	-- The flush yields. A reconnect may have rebound this account meanwhile.
 	if self.records[player.UserId] ~= record or record.player ~= player then return end
 	record.closing = true
+	if self.trades and self.trades[player.UserId] then self:_endTrade(self.trades[player.UserId], "cancelled") end
 	local ok = self:_transaction(player, function() return true end, nil, { releasing = true, silent = true })
 	-- Mutations already commit immediately. If lease release fails, the next
 	-- server waits for expiry rather than taking ownership prematurely.

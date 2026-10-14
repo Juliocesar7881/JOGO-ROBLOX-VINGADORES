@@ -968,6 +968,43 @@ local function session(screen)
 		if contextOpen() then click("X") end
 		push(lobbySnapshot(veteranProfile()))
 	end)
+	step("a friend trade is drawn from the server's view", function()
+		local trader = veteranProfile()
+		trader.heroes.thor = { xp = 0, level = 1, stars = 0 }
+		trader.tradesLeft = 10
+		push(lobbySnapshot(trader))
+		fx({ kind = "OpenPanel", panel = "trade" })
+		check(contextOpen() and named(gui, "TradeInvite_" .. ALLY_ID) ~= nil, tag .. ": the trade panel lists the other player in the server")
+		clickNamed("TradeInvite_" .. ALLY_ID)
+		check(actions[#actions] == "TradeOffer", tag .. ": inviting sends TradeOffer")
+		if contextOpen() then click("X") end
+		trader.trade = { id = "t1", stage = "invited", invited = true, partnerId = ALLY_ID, partnerName = "Ally" }
+		push(lobbySnapshot(trader))
+		local strip = named(gui, "GuideTip")
+		check(strip ~= nil and string.find(strip.Text, "trocar", 1, true) ~= nil, tag .. ": the lobby strip announces the invite, got " .. tostring(strip and strip.Text))
+		fx({ kind = "OpenPanel", panel = "trade" })
+		check(named(gui, "TradeAccept") ~= nil, tag .. ": an invite shows Accept")
+		clickNamed("TradeAccept")
+		check(actions[#actions] == "TradeAccept", tag .. ": accepting sends TradeAccept")
+		if contextOpen() then click("X") end
+		trader.trade = { id = "t1", stage = "open", invited = false, partnerId = ALLY_ID, partnerName = "Ally", theirs = "hulk", lockedUntil = 0, unequal = false }
+		push(lobbySnapshot(trader))
+		fx({ kind = "OpenPanel", panel = "trade" })
+		check(named(gui, "TradeSet_thor") ~= nil and named(gui, "TradeSet_ironman") == nil, tag .. ": only tradeable heroes are offered: no starters, nothing on the team")
+		check(named(gui, "TradeConfirm") ~= nil and named(gui, "TradeConfirm").Active == false, tag .. ": with nothing offered the confirm sleeps")
+		clickNamed("TradeSet_thor")
+		check(actions[#actions] == "TradeSet", tag .. ": offering sends TradeSet")
+		if contextOpen() then click("X") end
+		trader.trade.mine = "thor"; trader.trade.unequal = true
+		push(lobbySnapshot(trader))
+		fx({ kind = "OpenPanel", panel = "trade" })
+		-- (A stand-in button only carries Active once UI.disabled set it.)
+		check(named(gui, "TradeUnequal") ~= nil and named(gui, "TradeConfirm").Active ~= false and string.find(named(gui, "TradeConfirm").Text, "mesmo assim", 1, true) ~= nil, tag .. ": an unequal trade is flagged and the confirm wakes as 'confirm anyway'")
+		clickNamed("TradeConfirm")
+		check(actions[#actions] == "TradeConfirm", tag .. ": confirming sends TradeConfirm")
+		if contextOpen() then click("X") end
+		push(lobbySnapshot(veteranProfile()))
+	end)
 	local openings = {
 		{ panel = "quests" }, { panel = "leaderboard" },
 		{ panel = "shop", shopKind = "pass", shopKey = "vip" }, { panel = "shop", shopKind = "pass", shopKey = "collector" },

@@ -606,6 +606,95 @@ function Panels.new(ctx)
 		end
 	end
 
+	-- Trading, one hero for one, with a Roblox friend in this server. Every rule
+	-- is the server's (PlayerService trade actions); this only draws its view.
+	local function contextTrade(body)
+		local p=profile()
+		local trade=type(p.trade)=="table" and p.trade or nil
+		local left=tonumber(p.tradesLeft) or 0
+		if not trade then
+			UI.label(body,T("Troque 1 herói por 1 herói com um amigo do Roblox que esteja neste servidor. Nunca Ouro, nunca heróis iniciais nem os da sua equipe.","Trade 1 hero for 1 hero with a Roblox friend in this server. Never Gold, never starter heroes or the ones on your team."),{Name="TradeIntro",Size=UDim2.new(1,-6,0,64),TextWrapped=true,TextSize=15,TextColor3=C.muted})
+			UI.label(body,left==1 and T("1 troca restante hoje","1 trade left today") or (tostring(left)..T(" trocas restantes hoje"," trades left today")),{Name="TradesLeft",Size=UDim2.new(1,-6,0,24),TextSize=14,TextColor3=C.gold})
+			local others={}
+			for _,entry in ipairs(ctx.state().players or {}) do if entry.userId~=player.UserId then table.insert(others,entry) end end
+			if #others==0 then UI.label(body,T("Ninguém mais está neste servidor agora.","Nobody else is in this server right now."),{Name="TradeNobody",Size=UDim2.new(1,-6,0,40),TextSize=16,TextWrapped=true}) end
+			for _,entry in ipairs(others) do
+				local row=UI.roundFrame(body,{Name="TradeWith_"..tostring(entry.userId),Size=UDim2.new(1,-6,0,64),BackgroundColor3=UI.Skin.slot})
+				UI.fit(UI.label(row,tostring(entry.name or "?").."  •  NV "..tostring(entry.level or 1),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-190,0,48),Font=UI.Fonts.display,TextSize=18}),12)
+				local invite=UI.button(row,T("Convidar","Invite"),function() act("TradeOffer",{userId=entry.userId}) end,{Name="TradeInvite_"..tostring(entry.userId),AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-10,0.5,0),Size=UDim2.fromOffset(150,46),BackgroundColor3=C.green,TextSize=17})
+				if left<=0 then UI.disabled(invite) end
+			end
+			return
+		end
+		local partner=tostring(trade.partnerName or "?")
+		if trade.stage=="invited" then
+			if trade.invited then
+				UI.label(body,partner..T(" quer trocar um herói com você."," wants to trade a hero with you."),{Name="TradeInviteText",Size=UDim2.new(1,-6,0,48),TextWrapped=true,TextSize=18,Font=UI.Fonts.display})
+				UI.button(body,T("Aceitar","Accept"),function() act("TradeAccept",{}) end,{Name="TradeAccept",Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.green,TextSize=18})
+				UI.button(body,T("Recusar","Decline"),function() act("TradeCancel",{}) end,{Name="TradeCancel",Size=UDim2.new(1,-6,0,46),BackgroundColor3=C.red,TextSize=16})
+			else
+				UI.label(body,T("Esperando ","Waiting for ")..partner..T(" aceitar…"," to accept…"),{Name="TradeWaiting",Size=UDim2.new(1,-6,0,48),TextWrapped=true,TextSize=18,Font=UI.Fonts.display})
+				UI.button(body,T("Cancelar","Cancel"),function() act("TradeCancel",{}) end,{Name="TradeCancel",Size=UDim2.new(1,-6,0,46),BackgroundColor3=C.red,TextSize=16})
+			end
+			return
+		end
+		-- Open: the two offers side by side, then the confirm and the cancel.
+		local board=UI.row(body,150)
+		board.Name="TradeBoard"
+		local function side(x,title,heroId,confirmed,name)
+			local box=UI.roundFrame(board,{Name=name,Position=UDim2.fromScale(x,0),Size=UDim2.new(0.5,-6,1,0),BackgroundColor3=UI.Skin.slot},confirmed and C.green or C.ink)
+			UI.fit(UI.label(box,title,{Position=UDim2.fromOffset(10,6),Size=UDim2.new(1,-20,0,22),Font=UI.Fonts.display,TextSize=16}),10)
+			local def=heroId and Catalog.Heroes[heroId]
+			if def then
+				heroPortrait(box,heroId,{Position=UDim2.fromOffset(10,32),Size=UDim2.fromOffset(84,84)})
+				UI.fit(UI.label(box,L(def.name),{Position=UDim2.fromOffset(102,36),Size=UDim2.new(1,-112,0,24),Font=UI.Fonts.display,TextSize=16}),10)
+				UI.chip(box,Catalog.Upper(L(Catalog.Rarities[def.rarity].name)),UI.color(Catalog.Rarities[def.rarity].color),{Position=UDim2.fromOffset(102,64),Size=UDim2.fromOffset(100,20),TextSize=11})
+			else
+				UI.label(box,T("Nada ainda","Nothing yet"),{Position=UDim2.fromOffset(10,32),Size=UDim2.new(1,-20,0,84),TextSize=15,TextColor3=C.muted})
+			end
+			if confirmed then UI.chip(box,T("Confirmado","Confirmed"),C.green,{Name=name.."Confirmed",AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-8,1,-8),Size=UDim2.fromOffset(110,22),TextSize=12}) end
+		end
+		side(0,T("Você dá","You give"),trade.mine,trade.myConfirm,"TradeMine")
+		side(0.5,partner..T(" dá"," gives"),trade.theirs,trade.theirConfirm,"TradeTheirs")
+		if trade.unequal then UI.chip(body,T("Troca desigual: raridades diferentes","Unequal trade: different rarities"),C.red,{Name="TradeUnequal",Size=UDim2.new(1,-6,0,28),TextSize=13}) end
+		local lockLeft=math.max(0,math.ceil((tonumber(trade.lockedUntil) or 0)-os.time()))
+		local ready=trade.mine~=nil and trade.theirs~=nil and lockLeft<=0
+		local label=trade.myConfirm and (T("Esperando ","Waiting for ")..partner) or (lockLeft>0 and (T("Aguarde ","Wait ")..tostring(lockLeft).."s") or (trade.unequal and T("Confirmar mesmo assim","Confirm anyway") or T("Confirmar troca","Confirm trade")))
+		local confirm=UI.button(body,label,function() act("TradeConfirm",{acceptUnequal=trade.unequal==true}) end,{Name="TradeConfirm",Size=UDim2.new(1,-6,0,52),BackgroundColor3=trade.unequal and C.coral or C.green,TextSize=19})
+		if not ready or trade.myConfirm then UI.disabled(confirm) end
+		if lockLeft>0 then
+			-- Redraw when the wait ends, so the button wakes up by itself.
+			kit.tradeTick=(kit.tradeTick or 0)+1
+			local tick=kit.tradeTick
+			task.delay(lockLeft+0.2,function() if kit.tradeTick==tick and type(profile().trade)=="table" then renderContext() end end)
+		end
+		UI.button(body,T("Cancelar troca","Cancel trade"),function() act("TradeCancel",{}) end,{Name="TradeCancel",Size=UDim2.new(1,-6,0,44),BackgroundColor3=C.red,TextSize=16})
+		-- What I can offer: no starters, nothing on my team (the server is the judge).
+		UI.label(body,T("Escolha o que você oferece","Choose what you offer"),{Size=UDim2.new(1,-6,0,28),Font=UI.Fonts.display,TextSize=18})
+		local ids={}
+		for id in pairs(p.heroes or {}) do
+			local def=Catalog.Heroes[id]
+			local onTeam=table.find(p.loadout or {},id)~=nil
+			if def and not def.starter and not onTeam then table.insert(ids,id) end
+		end
+		table.sort(ids,function(a,b)
+			local ra,rb=table.find(Catalog.RarityOrder,Catalog.Heroes[a].rarity) or 0,table.find(Catalog.RarityOrder,Catalog.Heroes[b].rarity) or 0
+			if ra~=rb then return ra>rb end
+			return L(Catalog.Heroes[a].name)<L(Catalog.Heroes[b].name)
+		end)
+		if #ids==0 then UI.label(body,T("Nenhum herói disponível para troca.","No hero available to trade."),{Name="TradeNothing",Size=UDim2.new(1,-6,0,40),TextSize=15,TextColor3=C.muted}) end
+		for _,id in ipairs(ids) do
+			local def=Catalog.Heroes[id]
+			local tint=UI.color(Catalog.Rarities[def.rarity].color)
+			local selected=trade.mine==id
+			local row=UI.roundFrame(body,{Name="TradeOffer_"..id,Size=UDim2.new(1,-6,0,64),BackgroundColor3=UI.Skin.slot},selected and C.green or tint)
+			heroPortrait(row,id,{Position=UDim2.fromOffset(6,4),Size=UDim2.fromOffset(56,56)})
+			UI.fit(UI.label(row,L(def.name),{Position=UDim2.fromOffset(72,8),Size=UDim2.new(1,-240,0,24),Font=UI.Fonts.display,TextSize=17}),10)
+			UI.chip(row,Catalog.Upper(L(Catalog.Rarities[def.rarity].name)),tint,{Position=UDim2.fromOffset(72,36),Size=UDim2.fromOffset(100,20),TextSize=11})
+			UI.button(row,selected and T("Retirar","Withdraw") or T("Oferecer","Offer"),function() act("TradeSet",selected and {} or {heroId=id}) end,{Name="TradeSet_"..id,AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-10,0.5,0),Size=UDim2.fromOffset(140,46),BackgroundColor3=selected and C.card or C.blue,TextSize=16})
+		end
+	end
+
 	local function contextPremium(body)
 	 starterOffer(body)
 	 -- Heroes bought but not yet chosen: the way to them stays on top of the shop.
@@ -1088,6 +1177,8 @@ function Panels.new(ctx)
 		local width=UI.contextLayout(screen.X,screen.Y,{wide=true}).w-40
 		local wide=width>=640
 		-- Bases have their own dock entry and screen.
+		-- Trading with a friend starts here: the heroes are already on screen.
+		UI.button(body,T("Trocar herói com amigo","Trade a hero with a friend"),function() openContext("trade",{}) end,{Name="OpenTrade",Size=UDim2.new(1,-6,0,40),BackgroundColor3=C.blue,TextSize=16})
 		local team=UI.row(body,104)
 		team.Name="TeamRow"
 		local lineup=UI.frame(team,{Name="SquadSlots",Size=UDim2.new(1,0,0,104),BackgroundTransparency=1})
@@ -1776,7 +1867,7 @@ function Panels.new(ctx)
 		bases=contextBases,
 		modes=contextModes,
 		talents = contextTalents,
-		hero = contextHero, chests = contextChests, premium = contextPremium, pick = contextPick, inventory = contextSquad, shop = contextShop,
+		hero = contextHero, chests = contextChests, premium = contextPremium, pick = contextPick, trade = contextTrade, inventory = contextSquad, shop = contextShop,
 		quests = contextQuests, leaderboard = contextLeaderboard, squad = contextSquad, settings = contextSettings,
 		rewards = contextRewards,
 	}

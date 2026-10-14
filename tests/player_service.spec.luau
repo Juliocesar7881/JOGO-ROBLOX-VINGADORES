@@ -100,8 +100,9 @@ local function scriptedRolls(...)
 	local values, index = { ... }, 0
 	return { NextNumber = function() index += 1; return values[index] or 0 end }
 end
+local friends = {}
 local function player(id)
-	local result = { UserId = id, Name = "Player" .. id }
+	local result = { UserId = id, Name = "Player" .. id, IsFriendsWith = function(self, other) return friends[tostring(self.UserId) .. ":" .. tostring(other)] == true end }
 	online[id] = result
 	return result
 end
@@ -1174,6 +1175,75 @@ do
 		local _, againOk, again = service:Handle(picker, "PickHero", { heroId = rareId }, true)
 		dup, again = type(dup) == "table" and dup.result or {}, type(again) == "table" and again.result or {}
 		check(dupOk and not dup.duplicate and againOk and again.duplicate and again.gold == Catalog.Heroes[rareId].economy.duplicate.gold and service:Get(picker).heroPicks.rare == 1, "A rare picked twice: the second pays as a duplicate")
+	end)()
+	-- Trading between friends: one hero for one, the server judging every step.
+	;(function()
+		local a, b, stranger = player(88), player(89), player(90)
+		service:Load(a); service:Load(b); service:Load(stranger)
+		friends["88:89"], friends["89:88"] = true, true
+		service:_transaction(a, function(profile, now) service:_grantHero(profile, "thor", now); return true end)
+		service:_transaction(b, function(profile, now) service:_grantHero(profile, "hulk", now); service:_grantHero(profile, "wanda", now); return true end)
+		check(service:Get(a).trade == nil and service:Get(a).tradesLeft == Catalog.Trade.perDay, "A fresh account has no trade open and every trade of the day left")
+		local _, offerStranger = service:Handle(a, "TradeOffer", { userId = 90 }, true)
+		check(not offerStranger, "A trade is offered only to a Roblox friend")
+		local _, offerOk = service:Handle(a, "TradeOffer", { userId = 89 }, true)
+		check(offerOk and service:Get(a).trade.stage == "invited" and service:Get(a).trade.invited == false and service:Get(b).trade.invited == true and service:Get(b).trade.partnerName == "Player88", "The invite reaches both sides")
+		local _, twice = service:Handle(stranger, "TradeOffer", { userId = 88 }, true)
+		check(not twice, "A player already trading cannot be invited")
+		local _, setEarly = service:Handle(a, "TradeSet", { heroId = "thor" }, true)
+		check(not setEarly, "Nothing is offered before the friend accepts")
+		local _, acceptWrong = service:Handle(a, "TradeAccept", {}, true)
+		check(not acceptWrong, "Only the invited side accepts")
+		local _, acceptOk = service:Handle(b, "TradeAccept", {}, true)
+		check(acceptOk and service:Get(a).trade.stage == "open", "The friend accepts")
+		local _, starter = service:Handle(a, "TradeSet", { heroId = "ironman" }, true)
+		check(not starter, "A starter hero is never traded")
+		service:Handle(a, "SetLoadout", { heroes = { "thor", "ironman" } }, true)
+		local _, onTeam = service:Handle(a, "TradeSet", { heroId = "thor" }, true)
+		check(not onTeam, "A hero on the team is not traded")
+		service:Handle(a, "SetLoadout", { heroes = { "ironman" } }, true)
+		local _, setA = service:Handle(a, "TradeSet", { heroId = "thor" }, true)
+		check(setA and service:Get(b).trade.theirs == "thor" and service:Get(a).trade.mine == "thor", "An offer shows on both sides")
+		-- A granted hero joins the team when a slot is free: take it off first.
+		service:Handle(b, "SetLoadout", { heroes = { "ironman" } }, true)
+		local _, owned, ownedWhy = service:Handle(b, "TradeSet", { heroId = "wanda" }, true)
+		check(owned, "The friend offers a legendary: " .. tostring(type(ownedWhy) == "table" and "ok" or ownedWhy))
+		local _, setB = service:Handle(b, "TradeSet", { heroId = "hulk" }, true)
+		check(setB and service:Get(a).trade.unequal == true, "An epic for a legendary is flagged unequal")
+		local _, tooSoon = service:Handle(a, "TradeConfirm", { acceptUnequal = true }, true)
+		check(not tooSoon, "A confirm right after a change waits")
+		clockOffset += Catalog.Trade.lockSeconds
+		local _, plain = service:Handle(a, "TradeConfirm", {}, true)
+		check(not plain, "An unequal trade needs the explicit second confirm")
+		local _, accepted = service:Handle(a, "TradeConfirm", { acceptUnequal = true }, true)
+		check(accepted and service:Get(a).trade.myConfirm == true and service:Get(b).trade.theirConfirm == true, "The explicit confirm is recorded")
+		local _, changed = service:Handle(b, "TradeSet", { heroId = "wanda" }, true)
+		check(changed and service:Get(a).trade.myConfirm == false and service:Get(a).trade.unequal == false, "Changing an offer clears every confirm")
+		clockOffset += Catalog.Trade.lockSeconds
+		local _, confA = service:Handle(a, "TradeConfirm", {}, true)
+		check(confA and service:Get(a).heroes.thor ~= nil, "One confirm moves nothing yet")
+		local _, confB = service:Handle(b, "TradeConfirm", {}, true)
+		local pa, pb = service:Get(a), service:Get(b)
+		check(confB and pa.heroes.wanda ~= nil and pa.heroes.thor == nil and pb.heroes.thor ~= nil and pb.heroes.wanda == nil and pb.heroes.hulk ~= nil, "Both confirms swap the two heroes")
+		check(pa.trade == nil and pb.trade == nil and pa.tradeNotice.kind == "done" and pa.tradeNotice.heroId == "wanda" and pb.tradeNotice.heroId == "thor", "The session closes and each side is told what it got")
+		check(service:Get(a).tradeNotice == nil and pa.tradesLeft == Catalog.Trade.perDay - 1, "The notice is told once; the day's count moved")
+		check(pa.gold == 0 and pb.gold == 0, "A trade never creates Gold")
+		-- A friend who leaves cancels the trade for the one who stays.
+		service:Handle(a, "TradeOffer", { userId = 89 }, true)
+		service:Handle(b, "TradeAccept", {}, true)
+		service:Release(b)
+		local left = service:Get(a)
+		check(left.trade == nil and left.tradeNotice ~= nil and left.tradeNotice.kind == "cancelled", "A friend leaving cancels the trade")
+		service:Load(b)
+		-- The daily limit.
+		service:_transaction(a, function(profile, now)
+			profile._trades = {}
+			for index = 1, Catalog.Trade.perDay do table.insert(profile._trades, { id = "old" .. index, with = 89, gave = "x", got = "y", at = now }) end
+			return true
+		end)
+		local _, capped = service:Handle(a, "TradeOffer", { userId = 89 }, true)
+		check(not capped and service:Get(a).tradesLeft == 0, "The day's limit stops a new trade")
+		clockOffset -= 2 * Catalog.Trade.lockSeconds
 	end)()
 	-- Where paid random items are restricted, the premium chests become Gold.
 	do

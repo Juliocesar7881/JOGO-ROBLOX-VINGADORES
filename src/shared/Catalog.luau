@@ -641,6 +641,18 @@ Catalog.Abilities = {
 }
 
 --==============================================================================
+-- Trading: one hero for one hero, between Roblox friends in the same server
+--==============================================================================
+-- The server owns every step (PlayerService trade actions). Never Gold or
+-- Robux, never a starter hero or one on the current team, never a hero the
+-- friend already owns; different rarities need an explicit second confirm.
+Catalog.Trade = {
+	perDay = 10, -- trades an account may complete per UTC day
+	lockSeconds = 5, -- after the last change, confirms wait this long
+	keep = 50, -- past trades remembered on the profile, for support
+}
+
+--==============================================================================
 -- Rewards: reasons to come back
 --==============================================================================
 -- Four small loops around the main game. None of them can be bought, and each

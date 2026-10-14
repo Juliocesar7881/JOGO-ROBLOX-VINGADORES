@@ -647,7 +647,19 @@ passageiro), `BuyGuaranteed {itemId}` (lobby, só contas com itens aleatórios
 pagos restritos; preço `Rules.GuaranteedPrice`), `LeaveAfk {}` (lobby, tira o
 jogador da sala AFK), `PickHero {heroId}` (lobby; gasta um crédito de
 `profile.heroPicks[raridade]` pago por um pacote Lendário/Equipe e concede o
-herói escolhido; herói já possuído paga como duplicata).
+herói escolhido; herói já possuído paga como duplicata). Troca entre amigos
+(lobby, `Catalog.Trade`): `TradeOffer {userId}` (só amigos do Roblox no mesmo
+servidor, nenhum dos dois em outra troca, limite diário), `TradeAccept {}`,
+`TradeSet {heroId?}` (herói próprio, não inicial, fora da equipe, que o amigo
+não tem; `heroId` ausente retira a oferta; qualquer mudança zera as
+confirmações), `TradeConfirm {acceptUnequal?}` (só `lockSeconds` depois da
+última mudança; raridades diferentes exigem `acceptUnequal = true`; a segunda
+confirmação executa: cada conta grava a sua metade sob a própria trava e uma
+segunda metade falha desfaz a primeira) e `TradeCancel {}`. O snapshot traz
+`trade` (visão deste lado: `stage`, `invited`, `mine`, `theirs`, `myConfirm`,
+`theirConfirm`, `unequal`, `lockedUntil`, `partnerName`), `tradesLeft` e, uma
+vez, `tradeNotice {kind = "done"|"cancelled", heroId}`. O histórico fica em
+`profile._trades` (até `Catalog.Trade.keep`).
 
 **FX novo.** `WaveCash {amount}`: bônus de Ouro da partida ao fim da onda.
 `CoinRemove` passa a trazer `value`. `BossArrive {enemyId, final, position}`:

@@ -580,7 +580,7 @@ renderContext = function()
 	titles.maps = T("Escolha seu Mapa", "Choose Your Map")
 	titles.bases=T("Minhas Bases","My Bases")
 	titles.chests=Catalog.Chests[kit.selectedChest].kind=="base" and T("Invocar Bases","Summon Bases") or T("Invocar Heróis","Summon Heroes"); titles.premium=T("Loja Robux","Robux Shop")
-	titles.inventory=T("Meus Heróis","My Heroes"); titles.modes=T("Portais","Portals"); titles.rewards=T("Prêmios Diários","Daily Rewards"); titles.pick=T("Escolha seu Herói","Choose Your Hero")
+	titles.inventory=T("Meus Heróis","My Heroes"); titles.modes=T("Portais","Portals"); titles.rewards=T("Prêmios Diários","Daily Rewards"); titles.pick=T("Escolha seu Herói","Choose Your Hero"); titles.trade=T("Troca entre Amigos","Friend Trade")
 	local narrow=size.X<560
 	local ribbonH=narrow and 46 or 56
 	local ribbonW=math.min(slot.w-70,narrow and 300 or 470)
@@ -912,6 +912,9 @@ renderLobby = function()
 				or (type(p.stats)=="table" and (p.stats.matches or 0)<=1 and next(p.campaign or {})==nil)
 			if errands then
 				-- TutorialCard owns this objective; do not repeat it in the strip.
+			elseif type(p.trade)=="table" and p.trade.invited then
+				-- A friend is waiting on an answer: that beats every other errand.
+				key,suggestion="trade:"..tostring(p.trade.id),{tostring(p.trade.partnerName).." "..T("quer trocar um herói com você!","wants to trade a hero with you!"),function() openContext("trade",{hud=true}) end}
 			elseif goal then
 				local target=goal.target or {}
 				local progress=(goal.total or 1)>1 and ("  "..tostring(goal.progress).."/"..tostring(goal.total)) or ""
@@ -1676,6 +1679,13 @@ end
 
 local function applyState(nextState)
 	if type(nextState) ~= "table" then return end
+	-- A trade that ended on the server is told once (profile.tradeNotice).
+	local notice = type(nextState.profile) == "table" and nextState.profile.tradeNotice
+	if type(notice) == "table" then
+		local got = notice.heroId and Catalog.Heroes[notice.heroId]
+		if notice.kind == "done" and got then showToast(T("Troca concluída: ", "Trade done: ") .. L(got.name) .. T(" é seu!", " is yours!"))
+		elseif notice.kind == "cancelled" then showToast(T("A troca foi cancelada.", "The trade was cancelled."), true) end
+	end
 	-- Sync may beat the profile load on a cold join. Lobby -> Lobby with the
 	-- first profile is still a screen transition: the placeholder must rebuild.
 	local firstProfile = nextState.profile ~= nil and not (state and state.profile)
