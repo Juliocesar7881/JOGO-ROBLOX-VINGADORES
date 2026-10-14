@@ -652,6 +652,12 @@ Catalog.Trade = {
 	keep = 50, -- past trades remembered on the profile, for support
 }
 
+-- The day's market: one exact hero per rarity for Gold, new every UTC day,
+-- one of each per account per day (Rules.DailyMarket, action BuyMarket).
+-- Priced from the chests' own odds (Rules.GuaranteedPrice × discount): a
+-- saver's shortcut to the hero they want, never a cheaper farm than chests.
+Catalog.Market = { rarities = { "common", "rare", "legendary" }, discount = 0.5 }
+
 --==============================================================================
 -- Rewards: reasons to come back
 --==============================================================================

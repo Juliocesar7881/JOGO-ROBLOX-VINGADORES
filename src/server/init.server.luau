@@ -491,7 +491,7 @@ local MATCH_ACTIONS = {
 local QUIET_ACTIONS = { CollectCoin = true, Ping = true }
 -- Actions that move gold, so the economy can be read from the funnels instead
 -- of being inferred from balance snapshots.
-local ECONOMY_ACTIONS = { OpenChest = "Chest", UpgradeAbility = "Upgrade", ClaimQuest = "Gameplay", PickHero = "Shop" }
+local ECONOMY_ACTIONS = { OpenChest = "Chest", UpgradeAbility = "Upgrade", ClaimQuest = "Gameplay", PickHero = "Shop", BuyMarket = "Shop" }
 local tutorialTower = {}
 
 -- Kept as an explicit rejection for old clients. Only a server-owned
@@ -574,7 +574,7 @@ local function route(player, action, payload)
 		}
 	end
 	-- Verify the specific summon hall, including guaranteed regional offers.
-	if action=="OpenChest" or action=="BuyGuaranteed" then
+	if action=="OpenChest" or action=="BuyGuaranteed" or action=="BuyMarket" then
 		local chest=action=="OpenChest" and type(payload.chestId)=="string" and Catalog.Chests[payload.chestId]
 		local itemId=type(payload.itemId)=="string" and payload.itemId
 		local kind=chest and (chest.kind or "hero") or (itemId and Catalog.Bases[itemId] and "base" or "hero")

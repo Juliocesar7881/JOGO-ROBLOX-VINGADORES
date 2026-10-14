@@ -1005,6 +1005,19 @@ local function session(screen)
 		if contextOpen() then click("X") end
 		push(lobbySnapshot(veteranProfile()))
 	end)
+	step("the day's market sells exact heroes for Gold", function()
+		local shopper = veteranProfile({ gold = 50000 })
+		shopper.market = { day = 1, renewsAt = os.time() + 3600, offers = { { heroId = "thor", rarity = "legendary", price = 40000, bought = false }, { heroId = "hawkeye", rarity = "common", price = 500, bought = false } } }
+		push(lobbySnapshot(shopper))
+		fx({ kind = "OpenPanel", panel = "chests" })
+		local thor = named(gui, "MarketBuy_thor")
+		check(thor ~= nil and string.find(thor.Text, "40", 1, true) ~= nil, tag .. ": the hero hall lists today's offer with its Gold price, got " .. tostring(thor and thor.Text))
+		check(named(gui, "MarketBuy_hawkeye") ~= nil and named(gui, "MarketBuy_hawkeye").Active == false, tag .. ": an owned hero's offer is marked yours and sleeps")
+		clickNamed("MarketBuy_thor")
+		check(actions[#actions] == "BuyMarket", tag .. ": buying sends BuyMarket; the server charges")
+		if contextOpen() then click("X") end
+		push(lobbySnapshot(veteranProfile()))
+	end)
 	local openings = {
 		{ panel = "quests" }, { panel = "leaderboard" },
 		{ panel = "shop", shopKind = "pass", shopKey = "vip" }, { panel = "shop", shopKind = "pass", shopKey = "collector" },

@@ -242,6 +242,35 @@ function Rules.GuaranteedPrice(itemId)
 	return if best then math.ceil(best / 50) * 50 else nil
 end
 
+-- The Gold price of a hero on the day's market: the guaranteed price with
+-- Catalog.Market.discount, in steps of 50.
+function Rules.MarketPrice(heroId)
+	local base = Catalog.Heroes[heroId] and Rules.GuaranteedPrice(heroId)
+	if not base then return nil end
+	return math.ceil(base * Catalog.Market.discount / 50) * 50
+end
+
+-- The heroes on sale on a UTC day number: one per rarity in
+-- Catalog.Market.rarities, never a starter, chosen by a fixed hash of the day
+-- so every server and client agree, each with its Gold price.
+function Rules.DailyMarket(day)
+	day = math.floor(number(day, 0))
+	local offers = {}
+	for index, rarity in ipairs(Catalog.Market.rarities) do
+		local pool = {}
+		for _, id in ipairs(Catalog.HeroOrder) do
+			local hero = Catalog.Heroes[id]
+			if hero.rarity == rarity and not hero.starter then table.insert(pool, id) end
+		end
+		if #pool > 0 then
+			local hash = (day * 2654435761 + index * 40503 + 7) % 2147483647
+			local heroId = pool[hash % #pool + 1]
+			table.insert(offers, { heroId = heroId, rarity = rarity, price = Rules.MarketPrice(heroId) })
+		end
+	end
+	return { day = day, renewsAt = (day + 1) * 86400, offers = offers }
+end
+
 -- What a stretch of whole minutes in an AFK chamber pays. nil for anything
 -- that is not a farm or not a sane number of minutes.
 function Rules.AfkReward(kind, minutes)

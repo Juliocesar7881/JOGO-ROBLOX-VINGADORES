@@ -300,6 +300,19 @@ do
 	end
 	check(byRarity.legendary > byRarity.rare and byRarity.rare > byRarity.common, "rarer hero groups cost more to guarantee")
 	check(Rules.GuaranteedPrice("nobody") == nil, "unknown items have no price")
+	-- The day's market: one hero per rarity, never a starter, the same for everyone that day, new the next.
+	local today = Rules.DailyMarket(20740)
+	check(#today.offers == #Catalog.Market.rarities and today.renewsAt == 20741 * 86400, "the market has one offer per rarity and renews at midnight UTC")
+	for index, offer in ipairs(today.offers) do
+		local hero = Catalog.Heroes[offer.heroId]
+		check(hero ~= nil and hero.rarity == Catalog.Market.rarities[index] and not hero.starter, "offer " .. index .. " is a non-starter hero of its rarity")
+		check(offer.price == Rules.MarketPrice(offer.heroId) and offer.price % 50 == 0 and offer.price < Rules.GuaranteedPrice(offer.heroId) and offer.price >= cheapest, "an offer costs less than the guarantee, more than a chest, in steps of 50")
+	end
+	check(Rules.DailyMarket(20740).offers[1].heroId == today.offers[1].heroId, "the same day gives the same market")
+	local differs = false
+	for day = 20741, 20760 do if Rules.DailyMarket(day).offers[1].heroId ~= today.offers[1].heroId then differs = true end end
+	check(differs, "the market changes from day to day")
+	check(Rules.MarketPrice("nobody") == nil, "an unknown hero has no market price")
 end
 
 -- AFK farm: a small, fixed pay per whole minute, and nothing for nonsense.

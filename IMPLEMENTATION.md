@@ -659,7 +659,11 @@ segunda metade falha desfaz a primeira) e `TradeCancel {}`. O snapshot traz
 `trade` (visão deste lado: `stage`, `invited`, `mine`, `theirs`, `myConfirm`,
 `theirConfirm`, `unequal`, `lockedUntil`, `partnerName`), `tradesLeft` e, uma
 vez, `tradeNotice {kind = "done"|"cancelled", heroId}`. O histórico fica em
-`profile._trades` (até `Catalog.Trade.keep`).
+`profile._trades` (até `Catalog.Trade.keep`). Mercado do dia (`Catalog.Market`,
+`Rules.DailyMarket(dia UTC)`): o snapshot traz `market {day, renewsAt, offers =
+{heroId, rarity, price, bought}}`; `BuyMarket {heroId}` (lobby, perto da loja de
+heróis) compra um herói da oferta de hoje pelo preço listado, uma vez por conta
+por dia (`profile.market`), nunca um herói já possuído.
 
 **FX novo.** `WaveCash {amount}`: bônus de Ouro da partida ao fim da onda.
 `CoinRemove` passa a trazer `value`. `BossArrive {enemyId, final, position}`:

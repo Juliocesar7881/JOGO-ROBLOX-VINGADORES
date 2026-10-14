@@ -505,6 +505,27 @@ function Panels.new(ctx)
 		if chest.pity then smallText(body,T("A garantia entrega um dos destaques com estrela.","The guarantee awards one of the starred featured items."),0,28) end
 		smallText(body,isBase and T("Base repetida vira Ouro.","A duplicate base becomes Gold.") or T("Repetidos rendem Ouro, maestria, estrelas e cartas.","Duplicates grant Gold, mastery, stars and cards."),0,30)
 		resultCard()
+		-- The day's market: exact heroes for Gold, new every day, one each per account.
+		local market=not isBase and type(p.market)=="table" and p.market or nil
+		if market and #(market.offers or {})>0 then
+			local renew=math.max(0,(tonumber(market.renewsAt) or 0)-os.time())
+			UI.section(body,T("Oferta do dia","Today's offer"),T("Renova em ","Renews in ")..math.floor(renew/3600).."h "..string.format("%02d",math.floor((renew%3600)/60)).."m"..T("  •  estoque 1 de cada","  •  stock 1 of each"))
+			for _,offer in ipairs(market.offers) do
+				local def=Catalog.Heroes[offer.heroId]
+				if def then
+					local color=UI.color(Catalog.Rarities[def.rarity].color)
+					local row=UI.roundFrame(body,{Name="Market_"..offer.heroId,Size=UDim2.new(1,-6,0,72),BackgroundColor3=UI.Skin.slot},color)
+					heroPortrait(row,offer.heroId,{Position=UDim2.fromOffset(6,4),Size=UDim2.fromOffset(64,64)})
+					UI.hover(row,function(box) if kit.heroTooltip then kit.heroTooltip(box,offer.heroId) end end,320)
+					UI.fit(UI.label(row,L(def.name),{Position=UDim2.fromOffset(80,8),Size=UDim2.new(1,-250,0,26),Font=UI.Fonts.display,TextSize=18}),10)
+					UI.chip(row,Catalog.Upper(L(Catalog.Rarities[def.rarity].name)),color,{Position=UDim2.fromOffset(80,40),Size=UDim2.fromOffset(100,20),TextSize=11})
+					local mine=owned[offer.heroId]~=nil
+					local label=mine and T("Já é seu","Yours") or offer.bought and T("Esgotado hoje","Sold out today") or (number(offer.price)..T(" Ouro"," Gold"))
+					local buy=UI.button(row,label,function() act("BuyMarket",{heroId=offer.heroId},function() showToast(L(def.name)..T(" entrou para a sua coleção!"," joined your collection!")) end) end,{Name="MarketBuy_"..offer.heroId,AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-10,0.5,0),Size=UDim2.fromOffset(150,48),BackgroundColor3=C.gold,TextSize=16})
+					if mine or offer.bought or (p.gold or 0)<offer.price then UI.disabled(buy) end
+				end
+			end
+		end
 		if p.paidRandomRestricted then
 			UI.section(body,T("Escolha garantida","Guaranteed choice"),T("Esta conta compra sem sorteio: escolha exatamente o que receber.","This account buys without a draw: choose exactly what you get."))
 			for _,itemId in ipairs(isBase and Catalog.BaseOrder or Catalog.HeroOrder) do

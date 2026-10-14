@@ -25,7 +25,7 @@ local SCHEMA_VERSION = 1
 local PUBLIC_FIELDS = { "gold", "xp", "level", "heroes", "bases", "equippedBase", "loadout", "abilities", "pity", "campaign", "tutorialComplete", "settings", "quests", "achievements", "best", "stats", "title", "talents", "starterPack", "boostUntil", "heroPicks" }
 -- Heroes are won from chests or bought directly with Robux, never with a plain
 -- gold purchase, so there is no BuyHero here: OpenChest is the way in.
-local ACTIONS = { BuyGuaranteed = true, PickHero = true, TradeOffer = true, TradeAccept = true, TradeSet = true, TradeConfirm = true, TradeCancel = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
+local ACTIONS = { BuyGuaranteed = true, PickHero = true, BuyMarket = true, TradeOffer = true, TradeAccept = true, TradeSet = true, TradeConfirm = true, TradeCancel = true, EquipBase = true, UpgradeTalent = true, ResetTalents = true, OpenChest = true, UpgradeAbility = true, SetLoadout = true, Settings = true, ClaimQuest = true, ProductInfo = true, Leaderboard = true, SetTitle = true, RankUpHero = true, SetHeroPoints = true,
 	ClaimFreeChest = true, ClaimLogin = true, ClaimPlaytime = true, ClaimMilestone = true, ClaimSeason = true,
 	RedeemCode = true, ClaimGroupReward = true }
 -- Rewards that can open a chest need their two random numbers drawn up front.
@@ -108,7 +108,7 @@ local function newProfile(now)
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
 		pity = { legendary = 0 },
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
-		codes = {}, starterPack = false, boostUntil = 0, heroPicks = {}, _trades = {}, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
+		codes = {}, starterPack = false, boostUntil = 0, heroPicks = {}, _trades = {}, market = { day = 0, bought = {} }, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", languageSet = false, lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
 		quests = {}, achievements = {}, best = {},
@@ -839,6 +839,13 @@ function PlayerService:Snapshot(player)
 	if record.passes.vip then result.titles.vip = copy(VIP_TITLE) end
 	if result.title ~= "" and not result.titles[result.title] then result.title = "" end
 	result.nextGoal = self.rules.NextGoal(result)
+	if self.catalog.Market then
+		-- Today's market, with what this account already took from it.
+		local market = self.rules.DailyMarket(math.floor(now / DAY))
+		local slot = type(record.profile.market) == "table" and record.profile.market.day == market.day and record.profile.market or nil
+		for _, offer in ipairs(market.offers) do offer.bought = slot ~= nil and slot.bought[offer.heroId] == true end
+		result.market = market
+	end
 	if self.catalog.Trade then
 		result.trade = self:_tradeView(player.UserId)
 		result.tradesLeft = math.max(0, self.catalog.Trade.perDay - tradesToday(record.profile, now))
@@ -1094,6 +1101,22 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			profile.heroPicks = picks
 			local duplicate, paid = self:_grantHero(profile, payload.heroId, now, {})
 			return true, { heroId = payload.heroId, rarity = hero.rarity, left = left - 1, duplicate = duplicate, gold = paid and paid.gold or 0 }
+		elseif action == "BuyMarket" then
+			-- Today's market (Rules.DailyMarket): one of each offer per account per day.
+			local day = math.floor(now / DAY)
+			local offer
+			for _, entry in ipairs(self.rules.DailyMarket(day).offers) do if entry.heroId == payload.heroId then offer = entry end end
+			if not offer then return false, "Este herói não está à venda hoje. / This hero is not on sale today." end
+			if profile.heroes[offer.heroId] then return false, "Você já tem este herói. / You already own this hero." end
+			local slot = type(profile.market) == "table" and profile.market or { day = 0, bought = {} }
+			if slot.day ~= day then slot = { day = day, bought = {} } end
+			if slot.bought[offer.heroId] then return false, "Esgotado por hoje. / Sold out for today." end
+			if profile.gold < offer.price then return false, "Ouro insuficiente. / Not enough Gold." end
+			profile.gold -= offer.price
+			slot.bought[offer.heroId] = true
+			profile.market = slot
+			self:_grantHero(profile, offer.heroId, now)
+			return true, { heroId = offer.heroId, price = offer.price }
 		elseif action == "OpenChest" then
 			if record.randomRestricted then return false, "Baús indisponíveis para esta conta. / Chests unavailable for this account." end
 			local chest = type(payload.chestId) == "string" and self.catalog.Chests[payload.chestId]
@@ -1271,7 +1294,7 @@ function PlayerService:Handle(player, action, payload, inLobby)
 	local snapshot = ok and self:Snapshot(player) or nil
 	-- A chest or an ability upgrade also reports what just happened, so the
 	-- client can play the reveal instead of guessing from a diff.
-	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility" or action == "RankUpHero" or action == "SetHeroPoints" or action == "RedeemCode" or action == "PickHero" or action:sub(1, 5) == "Claim") then snapshot.result = result end
+	if snapshot and type(result) == "table" and (action == "OpenChest" or action == "UpgradeAbility" or action == "RankUpHero" or action == "SetHeroPoints" or action == "RedeemCode" or action == "PickHero" or action == "BuyMarket" or action:sub(1, 5) == "Claim") then snapshot.result = result end
 	return true, ok, ok and snapshot or result
 end
 

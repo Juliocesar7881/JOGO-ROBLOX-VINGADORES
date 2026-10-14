@@ -1245,6 +1245,26 @@ do
 		check(not capped and service:Get(a).tradesLeft == 0, "The day's limit stops a new trade")
 		clockOffset -= 2 * Catalog.Trade.lockSeconds
 	end)()
+	-- The day's market: an exact hero for Gold, once per account per day.
+	;(function()
+		local shopper = player(93)
+		service:Load(shopper)
+		local market = service:Get(shopper).market
+		check(market ~= nil and #market.offers == #Catalog.Market.rarities and market.offers[1].bought == false, "The snapshot carries today's market")
+		local offer = market.offers[#market.offers]
+		local _, poor = service:Handle(shopper, "BuyMarket", { heroId = offer.heroId }, true)
+		check(not poor, "The market charges Gold the account must have")
+		local _, absent = service:Handle(shopper, "BuyMarket", { heroId = "nobody" }, true)
+		check(not absent, "Only today's heroes are for sale")
+		service:Award(shopper, "market-funds", { gold = offer.price * 2 })
+		local before = service:Get(shopper).gold
+		local _, bought, data = service:Handle(shopper, "BuyMarket", { heroId = offer.heroId }, true)
+		local after = service:Get(shopper)
+		check(bought and data.result.heroId == offer.heroId and after.heroes[offer.heroId] ~= nil and after.gold == before - offer.price, "The hero is bought at the listed price")
+		check(after.market.offers[#after.market.offers].bought == true, "The offer shows as taken")
+		local _, again = service:Handle(shopper, "BuyMarket", { heroId = offer.heroId }, true)
+		check(not again and service:Get(shopper).gold == after.gold, "Stock is one per day")
+	end)()
 	-- Where paid random items are restricted, the premium chests become Gold.
 	do
 	local careful = player(82)
