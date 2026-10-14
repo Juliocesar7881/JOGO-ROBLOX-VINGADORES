@@ -330,9 +330,32 @@ do
 	check(stones == 7, "seven jump stones spiral up the hero beacon, got " .. stones)
 	check(lobby:FindFirstChild("HeroTower") and lobby.HeroTower:FindFirstChild("TowerShaft") ~= nil, "the tower rises over the north road")
 	local statues = lobby:FindFirstChild("HeroStatues")
-	check(statues and statues:FindFirstChild("Statue_ironman") and statues:FindFirstChild("Statue_captain"), "two golden statues greet the plaza")
-	check(statues.Statue_ironman:FindFirstChild("StatueReactor") and not statues.Statue_ironman:FindFirstChild("StatueShield"),"reactor monument carries the armoured hero's equipment")
-	check(statues.Statue_captain:FindFirstChild("StatueShield") and statues.Statue_captain:FindFirstChild("StatueHelmet"):FindFirstChild("MonumentContour"),"shield monument keeps its signature and a sculpted helmet")
+	check(statues and statues:FindFirstChild("Statue_ironman") and statues:FindFirstChild("Statue_captain"), "two gameplay heroes greet the plaza")
+	local portraits = game:GetService("ReplicatedStorage").DoomHeroPortraits
+	for _, id in ipairs({"ironman", "captain"}) do
+		local monument = statues:FindFirstChild("Statue_" .. id)
+		local figure = monument and monument:FindFirstChild("HeroFigure")
+		local source = portraits[id]:FindFirstChild("HeroFigure")
+		check(figure and figure:GetAttribute("HeroArt") and not figure:GetAttribute("IdleFigure"), id .. ": the enlarged gameplay figure stays still")
+		if figure then
+			check(figure:GetAttribute("FigureScale") == source:GetAttribute("FigureScale") * 2, id .. ": monument doubles the gameplay model scale")
+			local count = 0
+			for _, piece in ipairs(figure:GetDescendants()) do
+				if piece:IsA("BasePart") and piece:GetAttribute("HeroVisual") then
+					count += 1
+					check(piece.Anchored, id .. ": all costume parts remain anchored")
+				end
+			end
+			local sourceCount = 0
+			for _, piece in ipairs(source:GetDescendants()) do
+				if piece:IsA("BasePart") and piece:GetAttribute("HeroVisual") then sourceCount += 1 end
+			end
+			check(count == sourceCount, id .. ": complete gameplay costume reused without substitute pieces")
+			local chest = figure:FindFirstChild("UpperTorso")
+			check(chest.Size == source.UpperTorso.Size * 2, id .. ": body proportions follow the original model")
+			check(figure:FindFirstChild(id == "ironman" and "ArcReactorCore" or "Shield", true) ~= nil, id .. ": original signature equipment is present")
+		end
+	end
 	local outpost = hq and hq:FindFirstChild("ShieldOutpost")
 	for _, name in ipairs({ "QuinjetHull", "HelicarrierHull", "RadarDish", "CommandModule", "ArmoryDepot" }) do
 		check(outpost and outpost:FindFirstChild(name, true) ~= nil, "S.H.I.E.L.D. set piece: " .. name)
@@ -400,7 +423,7 @@ do
 	for portalId, destination in pairs(Catalog.Destinations) do
 		check(onFloor(v3(destination.x, 0, destination.z), -2) ~= nil, "station " .. portalId .. " stands on an area floor")
 	end
-	check(countClass(lobby, "BasePart") < 4500, "the lobby remains under its geometry budget, got " .. tostring(countClass(lobby, "BasePart")))
+	check(countClass(lobby, "BasePart") < 4550, "the lobby remains under its geometry budget, got " .. tostring(countClass(lobby, "BasePart")))
 	print("  lobby: " .. tostring(countClass(lobby, "BasePart")) .. " parts")
 end
 -- Coplanar overlapping faces flicker (z-fighting) as the camera moves.

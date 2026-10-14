@@ -5279,68 +5279,16 @@ function World:BuildHeroStatues(lobby)
 		text.Name, text.BackgroundTransparency, text.Size, text.Font, text.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.FredokaOne, true
 		text.TextColor3, text.Text, text.Parent = HQ.navy, upper(hero.name.pt), gui
 		text:SetAttribute("LobbyTextPT", upper(hero.name.pt)); text:SetAttribute("LobbyTextEN", upper(hero.name.en))
-		local figure = Instance.new("Model")
-		figure.Name, figure.Parent = "Statue_" .. spec[1], model
-		-- Monument armour is authored at its display scale. The tiny character
-		-- rig formerly enlarged here had neither a shoulder nor a boot silhouette.
-		local origin = CFrame.new(foot + V(0, 3, 0)) * CFrame.Angles(0, math.pi, 0)
-		local teal = spec[1] == "ironman"
-		local enamel = teal and Color3.fromRGB(172, 38, 48) or Color3.fromRGB(22, 137, 145)
-		local edging = teal and HQ.gold or Color3.fromRGB(211, 223, 224)
-		figure:SetAttribute("MonumentFinish", "sculpted")
-		figure:SetAttribute("HeroId", spec[1])
-		local function armor(name, size, offset, tint, roll)
-			local at = CFrame.new(offset) * CFrame.Angles(0, 0, roll or 0)
-			-- A guarded asymmetric stance, with each arm still attached at its
-			-- shoulder. The reactor hand and shield arm lead their silhouettes.
-			if math.abs(offset.X)>3.8 then
-				local side=math.sign(offset.X)
-				local pivot=CFrame.new(side*4.15,10,0)
-				local pitch=(teal and side>0) and -0.42 or (not teal and side<0) and -0.24 or 0.08
-				at=pivot*CFrame.Angles(pitch,0,-side*0.06)*pivot:Inverse()*at
-			end
-			local made=Kit.block(figure,name,size,origin*at,tint,Enum.Material.Metal,true)
-			made.Reflectance=0.04
-			if name~="StatueChestInset" and name~="StatueBackSpine" and name~="StatueVisor" and name~="StatueBrow" then
-				local bevel=Instance.new("SpecialMesh")
-				bevel.Name,bevel.MeshType,bevel.Parent="MonumentContour",Enum.MeshType.Head,made
-			end
-			return made
-		end
-		armor("StatuePelvis", V(4.5, 1.6, 2.5), V(0, 5.3, 0), enamel)
-		armor("StatueWaist", V(4.9, 0.6, 2.7), V(0, 6.25, 0), edging)
-		armor("StatueBreastplate", V(5.8, 4.3, 3), V(0, 8.7, 0), enamel).CastShadow = true
-		armor("StatueCollar", V(4.5, 0.55, 3.2), V(0, 11.05, 0), edging)
-		armor("StatueChestInset", V(3.9, 2.35, 0.16), V(0, 8.9, -1.58), enamel:Lerp(HQ.navy, 0.3))
-		armor("StatueBackSpine", V(0.6, 3.5, 0.25), V(0, 8.7, 1.63), edging)
-		for _, side in ipairs({-1, 1}) do
-			armor("StatueBoot", V(2.05, 1.4, 3), V(side * 1.27, 0.7, -0.25), enamel)
-			armor("StatueBootSole", V(2.2, 0.25, 3.2), V(side * 1.27, 0.125, -0.25), HQ.navy)
-			armor("StatueGreave", V(1.8, 3.2, 2.15), V(side * 1.27, 2.9, 0), edging)
-			armor("StatueKnee", V(1.9, 1.15, 0.45), V(side * 1.27, 4, -1.18), enamel)
-			armor("StatueShoulderRim", V(2.35, 1.9, 3.3), V(side * 4.15, 9.8, 0), edging, -side * 0.13)
-			armor("StatueShoulder", V(2.15, 1.75, 3.5), V(side * 4.3, 10.05, 0), enamel, -side * 0.13)
-			armor("StatueUpperArm", V(1.9, 2.6, 2.45), V(side * 4.4, 8.15, 0), edging, -side * 0.08)
-			armor("StatueGauntlet", V(2.15, 1.8, 2.6), V(side * 4.65, 6.1, 0), enamel)
-			armor("StatueHand", V(1.8, 1, 2), V(side * 4.65, 4.75, -0.1), edging)
-			-- A wedge shoulder underneath the cap softens the broad chest edge.
-			local bevel = Instance.new("WedgePart")
-			bevel.Name, bevel.Size, bevel.CFrame = "StatueArmourBevel", V(1, 4.3, 3), origin * CFrame.new(side * 3.65, 8.7, 0) * CFrame.Angles(0, 0, side * math.pi / 2)
-			bevel.Color, bevel.Material, bevel.Anchored, bevel.CanCollide, bevel.CastShadow, bevel.Parent = enamel, Enum.Material.Metal, true, true, false, figure
-		end
-		armor("StatueHelmet", V(3.25,3.2,3.2), V(0,12.95,0), enamel).CastShadow=true
-		armor("StatueVisor", V(2.5, 0.36, 0.25), V(0, 13.1, -1.61), teal and HQ.cyan or HQ.navy)
-		armor("StatueBrow", V(3.05, 0.28, 0.35), V(0, 13.55, -1.77), edging)
-		if teal then
-			armor("StatueCrest", V(0.6, 1.2, 3.8), V(0, 14.4, 0), HQ.gold)
-			local core=origin*CFrame.new(0,9.25,-1.76)*CFrame.Angles(0,math.pi/2,0)
-			Kit.block(figure,"StatueReactorRim",V(0.22,1.65,1.65),core,HQ.gold,Enum.Material.Metal).Shape=Enum.PartType.Cylinder
-			Kit.block(figure,"StatueReactor",V(0.28,1.18,1.18),core,HQ.cyan,Enum.Material.Metal).Shape=Enum.PartType.Cylinder
-		else
-			local shield = origin * CFrame.new(-5.0, 7.2, -1.6) * CFrame.Angles(0, -0.24, 0.12)
-			Kit.block(figure, "StatueShield", V(0.55, 6.8, 6.8), shield * CFrame.Angles(0, math.pi / 2, 0), HQ.gold, Enum.Material.Metal, true).Shape = Enum.PartType.Cylinder
-			Kit.block(figure, "StatueShieldField", V(0.6, 5.8, 5.8), shield * CFrame.Angles(0, math.pi / 2, 0), enamel, Enum.Material.Metal).Shape = Enum.PartType.Cylinder
-		end
+		-- Reuse the gameplay costume at twice its authored scale, with every
+		-- piece anchored in the same pose. The pedestal remains separate.
+		local figureContainer = Instance.new("Model")
+		figureContainer.Name, figureContainer.Parent = "Statue_" .. spec[1], model
+		figureContainer:SetAttribute("HeroId", spec[1])
+		local origin = CFrame.new(foot + V(0, 3.02, 0)) * CFrame.Angles(0, math.pi, 0)
+		local figure = staticFigure(figureContainer, spec[1], hero, origin, 2.0)
+		-- Disable idle on the actual nested figure, which LobbyWorld discovers.
+		figure:SetAttribute("IdleFigure", nil)
+		figure:SetAttribute("IdlePhase", nil)
 	end
 	return model
 end

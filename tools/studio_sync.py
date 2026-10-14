@@ -119,7 +119,7 @@ camera.Focus = CFrame.new(hub)
 camera.CFrame = CFrame.lookAt(hub + Vector3.new(0, 230, -200), hub)
 local parts = 0
 for _, item in ipairs(workspace.DoomLobby:GetDescendants()) do if item:IsA("BasePart") then parts += 1 end end
-assert(parts < 4500, "Lobby geometry budget exceeded in Studio: " .. parts)
+assert(parts < 4550, "Lobby geometry budget exceeded in Studio: " .. parts)
 print("DOOM_PREVIEW_OK", parts)
 '''
 
