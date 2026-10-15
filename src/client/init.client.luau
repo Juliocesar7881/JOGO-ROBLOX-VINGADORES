@@ -939,6 +939,15 @@ renderLobby = function()
 			elseif type(p.trade)=="table" and p.trade.invited then
 				-- A friend is waiting on an answer: that beats every other errand.
 				key,suggestion="trade:"..tostring(p.trade.id),{tostring(p.trade.partnerName).." "..T("quer trocar um herói com você!","wants to trade a hero with you!"),function() openContext("trade",{hud=true}) end}
+			elseif heroPicksLeft(p)>0 then
+				-- A bundle paid for: its heroes are waiting to be chosen.
+				key,suggestion="pick",{T("Você tem um herói para escolher!","You have a hero to choose!"),function() openContext("pick",{hud=true}) end}
+			elseif tonumber(p.rewards and p.rewards.claimable) and p.rewards.claimable>0 then
+				key,suggestion="gifts",{T("Tem prêmios esperando por você!","You have gifts waiting!"),function() openContext("rewards",{hud=true}) end}
+			elseif canOpenChest() and not firstChest then
+				key,suggestion="chest",{T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."),function() routePreview.goShop() end}
+			-- The server's next goal is the default guidance; the nudges above it are
+			-- things waiting right now (it is nearly always present, so it goes after them).
 			elseif goal then
 				local target=goal.target or {}
 				local progress=(goal.total or 1)>1 and ("  "..tostring(goal.progress).."/"..tostring(goal.total)) or ""
@@ -948,13 +957,6 @@ renderLobby = function()
 					elseif target.chest then routePreview.goShop(target.chest)
 					elseif target.panel then openContext(target.panel,{hud=true}) end
 				end}
-			elseif heroPicksLeft(p)>0 then
-				-- A bundle paid for: its heroes are waiting to be chosen.
-				key,suggestion="pick",{T("Você tem um herói para escolher!","You have a hero to choose!"),function() openContext("pick",{hud=true}) end}
-			elseif canOpenChest() and not firstChest then
-				key,suggestion="chest",{T("Você tem Ouro para um baú! Vá até a INVOCAÇÃO.","You have Gold for a chest! Visit the SUMMON halls."),function() routePreview.goShop() end}
-			elseif tonumber(p.rewards and p.rewards.claimable) and p.rewards.claimable>0 then
-				key,suggestion="gifts",{T("Tem prêmios esperando por você!","You have gifts waiting!"),function() openContext("rewards",{hud=true}) end}
 			elseif (p.talentPoints or 0)>0 then
 				key,suggestion="talents",{T("Você tem pontos para gastar na EVOLUÇÃO.","You have points to spend on TALENTS."),function() openContext("talents",{}) end}
 			elseif tonumber(p.starterOfferEndsAt) and p.starterOfferEndsAt>os.time() and kit.productConfigured and kit.productConfigured("product","starterPack") then
