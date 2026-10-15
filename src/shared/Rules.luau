@@ -379,6 +379,23 @@ function Rules.WaveMutation(modeId, mapId, wave, seed)
 	return Catalog.MutationOrder[math.floor(hash / 4) % #Catalog.MutationOrder + 1]
 end
 
+-- The Roblox badges a profile has earned, by Config.Badges key. Pure: the
+-- server awards whatever this lists that the player does not hold yet.
+Rules.BadgeCollection = 12
+function Rules.EarnedBadges(profile)
+	local earned = {}
+	if type(profile) ~= "table" then return earned end
+	local stats = type(profile.stats) == "table" and profile.stats or {}
+	if profile.tutorialComplete == true then table.insert(earned, "tutorial") end
+	if anyWon(profile, "normal") then table.insert(earned, "firstWin") end
+	if (tonumber(stats.bosses) or 0) >= 1 then table.insert(earned, "firstBoss") end
+	local owned = 0
+	for _ in pairs(type(profile.heroes) == "table" and profile.heroes or {}) do owned += 1 end
+	if owned >= Rules.BadgeCollection then table.insert(earned, "collector") end
+	if type(profile.achievements) == "table" and profile.achievements.hardWin ~= nil then table.insert(earned, "fearless") end
+	return earned
+end
+
 -- Which kind of server this is, from the server's own facts and the
 -- configured places. Pure, so every combination is tested outside Roblox.
 -- env: studio, placeId, privateServerId, privateServerOwnerId, builtRole (the

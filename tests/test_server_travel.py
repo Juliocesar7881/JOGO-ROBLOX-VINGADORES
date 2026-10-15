@@ -51,10 +51,20 @@ services.DataStoreService = (function()
 	end
 	local stores = {}
 	return {
+		__stores = stores,
 		GetDataStore = function(_, name) stores[name] = stores[name] or store(); return stores[name] end,
 		GetOrderedDataStore = function(_, name) stores["o:" .. name] = stores["o:" .. name] or store(); return stores["o:" .. name] end,
 	}
 end)()
+-- Roblox badges, recorded: awarded once, never to someone who already holds it.
+badgeAwards = {}
+services.BadgeService = {
+	UserHasBadgeAsync = function(_, userId, badgeId)
+		for _, award in ipairs(badgeAwards) do if award.userId == userId and award.badgeId == badgeId then return true end end
+		return false
+	end,
+	AwardBadge = function(_, userId, badgeId) table.insert(badgeAwards, { userId = userId, badgeId = badgeId }); return true end,
+}
 -- One shared map, as MemoryStore is across the servers of a universe. The
 -- battle scenario files the code the lobby would have filed for this server.
 rejoinValues = { ["server:reserved-1"] = "code-1" }
@@ -157,6 +167,20 @@ check(not request(eva, "ElevatorFriends", { on = false }).ok, "only the first ri
 request(eva, "ElevatorLeave", {})
 request(dan, "ElevatorLeave", {})
 frames(0.5)
+
+-- A commander who already finished training gets that badge, once.
+do
+	local Config = require(shared.Config)
+	services.DataStoreService:GetDataStore(Config.DataStoreName or "DoomPlayer_v1"):SetAsync("p_506", {
+		schemaVersion = 1, gold = 0, xp = 0, tutorialComplete = true,
+		heroes = { ironman = { xp = 0, level = 1 }, hawkeye = { xp = 0, level = 1 } },
+	})
+	local veteran = join(506, "Vet")
+	frames(3)
+	local awarded = {}
+	for _, award in ipairs(badgeAwards) do if award.userId == 506 then table.insert(awarded, award.badgeId) end end
+	check(#awarded == 1 and awarded[1] == Config.Badges.tutorial, "the training badge is awarded once to a commander who finished training, got " .. #awarded)
+end
 
 -- Roblox cannot reserve a server: the lobby hosts the battle rather than stranding the group.
 reserveFails = true

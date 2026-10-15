@@ -17,6 +17,13 @@ return {
 	MatchPlaceId = 0,
 	-- Optional light AFK place (0 = AFK stays in the lobby chambers).
 	AfkPlaceId = 0,
+	-- Roblox badges (Creator Hub > Engagement > Badges, created 2026-10-15),
+	-- awarded by the server once the profile that earns them is saved
+	-- (Rules.EarnedBadges). 0 turns one off.
+	Badges = {
+		tutorial = 2496029722635949, firstWin = 4403390299371408, firstBoss = 2901295397250104,
+		collector = 1329107087739180, fearless = 2993058614693693,
+	},
 	-- Optional Roblox group for the one-time join-the-group reward. 0 hides it.
 	GroupId = 0,
 	MaxPartySize = 4,

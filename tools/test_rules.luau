@@ -313,6 +313,15 @@ do
 	for day = 20741, 20760 do if Rules.DailyMarket(day).offers[1].heroId ~= today.offers[1].heroId then differs = true end end
 	check(differs, "the market changes from day to day")
 	check(Rules.MarketPrice("nobody") == nil, "an unknown hero has no market price")
+	-- Badges follow the saved profile.
+	local function has(list, key) return table.find(list, key) ~= nil end
+	check(#Rules.EarnedBadges({}) == 0 and #Rules.EarnedBadges(nil) == 0, "a fresh or missing profile earns no badge")
+	local badged = { tutorialComplete = true, campaign = { gamma = { normal = true } }, stats = { bosses = 2 }, heroes = {}, achievements = { hardWin = { name = "x" } } }
+	for index = 1, Rules.BadgeCollection do badged.heroes["h" .. index] = {} end
+	local all = Rules.EarnedBadges(badged)
+	check(has(all, "tutorial") and has(all, "firstWin") and has(all, "firstBoss") and has(all, "collector") and has(all, "fearless"), "every badge condition is read off the profile")
+	badged.heroes.h1 = nil
+	check(not has(Rules.EarnedBadges(badged), "collector"), "the collector badge needs the full count")
 	-- Server roles. One place: public servers are lobbies, reserved ones are battles.
 	local PLACE = 97132875544830
 	local single = { SinglePlace = true, LobbyPlaceId = 0, MatchPlaceId = 0, AfkPlaceId = 0 }

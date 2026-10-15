@@ -290,6 +290,32 @@ local function snapshotFor(player)
 	return snapshot
 end
 
+-- Roblox badges: whatever the saved profile has earned (Rules.EarnedBadges)
+-- and this session has not awarded yet. Never inside a profile transaction
+-- (UpdateAsync may replay it); a badge the player already holds is harmless.
+local badgesGiven = {}
+local function awardBadges(player, profile)
+	if RunService:IsStudio() or type(profile) ~= "table" or type(Config.Badges) ~= "table" then return end
+	local given = badgesGiven[player.UserId] or {}
+	badgesGiven[player.UserId] = given
+	for _, key in ipairs(Rules.EarnedBadges(profile)) do
+		local badgeId = math.floor(tonumber(Config.Badges[key]) or 0)
+		if badgeId > 0 and not given[key] then
+			given[key] = true
+			task.spawn(function()
+				local ok, problem = pcall(function()
+					local BadgeService = game:GetService("BadgeService")
+					if not BadgeService:UserHasBadgeAsync(player.UserId, badgeId) then BadgeService:AwardBadge(player.UserId, badgeId) end
+				end)
+				if not ok then
+					given[key] = nil
+					warn("[Doomsday] Badge award failed: " .. tostring(problem))
+				end
+			end)
+		end
+	end
+end
+
 pushState = function(player)
 	if not player or player.Parent ~= Players then return end
 	local ok, snapshot = pcall(snapshotFor, player)
@@ -298,6 +324,7 @@ pushState = function(player)
 		return
 	end
 	remotes.State:FireClient(player, snapshot)
+	awardBadges(player, snapshot.profile)
 end
 
 local function pushAll()
@@ -916,6 +943,7 @@ Players.PlayerRemoving:Connect(function(player)
 		rejoin:Forget(player.UserId)
 	end
 	presence[player.UserId] = nil
+	badgesGiven[player.UserId] = nil
 	sessionStart[player.UserId] = nil
 	tutorialTower[player.UserId] = nil
 	joined[player.UserId] = nil
