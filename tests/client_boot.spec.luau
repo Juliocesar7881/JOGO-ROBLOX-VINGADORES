@@ -977,6 +977,16 @@ local function session(screen)
 		check(strip ~= nil and string.find(strip.Text, "Manhattan", 1, true) ~= nil, tag .. ": with nothing waiting the goal leads again, got " .. tostring(strip and strip.Text))
 		push(lobbySnapshot(veteranProfile()))
 	end)
+	step("a friend in a portal queue is one tap away", function()
+		local snapshot = lobbySnapshot(veteranProfile({ rewards = rewardsFixture("empty") }))
+		snapshot.friendsRiding = { { userId = ALLY_ID, name = "Ally", mapId = "gamma", portalId = "normal_gamma" } }
+		push(snapshot)
+		local strip = named(gui, "GuideTip")
+		check(strip ~= nil and string.find(strip.Text, "ir junto", 1, true) ~= nil and string.find(strip.Text, "Ally", 1, true) ~= nil, tag .. ": the strip offers to go along with the friend, got " .. tostring(strip and strip.Text))
+		clickNamed("FirstVisitHint")
+		check(asked("ElevatorJoin"), tag .. ": going along asks the server to join the friend's queue")
+		push(lobbySnapshot(veteranProfile()))
+	end)
 	step("a bundle's hero is chosen in its own panel", function()
 		local picker = veteranProfile({ gold = 0 })
 		picker.heroPicks = { legendary = 1 }
@@ -1809,6 +1819,28 @@ local function session(screen)
 		check(string.find(joined, "2/4", 1, true) ~= nil and (ridingLayout.class.short or string.find(joined, "Ally", 1, true) ~= nil),
 			tag .. ": the card lists who is riding, got " .. joined)
 		check(string.find(joined, "Manhattan", 1, true) ~= nil, tag .. ": the card names the sector")
+		-- The host's friends-only heart and everyone's invite: thumb-sized, inside
+		-- the card, clear of Start, Leave and the difficulty row.
+		do
+			local cardRect = screenRect(card, gui, SCREEN)
+			local rects = {}
+			for _, name in ipairs({ "ElevatorFriends", "ElevatorInvite", "ElevatorStartNow", "ElevatorLeave", "Difficulty_normal", "Difficulty_hard", "Difficulty_nightmare" }) do
+				local item = named(card, name)
+				if item then rects[name] = screenRect(item, gui, SCREEN) end
+			end
+			for _, name in ipairs({ "ElevatorFriends", "ElevatorInvite" }) do
+				local r = rects[name]
+				check(r ~= nil and r.w >= 30 and r.h >= 30 and r.x >= cardRect.x and r.x + r.w <= cardRect.x + cardRect.w, tag .. ": " .. name .. " is a thumb-sized button inside the card")
+				for other, o in pairs(rects) do
+					if other ~= name and r and o then
+						local apart = r.x + r.w <= o.x + 0.5 or o.x + o.w <= r.x + 0.5 or r.y + r.h <= o.y + 0.5 or o.y + o.h <= r.y + 0.5
+						check(apart, tag .. ": " .. name .. " does not cover " .. other)
+					end
+				end
+			end
+			clickNamed("ElevatorFriends")
+			check(asked("ElevatorFriends"), tag .. ": the heart asks the server to close the queue to friends")
+		end
 		local tip = named(gui, "FirstVisitHint")
 		check(tip == nil or tip.Visible == false, tag .. ": the tip strip steps aside while the queue card is up")
 		check(named(gui,"PortalChooseMap")==nil,tag..": fixed portal has no map switch")

@@ -225,7 +225,33 @@ end
 -- Snapshots
 --==============================================================================
 local elevator
-
+-- Roblox friendships between players in this server, learnt once when someone
+-- joins (IsFriendsWith asks the web, so never inside a snapshot or a touch).
+local friendships = {}
+local function friendKey(a, b) return math.min(a, b) .. ":" .. math.max(a, b) end
+local function areFriends(a, b)
+	return a ~= nil and b ~= nil and a ~= b and friendships[friendKey(a.UserId, b.UserId)] == true
+end
+local function learnFriends(player)
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other ~= player and friendships[friendKey(player.UserId, other.UserId)] == nil then
+			local ok, friends = pcall(function() return player:IsFriendsWith(other.UserId) end)
+			if ok then friendships[friendKey(player.UserId, other.UserId)] = friends == true end
+		end
+	end
+end
+-- Friends riding a portal queue right now, for the lobby's "go along" strip.
+local function friendsRidingFor(player)
+	if not elevator or elevator:RideOf(player) then return nil end
+	local list = {}
+	for _, other in ipairs(Players:GetPlayers()) do
+		local ride = other ~= player and areFriends(player, other) and elevator:RideOf(other)
+		if ride and ride.count < ride.max then
+			table.insert(list, { userId = other.UserId, name = other.DisplayName or other.Name, mapId = ride.mapId, portalId = ride.portalId })
+		end
+	end
+	return #list > 0 and list or nil
+end
 local function snapshotFor(player)
 	local matchState, results = match:Snapshot(player)
 	local roster
@@ -247,6 +273,7 @@ local function snapshotFor(player)
 		players = roster,
 		party = party:Snapshot(player),
 		elevator = (not matchState and elevator) and elevator:Snapshot(player) or nil,
+		friendsRiding = (not matchState) and friendsRidingFor(player) or nil,
 		match = matchState,
 		results = results,
 		notice = notices[player.UserId],
@@ -568,6 +595,7 @@ elevator = ElevatorService.new({
 		if character then pcall(function() character:PivotTo(CFrame.new(position)) end) end
 	end,
 	available = function(player) return not match:Has(player) and not travelling[player.UserId] end,
+	friends = areFriends,
 })
 
 for queueId,zone in pairs(world.portalZones) do
@@ -678,6 +706,22 @@ local function route(player, action, payload)
 	end
 	if action == "ElevatorLeave" then
 		return { ok = elevator:Leave(player) }
+	end
+	if action == "ElevatorFriends" then
+		return { ok = elevator:SetFriendsOnly(player, type(payload) == "table" and payload.on == true), message = text("Só quem entrou primeiro pode fechar a fila.", "Only the first rider can close the queue.") }
+	end
+	if action == "ElevatorJoin" then
+		-- "Go along": into the queue a friend in this server is riding.
+		if role == "Match" or match:Has(player) or elevator:RideOf(player) then return { ok = false, message = text("Você já está em uma fila ou partida.", "You are already in a queue or a match.") } end
+		local friend = type(payload) == "table" and tonumber(payload.userId) and Players:GetPlayerByUserId(math.floor(payload.userId))
+		local ride = friend and areFriends(player, friend) and elevator:RideOf(friend)
+		if not ride then return { ok = false, message = text("Seu amigo não está mais na fila.", "Your friend is no longer in a queue.") } end
+		local zone = world.portalZones[ride.queueId]
+		local character = player.Character
+		if not zone or not character then return { ok = false, message = text("Aguarde seu personagem.", "Wait for your character.") } end
+		pcall(function() character:PivotTo(CFrame.new(zone.center)) end)
+		if elevator:Touch(player, ride.queueId) then return { ok = true } end
+		return { ok = false, message = text("Não foi possível entrar nessa fila.", "Could not join that queue.") }
 	end
 	if action == "EnterAfkServer" then
 		-- From a lobby AFK chamber to the dedicated AFK place.
@@ -797,6 +841,7 @@ local joined = {}
 local function onPlayerAdded(player)
 	if joined[player.UserId] then return end
 	joined[player.UserId] = true
+	task.spawn(learnFriends, player)
 	sessionStart[player.UserId] = os.clock()
 	analytics:BeginSession(player)
 	cosmetics:Bind(player)

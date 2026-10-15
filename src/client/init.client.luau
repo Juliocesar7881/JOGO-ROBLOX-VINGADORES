@@ -781,6 +781,22 @@ renderElevator = function()
 		local startW = compact and 96 or 120
 		UI.button(card, T("Começar", "Start"), function() act("ElevatorStart", {}) end, {Name = "ElevatorStartNow", Position = UDim2.new(1, -(leaveW + startW + 20), 0, rowY), Size = UDim2.fromOffset(startW, rowH), BackgroundColor3 = C.green, TextSize = compact and 14 or 17})
 		statusRight += startW + 8
+		-- A heart closes the queue to the host's Roblox friends (the server checks).
+		local friendsButton = UI.button(card, "", function() act("ElevatorFriends", { on = not e.friendsOnly }) end, {Name = "ElevatorFriends", Position = UDim2.new(1, -(statusRight + rowH - 8), 0, rowY), Size = UDim2.fromOffset(rowH, rowH), BackgroundColor3 = e.friendsOnly and C.coral or C.card})
+		UI.icon(friendsButton, "heart", e.friendsOnly and C.text or C.coral, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(rowH - 12, rowH - 12)})
+		statusRight += rowH + 6
+	end
+	-- Anyone aboard can invite Roblox friends to come and fill the queue.
+	if not e.departing then
+		local invite = UI.button(card, "", function()
+			local ok = pcall(function()
+				local social = game:GetService("SocialService")
+				if social:CanSendGameInviteAsync(player) then social:PromptGameInvite(player) else error("cannot invite") end
+			end)
+			if not ok then showToast(T("Convites indisponíveis nesta conta.", "Invites are not available on this account."), true) end
+		end, {Name = "ElevatorInvite", Position = UDim2.new(1, -(statusRight + rowH - 8), 0, rowY), Size = UDim2.fromOffset(rowH, rowH), BackgroundColor3 = C.card})
+		UI.icon(invite, "plus", C.green, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(rowH - 12, rowH - 12)})
+		statusRight += rowH + 6
 	end
 	-- Normal / Hard / Nightmare: the host picks, everyone sees the choice.
 	-- The lock shown is only a hint; the server re-checks every rider.
@@ -814,6 +830,7 @@ renderElevator = function()
 	local status = tostring(#names) .. "/" .. tostring(e.max or 4) .. "  " .. T("jogadores", "players")
 	-- Playing together pays: the server applies this to everyone's Gold and XP.
 	if #names >= 2 then status ..= "  •  " .. T("Grupo +", "Party +") .. math.floor((Rules.PartyBonus(#names) - 1) * 100 + 0.5) .. "%" end
+	if e.friendsOnly then status ..= "  •  " .. T("Só amigos", "Friends only") end
 	status ..= "  •  " .. table.concat(names, ", ")
 	if inline then return true end
 	UI.label(card, status, {Name = "PortalRiders", Position = UDim2.fromOffset(14, rowY), Size = UDim2.new(1, -(14 + statusRight), 0, rowH), TextSize = compact and 13 or 16, TextColor3 = C.cream, TextWrapped = true})
@@ -936,6 +953,10 @@ renderLobby = function()
 				or (type(p.stats)=="table" and (p.stats.matches or 0)<=1 and next(p.campaign or {})==nil)
 			if errands then
 				-- TutorialCard owns this objective; do not repeat it in the strip.
+			elseif type(state.friendsRiding)=="table" and state.friendsRiding[1] and not state.elevator then
+				-- A friend is in a portal queue: one tap to go along.
+				local friend=state.friendsRiding[1]
+				key,suggestion="follow:"..tostring(friend.userId)..":"..tostring(friend.mapId),{tostring(friend.name).." "..T("está na fila de ","is in the queue for ")..mapName(friend.mapId)..T("  •  toque para ir junto","  •  tap to go along"),function() act("ElevatorJoin",{userId=friend.userId}) end}
 			elseif type(p.trade)=="table" and p.trade.invited then
 				-- A friend is waiting on an answer: that beats every other errand.
 				key,suggestion="trade:"..tostring(p.trade.id),{tostring(p.trade.partnerName).." "..T("quer trocar um herói com você!","wants to trade a hero with you!"),function() openContext("trade",{hud=true}) end}

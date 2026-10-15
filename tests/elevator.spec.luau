@@ -72,6 +72,7 @@ local function harness(options)
 			if not options.stubbornEject then player.root.Position = position end
 		end,
 		available = function(player) return not blocked[player] end,
+		friends = function(a, b) return (options.friendsOf or {})[a] and options.friendsOf[a][b] == true or (options.friendsOf or {})[b] and options.friendsOf[b][a] == true or false end,
 		random = options.random,
 		previousMap = options.previousMap,
 		day = function() return options.day or 0 end,
@@ -415,6 +416,25 @@ do
 	h2.service:SetDifficulty(solo, "hard")
 	h2.step(10)
 	check(sent == "hard", "a Hard car launches on Hard")
+end
+-- A friends-only car: the host closes it, strangers step off and are refused, friends ride.
+do
+	local host, friend, stranger, late = veteran(), veteran(), veteran(), veteran()
+	local friendsOf = { [host] = { [friend] = true } }
+	local h = harness({ friendsOf = friendsOf })
+	for _, p in ipairs({ host, friend, stranger, late }) do h.add(p) end
+	at(host, "normal"); h.step(0.25)
+	at(stranger, "normal"); h.step(0.25)
+	check(#h.service:Snapshot(host).riders == 2, "(setup) a stranger boards an open car")
+	check(not h.service:SetFriendsOnly(stranger, true), "only the host closes the car")
+	check(h.service:SetFriendsOnly(host, true) and h.service:Snapshot(host).friendsOnly == true, "the host closes the car to friends")
+	check(h.service:Snapshot(stranger) == nil and #h.noticesFor(stranger) > 0, "a stranger aboard steps off with a reason")
+	at(late, "normal"); h.step(0.25)
+	check(h.service:Snapshot(late) == nil and #h.noticesFor(late) > 0, "a stranger is refused at a friends-only car")
+	at(friend, "normal"); h.step(0.25)
+	check(h.service:Snapshot(friend) ~= nil and #h.service:Snapshot(host).riders == 2, "a friend boards the friends-only car")
+	check(h.service:RideOf(friend).friendsOnly and h.service:RideOf(friend).mapId == "manhattan", "RideOf tells where a friend's queue goes")
+	check(h.service:SetFriendsOnly(host, false) and not h.service:Snapshot(host).friendsOnly, "the host can open the car again")
 end
 print(string.format("%s elevator: %d checks, %d failures", failures == 0 and "PASS" or "FAIL", checks, failures))
 if failures > 0 then error("elevator failed", 0) end

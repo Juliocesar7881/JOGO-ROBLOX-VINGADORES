@@ -121,6 +121,43 @@ frames(1)
 check(rejoinValues["server:server-1"] == "code-1" and type(rejoinValues["501"]) == "table", "the lobby files the seat and the server's access code in MemoryStore")
 check(latest(ana).match == nil, "the lobby does not run that battle itself")
 
+-- "Go along": a friend joins the queue a friend is riding; a stranger cannot.
+local function joinFriendly(userId, name, friendIds)
+	local player = Instance.new("Player")
+	player.UserId, player.Name = userId, name
+	player.GetJoinData = function() return {} end
+	player.IsFriendsWith = function(_, otherId) return table.find(friendIds, otherId) ~= nil end
+	local character = Instance.new("Model")
+	character.Name = name
+	local root = Instance.new("Part")
+	root.Name, root.CFrame, root.Parent = "HumanoidRootPart", CFrame.new(0, 5.5, 480), character
+	local humanoid = Instance.new("Humanoid")
+	humanoid.Parent = character
+	character.Parent = workspace
+	player.Character = character
+	player.Parent = Players
+	task.spawn(function() Players.PlayerAdded:Fire(player) end)
+	advance(0.2)
+	return player
+end
+local dan = joinFriendly(503, "Dan", { 504 })
+local eva = joinFriendly(504, "Eva", { 503 })
+local stranger = joinFriendly(505, "Stranger", {})
+frames(0.5)
+stepInto(dan, "normal_hydra")
+frames(0.5)
+check(latest(dan).elevator ~= nil, "(setup) Dan rides a queue")
+frames(2.5) -- lobby snapshots reach everyone every two seconds
+check(type(latest(eva).friendsRiding) == "table" and latest(eva).friendsRiding[1].userId == 503, "Eva's snapshot shows her friend's queue")
+check(latest(stranger).friendsRiding == nil, "a stranger is not shown other people's queues")
+check(not request(stranger, "ElevatorJoin", { userId = 503 }).ok, "a stranger cannot go along")
+check(request(eva, "ElevatorJoin", { userId = 503 }).ok and latest(eva).elevator ~= nil and latest(eva).elevator.portalId == "normal_hydra", "Eva goes along into Dan's queue")
+check(request(dan, "ElevatorFriends", { on = true }).ok and latest(dan).elevator.friendsOnly == true, "Dan closes the queue to friends")
+check(not request(eva, "ElevatorFriends", { on = false }).ok, "only the first rider opens or closes the queue")
+request(eva, "ElevatorLeave", {})
+request(dan, "ElevatorLeave", {})
+frames(0.5)
+
 -- Roblox cannot reserve a server: the lobby hosts the battle rather than stranding the group.
 reserveFails = true
 local bia = join(502, "Bia")

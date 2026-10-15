@@ -26,6 +26,9 @@ function Elevator.new(options)
 		changed = options.changed or function() end,
 		eject = options.eject or function() end,
 		available = options.available or function() return true end,
+		-- Whether two players are Roblox friends (the server keeps a cache;
+		-- unknown counts as not friends, so a friends-only car stays closed).
+		friends = options.friends or function() return false end,
 		serial = 0,
 		cars = {}, riding = {}, refused = {},
 	}, Elevator)
@@ -68,6 +71,10 @@ function Elevator:_board(player, portalId)
 	end
 	if car and #car.riders >= MAX_RIDERS then
 		self:_refuse(player, portalId, "Este portal já está cheio. / This portal is full.")
+		return
+	end
+	if car and car.friendsOnly and car.riders[1] ~= player and not self.friends(car.riders[1], player) then
+		self:_refuse(player, portalId, "Esta fila é só para os amigos de quem entrou primeiro. Use outra fila. / This queue is for the first rider's friends only. Use another queue.")
 		return
 	end
 	local destinationId = self:Destination(portalId)
@@ -152,6 +159,38 @@ function Elevator:StartNow(player)
 	car.remaining = math.min(car.remaining, START_NOW_AFTER)
 	self:_announce(car)
 	return true
+end
+
+-- The host may close the car to their Roblox friends, so a group of friends
+-- is never joined (or led) by a stranger: strangers already aboard step off
+-- (every destination has other queues) and new ones are refused.
+function Elevator:SetFriendsOnly(player, on)
+	local portalId = self.riding[player]
+	local car = portalId and self.cars[portalId]
+	if not car or car.departing or car.riders[1] ~= player then return false end
+	car.friendsOnly = on == true
+	if car.friendsOnly then
+		for index = #car.riders, 2, -1 do
+			local rider = car.riders[index]
+			if not self.friends(player, rider) then
+				self:_drop(rider)
+				self.refused[rider] = portalId
+				local zone = self.zones[portalId]
+				if zone then self.eject(rider, zone.exit) end
+				self.notify(rider, "A fila virou só para os amigos de quem entrou primeiro. Use outra fila. / The queue is now for the first rider's friends only. Use another queue.")
+			end
+		end
+	end
+	self:_announce(car)
+	return true
+end
+
+-- Which queue a player rides, and where it goes (for a friend who wants to go along).
+function Elevator:RideOf(player)
+	local portalId = self.riding[player]
+	local car = portalId and self.cars[portalId]
+	if not car or car.departing then return nil end
+	return { queueId = portalId, portalId = self:Destination(portalId), mapId = self.rules.PortalMap(self:Destination(portalId)), count = #car.riders, max = MAX_RIDERS, friendsOnly = car.friendsOnly == true }
 end
 
 -- The host (first rider) picks the campaign difficulty. Refused, never
@@ -263,7 +302,7 @@ function Elevator:Snapshot(player)
 		carId=car.id, mapId=self.rules.PortalMap(self:Destination(portalId)),
 		portalId = self:Destination(portalId), queueId = portalId,
 		slot = (self.zones[portalId] or {}).slot or 1, departing = car.departing == true,
-		modeId = modeId, difficultyId = car.difficulty, riders = riders, max = MAX_RIDERS,
+		modeId = modeId, difficultyId = car.difficulty, riders = riders, max = MAX_RIDERS, friendsOnly = car.friendsOnly == true,
 		remaining = math.max(0, math.ceil(car.remaining)), host = car.riders[1] == player,
 	}
 end
