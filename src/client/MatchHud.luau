@@ -450,6 +450,9 @@ function MatchHud.new(ctx)
 		if stats.damage>0 then line(T("Dano: ","Damage: ")..arrow(stats.damage,nextStats.damage)..T("  •  Alcance: ","  •  Range: ")..arrow(stats.range,nextStats.range),C.coral,44) end
 		if stats.wall>0 then line(T("Barricada: ","Barricade: ")..(base.wall or 0).."/"..arrow(stats.wall,nextStats.wall)..T(" vida • volta após 5 s"," HP • regrows after 5 s"),C.blue,44) end
 		if stats.soldier>0 then line(T("Soldado: ","Soldier: ")..arrow(stats.soldier,nextStats.soldier)..T(" vida • a cada "," HP • every ")..stats.interval.." s",C.violet,44) end
+		local function pct(share) return math.floor(share*100+0.5).."%" end
+		if (stats.chill or 0)>0 then line(T("Campo de gelo: ","Ice field: ")..arrow(pct(stats.chill),pct(nextStats.chill))..T(" mais lento • raio "," slower • radius ")..arrow(stats.range,nextStats.range),C.blue,44) end
+		if (stats.interest or 0)>0 then line(T("Juros por onda: ","Interest per wave: ")..arrow(pct(stats.interest),pct(nextStats.interest))..T(" do Ouro guardado • até "," of the Gold kept • up to ")..arrow(stats.interestCap,nextStats.interestCap),C.gold,44) end
 		local button=UI.button(body,base.level>=5 and T("Nível máximo","Maximum level") or T("Evoluir • ","Upgrade • ")..stats.upgradeCost,function()
 			-- The window stays: it redraws with the new level and the next price.
 			act("UpgradeBase",{expectedLevel=base.level},function() audio:Cue("upgrade") end)

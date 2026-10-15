@@ -261,7 +261,7 @@ do
 		check(plaque and plaque:FindFirstChild("Title",true):GetAttribute("LobbyTextEN")~=nil,name.." has a localized physical product plaque")
 	end
 	check(lobby.Shop_collector:FindFirstChild("DroneMotor") and lobby.Shop_gold:FindFirstChild("VaultDoor") and lobby.Shop_training:FindFirstChild("TrainingScreen"),"products have distinct equipment silhouettes")
-	for _,name in ipairs({"Chest_rare","Chest_base_rare"}) do
+	for _,name in ipairs({"Chest_rare","Chest_base_epic"}) do
 		local hall=lobby:FindFirstChild(name)
 		local windows=0
 		for _,p in ipairs(hall:GetChildren()) do if p.Name=="HallWindowGlass" then windows+=1 end end
@@ -298,7 +298,7 @@ do
 		end end
 	end end
 	check(gardens==4,"four gardens frame the plaza without filling its entrances")
-	for _,name in ipairs({"Chest_rare","Chest_base_rare"}) do
+	for _,name in ipairs({"Chest_rare","Chest_base_epic"}) do
 		local hall=lobby[name]
 		local pane=hall:FindFirstChild("SummonPortalPane")
 		check(pane and pane:FindFirstChild("PortalSwirl") and not pane.CanCollide,"summon portal art animates without blocking entry")
@@ -618,7 +618,7 @@ do
 	check(world:NearMarket(visitor,"hero") and not world:NearMarket(visitor,"base"),"hero doorway authorizes only hero summons")
 	root.Position=world.shopZones.rare.purchaseCenter
 	check(world:NearMarket(visitor,"hero"),"purchase stays available inside the hero hall")
-	root.Position=world.shopZones.base_rare.purchaseCenter
+	root.Position=world.shopZones.base_epic.purchaseCenter
 	check(world:NearMarket(visitor,"base") and not world:NearMarket(visitor,"hero"),"base hall authorizes only base summons")
 	root.Position=world.lobbySpawn
 	check(not world:NearMarket(visitor),"the spawn plaza is not a purchase zone")
@@ -635,9 +635,9 @@ do
 	root.Position=world.shopZones.rare.center
 	world:StepShopEntries({visitor})
 	check(#panels==start+1,"small boundary jitter does not reopen the shop")
-	root.Position=world.shopZones.base_rare.center
+	root.Position=world.shopZones.base_epic.center
 	world:StepShopEntries({visitor})
-	check(#panels==start+2 and panels[#panels].data.chestId=="base_rare","walking to the other pad selects base collection")
+	check(#panels==start+2 and panels[#panels].data.chestId=="base_epic","walking to the other pad selects base collection")
 	root.Position=world.shopZones.rare.center+v3(0,25,0)
 	world:StepShopEntries({visitor})
 	check(#panels==start+2,"flying above a pad does not count as standing on it")

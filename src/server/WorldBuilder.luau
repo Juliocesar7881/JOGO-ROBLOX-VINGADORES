@@ -5812,7 +5812,7 @@ end
 
 function World:BuildMarket(lobby, hq)
 	local V = Vector3.new
-	local chests = { "rare", "base_rare" }
+	local chests = { "rare", "base_epic" }
 	for i, spec in ipairs(LAYOUT.market) do
 		local at = polar(spec[1], spec[2], 0)
 		local yaw = yawToward(at, HUB)
@@ -7856,6 +7856,28 @@ function World:UpdateBase(index, base, core, ownerId)
 		for x=-1,1,2 do
 			block("Flagpole",Vector3.new(0.15,5,0.15),Vector3.new(x*3.5,3.5,1))
 			block("Banner",Vector3.new(1.3,1.8,0.15),Vector3.new(x*3.5+0.55,5,1),tint,Enum.Material.Fabric)
+		end
+	elseif def.style=="frost" then
+		-- The ice field on the ground, as wide as its slow reaches (the base
+		-- range), and ice spires around a cryo core that grow with the level.
+		local radius=base.stats and base.stats.range or 30
+		local field=part(model,"FrostField",Vector3.new(0.1,radius*2,radius*2),CFrame.new(at+Vector3.new(0,0.32,0))*CFrame.Angles(0,0,math.pi/2),tint,Enum.Material.ForceField)
+		field.Shape,field.Transparency=Enum.PartType.Cylinder,0.35
+		field.CanCollide,field.CanQuery,field.CanTouch=false,false,false
+		for i,spot in ipairs({{-3,-3.4},{3,-3.4},{-3.7,2.4},{3.7,2.4}}) do
+			local height=2.2+base.level*0.45+(i%2)*0.6
+			block("IceSpire",Vector3.new(1.1,height,1.1),Vector3.new(spot[1],1+height/2,spot[2]),tint:Lerp(Color3.new(1,1,1),0.3),Enum.Material.Ice)
+		end
+		local cryo=block("CryoCore",Vector3.new(1.8,1.8,1.8),Vector3.new(0,6.2+base.level*0.2,0),tint,Enum.Material.Neon)
+		cryo.Shape=Enum.PartType.Ball
+	elseif def.style=="vault" then
+		-- A round vault door with its wheel, and gold bars that pile up with the level.
+		local door=part(model,"VaultDoor",Vector3.new(0.5,3,3),CFrame.new(at+Vector3.new(0,2.9,-2.75))*CFrame.Angles(0,math.pi/2,0),Color3.fromRGB(150,156,170),Enum.Material.DiamondPlate)
+		door.Shape,door.CanCollide=Enum.PartType.Cylinder,false
+		local wheel=part(model,"VaultWheel",Vector3.new(0.3,1.5,1.5),CFrame.new(at+Vector3.new(0,2.9,-3.1))*CFrame.Angles(0,math.pi/2,0),tint,Enum.Material.Metal)
+		wheel.Shape,wheel.CanCollide=Enum.PartType.Cylinder,false
+		for n=1,base.level+1 do
+			block("GoldBar",Vector3.new(1.3,0.45,0.65),Vector3.new(-3.6+((n-1)%3)*1.4,1.23+math.floor((n-1)/3)*0.47,-3.6),Color3.fromRGB(255,204,72),Enum.Material.Metal)
 		end
 	end
 	-- Both languages ride along; each client shows its own (see init.client).

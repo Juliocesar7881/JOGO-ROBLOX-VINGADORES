@@ -281,6 +281,37 @@ do
 	end
 end
 
+-- Base chests: every base comes from exactly one chest, a chest draws only
+-- its own bases and never an empty tier, and the two passives grow with the
+-- level within their caps.
+do
+	local seen = {}
+	for _, chestId in Catalog.BaseChestOrder do
+		local chest = Catalog.Chests[chestId]
+		check(chest.kind == "base" and #chest.bases == 4, "a base chest has four bases of its own: " .. chestId)
+		for _, group in chest.groups do
+			check(group.weight == 0 or #group.items > 0, "a base chest never draws an empty tier: " .. chestId)
+			for _, id in group.items do check(table.find(chest.bases, id) ~= nil, "a base chest draws only its own bases: " .. chestId .. "/" .. id) end
+		end
+		for _, id in chest.bases do
+			check(Catalog.Bases[id] ~= nil and not Catalog.Bases[id].starter and seen[id] == nil, "each base is in one chest only: " .. id)
+			seen[id] = chestId
+		end
+	end
+	for _, id in Catalog.BaseOrder do
+		check(Catalog.Bases[id].starter or seen[id] ~= nil, "every base can be found in a chest: " .. id)
+		check(Catalog.Bases[id].description ~= nil, "every base style is described: " .. id)
+	end
+	local polar1, polar5 = Rules.BaseStats("polar", 1), Rules.BaseStats("polar", 5)
+	check(polar1.chill > 0 and polar5.chill > polar1.chill and polar5.chill <= 0.4 and polar5.range > polar1.range, "the ice field grows with the level, capped")
+	check(Rules.BaseChill(polar1, true) > 0 and Rules.BaseChill(polar1, true) < Rules.BaseChill(polar1, false), "a boss resists the ice field")
+	check(Rules.BaseStats("outpost", 5).chill == 0 and Rules.BaseStats("outpost", 5).interest == 0, "other bases have neither passive")
+	local vault1, vault5 = Rules.BaseStats("vault", 1), Rules.BaseStats("vault", 5)
+	equal(Rules.BaseInterest(vault1, 500), math.floor(500 * vault1.interest), "the vault pays its rate on the Gold kept")
+	check(Rules.BaseInterest(vault1, 1e9) == vault1.interestCap and vault5.interestCap > vault1.interestCap and vault5.interest > vault1.interest, "the interest has a cap that grows with the level")
+	check(Rules.BaseInterest(vault1, -50) == 0 and Rules.BaseInterest(Rules.BaseStats("workshop", 3), 5000) == 0, "no interest on nothing, nor without a vault")
+end
+
 -- Guaranteed purchase for restricted accounts: priced at the expected chest cost.
 do
 	local cheapest = math.huge

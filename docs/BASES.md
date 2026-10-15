@@ -1,6 +1,6 @@
 # Bases, reforços e recrutamento — 11/10/2026
 
-A coleção tem **43 heróis e 11 bases**, em três raridades: Comum, Raro e
+A coleção tem **43 heróis e 13 bases**, em três raridades: Comum, Raro e
 Lendário. Cada comandante equipa uma base
 no lobby; suas torres continuam usando os cinco espaços de heróis. A base
 gratuita é o Posto da Resistência.
@@ -26,6 +26,8 @@ gratuita é o Posto da Resistência.
 | Arsenal de Ferro | Comum | Canhão | 20 |
 | Quartel da Selva | Raro | Soldados | 25 |
 | Reator de cristal | Raro | Gerador | 65 |
+| Estação Polar | Raro | Campo de gelo | 25 |
+| Cofre Blindado | Raro | Juros | 20 |
 | Cidadela Celeste | Lendário | Barricada | 28 |
 | Porta-aviões da Resistência | Lendário | Soldados | 32 |
 | Santuário Arcano | Lendário | Canhão mágico | 30 |
@@ -51,8 +53,16 @@ recupera o mesmo módulo da partida. Os níveis reiniciam na próxima partida.
   Colidem com terrestres e gastam vida proporcional ao dano. Ao chegar à
   entrada inimiga, desaparecem sem causar efeito ou conceder recompensa.
   Máximo de seis soldados por jogador. Invocados continuam sem recompensa.
+- **Campo de gelo (Estação Polar, 15/10):** os inimigos dentro do alcance da
+  base andam 18% mais devagar no nível 1, mais 4 pontos por nível (34% no
+  nível 5, nunca mais de 40%); chefes sentem 40% disso. Não soma com a
+  lentidão de um herói: vale a mais forte. Acaba um instante depois que o
+  inimigo sai do campo, que aparece no chão em volta da base.
+- **Juros (Cofre Blindado, 15/10):** ao fim de cada onda, paga 8% do Ouro da
+  partida que você guardou (16% no nível 5), até 60 Ouro por onda no nível 1
+  (228 no nível 5). Exige contribuição na onda, como a renda.
 
-## Cinco baús por coleção
+## Baús de heróis
 
 | Tipo | Ouro | Comum | Raro | Lendário | Garantia |
 |---|---:|---:|---:|---:|---|
@@ -62,8 +72,8 @@ recupera o mesmo módulo da partida. Os níveis reiniciam na próxima partida.
 | Lendas | 2.000 | 30% | 42% | 28% | Lendário na 10ª sem obter um lendário |
 | Cósmico | 5.000 | — | 45% | 55% | Destaque na 15ª sem obter um destaque |
 
-São dez produtos de recrutamento com Ouro, cinco em cada coleção. As
-garantias têm contadores independentes por baú e coleção. A interface mostra
+São oito produtos de recrutamento com Ouro: cinco de heróis e três de bases.
+As garantias têm contadores independentes por baú e coleção. A interface mostra
 as chances efetivas quando a garantia está ativa; uma estrela marca quais
 itens contam como destaque. Os grupos de aquisição originais conservam
 chances por item e prioridade de itens novos; os iniciais não aparecem.
@@ -71,6 +81,23 @@ Bases repetidas devolvem o menor valor entre 40% do custo e a compensação
 original por base. Heróis repetidos mantêm a compensação existente em
 Ouro/maestria/cartas/estrelas, independente da nova cor da coleção.
 As restrições da conta a itens aleatórios pagos valem para ambas as coleções.
+
+## Três baús de bases (15/10)
+
+Cada baú de base tem **quatro bases só dele**: o que um baú dá, nenhum outro
+dá. As chances pesam apenas as bases daquele baú (`bases` em cada baú do
+`Catalog`).
+
+| Baú | Ouro | Bases (chance de cada) | Garantia |
+|---|---:|---|---|
+| Suprimentos | 400 | Oficina de Ferro 35%, Horta de suprimentos 35%, Bunker da Agência 15%, Arsenal de Ferro 15% | — |
+| Vanguarda | 1.500 | Quartel da Selva, Reator de cristal, Estação Polar e Cofre Blindado, 25% cada | — |
+| Cósmico | 5.000 | Cidadela Celeste 37,5%, Porta-aviões 37,5%, Santuário Arcano 12,5%, Árvore-Mundo 12,5% | Santuário ou Árvore-Mundo na 15ª abertura sem um deles |
+
+Dentro de cada grupo de um baú, uma base que você ainda não tem sai antes de
+uma repetida. Os baús de base Aliança e Lendas saíram; o contador de garantia
+do Cósmico continua o mesmo. O salão "Invocar bases" do lobby abre no baú da
+Vanguarda (`Chest_base_epic`).
 
 ## Referência do elenco
 

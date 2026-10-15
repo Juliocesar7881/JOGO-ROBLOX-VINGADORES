@@ -698,7 +698,7 @@ local function session(screen)
 		local cutout=UI.heroPortrait(host,"ironman",nil,UI.Colors.blue,{Name="CutoutPortrait",FullFigure=true,NoBackdrop=true})
 		check(host:FindFirstChild("CutoutPortrait_Art")==nil,tag..": a scene illustration keeps its transparent background")
 		cutout:Destroy()
-		for _,baseId in ipairs({"outpost","garden","barracks"}) do
+		for _,baseId in ipairs({"outpost","garden","barracks","polar","vault"}) do
 			local def=Catalog.Bases[baseId]
 			if def then
 				local miniature=UI.basePortrait(host,def,{Name="BaseArtProbe",Size=UDim2.fromOffset(180,130)})
@@ -744,7 +744,7 @@ local function session(screen)
 			local root=nav.Disc:FindFirstChild("NavIcon")
 			check(onlyArtwork(root,root:FindFirstChild("Illustrated_icons")) and nav.Caption.Text=="Caption",tag..": navigation keeps one icon and its live caption: "..kind)
 		end
-		for _,rarity in ipairs({"supply","rare","epic","legendary","cosmic","base_supply","base_rare","base_epic","base_legendary","base_cosmic"}) do
+		for _,rarity in ipairs({"supply","rare","epic","legendary","cosmic","base_supply","base_epic","base_cosmic"}) do
 			local root=UI.illustration(host,"crate",UI.Colors.blue,{Rarity=rarity})
 			local chest=root:FindFirstChild("Illustrated_chests")
 			check(chest and chest:GetAttribute("ArtRarity")==rarity and chest.ImageRectOffset.X+chest.ImageRectSize.X<=1023 and chest.ImageRectOffset.Y+chest.ImageRectSize.Y<=682,tag..": chest rarity maps to a valid authored crop: "..rarity)
@@ -3439,7 +3439,7 @@ local function session(screen)
 		local summon=village.HeroesHQ:FindFirstChild("SummonSign")
 		local title=summon:FindFirstChild("Title",true)
 		check(title and title.Text=="SUMMONING",tag..": summoning sign changes language")
-		check(village.Chest_rare.SummonHeader:FindFirstChild("Title",true).Text=="SUMMON HEROES" and village.Chest_base_rare.SummonHeader:FindFirstChild("Title",true).Text=="SUMMON BASES",tag..": both mounted summon headers change language")
+		check(village.Chest_rare.SummonHeader:FindFirstChild("Title",true).Text=="SUMMON HEROES" and village.Chest_base_epic.SummonHeader:FindFirstChild("Title",true).Text=="SUMMON BASES",tag..": both mounted summon headers change language")
 		check(localPlayer.PlayerGui.PortalPicture_normal.MapTitle.Text==Catalog.Maps.manhattan.name.en,tag..": cloned map picture is localized")
 		local status=village.Portal_normal.QueueSign2.QueueBoard.QueueStatus
 		status:SetAttribute("LobbyTextPT","4/4 • LOTADO"); status:SetAttribute("LobbyTextEN","4/4 • FULL"); status.Text="4/4 • LOTADO"

@@ -892,7 +892,7 @@ end
 function Match:_statusOf(enemy)
 	local flags = 0
 	if enemy.stunUntil > self.elapsed then flags += STATUS.stunned end
-	if enemy.slowUntil > self.elapsed and enemy.slow > 0 then flags += STATUS.slowed end
+	if (enemy.slowUntil > self.elapsed and enemy.slow > 0) or (enemy.chillUntil or 0) > self.elapsed then flags += STATUS.slowed end
 	if enemy.markUntil > self.elapsed then flags += STATUS.marked end
 	if enemy.dot and enemy.dot.untilTime > self.elapsed then flags += STATUS.burning end
 	if enemy.shield > 0 then flags += STATUS.shielded end
@@ -965,7 +965,11 @@ function Match:_enemiesStep(dt)
 			if enemy.stunUntil > self.elapsed then enemy.speedNow = 0 continue end
 			-- A Nightmare run and a Rush wave really are faster (Waves sets it).
 			local speed=enemy.def.speed*(enemy.speedMultiplier or 1)
-			if enemy.slowUntil>self.elapsed then speed*=1-enemy.slow else enemy.slow=0 end
+			-- The strongest slow applies, a hero's (slow) or an ice field's (chill): they never stack.
+			local slowed=0
+			if enemy.slowUntil>self.elapsed then slowed=enemy.slow else enemy.slow=0 end
+			if (enemy.chillUntil or 0)>self.elapsed then slowed=math.max(slowed,enemy.chill or 0) end
+			speed*=1-slowed
 			if enemy.frenzyUntil and enemy.frenzyUntil>self.elapsed then speed*=1.2 end
 			for _,support in pairs(self.enemies) do
 				if support.enemyId=="support" and support.id~=enemy.id and distanceXZ(support.position,enemy.position)<18 then
@@ -1055,9 +1059,11 @@ function Match:_endWave()
 			end
 			self:_checkpoint(p,"wave:"..self.wave,true)
 			if p.contributed and not p.disconnectedAt then
-				local income = math.floor(self.rules.WaveCash(self.wave)*(1+cardStat(p,"energyIncome")))+p.base.stats.income
+				-- The Armored vault pays interest on the Gold kept through the wave.
+				local interest = self.rules.BaseInterest(p.base.stats, p.cash)
+				local income = math.floor(self.rules.WaveCash(self.wave)*(1+cardStat(p,"energyIncome")))+p.base.stats.income+interest
 				p.cash += income
-				self:_fx({kind="WaveCash",amount=income},p.player)
+				self:_fx({kind="WaveCash",amount=income,interest=interest>0 and interest or nil},p.player)
 				if self.modeId=="ranked" then
 					task.spawn(function() self.profiles:RecordBest(p.player,self.mapId,self.size,self.completedWaves,self.modeId) end)
 				end
@@ -1369,6 +1375,18 @@ function Match:_basesStep(dt)
 		end
 		if self.phase~="Wave" then continue end
 		local source={ownerId=uid}
+		if (stats.chill or 0)>0 then
+			-- The Polar station's ice field slows everything inside it, a boss
+			-- less, and lets go a moment after an enemy leaves. Two fields never
+			-- stack: each step an enemy keeps the strongest one reaching it.
+			local center=base.visualPosition or self.corePosition
+			for _,enemy in pairs(self.enemies) do
+				if enemy.hp>0 and distanceXZ(enemy.position,center)<=stats.range then
+					if enemy.chillAt~=self.elapsed then enemy.chillAt,enemy.chill=self.elapsed,0 end
+					enemy.chill=math.max(enemy.chill,self.rules.BaseChill(stats,enemy.def.boss)); enemy.chillUntil=self.elapsed+0.25
+				end
+			end
+		end
 		if stats.damage>0 and self.elapsed>=base.nextAttack then
 			-- The gun measures its range from the same spot it fires from.
 			local muzzle=base.visualPosition or self.corePosition

@@ -1702,7 +1702,7 @@ do
 		check(not match:Handle(player,"UpgradeBase",{expectedLevel=5}),"base stops at five levels")
 		check(p.profile.gold==gold,"base upgrades never spend permanent Gold")
 		p.contributed=true; before=p.cash; match:_endWave()
-		check(p.cash-before==90+match.wave*12+p.base.stats.income,"completed wave grants base income once")
+		check(p.cash-before==90+match.wave*12+p.base.stats.income+Rules.BaseInterest(p.base.stats,before),"completed wave grants base income (and a vault's interest) once")
 		before=p.cash; match:_endWave(); check(p.cash==before,"duplicate end-wave cannot farm income")
 	end
 	local match,player=stage({profile={equippedBase="worldtree",bases={worldtree=true}}})
@@ -1736,6 +1736,36 @@ do
 	local air=spawn(barracks,"flyer",barracks.routeCache[1].total-2,10)
 	barracks.participants[s.UserId].base.nextSoldier=0; barracks:_basesStep(0.1)
 	check(air.hp==air.maxHP,"ground soldiers cannot hit flying enemies")
+	-- Polar station: its ice field slows what is inside it (a boss less), the
+	-- strongest slow wins instead of stacking, and leaving the field ends it.
+	local polar,ice=stage({profile={equippedBase="polar",bases={polar=true}}})
+	local field=polar.participants[ice.UserId].base.stats
+	check(field.chill>0 and field.damage==0 and field.wall==0 and field.soldier==0,"the Polar station is an ice field, not a weapon")
+	local near=spawn(polar,"zombie",polar.routeCache[1].total-6,100)
+	local far=spawn(polar,"zombie",0,100)
+	local boss=spawn(polar,"lizard",polar.routeCache[1].total-8,100)
+	polar:_basesStep(0.1)
+	check((near.chillUntil or 0)>polar.elapsed and math.abs(near.chill-Rules.BaseChill(field,false))<1e-9,"an enemy inside the ice field is chilled")
+	check((far.chillUntil or 0)<=polar.elapsed,"an enemy outside the ice field is not")
+	check(boss.chill>0 and boss.chill<near.chill,"a boss resists most of the chill")
+	check(bit32.band(polar:_statusOf(near),2)==2,"a chilled enemy shows as slowed")
+	polar.enemies[boss.id]=nil; polar.alive-=1
+	local pace=near.def.speed*(near.speedMultiplier or 1)*0.1
+	local from=near.progress; polar:_enemiesStep(0.1)
+	check(math.abs(near.progress-from-pace*(1-field.chill))<1e-6,"the chill slows by its share")
+	near.slow,near.slowUntil=0.55,polar.elapsed+2
+	from=near.progress; polar:_enemiesStep(0.1)
+	check(math.abs(near.progress-from-pace*0.45)<1e-6,"a stronger hero slow wins: the two never stack")
+	near.slowUntil=0; polar.elapsed+=1
+	from=near.progress; polar:_enemiesStep(0.1)
+	check(math.abs(near.progress-from-pace)<1e-6,"the chill ends once the field stops refreshing it")
+	-- Armored vault: interest on the match Gold kept through the wave, up to a cap.
+	for _,kept in ipairs({500,100000}) do
+		local bank,saver=stage({profile={equippedBase="vault",bases={vault=true}}})
+		local v=bank.participants[saver.UserId]; v.contributed=true; v.cash=kept
+		local stats=v.base.stats; bank:_endWave()
+		check(v.cash-kept==90+bank.wave*12+stats.income+math.min(math.floor(kept*stats.interest),stats.interestCap),"the vault pays its interest on "..kept.." Gold kept")
+	end
 	for size=2,4 do
 		local members,byUser={},{}
 		for n=1,size do

@@ -1579,6 +1579,17 @@ function UI.basePortrait(parent, def, properties)
 			block("Flagpole",x,2.8,1.6,0.15,4.8,0.15,UI.Colors.cream,Enum.Material.Metal)
 			block("Banner",x+0.65,4.1,1.6,1.3,1.7,0.1,tint,Enum.Material.Fabric)
 		end
+	elseif def.style=="frost" then
+		for _,spot in ipairs({{-3.5,-3.2,2.6},{3.5,-3.2,2},{-4,1.8,1.8},{4,1.8,2.4}}) do
+			block("IceSpire",spot[1],0.6+spot[3]/2,spot[2],0.9,spot[3],0.9,tint:Lerp(UI.Colors.cream,0.35),Enum.Material.Ice)
+		end
+		block("CryoCore",0,4.9,-0.5,1.6,1.6,1.6,tint,Enum.Material.Glass).Shape=Enum.PartType.Ball
+	elseif def.style=="vault" then
+		local door=block("VaultDoor",0,2,-2.95,0.3,2.6,2.6,UI.Colors.muted,Enum.Material.DiamondPlate)
+		door.Shape,door.CFrame=Enum.PartType.Cylinder,CFrame.new(0,2,-2.95)*CFrame.Angles(0,math.pi/2,0)
+		local wheel=block("VaultWheel",0,2,-3.15,0.2,1.3,1.3,tint,Enum.Material.Metal)
+		wheel.Shape,wheel.CFrame=Enum.PartType.Cylinder,CFrame.new(0,2,-3.15)*CFrame.Angles(0,math.pi/2,0)
+		for n=1,5 do block("GoldBar",-3.9+((n-1)%3)*1,0.85+math.floor((n-1)/3)*0.42,-3.4,0.95,0.4,0.55,Color3.fromRGB(255,204,72),Enum.Material.Metal) end
 	end
 	local camera=UI.create("Camera",{Name="BaseCamera",FieldOfView=34},root)
 	camera.CFrame=CFrame.lookAt(Vector3.new(15,11,-18),Vector3.new(0,2,0))

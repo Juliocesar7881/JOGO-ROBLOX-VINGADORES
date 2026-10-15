@@ -1603,6 +1603,12 @@ function Panels.new(ctx)
 		local screen=screenSize()
 		local width=UI.contextLayout(screen.X,screen.Y,{wide=true}).w-40
 		local narrow=width<420
+		-- What a base adds besides income: its own passive, else its core HP.
+		local function basePassive(stats,hpWord)
+			if (stats.chill or 0)>0 then return "  •  -"..math.floor(stats.chill*100+0.5)..T("% de velocidade","% speed") end
+			if (stats.interest or 0)>0 then return "  •  "..T("juros de ","interest ")..math.floor(stats.interest*100+0.5).."%" end
+			return stats.hp>0 and ("  •  +"..stats.hp..hpWord) or ""
+		end
 		-- The base in use, big, with what it gives and where it is upgraded.
 		local summary=UI.roundFrame(body,{Name="ActiveBaseSummary",Size=UDim2.new(1,-6,0,narrow and 196 or 150),BackgroundColor3=UI.Skin.slot},C.green)
 		UI.stroke(summary,C.green,3)
@@ -1610,10 +1616,10 @@ function Panels.new(ctx)
 		local textX=narrow and 112 or 132
 		UI.pill(summary,T("Base ativa","Active base"),C.green:Lerp(C.ink,0.2),{Position=UDim2.fromOffset(textX,12),TextSize=15})
 		UI.fit(UI.label(summary,L(active.name),{Name="ActiveBaseName",Position=UDim2.fromOffset(textX,44),Size=UDim2.new(1,-textX-12,0,34),TextWrapped=true,TextSize=26,Font=UI.Fonts.display}),14)
-		UI.fit(UI.label(summary,"+"..activeStats.income..T(" Ouro por onda"," Gold per wave")..(activeStats.hp>0 and ("  •  +"..activeStats.hp..T(" de vida"," HP")) or ""),{Name="ActiveBaseIncome",Position=UDim2.fromOffset(textX,80),Size=UDim2.new(1,-textX-12,0,narrow and 36 or 24),TextWrapped=narrow,TextSize=18,Font=UI.Fonts.display,TextColor3=C.gold}),11)
+		UI.fit(UI.label(summary,"+"..activeStats.income..T(" Ouro por onda"," Gold per wave")..basePassive(activeStats,T(" de vida"," HP")),{Name="ActiveBaseIncome",Position=UDim2.fromOffset(textX,80),Size=UDim2.new(1,-textX-12,0,narrow and 36 or 24),TextWrapped=narrow,TextSize=18,Font=UI.Fonts.display,TextColor3=C.gold}),11)
 		UI.fit(UI.label(summary,T("Entra na sua próxima partida. Evolua com o Agente da Base ao lado dela (tecla E).","Deploys in your next match. Upgrade it with the Base Agent beside it (E key)."),{Name="ActiveBaseHow",Position=narrow and UDim2.fromOffset(12,124) or UDim2.fromOffset(132,106),Size=narrow and UDim2.new(1,-24,0,62) or UDim2.new(1,-144,0,40),TextWrapped=true,TextSize=15,TextColor3=C.muted}),11)
 
-		UI.button(body,T("Ir à loja de bases","Go to the base shop"),function() routePreview.goShop("base_rare") end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=20})
+		UI.button(body,T("Ir à loja de bases","Go to the base shop"),function() routePreview.goShop("base_epic") end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=20})
 		-- Every base as a tile: picture, name, rarity, what it gives, one button.
 		local columns=width>=640 and 3 or (width>=420 and 2 or 1)
 		local cellW=math.floor((width-(columns-1)*10)/columns)
@@ -1639,9 +1645,9 @@ function Panels.new(ctx)
 			UI.label(row,L(def.name),{Position=UDim2.fromOffset(12,116),Size=UDim2.new(1,-24,0,30),TextSize=21,TextWrapped=true,Font=UI.Fonts.display})
 			UI.label(row,L(Catalog.Rarities[def.rarity].name),{Position=UDim2.fromOffset(12,144),Size=UDim2.new(1,-24,0,20),TextSize=15,Font=UI.Fonts.display,TextColor3=tint:Lerp(Color3.new(1,1,1),0.35)})
 			UI.label(row,L(def.description),{Position=UDim2.fromOffset(12,166),Size=UDim2.new(1,-24,0,40),TextSize=14,TextWrapped=true,TextTruncate=Enum.TextTruncate.AtEnd,TextColor3=C.muted,TextYAlignment=Enum.TextYAlignment.Top})
-			UI.label(row,"+"..stats.income..T(" Ouro/onda"," Gold/wave")..(stats.hp>0 and ("  •  +"..stats.hp..T(" vida*"," HP*")) or ""),{Position=UDim2.fromOffset(12,206),Size=UDim2.new(1,-24,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold})
+			UI.fit(UI.label(row,"+"..stats.income..T(" Ouro/onda"," Gold/wave")..basePassive(stats,T(" vida*"," HP*")),{Name="BasePassive",Position=UDim2.fromOffset(12,206),Size=UDim2.new(1,-24,0,22),TextSize=15,Font=UI.Fonts.display,TextColor3=C.gold}),10)
 			local button=UI.button(row,equipped and T("Base ativa","Active base") or owned and T("Ativar base","Activate base") or T("Encontrar nos baús","Find in chests"),function()
-				if owned then act("EquipBase",{baseId=id},function() showToast(T("Base ativada! Ela aparecerá na próxima partida.","Base activated! It will deploy in your next match.")) end) else routePreview.goShop("base_rare") end
+				if owned then act("EquipBase",{baseId=id},function() showToast(T("Base ativada! Ela aparecerá na próxima partida.","Base activated! It will deploy in your next match.")) end) else routePreview.goShop("base_epic") end
 			end,{Name="EquipBase_"..id,Position=UDim2.new(0,10,1,-54),Size=UDim2.new(1,-20,0,44),BackgroundColor3=equipped and C.green or (owned and C.blue or C.card),TextSize=18})
 			if equipped then UI.disabled(button) end
 		end

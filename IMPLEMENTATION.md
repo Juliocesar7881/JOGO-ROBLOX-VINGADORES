@@ -55,8 +55,9 @@ the catalog before this consolidation where they mention five rarities.
 ## Invocação física e filas por destino — 27/09/2026
 
 O mercado tem dois salões: **Invocar heróis** (`Chest_rare`) e **Invocar bases**
-(`Chest_base_rare`). Aproximar-se do piso verde abre a coleção correspondente.
-Cada salão permite escolher seus cinco baús existentes, consultar as chances
+(`Chest_base_epic`). Aproximar-se do piso verde abre a coleção correspondente.
+Cada salão permite escolher seus baús (cinco de heróis; três de bases desde
+15/10, cada um com bases só dele, ver `docs/BASES.md`), consultar as chances
 efetivas e confirmar uma invocação. Não mudam preços, garantias ou compensações.
 No computador, retratos/chances e compra aparecem lado a lado. Em telas menores,
 os baús ficam numa faixa horizontal; cada coleção conserva sua rolagem.
@@ -98,7 +99,7 @@ com `tools/studio_sync.py`; um destino diferente é recusado antes de escrever.
 
 ## Bases e recrutamento — 2026.4
 
-`Catalog.Chests` contém dez IDs; `HeroChestOrder` e `BaseChestOrder` separam
+`Catalog.Chests` contém oito IDs (dez até 15/10); `HeroChestOrder` e `BaseChestOrder` separam
 as duas coleções. `OpenChest {chestId}` mantém a transação existente e retorna
 `result.heroId` **ou** `result.baseId`, mais raridade, repetido e compensação.
 Contadores de garantia são independentes. O perfil adiciona `bases: {[id]: true}`

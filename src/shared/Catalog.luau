@@ -1009,7 +1009,7 @@ for _, id in ipairs({ "indestructible", "emeraldConstruct", "solarWrath", "super
 
 -- Personal outposts support the shared core. Income is match Gold, never
 -- lobby Gold. Each has five match-only levels, bought with match Gold.
-Catalog.BaseOrder={"outpost","workshop","garden","bunker","arsenal","barracks","reactor","citadel","carrier","sanctum","worldtree"}
+Catalog.BaseOrder={"outpost","workshop","garden","bunker","arsenal","barracks","reactor","polar","vault","citadel","carrier","sanctum","worldtree"}
 Catalog.Bases={}
 local bases={
 	{"outpost","Posto da Resistência","Resistance outpost","common","balanced",{139,213,151},20,0,0,0,0},
@@ -1019,21 +1019,33 @@ local bases={
 	{"arsenal","Arsenal de Ferro","Iron arsenal","rare","turret",{228,116,82},20,8,26,0,0},
 	{"barracks","Quartel da Selva","Jungle barracks","epic","soldiers",{190,139,241},25,12,0,0,85},
 	{"reactor","Reator de cristal","Crystal reactor","epic","farm",{89,228,194},65,8,0,0,0},
+	-- Two passives of their own (Rules.BaseStats): an ice field that slows
+	-- enemies near the base (chill, a share of their speed) and a vault that
+	-- pays interest on the match Gold kept (interest, a share; interestCap,
+	-- the most it pays in a wave at level 1).
+	{"polar","Estação Polar","Polar station","epic","frost",{118,212,255},25,10,0,0,0,{chill=0.18}},
+	{"vault","Cofre Blindado","Armored vault","epic","vault",{246,188,64},20,8,0,0,0,{interest=0.08,interestCap=60}},
 	{"citadel","Cidadela Celeste","Sky citadel","legendary","wall",{255,210,118},28,28,0,240,0},
 	{"carrier","Porta-aviões da Resistência","Resistance carrier","legendary","soldiers",{146,183,225},32,14,0,0,140},
 	{"sanctum","Santuário Arcano","Arcane sanctum","mythic","turret",{242,142,92},30,14,48,0,0},
 	{"worldtree","Jardim da Árvore-Mundo","World-tree garden","mythic","farm",{245,177,221},85,12,0,0,0},
 }
-local roles={balanced=text("Renda básica e vida ao evoluir.","Basic income and HP when upgraded."),farm=text("Mais Ouro da partida a cada onda concluída.","More match Gold each completed wave."),wall=text("Barricada troca vida por dano e se regenera fora de combate.","Barricade trades HP for damage and regenerates out of combat."),turret=text("Canhão automático protege a chegada ao núcleo.","Automatic cannon guards the approach to the core."),soldiers=text("Soldados percorrem a rota ao contrário e colidem com inimigos.","Soldiers march backwards along the path and collide with enemies.")}
+local roles={balanced=text("Renda básica e vida ao evoluir.","Basic income and HP when upgraded."),farm=text("Mais Ouro da partida a cada onda concluída.","More match Gold each completed wave."),wall=text("Barricada troca vida por dano e se regenera fora de combate.","Barricade trades HP for damage and regenerates out of combat."),turret=text("Canhão automático protege a chegada ao núcleo.","Automatic cannon guards the approach to the core."),soldiers=text("Soldados percorrem a rota ao contrário e colidem com inimigos.","Soldiers march backwards along the path and collide with enemies."),
+	frost=text("Campo de gelo: os inimigos perto da base andam mais devagar. Chefes resistem.","Ice field: enemies near the base move slower. Bosses resist."),
+	vault=text("Rende juros: guarde Ouro da partida e ganhe uma parte dele a cada onda.","Earns interest: keep match Gold and get a share of it every wave.")}
 for _,row in ipairs(bases) do
-	local id,pt,en,rarity,style,color,income,hp,damage,wall,soldier=unpack(row)
+	local id,pt,en,rarity,style,color,income,hp,damage,wall,soldier,extra=unpack(row)
 	Catalog.Bases[id]={id=id,name=text(pt,en),rarity=rarity,style=style,color=color,income=income,hp=hp,damage=damage,wall=wall,soldier=soldier,starter=id=="outpost",description=roles[style]}
+	for key,value in pairs(extra or {}) do Catalog.Bases[id][key]=value end
 end
 Catalog.BaseUpgradeCosts={450,950,1800,3200}
 
--- Five price tiers per collection. Existing chest IDs/pity are preserved.
+-- Five price tiers of heroes. Bases have three chests, each with four bases
+-- no other chest gives (bases); a chest's odds weigh the price tiers of its
+-- own bases only. Existing chest IDs and guarantee counters are kept; the
+-- base Alliance and Legends chests were retired on 15/10.
 Catalog.HeroChestOrder={"supply","rare","epic","legendary","cosmic"}
-Catalog.BaseChestOrder={"base_supply","base_rare","base_epic","base_legendary","base_cosmic"}
+Catalog.BaseChestOrder={"base_supply","base_epic","base_cosmic"}
 Catalog.Chests.supply={id="supply",name=text("Suprimentos","Supplies"),cost=400,color={155,214,129},odds={common=75,rare=23,epic=2,legendary=0,mythic=0}}
 Catalog.Chests.epic={id="epic",name=text("Baú Épico","Epic chest"),cost=1500,color={196,145,250},odds={common=0,rare=45,epic=47,legendary=7,mythic=1},pity={after=8,minimum="epic"}}
 Catalog.Chests.cosmic={id="cosmic",name=text("Baú Cósmico","Cosmic chest"),cost=5000,color={255,138,198},odds={common=0,rare=0,epic=45,legendary=43,mythic=12},pity={after=15,minimum="mythic"}}
@@ -1042,11 +1054,23 @@ for _,id in ipairs(Catalog.HeroChestOrder) do
 	local chest=Catalog.Chests[id]; chest.kind="hero"
 	chest.description=chest.description or text("Um herói aleatório. Veja as chances antes de abrir.","One random hero. Check the odds before opening.")
 	table.insert(Catalog.ChestOrder,id)
-	local baseId="base_"..id
-	local baseChest={id=baseId,kind="base",name=chest.name,cost=chest.cost,color=chest.color,odds=chest.odds,pity=chest.pity,description=text("Uma base aleatória. Equipe apenas uma no lobby.","One random base. Equip one in the lobby.")}
-	Catalog.Chests[baseId]=baseChest
 end
-for _,id in ipairs(Catalog.BaseChestOrder) do table.insert(Catalog.ChestOrder,id) end
+-- A base chest wears the name, colour and price of the hero chest it follows.
+local baseChests={
+	base_supply={look="supply",bases={"workshop","garden","bunker","arsenal"},odds={common=70,rare=30},
+		description=text("Quatro bases para começar: renda, barricada e canhão.","Four bases to start with: income, barricade and cannon.")},
+	base_epic={look="epic",bases={"barracks","reactor","polar","vault"},odds={epic=100},
+		description=text("Quatro bases táticas, entre elas o campo de gelo e o cofre com juros.","Four tactical bases, among them the ice field and the interest vault.")},
+	base_cosmic={look="cosmic",bases={"citadel","carrier","sanctum","worldtree"},odds={legendary=75,mythic=25},pity={after=15,minimum="mythic"},
+		description=text("As quatro bases mais fortes do jogo.","The four strongest bases in the game.")},
+}
+for _,id in ipairs(Catalog.BaseChestOrder) do
+	local spec=baseChests[id]; local look=Catalog.Chests[spec.look]
+	local odds={common=0,rare=0,epic=0,legendary=0,mythic=0}
+	for rarity,weight in pairs(spec.odds) do odds[rarity]=weight end
+	Catalog.Chests[id]={id=id,kind="base",name=look.name,cost=look.cost,color=look.color,odds=odds,pity=spec.pity,bases=spec.bases,description=spec.description}
+	table.insert(Catalog.ChestOrder,id)
+end
 
 -- Map factions preserve family counters while adding distinct silhouettes.
 Catalog.MapEnemyVariants={}
@@ -1131,7 +1155,7 @@ for _, id in ipairs(Catalog.ChestOrder) do
 		local pool, size = {}, 0
 		for _, itemId in ipairs(order) do
 			local item=items[itemId]
-			if item.rarity==rarity then
+			if item.rarity==rarity and (not chest.bases or table.find(chest.bases,itemId)) then
 				size+=1
 				if not item.starter then table.insert(pool,itemId) end
 			end
@@ -1173,7 +1197,7 @@ local chestNames={supply=text("Suprimentos","Supplies"),rare=text("Baú da Alian
 	epic=text("Baú da Vanguarda","Vanguard chest"),legendary=text("Baú das Lendas","Legends chest"),cosmic=text("Baú Cósmico","Cosmic chest")}
 for id,name in pairs(chestNames) do
 	Catalog.Chests[id].name=name
-	Catalog.Chests["base_"..id].name=name
+	if Catalog.Chests["base_"..id] then Catalog.Chests["base_"..id].name=name end
 end
 Catalog.Chests.rare.description=text("Uma nova força para sua equipe. Veja as chances de cada herói.","A new force for your squad. Check each hero's odds.")
 Catalog.Products.Consumables.starterPack.description=text("Uma vez por conta: Gigante Furioso (raro) + 5.000 de Ouro.","Once per account: Raging Giant (rare) + 5,000 Gold.")

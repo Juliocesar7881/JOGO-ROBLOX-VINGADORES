@@ -1893,6 +1893,10 @@ fxRemote.OnClientEvent:Connect(function(event)
 		if refs.energy and refs.energy.Parent and tonumber(event.amount) then
 			celebrate:Float("+" .. number(event.amount), refs.energy, C.gold)
 			celebrate:Pop(refs.energy, 0.12)
+			-- The Armored vault's interest is part of it: named a moment later.
+			if tonumber(event.interest) then
+				task.delay(0.45, function() celebrate:Float(T("juros +", "interest +") .. number(event.interest), refs.energy, C.green) end)
+			end
 		end
 	elseif event.kind == "OpenPanel" and state and state.phase == "Lobby" then
 		if contextBuilders[event.panel] then

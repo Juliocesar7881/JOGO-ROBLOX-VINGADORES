@@ -244,7 +244,8 @@ function Rules.GuaranteedPrice(itemId)
 		local chestKind = if chest.kind == "base" then "base" else "hero"
 		local group = chest.groups[def.recruitmentGroup]
 		local odds, count = group.weight, group.size
-		if chestKind == kind and odds > 0 and count > 0 then
+		-- A base chest gives only its own bases (chest.bases).
+		if chestKind == kind and odds > 0 and count > 0 and (not chest.bases or table.find(chest.bases, itemId)) then
 			local price = chest.cost / (odds / 100 / count)
 			if not best or price < best then best = price end
 		end
@@ -978,7 +979,26 @@ function Rules.BaseStats(id, level)
 		hp=def.hp+(level-1)*12,damage=math.floor(def.damage*growth),range=30+(level-1)*3,
 		wall=math.floor(def.wall*growth),regen=def.wall>0 and (5+level*3) or 0,
 		soldier=math.floor(def.soldier*growth),interval=math.max(12,24-level*2),
+		-- Ice field (Polar station): 4 more points of slow a level, never past 40%.
+		chill=(def.chill or 0)>0 and math.min(0.4,def.chill+(level-1)*0.04) or 0,
+		-- Vault: 2 more points of interest a level; its cap grows like income.
+		interest=(def.interest or 0)>0 and def.interest+(level-1)*0.02 or 0,
+		interestCap=math.floor((def.interestCap or 0)*growth),
 		upgradeCost=Catalog.BaseUpgradeCosts[level] or 0}
+end
+
+-- How much an ice field slows one enemy: a boss shrugs off most of it.
+function Rules.BaseChill(stats, boss)
+	local chill = number(stats and stats.chill, 0)
+	return if boss then chill * 0.4 else chill
+end
+
+-- A vault's interest at the end of a wave: its rate of the match Gold kept,
+-- never more than the level's cap.
+function Rules.BaseInterest(stats, cash)
+	local rate = number(stats and stats.interest, 0)
+	if rate <= 0 then return 0 end
+	return math.min(math.floor(math.max(0, number(cash, 0)) * rate), math.floor(number(stats.interestCap, 0)))
 end
 
 --==============================================================================
