@@ -42,6 +42,8 @@ return {
 		Consumables = {
 			gold1000 = { id = 3715833438 }, gold5000 = { id = 3715833690 }, gold12000 = { id = 3715833842 }, gold30000 = { id = 3715833975 },
 			starterPack = { id = 3715833256 },
+			-- Created in the official Creator Hub on 2026-10-14 (Managed Pricing on).
+			goldBoost = { id = 3718674787 }, seasonPass = { id = 3718674866 }, legendaryBundle = { id = 3718674909 }, teamBundle = { id = 3718675077 },
 		},
 		-- All 41 direct hero products registered in the official Creator Hub.
 		-- Two starter heroes remain free; receipts use these stable IDs.

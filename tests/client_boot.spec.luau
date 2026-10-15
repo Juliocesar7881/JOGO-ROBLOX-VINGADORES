@@ -1212,6 +1212,17 @@ local function session(screen)
 		click("Ouro")
 		local unsold=named(gui,"Buy_product:gold1000")
 		check(unsold~=nil and unsold.Text=="Indisponível",tag..": client off-sale status overrides a server quote")
+		-- A product without a real ID in Config is not drawn at all: nothing on sale that cannot be bought.
+		do
+			local Config=require(shared.Config)
+			local saved=Config.Products.Consumables.gold30000.id
+			Config.Products.Consumables.gold30000.id=0
+			click("Passes"); click("Ouro")
+			check(named(gui,"Product_gold30000")==nil and named(gui,"Product_gold5000")~=nil,tag..": an unconfigured product is left out of the shop")
+			Config.Products.Consumables.gold30000.id=saved
+			click("Passes"); click("Ouro")
+			check(named(gui,"Product_gold30000")~=nil,tag..": a configured product is drawn")
+		end
 		-- The Gold packs rank themselves: the biggest pack is the best deal and
 		-- the mid pack is recommended; each available pack states Gold per Robux.
 		check(named(gui,"Badge_gold30000")~=nil and named(gui,"Badge_gold5000")~=nil and named(gui,"Badge_gold1000")==nil and named(gui,"Badge_gold12000")==nil,tag..": only the best-value and the recommended Gold pack wear a badge")

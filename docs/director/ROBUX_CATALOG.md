@@ -6,6 +6,16 @@ nomes atuais e descrições atualizados no Creator Hub; IDs reais em Config.
 Heróis Comum/Raro/Lendário: 9/29/79 Robux. Passes 19–49; pacotes 5–79.
 O cliente mostra a cotação regional do Roblox, não o preço antigo do servidor.
 
+**14/10/2026, 22h (UTC-3): os quatro produtos abaixo foram criados no Creator Hub
+oficial (universo 10768165352, Managed Pricing ligado, Brasil com preço regional)
+e os IDs estão no `Config`:** `goldBoost` = 3718674787 (29), `seasonPass` =
+3718674866 (49), `legendaryBundle` = 3718674909 (99), `teamBundle` = 3718675077
+(49). Nome do boost no Hub: "Ouro em dobro - 1 hora" (sem o ponto do meio).
+Nenhuma compra de teste real foi feita; o fluxo de recibo de cada um tem teste
+em `tests/player_service.spec.luau`. A loja só desenha produtos com ID real no
+`Config`. Falta: ícone de cada produto (o dono) e publicar o place com este
+`Config` (Studio estava fechado).
+
 **Produto novo a cadastrar (14/10/2026):** `goldBoost` — "Ouro em dobro • 1 hora",
 Developer Product, preço sugerido **29 Robux**, descrição "Por uma hora, cada
 onda e cada vitória pagam o dobro de Ouro. Comprar de novo soma mais uma hora."

@@ -60,16 +60,13 @@ Ela executa o catálogo atual; ID preenchido não comprova venda nem entrega.
   Arte interna e imagens existentes da experiência preservadas.
 - [ ] Confirmar pessoalmente contratos pendentes, se ainda aparecerem. O
   registro de 01/10 relata “Updated Agreements”; nenhuma aceitação automática.
-- [ ] Criar o Developer Product **Ouro em dobro • 1 hora** (29 Robux, ver
-  `docs/director/ROBUX_CATALOG.md`) e gravar o ID em
-  `Config.Products.Consumables.goldBoost`.
-- [ ] Criar o Developer Product **Passe da Temporada** (49 Robux, ver
-  `docs/director/ROBUX_CATALOG.md`) e gravar o ID em
-  `Config.Products.Consumables.seasonPass`; opcional: tirar o game pass
+- [x] 14/10: Developer Products **Ouro em dobro - 1 hora** (29), **Passe da
+  Temporada** (49), **Pacote Lendário** (99) e **Pacote Equipe** (49) criados no
+  Creator Hub; IDs em `Config.Products.Consumables`. Opcional: tirar o game pass
   Temporada de venda (quem já tem continua com todas as temporadas).
-- [ ] Criar os Developer Products **Pacote Lendário** (99 Robux) e **Pacote
-  Equipe** (49 Robux), ver `docs/director/ROBUX_CATALOG.md`, e gravar os IDs em
-  `Config.Products.Consumables.legendaryBundle` / `.teamBundle`.
+- [ ] Publicar o place com o `Config` atual (a loja só mostra produtos com ID
+  real; sem publicar, os quatro novos não aparecem no jogo ao vivo).
+- [ ] Ícone de cada produto novo no Creator Hub (dono).
 - [ ] Compra real de cada passe/produto em conta de teste: entrega única,
   saldo, cancelamento, saída/reentrada e recibo repetido. Pacote Inicial:
   segunda compra concede apenas a compensação de Ouro.

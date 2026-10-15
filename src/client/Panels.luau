@@ -454,7 +454,9 @@ function Panels.new(ctx)
 		if not eligible and not p.paidRandomRestricted then
 			smallText(purchaseParent,T("Faltam ","You need ")..number(chest.cost*count-(p.gold or 0))..T(" Ouro: jogue partidas e pegue os prêmios."," Gold: play matches and claim gifts."),0,36)
 			-- Or buy the Gold: one tap to the Gold packs, the server still decides every price.
-			UI.button(purchaseParent,T("Comprar Ouro com Robux","Buy Gold with Robux"),function() openContext("premium",{shopKind="product"}) end,{Name="BuyGoldShortcut",Size=UDim2.new(1,-6,0,46),BackgroundColor3=C.gold,TextSize=17})
+			local goldOnSale=false
+			for key,def in pairs(Catalog.Products.Consumables) do if def.gold and not def.heroPicks and key~="starterPack" and kit.productConfigured("product",key) then goldOnSale=true end end
+			if goldOnSale then UI.button(purchaseParent,T("Comprar Ouro com Robux","Buy Gold with Robux"),function() openContext("premium",{shopKind="product"}) end,{Name="BuyGoldShortcut",Size=UDim2.new(1,-6,0,46),BackgroundColor3=C.gold,TextSize=17}) end
 		end
 
 		-- A real roster showcase, separate from the complete odds list. These
@@ -539,10 +541,19 @@ function Panels.new(ctx)
 		end
 	end
 
+	-- Only products with a real ID in Config are drawn: nothing on sale that
+	-- cannot be bought. (The server still refuses an unconfigured product.)
+	local function configured(kind,key)
+		local group=Config.Products and Config.Products[kind=="hero" and "Heroes" or kind=="pass" and "Passes" or "Consumables"]
+		local entry=group and group[key]
+		return entry~=nil and (tonumber(entry.id) or 0)>0
+	end
+	kit.productConfigured=configured
+
 	-- The starter pack, featured above every tab until the account owns it.
 	local function starterOffer(body)
 		local pack=Catalog.Products.Consumables.starterPack
-		if not pack or profile().starterPack then return end
+		if not pack or profile().starterPack or not configured("product","starterPack") then return end
 		local info=productInfo["product:starterPack"]
 		local ready=type(info)=="table"
 		local endsAt=tonumber(profile().starterOfferEndsAt)
@@ -587,7 +598,7 @@ function Panels.new(ctx)
 		for _,group in ipairs({{kind="hero",items=Catalog.Products.Heroes},{kind="pass",items=Catalog.Products.Passes},{kind="product",items=Catalog.Products.Consumables}}) do
 			if group.kind~=premiumCategory then continue end
 			-- Cheapest first; the starter pack has its own banner above.
-			local keys={}; for key in pairs(group.items) do if key~="starterPack" then table.insert(keys,key) end end
+			local keys={}; for key in pairs(group.items) do if key~="starterPack" and configured(group.kind,key) then table.insert(keys,key) end end
 			-- Things you do not own come first: a shop that opens on "already yours" sells nothing.
 			local function ownedKey(key) return group.kind=="hero" and (profile().heroes or {})[key]~=nil or group.kind=="pass" and (profile().passes or {})[key]==true end
 			table.sort(keys,function(a,b)
@@ -981,7 +992,7 @@ function Panels.new(ctx)
 			end, {Name = "ClaimSeason", Position = UDim2.fromOffset(12, 158), Size = UDim2.new(1, -24, 0, 48), BackgroundColor3 = season.claimable > 0 and C.green or C.card, TextSize = 20})
 			if season.claimable == 0 then UI.disabled(claimSeason) end
 			if not season.owned then
-				UI.button(seasonCard, T("Liberar trilha premium", "Unlock the premium track"), function() openContext("shop", {shopKind = "product"}) end,
+				UI.button(seasonCard, T("Liberar trilha premium", "Unlock the premium track"), function() openContext("shop", {shopKind = configured("product", "seasonPass") and "product" or "pass"}) end,
 					{Name = "SeasonUnlock", Position = UDim2.fromOffset(12, 210), Size = UDim2.new(1, -24, 0, 36), BackgroundColor3 = C.violet, TextSize = 18})
 			end
 		end

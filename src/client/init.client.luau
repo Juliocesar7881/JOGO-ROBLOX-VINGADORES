@@ -957,7 +957,7 @@ renderLobby = function()
 				key,suggestion="gifts",{T("Tem prêmios esperando por você!","You have gifts waiting!"),function() openContext("rewards",{hud=true}) end}
 			elseif (p.talentPoints or 0)>0 then
 				key,suggestion="talents",{T("Você tem pontos para gastar na EVOLUÇÃO.","You have points to spend on TALENTS."),function() openContext("talents",{}) end}
-			elseif tonumber(p.starterOfferEndsAt) and p.starterOfferEndsAt>os.time() then
+			elseif tonumber(p.starterOfferEndsAt) and p.starterOfferEndsAt>os.time() and kit.productConfigured and kit.productConfigured("product","starterPack") then
 				-- Nothing waiting: the welcome offer, with how long it still points here.
 				local pack=Catalog.Products.Consumables.starterPack
 				local left=p.starterOfferEndsAt-os.time()
