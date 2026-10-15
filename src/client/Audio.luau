@@ -31,7 +31,7 @@ for name in pairs(BATTLE_TRACKS) do VOLUME[name] = 0.2 end
 -- speakers, quieter with distance, and none from beyond earshot.
 local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.3, 3, 90, 3
 Audio.Ambiences = AMBIENCE
-local BANK_LIMITS = {ui=3,events=4,summon=2,rewardAccent=2,combat=6,powers=3,boss=2,world=2}
+local BANK_LIMITS = {ui=3,events=4,summon=2,rewardAccent=2,combat=6,powers=3,boss=2,world=2,score=8}
 local WEAPON_BANK = {
 	hulk="heavy", capmen="heavy", beast="punch", shangchi="punch", ironfist="punch", antman="punch",
 	captain="metal", panther="swift", wolverine="swift", daredevil="swift", blade="swift",
@@ -66,6 +66,58 @@ local HERO_POWER = {
 	speedster = {"powerWeb", 1.4}, solartitan = {"powerBlast", 0.85}, nightstalker = {"powerBlast", 1.35},
 }
 Audio.HeroPower = HERO_POWER
+
+-- After that first sound, every power plays a short score of its own, timed to
+-- its look in PowerFX: the missiles land one by one, the thunder cracks when the
+-- strike falls, ice splits as the spikes rise, the shield rings at each bounce.
+-- Notes: { seconds, bank sound, pitch, loudness } on a channel of their own
+-- (score), so they never cut the weapons or the first sound.
+local POWER_SCORES = {
+	ironman = { { 0.05, "swift", 1.3, 0.8 }, { 0.42, "blast", 1.1, 0.75 }, { 0.56, "blast", 0.95, 0.75 }, { 0.7, "blast", 1.2, 0.75 }, { 0.84, "powerBlast", 1.05, 0.85 } },
+	hawkeye = { { 0.02, "abilityArm", 1.2, 0.7 }, { 0.35, "arrow", 0.8, 1 }, { 0.6, "blast", 1.0, 0.9 } },
+	falcon = { { 0.05, "swift", 0.9, 0.8 }, { 0.2, "tech", 1.2, 0.6 }, { 0.4, "swift", 1.1, 0.7 }, { 0.55, "upgrade", 1.2, 0.6 } },
+	bucky = { { 0.03, "metal", 1.4, 0.7 }, { 0.12, "powerTaunt", 1.2, 0.6 }, { 0.3, "swift", 0.8, 0.5 } },
+	spiderman = { { 0.08, "web", 1.0, 0.9 }, { 0.2, "web", 1.2, 0.7 }, { 0.32, "swift", 1.3, 0.5 } },
+	widow = { { 0.06, "tech", 1.5, 0.7 }, { 0.14, "tech", 1.3, 0.7 }, { 0.22, "beam", 1.6, 0.6 } },
+	antman = { { 0.02, "abilityArm", 0.7, 0.6 }, { 0.4, "heavy", 0.6, 1 }, { 0.43, "powerTaunt", 0.7, 0.9 } },
+	wasp = { { 0.05, "swift", 1.6, 0.6 }, { 0.15, "tech", 1.6, 0.6 }, { 0.3, "tech", 1.4, 0.6 }, { 0.45, "tech", 1.7, 0.5 } },
+	rocket = { { 0.04, "metal", 1.2, 0.8 }, { 0.2, "collect", 1.3, 0.7 }, { 0.4, "metal", 1.5, 0.5 } },
+	daredevil = { { 0.22, "beam", 1.5, 0.55 }, { 0.44, "beam", 1.5, 0.5 }, { 0.66, "beam", 1.5, 0.45 } },
+	shangchi = { { 0.1, "swift", 1.1, 0.7 }, { 0.35, "metal", 1.3, 0.6 }, { 0.65, "metal", 1.1, 0.6 }, { 0.9, "magic", 1.1, 0.8 } },
+	captain = { { 0.05, "metal", 1.0, 0.9 }, { 0.2, "metal", 1.15, 0.8 }, { 0.36, "metal", 1.3, 0.8 }, { 0.48, "powerHeal", 0.8, 0.7 } },
+	panther = { { 0.03, "powerBlast", 1.1, 0.7 }, { 0.15, "magic", 1.0, 0.6 }, { 0.35, "upgrade", 1.2, 0.6 } },
+	hulk = { { 0.03, "heavy", 0.55, 1 }, { 0.1, "bossBeast", 1.1, 0.6 }, { 0.3, "blast", 0.7, 0.8 } },
+	vision = { { 0.08, "beam", 1.0, 0.8 }, { 0.25, "beam", 1.25, 0.6 }, { 0.4, "powerHeal", 1.3, 0.5 } },
+	warmachine = { { 0.05, "swift", 0.9, 0.7 }, { 0.42, "blast", 0.9, 0.75 }, { 0.54, "blast", 1.05, 0.75 }, { 0.66, "blast", 0.85, 0.75 }, { 0.78, "blast", 1.1, 0.75 }, { 0.92, "powerBlast", 0.8, 0.85 } },
+	starlord = { { 0.14, "tech", 1.2, 0.6 }, { 0.28, "tech", 1.0, 0.6 }, { 0.42, "tech", 1.35, 0.6 }, { 0.56, "levelUp", 1.0, 0.5 } },
+	groot = { { 0.04, "organic", 0.8, 1 }, { 0.1, "heavy", 0.8, 0.8 }, { 0.2, "organic", 1.0, 0.7 } },
+	thor = { { 0.15, "heavy", 0.55, 0.9 }, { 0.18, "powerBlast", 0.8, 0.85 }, { 0.4, "tech", 1.0, 0.7 }, { 0.55, "beam", 1.3, 0.5 } },
+	wanda = { { 0.3, "magic", 0.9, 0.6 }, { 0.7, "magic", 1.1, 0.6 }, { 1.1, "powerBlast", 1.2, 0.8 } },
+	strange = { { 0.2, "magic", 1.2, 0.6 }, { 0.45, "magic", 0.9, 0.5 }, { 0.7, "powerHeal", 1.3, 0.5 } },
+	ghostrider = { { 0.1, "fire", 0.9, 0.8 }, { 0.25, "fire", 1.1, 0.7 }, { 0.4, "powerFire", 1.1, 0.6 } },
+	captainmarvel = { { 0.05, "beam", 1.1, 0.8 }, { 0.15, "blast", 0.9, 0.75 }, { 0.3, "powerBlast", 1.3, 0.6 } },
+	silversurfer = { { 0.05, "beam", 0.8, 0.8 }, { 0.12, "heavy", 0.9, 0.6 }, { 0.3, "powerHeal", 1.4, 0.5 } },
+	wolverine = { { 0.03, "metal", 1.4, 0.6 }, { 0.22, "swift", 0.85, 1 }, { 0.27, "metal", 1.5, 0.6 } },
+	cyclops = { { 0.05, "beam", 1.1, 1 }, { 0.25, "beam", 1.0, 0.7 }, { 0.45, "fire", 1.2, 0.6 } },
+	storm = { { 0.05, "swift", 0.6, 0.9 }, { 0.45, "powerLightning", 1.1, 0.75 }, { 0.6, "tech", 1.2, 0.6 }, { 0.75, "powerLightning", 0.9, 0.7 } },
+	jean = { { 0.12, "magic", 1.2, 0.7 }, { 0.28, "fire", 1.0, 0.75 }, { 0.45, "fire", 1.2, 0.6 } },
+	iceman = { { 0.05, "ice", 1.2, 0.8 }, { 0.15, "ice", 1.0, 0.75 }, { 0.3, "ice", 1.35, 0.6 } },
+	gambit = { { 0.05, "swift", 1.3, 0.8 }, { 0.5, "blast", 1.3, 0.65 }, { 0.62, "blast", 1.15, 0.65 }, { 0.74, "blast", 1.4, 0.65 }, { 0.86, "powerBlast", 1.2, 0.75 } },
+	nightcrawler = { { 0.09, "swift", 1.6, 0.6 }, { 0.27, "swift", 1.5, 0.6 }, { 0.45, "swift", 1.7, 0.6 }, { 0.5, "magic", 1.4, 0.5 } },
+	beast = { { 0.02, "punch", 0.8, 1 }, { 0.2, "collect", 1.6, 0.45 }, { 0.4, "collect", 1.8, 0.4 } },
+	psylocke = { { 0.05, "swift", 1.15, 0.9 }, { 0.19, "swift", 1.3, 0.8 }, { 0.33, "swift", 1.2, 0.8 }, { 0.45, "magic", 1.15, 0.6 } },
+	deadpool = { { 0.04, "swift", 1.0, 0.9 }, { 0.16, "swift", 1.2, 0.9 }, { 0.25, "levelUp", 1.3, 0.55 }, { 0.32, "collect", 1.2, 0.5 } },
+	moonknight = { { 0.15, "powerHeal", 0.8, 0.6 }, { 0.35, "beam", 0.7, 0.5 }, { 0.5, "magic", 0.9, 0.5 } },
+	nova = { { 0.05, "beam", 1.2, 0.7 }, { 0.2, "blast", 1.1, 0.7 }, { 0.35, "powerHeal", 1.4, 0.45 } },
+	capmen = { { 0.03, "metal", 0.8, 0.9 }, { 0.2, "powerHeal", 0.9, 0.7 }, { 0.3, "upgrade", 1.0, 0.6 } },
+	amazon = { { 0.3, "swift", 1.0, 0.6 }, { 0.6, "swift", 1.2, 0.6 }, { 0.9, "metal", 1.3, 0.6 } },
+	seaking = { { 0.08, "swift", 0.6, 0.9 }, { 0.3, "swift", 0.75, 0.6 }, { 0.5, "ice", 0.7, 0.45 } },
+	emerald = { { 0.05, "magic", 0.9, 0.6 }, { 0.38, "heavy", 0.7, 1 }, { 0.41, "powerBlast", 0.85, 0.85 } },
+	speedster = { { 0.08, "swift", 1.6, 0.7 }, { 0.24, "swift", 1.7, 0.7 }, { 0.4, "tech", 1.6, 0.6 }, { 0.5, "swift", 1.5, 0.6 } },
+	solartitan = { { 0.05, "fire", 0.7, 0.7 }, { 0.55, "powerBlast", 0.7, 1 }, { 0.58, "fire", 0.8, 0.8 }, { 0.7, "blast", 0.8, 0.7 } },
+	nightstalker = { { 0.05, "swift", 0.8, 0.7 }, { 0.2, "metal", 1.4, 0.45 }, { 0.35, "swift", 0.7, 0.5 } },
+}
+Audio.PowerScores = POWER_SCORES
 local function bankChannel(asset) return string.lower(string.sub(asset,4)) end
 
 function Audio.WeaponProfile(heroId, family)
@@ -630,10 +682,16 @@ function Audio:Ability(family, distance, kind, heroId, own)
 	if now-(self.lastCue[gate] or -math.huge)<0.6 then return false end
 	if not own and (distance or 0)>POWER_EARSHOT then return false end
 	self.lastCue[gate]=now
-	local volume = own and .34 or .26*math.clamp(1-(distance or 0)/POWER_EARSHOT,.3,1)
+	local volume = own and .42 or .26*math.clamp(1-(distance or 0)/POWER_EARSHOT,.3,1)
 	local spec = HERO_POWER[heroId or ""]
-	if self:_bankPlay(Audio.PowerProfile(heroId,kind,family), {volume=volume,pitch=spec and spec[2] or 1,duck=own and .9 or .45}) then
+	if self:_bankPlay(Audio.PowerProfile(heroId,kind,family), {volume=volume,pitch=spec and spec[2] or 1,duck=own and 1.2 or .45}) then
 		if spec and spec[3] then self:Cue(spec[3], 0) end
+		-- Then the power's own score, a little softer than its first sound.
+		for _, note in ipairs(POWER_SCORES[heroId or ""] or {}) do
+			task.delay(note[1], function()
+				self:_bankPlay(note[2], {volume = volume * 0.85 * (note[4] or 1), pitch = note[3], channel = "score"})
+			end)
+		end
 		return true
 	end
 	local voice=self:_voice(family) or self:_voice("ability")

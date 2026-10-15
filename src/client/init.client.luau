@@ -415,30 +415,6 @@ local celebrate = Celebrate.new({
 	end,
 })
 
--- Every power has its moment: the caster's own cast plays the full cut-in
--- (Celebrate:CutIn), a teammate's a small strip with their name. Reduced
--- effects keeps only the plain banner, for one's own ultimate.
-local function showPowerCutIn(event)
-	local def = Catalog.Abilities[event.abilityId or ""]
-	local hero = Catalog.Heroes[event.heroId or ""]
-	if not def or not hero then return end
-	local own = event.ownerId == player.UserId
-	local tint = UI.color(def.color)
-	if profile().settings and profile().settings.lowFX then
-		if own and event.ultimate then
-			celebrate:Banner({pt = "★ " .. Catalog.Upper(def.name.pt) .. "!", en = "★ " .. Catalog.Upper(def.name.en) .. "!"}, {pt = "ULTIMATE", en = "ULTIMATE"}, tint, {duration = 1.5})
-		end
-		return
-	end
-	local name = {pt = Catalog.Upper(def.name.pt) .. "!", en = Catalog.Upper(def.name.en) .. "!"}
-	if own then
-		celebrate:CutIn(event.heroId, name, tint, {ultimate = event.ultimate == true, subtitle = hero.name})
-	else
-		local ok, caster = pcall(function() return Players:GetPlayerByUserId(event.ownerId) end)
-		celebrate:CutIn(event.heroId, name, tint, {compact = true, subtitle = ok and caster and caster.DisplayName or hero.name})
-	end
-end
-
 -- A quickbar slot: the hero's 3D portrait on a tile in its rarity colour,
 -- the slot number in a corner and the price on the bottom edge. No name: a
 -- name never fits a phone tile, and the portrait and colour already say who.
@@ -1531,7 +1507,6 @@ local function renderMatch()
 	local cd = refs.controlDelta
 	refs.speedToggle = UI.secondary(abilities, "2x", function() chooseSpeed(2) end, {Name = "SpeedToggle", LayoutOrder = 4, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 22 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
 	refs.speed3Toggle = UI.secondary(abilities, "3x", function() chooseSpeed(3) end, {Name = "Speed3Toggle", LayoutOrder = 5, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 22 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
-	refs.sheetButton = UI.secondary(abilities, T("Ficha", "Sheet"), function() kit.sheet:Toggle() end, {Name = "SheetButton", LayoutOrder = 7, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 17 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = UI.Skin.bodyTop})
 	-- The cards have a button of their own, in the cards mode only.
 	if state.match and state.match.cardMode then
 		refs.cardsButton = UI.secondary(abilities, T("Cartas", "Cards"), function() kit.sheet:Open("cards") end, {Name = "CardsButton", LayoutOrder = 8, Size = UDim2.fromOffset(layout.controlW, layout.buttonH), TextSize = 17 + cd, Font = Enum.Font.FredokaOne, BackgroundColor3 = C.violet})
@@ -1556,7 +1531,6 @@ local function renderMatch()
 	controlTip(refs.speedToggle, T("Velocidade 2x  (tecla F)", "Speed 2x  (F key)"), T("Acelera a partida. Em grupo, começa quando todos pedirem.", "Speeds the match up. In a group it starts once everyone asks."))
 	controlTip(refs.speed3Toggle, T("Velocidade 3x", "Speed 3x"), T("Do passe 3x: quem tem o passe acelera a partida sozinho.", "From the 3x pass: its owner speeds the match up alone."))
 	controlTip(refs.autoSkipToggle, T("Onda automática", "Auto wave"), T("Ligado, a próxima onda começa sozinha quando a atual acaba.", "When on, the next wave starts by itself once the current one ends."))
-	controlTip(refs.sheetButton, T("Ficha  (tecla C)", "Sheet  (C key)"), T("Seus talentos nesta partida.", "Your talents in this match."))
 	controlTip(state.match and state.match.cardMode and refs.cardsButton or nil, T("Cartas", "Cards"), T("As cartas escolhidas e o bônus total delas.", "The cards you picked and their total bonus."))
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
 	UI.windowSkin(bottom, C.gold)
@@ -1966,10 +1940,6 @@ fxRemote.OnClientEvent:Connect(function(event)
 				TweenService:Create(flash, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
 				task.delay(0.45, function() flash:Destroy() end)
 			end
-		elseif event.kind == "Ability" and activeMatch() then
-			-- The cut-in plays no cue: Effects plays the hero's power sound below,
-			-- and a second cue would consume its cooldown and silence it.
-			showPowerCutIn(event)
 		end
 		effects:Handle(event)
 	end
@@ -2025,8 +1995,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		local index = table.find(keys, input.KeyCode)
 		if index and profile().loadout[index] then chooseHero(profile().loadout[index])
 		elseif input.KeyCode == Enum.KeyCode.Q and state.match.ability then chooseSkill(state.match.ability.id)
-		elseif input.KeyCode == Enum.KeyCode.F then toggleSpeed()
-		elseif input.KeyCode == Enum.KeyCode.C then kit.sheet:Toggle() end
+		elseif input.KeyCode == Enum.KeyCode.F then toggleSpeed() end
 	end
 end)
 
@@ -2432,10 +2401,7 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		openContext = function(kind, data) openContext(kind, data) end,
 		closeContext = closeContext,
 		hold = function(fn) reviewHold = fn end,
-		fire = function(event)
-			if type(event) == "table" and event.kind == "Ability" then showPowerCutIn(event) end
-			effects:Handle(event)
-		end,
+		fire = function(event) effects:Handle(event) end,
 		-- Draw the HUD in a fixed phone-sized area (nil = the whole window, scaled).
 		setReviewSize = function(width, height)
 			kit.reviewSize = width and Vector2.new(width, height) or nil

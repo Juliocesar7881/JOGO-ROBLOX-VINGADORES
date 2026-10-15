@@ -412,6 +412,13 @@ function PlayerService.new(config, catalog, onChanged, rules, codes)
 		for key, product in pairs(self.products.Passes) do
 			if product.id == passId and self.records[player.UserId] then
 				self:_purchaseEvent(player, "granted", "pass", key, passId)
+				-- A Studio playtest: Roblox records no ownership for a test purchase,
+				-- so the temporary profile gets the pass for this session only.
+				if self.memory then
+					self.records[player.UserId].passes[key] = true
+					self:_notify(player)
+					continue
+				end
 				task.spawn(function()
 					local ok, owned = pcall(function() return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId) end)
 					local record = self.records[player.UserId]

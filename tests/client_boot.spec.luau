@@ -2055,11 +2055,10 @@ local function session(screen)
 		check(string.find(bannerTitle(), "CHEFE DERROTADO", 1, true) ~= nil, tag .. ": a fallen boss gets a big banner, got " .. bannerTitle())
 		fx({ kind = "Ability", heroId = "captainmarvel", abilityId = "photonNova", abilityKind = "blast", ultimate = true, ownerId = LOCAL_ID,
 			position = v3(0, 0, 0), radius = 60, duration = 2, color = Color3.fromRGB(255, 210, 90), points = {} })
-		local cutTitle = named(overlays, "CutInTitle")
-		check(cutTitle ~= nil and string.find(cutTitle.Text, "NOVA FOTÔNICA", 1, true) ~= nil,
-			tag .. ": your own ultimate shouts its name in a cut-in, accents intact, got " .. (cutTitle and cutTitle.Text or "nothing"))
+		check(named(overlays, "PowerCutIn") == nil and string.find(bannerTitle(), "NOVA FOTÔNICA", 1, true) == nil,
+			tag .. ": your own ultimate puts nothing over the battle: the power itself is the show")
 		frames(1 / 30, 120)
-		check(named(overlays, "CelebrationBanner") == nil and named(overlays, "PowerCutIn") == nil, tag .. ": banners and cut-ins clear themselves")
+		check(named(overlays, "CelebrationBanner") == nil, tag .. ": banners clear themselves")
 		push(matchSnapshot(profile, "Preparing"))
 		push(matchSnapshot(profile, "Preparing", { completedWaves = 8, wave = 8, nextBoss = 10 }))
 		local warned = false
@@ -2325,38 +2324,21 @@ local function session(screen)
 		sheetProfile.talents = { roundGold = 3, killGold = 2, magnet = 1 }
 		local base = Rules.BaseStats("outpost", 2)
 		push(matchSnapshot(sheetProfile, "Wave", { base = { id = "outpost", level = 2, stats = base, wall = 0 }, cardMode = false }))
-		check(named(gui, "SheetButton") ~= nil, tag .. ": the match HUD has a button for the commander's sheet")
-		check(named(gui, "CommanderSheet") == nil, tag .. ": the sheet starts closed")
-		clickNamed("SheetButton")
-		check(named(gui, "CommanderSheet") ~= nil, tag .. ": the sheet opens in the middle of a match")
-		check(named(gui, "SheetTab_talents") ~= nil and named(gui, "SheetTab_base") == nil and named(gui, "SheetTab_cards") == nil, tag .. ": tabs: talents only, no base (the agent upgrades it) and no cards outside the cards mode")
-		check(named(gui, "TalentReadOnlyNote") ~= nil, tag .. ": the talents say they only change in the lobby")
-		check(named(gui, "TalentNode_roundGold") ~= nil and named(gui, "TalentNode_globalMagnet") ~= nil, tag .. ": the whole tree is drawn, capstone included")
-		local treeScroll = named(gui, "TalentScroll")
-		check(treeScroll ~= nil and named(gui, "TalentNode_roundGold").Size.Y.Offset >= 70, tag .. ": the match tree scrolls with fingertip-sized hexagons")
-		if treeScroll then treeScroll.CanvasPosition = Vector2.new(70, 20) end
-		check(countNamed(gui, "UpgradeTalent_roundGold") == 0 and named(gui, "TalentOverview") == nil, tag .. ": nothing can be spent in a match")
-		check(countNamed(gui, "ResetTalents") == 0 and findButton(gui, "Redistribuir") == nil, tag .. ": and nothing can be reset")
-		clickNamed("TalentNode_globalMagnet")
-		check(named(gui, "TalentScroll").CanvasPosition == Vector2.new(70, 20), tag .. ": selecting a talent keeps the tree's scroll position")
-		local card = named(gui, "Talent_globalMagnet")
-		check(card ~= nil and string.find(named(card, "TalentNowNext").Text, "inativo", 1, true) ~= nil, tag .. ": a talent card says whether the capstone is active, got " .. tostring(card and named(card, "TalentNowNext").Text))
-		check(card ~= nil and named(card, "UpgradeTalent_globalMagnet") == nil, tag .. ": the card has no upgrade button")
-		clickNamed("CloseSheet")
+		check(named(gui, "SheetButton") == nil, tag .. ": the match HUD has no commander's sheet (Ficha) button")
 		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.C }, false)
-		check(named(gui, "CommanderSheet") ~= nil, tag .. ": the C key opens the sheet")
-		input.InputBegan:Fire({ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.C }, false)
-		check(named(gui, "CommanderSheet") == nil, tag .. ": and closes it")
-		-- The cards mode adds a tab with the cards picked so far.
+		check(named(gui, "CommanderSheet") == nil, tag .. ": the C key opens nothing")
+		-- The cards mode keeps its own button: the cards picked so far (a cards
+		-- run is one from the start, so it begins as a fresh match here).
+		push(resultsSnapshot(sheetProfile))
 		push(matchSnapshot(sheetProfile, "Wave", { base = { id = "outpost", level = 2, stats = base, wall = 0 }, cardMode = true, cards = { "sharpen", "sharpen", "income" } }))
-		clickNamed("SheetButton")
-		check(named(gui, "SheetTab_cards") ~= nil, tag .. ": the cards mode gets a cards tab")
-		clickNamed("SheetTab_cards")
+		check(named(gui, "SheetButton") == nil and named(gui, "CardsButton") ~= nil, tag .. ": the cards mode has its Cards button and no sheet button")
+		clickNamed("CardsButton")
+		check(named(gui, "SheetTab_cards") ~= nil and named(gui, "SheetTab_talents") == nil, tag .. ": the cards view shows the cards, not the talents")
 		check(named(gui, "SheetCard_sharpen") ~= nil and string.find(textOf(named(gui, "SheetCard_sharpen")), "×2", 1, true) ~= nil and named(gui, "SheetCard_income") ~= nil, tag .. ": each picked card is listed with its stacks")
 		clickNamed("CloseSheet")
 		check(named(gui, "CommanderSheet") == nil, tag .. ": the close button closes the sheet")
 		-- The sheet follows the match: the end of the match closes it.
-		clickNamed("SheetButton")
+		clickNamed("CardsButton")
 		push(resultsSnapshot(sheetProfile))
 		frames(1 / 30, 2)
 		check(named(gui, "CommanderSheet") == nil, tag .. ": the sheet closes when the match ends")
@@ -3194,10 +3176,26 @@ local function session(screen)
 			if string.match(voice.Name, "^Bank_powers_") and voice.IsPlaying and voice.Volume >= 0.3 then heard = true end
 		end
 		check(heard, tag .. ": the commander hears their own power at full volume, however far it lands")
+		-- Then the power's own score: every hero has one, of bank sounds, timed to its look.
+		local scores, badScore = AudioModule.PowerScores, {}
+		for _, heroId in ipairs(Catalog.HeroOrder) do
+			local score = scores[heroId]
+			local fine = type(score) == "table" and #score >= 2 and #score <= 8
+			for _, note in ipairs(score or {}) do
+				fine = fine and bank[note[2]] ~= nil and note[1] >= 0 and note[1] <= 1.5 and note[3] >= 0.5 and note[3] <= 2 and note[4] > 0 and note[4] <= 1
+			end
+			if not fine then table.insert(badScore, heroId) end
+		end
+		check(#badScore == 0, tag .. ": every hero's power has a score of bank sounds timed to its look: " .. table.concat(badScore, ", "))
+		local scored = 0
+		for _, voice in ipairs(folder:GetChildren()) do
+			if string.match(voice.Name, "^Bank_score_") and voice.IsPlaying then scored += 1 end
+		end
+		check(scored >= 2, tag .. ": the commander's power plays its score after the first sound, got " .. scored .. " notes")
 		fx({kind = "Clear"})
 	end)
 
-	step("every hero's power has its own look, and the caster a cut-in", function()
+	step("every hero's power has its own look, and nothing covers the screen", function()
 		local PowerFXModule = require(clientModules.PowerFX)
 		local missing = {}
 		for _, heroId in ipairs(Catalog.HeroOrder) do
@@ -3234,15 +3232,11 @@ local function session(screen)
 			for _, item in ipairs(folder:GetChildren()) do if item.Name == "PowerEffect" then count += 1 end end
 			return count
 		end
-		-- The commander's own ultimate: the full cut-in, and the hero's own look on the road.
+		-- The commander's own ultimate: the hero's own look on the road, nothing on the screen.
 		local thunder = Catalog.Abilities[Catalog.Heroes.thor.ability]
 		fx({kind = "Ability", heroId = "thor", abilityId = thunder.id, abilityKind = thunder.kind, ultimate = true, ownerId = LOCAL_ID,
 			position = v3(0, 0, 0), radius = 14, duration = 2, color = Color3.fromRGB(120, 220, 255), points = {v3(4, 0, 2)}, shake = 1.1})
-		local cut = named(overlays, "PowerCutIn")
-		local title = cut and named(cut, "CutInTitle")
-		check(title ~= nil and string.find(title.Text, Catalog.Upper(thunder.name.pt), 1, true) ~= nil, tag .. ": your own power shouts its name in a cut-in")
-		check(cut ~= nil and named(cut, "CutInHero") ~= nil and named(cut, "CutInUltimate") ~= nil and countNamed(cut, "CutInBar") == 2,
-			tag .. ": an ultimate's cut-in shows the hero, the ULTIMATE tag and cinema bars")
+		check(named(overlays, "PowerCutIn") == nil and named(overlays, "PowerCutInStrip") == nil, tag .. ": a power puts no band or strip over the screen")
 		frames(1 / 30, 12)
 		local peak = shown()
 		check(peak > 4, tag .. ": the hero's own power look is on the road, got " .. peak)
@@ -3254,9 +3248,9 @@ local function session(screen)
 			frames(1 / 30, 1)
 			check(shown() <= PowerFXModule.MAX_PARTS, tag .. ": the power looks stay inside their pool after " .. heroId)
 		end
-		check(named(overlays, "PowerCutInStrip") ~= nil, tag .. ": a teammate's power is a small strip with their name")
+		check(named(overlays, "PowerCutInStrip") == nil, tag .. ": a teammate's power puts nothing on the screen either")
 		frames(1 / 30, 120)
-		check(shown() == 0 and named(overlays, "PowerCutIn") == nil and named(overlays, "PowerCutInStrip") == nil, tag .. ": every power look and cut-in clears itself")
+		check(shown() == 0, tag .. ": every power look clears itself")
 		-- Reduced effects: no cut-in and no power look (the radius ring stays).
 		local calm = veteranProfile()
 		calm.settings.lowFX = true
@@ -3264,7 +3258,7 @@ local function session(screen)
 		fx({kind = "Ability", heroId = "thor", abilityId = thunder.id, abilityKind = thunder.kind, ultimate = true, ownerId = LOCAL_ID,
 			position = v3(0, 0, 0), radius = 14, duration = 2, color = Color3.fromRGB(120, 220, 255)})
 		frames(1 / 30, 6)
-		check(shown() == 0 and named(overlays, "PowerCutIn") == nil, tag .. ": reduced effects draws no power look and no cut-in")
+		check(shown() == 0 and named(overlays, "PowerCutIn") == nil, tag .. ": reduced effects draws no power look")
 		fx({kind = "Clear"})
 	end)
 

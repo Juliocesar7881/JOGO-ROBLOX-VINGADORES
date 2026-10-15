@@ -685,6 +685,11 @@ check(localOnly:Get(p4).heroes.hulk ~= nil and localOnly:Get(p4).loadout[2] == "
 check(localOnly:_receipt({ PlayerId = 4, ProductId = 101, PurchaseId = "studio-purchase" }) == "pending", "Memory mode cannot acknowledge real purchases")
 local _, studioQuoteOK, studioQuote = localOnly:Handle(p4, "ProductInfo", { kind = "product", key = "gold1000" }, true)
 check(studioQuoteOK and studioQuote.preview == true and studioQuote.price == 87, "Studio memory can preview live prices without enabling a purchase")
+-- A Studio test purchase of a pass unlocks it for that playtest (Roblox records
+-- no ownership for it), so 3x and the other passes can be tried in Studio.
+check(localOnly:Get(p4).passes.speed3 ~= true, "A Studio profile starts without the 3x pass")
+localOnly.passConnection.callback(p4, localOnly.products.Passes.speed3.id, true)
+check(localOnly:Get(p4).passes.speed3 == true, "A Studio test purchase unlocks the pass for the playtest")
 check(productInfo.preview == false, "Live-game quotes do not carry the Studio purchase restriction")
 
 -- Talent points are derived from earned levels, never bought or client supplied.

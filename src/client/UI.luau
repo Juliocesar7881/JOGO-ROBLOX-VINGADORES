@@ -1281,14 +1281,14 @@ function UI.matchLayout(width, height, options)
 	local small = class.short or class.narrow
 	local skillW = small and 124 or (class.compact and 144 or 190)
 	local saluteW = small and 78 or 96
-	-- Speed (1x/2x), auto-skip and the commander's sheet ride in the same band as the ability: they
+	-- Speed (2x/3x) and auto-skip ride in the same band as the ability: they
 	-- are pressed often, so they get thumb height and sit where the hand is.
 	local controlW = small and 52 or 64
 	local function bandWidth()
 		local w = count * skillW + math.max(0, count - 1) * 8
 		if options.vip then w += (count > 0 and 8 or 0) + saluteW end
-		-- 2x, 3x, auto-skip, the sheet and, in the cards mode, the cards.
-		return w + (w > 0 and 8 or 0) + (options.cards and 5 or 4) * controlW + 16
+		-- 2x, 3x, auto-skip and, in the cards mode, the cards.
+		return w + (w > 0 and 8 or 0) + (options.cards and 4 or 3) * controlW + 16
 	end
 	-- On a narrow screen the band gives way a little at a time: the ability
 	-- first, then the salute, then the small controls (never under 44 wide).

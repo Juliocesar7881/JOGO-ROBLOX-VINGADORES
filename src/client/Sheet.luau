@@ -1,10 +1,8 @@
 --!nonstrict
--- The commander's sheet, openable at any time during a match: what you have
--- (your talents, your active base, the cards you picked) laid out to read,
--- never to change. Talents and the equipped base are chosen in the lobby; this
--- only shows them, and points at the one thing a match does allow, upgrading
--- the base with the match's own Gold. Pure presentation: nothing here asks the
--- server for anything.
+-- The cards picked in a cards-mode match, opened by its Cards button: laid out
+-- to read, never to change. (The commander's talent sheet, the "Ficha" on the
+-- C key, was removed on 15/10 at the owner's request.) Pure presentation:
+-- nothing here asks the server for anything.
 local CardArt = require(script.Parent:WaitForChild("CardArt"))
 local Sheet = {}
 Sheet.__index = Sheet
@@ -12,7 +10,7 @@ Sheet.__index = Sheet
 -- ctx: UI, C, T, L, Catalog, Rules, overlays, screenSize(), state(), profile(),
 -- number(), buildTalents(body, options), openBaseUpgrade().
 function Sheet.new(ctx)
-	return setmetatable({ ctx = ctx, tab = "talents" }, Sheet)
+	return setmetatable({ ctx = ctx, tab = "cards" }, Sheet)
 end
 
 function Sheet:IsOpen()
@@ -49,15 +47,12 @@ function Sheet:Toggle()
 	if self:IsOpen() then self:Close() else self:Open() end
 end
 
--- Tabs shown for this match: cards only appear in the cards mode, once picked.
+-- Tabs shown for this match: the cards, and only in the cards mode.
 function Sheet:_tabs()
 	local ctx = self.ctx
 	local T = ctx.T
 	local match = ctx.state() and ctx.state().match
-	-- The base is upgraded at the base agent standing beside it, not here.
-	local tabs = {
-		{ id = "talents", label = T("Talentos", "Talents") },
-	}
+	local tabs = {}
 	if match and match.cardMode then table.insert(tabs, { id = "cards", label = T("Cartas", "Cards") }) end
 	return tabs
 end
@@ -66,17 +61,17 @@ function Sheet:Open(tab)
 	local ctx = self.ctx
 	local UI, C, T = ctx.UI, ctx.C, ctx.T
 	local state = ctx.state()
-	if not state or not state.match then return end
+	if not state or not state.match or #self:_tabs() == 0 then return end
 	self:Close()
 	self.signature = Sheet._signature(state.match)
-	self.tab = tab or self.tab or "talents"
+	self.tab = tab or self.tab or "cards"
 	local screen = ctx.screenSize()
 	local shade = UI.frame(ctx.overlays, { Name = "CommanderSheet", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.5, Active = true, ZIndex = 45 })
 	self.panelWidth, self.panelHeight = math.min(560, screen.X - 24), math.min(620, screen.Y - 24)
 	local panel = UI.roundFrame(shade, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromOffset(self.panelWidth, self.panelHeight), BackgroundColor3 = C.background, ZIndex = 46 }, C.violet)
 	UI.windowSkin(panel, C.violet)
-	UI.titleRibbon(panel, T("Ficha do comandante", "Commander sheet"), C.violet, {Position=UDim2.fromOffset(-8,-8), width=self.panelWidth-60, height=54, TextSize=26, ZIndex=47})
+	UI.titleRibbon(panel, T("Cartas escolhidas", "Cards picked"), C.violet, {Position=UDim2.fromOffset(-8,-8), width=self.panelWidth-60, height=54, TextSize=26, ZIndex=47})
 	UI.closeButton(panel, function() self:Close() end, { Name = "CloseSheet", Position = UDim2.new(1, -50, 0, 6), Size = UDim2.fromOffset(44, 44), TextSize = 25, ZIndex = 47 })
 	self.shade, self.panel = shade, panel
 	self:_render()
@@ -92,15 +87,14 @@ function Sheet:_render()
 	if not match then self:Close() return end
 	local oldBody = panel:FindFirstChild("SheetBody")
 	local outerPosition = oldBody and oldBody.CanvasPosition
-	local oldTree = oldBody and oldBody:FindFirstChild("TalentScroll", true)
-	local treePosition = oldTree and oldTree.CanvasPosition
 	for _, child in ipairs(panel:GetChildren()) do
 		if child.Name == "SheetTabs" or child.Name == "SheetBody" then child:Destroy() end
 	end
 	local tabs = self:_tabs()
+	if #tabs == 0 then self:Close() return end
 	local known = false
 	for _, tab in ipairs(tabs) do if tab.id == self.tab then known = true end end
-	if not known then self.tab = "talents" end
+	if not known then self.tab = tabs[1].id end
 	local width = self.panelWidth or (panel.AbsoluteSize.X > 0 and UI.toLogical(panel.AbsoluteSize.X) or 480)
 	local tabBar = UI.frame(panel, { Name = "SheetTabs", Position = UDim2.fromOffset(14, 50), Size = UDim2.new(1, -28, 0, 40), BackgroundTransparency = 1, ZIndex = 47 })
 	local tabW = math.floor((width - 28 - (#tabs - 1) * 6) / #tabs)
@@ -114,13 +108,7 @@ function Sheet:_render()
 	local body = UI.scroll(panel, { Name = "SheetBody", Position = UDim2.fromOffset(14, 98), Size = UDim2.new(1, -28, 1, -110), ZIndex = 47 })
 	UI.list(body, 8)
 	self.body = body
-	if self.tab == "talents" then
-		local height = self.panelHeight or (panel.AbsoluteSize.Y > 0 and UI.toLogical(panel.AbsoluteSize.Y) or 540)
-		-- The tree fills the window: the info card under it needs about 130.
-		ctx.buildTalents(body, { readOnly = true, rerender = function() self:_render() end, canvasHeight = math.clamp(height - 260, 100, 420), canvasWidth = self.panelWidth and (self.panelWidth - 40) or nil, canvasPosition = treePosition })
-	else
-		self:_cardsTab(body, match)
-	end
+	self:_cardsTab(body, match)
 	if outerPosition then body.CanvasPosition = outerPosition end
 end
 

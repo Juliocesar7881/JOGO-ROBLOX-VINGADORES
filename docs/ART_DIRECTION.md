@@ -102,11 +102,12 @@ raios e colunas do céu, espinhos de gelo e madeira, fogo, redemoinhos,
 cortes de lâmina, chuvas de mísseis, cartas e moedas, círculos mágicos,
 cúpulas de força e feixe varrendo. Partículas só com texturas do motor
 (`rbxasset://textures/particles`), sem emissão de luz; pool próprio de 110
-peças, separado do pool de 80 dos ataques. O próprio poder abre um corte de
-anime (`Celebrate:CutIn`: faixa inclinada com linhas de velocidade, herói e
-nome do poder; o ultimate ganha barras de cinema); o de um colega, uma tira
-com o nome dele. Ataques que voam deixam rastro (Trail). Menos efeitos não
-desenha nada disso. Herói novo: acrescentar sua entrada em SIGNATURES (o
+peças, separado do pool de 80 dos ataques. Nada cobre a tela: o dono
+rejeitou o corte de anime (15/10), o poder em si é o espetáculo. Cada poder
+toca sua trilha de som (`Audio.PowerScores`): notas dos bancos já enviados,
+no tempo de cada camada do visual (mísseis caindo um a um, trovão quando o
+raio cai, gelo rachando). Ataques que voam deixam rastro (Trail). Menos
+efeitos não desenha nada disso. Herói novo: acrescentar sua entrada em SIGNATURES (o
 teste do cliente exige uma por herói, sem erro e com até 60 peças).
 
 ## Som e avaliação
