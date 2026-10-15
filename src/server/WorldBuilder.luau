@@ -2841,13 +2841,15 @@ local ENEMY_LOOK = {
 	saboteur = { gait = "stalk", body = { scale = 0.82, width = 0.88, arm = 0.92, leg = 0.92 }, skin = Color3.fromRGB(150, 176, 198) },
 	splitter = { gait = "shamble", body = { scale = 0.86, width = 1.32, depth = 1.2, chest = 1.3, head = 0.82, arm = 0.92, leg = 0.92, legLength = 0.84 }, skin = Color3.fromRGB(112, 196, 150) },
 	splitling = { gait = "sprint", body = { scale = 0.5, width = 0.96 }, skin = Color3.fromRGB(150, 226, 184) },
-	illusion = { gait = "glide", body = { scale = 1.25, width = 0.92, arm = 0.9 }, skin = Color3.fromRGB(226, 206, 184) },
-	lizard = { gait = "reptile", body = { scale = 1.55, width = 1.16, depth = 1.1, head = 1.02, arm = 1.12, hand = 1.3, leg = 1.2, legLength = 0.9 }, skin = Color3.fromRGB(96, 170, 70) },
-	abomination = { gait = "stomp", body = { scale = 1.8, width = 1.46, depth = 1.3, chest = 1.3, head = 0.78, arm = 1.7, hand = 1.4, leg = 1.45, legLength = 0.84 }, skin = Color3.fromRGB(128, 136, 80) },
-	redskull = { gait = "march", body = { scale = 1.45, width = 1.04 }, skin = Color3.fromRGB(206, 52, 44) },
-	killmonger = { gait = "stalk", body = { scale = 1.45, width = 1.08, arm = 1.06 }, skin = Color3.fromRGB(96, 64, 46) },
-	doom = { gait = "regal", body = { scale = 1.55, width = 1.14, arm = 1.1, leg = 1.08 }, skin = Color3.fromRGB(150, 160, 166) },
-	loki = { gait = "glide", body = { scale = 1.45, width = 0.92, arm = 0.9 }, skin = Color3.fromRGB(226, 206, 184) },
+	illusion = { gait = "glide", body = { scale = 2.0, width = 0.92, arm = 0.9 }, skin = Color3.fromRGB(226, 206, 184) },
+	-- Bosses tower over the defence: about twice to two and a half times a
+	-- hero tower, so a boss reads as the threat of the wave from any camera.
+	lizard = { gait = "reptile", body = { scale = 2.48, width = 1.16, depth = 1.1, head = 1.02, arm = 1.12, hand = 1.3, leg = 1.2, legLength = 0.9 }, skin = Color3.fromRGB(96, 170, 70) },
+	abomination = { gait = "stomp", body = { scale = 2.75, width = 1.46, depth = 1.3, chest = 1.3, head = 0.78, arm = 1.7, hand = 1.4, leg = 1.45, legLength = 0.84 }, skin = Color3.fromRGB(128, 136, 80) },
+	redskull = { gait = "march", body = { scale = 2.32, width = 1.04 }, skin = Color3.fromRGB(206, 52, 44) },
+	killmonger = { gait = "stalk", body = { scale = 2.32, width = 1.08, arm = 1.06 }, skin = Color3.fromRGB(96, 64, 46) },
+	doom = { gait = "regal", body = { scale = 2.48, width = 1.14, arm = 1.1, leg = 1.08 }, skin = Color3.fromRGB(150, 160, 166) },
+	loki = { gait = "glide", body = { scale = 2.32, width = 0.92, arm = 0.9 }, skin = Color3.fromRGB(226, 206, 184) },
 }
 Figure.EnemyLook = ENEMY_LOOK
 

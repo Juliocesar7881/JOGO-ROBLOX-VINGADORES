@@ -78,6 +78,19 @@ do
 	local enemies = folder and folder:FindFirstChild("Enemies")
 	check(enemies ~= nil, "the published enemy figures exist")
 	local report = {}
+	-- A boss towers over the defence: at least twice a hero tower (towers stand at 1.15x a figure).
+	do
+		local portrait = storage:FindFirstChild("DoomHeroPortraits") and storage.DoomHeroPortraits:FindFirstChild("ironman")
+		local hero = portrait and portrait:FindFirstChild("HeroFigure")
+		local tower = hero and (hero:GetAttribute("FigureHeight") or 0) * 1.15 or 0
+		for id, def in pairs(Catalog.Enemies) do
+			local figure = enemies and enemies:FindFirstChild(id)
+			if def.boss and figure then
+				local height = figure:GetAttribute("FigureHeight") or 0
+				check(tower > 0 and height >= tower * 2, id .. " stands at least twice a hero tower, got " .. string.format("%.1f vs %.1f", height, tower))
+			end
+		end
+	end
 	for id, def in pairs(Catalog.Enemies) do
 		local figure = enemies and enemies:FindFirstChild(id)
 		check(figure ~= nil, "every enemy has a published figure: " .. id)
