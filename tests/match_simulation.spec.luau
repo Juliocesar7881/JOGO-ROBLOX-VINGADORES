@@ -136,10 +136,11 @@ local function newWorld()
 	function world:MovePlayer() end
 	function world:ApplyLobbyLighting() end
 	function world:UpgradeTower() self.upgrades += 1 end
-	function world:MakeTower()
+	function world:MakeTower(_, _, _, _, options)
 		self.towers += 1
 		local owner = self
-		return { Destroy = function() owner.towers -= 1 end }
+		-- The stand-in remembers what the server asked for (the shiny finish).
+		return { options = options, Destroy = function() owner.towers -= 1 end }
 	end
 	return world
 end
@@ -1877,6 +1878,21 @@ do
 	check(math.abs(eventMatch.rewardBonus - eventMatch.partyBonus * eventMatch.featuredBonus * eventMatch.eventBonus) < 1e-9, "and it multiplies the other bonuses")
 	Config.WeekendEvent = false
 	check(stage({ mapId = weekend.mapId, wave = 1 }).eventBonus == 1, "with the event switched off nothing changes")
+-- The shiny copy of a hero is seen on its tower; a plain copy is not.
+do
+	local plainMatch, plainPlayer = stage({ profile = { heroes = { ironman = { xp = 0, level = 1 } }, loadout = { "ironman" } } })
+	plainMatch.phase = "Preparing"
+	plainMatch:Handle(plainPlayer, "PlaceTower", { heroId = "ironman", position = v3(-70, 0, -30) })
+	local plainTower
+	for _, tower in pairs(plainMatch.towers) do plainTower = tower end
+	check(plainTower and plainTower.model.options and plainTower.model.options.shiny == false, "a plain hero's tower carries no shine")
+	local shinyMatch, shinyPlayer = stage({ profile = { heroes = { ironman = { xp = 0, level = 1, shiny = true } }, loadout = { "ironman" } } })
+	shinyMatch.phase = "Preparing"
+	local ok = shinyMatch:Handle(shinyPlayer, "PlaceTower", { heroId = "ironman", position = v3(-70, 0, -30) })
+	local shinyTower
+	for _, tower in pairs(shinyMatch.towers) do shinyTower = tower end
+	check(ok and shinyTower and shinyTower.model.options and shinyTower.model.options.shiny == true, "a shiny hero's tower is asked to shine")
+end
 	Config.DailyFeature = false
 	local off = stage({ mapId = featuredMapId, wave = 1 })
 	check(off.featuredBonus == 1, "the feature can be switched off")

@@ -1641,7 +1641,8 @@ function Match:Handle(player,action,payload)
 		if not valid then return refuse(reason or "bounds") end
 		local towerId=self:_nextId("t") local pos=Vector3.new(payload.position.X,0,payload.position.Z)
 		local tower={id=towerId,heroId=id,ownerId=player.UserId,position=pos,level=1,branch=nil,priority="First",invested=cost,nextAttack=0,totalDamage=0,kills=0}
-		tower.model=self.world:MakeTower(towerId,id,pos,player.UserId)
+		local owned=p.profile.heroes and p.profile.heroes[id]
+		tower.model=self.world:MakeTower(towerId,id,pos,player.UserId,{shiny=type(owned)=="table" and owned.shiny==true})
 		self.towers[towerId]=tower p.cash-=cost p.towerCount+=1
 		self:_fx({kind="Pulse",position=pos,radius=5,color=Color3.fromRGB(unpack(hero.color)),duration=0.45})
 		return true,{towerId=towerId,cost=cost}

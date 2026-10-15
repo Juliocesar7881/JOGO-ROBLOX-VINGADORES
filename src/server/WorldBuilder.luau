@@ -7728,11 +7728,16 @@ function World:SetBarrierHealth(index, ratio)
 	end
 end
 
-function World:MakeTower(id, heroId, position, ownerId)
+-- options.shiny: the commander owns the shiny copy of this hero (a collectible
+-- finish, no stat change): the figure gleams and sheds a few gold sparks, so
+-- the shine from the collection card is seen on the battlefield too.
+function World:MakeTower(id, heroId, position, ownerId, options)
 	local hero = self.catalog.Heroes[heroId]
 	local model = Instance.new("Model")
 	model.Name = heroId .. "_" .. id
 	model:SetAttribute("TowerId", id) model:SetAttribute("OwnerId", ownerId) model:SetAttribute("HeroId", heroId)
+	local shiny = type(options) == "table" and options.shiny == true
+	if shiny then model:SetAttribute("Shiny", true) end
 	local color = rgb(hero.color)
 	local flat = CFrame.Angles(0,0,math.pi/2)
 	local base = part(model, "Platform", Vector3.new(0.45, 5.5, 5.5), CFrame.new(position.X, 0.35, position.Z)*flat, Color3.fromRGB(65, 83, 107), Enum.Material.Metal)
@@ -7758,6 +7763,13 @@ function World:MakeTower(id, heroId, position, ownerId)
 	local scale = (FIGURE_SCALE[heroId] or 1) * 1.15
 	local origin = CFrame.new(position.X, 0.55, position.Z)
 	local torso, head = heroFigure(model, heroId, hero, origin, scale)
+	if shiny then
+		local figureModel = model:FindFirstChild("HeroFigure")
+		for _, piece in ipairs(figureModel and figureModel:GetDescendants() or {}) do
+			if piece:IsA("BasePart") and piece.Name ~= "HumanoidRootPart" then piece.Reflectance = math.max(piece.Reflectance, 0.22) end
+		end
+		if head then emitter(head, Color3.fromRGB(255, 214, 110), 2.5, 1.2, 0.35, 1.4, Vector3.new(0, 1.2, 0)) end
+	end
 	-- The figure's own parts take no clicks (they are never queried), so an
 	-- invisible box as tall as the hero lets a tap or click land on the hero
 	-- itself, not just on the circle under its feet.
