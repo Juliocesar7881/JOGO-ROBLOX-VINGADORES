@@ -144,11 +144,15 @@ function Analytics:MatchFinished(player, mapId, modeId, victory, waves, seconds,
 	self:Custom(player, "WavesCleared", waves, mapId, modeId)
 end
 
+-- One value per field keeps every event under Roblox's limit of 8,000 values
+-- per field (a whole team as one string ran past it and read as "Other"):
+-- who leads the team (that hero gives the power) and each hero fielded.
 function Analytics:Composition(player, loadout, mapId)
 	if type(loadout) ~= "table" or #loadout == 0 then return end
-	local ordered = table.clone(loadout)
-	table.sort(ordered)
-	self:Custom(player, "Composition", #ordered, table.concat(ordered, "+"), mapId)
+	self:Custom(player, "TeamLeader", #loadout, tostring(loadout[1]), mapId)
+	for _, heroId in ipairs(loadout) do
+		self:Custom(player, "TeamHero", 1, tostring(heroId), mapId)
+	end
 end
 
 function Analytics:HeroUnlocked(player, heroId, level, minutesPlayed)

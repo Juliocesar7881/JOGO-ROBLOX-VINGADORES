@@ -98,6 +98,22 @@ local function tradesToday(profile, now)
 	return count
 end
 
+-- A code as typed, made comparable: no spaces, capitals, and the accented
+-- letters a Portuguese keyboard adds (ç, ã, é...) read as their plain letter.
+local CODE_ACCENTS = {
+	["á"] = "A", ["à"] = "A", ["â"] = "A", ["ã"] = "A", ["ä"] = "A", ["Á"] = "A", ["À"] = "A", ["Â"] = "A", ["Ã"] = "A", ["Ä"] = "A",
+	["é"] = "E", ["ê"] = "E", ["è"] = "E", ["É"] = "E", ["Ê"] = "E", ["È"] = "E",
+	["í"] = "I", ["î"] = "I", ["Í"] = "I", ["Î"] = "I",
+	["ó"] = "O", ["ô"] = "O", ["õ"] = "O", ["ö"] = "O", ["Ó"] = "O", ["Ô"] = "O", ["Õ"] = "O", ["Ö"] = "O",
+	["ú"] = "U", ["ü"] = "U", ["Ú"] = "U", ["Ü"] = "U",
+	["ç"] = "C", ["Ç"] = "C", ["ñ"] = "N", ["Ñ"] = "N",
+}
+local function normalizeCode(raw)
+	local plain = string.gsub(raw, "%s", "")
+	plain = string.gsub(plain, "[\xC3][\x80-\xBF]", function(letter) return CODE_ACCENTS[letter] or letter end)
+	return string.upper(plain)
+end
+
 local function newProfile(now)
 	return {
 		schemaVersion = SCHEMA_VERSION,
@@ -1137,7 +1153,7 @@ function PlayerService:Handle(player, action, payload, inLobby)
 		local window = record.codeWindow
 		if not window or now - window.start >= 60 then window = { start = now, misses = 0 }; record.codeWindow = window end
 		if window.misses >= CODE_MISSES_PER_MINUTE then return true, false, "Muitas tentativas. Espere um minuto. / Too many tries. Wait a minute." end
-		code = type(payload.code) == "string" and string.upper((string.gsub(payload.code, "%s", ""))) or ""
+		code = type(payload.code) == "string" and normalizeCode(payload.code) or ""
 		codeEntry = #code >= 3 and #code <= 32 and not string.find(code, "[^%w]") and self.codes[code] or nil
 		if not codeEntry or (codeEntry.expires and now >= codeEntry.expires) then
 			window.misses += 1

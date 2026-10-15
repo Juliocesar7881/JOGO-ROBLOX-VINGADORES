@@ -267,7 +267,7 @@ pushState = function(player)
 	if not player or player.Parent ~= Players then return end
 	local ok, snapshot = pcall(snapshotFor, player)
 	if not ok then
-		warn("[Doomsday] Snapshot failed for " .. player.Name .. ": " .. tostring(snapshot))
+		warn("[Doomsday] Snapshot failed: " .. tostring(snapshot))
 		return
 	end
 	remotes.State:FireClient(player, snapshot)
@@ -645,8 +645,25 @@ local function route(player, action, payload)
 			elseif action == "ClaimSeason" and type(result) == "table" then
 				-- How far players climb the season, and whether they hold the premium track.
 				analytics:Custom(player, "SeasonClaimed", result.level, result.claimed, data.passes and data.passes.season and "premium" or "free")
+			-- The return loops, each measured: which day of the login calendar, free
+			-- and gifted chests, codes (one per video or channel), hero picks.
+			elseif action == "ClaimLogin" and type(result) == "table" then
+				analytics:Custom(player, "LoginClaimed", result.streak or 1, tostring(result.day or 1))
+			elseif action == "ClaimFreeChest" and type(result) == "table" then
+				analytics:Custom(player, "FreeChestOpened", 1, result.chest and tostring(result.chest.rarity) or "none")
+			elseif action == "ClaimGift" and type(result) == "table" then
+				analytics:Custom(player, "GiftOpened", 1, result.chest and tostring(result.chest.rarity) or "none")
+			elseif action == "ClaimPlaytime" and type(result) == "table" then
+				analytics:Custom(player, "PlaytimeGift", tonumber(payload.index) or 0)
+			elseif action == "RedeemCode" and type(result) == "table" then
+				analytics:Custom(player, "CodeRedeemed", 1, tostring(result.code))
+			elseif action == "PickHero" and type(result) == "table" then
+				analytics:Custom(player, "HeroPicked", 1, tostring(result.heroId), tostring(result.rarity))
 			end
 		end
+		if action == "SendGift" then analytics:Custom(player, "GiftSent", 1) end
+		if action == "TradeOffer" then analytics:Custom(player, "TradeOffered", 1) end
+		if action == "TradeConfirm" then analytics:Custom(player, "TradeConfirmed", 1) end
 		if action == "ProductInfo" and type(data) == "table" then
 			-- The shop asked the price of an item for this player: it was seen.
 			analytics:Custom(player, "ItemViewed", 1, tostring(payload.kind), tostring(payload.key), tostring(data.id))
@@ -834,7 +851,7 @@ end
 
 Players.PlayerAdded:Connect(function(player)
 	local ok, problem = pcall(onPlayerAdded, player)
-	if not ok then warn("[Doomsday] Join failed for " .. player.Name .. ": " .. tostring(problem)) end
+	if not ok then warn("[Doomsday] Join failed: " .. tostring(problem)) end
 end)
 
 Players.PlayerRemoving:Connect(function(player)

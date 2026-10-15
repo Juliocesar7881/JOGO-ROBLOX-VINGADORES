@@ -90,7 +90,7 @@ local Rules = __RULES__
 local PlayerService = __SERVICE__
 local config = {
 	DataStoreName = "Tests", StudioMemory = true, ProfileRetries = 3, GroupId = 777,
-	Codes = { TESTE = { gold = 200 }, VELHO = { gold = 1, expires = 1 }, BAU = { gold = 0, chest = "rare" } },
+	Codes = { TESTE = { gold = 200 }, VELHO = { gold = 1, expires = 1 }, BAU = { gold = 0, chest = "rare" }, LANCAMENTO = { gold = 7 } },
 	Products = {
 		Passes = { collector = { id = 201 }, training = { id = 202 }, season = { id = 203 } },
 		Consumables = { gold1000 = { id = 101 }, gold5000 = { id = 102 }, starterPack = { id = 103 }, goldBoost = { id = 104 }, seasonPass = { id = 105 }, legendaryBundle = { id = 106 }, teamBundle = { id = 107 } },
@@ -965,6 +965,10 @@ do
 		local _, inMatch = service:Handle(fan, "RedeemCode", { code = "TESTE" }, false)
 		check(not inMatch, "Codes are redeemed in the lobby")
 		check(stores.Tests.values.p_25.codes.TESTE ~= nil, "Used codes are durable")
+		-- Typed with the accents of a Portuguese keyboard, in any case.
+		local accentGold = service:Get(fan).gold
+		local _, accentOk, accented = service:Handle(fan, "RedeemCode", { code = "Lançamento" }, true)
+		check(accentOk and accented.result.code == "LANCAMENTO" and accented.gold == accentGold + 7, "A code typed with ç and ã is the same code")
 		check(service:Get(fan).codes == nil, "The list of used codes never replicates")
 	end
 
