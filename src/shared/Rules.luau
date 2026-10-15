@@ -371,6 +371,39 @@ function Rules.WaveMutation(modeId, mapId, wave, seed)
 	return Catalog.MutationOrder[math.floor(hash / 4) % #Catalog.MutationOrder + 1]
 end
 
+-- Which kind of server this is, from the server's own facts and the
+-- configured places. Pure, so every combination is tested outside Roblox.
+-- env: studio, placeId, privateServerId, privateServerOwnerId, builtRole (the
+-- DoomRole the build stamped into the place). config: LobbyPlaceId,
+-- MatchPlaceId, AfkPlaceId, SinglePlace.
+-- SinglePlace: one published place hosts both kinds of server. Every public
+-- (or owner's private) server is a lobby; every battle runs in a server the
+-- lobby reserved of the same place (TeleportService:ReserveServer). Separate
+-- places keep the role their build stamped. Studio and unconfigured places run
+-- one self-contained server (Standalone): teleports never work in a playtest.
+function Rules.PlaceRole(env, config)
+	env, config = type(env) == "table" and env or {}, type(config) == "table" and config or {}
+	local function id(value) return math.max(0, math.floor(number(value, 0))) end
+	local lobby, matchPlace, afk = id(config.LobbyPlaceId), id(config.MatchPlaceId), id(config.AfkPlaceId)
+	local placeId = id(env.placeId)
+	local single = config.SinglePlace == true and placeId > 0 and (lobby == 0 or lobby == placeId) and (matchPlace == 0 or matchPlace == placeId)
+	if single then lobby, matchPlace = placeId, placeId end
+	local travel = lobby > 0 and matchPlace > 0 and env.studio ~= true
+	local role
+	if not travel then
+		role = "Standalone"
+	elseif single then
+		local reserved = type(env.privateServerId) == "string" and env.privateServerId ~= "" and id(env.privateServerOwnerId) == 0
+		role = reserved and "Match" or "Lobby"
+	else
+		role = env.builtRole
+		if role ~= "Lobby" and role ~= "Match" and role ~= "Afk" then role = "Standalone" end
+	end
+	local afkTravel = travel and afk > 0 and not single
+	if role == "Afk" and not afkTravel then role = "Standalone" end
+	return { role = role, travel = travel, afkTravel = afkTravel, single = single, lobbyPlaceId = lobby, matchPlaceId = matchPlace, afkPlaceId = afk }
+end
+
 -- The campaign map featured on a given day (the day number is the Unix day,
 -- decided by the server), and the multiplier it pays on that day.
 function Rules.FeaturedMap(day)

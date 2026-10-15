@@ -206,8 +206,10 @@ class ContractTests(unittest.TestCase):
         self.assertNotIn("seat", payload)
 
     def test_travel_falls_back_to_standalone_without_configured_places(self):
-        self.assertIn('if not travelEnabled then role = "Standalone" end', BOOTSTRAP)
-        self.assertIn("not RunService:IsStudio()", BOOTSTRAP)
+        # The role is the pure Rules.PlaceRole (every case is checked in
+        # tools/test_rules.luau); the bootstrap must feed it the real Studio flag.
+        self.assertIn("Rules.PlaceRole(", BOOTSTRAP)
+        self.assertIn("studio = RunService:IsStudio()", BOOTSTRAP)
 
     def test_shutdown_drains_rewards_before_releasing_profiles(self):
         tail = BOOTSTRAP[BOOTSTRAP.index("game:BindToClose"):]

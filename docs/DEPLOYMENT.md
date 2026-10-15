@@ -1,5 +1,30 @@
 # Configurar e testar a versão da sua conta
 
+## Desde 15/10/2026: um lugar só, várias batalhas (`Config.SinglePlace = true`)
+
+Não é preciso criar um segundo lugar. O place publicado (97132875544830)
+funciona como dois tipos de servidor (`Rules.PlaceRole`):
+
+- **servidores públicos** (e servidores privados de dono) são **lobby**;
+- **cada batalha** roda num **servidor reservado do mesmo place**, que o lobby
+  reserva quando a contagem do portal termina (`TeleportService:ReserveServer`).
+
+Quem chega ao lobby nunca espera a batalha de outro grupo acabar. Se o Roblox
+não conseguir reservar ou teleportar, o próprio lobby roda a batalha (como o
+servidor único fazia antes). O código de acesso do servidor reservado fica só
+na MemoryStore (assentos de reconexão, inclusive depois de "Jogar de novo"),
+nunca nos dados de teleporte. Quem volta ao lobby junto (até 2 s de diferença)
+viaja no mesmo teleporte e cai no mesmo lobby. No Studio tudo continua num
+servidor só (teleporte não funciona em playtest). Testes:
+`tests/test_server_travel.py` (lobby e batalha com DataStore/MemoryStore
+simulados) e `tools/test_rules.luau` (todas as combinações de papel).
+
+O modo de dois lugares separados abaixo continua disponível: preencher
+`LobbyPlaceId` e `MatchPlaceId` com lugares diferentes tem prioridade sobre o
+`SinglePlace`.
+
+## Lugares separados (opcional)
+
 O jogo local está em `dist/Doomsday-Studio.rbxlx`. Os arquivos Lobby e Match
 devem ser publicados em dois lugares distintos da mesma experiência.
 Não substitua uma sessão aberta com alterações não salvas: salve essa sessão

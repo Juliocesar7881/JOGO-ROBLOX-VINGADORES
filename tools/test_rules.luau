@@ -313,6 +313,22 @@ do
 	for day = 20741, 20760 do if Rules.DailyMarket(day).offers[1].heroId ~= today.offers[1].heroId then differs = true end end
 	check(differs, "the market changes from day to day")
 	check(Rules.MarketPrice("nobody") == nil, "an unknown hero has no market price")
+	-- Server roles. One place: public servers are lobbies, reserved ones are battles.
+	local PLACE = 97132875544830
+	local single = { SinglePlace = true, LobbyPlaceId = 0, MatchPlaceId = 0, AfkPlaceId = 0 }
+	local lobbyRole = Rules.PlaceRole({ studio = false, placeId = PLACE, privateServerId = "", privateServerOwnerId = 0, builtRole = "Standalone" }, single)
+	check(lobbyRole.role == "Lobby" and lobbyRole.travel and lobbyRole.single and lobbyRole.lobbyPlaceId == PLACE and lobbyRole.matchPlaceId == PLACE, "a public server of the single place is a lobby that travels to its own place")
+	local matchRole = Rules.PlaceRole({ studio = false, placeId = PLACE, privateServerId = "abc", privateServerOwnerId = 0, builtRole = "Standalone" }, single)
+	check(matchRole.role == "Match" and matchRole.travel, "a reserved server of the single place is a battle server")
+	check(Rules.PlaceRole({ studio = false, placeId = PLACE, privateServerId = "abc", privateServerOwnerId = 77, builtRole = "Standalone" }, single).role == "Lobby", "an owner's private server is a lobby, not a battle")
+	check(Rules.PlaceRole({ studio = true, placeId = PLACE, privateServerId = "", builtRole = "Standalone" }, single).role == "Standalone", "Studio stays self-contained: teleports never work in a playtest")
+	check(Rules.PlaceRole({ studio = false, placeId = 0, privateServerId = "", builtRole = "Standalone" }, single).role == "Standalone", "an unpublished place stays self-contained")
+	check(not lobbyRole.afkTravel and Rules.PlaceRole({ studio = false, placeId = PLACE, privateServerId = "" }, { SinglePlace = true, AfkPlaceId = 55 }).afkTravel == false, "the single place keeps AFK in the lobby chambers")
+	-- Separate places keep the stamped role; studio and missing IDs fall back.
+	local separate = { SinglePlace = false, LobbyPlaceId = 1, MatchPlaceId = 2, AfkPlaceId = 0 }
+	check(Rules.PlaceRole({ studio = false, placeId = 2, builtRole = "Match" }, separate).role == "Match" and Rules.PlaceRole({ studio = false, placeId = 1, builtRole = "Lobby" }, separate).role == "Lobby", "separate places keep their built roles")
+	check(Rules.PlaceRole({ studio = false, placeId = 1, builtRole = "Lobby" }, { LobbyPlaceId = 1, MatchPlaceId = 0 }).role == "Standalone", "without a battle place a lobby build runs self-contained")
+	check(Rules.PlaceRole({ studio = false, placeId = 9, privateServerId = "" }, { SinglePlace = true, LobbyPlaceId = 1, MatchPlaceId = 2 }).single == false, "configured separate places win over SinglePlace")
 	-- The weekend event: Saturday and Sunday UTC, one campaign map paying over; the next one is announced in between.
 	local saturday, sunday, monday = Rules.WeekendEvent(2 * 86400), Rules.WeekendEvent(3 * 86400 + 100), Rules.WeekendEvent(4 * 86400)
 	check(saturday.active and sunday.active and not monday.active, "the event runs Saturday and Sunday")

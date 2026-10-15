@@ -67,6 +67,7 @@ def main() -> None:
         "test_world_boot.py",
         "test_client_boot.py",
         "test_server_boot.py",
+        "test_server_travel.py",
         "test_match_simulation.py",
     ):
         path = ROOT / "tests" / suite

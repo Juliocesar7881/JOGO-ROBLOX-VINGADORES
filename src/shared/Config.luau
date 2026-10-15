@@ -9,6 +9,10 @@ return {
 	ProfileRetries = 3,
 	SeasonEpoch = 1789862400, -- 2026-09-20 UTC
 	SeasonDays = 60,
+	-- One published place, two kinds of server (Rules.PlaceRole): public
+	-- servers are lobbies and each battle runs in a reserved server of the same
+	-- place, so a lobby never waits for another group's battle to end.
+	SinglePlace = true,
 	LobbyPlaceId = 0,
 	MatchPlaceId = 0,
 	-- Optional light AFK place (0 = AFK stays in the lobby chambers).

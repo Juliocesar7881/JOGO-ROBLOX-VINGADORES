@@ -46,6 +46,23 @@ function Rejoin:Remember(userIds, accessCode, runId)
 	end
 end
 
+-- The lobby that reserved a battle server also files its access code under
+-- the server's own id, so the battle server can seat its players again after
+-- a replay ("Jogar de novo" starts a new run in the same server). The code
+-- still never reaches a client.
+function Rejoin:RememberServer(serverId, accessCode)
+	if not self.enabled or type(serverId) ~= "string" or serverId == "" or type(accessCode) ~= "string" or accessCode == "" then return end
+	task.spawn(function()
+		pcall(function() self.map:SetAsync("server:" .. serverId, accessCode, MATCH_TTL) end)
+	end)
+end
+
+function Rejoin:ServerCode(serverId)
+	if not self.enabled or type(serverId) ~= "string" or serverId == "" then return nil end
+	local ok, value = pcall(function() return self.map:GetAsync("server:" .. serverId) end)
+	return ok and type(value) == "string" and value ~= "" and value or nil
+end
+
 function Rejoin:Lookup(userId)
 	if not self.enabled then return nil end
 	local ok, value = pcall(function() return self.map:GetAsync(self:_key(userId)) end)

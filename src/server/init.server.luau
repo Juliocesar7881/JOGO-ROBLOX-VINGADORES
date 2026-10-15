@@ -52,20 +52,18 @@ local remotes = {
 --==============================================================================
 -- Place role
 --==============================================================================
-local lobbyPlaceId = math.floor(tonumber(Config.LobbyPlaceId) or 0)
-local matchPlaceId = math.floor(tonumber(Config.MatchPlaceId) or 0)
-local afkPlaceId = math.floor(tonumber(Config.AfkPlaceId) or 0)
 -- Teleport never works in a Studio playtest, and unconfigured IDs would strand
--- players. Both cases collapse to a single self-contained server instead.
-local travelEnabled = lobbyPlaceId > 0 and matchPlaceId > 0 and not RunService:IsStudio()
-
-local role = workspace:GetAttribute("DoomRole")
-if role ~= "Lobby" and role ~= "Match" and role ~= "Afk" then role = "Standalone" end
-if not travelEnabled then role = "Standalone" end
--- The dedicated AFK place is optional: without its ID, AFK farming stays in
--- the lobby chambers and an "Afk" place behaves like a standalone server.
-local afkTravel = travelEnabled and afkPlaceId > 0
-if role == "Afk" and not afkTravel then role = "Standalone" end
+-- players: both collapse to a single self-contained server (Standalone). With
+-- Config.SinglePlace the published place is a lobby in its public servers and
+-- a battle in the servers a lobby reserves (Rules.PlaceRole). The dedicated
+-- AFK place is optional: without it, AFK farming stays in the lobby chambers.
+local placeFacts = Rules.PlaceRole({
+	studio = RunService:IsStudio(), placeId = game.PlaceId,
+	privateServerId = game.PrivateServerId, privateServerOwnerId = game.PrivateServerOwnerId,
+	builtRole = workspace:GetAttribute("DoomRole"),
+}, Config)
+local lobbyPlaceId, matchPlaceId, afkPlaceId = placeFacts.lobbyPlaceId, placeFacts.matchPlaceId, placeFacts.afkPlaceId
+local travelEnabled, afkTravel, role = placeFacts.travel, placeFacts.afkTravel, placeFacts.role
 print(string.format("[Doomsday] version %s starting (role=%s, travel=%s)", tostring(Config.Version), role, tostring(travelEnabled)))
 
 pcall(function()
@@ -299,20 +297,35 @@ end
 --==============================================================================
 local travelling = {}
 
+-- Players who head back within a moment of each other travel in one
+-- teleport, which Roblox lands in the same lobby server: a group that played
+-- together stays together.
+local RETURN_GATHER_SECONDS = 2
+local returning = nil
 local function sendToLobby(player)
 	if (role ~= "Match" and role ~= "Afk") or not travelEnabled or travelling[player.UserId] then return end
 	travelling[player.UserId] = true
-	task.spawn(function()
+	if returning then table.insert(returning, player); return end
+	returning = { player }
+	task.delay(RETURN_GATHER_SECONDS, function()
+		local group = {}
+		for _, member in ipairs(returning) do
+			if member.Parent == Players then table.insert(group, member) else travelling[member.UserId] = nil end
+		end
+		returning = nil
+		if #group == 0 then return end
 		local ok, problem = pcall(function()
-			TeleportService:TeleportAsync(lobbyPlaceId, { player })
+			TeleportService:TeleportAsync(lobbyPlaceId, group)
 		end)
 		if not ok then
-			travelling[player.UserId] = nil
 			warn("[Doomsday] Return teleport failed: " .. tostring(problem))
-			notify(player, text("Não foi possível voltar ao lobby. Tentando novamente.", "Could not return to the lobby. Retrying."))
-			task.delay(4, function()
-				if player.Parent == Players then sendToLobby(player) end
-			end)
+			for _, member in ipairs(group) do
+				travelling[member.UserId] = nil
+				notify(member, text("Não foi possível voltar ao lobby. Tentando novamente.", "Could not return to the lobby. Retrying."))
+				task.delay(4, function()
+					if member.Parent == Players then sendToLobby(member) end
+				end)
+			end
 		end
 	end)
 end
@@ -349,8 +362,8 @@ local function sendToMatch(leader, members, mapId, modeId, difficultyId)
 	if travelling[leader.UserId] then
 		return { ok = false, message = text("Sua partida já está sendo preparada.", "Your match is already being prepared.") }
 	end
-	local reserved, accessCode = pcall(function()
-		return (TeleportService:ReserveServer(matchPlaceId))
+	local reserved, accessCode, serverId = pcall(function()
+		return TeleportService:ReserveServer(matchPlaceId)
 	end)
 	if not reserved or type(accessCode) ~= "string" then
 		warn("[Doomsday] ReserveServer failed: " .. tostring(accessCode))
@@ -380,6 +393,7 @@ local function sendToMatch(leader, members, mapId, modeId, difficultyId)
 		return { ok = false, message = text("O teleporte falhou. Nenhum progresso foi perdido.", "The teleport failed. No progress was lost.") }
 	end
 	rejoin:Remember(userIds, accessCode, runId)
+	rejoin:RememberServer(serverId, accessCode)
 	return { ok = true }
 end
 
@@ -446,10 +460,25 @@ local function registerArrival(player)
 		arrivals = {
 			runId = data.runId, mapId = data.mapId, modeId = data.modeId, difficultyId = data.difficultyId,
 			expected = math.clamp(math.floor(tonumber(data.size) or 1), 1, 4),
-			waiting = {}, deadline = os.clock() + 25,
+			-- Long enough for every profile to leave the lobby server it came from.
+			waiting = {}, deadline = os.clock() + 45,
 		}
 	end
 	if not table.find(arrivals.waiting, player.UserId) then table.insert(arrivals.waiting, player.UserId) end
+end
+
+-- A battle server files its players' seats for the run that just started, so
+-- a player who drops can be brought back from a lobby; replays included (the
+-- lobby filed this server's access code when it reserved it).
+local function rememberSeats()
+	if role ~= "Match" then return end
+	task.spawn(function()
+		local code = rejoin:ServerCode(game.PrivateServerId)
+		if not code then return end
+		local userIds = {}
+		for _, entry in ipairs(match:Roster()) do table.insert(userIds, entry.userId) end
+		rejoin:Remember(userIds, code, match.runId)
+	end)
 end
 
 local function beginReservedMatch()
@@ -469,7 +498,7 @@ local function beginReservedMatch()
 	-- Difficulty follows the party that actually arrived, never the size the
 	-- lobby server announced.
 	local ok, problem = match:Start(present, mapId, modeId, runId, difficultyId)
-	if ok then logMatchStart() end
+	if ok then logMatchStart(); rememberSeats() end
 	if not ok then
 		for _, member in ipairs(present) do
 			notify(member, problem or text("Não foi possível iniciar a partida.", "Could not start the match."))
@@ -506,9 +535,16 @@ end
 -- starts when its countdown ends. In a Lobby server that means travel to a
 -- reserved match server; anywhere else the match starts right here.
 local function launchFromPortal(members, mapId, modeId, difficultyId)
+	-- A battle server only runs the battle its group travelled for.
+	if role == "Match" then return false, text("Volte ao lobby para escolher outra batalha.", "Go back to the lobby to pick another battle.") end
 	if role == "Lobby" then
 		local result = sendToMatch(members[1], members, mapId, modeId, difficultyId)
-		return result.ok == true, result.message
+		if result.ok == true then return true end
+		-- Roblox could not reserve or teleport: this lobby still hosts one
+		-- battle itself, the way a self-contained server does, rather than
+		-- leaving the group at the portal.
+		if not match:CanStart() then return false, result.message end
+		warn("[Doomsday] Travel failed, the battle runs in this lobby: " .. tostring(result.message and result.message.en or result.message))
 	end
 	if not match:CanStart() then
 		return false, text("Uma batalha já ocupa este servidor. Aguarde ela terminar.", "A battle is already using this server. Wait for it to end.")
@@ -558,7 +594,7 @@ local function route(player, action, payload)
 			rejoin:Forget(player.UserId)
 			sendToLobby(player)
 		end
-		if ok == true and action == "PlayAgain" and match.running then logMatchStart() end
+		if ok == true and action == "PlayAgain" and match.running then logMatchStart(); rememberSeats() end
 		if ok == true and action == "PlaceTower" then analytics:Milestone(player, "FirstTowerSeconds", match.mapId, match.modeId) end
 		if ok == true and action == "CastSkill" then analytics:Milestone(player, "FirstPowerSeconds", match.mapId, match.modeId) end
 		if ok == true and action == "PlaceTower" and match.modeId == "tutorial" and not tutorialTower[player.UserId] then
@@ -750,16 +786,25 @@ local function onPlayerAdded(player)
 	player.CharacterAdded:Connect(function()
 		task.defer(placeCharacter, player)
 	end)
+	-- After a teleport the server the player left may still hold the profile
+	-- for a few seconds while it saves. Keep trying (the lease always expires,
+	-- Config.ProfileLeaseSeconds) instead of giving up and leaving the loading
+	-- screen up; tell the player now and then.
 	local profile, failure
-	for attempt = 1, 4 do
+	local started, attempt = os.clock(), 0
+	local patience = (tonumber(Config.ProfileLeaseSeconds) or 180) + 20
+	while player.Parent == Players do
+		attempt += 1
 		profile, failure = profiles:Load(player)
-		if profile or player.Parent ~= Players then break end
-		notify(player, failure)
-		task.wait(1.5 * attempt)
+		if profile or os.clock() - started > patience then break end
+		if attempt == 1 or attempt % 4 == 0 then notify(player, failure) end
+		task.wait(math.min(1.5 * attempt, 8))
 	end
 	if player.Parent ~= Players then return end
 	if not profile then
 		notify(player, failure or text("Perfil indisponivel. Nenhum dado foi alterado.", "Profile unavailable. No data was changed."))
+		-- A battle server cannot hold someone without a profile: back to a lobby.
+		if role == "Match" then task.delay(3, function() if player.Parent == Players then sendToLobby(player) end end) end
 		return
 	end
 	refreshPresence(player)
