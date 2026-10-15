@@ -34,7 +34,8 @@ end
 -- Rarity
 --==============================================================================
 -- robux: what the direct-purchase shop asks for a hero of this rarity. The rarer
--- the hero, the more it costs, exactly like its odds in a chest.
+-- the hero, the more it costs, exactly like its odds in a chest. Raised on 15/10
+-- to the usual Roblox price points (49 / 149 / 399 after the rarity merge).
 -- abilityCost: multiplies the gold price of every ability upgrade.
 -- duplicate: what a chest turns a hero you already own into.
 -- placeLimit: how many towers of one hero of this rarity a commander may field.
@@ -104,11 +105,11 @@ Catalog.DailyFeature = { bonus = 0.25 }
 -- shine (cosmetic only: no stat changes). Drawn with the chest's rolls.
 Catalog.ShinyChance = 1 / 40
 Catalog.Rarities = {
-	common = { id = "common", name = text("Comum", "Common"), color = { 190, 200, 212 }, robux = 9, placeLimit = 8, abilityCost = 1, duplicate = { gold = 150, mastery = 60 } },
-	rare = { id = "rare", name = text("Raro", "Rare"), color = { 84, 170, 255 }, robux = 9, placeLimit = 6, abilityCost = 1.4, duplicate = { gold = 300, mastery = 120 } },
-	epic = { id = "epic", name = text("Épico", "Epic"), color = { 176, 108, 255 }, robux = 29, placeLimit = 5, abilityCost = 2, duplicate = { gold = 600, mastery = 250 } },
-	legendary = { id = "legendary", name = text("Lendário", "Legendary"), color = { 255, 188, 62 }, robux = 79, placeLimit = 4, abilityCost = 3, duplicate = { gold = 1200, mastery = 500 } },
-	mythic = { id = "mythic", name = text("Mítico", "Mythic"), color = { 255, 84, 112 }, robux = 79, placeLimit = 3, abilityCost = 4.5, duplicate = { gold = 2500, mastery = 1000 } },
+	common = { id = "common", name = text("Comum", "Common"), color = { 190, 200, 212 }, robux = 49, placeLimit = 8, abilityCost = 1, duplicate = { gold = 150, mastery = 60 } },
+	rare = { id = "rare", name = text("Raro", "Rare"), color = { 84, 170, 255 }, robux = 49, placeLimit = 6, abilityCost = 1.4, duplicate = { gold = 300, mastery = 120 } },
+	epic = { id = "epic", name = text("Épico", "Epic"), color = { 176, 108, 255 }, robux = 149, placeLimit = 5, abilityCost = 2, duplicate = { gold = 600, mastery = 250 } },
+	legendary = { id = "legendary", name = text("Lendário", "Legendary"), color = { 255, 188, 62 }, robux = 399, placeLimit = 4, abilityCost = 3, duplicate = { gold = 1200, mastery = 500 } },
+	mythic = { id = "mythic", name = text("Mítico", "Mythic"), color = { 255, 84, 112 }, robux = 399, placeLimit = 3, abilityCost = 4.5, duplicate = { gold = 2500, mastery = 1000 } },
 }
 
 --==============================================================================
@@ -1090,41 +1091,41 @@ end
 
 Catalog.Products = {
 	Passes = {
-		collector = { id = 0, price = 19, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold.") },
-		training = { id = 0, price = 29, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP.") },
-		speed3 = { id = 0, price = 19, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. A partida acelera quando todo o grupo escolhe 3x.", "Unlocks 3x in matches. The match speeds up when the whole squad picks 3x.") },
-		season = { id = 0, price = 49, name = text("Passe de Temporada", "Season Pass"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title.") },
+		collector = { id = 0, price = 99, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold.") },
+		training = { id = 0, price = 99, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP.") },
+		speed3 = { id = 0, price = 99, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. A partida acelera quando todo o grupo escolhe 3x.", "Unlocks 3x in matches. The match speeds up when the whole squad picks 3x.") },
+		season = { id = 0, price = 499, name = text("Passe de Temporada", "Season Pass"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title.") },
 		-- freeChestScale: the free chest comes back this much sooner for VIPs.
-		vip = { id = 0, price = 29, freeChestScale = 0.5, name = text("Pacote VIP", "VIP Pack"), description = text("Baú grátis duas vezes mais rápido, nome dourado, título, emote, trilha e drone dourado.", "Free chest twice as fast, golden name, title, emote, trail and a golden drone.") },
+		vip = { id = 0, price = 199, freeChestScale = 0.5, name = text("Pacote VIP", "VIP Pack"), description = text("Baú grátis duas vezes mais rápido, nome dourado, título, emote, trilha e drone dourado.", "Free chest twice as fast, golden name, title, emote, trail and a golden drone.") },
 	},
 	Consumables = {
-		gold1000 = { id = 0, price = 5, gold = 1000, name = text("1.000 de Ouro", "1,000 Gold") },
-		gold5000 = { id = 0, price = 19, gold = 5000, popular = true, name = text("5.000 de Ouro", "5,000 Gold") },
-		gold12000 = { id = 0, price = 39, gold = 12000, name = text("12.000 de Ouro", "12,000 Gold") },
-		gold30000 = { id = 0, price = 79, gold = 30000, name = text("30.000 de Ouro", "30,000 Gold") },
+		gold1000 = { id = 0, price = 25, gold = 1000, name = text("1.000 de Ouro", "1,000 Gold") },
+		gold5000 = { id = 0, price = 99, gold = 5000, popular = true, name = text("5.000 de Ouro", "5,000 Gold") },
+		gold12000 = { id = 0, price = 199, gold = 12000, name = text("12.000 de Ouro", "12,000 Gold") },
+		gold30000 = { id = 0, price = 399, gold = 30000, name = text("30.000 de Ouro", "30,000 Gold") },
 		-- Once per account: an epic hero and Gold. Bought again (a second
 		-- prompt racing the first), it is paid in Gold instead of the hero.
 		-- offerSeconds: how long after the account's first visit the lobby strip
 		-- suggests the pack. No countdown is shown: the pack stays for sale.
-		starterPack = { id = 0, price = 19, gold = 5000, heroId = "hulk", repeatGold = 2500, offerSeconds = 3 * 86400, name = text("Pacote Inicial", "Starter Pack"),
+		starterPack = { id = 0, price = 99, gold = 5000, heroId = "hulk", repeatGold = 2500, offerSeconds = 3 * 86400, name = text("Pacote Inicial", "Starter Pack"),
 			description = text("Uma vez por conta: Gigante Furioso (épico) + 5.000 de Ouro.", "Once per account: Raging Giant (epic) + 5,000 Gold.") },
 		-- The season's premium track, bought for the season running at purchase
 		-- time (profile.season.premium). One product, reused every season; the
 		-- old permanent game pass (Passes.season) keeps unlocking every season
 		-- for whoever bought it.
-		seasonPass = { id = 0, price = 49, seasonPass = true, name = text("Passe da Temporada", "Season Pass"),
+		seasonPass = { id = 0, price = 199, seasonPass = true, name = text("Passe da Temporada", "Season Pass"),
 			description = text("Trilha premium desta temporada: o dobro de Ouro, mais baús, um título e o herói brilhante da temporada no nível 30.", "This season's premium track: double the Gold, more chests, a title and the season's shiny hero at level 30.") },
 		-- A timed boost: lobby Gold from waves and victories is doubled while it
 		-- lasts. Buying it again adds another hour to the end. The server keeps
 		-- the clock (profile.boostUntil) and applies it; the client only shows it.
-		goldBoost = { id = 0, price = 29, boostSeconds = 3600, boostScale = 2, name = text("Ouro em dobro • 1 hora", "Double Gold • 1 hour"),
+		goldBoost = { id = 0, price = 49, boostSeconds = 3600, boostScale = 2, name = text("Ouro em dobro • 1 hora", "Double Gold • 1 hour"),
 			description = text("Por uma hora de jogo, cada onda e cada vitória pagam o dobro de Ouro (o tempo pausa quando você sai). Comprar de novo soma mais uma hora.", "For one hour of play every wave and victory pays double Gold (the clock pauses while you are away). Buying again adds another hour.") },
 		-- Bundles: the Gold lands at once, the heroes are chosen afterwards. The
 		-- receipt credits profile.heroPicks[rarity]; PickHero spends one credit
 		-- on any hero of that rarity (one already owned pays like a duplicate).
-		legendaryBundle = { id = 0, price = 99, gold = 12000, heroPicks = { legendary = 1 }, name = text("Pacote Lendário", "Legendary Pack"),
+		legendaryBundle = { id = 0, price = 499, gold = 12000, heroPicks = { legendary = 1 }, name = text("Pacote Lendário", "Legendary Pack"),
 			description = text("Um herói lendário à sua escolha + 12.000 de Ouro.", "One legendary hero of your choice + 12,000 Gold.") },
-		teamBundle = { id = 0, price = 49, heroPicks = { rare = 3 }, name = text("Pacote Equipe", "Team Pack"),
+		teamBundle = { id = 0, price = 299, heroPicks = { rare = 3 }, name = text("Pacote Equipe", "Team Pack"),
 			description = text("Três heróis raros à sua escolha.", "Three rare heroes of your choice.") },
 	},
 	-- One product per purchasable hero, priced by rarity. The two starter

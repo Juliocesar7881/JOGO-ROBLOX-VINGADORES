@@ -9,8 +9,8 @@ return function(check,equal,approx)
 	for id,old in pairs(baseline.heroes) do
 		local hero=Catalog.Heroes[id]
 		equal(hero.rarity,merged[old.rarity],"Hero reclassified without changing ID: "..id)
-		local affordable={common=9,rare=29,legendary=79}
-		equal(Catalog.Products.Heroes[id] and Catalog.Products.Heroes[id].price or 0,hero.starter and 0 or affordable[hero.rarity],"Affordable direct price; starters remain free: "..id)
+		local robux={common=49,rare=149,legendary=399}
+		equal(Catalog.Products.Heroes[id] and Catalog.Products.Heroes[id].price or 0,hero.starter and 0 or robux[hero.rarity],"Direct Robux price by rarity; starters remain free: "..id)
 		equal(Rules.GuaranteedPrice(id),old.guaranteed,"Existing guaranteed Gold price: "..id)
 		for rank,cost in ipairs(old.abilityCosts) do equal(Rules.AbilityUpgrade(id,rank).cost,cost,"Existing ability price: "..id.." "..rank) end
 		equal(hero.economy.duplicate.gold,old.duplicateGold,"Existing duplicate Gold: "..id)
