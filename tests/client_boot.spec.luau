@@ -2861,6 +2861,26 @@ local function session(screen)
 			end
 		end
 		check(#silent == 0, tag .. ": every hero's shot VFX actually renders something, not just avoids crashing: silent " .. table.concat(silent, ", "))
+		-- Effects that grow over their life grow from their birth size: at a high
+		-- frame rate a per-frame multiply compounds into map-wide neon bars.
+		do
+			local largest, culprit = 0, ""
+			for index, heroId in ipairs({ "hawkeye", "ironman", "captain" }) do
+				local towerId = "vfx-fps" .. index
+				world:MakeTower(towerId, heroId, v3(90 + index * 3, 0, 70), LOCAL_ID)
+				fx({ kind = "Shot", from = v3(90 + index * 3, 4, 70), to = v3(90 + index * 3, 2, 50), color = Color3.fromRGB(200, 200, 200), towerId = towerId, heroId = heroId })
+				for _ = 1, 160 do
+					frames(1 / 240, 1)
+					for _, item in ipairs(workspace:FindFirstChild("DoomClientVisuals"):GetChildren()) do
+						if item.Name == "CombatEffect" then
+							local size = math.max(item.Size.X, item.Size.Y, item.Size.Z)
+							if size > largest then largest, culprit = size, heroId end
+						end
+					end
+				end
+			end
+			check(largest < 40, tag .. ": no combat effect outgrows its shot at 240 fps, largest " .. string.format("%.1f", largest) .. " studs from " .. culprit)
+		end
 		fx({kind="CardPicked",cardId="sharpen",rarity="common"})
 		fx({kind="EnemyDown",id=4,enemyId="lizard",position=v3(32,0,0),boss=true})
 		fx({ kind = "EnemySync", enemies = { enemies[1] } })

@@ -765,18 +765,23 @@ end
 function UI.cardSkin(frame,tint)
 	frame.BackgroundColor3=tint
 	local corner=frame:FindFirstChildOfClass("UICorner")
-	if corner then corner.CornerRadius=UDim.new(0,12) else UI.corner(frame,12) end
+	if corner then corner.CornerRadius=UDim.new(0,14) else UI.corner(frame,14) end
 	local shade=frame:FindFirstChildOfClass("UIGradient") or UI.create("UIGradient",{},frame)
-	shade.Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromRGB(86,105,153)); shade.Rotation=65
+	shade.Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromRGB(72,92,140)); shade.Rotation=65
 	local old=frame:FindFirstChild("CardPrint"); if old then old:Destroy() end
 	local art=UI.frame(frame,{Name="CardPrint",Size=UDim2.fromScale(1,1),ClipsDescendants=true,BackgroundTransparency=1,Active=false,ZIndex=0})
-	UI.corner(art,12)
-	for index=0,2 do
-		UI.frame(art,{Name="ComicRay",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.45),Size=UDim2.fromScale(0.18,1.8),Rotation=-50+index*50,
-			BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.89,Active=false,ZIndex=0})
+	UI.corner(art,14)
+	-- More comic rays for a punchier look
+	for index=0,3 do
+		UI.frame(art,{Name="ComicRay",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.45),Size=UDim2.fromScale(0.14,1.8),Rotation=-60+index*40,
+			BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.86,Active=false,ZIndex=0})
 	end
-	UI.frame(art,{Name="CardFoot",Position=UDim2.fromScale(0,0.76),Size=UDim2.fromScale(1,0.24),BackgroundColor3=UI.Colors.ink,BackgroundTransparency=0.28,Active=false,ZIndex=0})
-	UI.angular(frame,tint:Lerp(UI.Colors.cream,0.45),{cut=9,art="card"})
+	UI.frame(art,{Name="CardFoot",Position=UDim2.fromScale(0,0.74),Size=UDim2.fromScale(1,0.26),BackgroundColor3=UI.Colors.ink,BackgroundTransparency=0.22,Active=false,ZIndex=0})
+	-- Brighter border cut for more pop
+	UI.angular(frame,tint:Lerp(UI.Colors.cream,0.55),{cut=10,art="card"})
+	-- Add a subtle inner glow
+	local glow=UI.frame(art,{Name="CardGlow",Size=UDim2.fromScale(1,1),BackgroundColor3=tint,BackgroundTransparency=0.7,Active=false,ZIndex=0})
+	UI.corner(glow,14)
 	frame.BackgroundTransparency=1
 	return art
 end

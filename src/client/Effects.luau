@@ -625,7 +625,9 @@ function Effects:_effect(size, frame, color, duration, shape, fade)
 	local ringGui = visual:FindFirstChild("RingGui")
 	if ringGui then ringGui.Enabled = false end
 	visual.Parent = self.folder
-	local effect = {part = visual, born = self.clock, expires = self.clock + duration, fade = fade or 0.12}
+	-- The size it was born with: anything that grows over its life scales this,
+	-- never the size of the previous frame (that compounds with the frame rate).
+	local effect = {part = visual, born = self.clock, expires = self.clock + duration, fade = fade or 0.12, size = size}
 	table.insert(self.shots, effect)
 	return effect
 end
@@ -636,14 +638,17 @@ function Effects:_line(from, to, color, width, duration)
 end
 
 function Effects:_impact(position, color, diameter)
-	local effect = self:_effect(Vector3.one * diameter, CFrame.new(position), color, 0.18, Enum.PartType.Ball, 0.4)
-	if effect then effect.ballFrom, effect.ballTo = diameter, diameter * 1.9 end
+	local effect = self:_effect(Vector3.one * diameter * 1.3, CFrame.new(position), color, 0.22, Enum.PartType.Ball, 0.35)
+	if effect then effect.ballFrom, effect.ballTo = diameter * 0.8, diameter * 2.4 end
 end
 
 -- A short muzzle flash, contained inside the silhouette of the weapon.
 function Effects:_muzzle(position, color, size)
-	local flash = self:_effect(Vector3.one * size, CFrame.new(position), color:Lerp(Color3.new(1, 1, 1), 0.2), 0.11, Enum.PartType.Ball, 0.35)
-	if flash then flash.ballFrom, flash.ballTo = size * 0.7, size * 1.25 end
+	local flash = self:_effect(Vector3.one * size * 1.4, CFrame.new(position), color:Lerp(Color3.new(1, 1, 1), 0.3), 0.14, Enum.PartType.Ball, 0.28)
+	if flash then flash.ballFrom, flash.ballTo = size * 0.6, size * 1.6 end
+	-- Add a secondary smaller flash for more punch
+	local inner = self:_effect(Vector3.one * size * 0.7, CFrame.new(position), color:Lerp(Color3.new(1, 1, 1), 0.55), 0.08, Enum.PartType.Ball, 0.15)
+	if inner then inner.ballFrom, inner.ballTo = size * 0.4, size * 0.9 end
 end
 
 -- Short streaks thrown outward from a point.
@@ -651,9 +656,12 @@ function Effects:_sparks(position, color, count, reach)
 	for index = 1, count do
 		local angle = index * math.pi * 2 / count + self.shotSerial * 0.7
 		local offset = Vector3.new(math.cos(angle), 0.35, math.sin(angle))
-		local spark = self:_effect(Vector3.new(0.12, 0.12, 0.5), CFrame.lookAt(position, position + offset), color, 0.22, nil, 0.1)
-		if spark then spark.from, spark.to, spark.arc, spark.arrow = position, position + offset * reach, 0.6, true end
+		local spark = self:_effect(Vector3.new(0.16, 0.16, 0.7), CFrame.lookAt(position, position + offset), color, 0.28, nil, 0.08)
+		if spark then spark.from, spark.to, spark.arc, spark.arrow = position, position + offset * reach * 1.3, 0.8, true end
 	end
+	-- Add a central flash for more impact
+	local flash = self:_effect(Vector3.one * reach * 0.4, CFrame.new(position), color:Lerp(Color3.new(1, 1, 1), 0.4), 0.12, Enum.PartType.Ball, 0.2)
+	if flash then flash.ballFrom, flash.ballTo = reach * 0.2, reach * 0.6 end
 end
 
 -- Where a shot lands: a swelling flash, a ring on the ground and sparks.
@@ -1035,7 +1043,8 @@ function Effects:_heroShot(event, lowFX)
 		self:_groundImpact(target, color, heroId == "hulk" and 5 or 3.5)
 		self:_ring(target, color:Lerp(Color3.new(1, 1, 1), 0.3), 1.5, heroId == "hulk" and 11 or 7, 0.32)
 	elseif heroId == "captain" then
-		local shield = self:_effect(Vector3.new(0.15, 1.4, 1.4), CFrame.new(from), Color3.fromRGB(223, 62, 70), 0.38, Enum.PartType.Cylinder)
+		-- The thrown shield is the one on his arm: a gold rim.
+		local shield = self:_effect(Vector3.new(0.15, 1.4, 1.4), CFrame.new(from), Color3.fromRGB(244, 190, 58), 0.38, Enum.PartType.Cylinder)
 		if shield then shield.from, shield.to, shield.returning, shield.disc = from, target, true, true end
 		self:_impact(target, white, 0.45)
 	elseif heroId == "hawkeye" then
@@ -1773,6 +1782,9 @@ function Effects:Step(dt)
 					effect.part.CFrame = CFrame.new(position) * CFrame.Angles(0, life * 18, math.pi / 2)
 				elseif effect.arrow then
 					effect.part.CFrame = CFrame.lookAt(position, position + (effect.to - effect.from))
+					-- Stretch the projectile along its flight path for a trail effect:
+					-- from its own birth length, so it is the same at 30 or 240 fps.
+					effect.part.Size = Vector3.new(effect.size.X, effect.size.Y, effect.size.Z * (1 + life * 0.6))
 				else
 					effect.part.CFrame = CFrame.new(position) * CFrame.Angles(life * 3, 0, life * 4)
 				end
