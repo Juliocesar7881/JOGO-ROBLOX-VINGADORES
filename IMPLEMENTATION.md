@@ -498,6 +498,10 @@ unless every rider has opened it on that map, `Rules.CanUseDifficulty`). The
 car's difficulty travels in the teleport data and into `match:Start`; it
 scales the waves (`Waves.Generate`) and the victory Gold/XP, and a win records
 `campaign[mapId][winKey]`, which opens the next one.
+`ElevatorQuick` `{on}` → `{ok, message}` (host only, campaign portals only)
+makes the car the quick session (`Catalog.Modes.quick`: the map's first 20
+waves at Normal, paid per wave like the campaign, never recorded as its
+victory); a `SetDifficulty` pick turns it back into the campaign.
 Snapshots carry `elevator = {portalId, modeId, mapId, difficultyId, riders = {{userId, name}},
 max, remaining, host, maps}` while the player rides, `nil` otherwise. The
 legacy `StartMatch`/party actions are still routed but no client UI sends them.

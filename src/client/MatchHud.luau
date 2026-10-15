@@ -531,8 +531,13 @@ function MatchHud.new(ctx)
 		else
 			local waiting=result.again==true
 			local again=UI.button(panel,waiting and (T("Esperando ","Waiting ")..tostring(result.againVotes or 1).."/"..tostring(result.againTotal or 1)) or T("▶ Jogar de novo","▶ Play again"),
-				function() act("PlayAgain",{}) end,{Name="ResultPlayAgain",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(0.62,-24,0,52),BackgroundColor3=C.green,TextSize=22})
+				function() act("PlayAgain",{}) end,{Name="ResultPlayAgain",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(0.62,-84,0,52),BackgroundColor3=C.green,TextSize=22})
 			if waiting then UI.disabled(again) end
+			-- A friend for the next round: Roblox's invite sheet, one tap from the result.
+			if ctx.inviteFriends then
+				local invite=UI.button(panel,"",ctx.inviteFriends,{Name="ResultInvite",Position=UDim2.new(0.62,-58,1,-64),Size=UDim2.fromOffset(52,52),BackgroundColor3=UI.Skin.bodyTop})
+				UI.icon(invite,"plus",C.green,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(36,36)})
+			end
 			UI.secondary(panel,T("Lobby","Lobby"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0.62,0,1,-64),Size=UDim2.new(0.38,-18,0,52),TextSize=20,BackgroundColor3=UI.Skin.bodyTop})
 		end
 		UI.list(content, 8)

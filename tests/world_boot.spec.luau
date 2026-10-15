@@ -1306,6 +1306,23 @@ do
 	check(workspace.DoomLobby.Portal_normal_gamma.MapBillboard.MapBoard:FindFirstChild("MapPhoto") == nil, "a map without a photograph keeps its diorama")
 end
 
+-- A battle server builds the bay and an arrival deck, never the lobby.
+do
+	local ok, arrival = pcall(WorldBuilder.new, Catalog, function() end, nil, { lobby = false })
+	check(ok, "a battle server's world builds: " .. tostring(arrival))
+	if ok then
+		local deck = workspace:FindFirstChild("DoomArrival")
+		local parts = 0
+		for _, item in ipairs(deck and deck:GetDescendants() or {}) do if item:IsA("BasePart") then parts += 1 end end
+		check(workspace:FindFirstChild("DoomLobby") == nil, "a battle server has no lobby model")
+		check(deck ~= nil and deck:FindFirstChild("LobbySpawn") ~= nil and arrival.lobbySpawn ~= nil, "a battle server has a spawn on its arrival deck")
+		check(parts > 0 and parts < 200, "the arrival deck is a few dozen parts, not the lobby's thousands: " .. parts)
+		check(next(arrival.portalZones) == nil and not arrival:NearMarket(nil), "a battle server has no portal queues or shop")
+		local built = pcall(function() arrival:Build("manhattan") end)
+		check(built and workspace:FindFirstChild("DoomLobby") == nil, "a map builds next to the arrival deck")
+	end
+end
+
 print(string.format("%s world boot: %d checks, %d failures",
 	failures == 0 and "PASS" or "FAIL", checks, failures))
 if failures > 0 then error("world boot failed", 0) end

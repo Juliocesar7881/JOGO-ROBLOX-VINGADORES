@@ -89,7 +89,7 @@ Rules.CardsAfterWaves = CARDS_AFTER_WAVES
 function Rules.ModeUnlocked(profile, modeId)
 	if type(profile) ~= "table" or not Catalog.Modes[modeId] then return false end
 	if modeId == "tutorial" then return true end
-	if modeId == "normal" then return true end
+	if modeId == "normal" or modeId == "quick" then return true end
 	if modeId == "ranked" then return profile.tutorialComplete == true or anyWon(profile, "normal") end
 	if modeId == "cards" then
 		local waves = type(profile.stats) == "table" and tonumber(profile.stats.waves) or 0
@@ -116,9 +116,11 @@ function Rules.CanStart(profile, mapId, modeId)
 		if mapId ~= "manhattan" then return false, "O treinamento acontece em Manhattan / Training takes place in Manhattan" end
 		return true
 	end
+	-- The quick session plays on any campaign map (Catalog.Modes.quick.campaign).
+	local portalMode=Catalog.Modes[modeId].campaign and "normal" or modeId
 	local destination=false
 	for _,def in pairs(Catalog.Destinations) do
-		if def.mapId==mapId and def.modeId==modeId then destination=true; break end
+		if def.mapId==mapId and def.modeId==portalMode then destination=true; break end
 	end
 	if not destination then return false,"Este mapa tem seu próprio modo. / This map has its own mode." end
 	if not Rules.ModeUnlocked(profile, modeId) then return false, Rules.ModeLockReason(modeId, profile) end
@@ -353,7 +355,8 @@ end
 --   campaign: 40 per wave (2,000 for 50 waves, 1,600 for 40, 2,800 for 70)
 --   cards: 50 per wave; training: nothing per wave, a one-off first clear
 --   competitive: 25 per wave and 100 more every ten waves, all of it kept
-local RUN_GOLD_PER_WAVE = { normal = 40, cards = 50 }
+--   quick: the campaign's 40 per wave over its 20 waves
+local RUN_GOLD_PER_WAVE = { normal = 40, cards = 50, quick = 40 }
 local DEFEAT_SHARE = 0.4
 
 -- The lobby Gold banked when a wave is completed.

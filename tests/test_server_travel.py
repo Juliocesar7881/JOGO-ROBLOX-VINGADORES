@@ -118,6 +118,7 @@ end
 local ana = join(501, "Ana")
 check(latest(ana) and latest(ana).role == "Lobby", "a public server of the single place is a lobby, got " .. tostring(latest(ana) and latest(ana).role))
 check(latest(ana).profile ~= nil, "the lobby loads the profile from the DataStore")
+check(workspace:FindFirstChild("DoomLobby") ~= nil and workspace:FindFirstChild("DoomArrival") == nil, "a lobby server builds the lobby")
 stepInto(ana, "normal")
 for _ = 1, 30 do
 	frames(0.5)
@@ -182,6 +183,28 @@ do
 	check(#awarded == 1 and awarded[1] == Config.Badges.tutorial, "the training badge is awarded once to a commander who finished training, got " .. #awarded)
 end
 
+-- A profile still held by another server past the whole wait: the cover offers
+-- Try again, and a retry once that server lets go loads it.
+do
+	local Config = require(shared.Config)
+	local store = services.DataStoreService:GetDataStore(Config.DataStoreName or "DoomPlayer_v1")
+	store:SetAsync("p_507", {
+		schemaVersion = 1, gold = 0, xp = 0,
+		heroes = { ironman = { xp = 0, level = 1 }, hawkeye = { xp = 0, level = 1 } },
+		_session = { id = "elsewhere", expires = os.time() + 100000 },
+	})
+	local held = join(507, "Held")
+	frames((tonumber(Config.ProfileLeaseSeconds) or 180) + 40)
+	check(latest(held) ~= nil and latest(held).profile == nil and latest(held).profileFailed == true, "a profile held elsewhere past the wait offers Try again")
+	local value = store:GetAsync("p_507")
+	value._session = nil
+	store:SetAsync("p_507", value)
+	check(request(held, "RetryProfile", {}).ok, "Try again is accepted while the profile is missing")
+	frames(3)
+	check(latest(held).profile ~= nil and latest(held).profileFailed == nil, "a retry after the other server let go loads the profile")
+	check(not request(held, "RetryProfile", {}).ok, "Try again is refused once the profile is in")
+end
+
 -- Roblox cannot reserve a server: the lobby hosts the battle rather than stranding the group.
 reserveFails = true
 local bia = join(502, "Bia")
@@ -233,6 +256,7 @@ for _ = 1, 20 do
 	if latest(cris).match ~= nil then started = true; break end
 end
 check(started and latest(cris).match.mapId == "manhattan", "the arriving group's battle starts in the battle server")
+check(workspace:FindFirstChild("DoomLobby") == nil and workspace:FindFirstChild("DoomArrival") ~= nil, "a battle server builds an arrival deck, not the lobby")
 check(#teleportsOf(602) == 0, "the arriving group is not sent anywhere")
 frames(1)
 local seat = rejoinValues["602"]

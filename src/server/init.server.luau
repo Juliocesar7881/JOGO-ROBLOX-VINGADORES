@@ -78,6 +78,10 @@ end)
 --==============================================================================
 local pushState
 local notices = {}
+-- A profile that could not be loaded (still held elsewhere past its lease, or
+-- the DataStore down): the loading screen offers "Try again" (RetryProfile).
+local profileFailed, profileLoading = {}, {}
+local joinProfile
 
 local function notify(player, message)
 	if not message or message == "" then return end
@@ -93,6 +97,11 @@ end, Rules, Codes)
 
 -- The purchase funnel: what was looked at, what was bought, what was walked
 -- away from, each with its SKU. A receipt's Gold is tagged IAP before it lands.
+-- Thanks owed from another server, paid here (PlayerService.ClaimInviteThanks).
+profiles.onInviteThanks = function(player, result)
+	notify(player, text("Seus amigos entraram pelo seu convite: +" .. result.gold .. " Ouro!", "Your friends joined from your invite: +" .. result.gold .. " Gold!"))
+end
+
 local purchaseAnalytics
 profiles.onPurchase = function(player, phase, kind, key, id)
 	if phase == "start" then
@@ -117,7 +126,7 @@ local world = WorldBuilder.new(Catalog, function(player, panel, data)
 		kind = "OpenPanel", panel = panel, modeId = data.modeId, heroId = data.heroId,
 		chestId = data.chestId, shopKind = data.shopKind, shopKey = data.shopKey,
 	})
-end, Config)
+end, Config, { lobby = role ~= "Match" })
 
 local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, remotes, function(player)
 	if pushState then pushState(player) end
@@ -274,6 +283,7 @@ local function snapshotFor(player)
 		party = party:Snapshot(player),
 		elevator = (not matchState and elevator) and elevator:Snapshot(player) or nil,
 		friendsRiding = (not matchState) and friendsRidingFor(player) or nil,
+		profileFailed = profileFailed[player.UserId] or nil,
 		match = matchState,
 		results = results,
 		notice = notices[player.UserId],
@@ -636,6 +646,15 @@ local function route(player, action, payload)
 	if action == "Sync" then
 		return { ok = true, data = snapshotFor(player) }
 	end
+	if action == "RetryProfile" then
+		-- The loading screen's "Try again" once the profile could not be loaded.
+		if not profileFailed[player.UserId] then return { ok = false, message = text("Seu perfil já está carregando.", "Your profile is already loading.") } end
+		task.spawn(function()
+			local ok, problem = pcall(joinProfile, player)
+			if not ok then warn("[Doomsday] Join failed: " .. tostring(problem)) end
+		end)
+		return { ok = true }
+	end
 	-- Studio-only review scenes (src/client/Review.luau); a live server
 	-- answers this like any unknown action.
 	if action == "StudioReview" and RunService:IsStudio() then
@@ -729,6 +748,10 @@ local function route(player, action, payload)
 	if action == "SetDifficulty" then
 		if type(payload) ~= "table" or type(payload.difficultyId) ~= "string" then return { ok = false, message = text("Dificuldade inválida.", "Invalid difficulty.") } end
 		local ok, reason = elevator:SetDifficulty(player, payload.difficultyId)
+		return { ok = ok, message = reason }
+	end
+	if action == "ElevatorQuick" then
+		local ok, reason = elevator:SetQuick(player, type(payload) == "table" and payload.on == true)
 		return { ok = ok, message = reason }
 	end
 	if action == "ElevatorLeave" then
@@ -865,16 +888,9 @@ end
 
 local joined = {}
 
-local function onPlayerAdded(player)
-	if joined[player.UserId] then return end
-	joined[player.UserId] = true
-	task.spawn(learnFriends, player)
-	sessionStart[player.UserId] = os.clock()
-	analytics:BeginSession(player)
-	cosmetics:Bind(player)
-	player.CharacterAdded:Connect(function()
-		task.defer(placeCharacter, player)
-	end)
+joinProfile = function(player)
+	if profileLoading[player.UserId] then return end
+	profileLoading[player.UserId], profileFailed[player.UserId] = true, nil
 	-- After a teleport the server the player left may still hold the profile
 	-- for a few seconds while it saves. Keep trying (the lease always expires,
 	-- Config.ProfileLeaseSeconds) instead of giving up and leaving the loading
@@ -889,13 +905,21 @@ local function onPlayerAdded(player)
 		if attempt == 1 or attempt % 4 == 0 then notify(player, failure) end
 		task.wait(math.min(1.5 * attempt, 8))
 	end
+	profileLoading[player.UserId] = nil
 	if player.Parent ~= Players then return end
 	if not profile then
 		notify(player, failure or text("Perfil indisponivel. Nenhum dado foi alterado.", "Profile unavailable. No data was changed."))
 		-- A battle server cannot hold someone without a profile: back to a lobby.
-		if role == "Match" then task.delay(3, function() if player.Parent == Players then sendToLobby(player) end end) end
+		if role == "Match" then
+			task.delay(3, function() if player.Parent == Players then sendToLobby(player) end end)
+		else
+			profileFailed[player.UserId] = true
+			pushState(player)
+		end
 		return
 	end
+	-- Thanks owed from friends who joined from this player's invite elsewhere.
+	task.spawn(function() profiles:ClaimInviteThanks(player) end)
 	refreshPresence(player)
 	analytics:ProfileReady(player, profile.stats and (profile.stats.matches or 0) > 0)
 	-- Joined through a friend's invite: PlayerService decides who is paid.
@@ -921,6 +945,19 @@ local function onPlayerAdded(player)
 	pushAll()
 end
 
+local function onPlayerAdded(player)
+	if joined[player.UserId] then return end
+	joined[player.UserId] = true
+	task.spawn(learnFriends, player)
+	sessionStart[player.UserId] = os.clock()
+	analytics:BeginSession(player)
+	cosmetics:Bind(player)
+	player.CharacterAdded:Connect(function()
+		task.defer(placeCharacter, player)
+	end)
+	joinProfile(player)
+end
+
 Players.PlayerAdded:Connect(function(player)
 	local ok, problem = pcall(onPlayerAdded, player)
 	if not ok then warn("[Doomsday] Join failed: " .. tostring(problem)) end
@@ -944,6 +981,7 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 	presence[player.UserId] = nil
 	badgesGiven[player.UserId] = nil
+	profileFailed[player.UserId], profileLoading[player.UserId] = nil, nil
 	sessionStart[player.UserId] = nil
 	tutorialTower[player.UserId] = nil
 	joined[player.UserId] = nil

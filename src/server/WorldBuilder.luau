@@ -4237,7 +4237,8 @@ function World:ApplyLobbyLighting()
 	clouds.Parent = terrain
 end
 
-function World.new(catalog, openPanel, config)
+-- options.lobby = false (a battle server): the bay and an arrival deck, no lobby.
+function World.new(catalog, openPanel, config, options)
 	upper = catalog.Upper or string.upper
 	campaignWaves = catalog.CampaignWaves or {}
 	local self = setmetatable({ catalog = catalog, openPanel = openPanel, mapImages = config and config.MapImages or {} }, World)
@@ -4257,7 +4258,11 @@ function World.new(catalog, openPanel, config)
 	-- Every enemy's jointed figure, cloned by the clients for the road.
 	Figure.PublishEnemies(catalog)
 	self:ApplyLobbyLighting()
-	self:BuildLobby()
+	if type(options) == "table" and options.lobby == false then
+		self:BuildArrival()
+	else
+		self:BuildLobby()
+	end
 	return self
 end
 
@@ -4921,6 +4926,34 @@ function World:BuildLobby()
 	World.TameNeon(lobby)
 	-- Last: no two surfaces of the finished lobby may share a plane.
 	World.SeparateCoplanar(lobby)
+end
+
+-- A battle server never shows the lobby: with Config.SinglePlace its players
+-- arrive from a lobby server, wait a moment for their group, play and travel
+-- back. It builds the same bay (terrain, so the battlefield keeps its horizon)
+-- and a plain round deck with the spawn where the hero plaza would stand, so a
+-- phone in a battle loads the sea and a few dozen parts instead of the ~4,500
+-- of the lobby (nothing streams: StreamingEnabled is off).
+function World:BuildArrival()
+	for _, name in ipairs({ "DoomLobby", "DoomArrival" }) do
+		local old = workspace:FindFirstChild(name)
+		if old then old:Destroy() end
+	end
+	local arrival = Instance.new("Model")
+	arrival.Name, arrival.Parent = "DoomArrival", workspace
+	self.lobby, self.portalZones, self.shopZones, self.shopOccupants = arrival, {}, {}, {}
+	self:BuildLobbyTerrain()
+	Kit.disc(arrival, "ArrivalDeck", Vector3.new(HUB.X, PLAZA_Y - 1, HUB.Z), 56, 2, HQ.stone, Enum.Material.Concrete, true)
+	Kit.disc(arrival, "ArrivalRing", Vector3.new(HUB.X, PLAZA_Y + 0.06, HUB.Z), 44, 0.12, HQ.stoneDark, Enum.Material.Concrete, true)
+	Kit.disc(arrival, "ArrivalCentre", Vector3.new(HUB.X, PLAZA_Y + 0.12, HUB.Z), 30, 0.12, HQ.stoneWarm, Enum.Material.Concrete, true)
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name, spawn.Size, spawn.CFrame = "LobbySpawn", Vector3.new(14, 0.2, 14), CFrame.new(HUB.X, PLAZA_Y + 0.3, HUB.Z)
+	spawn.Anchored, spawn.Neutral, spawn.Duration, spawn.Transparency = true, true, 0, 1
+	spawn.Parent = arrival
+	self.lobbySpawn = Vector3.new(HUB.X, PLAZA_Y + 4, HUB.Z)
+	World.SolidifyProps(arrival)
+	World.TameNeon(arrival)
+	World.SeparateCoplanar(arrival)
 end
 
 --------------------------------------------------------------------------------

@@ -417,6 +417,18 @@ do
 	h2.step(10)
 	check(sent == "hard", "a Hard car launches on Hard")
 end
+-- The quick session: the first rider turns a campaign car into 20 waves; a difficulty turns it back.
+do
+	local host, rider = veteran(), veteran()
+	local h = harness({})
+	for _, p in ipairs({ host, rider }) do h.add(p) end
+	at(host, "normal"); h.step(0.25)
+	at(rider, "normal"); h.step(0.25)
+	check(not h.service:SetQuick(rider, true), "only the first rider makes the car quick")
+	check(h.service:SetQuick(host, true) and h.service:Snapshot(rider).modeId == "quick", "the host makes a campaign car the quick session, and everyone sees it")
+	check(h.service:Snapshot(host).difficultyId == "normal", "the quick session plays at Normal")
+	check(h.service:SetDifficulty(host, "normal") and h.service:Snapshot(host).modeId == "normal", "picking a difficulty turns it back into the campaign")
+end
 -- A friends-only car: the host closes it, strangers step off and are refused, friends ride.
 do
 	local host, friend, stranger, late = veteran(), veteran(), veteran(), veteran()

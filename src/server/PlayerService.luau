@@ -422,13 +422,17 @@ function PlayerService.new(config, catalog, onChanged, rules, codes)
 	end)
 	local interval = math.min(config.AutoSaveSeconds or 45, self.leaseSeconds / 3)
 	task.spawn(function()
+		local cycle = 0
 		while not self.closed do
 			task.wait(math.max(interval, 10))
 			if self.closed then break end
+			cycle += 1
 			for _, record in pairs(self.records) do
 				local player = record.player
 				task.spawn(function()
 					if not record.closing then self:Save(player); self:_flushBoards(player) end
+					-- Every fourth save (about three minutes): thanks owed from other servers.
+					if cycle % 4 == 0 and not record.closing then self:ClaimInviteThanks(player) end
 				end)
 			end
 		end
@@ -458,7 +462,11 @@ function PlayerService:_withLock(userId, callback)
 end
 
 function PlayerService:_update(userId, transform)
-	local key = "p_" .. tostring(userId)
+	return self:_updateKey("p_" .. tostring(userId), transform, userId)
+end
+
+-- UpdateAsync on any key of the profile store, retried with backoff.
+function PlayerService:_updateKey(key, transform, label)
 	local lastError
 	for attempt = 1, self.retries do
 		local ok, value = pcall(function()
@@ -473,7 +481,7 @@ function PlayerService:_update(userId, transform)
 		lastError = value
 		if attempt < self.retries then task.wait(0.4 * 2 ^ (attempt - 1)) end
 	end
-	warn("[PlayerService] UpdateAsync unavailable for " .. tostring(userId) .. ": " .. tostring(lastError))
+	warn("[PlayerService] UpdateAsync unavailable for " .. tostring(label or key) .. ": " .. tostring(lastError))
 	return false, nil
 end
 
@@ -736,8 +744,77 @@ function PlayerService:InviteBonus(player, inviterId)
 			return true, invite.inviterGold
 		end)
 		if thanked then paid.friend, paid.thanks = friend, thanks end
+	else
+		-- In another server (a battle, another lobby): owed, paid where they are.
+		self:_oweThanks(inviterId, player.UserId)
 	end
 	return paid
+end
+
+-- Thanks owed to an inviter who was in another server when their friend was
+-- welcomed. They live under their own key ("invites_<id>"), never inside the
+-- inviter's profile (another server holds that lease), and the server the
+-- inviter is in pays them (ClaimInviteThanks: at load and every few minutes),
+-- once per newcomer and within the same daily cap as thanks paid on the spot.
+local OWED_LIMIT = 50
+local PAID_MEMORY = 7 * DAY
+function PlayerService:_oweThanks(inviterId, newcomerId)
+	local now = os.time()
+	return self:_updateKey("invites_" .. tostring(inviterId), function(raw)
+		local owed = type(raw) == "table" and raw or {}
+		local count = 0
+		for _ in pairs(owed) do count += 1 end
+		if owed[tostring(newcomerId)] ~= nil or count >= OWED_LIMIT then return nil end
+		owed[tostring(newcomerId)] = now
+		return owed
+	end, inviterId)
+end
+
+function PlayerService:ClaimInviteThanks(player)
+	local record = self.records[player.UserId]
+	local invite = self.catalog.Rewards.invite
+	if not invite or not record or record.lost or record.closing then return nil end
+	local owed
+	local read = self:_updateKey("invites_" .. tostring(player.UserId), function(raw)
+		owed = type(raw) == "table" and copy(raw) or nil
+		return nil
+	end, player.UserId)
+	if not read or not owed or next(owed) == nil then return nil end
+	local ok, result = self:_transaction(player, function(profile, now)
+		local today = math.floor(now / DAY)
+		local log = profile.invites
+		if type(log) ~= "table" or log.day ~= today then
+			log = { day = today, count = 0 }
+			profile.invites = log
+		end
+		-- Who was already paid for: a claim interrupted before the owed list
+		-- was cleared never pays the same newcomer twice.
+		local paidFor = type(profile.invitePaid) == "table" and profile.invitePaid or {}
+		for id, at in pairs(paidFor) do if (tonumber(at) or 0) < now - PAID_MEMORY then paidFor[id] = nil end end
+		profile.invitePaid = paidFor
+		local gold, friends, settled = 0, 0, {}
+		for newcomer in pairs(owed) do
+			table.insert(settled, newcomer)
+			if not paidFor[newcomer] then
+				paidFor[newcomer] = now
+				if (tonumber(log.count) or 0) < invite.inviterDailyCap then
+					log.count = (tonumber(log.count) or 0) + 1
+					gold += invite.inviterGold
+					friends += 1
+				end
+			end
+		end
+		profile.gold += gold
+		return true, { gold = gold, friends = friends, settled = settled }
+	end)
+	if not ok or type(result) ~= "table" then return nil end
+	self:_updateKey("invites_" .. tostring(player.UserId), function(raw)
+		if type(raw) ~= "table" then return nil end
+		for _, newcomer in ipairs(result.settled) do raw[newcomer] = nil end
+		return raw
+	end, player.UserId)
+	if result.gold > 0 and self.onInviteThanks then pcall(self.onInviteThanks, player, result) end
+	return result.gold > 0 and result or nil
 end
 
 function PlayerService:GrantAfk(player, kind, minutes, paymentId)

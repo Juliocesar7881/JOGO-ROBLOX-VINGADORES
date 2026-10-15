@@ -235,6 +235,16 @@ showToast = function(message, bad, icon)
 	task.delay(4.5, function() if toast.Parent then toast:Destroy() end end)
 end
 
+-- Roblox's own invite sheet for this experience (the queue card and the
+-- results screen). Accounts that cannot invite get a plain message instead.
+local function inviteFriends()
+	local ok = pcall(function()
+		local social = game:GetService("SocialService")
+		if social:CanSendGameInviteAsync(player) then social:PromptGameInvite(player) else error("cannot invite") end
+	end)
+	if not ok then showToast(T("Convites indisponíveis nesta conta.", "Invites are not available on this account."), true) end
+end
+
 local function request(action, payload, silent)
 	local success, result = pcall(function() return requestRemote:InvokeServer(action, payload or {}) end)
 	if not success or type(result) ~= "table" then
@@ -739,8 +749,9 @@ renderElevator = function()
 	if refs.firstVisitHint then refs.firstVisitHint.Visible = e == nil and contextPanel == nil end
 	if not e then return true end
 	local size = screenSize()
-	-- The campaign's card is taller: it carries a row of difficulties.
-	local withDifficulty = e.modeId == "normal"
+	-- The campaign's card is taller: it carries a row of difficulties (and the
+	-- quick session, which a campaign car may become).
+	local withDifficulty = e.modeId == "normal" or e.modeId == "quick"
 	local hud = UI.lobbyLayout(size.X, size.Y, { difficulty = withDifficulty })
 	local compact, r = hud.class.compact, hud.elevator
 	local tint = kit.modeTint[e.portalId] or C.green
@@ -788,13 +799,7 @@ renderElevator = function()
 	end
 	-- Anyone aboard can invite Roblox friends to come and fill the queue.
 	if not e.departing then
-		local invite = UI.button(card, "", function()
-			local ok = pcall(function()
-				local social = game:GetService("SocialService")
-				if social:CanSendGameInviteAsync(player) then social:PromptGameInvite(player) else error("cannot invite") end
-			end)
-			if not ok then showToast(T("Convites indisponíveis nesta conta.", "Invites are not available on this account."), true) end
-		end, {Name = "ElevatorInvite", Position = UDim2.new(1, -(statusRight + rowH - 8), 0, rowY), Size = UDim2.fromOffset(rowH, rowH), BackgroundColor3 = C.card})
+		local invite = UI.button(card, "", inviteFriends, {Name = "ElevatorInvite", Position = UDim2.new(1, -(statusRight + rowH - 8), 0, rowY), Size = UDim2.fromOffset(rowH, rowH), BackgroundColor3 = C.card})
 		UI.icon(invite, "plus", C.green, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(rowH - 12, rowH - 12)})
 		statusRight += rowH + 6
 	end
@@ -804,13 +809,15 @@ renderElevator = function()
 	local inline = withDifficulty and hud.class.short
 	if withDifficulty then
 		local rowW = inline and (r.w - 14 - statusRight) or (r.w - 28)
-		local chipW = math.floor((rowW - 2 * 6) / 3)
+		local chips = #Catalog.DifficultyOrder + 1
+		local chipW = math.floor((rowW - (chips - 1) * 6) / chips)
 		local chipY = inline and rowY or (compact and 46 or 58)
 		if inline then chipH = rowH end
+		local quick = e.modeId == "quick"
 		for index, id in ipairs(Catalog.DifficultyOrder) do
 			local def = Catalog.Difficulties[id]
 			local open = Rules.DifficultyUnlocked(profile(), e.mapId, id)
-			local chosen = (e.difficultyId or "normal") == id
+			local chosen = not quick and (e.difficultyId or "normal") == id
 			local color = UI.color(def.color)
 			local label = (open and "" or "     ") .. Catalog.Upper(L(def.name)) .. (def.rewardMultiplier > 1 and not inline and ("  ×" .. string.gsub(tostring(def.rewardMultiplier), "%.", language == "en" and "." or ",")) or "")
 			local chip = UI.button(card, label, function()
@@ -824,6 +831,17 @@ renderElevator = function()
 				UI.icon(chip, "lock", C.muted, { Name = "DifficultyLock", Position = UDim2.new(0, 8, 0.5, -8), Size = UDim2.fromOffset(16, 16), ZIndex = (chip.ZIndex or 1) + 1 })
 			end
 		end
+		-- Last: the quick session (20 waves of this map, at Normal).
+		local mode = Catalog.Modes.quick
+		local color = UI.color(mode.color)
+		local label = Catalog.Upper(L(mode.name)) .. (inline and "" or ("  " .. tostring(mode.waves)))
+		local chip = UI.button(card, label, function()
+			if quick then return end
+			if not e.host then showToast(T("Só quem entrou primeiro escolhe a dificuldade.", "Only the first rider picks the difficulty."), true); return end
+			act("ElevatorQuick", { on = true })
+		end, { Name = "Difficulty_quick", Position = UDim2.fromOffset(14 + (chips - 1) * (chipW + 6), chipY), Size = UDim2.fromOffset(chipW, chipH),
+			BackgroundColor3 = quick and color or C.card, TextColor3 = quick and C.background or color, TextSize = compact and 12 or 15 })
+		if quick then UI.stroke(chip, C.text, 2) end
 	end
 	local names = {}
 	for _, rider in ipairs(e.riders or {}) do table.insert(names, rider.name) end
@@ -1303,7 +1321,7 @@ local matchHud = MatchHud.new({
 	T = T, L = L, number = number, player = player, act = act, audio = audio, celebrate = celebrate,
 	main = main, overlays = overlays, at = at, dims = dims, screenSize = screenSize, sizeClass = sizeClass, mobile = mobile,
 	heroName = heroName, colorFor = colorFor, mapName = mapName, modeName = modeName, profile = profile, heroPortrait = heroPortrait,
-	livePortrait = livePortrait, registerShowcase = registerShowcase,
+	livePortrait = livePortrait, registerShowcase = registerShowcase, inviteFriends = inviteFriends,
 	activeMatch = activeMatch, levelProgress = levelProgress, welcomePanel = welcomePanel,
 	currentMatchLayout = currentMatchLayout, closeTowerPanel = closeTowerPanel, selectTower = selectTower,
 	selectedTower = function() return selectedTower end,
@@ -1663,6 +1681,12 @@ render = function()
 	if not state or not state.profile then
 		refs.loading = kit.screenArt.Loading(main, T, screenSize(), UI)
 		refs.loadingStarted = os.clock()
+		-- The profile could not be loaded (held by another server past its lease,
+		-- or the data service down): a way out instead of a cover forever.
+		if state and state.profileFailed then
+			UI.button(refs.loading.root, T("Tentar de novo", "Try again"), function() act("RetryProfile", {}) end,
+				{Name = "RetryProfile", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -28), Size = UDim2.fromOffset(240, 56), BackgroundColor3 = C.green, TextSize = 22, ZIndex = 95})
+		end
 		return
 	end
 	if state.phase == "Lobby" then renderLobby() elseif state.phase == "Results" then matchHud.renderResults() else renderMatch() end
@@ -1743,6 +1767,7 @@ local function applyState(nextState)
 	local previousGold = state and state.profile and state.profile.gold
 	local previousMatch = state and state.match
 	local previousLanguage = language
+	local previousFailed = state ~= nil and state.profileFailed == true
 	state = nextState
 	language = state.profile and state.profile.settings and state.profile.settings.language or language
 	local kind = screenKey()
@@ -1750,7 +1775,9 @@ local function applyState(nextState)
 	local phaseChanged = previousPhase ~= state.phase and not ((previousPhase == "Wave" or previousPhase == "Preparing") and activeMatch())
 	if phaseChanged then celebrate:Clear() end
 	if state.phase ~= "Results" then kit.resultsCelebrated = false end
-	if firstProfile or phaseChanged or kind ~= layoutKind or language ~= previousLanguage or not refs.wave and activeMatch() then
+	-- A profile that could not be loaded (or loads on a retry) redraws the cover.
+	local failedChanged = (state.profileFailed == true) ~= previousFailed
+	if firstProfile or phaseChanged or failedChanged or kind ~= layoutKind or language ~= previousLanguage or not refs.wave and activeMatch() then
 		layoutKind = kind
 		render()
 		if phaseChanged and state.phase ~= "Results" then frameCommanderView(activeMatch()) end

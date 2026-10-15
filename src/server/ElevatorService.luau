@@ -51,7 +51,10 @@ function Elevator:Plan(portalId)
 	local host = car and car.riders[1]
 	local profile = host and self.profileOf(host)
 	if not profile then return nil end
-	return self.rules.PortalMode(profile, self:Destination(portalId))
+	local modeId = self.rules.PortalMode(profile, self:Destination(portalId))
+	-- A campaign car the first rider made short plays the quick session.
+	if modeId == "normal" and car.quick then return "quick" end
+	return modeId
 end
 
 function Elevator:_refuse(player, portalId, reason)
@@ -200,12 +203,31 @@ function Elevator:SetDifficulty(player, difficultyId)
 	local car = portalId and self.cars[portalId]
 	if not car or car.departing then return false, "Entre em um portal primeiro. / Step into a portal first." end
 	if car.riders[1] ~= player then return false, "Só quem entrou primeiro escolhe. / Only the first rider chooses." end
-	local mapId, modeId = self.rules.PortalMap(self:Destination(portalId)), self:Plan(portalId)
+	-- A difficulty is a choice of the full campaign: it also ends a quick plan.
+	local mapId, modeId = self.rules.PortalMap(self:Destination(portalId)), self.rules.PortalMode(self.profileOf(player), self:Destination(portalId))
 	for _, rider in ipairs(car.riders) do
 		local allowed, reason = self.rules.CanUseDifficulty(self.profileOf(rider), mapId, modeId, difficultyId)
 		if not allowed then return false, reason end
 	end
-	car.difficulty = difficultyId
+	car.difficulty, car.quick = difficultyId, nil
+	car.remaining = math.max(car.remaining, JOIN_GRACE)
+	self:_announce(car)
+	return true
+end
+
+-- The first rider may make a campaign car the short session
+-- (Catalog.Modes.quick: the first 20 waves of the same map, at Normal).
+-- Picking a difficulty again turns it back into the full campaign.
+function Elevator:SetQuick(player, on)
+	local portalId = self.riding[player]
+	local car = portalId and self.cars[portalId]
+	if not car or car.departing then return false, "Entre em um portal primeiro. / Step into a portal first." end
+	if car.riders[1] ~= player then return false, "Só quem entrou primeiro escolhe. / Only the first rider chooses." end
+	if self.rules.PortalMode(self.profileOf(player), self:Destination(portalId)) ~= "normal" then
+		return false, "Só os portais da campanha têm o modo rápido. / Only campaign portals have the quick mode."
+	end
+	car.quick = on == true or nil
+	if car.quick then car.difficulty = "normal" end
 	car.remaining = math.max(car.remaining, JOIN_GRACE)
 	self:_announce(car)
 	return true

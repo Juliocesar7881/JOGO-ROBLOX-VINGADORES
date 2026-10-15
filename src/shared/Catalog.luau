@@ -551,6 +551,12 @@ Catalog.Modes = {
 		description = text("Ondas sem fim. Sobreviva o máximo que puder e suba no placar da temporada!", "Endless waves. Survive as long as you can and climb the season leaderboard!") },
 	cards = { id = "cards", name = text("Roguelike de Cartas", "Card Roguelike"), waves = 50, hpMultiplier = 1.6, rewardMultiplier = 1.25, cards = true,
 		description = text("Depois das ondas 5, 10 … 45 escolha 1 de 3 cartas que mudam seu jogo. 50 ondas.", "After waves 5, 10 … 45 pick 1 of 3 cards that change your run. 50 waves.") },
+	-- The short session: the first 20 waves of a campaign map, ending with the
+	-- map's own boss. It has no portal: the first rider picks it on the queue
+	-- card of any campaign portal, beside the difficulties. Pays per wave like
+	-- the campaign and never counts as the map's campaign victory.
+	quick = { id = "quick", name = text("Rápido", "Quick"), waves = 20, hpMultiplier = 1.2, rewardMultiplier = 1, campaign = true, color = { 72, 196, 232 },
+		description = text("As 20 primeiras ondas da campanha deste mapa, com o chefe dele no fim: uns 9 minutos em 2x.", "The first 20 waves of this map's campaign, with its boss at the end: about 9 minutes at 2x.") },
 }
 
 --==============================================================================

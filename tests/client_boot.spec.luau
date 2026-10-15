@@ -603,6 +603,11 @@ local function session(screen)
 	check(named(gui,"LoadingSplash")~=nil and localPlayer:GetAttribute("DoomReady")~=true,tag..": pending profile keeps a truthful cover and does not signal readiness")
 	frames(2.1,1)
 	check(requestCount("Sync")==2 and named(gui,"LoadingSplash")~=nil,tag..": a blocked first Sync permits an independent bounded retry")
+	-- A profile that could not be loaded: the cover offers a way out.
+	stateRemote.OnClientEvent:Fire({phase="Lobby",players={},profileFailed=true}); flush()
+	check(named(gui,"RetryProfile")~=nil and named(gui,"LoadingSplash")~=nil,tag..": a profile that could not be loaded offers Try again on the cover")
+	clickNamed("RetryProfile")
+	check(asked("RetryProfile"),tag..": Try again asks the server to load the profile again")
 	profilePending=false
 	-- Cover both delivery orders: a later Sync reply and the pushed State.
 	if screen.w>1000 then frames(2.1,1) else push(current) end
@@ -1824,7 +1829,7 @@ local function session(screen)
 		do
 			local cardRect = screenRect(card, gui, SCREEN)
 			local rects = {}
-			for _, name in ipairs({ "ElevatorFriends", "ElevatorInvite", "ElevatorStartNow", "ElevatorLeave", "Difficulty_normal", "Difficulty_hard", "Difficulty_nightmare" }) do
+			for _, name in ipairs({ "ElevatorFriends", "ElevatorInvite", "ElevatorStartNow", "ElevatorLeave", "Difficulty_normal", "Difficulty_hard", "Difficulty_nightmare", "Difficulty_quick" }) do
 				local item = named(card, name)
 				if item then rects[name] = screenRect(item, gui, SCREEN) end
 			end
@@ -1844,7 +1849,9 @@ local function session(screen)
 		local tip = named(gui, "FirstVisitHint")
 		check(tip == nil or tip.Visible == false, tag .. ": the tip strip steps aside while the queue card is up")
 		check(named(gui,"PortalChooseMap")==nil,tag..": fixed portal has no map switch")
-		for _, id in ipairs(Catalog.DifficultyOrder) do
+		local chipIds = table.clone(Catalog.DifficultyOrder)
+		table.insert(chipIds, "quick")
+		for _, id in ipairs(chipIds) do
 			local chip = named(card, "Difficulty_" .. id)
 			local chipRect = chip and screenRect(chip, gui, SCREEN)
 			local cardRect = screenRect(card, gui, SCREEN)
@@ -1854,6 +1861,8 @@ local function session(screen)
 		check(named(named(card, "Difficulty_nightmare"), "DifficultyLock") ~= nil and named(named(card, "Difficulty_normal"), "DifficultyLock") == nil, tag .. ": a difficulty not opened yet shows a drawn lock, an open one does not")
 		clickNamed("Difficulty_hard")
 		check(asked("SetDifficulty"), tag .. ": the host's pick is sent to the server as an intent")
+		clickNamed("Difficulty_quick")
+		check(asked("ElevatorQuick"), tag .. ": the quick session is the host's pick on the same row")
 		fx({ kind = "OpenPanel", panel = "quests" })
 		check(main:FindFirstChild("ContextPanel") ~= nil, tag .. ": a panel opened while riding stops above the card")
 		local panelRect = screenRect(named(gui, "ContextPanel"), gui, SCREEN)
@@ -3316,6 +3325,9 @@ local function session(screen)
 		local again = named(gui, "ResultPlayAgain")
 		local againRect = again and screenRect(again, gui, SCREEN)
 		check(againRect ~= nil and againRect.y + againRect.h <= view().h and againRect.h >= 44, tag .. ": PLAY AGAIN sits beside the return button without scrolling")
+		local invite = named(gui, "ResultInvite")
+		local inviteRect = invite and screenRect(invite, gui, SCREEN)
+		check(inviteRect ~= nil and againRect ~= nil and inviteRect.x >= againRect.x + againRect.w and inviteRect.y + inviteRect.h <= view().h, tag .. ": a friend invite sits beside PLAY AGAIN on the results screen")
 		click("▶ Jogar de novo")
 		check(asked("PlayAgain"), tag .. ": the results screen offers to play the same map again")
 		click("Lobby")

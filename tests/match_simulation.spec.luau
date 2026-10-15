@@ -568,6 +568,22 @@ if cardRun then
 	print(string.format("  %d waves, %d cartas, %.1f min, victory=%s", cardRun.results.waves, cardRun.picks, cardRun.seconds / 60, tostring(cardRun.results.victory)))
 end
 
+print("--- quick session, Manhattan ---")
+local quickRun = simulate({ mapId = "manhattan", modeId = "quick" })
+check(quickRun ~= nil, "the quick session runs")
+if quickRun then
+	check(quickRun.match.phase == "Results", "the quick session terminates")
+	check(quickRun.results.waves <= Catalog.Modes.quick.waves, "the quick session never runs past its 20 waves, got " .. tostring(quickRun.results.waves))
+	local final
+	for id, reward in pairs(quickRun.profiles.awards) do if string.find(id, ":final", 1, true) then final = reward end end
+	check(final ~= nil and final.modeId == "quick", "the quick session's award names its mode, so its win is never the campaign's")
+	if quickRun.results.victory then
+		check(quickRun.results.waves == Catalog.Modes.quick.waves and quickRun.bossSeen, "a quick win clears its 20 waves and meets the map's boss")
+	end
+	check(quickRun.seconds <= 20 * 60, "the quick session fits a short break, got " .. string.format("%.1f min", quickRun.seconds / 60))
+	print(string.format("  %d waves, %.1f min, victory=%s, gold %d", quickRun.results.waves, quickRun.seconds / 60, tostring(quickRun.results.victory), quickRun.results.gold))
+end
+
 print("--- competitive, wakanda ---")
 local hardRun = simulate({ mapId = "wakanda", modeId = "ranked", profile = { campaign = { manhattan = { normal = true } } } })
 if hardRun then

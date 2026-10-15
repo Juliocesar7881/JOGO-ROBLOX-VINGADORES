@@ -75,7 +75,7 @@ function Tutorial:_firstErrands(state, root)
 	local T, profile = ctx.T, state.profile
 	local stats = profile.stats
 	if type(stats) ~= "table" or not root then return nil end
-	if state.elevator and state.elevator.modeId == "normal" then
+	if state.elevator and (state.elevator.modeId == "normal" or state.elevator.modeId == "quick") then
 		return { id = "campaign", number = 2, total = 2, text = T("Boa! A partida começa em instantes.", "Nice! The match starts in a moment.") }
 	end
 	local cost = ctx.Catalog.Chests.rare.cost

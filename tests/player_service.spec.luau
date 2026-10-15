@@ -159,6 +159,9 @@ check(service:Award(p1, "tutorial:finish", { tutorial = true, finished = true, v
 check(service:Get(p1).gold == 1000 and service:Get(p1).xp == 100, "Duplicate award is inert")
 check(service:Award(p1, "tutorial:again", { tutorial = true, finished = true, victory = true }), "Replay tutorial award")
 check(service:Get(p1).gold == 1000, "Tutorial first-clear bonus awarded once")
+-- A quick-session win is never the map's campaign victory (nor its first-clear bonus).
+check(service:Award(p1, "quick:final", { finished = true, victory = true, modeId = "quick", mapId = "gamma", gold = 0, xp = 0 }), "a quick-session award is accepted")
+check(not ((service:Get(p1).campaign or {}).gamma or {}).normal and service:Get(p1).gold == 1000, "a quick-session win never records the map's campaign victory")
 
 -- Heroes come from chests, never from a plain gold purchase.
 local handled, boughtDirect = service:Handle(p1, "BuyHero", { heroId = "spiderman" }, true)
@@ -1014,6 +1017,18 @@ do
 		service:Load(away)
 		local awayPaid = service:InviteBonus(away, 99999)
 		check(awayPaid and awayPaid.friend == nil, "A friend in another server: the newcomer is still welcomed")
+		-- ...and the friend's thanks wait under their own key, paid where they are next, once.
+		check(type(stores.Tests.values.invites_99999) == "table" and stores.Tests.values.invites_99999["44"] ~= nil, "The thanks of a friend in another server are kept for them")
+		local inviter = player(99999)
+		service:Load(inviter)
+		local inviterBefore = service:Get(inviter).gold
+		local claimed = service:ClaimInviteThanks(inviter)
+		check(claimed and claimed.gold == invite.inviterGold and service:Get(inviter).gold == inviterBefore + invite.inviterGold, "The friend is thanked in the server they are in")
+		check(next(stores.Tests.values.invites_99999) == nil and service:ClaimInviteThanks(inviter) == nil and service:Get(inviter).gold == inviterBefore + invite.inviterGold, "Owed thanks pay once")
+		-- A claim cut short before the owed list was cleared never pays twice.
+		stores.Tests.values.invites_99999 = { ["44"] = os.time() }
+		check(service:ClaimInviteThanks(inviter) == nil and service:Get(inviter).gold == inviterBefore + invite.inviterGold, "A newcomer already paid for is not paid again")
+		check(next(stores.Tests.values.invites_99999) == nil and service:Get(inviter).invitePaid == nil, "The settled entry is cleared, and who was paid for never replicates")
 		-- The friend's thanks stop at the daily cap; the newcomers are still welcomed.
 		local thanked = 1
 		for index = 1, invite.inviterDailyCap + 1 do

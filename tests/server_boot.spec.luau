@@ -181,7 +181,7 @@ end) then error("server boot failed", 0) end
 
 local remotes = services.ReplicatedStorage:FindFirstChild("DoomRemotes")
 check(remotes ~= nil and remotes:FindFirstChild("Request") ~= nil, "the bootstrap creates the remote contract")
-check(workspace:FindFirstChild("DoomLobby") ~= nil, "the bootstrap builds the lobby")
+check(workspace:FindFirstChild("DoomLobby") ~= nil or workspace:FindFirstChild("DoomArrival") ~= nil, "the bootstrap builds the lobby (a battle server: its arrival deck)")
 local router = remotes.Request.OnServerInvoke
 check(type(router) == "function", "Request is answered by a server function")
 

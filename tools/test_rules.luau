@@ -313,6 +313,22 @@ do
 	for day = 20741, 20760 do if Rules.DailyMarket(day).offers[1].heroId ~= today.offers[1].heroId then differs = true end end
 	check(differs, "the market changes from day to day")
 	check(Rules.MarketPrice("nobody") == nil, "an unknown hero has no market price")
+	-- The quick session: the first 20 waves of any campaign map, never a campaign victory.
+	check(Rules.WaveCount("quick", "latveria") == 20 and Rules.WaveCount("quick", "manhattan") == 20, "the quick session is 20 waves on every map")
+	check(Rules.ModeUnlocked({}, "quick"), "the quick session is open to everyone")
+	for _, id in ipairs(Catalog.DestinationOrder) do
+		local def = Catalog.Destinations[id]
+		local quickOk = Rules.CanStart({}, def.mapId, "quick")
+		if def.modeId == "normal" then check(quickOk, "the quick session plays on campaign map " .. def.mapId) end
+	end
+	check(not Rules.CanStart({}, "nowhere", "quick"), "the quick session needs a real map")
+	check(Rules.IsFinalWave("quick", 20, "gamma") and Rules.BossId(20, "gamma", "quick") == Catalog.Maps.gamma.bossId, "the quick session ends with the map's own boss")
+	check(Rules.RunGold("quick", "manhattan", 20, true) == 800 and Rules.RunGold("normal", "manhattan", 40, true) == 1600, "a quick win pays the campaign's rate for its 20 waves")
+	check(not Rules.CanUseDifficulty({}, "manhattan", "quick", "hard") and Rules.CanUseDifficulty({}, "manhattan", "quick", "normal"), "the quick session plays at Normal only")
+	local quickSpecs = Waves.Generate("manhattan", "quick", 20, 1, 7)
+	local quickBoss = false
+	for _, spec in ipairs(quickSpecs) do if spec.enemyId == Catalog.Maps.manhattan.bossId then quickBoss = true end end
+	check(quickBoss and #Waves.Generate("manhattan", "quick", 21, 1, 7) == 0, "quick waves end at 20 with the map's boss")
 	-- Badges follow the saved profile.
 	local function has(list, key) return table.find(list, key) ~= nil end
 	check(#Rules.EarnedBadges({}) == 0 and #Rules.EarnedBadges(nil) == 0, "a fresh or missing profile earns no badge")
