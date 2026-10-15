@@ -12,6 +12,9 @@ test-results/
 # Authored production HUD artwork, including deterministic Roblox deliveries.
 !assets/ui/illustrated/*.png
 !assets/ui/illustrated/roblox/*.png
+# Authored game-page artwork and preserved generator originals.
+!assets/store/promo-2026-10-15/*.png
+!assets/store/promo-2026-10-15/originais/*.png
 # Editor and OS noise.
 .vscode/
 deployment/local.json

@@ -78,7 +78,9 @@
     "mediaId": 8568662179705711,
     "approved": false,
     "firstInPublicMediaList": true,
-    "legalDeclarationAccepted": false
+    "legalDeclarationAccepted": false,
+    "lastModerationCheckUTC": "2026-10-15T23:31:02.394459+00:00",
+    "lastModerationCheckBrasilia": "2026-10-15T20:31:02.394459-03:00"
   },
   "audienceReadOnly": {
     "availableAges": "16+",
@@ -89,5 +91,7 @@
     "publishingFee": "Paid",
     "settingsChanged": false
   },
-  "recommendationServiceReadOnly": "Page configures recommendations inside experience, not a listing eligibility status. No settings changed."
+  "recommendationServiceReadOnly": "Page configures recommendations inside experience, not a listing eligibility status. No settings changed.",
+  "lastCheckedAtUTC": "2026-10-15T23:31:02.394459+00:00",
+  "lastCheckedAtBrasilia": "2026-10-15T20:31:02.394459-03:00"
 }

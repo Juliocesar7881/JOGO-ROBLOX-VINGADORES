@@ -92,7 +92,8 @@ editada ou sincronizada para esta entrega de página.
 Vídeo enviado com **Video uploaded successfully**, um único envio e dois
 uploads restantes da quota mensal. Registrado como primeiro item da galeria
 (`GamePreviewVideo`, asset `136040769273965`, media
-`8568662179705711`). No último estado observado, **Video under review** e
+`8568662179705711`). Na consulta final de **15/10 às 20:31:02 de Brasília**,
+**Video under review** e
 `approved=false`: o envio está concluído, a aprovação depende da moderação
 do Roblox. Não reenviar enquanto estiver em análise.
 
@@ -112,5 +113,8 @@ houver tráfego suficiente, sem trocar o conjunto a cada dia.
 asserções; layout: 6.937 checagens; mundo: 8.593 checagens. Compilação,
 boot de cliente/servidor, simulação e geração dos places incluídos.
 Log: `test-results/marketing-20261015/full-suite.txt`.
+Entrega principal no `main`: `d74ae82`. O complemento inclui o ícone e os
+cinco originais PNG no git, com exceção restrita no `.gitignore` para que as
+regras de capturas locais não excluam os assets de produção.
 Alterações de combate feitas simultaneamente por outra sessão foram
 preservadas e não integram o escopo desta entrega.
