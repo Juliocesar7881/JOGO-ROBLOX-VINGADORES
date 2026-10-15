@@ -23,22 +23,31 @@ O modo de dois lugares separados abaixo continua disponível: preencher
 `LobbyPlaceId` e `MatchPlaceId` com lugares diferentes tem prioridade sobre o
 `SinglePlace`.
 
-## Música de batalha por mapa (Creative Commons BY)
+## Música do lobby e de batalha por mapa (Creative Commons BY)
 
-Cada mapa tem a sua faixa. As seis são Creative Commons BY: uso comercial
-liberado, desde que o autor seja creditado. O jogo mostra os créditos em
-Opções para cada faixa que estiver em uso (`Catalog.MusicCredits`).
+O lobby e cada mapa têm a sua faixa. Todas são Creative Commons BY: uso
+comercial liberado, desde que o autor seja creditado. O jogo mostra os créditos
+em Opções para cada faixa que estiver em uso (`Catalog.MusicCredits`).
 
-| Mapa | Faixa | Autor | Licença |
+| Onde | Faixa | Autor | Licença |
 |---|---|---|---|
-| Ruas de Manhattan | Chase | Alexander Nakarada (CreatorChords) | CC BY 4.0 |
+| Lobby | Electrodoodle | Kevin MacLeod (incompetech.com) | CC BY 4.0 |
+| Ruas de Manhattan | Undaunted | Kevin MacLeod (incompetech.com) | CC BY 4.0 |
 | Complexo Gama | Checkpoint | Hayden Folker | CC BY 3.0 |
 | Fundição Sombria | Pursuit | Hayden Folker | CC BY 3.0 |
-| Selva de Cristal | Pirates of the Quarantine | Alexander Nakarada (CreatorChords) | CC BY 4.0 |
+| Selva de Cristal | Firebrand | Kevin MacLeod (incompetech.com) | CC BY 4.0 |
 | Cidadela do Tirano | Storm | Keys of Moon | CC BY 4.0 |
-| Ponte Celeste | Valhalla | Alexander Nakarada (CreatorChords) | CC BY 4.0 |
+| Ponte Celeste | Five Armies | Kevin MacLeod (incompetech.com) | CC BY 4.0 |
 
-1. `python tools/prepare_music.py` gera `assets/audio/licensed_music/battle_<mapa>.ogg`
+As primeiras faixas de Manhattan, Selva de Cristal e Ponte Celeste (Chase,
+Pirates of the Quarantine e Valhalla, de Alexander Nakarada) foram
+reprovadas pela moderação de áudio do Roblox ("Your audio was moderated",
+visto em 15/10); as do Kevin MacLeod passaram. Depois de enviar uma faixa,
+confira na lista do Creator Hub que ela ganhou o ícone de som: ícone em
+branco com o aviso de moderação na página da faixa é reprovação.
+
+1. `python tools/prepare_music.py` gera `assets/audio/licensed_music/battle_<mapa>.ogg` e `lobby.ogg`
+   (`--only lobby` ou `--only battleManhattan,...` prepara só essas)
    (fora do git), já com o silêncio das pontas cortado, volume igualado em
    -16 LUFS e fade para o loop. Os créditos e o hash de cada arquivo ficam em
    `assets/audio/music_credits.json`.

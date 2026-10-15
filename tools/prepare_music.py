@@ -1,17 +1,19 @@
-"""Prepare the licensed battle music: one track per map, ready to upload to Roblox.
+"""Prepare the licensed music, ready to upload to Roblox: one battle track per map and the lobby's.
 
-    python tools/prepare_music.py                       # sources in "D:/Downloads google"
-    python tools/prepare_music.py --source <folder>     # any folder holding the MP3s
+    python tools/prepare_music.py                               # sources in "D:/Downloads google"
+    python tools/prepare_music.py --source <folder>             # any folder holding the MP3s
+    python tools/prepare_music.py --source <folder> --only lobby  # just these keys; the others keep their credits
 
 Every track is Creative Commons BY (commercial use allowed, the author must be
 credited; the game credits them in Options > Credits, Catalog.MusicCredits).
-For each map this trims silence at both ends, normalises to -16 LUFS with a
+For each track this trims silence at both ends, normalises to -16 LUFS with a
 -1.5 dBTP ceiling (two-pass loudnorm, linear), adds a short fade in and out so
-the loop is seamless, and writes assets/audio/licensed_music/battle_<map>.ogg
+the loop is seamless, and writes assets/audio/licensed_music/<file>.ogg
 (gitignored: third-party files stay out of the repository). The credits and
 the hash of every prepared file go to assets/audio/music_credits.json, which
 is versioned. Upload the OGGs as Audio in the Creator Hub (the owner confirms
-the rights there), then put each ID in Config.Audio.battle<Map>.
+the rights there), then put each ID in Config.Audio under its key
+(battle<Map>, lobby).
 Needs ffmpeg on PATH.
 """
 from __future__ import annotations
@@ -31,20 +33,32 @@ CREDITS = ROOT / "assets" / "audio" / "music_credits.json"
 TARGET_LUFS, CEILING_DB = -16.0, -1.5
 
 # Map -> the source file (a unique piece of its name) and its credit.
+# Manhattan, Wakanda and Asgard first had Alexander Nakarada's Chase, Pirates of
+# the Quarantine and Valhalla; Roblox moderation rejected those three uploads
+# (seen 15/10), so they play Kevin MacLeod tracks from incompetech.com instead.
 MUSIC = {
-    "manhattan": {"match": "Chase - Música de Ação", "title": "Chase", "author": "Alexander Nakarada (CreatorChords)",
-                  "license": "CC BY 4.0", "source": "https://creatorchords.com/music/chase/"},
+    "manhattan": {"match": "Undaunted", "title": "Undaunted", "author": "Kevin MacLeod (incompetech.com)",
+                  "license": "CC BY 4.0", "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1400025"},
     "gamma": {"match": "Checkpoint", "title": "Checkpoint", "author": "Hayden Folker",
               "license": "CC BY 3.0", "source": "https://www.free-stock-music.com/hayden-folker-checkpoint.html"},
     "hydra": {"match": "Pursuit", "title": "Pursuit", "author": "Hayden Folker",
               "license": "CC BY 3.0", "source": "https://www.free-stock-music.com/hayden-folker-pursuit.html"},
-    "wakanda": {"match": "Pirates of the Quarantine", "title": "Pirates of the Quarantine", "author": "Alexander Nakarada (CreatorChords)",
-                "license": "CC BY 4.0", "source": "https://alexandernakarada.bandcamp.com/track/pirates-of-the-quarantine"},
+    "wakanda": {"match": "Firebrand", "title": "Firebrand", "author": "Kevin MacLeod (incompetech.com)",
+                "license": "CC BY 4.0", "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100830"},
     "latveria": {"match": "Storm - Música Dramática", "title": "Storm", "author": "Keys of Moon",
                  "license": "CC BY 4.0", "source": "https://www.free-stock-music.com/keys-of-moon-storm.html"},
-    "asgard": {"match": "Valhalla", "title": "Valhalla", "author": "Alexander Nakarada (CreatorChords)",
-               "license": "CC BY 4.0", "source": "https://alexandernakarada.bandcamp.com/track/valhalla-2"},
+    "asgard": {"match": "Five Armies", "title": "Five Armies", "author": "Kevin MacLeod (incompetech.com)",
+               "license": "CC BY 4.0", "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100875"},
 }
+
+# Config.Audio key -> what to prepare: every map's battle track, then the lobby's
+# (owner, 15/10: an electronic track of the kind lobbies play, in place of the
+# synthesized one). The author asks for the credit on a Credits screen in the
+# settings, which Options is (incompetech.com FAQ).
+TRACKS = {"battle" + mapId[0].upper() + mapId[1:]: {**info, "map": mapId, "file": f"battle_{mapId}.ogg"} for mapId, info in MUSIC.items()}
+TRACKS["lobby"] = {"match": "Electrodoodle", "title": "Electrodoodle", "author": "Kevin MacLeod (incompetech.com)",
+                   "license": "CC BY 4.0", "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200079",
+                   "file": "lobby.ogg"}
 
 
 def run(args: list[str]) -> str:
@@ -92,24 +106,31 @@ def prepare(source: Path, target: Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--source", default="D:/Downloads google", help="folder holding the source MP3s")
+    parser.add_argument("--only", help="comma-separated Config.Audio keys to prepare (e.g. lobby); the others keep their credits")
     args = parser.parse_args()
+    keys = [key.strip() for key in args.only.split(",")] if args.only else list(TRACKS)
+    unknown = [key for key in keys if key not in TRACKS]
+    if unknown:
+        print(f"unknown keys {unknown}; known: {', '.join(TRACKS)}", file=sys.stderr)
+        return 1
     folder = Path(args.source)
     files = sorted(folder.glob("*.mp3"))
     OUT.mkdir(parents=True, exist_ok=True)
-    credits = {}
-    for mapId, info in MUSIC.items():
+    credits = json.loads(CREDITS.read_text(encoding="utf-8")) if CREDITS.exists() else {}
+    for key in keys:
+        info = TRACKS[key]
         found = [path for path in files if info["match"] in path.name]
         if len(found) != 1:
-            print(f"{mapId}: expected one source matching {info['match']!r}, found {len(found)}", file=sys.stderr)
+            print(f"{key}: expected one source matching {info['match']!r}, found {len(found)}", file=sys.stderr)
             return 1
-        key = "battle" + mapId[0].upper() + mapId[1:]
-        target = OUT / f"battle_{mapId}.ogg"
+        target = OUT / info["file"]
         facts = prepare(found[0], target)
-        credits[key] = {"map": mapId, "title": info["title"], "author": info["author"], "license": info["license"],
-                        "source": info["source"], "file": f"licensed_music/{target.name}", **facts}
+        credits[key] = {**({"map": info["map"]} if "map" in info else {}), "title": info["title"], "author": info["author"],
+                        "license": info["license"], "source": info["source"], "file": f"licensed_music/{target.name}", **facts}
         print(f"{key}: {info['title']} - {facts['seconds']} s, {facts['lufs']} LUFS, peak {facts['truePeak']} dBTP")
-    CREDITS.write_text(json.dumps(credits, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"{len(credits)} tracks in {OUT}; credits in {CREDITS.relative_to(ROOT)}")
+    ordered = {key: credits[key] for key in TRACKS if key in credits}
+    CREDITS.write_text(json.dumps(ordered, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"{len(keys)} track(s) prepared in {OUT}; credits in {CREDITS.relative_to(ROOT)}")
     return 0
 
 

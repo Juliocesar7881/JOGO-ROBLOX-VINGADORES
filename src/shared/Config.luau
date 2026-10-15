@@ -97,15 +97,21 @@ return {
 	-- uploaded 2026-10-02 by LoopsDev7881 through Studio's Asset Manager. Sources and
 	-- IDs: assets/audio/uploads.json. A zero falls back to the built-in sounds.
 	Audio = {
-		lobby = 90120138259155, battle = 138426860300125, collect = 89386392576030, victory = 85206381307425, defeat = 89940652537869,
+		battle = 138426860300125, collect = 89386392576030, victory = 85206381307425, defeat = 89940652537869,
 		breach = 88806730855390, place = 110695275250497, upgrade = 123473912601268, levelUp = 87307736942781, ability = 106314680284413,
 		boss = 78255398419469, wave = 75814374915023, chest = 121229565044752,
+		-- The lobby's music since 15/10 (owner: an electronic track of the kind
+		-- lobbies play): "Electrodoodle" by Kevin MacLeod, CC BY 4.0, prepared by
+		-- tools/prepare_music.py and credited in Options like the battle tracks.
+		lobby = 96735553222959,
 		-- One battle track per map: licensed Creative Commons BY music prepared by
 		-- tools/prepare_music.py (credits: assets/audio/music_credits.json and
 		-- Catalog.MusicCredits, shown in Options). 0 = that map plays `battle`.
 		-- Uploaded to the owner's account on 15/10 (Creator Hub, moderation applies).
-		battleManhattan = 97545750349415, battleGamma = 131099793893363, battleHydra = 123106203425536,
-		battleWakanda = 101674039226442, battleLatveria = 94715672061348, battleAsgard = 122417071033216,
+		-- Manhattan, Wakanda and Asgard were uploaded again the same day with Kevin
+		-- MacLeod tracks: moderation rejected their first ones.
+		battleManhattan = 126920682041461, battleGamma = 131099793893363, battleHydra = 123106203425536,
+		battleWakanda = 114624051816618, battleLatveria = 94715672061348, battleAsgard = 91724157195350,
 		-- One ambience loop per map, and a short cue per weapon family.
 		ambManhattan = 132352626399475, ambGamma = 101885347333293, ambHydra = 134964091158105,
 		ambWakanda = 109955783634978, ambAsgard = 107103621057466, ambLatveria = 131878071679857,

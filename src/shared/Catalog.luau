@@ -542,16 +542,18 @@ Catalog.Difficulties = {
 		description = text("Inimigos com mais que o dobro de vida e mais rápidos. Ouro e XP em dobro.", "Enemies with over twice the health, and faster. Double Gold and XP.") },
 }
 
--- Each map's battle music: Creative Commons BY tracks (tools/prepare_music.py,
--- assets/audio/music_credits.json). The licence asks for this credit, which
--- Options shows for every track the place really plays (Config.Audio[key] > 0).
+-- The lobby's music and each map's battle music: Creative Commons BY tracks
+-- (tools/prepare_music.py, assets/audio/music_credits.json). The licence asks
+-- for this credit, which Options shows for every track the place really plays
+-- (Config.Audio[key] > 0).
 Catalog.MusicCredits = {
-	{ key = "battleManhattan", mapId = "manhattan", title = "Chase", author = "Alexander Nakarada (CreatorChords)", license = "CC BY 4.0" },
+	{ key = "lobby", title = "Electrodoodle", author = "Kevin MacLeod (incompetech.com)", license = "CC BY 4.0" },
+	{ key = "battleManhattan", mapId = "manhattan", title = "Undaunted", author = "Kevin MacLeod (incompetech.com)", license = "CC BY 4.0" },
 	{ key = "battleGamma", mapId = "gamma", title = "Checkpoint", author = "Hayden Folker", license = "CC BY 3.0" },
 	{ key = "battleHydra", mapId = "hydra", title = "Pursuit", author = "Hayden Folker", license = "CC BY 3.0" },
-	{ key = "battleWakanda", mapId = "wakanda", title = "Pirates of the Quarantine", author = "Alexander Nakarada (CreatorChords)", license = "CC BY 4.0" },
+	{ key = "battleWakanda", mapId = "wakanda", title = "Firebrand", author = "Kevin MacLeod (incompetech.com)", license = "CC BY 4.0" },
 	{ key = "battleLatveria", mapId = "latveria", title = "Storm", author = "Keys of Moon", license = "CC BY 4.0" },
-	{ key = "battleAsgard", mapId = "asgard", title = "Valhalla", author = "Alexander Nakarada (CreatorChords)", license = "CC BY 4.0" },
+	{ key = "battleAsgard", mapId = "asgard", title = "Five Armies", author = "Kevin MacLeod (incompetech.com)", license = "CC BY 4.0" },
 }
 
 Catalog.ModeOrder = { "tutorial", "normal", "ranked", "cards" }

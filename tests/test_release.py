@@ -40,7 +40,13 @@ class ReleaseTests(unittest.TestCase):
         found = {key: int(value) for key, value in re.findall(r'(\w+) = (\d+)', block)}
         wavs = sorted(path.stem for path in (ROOT / 'assets/audio').glob('*.wav'))
         self.assertEqual(sorted(uploads), wavs)
+        # A licensed track can take a synthesized one's place (the lobby since
+        # 15/10, music_credits.json): its own upload is then the one configured.
+        music = json.loads((ROOT / 'assets/audio/music_credits.json').read_text(encoding='utf-8'))
         for key in wavs:
+            if key in music:
+                self.assertTrue(10**13 < found.get(key, 0) < 10**16 and found[key] != uploads[key], key + ' plays its licensed track')
+                continue
             self.assertEqual(found.get(key), uploads[key], key)
         self.assertEqual(len(set(uploads.values())), len(uploads))
         for value in uploads.values():

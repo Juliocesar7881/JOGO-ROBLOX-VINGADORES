@@ -1,15 +1,15 @@
 {
   "battleManhattan": {
     "map": "manhattan",
-    "title": "Chase",
-    "author": "Alexander Nakarada (CreatorChords)",
+    "title": "Undaunted",
+    "author": "Kevin MacLeod (incompetech.com)",
     "license": "CC BY 4.0",
-    "source": "https://creatorchords.com/music/chase/",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1400025",
     "file": "licensed_music/battle_manhattan.ogg",
-    "seconds": 123.95,
-    "lufs": -16.01,
-    "truePeak": -7.37,
-    "sha256": "b31b881c3f90c773d8868f91503b9f3e03c90fa7694de6f6a18fc89a94f7acdc"
+    "seconds": 211.1,
+    "lufs": -16.02,
+    "truePeak": -1.02,
+    "sha256": "48730d8d40e6ff9f14415936d194b603d1de1878e75bf35b660b2212fd62dfb4"
   },
   "battleGamma": {
     "map": "gamma",
@@ -37,15 +37,15 @@
   },
   "battleWakanda": {
     "map": "wakanda",
-    "title": "Pirates of the Quarantine",
-    "author": "Alexander Nakarada (CreatorChords)",
+    "title": "Firebrand",
+    "author": "Kevin MacLeod (incompetech.com)",
     "license": "CC BY 4.0",
-    "source": "https://alexandernakarada.bandcamp.com/track/pirates-of-the-quarantine",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100830",
     "file": "licensed_music/battle_wakanda.ogg",
-    "seconds": 136.8,
-    "lufs": -16.15,
-    "truePeak": -1.23,
-    "sha256": "747302e7379b0a9fe0aafceb0d52605daef566d8b187659b0dd70296df8c7fb8"
+    "seconds": 353.97,
+    "lufs": -16.0,
+    "truePeak": -1.72,
+    "sha256": "73ce2c5043ea0f897bd897c5f4d6ed8bb878c60867ede800b73e2ca7c73b0a29"
   },
   "battleLatveria": {
     "map": "latveria",
@@ -61,14 +61,25 @@
   },
   "battleAsgard": {
     "map": "asgard",
-    "title": "Valhalla",
-    "author": "Alexander Nakarada (CreatorChords)",
+    "title": "Five Armies",
+    "author": "Kevin MacLeod (incompetech.com)",
     "license": "CC BY 4.0",
-    "source": "https://alexandernakarada.bandcamp.com/track/valhalla-2",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100875",
     "file": "licensed_music/battle_asgard.ogg",
-    "seconds": 338.64,
-    "lufs": -16.1,
-    "truePeak": -3.4,
-    "sha256": "f51ca8ec466a30aaa12795bf6d1196ed5aba064d0ccac1a358e6b60669af4bd7"
+    "seconds": 152.7,
+    "lufs": -15.96,
+    "truePeak": -1.27,
+    "sha256": "057f4e4f798f430ec2c220a67a2def2cfca86f6fc6dd2fc2d36506c026949a55"
+  },
+  "lobby": {
+    "title": "Electrodoodle",
+    "author": "Kevin MacLeod (incompetech.com)",
+    "license": "CC BY 4.0",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200079",
+    "file": "licensed_music/lobby.ogg",
+    "seconds": 165.69,
+    "lufs": -16.08,
+    "truePeak": -5.59,
+    "sha256": "47395ae7ab8e32a34850c92e69fa0eb9f5b30281400894ab911ff3b7975561ec"
   }
 }
