@@ -356,20 +356,36 @@ do
 			check(figure:FindFirstChild(id == "ironman" and "ArcReactorCore" or "Shield", true) ~= nil, id .. ": original signature equipment is present")
 			local hips = figure.LowerTorso:FindFirstChild("BodyContour")
 			check(hips.MeshType == Enum.MeshType.Brick and hips.Scale == Vector3.one, id .. ": waist has a continuous silhouette")
-			if id == "captain" then
-				local plate = figure:FindFirstChild("PectoralPlate")
-				local front = plate.Fit.C0.Position.Z - plate.Size.Z / 2
-				local marks = 0
-				for _, piece in ipairs(figure:GetChildren()) do
-					if piece.Name == "Chevron" then
-						marks += 1
-						check(piece.Fit.C0.Position.Z + piece.Size.Z / 2 < front, "both chest insignia halves sit ahead of the armour")
-					end
+			-- The monument strikes a pose and still stands on its pedestal: the soles
+			-- touch the top plate (no floating, no feet sunk into the stone).
+			check(figure:GetAttribute("StatuePosed") == true, id .. ": the statue holds a heroic pose")
+			local top = statues:FindFirstChild("StatueTopField")
+			local lowest = math.huge
+			for _, piece in ipairs(figure:GetDescendants()) do
+				if piece:IsA("BasePart") and piece:GetAttribute("HeroVisual") and piece.Name ~= "HumanoidRootPart" then
+					lowest = math.min(lowest, piece.Position.Y - piece.Size.Y / 2)
 				end
-				check(marks == 2, "the captain keeps both chest insignia halves")
-				local badge, face = figure.ShieldStar, figure.ShieldFace
-				check(badge.Fit.C0.Position.X < face.Fit.C0.Position.X - face.Size.X / 2, "shield badge sits on the outside face")
-				check(math.abs(badge.Fit.C0.RightVector.X) > 0.99, "shield badge and shield share their cylinder axis")
+			end
+			local deck = top and (top.Position.Y + 0.01) or lowest
+			check(math.abs(lowest - deck) < 0.35, id .. ": the posed statue stands on its pedestal, soles at " .. string.format("%.2f", lowest) .. " vs deck " .. string.format("%.2f", deck))
+			if id == "captain" then
+				-- An open face under the helmet (skin, not a mask the colour of the suit).
+				local head, helmet = figure:FindFirstChild("Head"), figure:FindFirstChild("Helmet")
+				check(head and helmet and head.Color ~= helmet.Color and head.Color.R > head.Color.B, "the captain shows his face under the helmet")
+				-- His own winged badge sits ahead of the chest.
+				local chestBadge = figure:FindFirstChild("ChestBadge")
+				check(chestBadge and chestBadge.Fit.C0.Position.Z < -figure.UpperTorso.Size.Z / 2, "the chest badge sits on the front of the uniform")
+				-- The shield is turned toward the front, not a thin oval on the side,
+				-- and its badge sits ahead of its core along the shield's own axis.
+				local shield, core, badge = figure:FindFirstChild("Shield"), figure:FindFirstChild("ShieldCore"), figure:FindFirstChild("ShieldBadge")
+				check(shield and math.abs(shield.Fit.C0.RightVector.Z) > 0.6, "the shield faces the front")
+				if shield and core and badge then
+					local axis = shield.Fit.C0.RightVector
+					local ahead = (badge.Fit.C0.Position - core.Fit.C0.Position):Dot(axis)
+					local coreAhead = (core.Fit.C0.Position - shield.Fit.C0.Position):Dot(axis)
+					check(ahead * coreAhead > 0 and math.abs(ahead) > 0, "the shield badge sits on the outside face")
+				end
+				check(figure:FindFirstChild("Star", true) == nil, "no star on the captain: his badge is his own")
 			end
 		end
 	end

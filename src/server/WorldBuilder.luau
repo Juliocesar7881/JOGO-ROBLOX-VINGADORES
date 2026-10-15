@@ -498,7 +498,8 @@ local HERO_POSE = {
 -- body, colors, face and hair per hero; `extras` below adds what makes each
 -- one recognizable without its name: shield, hammer, web, bow, claws, cape.
 local HERO_LOOK = {
-	ironman = { colors = { chest = Color3.fromRGB(36, 110, 220), pelvis = HC.white, upperArm = Color3.fromRGB(36, 110, 220), lowerArm = HC.white, hand = Color3.fromRGB(36, 110, 220), upperLeg = Color3.fromRGB(36, 110, 220), lowerLeg = HC.white, foot = Color3.fromRGB(36, 110, 220), head = HC.white }, shiny = true },
+	-- The base suit matches the armour above it: the old blue showed through at the torso sides and shoulders.
+	ironman = { suit = Color3.fromRGB(180, 40, 40), colors = { chest = Color3.fromRGB(180, 40, 40), pelvis = Color3.fromRGB(180, 40, 40), upperArm = Color3.fromRGB(180, 40, 40), lowerArm = Color3.fromRGB(180, 40, 40), hand = Color3.fromRGB(255, 214, 64), upperLeg = Color3.fromRGB(180, 40, 40), lowerLeg = Color3.fromRGB(255, 214, 64), foot = Color3.fromRGB(180, 40, 40), head = Color3.fromRGB(180, 40, 40) }, shiny = true },
 	hawkeye = { colors = { chest = Color3.fromRGB(52, 128, 80), pelvis = HC.ink, upperArm = HC.skin, lowerArm = HC.ink, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.leather }, face = "fierce", hair = { Color3.fromRGB(122, 88, 54), "fringe" } },
 	falcon = { colors = { skin = HC.brown, chest = Color3.fromRGB(60, 150, 230), pelvis = HC.ink, upperArm = Color3.fromRGB(60, 150, 230), lowerArm = HC.ink, hand = HC.ink, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "smile", hair = { HC.ink } },
 	bucky = { colors = { chest = Color3.fromRGB(78, 96, 58), pelvis = HC.ink, upperArm = HC.silver, lowerArm = HC.silver, hand = HC.silver, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { Color3.fromRGB(58, 42, 34), "long" } },
@@ -509,7 +510,8 @@ local HERO_LOOK = {
 	rocket = { body = { scale = 0.62, head = 1.36, legLength = 0.78, armLength = 0.9, width = 1.02 }, colors = { skin = Color3.fromRGB(150, 104, 72), head = Color3.fromRGB(150, 104, 72), chest = Color3.fromRGB(64, 150, 96), pelvis = HC.ink, upperArm = Color3.fromRGB(64, 150, 96), lowerArm = Color3.fromRGB(150, 104, 72), hand = Color3.fromRGB(150, 104, 72), upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "grin" },
 	daredevil = { colors = { head = Color3.fromRGB(70, 82, 110), chest = Color3.fromRGB(70, 82, 110), pelvis = Color3.fromRGB(44, 52, 74), upperArm = Color3.fromRGB(70, 82, 110), lowerArm = Color3.fromRGB(70, 82, 110), hand = Color3.fromRGB(44, 52, 74), upperLeg = Color3.fromRGB(70, 82, 110), lowerLeg = Color3.fromRGB(70, 82, 110), foot = Color3.fromRGB(44, 52, 74) } },
 	shangchi = { colors = { chest = Color3.fromRGB(40, 150, 110), pelvis = HC.ink, upperArm = Color3.fromRGB(40, 150, 110), lowerArm = HC.skin, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { HC.ink, "fringe" } },
-	captain = { colors = { chest = Color3.fromRGB(22, 150, 140), pelvis = Color3.fromRGB(196, 140, 72), upperArm = Color3.fromRGB(22, 150, 140), lowerArm = HC.white, hand = Color3.fromRGB(196, 140, 72), upperLeg = Color3.fromRGB(22, 150, 140), lowerLeg = HC.white, foot = Color3.fromRGB(196, 140, 72), head = Color3.fromRGB(22, 150, 140) } },
+	-- Shield Captain: teal uniform, navy trousers, gloves and boots; a bigger head and hands read at the game camera.
+	captain = { suit = Color3.fromRGB(28, 50, 108), body = { width = 1.08, chest = 1.06, arm = 1.08, hand = 1.18, head = 1.1, leg = 1.04 }, colors = { skin = Color3.fromRGB(240, 192, 156), head = Color3.fromRGB(240, 192, 156), chest = Color3.fromRGB(24, 166, 156), pelvis = Color3.fromRGB(28, 50, 108), upperArm = Color3.fromRGB(24, 166, 156), lowerArm = Color3.fromRGB(28, 50, 108), hand = Color3.fromRGB(28, 50, 108), upperLeg = Color3.fromRGB(28, 50, 108), lowerLeg = Color3.fromRGB(28, 50, 108), foot = Color3.fromRGB(28, 50, 108) } },
 	panther = { colors = { head = Color3.fromRGB(58, 36, 96), chest = Color3.fromRGB(58, 36, 96), pelvis = Color3.fromRGB(44, 28, 74), upperArm = Color3.fromRGB(58, 36, 96), lowerArm = Color3.fromRGB(58, 36, 96), hand = Color3.fromRGB(44, 28, 74), upperLeg = Color3.fromRGB(58, 36, 96), lowerLeg = Color3.fromRGB(58, 36, 96), foot = Color3.fromRGB(44, 28, 74) }, shiny = true },
 	hulk = { body = { scale = 1.72, width = 1.1, depth = 1.12, chest = 1.14, head = 0.8, arm = 1.55, hand = 1.3, leg = 1.36, legLength = 0.88, torsoLength = 1.1, foot = 1.1 },
 		colors = { skin = Color3.fromRGB(152, 138, 120), head = Color3.fromRGB(152, 138, 120), chest = Color3.fromRGB(152, 138, 120), pelvis = Color3.fromRGB(86, 76, 66), upperArm = Color3.fromRGB(152, 138, 120), lowerArm = Color3.fromRGB(140, 126, 110), hand = Color3.fromRGB(152, 138, 120), upperLeg = Color3.fromRGB(86, 76, 66), lowerLeg = Color3.fromRGB(140, 126, 110), foot = Color3.fromRGB(120, 108, 96) }, face = "angry" },
@@ -627,48 +629,82 @@ HERO_EXTRAS.ironman = function(f)
 end
 HERO_EXTRAS.captain = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local teal, bronze, steel = Color3.fromRGB(22, 150, 140), Color3.fromRGB(196, 140, 72), Color3.fromRGB(180, 185, 190)
-	-- Sentinel Commander: tactical half-helm with bronze crest, layered chest
-	-- armor with chevron insignia, reinforced gauntlets and the iconic aegis
-	-- shield on the left forearm; silhouette reads as frontline leader.
-	-- Head: open-face helm with brow guard, cheek plates and chin strap.
-	f.add("Head", "BrowGuard", Vector3.new(h.X * 0.82, h.Y * 0.18, h.Z * 0.22), CFrame.new(0, h.Y * 0.38, -h.Z / 2 - 0.02 * s), bronze, METAL)
-	f.add("Head", "HelmetCrest", Vector3.new(0.16 * s, h.Y * 0.48, h.Z * 1.06), CFrame.new(0, h.Y * 0.46, 0), bronze, METAL)
+	local teal, navy, gold, cream = Color3.fromRGB(24, 166, 156), Color3.fromRGB(28, 50, 108), Color3.fromRGB(244, 190, 58), Color3.fromRGB(240, 232, 212)
+	-- Shield Captain: an open-faced teal dome helmet with a gold ridge, a teal
+	-- uniform with gold epaulettes over navy trousers, gloves and boots, and a
+	-- big round shield of concentric bands. His badge is his own: a gold
+	-- diamond with two raised wings (an upward arrow), on the chest and on the
+	-- shield. No star, no stripes.
+	local function bar(host, name, frame, ax, ay, bx, by, width, depth, color)
+		local dx, dy = bx - ax, by - ay
+		local length = math.sqrt(dx * dx + dy * dy) + width * 0.5
+		return f.add(host, name, Vector3.new(width, length, depth), frame * CFrame.new((ax + bx) / 2, (ay + by) / 2, 0) * CFrame.Angles(0, 0, math.atan2(-dx, dy)), color, METAL)
+	end
+	-- The winged badge, facing `frame`'s -Z.
+	local function badge(host, prefix, frame, size)
+		f.add(host, prefix .. "Badge", Vector3.new(0.4, 0.4, 0.1) * size, frame * CFrame.Angles(0, 0, math.pi / 4), gold, METAL)
+		for _, side in ipairs({ -1, 1 }) do
+			f.add(host, prefix .. "Wing", Vector3.new(0.62, 0.16, 0.1) * size, frame * CFrame.new(side * 0.4 * size, 0.08 * size, 0) * CFrame.Angles(0, 0, side * 0.42), gold, METAL)
+		end
+	end
+	-- Head: a smooth teal dome, open at the face. Its Size stays under half the
+	-- head (the costume finish would otherwise paint the whole head teal); the
+	-- sphere mesh's Scale draws the full dome.
+	local dome = CFrame.new(0, h.Y * 0.21, h.Z * 0.055) * CFrame.Angles(0.2, 0, 0)
+	local helmet = f.add("Head", "Helmet", Vector3.new(h.X * 1.12, h.Y * 0.38, h.Z * 1.13), dome, teal, FABRIC, "ball")
+	helmet:FindFirstChildOfClass("SpecialMesh").Scale = Vector3.new(1, 2.58, 1)
+	-- The back and sides down to the nape frame the face like cheek guards.
+	local nape = f.add("Head", "HelmetNape", Vector3.new(h.X * 1.12, h.Y * 0.45, h.Z * 0.95), CFrame.new(0, -h.Y * 0.06, h.Z * 0.1), teal, FABRIC, "head")
+	nape:FindFirstChildOfClass("SpecialMesh").Scale = Vector3.new(1, 1.67, 1)
+	-- A low gold ridge: a disc standing front to back, only its arc shows above the dome.
+	f.disc("Head", "HelmetCrest", h.Y * 1.06, 0.18 * s, dome * CFrame.new(0, h.Y * 0.015, 0) * CFrame.Angles(0, math.pi / 2, 0), gold, METAL)
+	local brow = dome * CFrame.new(0, h.Y * 0.07, -h.Z * 0.555) * CFrame.Angles(0.17, 0, 0)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "CheekPlate", Vector3.new(h.X * 0.22, h.Y * 0.34, h.Z * 0.18), CFrame.new(side * h.X * 0.34, -h.Y * 0.08, -h.Z / 2 - 0.02 * s), steel, METAL)
-		f.add("Head", "Eye", Vector3.new(0.15, 0.22, 0.06) * s, f.face(side * 0.24, 0.12, 0.0), HC.ink, FABRIC, "ball")
+		bar("Head", "HelmetBadge", brow, 0, 0.1 * s, side * 0.2 * s, -0.06 * s, 0.1 * s, 0.06 * s, gold)
 	end
-	f.add("Head", "ChinStrap", Vector3.new(h.X * 0.54, h.Y * 0.14, 0.08 * s), f.face(0, -0.48, -0.02), bronze, METAL)
-	-- Torso: segmented pectoral plates with central chevron, abdominal
-	-- segments and a utility belt with bronze buckle.
+	-- A determined, friendly face: big eyes with a glint, lowered brows, a smile.
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("UpperTorso", "PectoralPlate", Vector3.new(c.X * 0.45, c.Y * 0.46, 0.1 * s), CFrame.new(side * c.X * 0.23, c.Y * 0.16, -c.Z / 2 - 0.07 * s), steel, METAL)
-		-- Both halves sit in front of the armour, rather than one disappearing
-		-- into its plate when the model is enlarged.
-		f.add("UpperTorso", "Chevron", Vector3.new(0.16 * s, 0.62 * s, 0.07 * s), CFrame.new(side * 0.18 * s, c.Y * 0.14, -c.Z / 2 - 0.17 * s) * CFrame.Angles(0, 0, side * 0.72), bronze, METAL)
+		f.add("Head", "Eye", Vector3.new(0.22, 0.32, 0.06) * s, f.face(side * 0.27, 0.08, 0), HC.ink, FABRIC, "ball")
+		f.add("Head", "Catchlight", Vector3.new(0.07, 0.08, 0.04) * s, f.face(side * 0.27 - 0.03, 0.16, 0.02), HC.white, FABRIC, "ball")
+		f.add("Head", "Brow", Vector3.new(0.34, 0.09, 0.06) * s, f.face(side * 0.29, 0.34, 0) * CFrame.Angles(0, 0, side * 0.22), Color3.fromRGB(96, 62, 40), FABRIC)
 	end
-	for i = 1, 3 do
-		local width = 1 - (i - 2) * 0.1
-		f.add("LowerTorso", "AbdomenPlate" .. i, Vector3.new(c.X * 0.64 * width, 0.16 * s, 0.08 * s), CFrame.new(0, -c.Y * 0.2 + (i - 2) * 0.16 * s, -c.Z / 2 - 0.03 * s), steel, METAL)
-	end
-	belt(f, HC.leather, bronze)
-	-- Arms: pauldrons with bronze trim, forearm bracers; left arm carries
-	-- the aegis shield with concentric rings and star emblem.
+	local mouth = Color3.fromRGB(110, 46, 42)
+	f.add("Head", "Mouth", Vector3.new(0.3, 0.07, 0.05) * s, f.face(0, -0.42, 0), mouth, FABRIC)
 	for _, side in ipairs({ -1, 1 }) do
-		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
-		f.add(armName, "Pauldron", f.sizes.upperArm * Vector3.new(1.26, 0.54, 1.18), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), steel, METAL, "wedge")
-		f.add(armName, "PauldronTrim", Vector3.new(f.sizes.upperArm.X * 1.05, 0.07 * s, f.sizes.upperArm.Z * 1.0), CFrame.new(0, f.sizes.upperArm.Y * 0.12, 0) * CFrame.Angles(0, side < 0 and math.pi or 0, side * -0.1), bronze, METAL)
+		f.add("Head", "Mouth", Vector3.new(0.14, 0.07, 0.05) * s, f.face(side * 0.24, -0.36, 0) * CFrame.Angles(0, 0, side * 0.5), mouth, FABRIC)
 	end
-	local arm = f.sizes.lowerArm
-	f.add("LeftLowerArm", "Shield", Vector3.new(0.16 * s, 2.4 * s, 2.4 * s), CFrame.new(-arm.X / 2 - 0.14 * s, 0, -0.12 * s), bronze, METAL, Enum.PartType.Cylinder)
-	f.add("LeftLowerArm", "ShieldFace", Vector3.new(0.16 * s, 2.05 * s, 2.05 * s), CFrame.new(-arm.X / 2 - 0.18 * s, 0, -0.12 * s), teal, METAL, Enum.PartType.Cylinder)
-	-- The shield faces sideways (-X); its badge shares that plane and axis.
-	f.add("LeftLowerArm", "ShieldStar", Vector3.new(0.04 * s, 0.52 * s, 0.52 * s), CFrame.new(-arm.X / 2 - 0.30 * s, 0, -0.12 * s), HC.white, METAL, Enum.PartType.Cylinder)
+	-- Torso: the winged badge on the teal chest, a navy collar seating the head,
+	-- a gold belt with a navy buckle.
+	badge("UpperTorso", "Chest", CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.03 * s), s * 1.25)
+	f.add("UpperTorso", "Collar", Vector3.new(0.24 * s, h.X * 0.86, h.Z * 0.86), CFrame.new(0, c.Y / 2 + 0.06 * s, 0) * CFrame.Angles(0, 0, math.pi / 2), navy, FABRIC, Enum.PartType.Cylinder)
+	local p = f.sizes.pelvis
+	f.add("LowerTorso", "Belt", Vector3.new(p.X * 1.04, p.Y * 0.36, p.Z * 1.06), CFrame.new(0, p.Y * 0.28, 0), gold, METAL)
+	f.add("LowerTorso", "BeltBuckle", Vector3.new(0.42, 0.3, 0.1) * s, CFrame.new(0, p.Y * 0.28, -p.Z * 0.55), navy, METAL)
+	-- Arms and legs: round gold epaulettes, gold cuffs on the gloves and boots.
+	local ua, la, ll = f.sizes.upperArm, f.sizes.lowerArm, f.sizes.lowerLeg
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("LeftLowerArm", "ShieldRing", Vector3.new(0.06 * s, 0.85 * s, 0.18 * s), CFrame.new(-arm.X / 2 - 0.30 * s, 0.04 * s, -0.12 * s + side * 0.2 * s) * CFrame.Angles(side * 0.72, 0, 0), HC.white, METAL)
+		local name = side < 0 and "Left" or "Right"
+		-- On the shoulders, not the sleeves: a raised arm leaves them in place.
+		local pad = f.add("UpperTorso", "ShoulderPad", Vector3.new(ua.X * 1.6, 0.26 * s, ua.Z * 1.25), CFrame.new(side * (c.X / 2 + ua.X * 0.34 - 0.02 * s), c.Y / 2 - 0.04 * s - ua.Y * 0.04, 0), gold, METAL, "ball")
+		pad:FindFirstChildOfClass("SpecialMesh").Scale = Vector3.new(1, 1.4, 1)
+		f.add(name .. "LowerArm", "GloveCuff", Vector3.new(la.X * 1.18, 0.22 * s, la.Z * 1.18), CFrame.new(0, la.Y * 0.38, 0), gold, METAL)
+		f.add(name .. "LowerLeg", "BootCuff", Vector3.new(ll.X * 1.16, 0.22 * s, ll.Z * 1.16), CFrame.new(0, ll.Y * 0.38, 0), gold, METAL)
 	end
-	f.add("RightLowerArm", "Gauntlet", f.sizes.lowerArm * Vector3.new(1.14, 0.62, 1.12), CFrame.new(0, f.sizes.lowerArm.Y * 0.14, 0), steel, METAL)
-	muzzle(f, "LeftLowerArm", Vector3.new(-arm.X / 2 - 0.32 * s, 0, 0))
+	-- The shield: strapped to the outer front of the left forearm and turned
+	-- 35 degrees toward the front, so it reads as a full disc from the front
+	-- and from the game camera. Gold rim, teal band, cream ring, navy core.
+	local turn = math.rad(35)
+	local normal = Vector3.new(-math.sin(turn), 0, -math.cos(turn))
+	local D, t = 2.45 * s, 0.16 * s
+	local centre = Vector3.new(-la.X / 2, -0.05 * s, -la.Z / 2) + normal * (t / 2 - 0.03 * s)
+	local base = CFrame.new(centre) * CFrame.Angles(0, turn, 0)
+	f.disc("LeftLowerArm", "Shield", D, t, base, gold, METAL)
+	f.disc("LeftLowerArm", "ShieldBack", D * 0.84, 0.04 * s, base * CFrame.new(0, 0, t / 2 + 0.01 * s), navy, METAL)
+	f.disc("LeftLowerArm", "ShieldBand", D * 0.86, 0.06 * s, base * CFrame.new(0, 0, -0.09 * s), teal, METAL)
+	f.disc("LeftLowerArm", "ShieldRing", D * 0.64, 0.06 * s, base * CFrame.new(0, 0, -0.12 * s), cream, METAL)
+	f.disc("LeftLowerArm", "ShieldCore", D * 0.44, 0.06 * s, base * CFrame.new(0, 0, -0.15 * s), navy, METAL)
+	badge("LeftLowerArm", "Shield", base * CFrame.new(0, -0.03 * s, -0.19 * s), s * 0.78)
+	muzzle(f, "LeftLowerArm", centre + normal * 0.3 * s)
 end
 HERO_EXTRAS.spiderman = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
@@ -2670,10 +2706,11 @@ function Figure.Hero(parent, heroId, hero, scale)
 	if extras then extras(figure) end
 	Figure.Finish(figure, true)
 	finishHeroCostume(figure)
-	if heroId == "ironman" or heroId == "captain" then
-		-- These plated suits need continuous solid sleeves and a full waist.
-		-- A tapered torso mesh on each limb left notches and visible blue hips.
-		local suit = heroId == "ironman" and Color3.fromRGB(180,40,40) or Color3.fromRGB(22,150,140)
+	if look.suit then
+		-- Plated suits (look.suit is the suit colour) need continuous solid
+		-- sleeves and a full waist. A tapered torso mesh on each limb left
+		-- notches and visible hips in the base colour.
+		local suit = look.suit
 		figure.parts.LowerTorso.Color = suit:Lerp(FIGURE_INK,0.18)
 		local hips = figure.parts.LowerTorso:FindFirstChild("BodyContour")
 		hips.MeshType, hips.Scale = Enum.MeshType.Brick, Vector3.one
@@ -3218,6 +3255,71 @@ end
 -- anchored before the body is placed: a released body (heroFigure) follows
 -- its root only on the next physics step, so anchoring it afterwards would
 -- pin the limbs wherever they were built.
+-- A statue holds a heroic pose instead of standing to attention. Every joint
+-- of a figure is a Motor6D between anchored parts, so a pose turns the part on
+-- the far side of each joint about the joint's pivot, together with all that
+-- hangs from it (the next limbs and the costume pieces welded to them).
+-- Angles follow the client's Motion: X lifts a limb forward, Z swings it out
+-- (negative on the left side, positive on the right), Y twists it. Parents
+-- are listed before their children.
+local STATUE_POSE = {
+	-- Repulsor raised at the plaza: the glowing palm faces whoever walks up.
+	ironman = {
+		{ "Waist", CFrame.Angles(0, -0.12, 0) },
+		{ "RightShoulder", CFrame.Angles(1.48, 0, 0.12) },
+		{ "RightElbow", CFrame.Angles(0.06, 0, 0) },
+		{ "LeftShoulder", CFrame.Angles(0.1, 0, -0.16) },
+		{ "LeftElbow", CFrame.Angles(0.28, 0, 0) },
+		{ "Neck", CFrame.Angles(0.04, 0.1, 0) },
+		{ "LeftHip", CFrame.Angles(0, 0, -0.1) }, { "LeftAnkle", CFrame.Angles(0, 0, 0.1) },
+		{ "RightHip", CFrame.Angles(0, 0, 0.1) }, { "RightAnkle", CFrame.Angles(0, 0, -0.1) },
+	},
+	-- Fist raised, shield held out toward the plaza.
+	captain = {
+		{ "Waist", CFrame.Angles(0, -0.16, 0) },
+		{ "RightShoulder", CFrame.Angles(2.65, 0, 0.32) },
+		{ "RightElbow", CFrame.Angles(0.3, 0, 0) },
+		{ "LeftShoulder", CFrame.Angles(0.14, 0, -0.14) },
+		{ "LeftElbow", CFrame.Angles(0.1, 0, 0) },
+		{ "Neck", CFrame.Angles(0.08, 0.12, 0) },
+		{ "LeftHip", CFrame.Angles(0, 0, -0.12) }, { "LeftAnkle", CFrame.Angles(0, 0, 0.12) },
+		{ "RightHip", CFrame.Angles(0, 0, 0.12) }, { "RightAnkle", CFrame.Angles(0, 0, -0.12) },
+	},
+}
+World.StatuePose = STATUE_POSE
+
+function Figure.PoseStatic(model, pose)
+	if not pose then return end
+	local motors, hung = {}, {}
+	local function hang(from, part)
+		if not from or not part then return end
+		hung[from] = hung[from] or {}
+		table.insert(hung[from], part)
+	end
+	for _, item in ipairs(model:GetDescendants()) do
+		if item:IsA("Motor6D") then
+			motors[item.Name] = item
+			hang(item.Part0, item.Part1)
+		elseif item:IsA("Weld") and item.Name == "Fit" then
+			hang(item.Part0, item.Part1)
+		end
+	end
+	local function collect(part, out)
+		table.insert(out, part)
+		for _, child in ipairs(hung[part] or {}) do collect(child, out) end
+		return out
+	end
+	for _, step in ipairs(pose) do
+		local motor = motors[step[1]]
+		if motor and motor.Part0 and motor.Part1 then
+			local pivot = motor.Part0.CFrame * motor.C0
+			local turn = pivot * step[2] * pivot:Inverse()
+			for _, part in ipairs(collect(motor.Part1, {})) do part.CFrame = turn * part.CFrame end
+		end
+	end
+	model:SetAttribute("StatuePosed", true)
+end
+
 local function staticFigure(parent, heroId, hero, origin, scale)
 	local emphasis = (scale or FIGURE_SCALE[heroId] or 1) / (FIGURE_SCALE[heroId] or 1)
 	local template = artTemplate("Heroes", heroId)
@@ -5308,6 +5410,8 @@ function World:BuildHeroStatues(lobby)
 		-- Disable idle on the actual nested figure, which LobbyWorld discovers.
 		figure:SetAttribute("IdleFigure", nil)
 		figure:SetAttribute("IdlePhase", nil)
+		-- A monument strikes the hero's pose; the walk-through blocker stays.
+		Figure.PoseStatic(figure, STATUE_POSE[spec[1]])
 	end
 	return model
 end
