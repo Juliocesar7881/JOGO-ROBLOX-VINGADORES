@@ -12,7 +12,8 @@ captures the window with PrintWindow and presses Stop. Scenes:
     <stage>            a fixture screen (see Review.STAGES); nothing reaches the server
     live               the real game as the server sends it
     server:<command>   a Studio-only server scene: unlock (memory profile only) | start <map> [mode] | give a,b,c (field these heroes) | spawn a,b |
-                       crowd <n> | endwave [wave] | finish true|false | panel <name>
+                       crowd <n> | endwave [wave] | finish true|false | panel <name> |
+                       base <id> [level] (every commander's base in the running match)
     wait:<seconds>     let the real game run before the next capture
     snap               capture what is on screen now (an animation in flight) without starting a scene
     focus:tower        camera on the first tower (focus: alone resets it)

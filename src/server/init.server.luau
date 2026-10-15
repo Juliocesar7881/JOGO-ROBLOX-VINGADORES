@@ -1289,6 +1289,19 @@ if RunService:IsStudio() then
 			match:Finish(arg == true)
 			return true
 		end
+		-- base: every commander's base becomes this one at this level (1-5),
+		-- to look at a base's model and passive without owning it.
+		if command == "base" and type(arg) == "string" and Catalog.Bases[arg] then
+			for _, p in pairs(match.participants) do
+				p.base.id, p.base.level = arg, math.clamp(tonumber(modeId) or 1, 1, 5)
+				p.base.stats = Rules.BaseStats(arg, p.base.level)
+				p.base.wall = p.base.stats.wall
+				p.base.visualPosition = world:UpdateBase(p.index, p.base, match.corePosition, p.player.UserId)
+				world:UpdateBarrier(p.index, p.base, match.routeCache, 1)
+			end
+			pushMatch()
+			return true
+		end
 		if command == "endwave" then
 			if type(arg) == "number" then match.wave = arg; match.completedWaves = math.min(match.completedWaves, arg - 1) end
 			match.phase = "Wave"
