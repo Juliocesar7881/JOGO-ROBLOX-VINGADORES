@@ -34,8 +34,8 @@ function Panels.new(ctx)
 	end
 	kit.modeLockHints = {
 		normal = {pt = "Conclua o treinamento.", en = "Complete training."},
-		ranked = {pt = "Vença qualquer mapa da campanha.", en = "Win any campaign map."},
-		cards = {pt = "Vença qualquer mapa da campanha.", en = "Win any campaign map."},
+		ranked = {pt = "Complete o treino.", en = "Finish training."},
+		cards = {pt = "Vença um mapa da campanha ou jogue " .. Rules.CardsAfterWaves .. " ondas.", en = "Win a campaign map or play " .. Rules.CardsAfterWaves .. " waves."},
 		tutorial = {pt = "Sempre disponível.", en = "Always available."},
 	}
 

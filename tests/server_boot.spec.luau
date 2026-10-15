@@ -380,7 +380,7 @@ local function noticed(player, fragment)
 	end
 	return false
 end
-check(noticed(ana, "campanha"), "the refusal tells the newcomer to win a campaign first")
+check(noticed(ana, "treino"), "the refusal tells the newcomer to finish training first")
 -- Movement is bounded: placing a commander sets the walking values, and a
 -- speed or jump above the ceiling is put back within a second.
 do

@@ -353,8 +353,9 @@ check(Catalog.Afk.gold.gold <= 10 and Catalog.Afk.xp.xp <= 20, "AFK farms pay ve
 for _, bad in { { "gold", 0 }, { "gold", 1.5 }, { "gold", 11 }, { "gems", 1 }, { nil, 1 }, { "xp", "1" } } do
 	check(Rules.AfkReward(bad[1], bad[2]) == nil, "Invalid AFK payout refused: " .. tostring(bad[1]) .. "/" .. tostring(bad[2]))
 end
+check(not Rules.CanStart(profile, "hydra", "ranked"), "Competitive waits for training")
 profile.tutorialComplete = true
-check(not Rules.CanStart(profile, "hydra", "ranked"), "Competitive requires a campaign victory")
+check(Rules.CanStart(profile, "hydra", "ranked"), "Finishing training opens the competitive arena")
 check(not Rules.CanStart(profile, "gamma", "cards"), "Cards require a campaign victory")
 check(not Rules.CanStart(profile, "asgard", "infinite"), "The removed endless mode cannot start")
 profile.campaign.asgard = { normal = true }
@@ -368,7 +369,14 @@ check(not Rules.CanStart(profile, "manhattan", "bossrush"), "The removed boss ru
 do
 	local gate = { tutorialComplete = false, campaign = {} }
 	check(Rules.ModeUnlocked(gate, "tutorial") and Rules.ModeUnlocked(gate, "normal"), "Portal gate: training and campaign are open to a newcomer")
-	for _, modeId in { "ranked", "cards" } do check(not Rules.ModeUnlocked(gate, modeId), "Portal gate: " .. modeId .. " needs a campaign victory") end
+	for _, modeId in { "ranked", "cards" } do check(not Rules.ModeUnlocked(gate, modeId), "Portal gate: " .. modeId .. " stays closed to a brand-new commander") end
+	gate.tutorialComplete = true
+	check(Rules.ModeUnlocked(gate, "ranked") and not Rules.ModeUnlocked(gate, "cards"), "Portal gate: finishing training opens the competitive arena")
+	gate.stats = { waves = Rules.CardsAfterWaves - 1 }
+	check(not Rules.ModeUnlocked(gate, "cards"), "Portal gate: cards wait for enough waves")
+	gate.stats.waves = Rules.CardsAfterWaves
+	check(Rules.ModeUnlocked(gate, "cards"), "Portal gate: enough waves played open cards")
+	gate.stats, gate.tutorialComplete = nil, false
 	gate.campaign.manhattan = { normal = true }
 	check(Rules.ModeUnlocked(gate, "ranked") and Rules.ModeUnlocked(gate, "cards"), "Portal gate: ranked and cards open after any clear")
 	check(not Rules.ModeUnlocked(gate, "infinite"), "Portal gate: no endless mode to unlock")
@@ -396,7 +404,7 @@ do
 			"Difficulty: " .. id .. " scales the same wave's health and pace")
 	end
 	check(not Rules.ModeUnlocked(nil, "normal"), "Portal gate: missing profile stays locked")
-	check(not Rules.ModeUnlocked({ tutorialComplete = true, campaign = "corrupt" }, "ranked"), "A damaged campaign record locks instead of crashing")
+	check(not Rules.ModeUnlocked({ tutorialComplete = false, campaign = "corrupt", stats = "corrupt" }, "cards"), "A damaged campaign record locks instead of crashing")
 end
 
 equal(Rules.PortalMode({ tutorialComplete = false }, "normal"), "normal", "The campaign portal launches the campaign")

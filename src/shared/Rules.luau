@@ -80,19 +80,27 @@ end
 -- Whether a commander may enter a mode at all. This is the only unlock rule:
 -- the portals dim from it and the server re-checks it before every launch.
 --   training and the campaign are always open (training is recommended, never
---   required); the first campaign victory on any map opens cards and the
---   competitive arena. Nothing depends on beating an endless mode.
+--   required); finishing training opens the competitive arena (endless: play
+--   as long as you like and end with a kept record, the short session);
+--   cards open with the first campaign victory or CARDS_AFTER_WAVES waves
+--   played. Nothing depends on beating an endless mode.
+local CARDS_AFTER_WAVES = 25
+Rules.CardsAfterWaves = CARDS_AFTER_WAVES
 function Rules.ModeUnlocked(profile, modeId)
 	if type(profile) ~= "table" or not Catalog.Modes[modeId] then return false end
 	if modeId == "tutorial" then return true end
 	if modeId == "normal" then return true end
-	if modeId == "ranked" or modeId == "cards" then return anyWon(profile, "normal") end
+	if modeId == "ranked" then return profile.tutorialComplete == true or anyWon(profile, "normal") end
+	if modeId == "cards" then
+		local waves = type(profile.stats) == "table" and tonumber(profile.stats.waves) or 0
+		return anyWon(profile, "normal") or waves >= CARDS_AFTER_WAVES
+	end
 	return false
 end
 
 local LOCK_REASON = {
-	ranked = "Vença qualquer mapa da campanha / Win any campaign map",
-	cards = "Vença qualquer mapa da campanha / Win any campaign map",
+	ranked = "Complete o treino primeiro / Finish training first",
+	cards = "Vença um mapa da campanha ou jogue " .. CARDS_AFTER_WAVES .. " ondas / Win a campaign map or play " .. CARDS_AFTER_WAVES .. " waves",
 }
 
 -- Why a mode's portal refuses someone, in the "pt / en" form the router uses.

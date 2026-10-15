@@ -138,7 +138,7 @@ do
 	check(h.service:Snapshot(ana) == nil, "a locked portal does not take the player aboard")
 	check(#h.log.ejected == 1 and h.log.ejected[1].position == ZONES.ranked.exit, "the refused player is put down at the portal's exit")
 	local told = h.noticesFor(ana)
-	check(#told == 1 and string.find(told[1], "campanha", 1, true) ~= nil, "the refusal says what is missing, got " .. tostring(told[1]))
+	check(#told == 1 and string.find(told[1], "treino", 1, true) ~= nil, "the refusal says what is missing, got " .. tostring(told[1]))
 	-- The eject did not move them (stubborn), so they are still in the zone:
 	-- they must not be refused again every quarter second.
 	h.step(2)
