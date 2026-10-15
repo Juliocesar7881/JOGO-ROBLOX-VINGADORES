@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Catalog = require(ReplicatedStorage:WaitForChild("DoomShared"):WaitForChild("Catalog"))
 local UI = require(script.Parent:WaitForChild("UI"))
 local Motion = require(script.Parent:WaitForChild("Motion"))
+local PowerFX = require(script.Parent:WaitForChild("PowerFX"))
 
 local Effects = {}
 Effects.__index = Effects
@@ -244,6 +245,8 @@ function Effects.new(player, request, getState, audio)
 	self.links, self.dustBudget = {}, 0
 	self.dying, self.collecting = {}, {}
 	self.shotSerial = 0
+	-- Every hero's power has a look of its own, with a part pool of its own.
+	self.powerFX = PowerFX.new(self.folder)
 	self.connection = RunService.RenderStepped:Connect(function(dt) self:Step(dt) end)
 	-- Runs after the camera has been positioned for this frame, so the offset
 	-- is not immediately overwritten.
@@ -624,12 +627,38 @@ function Effects:_effect(size, frame, color, duration, shape, fade)
 	if warning then warning.Enabled = false end
 	local ringGui = visual:FindFirstChild("RingGui")
 	if ringGui then ringGui.Enabled = false end
+	local trail = visual:FindFirstChild("ShotTrail")
+	if trail then trail.Enabled = false end
 	visual.Parent = self.folder
 	-- The size it was born with: anything that grows over its life scales this,
 	-- never the size of the previous frame (that compounds with the frame rate).
 	local effect = {part = visual, born = self.clock, expires = self.clock + duration, fade = fade or 0.12, size = size}
 	table.insert(self.shots, effect)
 	return effect
+end
+
+-- A ribbon of light behind a flying attack (arrow, shield, card, orb, shell),
+-- the way the big games draw a throw. None under reduced effects.
+function Effects:_trail(effect, color, width, life)
+	if not effect or self:_reduced() then return end
+	local visual = effect.part
+	local trail = visual:FindFirstChild("ShotTrail")
+	if not trail then
+		local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+		a0.Name, a1.Name = "ShotTrailTop", "ShotTrailBottom"
+		a0.Parent, a1.Parent = visual, visual
+		trail = Instance.new("Trail")
+		trail.Name, trail.Attachment0, trail.Attachment1 = "ShotTrail", a0, a1
+		trail.FaceCamera, trail.LightEmission, trail.LightInfluence, trail.MinLength = true, 0.1, 0.2, 0.05
+		trail.Parent = visual
+	end
+	trail.Attachment0.Position, trail.Attachment1.Position = Vector3.new(0, width / 2, 0), Vector3.new(0, -width / 2, 0)
+	trail.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.45), color)
+	trail.Transparency = NumberSequence.new(0.25, 1)
+	trail.WidthScale = NumberSequence.new(1, 0.1)
+	trail.Lifetime = life or 0.22
+	trail:Clear()
+	trail.Enabled = true
 end
 
 function Effects:_line(from, to, color, width, duration)
@@ -680,8 +709,13 @@ end
 local PARTICLES = {
 	spark = { texture = "rbxasset://textures/particles/sparkles_main.dds", lifetime = { 0.16, 0.32 }, speed = { 10, 18 }, size = { 0.5, 0.04 }, drag = 7, accel = Vector3.new(0, -24, 0) },
 	dust = { texture = "rbxasset://textures/particles/smoke_main.dds", lifetime = { 0.35, 0.55 }, speed = { 2.5, 5 }, size = { 1.1, 2.6 }, drag = 4, accel = Vector3.new(0, 3, 0) },
+	star = { texture = "rbxasset://textures/particles/sparkles_main.dds", lifetime = { 0.45, 0.8 }, speed = { 2, 6 }, size = { 0.9, 0 }, drag = 2, accel = Vector3.new(0, 4, 0) },
+	ember = { texture = "rbxasset://textures/particles/fire_sparks_main.dds", lifetime = { 0.35, 0.7 }, speed = { 5, 11 }, size = { 0.45, 0.08 }, drag = 2, accel = Vector3.new(0, 6, 0) },
+	fire = { texture = "rbxasset://textures/particles/fire_main.dds", lifetime = { 0.3, 0.5 }, speed = { 2, 5 }, size = { 1.4, 0.4 }, drag = 1, accel = Vector3.new(0, 9, 0) },
+	smoke = { texture = "rbxasset://textures/particles/explosion01_smoke_main.dds", lifetime = { 0.5, 0.9 }, speed = { 1.5, 3.5 }, size = { 1.6, 3.6 }, drag = 2, accel = Vector3.new(0, 1.5, 0) },
+	snow = { texture = "rbxasset://textures/particles/sparkles_main.dds", lifetime = { 0.5, 0.9 }, speed = { 3, 6 }, size = { 0.45, 0.15 }, drag = 1.5, accel = Vector3.new(0, -5, 0) },
 }
-local MAX_EMITTERS, MAX_BEAMS = 24, 24
+local MAX_EMITTERS, MAX_BEAMS = 40, 24
 
 function Effects:_reduced()
 	local state = self.getState()
@@ -1032,6 +1066,11 @@ function Effects:PlaceBurst(position, color)
 	local state = self.getState()
 	if state and state.profile and state.profile.settings and state.profile.settings.lowFX then return end
 	self:_effect(Vector3.new(11, 1.5, 1.5), CFrame.new(position + Vector3.new(0, 5.5, 0)) * CFrame.Angles(0, 0, math.pi / 2), color, 0.4, Enum.PartType.Cylinder, 0.6)
+	-- The hero arrives from the sky: a beam of light lands on the spot and
+	-- sparkles burst around the pedestal.
+	self.powerFX:Column(position, color, 26, 2.2, 0.4, 0, 0.55)
+	self.powerFX:Ring(position, color, 1, 6.5, 0.45, 0.05)
+	self:_emit("star", position + Vector3.new(0, 2, 0), color, 14)
 end
 
 -- The signature of an ultimate: a short light column and two hollow shockwaves
@@ -1118,6 +1157,7 @@ function Effects:_heroShot(event, lowFX)
 			previous = point
 		end
 		self:_impact(target, white, 0.65)
+		self:_emit("spark", target, Color3.fromRGB(149, 218, 255), 6)
 	elseif heroId == "nightstalker" then
 		-- A mine is lobbed: a short dark arc to where it will lie.
 		local top = from:Lerp(target, 0.5) + Vector3.new(0, 4, 0)
@@ -1139,29 +1179,37 @@ function Effects:_heroShot(event, lowFX)
 	elseif heroId == "hulk" or heroId == "antman" or heroId=="beast" then
 		self:_groundImpact(target, color, heroId == "hulk" and 5 or 3.5)
 		self:_ring(target, color:Lerp(Color3.new(1, 1, 1), 0.3), 1.5, heroId == "hulk" and 11 or 7, 0.32)
+		self:_emit("dust", target, Color3.fromRGB(150, 130, 105), heroId == "hulk" and 4 or 2)
 	elseif heroId == "captain" then
 		-- The thrown shield is the one on his arm: a gold rim.
 		local shield = self:_effect(Vector3.new(0.15, 1.4, 1.4), CFrame.new(from), Color3.fromRGB(244, 190, 58), 0.38, Enum.PartType.Cylinder)
 		if shield then shield.from, shield.to, shield.returning, shield.disc = from, target, true, true end
+		self:_trail(shield, Color3.fromRGB(110, 170, 255), 0.9, 0.18)
 		self:_impact(target, white, 0.45)
 	elseif heroId == "hawkeye" then
 		local arrow = self:_effect(Vector3.new(0.11, 0.11, 2.4), CFrame.lookAt(from, target), Color3.fromRGB(205, 179, 243), 0.17)
 		if arrow then arrow.from, arrow.to, arrow.arrow = from, target, true end
+		self:_trail(arrow, Color3.fromRGB(205, 179, 243), 0.35, 0.16)
 	elseif heroId=="gambit" or heroId=="moonknight" then
 		local card=self:_effect(Vector3.new(0.7,1,0.1),CFrame.new(from),color,0.25,nil,0.1)
 		if card then card.from,card.to,card.arc=from,target,1.4 end
+		self:_trail(card,color,0.45,0.2)
 		self:_groundImpact(target,color,2)
 		self:_sparks(target,color,5,1.6)
+		self:_emit("star",target,color,4)
 	elseif heroId=="iceman" then
 		self:_line(from,target,color,0.2,0.2)
 		for index=-1,1 do self:_effect(Vector3.new(0.3,1.5,0.3),CFrame.new(target+Vector3.new(index*0.8,-0.4,0))*CFrame.Angles(0,0,index*0.2),color,0.35,nil,0.15) end
+		self:_emit("snow",target+Vector3.new(0,1,0),Color3.new(1,1,1),5)
 	elseif heroId=="nightcrawler" then
 		self:_impact(from,color,1.2); self:_impact(target,color,1.6)
 	elseif heroId == "wanda" or heroId=="jean" then
 		local bolt = self:_effect(Vector3.one * 0.65, CFrame.new(from), Color3.fromRGB(255, 85, 131), 0.22, Enum.PartType.Ball, 0.1)
 		if bolt then bolt.from, bolt.to, bolt.arc = from, target, 2 end
+		self:_trail(bolt, Color3.fromRGB(255, 85, 131), 0.55, 0.2)
 		self:_groundImpact(target, Color3.fromRGB(204, 57, 105), 3)
 		self:_ring(target, Color3.fromRGB(255, 90, 150), 1, 6, 0.3)
+		self:_emit("star", target, Color3.fromRGB(255, 120, 170), 5)
 	elseif heroId == "strange" then
 		self:_line(from, target, Color3.fromRGB(255, 181, 91), 0.13, 0.2)
 		for index = 0, 2 do
@@ -1169,6 +1217,7 @@ function Effects:_heroShot(event, lowFX)
 			local offset = Vector3.new(math.cos(angle), math.sin(angle), 0) * 1.2
 			self:_effect(Vector3.new(0.35, 0.35, 0.09), CFrame.new(target + offset) * CFrame.Angles(0, 0, angle), Color3.fromRGB(255, 196, 112), 0.32)
 		end
+		self:_emit("star", target, Color3.fromRGB(255, 196, 112), 4)
 	elseif heroId == "vision" or heroId=="cyclops" or heroId=="nova" then
 		self:_laser(from, target, heroId=="cyclops" and Color3.fromRGB(255,80,90) or Color3.fromRGB(252, 205, 99), 0.3, 0.24)
 	elseif heroId == "widow" then
@@ -1176,6 +1225,7 @@ function Effects:_heroShot(event, lowFX)
 	elseif heroId == "falcon" then
 		local swoop = self:_effect(Vector3.new(0.6, 0.15, 0.15), CFrame.new(from), Color3.fromRGB(255, 150, 110), 0.22, nil, 0.15)
 		if swoop then swoop.from, swoop.to, swoop.arc = from, target, 2.5 end
+		self:_trail(swoop, Color3.fromRGB(255, 150, 110), 0.5, 0.2)
 		self:_impact(target, Color3.fromRGB(255, 150, 110), 0.35)
 	elseif heroId == "bucky" or heroId=="deadpool" then
 		self:_muzzle(from, Color3.fromRGB(255, 214, 120), 0.5)
@@ -1192,6 +1242,8 @@ function Effects:_heroShot(event, lowFX)
 	elseif heroId == "rocket" then
 		local shell = self:_effect(Vector3.one * 0.3, CFrame.new(from), Color3.fromRGB(200, 160, 90), 0.3, Enum.PartType.Ball, 0.1)
 		if shell then shell.from, shell.to, shell.arc = from, target, 4 end
+		self:_trail(shell, Color3.fromRGB(255, 200, 120), 0.4, 0.22)
+		self:_emit("smoke", target, Color3.fromRGB(120, 115, 110), 2)
 		self:_groundImpact(target, Color3.fromRGB(255, 150, 60), 4)
 		self:_muzzle(from, Color3.fromRGB(255, 200, 120), 0.6)
 		self:_burst(target, Color3.fromRGB(255, 150, 60), 0.6)
@@ -1208,6 +1260,8 @@ function Effects:_heroShot(event, lowFX)
 	elseif heroId == "warmachine" then
 		local missile = self:_effect(Vector3.new(0.22, 0.22, 1.6), CFrame.lookAt(from, target), Color3.fromRGB(180, 190, 200), 0.2)
 		if missile then missile.from, missile.to = from, target end
+		self:_trail(missile, Color3.fromRGB(200, 200, 205), 0.5, 0.25)
+		self:_emit("smoke", target, Color3.fromRGB(120, 115, 110), 3)
 		self:_groundImpact(target, Color3.fromRGB(255, 140, 60), 5.5)
 		self:_muzzle(from, Color3.fromRGB(255, 200, 120), 0.7)
 		self:_ring(target, Color3.fromRGB(255, 160, 70), 1.5, 10, 0.35)
@@ -1227,6 +1281,8 @@ function Effects:_heroShot(event, lowFX)
 		end
 		self:_groundImpact(target, Color3.fromRGB(255, 90, 20), 4)
 		self:_column(Vector3.new(target.X, 0.3, target.Z), Color3.fromRGB(255, 120, 40), 4, 1.2, 0.35, 0.4)
+		self:_emit("ember", target, Color3.fromRGB(255, 150, 50), 6)
+		self:_emit("fire", target, Color3.fromRGB(255, 120, 40), 2)
 	elseif heroId == "captainmarvel" then
 		self:_laser(from, target, Color3.fromRGB(255, 220, 140), 0.34, 0.24)
 	elseif heroId == "silversurfer" then
@@ -1247,6 +1303,8 @@ function Effects:_heroShot(event, lowFX)
 		-- An energy fist drops on the target inside a ring of green light.
 		local fist = self:_effect(Vector3.new(1.3, 1.3, 1.3), CFrame.new(target + Vector3.new(0, 5, 0)), Color3.fromRGB(110, 255, 160), 0.3, Enum.PartType.Ball, 0.35)
 		if fist then fist.from, fist.to = target + Vector3.new(0, 5, 0), target + Vector3.new(0, 1, 0) end
+		self:_trail(fist, Color3.fromRGB(110, 255, 160), 1, 0.2)
+		self:_emit("spark", target, Color3.fromRGB(110, 255, 160), 6)
 		self:_groundImpact(target, Color3.fromRGB(70, 255, 140), 4.5)
 		self:_line(from, target, Color3.fromRGB(110, 255, 160), 0.1, 0.16)
 	elseif heroId == "solartitan" then
@@ -1258,9 +1316,11 @@ function Effects:_heroShot(event, lowFX)
 			self:_line(target + offset + Vector3.new(-0.5, 0.6, 0), target + offset + Vector3.new(0.5, -0.6, 0), Color3.fromRGB(255, 232, 90), 0.08, 0.1)
 		end
 		self:_line(from, target, Color3.fromRGB(255, 120, 90), 0.06, 0.08)
+		self:_emit("spark", target, Color3.fromRGB(255, 232, 90), 4)
 	elseif heroId == "amazon" then
 		local shield = self:_effect(Vector3.new(0.15, 1.3, 1.3), CFrame.new(from), Color3.fromRGB(240, 196, 60), 0.38, Enum.PartType.Cylinder)
 		if shield then shield.from, shield.to, shield.returning, shield.disc = from, target, true, true end
+		self:_trail(shield, Color3.fromRGB(255, 220, 110), 0.8, 0.18)
 		self:_line(from, target, Color3.fromRGB(255, 226, 120), 0.07, 0.14)
 		self:_impact(target, Color3.fromRGB(255, 230, 140), 0.45)
 	elseif heroId == "seaking" then
@@ -1270,6 +1330,7 @@ function Effects:_heroShot(event, lowFX)
 			self:_effect(Vector3.new(0.4, 1.6, 0.4), CFrame.new(target + Vector3.new(index * 0.9, -0.2, 0)) * CFrame.Angles(0, 0, index * 0.25), Color3.fromRGB(110, 225, 240), 0.35, nil, 0.2)
 		end
 		self:_line(from, target, Color3.fromRGB(110, 225, 240), 0.12, 0.14)
+		self:_emit("snow", target + Vector3.new(0, 1, 0), Color3.new(1, 1, 1), 5)
 	else
 		-- Repulsors remain pale blue even though Iron Man's suit is red.
 		local tint = heroId == "ironman" and Color3.fromRGB(136, 225, 255) or color
@@ -1405,6 +1466,10 @@ function Effects:Handle(event)
 				local base = model.PrimaryPart.Position
 				self:_groundImpact(base, UI.Colors.gold, 4 + (tonumber(event.level) or 1))
 				self:_effect(Vector3.new(8 * record.scale, 1.2, 1.2), CFrame.new(base + Vector3.new(0, 4 * record.scale, 0)) * CFrame.Angles(0, 0, math.pi / 2), UI.Colors.gold, 0.45, Enum.PartType.Cylinder, 0.55)
+				-- Golden sparks spiral up around the hero as it grows stronger.
+				self.powerFX:Orbit(Vector3.new(base.X, 0, base.Z), UI.Colors.gold, {count = 6, r0 = 2.6 * record.scale, r1 = 0.8 * record.scale, h0 = 0.6,
+					h1 = 7 * record.scale, speed = 8, size = Vector3.one * 0.35, trail = 0.35, trailLife = 0.25, life = 0.75})
+				self:_emit("star", base + Vector3.new(0, 4 * record.scale, 0), UI.Colors.gold, 12)
 			end
 			if self.audio and record.ownerId == self.player.UserId then self.audio:Cue("upgrade", 0.2) end
 		end
@@ -1429,14 +1494,28 @@ function Effects:Handle(event)
 		-- An ultimate takes over the screen for a heartbeat: the world drains of
 		-- colour, then floods back, tinted by the power (not under reduced effects).
 		if event.ultimate and not lowFX then self:_ultimateGrade(tint) end
+		-- Each hero's power has its own look (PowerFX); a hero without one keeps
+		-- the look of its kind of power. Reduced effects keeps the ring only.
+		local signed=not lowFX and typeof(event.position)=="Vector3" and self.powerFX:Cast(event,tint)
 		if typeof(event.position)=="Vector3" then
 			self:Handle({kind="Pulse",cosmetic=true,position=event.position,color=event.color,radius=math.max(event.radius or 0,5),duration=math.clamp(event.duration or 0.5,0.5,6)})
-			if not lowFX then self:_abilityVisual(kind,event.position,math.max(event.radius or 0,5),tint) end
+			if not lowFX and not signed then self:_abilityVisual(kind,event.position,math.max(event.radius or 0,5),tint) end
 		end
-		if event.ultimate and typeof(event.position)=="Vector3" then self:_ultimateBurst(event,tint,lowFX) end
-		for i,point in ipairs(event.points or {}) do
-			if i>(lowFX and 2 or 12) then break end
-			if typeof(point)=="Vector3" then self:_bolt(point,UI.color(event.color),0.26) end
+		if event.ultimate and typeof(event.position)=="Vector3" and not signed then self:_ultimateBurst(event,tint,lowFX) end
+		if not (signed and PowerFX.DRAWS_POINTS[event.heroId or ""]) then
+			for i,point in ipairs(event.points or {}) do
+				if i>(lowFX and 2 or 12) then break end
+				if typeof(point)=="Vector3" then self:_bolt(point,UI.color(event.color),0.26) end
+			end
+		end
+		-- The ground shakes under a big power: fully for the caster, less the
+		-- farther away it lands for everyone else (Shake honours the setting).
+		if tonumber(event.shake) and typeof(event.position)=="Vector3" then
+			local camera=workspace.CurrentCamera
+			local own=self.player~=nil and event.ownerId==self.player.UserId
+			local distance=camera and (event.position-camera.CFrame.Position).Magnitude or 0
+			local reach=own and 1 or math.clamp(1-(distance-40)/120,0,1)
+			if reach>0 then self:Shake(math.min(tonumber(event.shake),0.8)*reach) end
 		end
 		if self.audio then
 			local camera=workspace.CurrentCamera
@@ -1695,6 +1774,7 @@ function Effects:Handle(event)
 		end
 		self.aims, self.aimsOrder = {}, {}
 		self.towerModels, self.shakeAmount, self.shotSerial = nil, 0, 0
+		self.powerFX:Clear()
 		if self.drone then self.drone:Destroy(); self.drone = nil end
 	end
 end
@@ -1713,6 +1793,7 @@ function Effects:Step(dt)
 	end
 	-- Studio review only (Review.luau): effects played in slow motion so a still can catch one.
 	self.clock += dt * (self.reviewSlow or 1)
+	self.powerFX:Step(dt * (self.reviewSlow or 1))
 	-- Squad markers fade after four seconds.
 	for index = #(self.pings or {}), 1, -1 do
 		local entry = self.pings[index]

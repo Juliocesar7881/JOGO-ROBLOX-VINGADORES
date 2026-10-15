@@ -415,6 +415,30 @@ local celebrate = Celebrate.new({
 	end,
 })
 
+-- Every power has its moment: the caster's own cast plays the full cut-in
+-- (Celebrate:CutIn), a teammate's a small strip with their name. Reduced
+-- effects keeps only the plain banner, for one's own ultimate.
+local function showPowerCutIn(event)
+	local def = Catalog.Abilities[event.abilityId or ""]
+	local hero = Catalog.Heroes[event.heroId or ""]
+	if not def or not hero then return end
+	local own = event.ownerId == player.UserId
+	local tint = UI.color(def.color)
+	if profile().settings and profile().settings.lowFX then
+		if own and event.ultimate then
+			celebrate:Banner({pt = "★ " .. Catalog.Upper(def.name.pt) .. "!", en = "★ " .. Catalog.Upper(def.name.en) .. "!"}, {pt = "ULTIMATE", en = "ULTIMATE"}, tint, {duration = 1.5})
+		end
+		return
+	end
+	local name = {pt = Catalog.Upper(def.name.pt) .. "!", en = Catalog.Upper(def.name.en) .. "!"}
+	if own then
+		celebrate:CutIn(event.heroId, name, tint, {ultimate = event.ultimate == true, subtitle = hero.name})
+	else
+		local ok, caster = pcall(function() return Players:GetPlayerByUserId(event.ownerId) end)
+		celebrate:CutIn(event.heroId, name, tint, {compact = true, subtitle = ok and caster and caster.DisplayName or hero.name})
+	end
+end
+
 -- A quickbar slot: the hero's 3D portrait on a tile in its rarity colour,
 -- the slot number in a corner and the price on the bottom edge. No name: a
 -- name never fits a phone tile, and the portrait and colour already say who.
@@ -1942,11 +1966,10 @@ fxRemote.OnClientEvent:Connect(function(event)
 				TweenService:Create(flash, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
 				task.delay(0.45, function() flash:Destroy() end)
 			end
-		elseif event.kind == "Ability" and event.ultimate and event.ownerId == player.UserId then
-			local def = Catalog.Abilities[event.abilityId]
-			-- Effects plays the hero's power cue below. A generic banner cue would
-			-- consume the same cooldown and silence the actual ultimate sound.
-			if def then celebrate:Banner({pt = "★ " .. Catalog.Upper(def.name.pt) .. "!", en = "★ " .. Catalog.Upper(def.name.en) .. "!"}, {pt = "ULTIMATE", en = "ULTIMATE"}, UI.color(def.color), {duration = 1.5}) end
+		elseif event.kind == "Ability" and activeMatch() then
+			-- The cut-in plays no cue: Effects plays the hero's power sound below,
+			-- and a second cue would consume its cooldown and silence it.
+			showPowerCutIn(event)
 		end
 		effects:Handle(event)
 	end
@@ -2409,7 +2432,10 @@ if RunService:IsStudio() and script:FindFirstChild("Review") then
 		openContext = function(kind, data) openContext(kind, data) end,
 		closeContext = closeContext,
 		hold = function(fn) reviewHold = fn end,
-		fire = function(event) effects:Handle(event) end,
+		fire = function(event)
+			if type(event) == "table" and event.kind == "Ability" then showPowerCutIn(event) end
+			effects:Handle(event)
+		end,
 		-- Draw the HUD in a fixed phone-sized area (nil = the whole window, scaled).
 		setReviewSize = function(width, height)
 			kit.reviewSize = width and Vector2.new(width, height) or nil

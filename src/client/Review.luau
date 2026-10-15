@@ -397,15 +397,20 @@ function Review.start(api)
 						end
 					end
 				else
-					local kinds = { "blast", "heal", "slow", "stun", "reveal", "pull", "push", "burn", "weaken", "frenzy" }
-					for index, kind in ipairs(kinds) do
-						local spot = center + right * (((index - 1) % 5 - 2) * 26) + forward * (index > 5 and 22 or -8)
-						api.fire({ kind = "Ability", abilityKind = kind, heroId = "ironman", ownerId = 0, position = spot, radius = 9, duration = 1,
-							color = ({ blast = { 255, 130, 60 }, heal = { 110, 235, 150 }, slow = { 130, 210, 255 }, stun = { 255, 230, 90 }, reveal = { 190, 150, 255 },
-								pull = { 150, 120, 255 }, push = { 120, 200, 255 }, burn = { 255, 110, 40 }, weaken = { 150, 60, 200 }, frenzy = { 255, 90, 120 } })[kind] })
+					-- Every hero's own power, six a round (the first one as this
+					-- commander's, with its cut-in), round after round through the roster.
+					for slot = 1, 6 do
+						local heroId = Catalog.HeroOrder[((round - 1) * 6 + slot - 1) % #Catalog.HeroOrder + 1]
+						local ability = Catalog.Abilities[Catalog.Heroes[heroId].ability]
+						if ability then
+							local spot = center + right * (((slot - 1) % 3 - 1) * 30) + forward * (slot > 3 and 24 or -6)
+							api.fire({ kind = "Ability", abilityId = ability.id, abilityKind = ability.kind, heroId = heroId, ownerId = slot == 1 and player.UserId or 0,
+								ultimate = ability.ultimate or nil, position = spot, radius = 10, duration = 1, shake = 0,
+								color = Color3.fromRGB(ability.color[1], ability.color[2], ability.color[3]) })
+						end
 					end
 				end
-				task.wait(scene == "powers" and 1 or 0.3)
+				task.wait(scene == "powers" and 1.2 or 0.3)
 			end
 			api.slowEffects(nil)
 		end)

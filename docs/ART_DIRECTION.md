@@ -96,6 +96,19 @@ com núcleo fino, explosões e poderes com ondas vazadas, cores do herói e
 pouca luz branca. Respeitar limite compartilhado de 80 efeitos e Menos
 efeitos. Apresentação segue os eventos do servidor.
 
+Poderes (15/10): cada um dos 43 heróis tem uma assinatura própria em
+`src/client/PowerFX.luau` (SIGNATURES), montada com camadas animadas: anéis,
+raios e colunas do céu, espinhos de gelo e madeira, fogo, redemoinhos,
+cortes de lâmina, chuvas de mísseis, cartas e moedas, círculos mágicos,
+cúpulas de força e feixe varrendo. Partículas só com texturas do motor
+(`rbxasset://textures/particles`), sem emissão de luz; pool próprio de 110
+peças, separado do pool de 80 dos ataques. O próprio poder abre um corte de
+anime (`Celebrate:CutIn`: faixa inclinada com linhas de velocidade, herói e
+nome do poder; o ultimate ganha barras de cinema); o de um colega, uma tira
+com o nome dele. Ataques que voam deixam rastro (Trail). Menos efeitos não
+desenha nada disso. Herói novo: acrescentar sua entrada em SIGNATURES (o
+teste do cliente exige uma por herói, sem erro e com até 60 peças).
+
 ## Som e avaliação
 
 Armas, golpes, controle e magia têm timbres e ritmos próprios, com volume,

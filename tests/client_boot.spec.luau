@@ -2055,10 +2055,11 @@ local function session(screen)
 		check(string.find(bannerTitle(), "CHEFE DERROTADO", 1, true) ~= nil, tag .. ": a fallen boss gets a big banner, got " .. bannerTitle())
 		fx({ kind = "Ability", heroId = "captainmarvel", abilityId = "photonNova", abilityKind = "blast", ultimate = true, ownerId = LOCAL_ID,
 			position = v3(0, 0, 0), radius = 60, duration = 2, color = Color3.fromRGB(255, 210, 90), points = {} })
-		check(string.find(bannerTitle(), "★", 1, true) ~= nil and string.find(bannerTitle(), "NOVA FOTÔNICA", 1, true) ~= nil,
-			tag .. ": your own ultimate shouts its name, accents intact, got " .. bannerTitle())
+		local cutTitle = named(overlays, "CutInTitle")
+		check(cutTitle ~= nil and string.find(cutTitle.Text, "NOVA FOTÔNICA", 1, true) ~= nil,
+			tag .. ": your own ultimate shouts its name in a cut-in, accents intact, got " .. (cutTitle and cutTitle.Text or "nothing"))
 		frames(1 / 30, 120)
-		check(named(overlays, "CelebrationBanner") == nil, tag .. ": banners clear themselves")
+		check(named(overlays, "CelebrationBanner") == nil and named(overlays, "PowerCutIn") == nil, tag .. ": banners and cut-ins clear themselves")
 		push(matchSnapshot(profile, "Preparing"))
 		push(matchSnapshot(profile, "Preparing", { completedWaves = 8, wave = 8, nextBoss = 10 }))
 		local warned = false
@@ -3193,6 +3194,77 @@ local function session(screen)
 			if string.match(voice.Name, "^Bank_powers_") and voice.IsPlaying and voice.Volume >= 0.3 then heard = true end
 		end
 		check(heard, tag .. ": the commander hears their own power at full volume, however far it lands")
+		fx({kind = "Clear"})
+	end)
+
+	step("every hero's power has its own look, and the caster a cut-in", function()
+		local PowerFXModule = require(clientModules.PowerFX)
+		local missing = {}
+		for _, heroId in ipairs(Catalog.HeroOrder) do
+			if type(PowerFXModule.SIGNATURES[heroId]) ~= "function" then table.insert(missing, heroId) end
+		end
+		check(#missing == 0, tag .. ": every hero has a power look of its own: " .. table.concat(missing, ", "))
+		-- Each look on its own: it runs without an error (delayed layers included),
+		-- costs a bounded number of parts at its peak and leaves nothing behind.
+		local probe = PowerFXModule.new(workspace)
+		for _, heroId in ipairs(Catalog.HeroOrder) do
+			local ability = Catalog.Abilities[Catalog.Heroes[heroId].ability]
+			probe.lastError = nil
+			local cast = probe:Cast({heroId = heroId, abilityKind = ability.kind, position = v3(0, 0, 0), radius = 12, points = {v3(3, 0, 2), v3(-4, 0, 1)}},
+				Color3.fromRGB(ability.color[1], ability.color[2], ability.color[3]))
+			local most = 0
+			for _ = 1, 100 do
+				probe:Step(1 / 30)
+				most = math.max(most, (probe:Count()))
+			end
+			check(cast and probe.lastError == nil, tag .. ": " .. heroId .. "'s power look runs cleanly: " .. tostring(probe.lastError))
+			check(most > 0 and most <= 60, tag .. ": " .. heroId .. "'s power look peaks at a bounded part count, got " .. most)
+			check(probe:Count() == 0, tag .. ": " .. heroId .. "'s power look leaves nothing behind")
+		end
+		probe.folder:Destroy()
+		for kind, spec in pairs(PowerFXModule.PARTICLES) do
+			check(type(spec[1]) == "string" and string.match(spec[1], "^[%w_]+%.dds$") ~= nil, tag .. ": particle " .. kind .. " uses an engine texture")
+		end
+		push(matchSnapshot(veteranProfile(), "Wave", {enemies = 0}))
+		fx({kind = "Clear"})
+		local folder = workspace.DoomClientVisuals:FindFirstChild("PowerFX")
+		check(folder ~= nil, tag .. ": the power looks have a folder of their own")
+		local function shown()
+			local count = 0
+			for _, item in ipairs(folder:GetChildren()) do if item.Name == "PowerEffect" then count += 1 end end
+			return count
+		end
+		-- The commander's own ultimate: the full cut-in, and the hero's own look on the road.
+		local thunder = Catalog.Abilities[Catalog.Heroes.thor.ability]
+		fx({kind = "Ability", heroId = "thor", abilityId = thunder.id, abilityKind = thunder.kind, ultimate = true, ownerId = LOCAL_ID,
+			position = v3(0, 0, 0), radius = 14, duration = 2, color = Color3.fromRGB(120, 220, 255), points = {v3(4, 0, 2)}, shake = 1.1})
+		local cut = named(overlays, "PowerCutIn")
+		local title = cut and named(cut, "CutInTitle")
+		check(title ~= nil and string.find(title.Text, Catalog.Upper(thunder.name.pt), 1, true) ~= nil, tag .. ": your own power shouts its name in a cut-in")
+		check(cut ~= nil and named(cut, "CutInHero") ~= nil and named(cut, "CutInUltimate") ~= nil and countNamed(cut, "CutInBar") == 2,
+			tag .. ": an ultimate's cut-in shows the hero, the ULTIMATE tag and cinema bars")
+		frames(1 / 30, 12)
+		local peak = shown()
+		check(peak > 4, tag .. ": the hero's own power look is on the road, got " .. peak)
+		-- Every hero's look at once (a teammate's: a strip, not the full cut-in) stays inside its pool.
+		for _, heroId in ipairs(Catalog.HeroOrder) do
+			local ability = Catalog.Abilities[Catalog.Heroes[heroId].ability]
+			fx({kind = "Ability", heroId = heroId, abilityId = ability.id, abilityKind = ability.kind, ownerId = LOCAL_ID + 1,
+				position = v3(0, 0, 0), radius = 12, duration = 2, color = Color3.fromRGB(ability.color[1], ability.color[2], ability.color[3]), points = {v3(3, 0, 2)}})
+			frames(1 / 30, 1)
+			check(shown() <= PowerFXModule.MAX_PARTS, tag .. ": the power looks stay inside their pool after " .. heroId)
+		end
+		check(named(overlays, "PowerCutInStrip") ~= nil, tag .. ": a teammate's power is a small strip with their name")
+		frames(1 / 30, 120)
+		check(shown() == 0 and named(overlays, "PowerCutIn") == nil and named(overlays, "PowerCutInStrip") == nil, tag .. ": every power look and cut-in clears itself")
+		-- Reduced effects: no cut-in and no power look (the radius ring stays).
+		local calm = veteranProfile()
+		calm.settings.lowFX = true
+		push(matchSnapshot(calm, "Wave", {enemies = 0}))
+		fx({kind = "Ability", heroId = "thor", abilityId = thunder.id, abilityKind = thunder.kind, ultimate = true, ownerId = LOCAL_ID,
+			position = v3(0, 0, 0), radius = 14, duration = 2, color = Color3.fromRGB(120, 220, 255)})
+		frames(1 / 30, 6)
+		check(shown() == 0 and named(overlays, "PowerCutIn") == nil, tag .. ": reduced effects draws no power look and no cut-in")
 		fx({kind = "Clear"})
 	end)
 
