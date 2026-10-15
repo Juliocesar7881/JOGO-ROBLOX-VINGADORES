@@ -324,8 +324,16 @@ local function profileSignature()
 	local p = profile()
 	local presented=table.clone(p)
 	-- Only the gifts page renders reward clocks. Updating those clocks must
-	-- not rebuild a shop, inventory or destination page while it is scrolled.
-	if not contextPanel or contextPanel.kind~="rewards" then presented.rewards=nil end
+	-- not rebuild a shop, inventory or destination page while it is scrolled,
+	-- nor the gifts page itself: its clocks tick in place (kit.refreshRewardClocks),
+	-- and only what can be claimed redraws it.
+	if not contextPanel or contextPanel.kind~="rewards" then presented.rewards=nil
+	elseif type(p.rewards)=="table" then
+		local rewards=table.clone(p.rewards)
+		if type(rewards.freeChest)=="table" then rewards.freeChest=table.clone(rewards.freeChest); rewards.freeChest.remaining=nil end
+		if type(rewards.playtime)=="table" then rewards.playtime=table.clone(rewards.playtime); rewards.playtime.seconds=nil end
+		presented.rewards=rewards
+	end
 	-- The weekend event's tag lives on the lobby HUD: its phase is part of the signature.
 	local event = state and state.event
 	if type(event) == "table" then presented.eventPhase = tostring(event.active) .. ":" .. tostring(event.mapId) .. ":" .. tostring(event.startsAt) end
@@ -502,7 +510,11 @@ local quotes = ProductQuotes.new({
 		quoteRefreshPending = true
 		task.delay(0.12, function()
 			quoteRefreshPending = false
-			if contextPanel and (contextPanel.kind == "shop" or contextPanel.kind == "premium") and state and state.phase == "Lobby" then renderContext() end
+			-- A price that arrives updates its own button in place; redrawing the
+			-- whole window for every quote made the shop flicker and stutter.
+			if contextPanel and (contextPanel.kind == "shop" or contextPanel.kind == "premium") and state and state.phase == "Lobby" and refs.context and kit.refreshQuoteButtons then
+				kit.refreshQuoteButtons(refs.context)
+			end
 		end)
 	end,
 })
@@ -676,6 +688,10 @@ openContext = function(kind, data)
 	if kind == "leaderboard" then board.data = nil; loadBoard() end
 	if refs.firstVisitHint then refs.firstVisitHint.Visible = false end
 	renderContext()
+	-- The signature depends on the open screen (only the gifts page reads the
+	-- reward fields): take it as this screen sees it now, or the next periodic
+	-- snapshot would always differ and redraw the screen just opened.
+	if state and state.profile then lastProfileSignature = profileSignature() end
 end
 
 closeContext = function()
@@ -1822,6 +1838,7 @@ local function applyState(nextState)
 		if kit.rebuildSuggestion then kit.rebuildSuggestion(false) end
 		local elevatorMoved = renderElevator()
 		if signature ~= lastProfileSignature or elevatorMoved then renderContext(); updateWorldCosmetics() end
+		if contextPanel and contextPanel.kind == "rewards" and kit.refreshRewardClocks then kit.refreshRewardClocks() end
 	elseif activeMatch() then updateMatch()
 	elseif state.phase == "Results" and signature ~= lastProfileSignature then render() end
 	lastProfileSignature = signature

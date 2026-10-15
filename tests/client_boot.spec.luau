@@ -1240,9 +1240,14 @@ local function session(screen)
 		fx({kind="OpenPanel",panel="premium"})
 		click("Passes")
 		check(countNamed(gui,"PremiumTabs_pass")==1,tag..": premium pass tab stays accessible")
+		-- Prices arrive one by one: each updates its own button, the window is
+		-- never redrawn for them (that flickered and stuttered).
+		local bodyBefore, bannerBefore = named(gui,"ContextBody"), named(gui,"StarterPack")
 		-- A price that never answered offers a retry; one that is not on sale says so.
 		-- Available products update independently of a missing quote.
 		frames(0.5, 20)
+		check(bannerBefore ~= nil and named(gui,"StarterPack") == bannerBefore and bannerBefore.Parent ~= nil and named(gui,"ContextBody") == bodyBefore,
+			tag..": arriving prices update their buttons without redrawing the shop")
 		local retry=named(gui,"Buy_pass:training")
 		check(retry~=nil and retry.Text=="Tentar de novo",tag..": a price with no answer offers a retry, got "..tostring(retry and retry.Text))
 		check(named(gui,"Buy_product:starterPack").Text=="Indisponível",tag..": an unavailable starter pack cannot remain loading")
@@ -3305,6 +3310,48 @@ local function session(screen)
 	--========================================================================
 	-- Results, language and resize
 	--========================================================================
+	-- Opening a screen and leaving it open must not make it flicker: a periodic
+	-- snapshot whose only news is a ticking clock never redraws it.
+	step("an open screen is never redrawn by periodic snapshots or ticking clocks", function()
+		local base = veteranProfile()
+		base.rewards = rewardsFixture("empty")
+		push(lobbySnapshot(base))
+		local redrawn = {}
+		for _, kind in ipairs({ "inventory", "squad", "chests", "bases", "premium", "shop", "rewards", "quests", "modes", "maps", "settings", "talents" }) do
+			-- Missions open from the dock (a board-opened panel closes when the
+			-- commander walks away, and this one stands far from the board).
+			if kind == "quests" then
+				-- A short phone hides the dock behind an open window: close it first.
+				if named(gui, "CloseContext") then clickNamed("CloseContext"); frames(0.5, 1) end
+				clickNamed("Nav_quests")
+			else
+				fx({ kind = "OpenPanel", panel = kind })
+			end
+			frames(0.5, 2)
+			local body = named(gui, "ContextBody")
+			local marker
+			for _, child in ipairs(body and body:GetChildren() or {}) do
+				if not child:IsA("UIComponent") then marker = child; break end
+			end
+			for tick = 1, 4 do
+				local again = table.clone(base)
+				again.rewards = rewardsFixture("empty")
+				again.rewards.freeChest.remaining = 3600 - tick * 2
+				again.rewards.playtime.seconds = 60 + tick * 2
+				push(lobbySnapshot(again))
+				frames(0.5, 1)
+			end
+			-- An empty screen (no missions yet) has no row to watch: the same body must stay.
+			if body == nil or (marker ~= nil and marker.Parent == nil) or named(gui, "ContextBody") ~= body then table.insert(redrawn, kind) end
+		end
+		check(#redrawn == 0, tag .. ": open screens keep their content through periodic snapshots, redrawn: " .. table.concat(redrawn, ", "))
+		local clock = named(gui, "FreeChestClock")
+		fx({ kind = "OpenPanel", panel = "rewards" })
+		clock = named(gui, "FreeChestClock")
+		check(clock ~= nil and string.find(clock.Text, "59m", 1, true) ~= nil, tag .. ": the free chest clock still ticks in place, got " .. tostring(clock and clock.Text))
+		push(lobbySnapshot(veteranProfile()))
+	end)
+
 	step("results and the way back", function()
 		local results = resultsSnapshot(profile)
 		for _, heroId in ipairs(Catalog.HeroOrder) do results.results.mastery[heroId] = 50 end
