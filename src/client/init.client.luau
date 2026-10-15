@@ -1202,6 +1202,8 @@ local function chooseSkill(id)
 	if cooldown > 0 then showToast(T("Habilidade recarregando.", "Ability is recharging."), true); return end
 	clearPlacement()
 	if ability.target == "self" then act("CastSkill", {skillId = id}); return end
+	-- Armed: a short charge sound, then the aim (the power's own sound plays on the cast).
+	audio:Cue("abilityArm")
 	selectedSkill, selectedTower = id, nil
 	if refs.towerPanel then refs.towerPanel.Visible = false end
 	if towerRing then towerRing:Destroy(); towerRing = nil end

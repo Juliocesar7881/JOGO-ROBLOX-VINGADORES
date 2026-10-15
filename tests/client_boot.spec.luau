@@ -3166,6 +3166,31 @@ local function session(screen)
 		check(next(samples) ~= nil and not moved, tag .. ": dock icons with nothing waiting stay still")
 	end)
 
+	step("every hero's power has a sound that fits it, heard by its caster", function()
+		local AudioModule = require(clientModules.Audio)
+		local bank = require(clientModules.SoundBank)
+		local missing = {}
+		for _, heroId in ipairs(Catalog.HeroOrder) do
+			local spec = AudioModule.HeroPower[heroId]
+			if not spec or not bank[spec[1]] or type(spec[2]) ~= "number" or spec[2] < 0.5 or spec[2] > 2 then table.insert(missing, heroId) end
+		end
+		check(#missing == 0, tag .. ": every hero's power names a bank sound and a pitch: " .. table.concat(missing, ", "))
+		-- The commander's own power is heard even when it lands far from the camera.
+		push(matchSnapshot(veteranProfile(), "Wave", {enemies = 0}))
+		local folder = services.SoundService:FindFirstChild("DoomAudio")
+		for _, voice in ipairs(folder:GetChildren()) do if string.match(voice.Name, "^Bank_powers_") then voice:Stop() end end
+		advance(1)
+		local ability = Catalog.Abilities[Catalog.Heroes.ironman.ability]
+		fx({kind = "Ability", heroId = "ironman", abilityId = ability.id, abilityKind = ability.kind, ownerId = LOCAL_ID,
+			position = camera.CFrame.Position + v3(400, 0, 0), radius = 12, color = Color3.fromRGB(255, 90, 70)})
+		local heard = false
+		for _, voice in ipairs(folder:GetChildren()) do
+			if string.match(voice.Name, "^Bank_powers_") and voice.IsPlaying and voice.Volume >= 0.3 then heard = true end
+		end
+		check(heard, tag .. ": the commander hears their own power at full volume, however far it lands")
+		fx({kind = "Clear"})
+	end)
+
 	step("every hero's shot has a weapon sound", function()
 		local EffectsModule = require(effectsScript)
 		local missing = {}

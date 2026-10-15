@@ -1441,7 +1441,9 @@ function Effects:Handle(event)
 		if self.audio then
 			local camera=workspace.CurrentCamera
 			local distance=camera and typeof(event.position)=="Vector3" and (event.position-camera.CFrame.Position).Magnitude or 0
-			self.audio:Ability(Effects.ShotSound(event.heroId),distance,kind,event.heroId)
+			-- The commander's own power is always heard, wherever it lands.
+			local own=self.player~=nil and event.ownerId==self.player.UserId
+			self.audio:Ability(Effects.ShotSound(event.heroId),distance,kind,event.heroId,own)
 		end
 		return
 	end

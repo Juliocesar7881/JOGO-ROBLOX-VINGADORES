@@ -175,7 +175,8 @@ assert(audio:Ability('shotMelee',5),'Melee leader power plays')
 assert(not audio:Ability('shotTech',5),'Repeated power messages are rate limited')
 clock+=1;assert(audio:Ability('shotTech',5),'Tech leader has a distinct power source')
 assert(audio.voices.shotMelee[audio.voiceIndex.shotMelee].SoundId~=audio.voices.shotTech[audio.voiceIndex.shotTech].SoundId,'Power sounds follow the leader family')
-clock+=1;assert(not audio:Ability('shotTech',200),'Distant powers are silent')
+clock+=1;assert(not audio:Ability('shotTech',260),'A teammate power far beyond earshot is silent')
+clock+=1;assert(audio:Ability('shotTech',400,nil,nil,true),'The commander hears their own power however far it lands')
 settings.effects=false;clock+=1;assert(not audio:Ability('shotMelee',5),'Power honours effects mute')
 -- Owner-uploaded material cues replace the compatibility remix, preserving
 -- all rate limits and settings. No fictitious production IDs are introduced.

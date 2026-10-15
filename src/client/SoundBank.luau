@@ -45,6 +45,8 @@ return {
 	powerFire = {asset = "sfxPowers", loop = false, regions = {{7.5, 8.6}}},
 	powerHeal = {asset = "sfxPowers", loop = false, regions = {{8.75, 9.95}}},
 	powerTaunt = {asset = "sfxPowers", loop = false, regions = {{10.1, 10.514469}}},
+	-- Q arms a power that needs a target: the first breath of the magic shimmer, a short charge.
+	abilityArm = {asset = "sfxPowers", loop = false, regions = {{5.75, 6.2}}},
 	boss = {asset = "sfxBoss", loop = false, regions = {{0.15, 2.35}}},
 	bossMetal = {asset = "sfxBoss", loop = false, regions = {{2.5, 4.3}}},
 	bossBeast = {asset = "sfxBoss", loop = false, regions = {{4.45, 6.05}}},

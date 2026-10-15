@@ -47,7 +47,25 @@ local POWER_BANK = {blast="powerBlast",smite="powerLightning",freeze="powerFreez
 	heal="powerHeal",buff="powerHeal",rally="powerHeal",barrier="powerHeal",shield="powerHeal",overdrive="powerHeal",
 	taunt="powerTaunt",meteor="powerFire",fire="powerFire",burn="powerFire",execute="powerBlast",
 	pull="powerMagic",teleport="powerMagic",slow="powerFreeze",stun="powerLightning",reveal="powerMagic",weaken="powerMagic",energy="powerHeal"}
-local HERO_POWER_BANK = {spiderman="powerWeb",iceman="powerFreeze",groot="powerTaunt",wanda="powerMagic",strange="powerMagic",jean="powerFire"}
+-- Every hero's power has its own sound: the bank recording that fits what the
+-- skill does, at a pitch of its own so two powers of the same family still
+-- differ, and an optional accent cue. client_boot checks every hero has one.
+--   powerBlast explosion  powerLightning zap  powerFreeze icy wash  powerWeb whip/slash/whoosh
+--   powerMagic shimmer    powerFire flame     powerHeal warm chime  powerTaunt heavy thump
+local HERO_POWER = {
+	ironman = {"powerBlast", 1.0}, hawkeye = {"powerBlast", 1.25}, falcon = {"powerHeal", 1.1}, bucky = {"powerBlast", 1.15},
+	spiderman = {"powerWeb", 1.0}, widow = {"powerLightning", 1.45}, antman = {"powerMagic", 1.25}, wasp = {"powerLightning", 1.3},
+	rocket = {"powerHeal", 1.2, "collect"}, daredevil = {"powerMagic", 1.35}, shangchi = {"powerMagic", 1.1}, captain = {"powerHeal", 0.9},
+	panther = {"powerHeal", 1.0}, hulk = {"powerBlast", 0.7}, vision = {"powerMagic", 0.95}, warmachine = {"powerBlast", 0.8},
+	starlord = {"powerHeal", 1.05}, groot = {"powerTaunt", 0.75}, thor = {"powerLightning", 0.8}, wanda = {"powerMagic", 1.0},
+	strange = {"powerMagic", 0.8}, ghostrider = {"powerFire", 0.85}, captainmarvel = {"powerBlast", 1.0}, silversurfer = {"powerLightning", 0.9},
+	wolverine = {"powerWeb", 0.7}, cyclops = {"powerBlast", 1.1}, storm = {"powerLightning", 1.0}, jean = {"powerFire", 1.1},
+	iceman = {"powerFreeze", 1.0}, gambit = {"powerBlast", 1.2}, nightcrawler = {"powerMagic", 1.45}, beast = {"powerTaunt", 0.85},
+	psylocke = {"powerWeb", 1.15}, deadpool = {"powerHeal", 1.15}, moonknight = {"powerMagic", 0.85}, nova = {"powerBlast", 0.95},
+	capmen = {"powerHeal", 0.8}, amazon = {"powerWeb", 0.85}, seaking = {"powerFreeze", 0.75}, emerald = {"powerMagic", 0.9},
+	speedster = {"powerWeb", 1.4}, solartitan = {"powerBlast", 0.85}, nightstalker = {"powerBlast", 1.35},
+}
+Audio.HeroPower = HERO_POWER
 local function bankChannel(asset) return string.lower(string.sub(asset,4)) end
 
 function Audio.WeaponProfile(heroId, family)
@@ -55,7 +73,8 @@ function Audio.WeaponProfile(heroId, family)
 end
 
 function Audio.PowerProfile(heroId, kind, family)
-	return HERO_POWER_BANK[heroId] or POWER_BANK[kind] or (family=="shotBlast" and "powerBlast" or "powerMagic")
+	local own = HERO_POWER[heroId or ""]
+	return own and own[1] or POWER_BANK[kind] or (family=="shotBlast" and "powerBlast" or "powerMagic")
 end
 -- Material language using our existing owned recordings: a tactile click,
 -- a mechanical placement, a charging upgrade and a soft wave whoosh.
@@ -67,9 +86,11 @@ local PALETTES = {
 	wave = {{"shotArrow", 0.82, 0.075}},
 	breach = {{"shotBlast", 0.8, 0.12}},
 	abilityReady = {{"click", 1.1, 0.05}},
+	-- Q arms a power that needs a target: a short charge before the aim.
+	abilityArm = {{"shotMagic", 1.3, 0.09}, {"click", 1.25, 0.05, 0.04}},
 	deny = {{"click", 0.65, 0.075}},
 }
-local CUE_GAPS = {click=0.08,open=0.25,deny=0.6,collect=0.2,place=0.14,upgrade=0.3,abilityReady=1,wave=0.6,breach=0.4}
+local CUE_GAPS = {click=0.08,open=0.25,deny=0.6,collect=0.2,place=0.14,upgrade=0.3,abilityReady=1,abilityArm=0.3,wave=0.6,breach=0.4}
 local PITCHES = {0.96, 1.03, 0.99, 1.06, 0.93}
 -- Timbre belongs to the weapon, not the rarity. Heavy equipment gets a
 -- lower register; agile tools stay short and bright. Shared voices remain
@@ -598,18 +619,27 @@ function Audio:Shot(name, distance, heroId)
 	return (pcall(function() voice:Play() end))
 end
 
--- Powers inherit the leader's weapon family instead of one identical jingle.
-function Audio:Ability(family, distance, kind, heroId)
+-- A power plays its hero's own sound (HERO_POWER). The commander's own cast is
+-- always heard at full volume, wherever it lands (it used to fade out, and fall
+-- silent past 90 studs from the camera); a teammate's fades with distance.
+local POWER_EARSHOT = 220
+function Audio:Ability(family, distance, kind, heroId, own)
 	if not self:_allowed(true,"ability") then return false end
 	local now = os.clock()
-	if now-(self.lastCue.ability or -math.huge)<0.6 or (distance or 0)>EARSHOT then return false end
-	self.lastCue.ability=now
-	if self:_bankPlay(Audio.PowerProfile(heroId,kind,family),
-		{volume=.15*math.clamp(1-(distance or 0)/EARSHOT,.12,1),duck=.45}) then return true end
+	local gate = own and "abilityOwn" or "ability"
+	if now-(self.lastCue[gate] or -math.huge)<0.6 then return false end
+	if not own and (distance or 0)>POWER_EARSHOT then return false end
+	self.lastCue[gate]=now
+	local volume = own and .34 or .26*math.clamp(1-(distance or 0)/POWER_EARSHOT,.3,1)
+	local spec = HERO_POWER[heroId or ""]
+	if self:_bankPlay(Audio.PowerProfile(heroId,kind,family), {volume=volume,pitch=spec and spec[2] or 1,duck=own and .9 or .45}) then
+		if spec and spec[3] then self:Cue(spec[3], 0) end
+		return true
+	end
 	local voice=self:_voice(family) or self:_voice("ability")
 	if not voice then return false end
-	voice.Volume=0.15*math.clamp(1-(distance or 0)/EARSHOT,0.12,1)
-	voice.PlaybackSpeed=(self:_sound(family) or self:_sound("ability")).PlaybackSpeed*0.78
+	voice.Volume=volume
+	voice.PlaybackSpeed=(self:_sound(family) or self:_sound("ability")).PlaybackSpeed*0.78*(spec and spec[2] or 1)
 	local filter=voice:FindFirstChild("WeaponTone")
 	if filter then filter.HighGain,filter.MidGain,filter.LowGain=-3,0,1 end
 	return pcall(function() SoundService:PlayLocalSound(voice) end)
