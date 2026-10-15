@@ -511,7 +511,7 @@ local HERO_LOOK = {
 	daredevil = { colors = { head = Color3.fromRGB(70, 82, 110), chest = Color3.fromRGB(70, 82, 110), pelvis = Color3.fromRGB(44, 52, 74), upperArm = Color3.fromRGB(70, 82, 110), lowerArm = Color3.fromRGB(70, 82, 110), hand = Color3.fromRGB(44, 52, 74), upperLeg = Color3.fromRGB(70, 82, 110), lowerLeg = Color3.fromRGB(70, 82, 110), foot = Color3.fromRGB(44, 52, 74) } },
 	shangchi = { colors = { chest = Color3.fromRGB(40, 150, 110), pelvis = HC.ink, upperArm = Color3.fromRGB(40, 150, 110), lowerArm = HC.skin, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { HC.ink, "fringe" } },
 	-- Shield Captain: teal uniform, navy trousers, gloves and boots; a bigger head and hands read at the game camera.
-	captain = { suit = Color3.fromRGB(28, 50, 108), body = { width = 1.08, chest = 1.06, arm = 1.08, hand = 1.18, head = 1.1, leg = 1.04 }, colors = { skin = Color3.fromRGB(240, 192, 156), head = Color3.fromRGB(240, 192, 156), chest = Color3.fromRGB(24, 166, 156), pelvis = Color3.fromRGB(28, 50, 108), upperArm = Color3.fromRGB(24, 166, 156), lowerArm = Color3.fromRGB(28, 50, 108), hand = Color3.fromRGB(28, 50, 108), upperLeg = Color3.fromRGB(28, 50, 108), lowerLeg = Color3.fromRGB(28, 50, 108), foot = Color3.fromRGB(28, 50, 108) } },
+	captain = { suit = Color3.fromRGB(28, 50, 108), body = { width = 1.08, chest = 1.06, arm = 1.08, hand = 1.18, head = 1.1, leg = 1.04 }, colors = { skin = Color3.fromRGB(222, 164, 124), head = Color3.fromRGB(222, 164, 124), chest = Color3.fromRGB(20, 148, 140), pelvis = Color3.fromRGB(28, 50, 108), upperArm = Color3.fromRGB(20, 148, 140), lowerArm = Color3.fromRGB(28, 50, 108), hand = Color3.fromRGB(28, 50, 108), upperLeg = Color3.fromRGB(28, 50, 108), lowerLeg = Color3.fromRGB(28, 50, 108), foot = Color3.fromRGB(28, 50, 108) } },
 	panther = { colors = { head = Color3.fromRGB(58, 36, 96), chest = Color3.fromRGB(58, 36, 96), pelvis = Color3.fromRGB(44, 28, 74), upperArm = Color3.fromRGB(58, 36, 96), lowerArm = Color3.fromRGB(58, 36, 96), hand = Color3.fromRGB(44, 28, 74), upperLeg = Color3.fromRGB(58, 36, 96), lowerLeg = Color3.fromRGB(58, 36, 96), foot = Color3.fromRGB(44, 28, 74) }, shiny = true },
 	hulk = { body = { scale = 1.72, width = 1.1, depth = 1.12, chest = 1.14, head = 0.8, arm = 1.55, hand = 1.3, leg = 1.36, legLength = 0.88, torsoLength = 1.1, foot = 1.1 },
 		colors = { skin = Color3.fromRGB(152, 138, 120), head = Color3.fromRGB(152, 138, 120), chest = Color3.fromRGB(152, 138, 120), pelvis = Color3.fromRGB(86, 76, 66), upperArm = Color3.fromRGB(152, 138, 120), lowerArm = Color3.fromRGB(140, 126, 110), hand = Color3.fromRGB(152, 138, 120), upperLeg = Color3.fromRGB(86, 76, 66), lowerLeg = Color3.fromRGB(140, 126, 110), foot = Color3.fromRGB(120, 108, 96) }, face = "angry" },
@@ -629,7 +629,7 @@ HERO_EXTRAS.ironman = function(f)
 end
 HERO_EXTRAS.captain = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local teal, navy, gold, cream = Color3.fromRGB(24, 166, 156), Color3.fromRGB(28, 50, 108), Color3.fromRGB(244, 190, 58), Color3.fromRGB(240, 232, 212)
+	local teal, navy, gold, cream = Color3.fromRGB(20, 148, 140), Color3.fromRGB(28, 50, 108), Color3.fromRGB(244, 190, 58), Color3.fromRGB(240, 232, 212)
 	-- Shield Captain: an open-faced teal dome helmet with a gold ridge, a teal
 	-- uniform with gold epaulettes over navy trousers, gloves and boots, and a
 	-- big round shield of concentric bands. His badge is his own: a gold
