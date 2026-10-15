@@ -68,6 +68,8 @@ local services = {
 	},
 	RunService = { IsStudio = function() return isStudio end },
 	HttpService = { GenerateGUID = function() guid += 1; return "test-uuid-" .. guid end },
+	-- An unrestricted account by default; one block below restricts player 7.
+	PolicyService = { GetPolicyInfoForPlayerAsync = function() return { ArePaidRandomItemsRestricted = false, IsPaidItemTradingAllowed = true } end },
 }
 local game = { JobId = "unit-server", GetService = function(_, name) return services[name] end }
 local Enum = { InfoType = { GamePass = "pass", Product = "product" }, ProductPurchaseDecision = { NotProcessedYet = "pending", PurchaseGranted = "granted" } }
@@ -440,14 +442,25 @@ end
 -- Some regions restrict paid random items, so Gold packs are withheld there.
 do
 	services.PolicyService = { GetPolicyInfoForPlayerAsync = function(_, who)
-		return { ArePaidRandomItemsRestricted = who.UserId == 7 }
+		return { ArePaidRandomItemsRestricted = who.UserId == 7, IsPaidItemTradingAllowed = who.UserId ~= 7 }
 	end }
 	local restricted, free = player(7), player(8)
 	local regional = PlayerService.new(config, Catalog, nil, Rules)
 	regional:Load(restricted); regional:Load(free)
 	check(regional:Snapshot(restricted).paidRandomRestricted == true, "The policy reaches the snapshot")
 	local _, packRestricted = regional:Handle(restricted, "ProductInfo", { kind = "product", key = "gold1000" }, true)
-	check(not packRestricted, "Gold packs are unavailable to a restricted player")
+	-- Chests are closed to a restricted account, so Gold bought with Robux can
+	-- never become a random item there: every Robux product stays on sale.
+	check(packRestricted, "Gold packs are sold to a restricted player too")
+	local _, bundleRestricted = regional:Handle(restricted, "ProductInfo", { kind = "product", key = "starterPack" }, true)
+	check(bundleRestricted, "The Starter Pack is sold to a restricted player too")
+	-- No paid shortcut to free chests where paid random items are restricted.
+	regional.records[7].passes.vip = true
+	check(regional:Get(restricted).rewards.freeChest.cooldown == Catalog.Rewards.freeChest.cooldown, "A restricted VIP waits the normal free chest time")
+	-- Paid item trading follows the account's policy.
+	check(regional:Get(restricted).tradeAllowed == false and regional:Get(free).tradeAllowed == true, "Trading follows IsPaidItemTradingAllowed")
+	local _, tradeRestricted = regional:Handle(restricted, "TradeOffer", { userId = 8 }, true)
+	check(not tradeRestricted, "A trade-restricted account cannot offer a trade")
 	local _, packFree = regional:Handle(free, "ProductInfo", { kind = "product", key = "gold1000" }, true)
 	check(packFree, "Gold packs are available elsewhere")
 	local _, passRestricted = regional:Handle(restricted, "ProductInfo", { kind = "pass", key = "collector" }, true)
@@ -458,7 +471,7 @@ do
 	local beforeRestricted=regional:Get(restricted).gold
 	local _, restrictedChest = regional:Handle(restricted, "OpenChest", { chestId = "rare" }, true)
 	check(not restrictedChest and regional:Get(restricted).gold==beforeRestricted, "Restricted random purchases rejected even with sufficient gold")
-	services.PolicyService = nil
+	services.PolicyService = { GetPolicyInfoForPlayerAsync = function() return { ArePaidRandomItemsRestricted = false, IsPaidItemTradingAllowed = true } end }
 end
 
 -- Lease prevents concurrent servers; releasing permits the next place to load.
@@ -1172,6 +1185,11 @@ do
 		local bought = service:Get(buyer).seasonStatus
 		check(bought.owned == true and bought.claimablePremium == 2, "The product opens this season's premium track for the levels already reached")
 		check(service:_receipt({ PlayerId = 86, ProductId = 105, PurchaseId = "season-86" }) == "granted" and service:Get(buyer).seasonStatus.owned == true, "A replayed season receipt is inert")
+		-- Never sold twice; a racing second purchase is paid back in Gold.
+		local _, twice = service:Handle(buyer, "ProductInfo", { kind = "product", key = "seasonPass" }, true)
+		check(not twice, "An open premium track is not offered again")
+		local goldBefore = service:Get(buyer).gold
+		check(service:_receipt({ PlayerId = 86, ProductId = 105, PurchaseId = "season-86b" }) == "granted" and service:Get(buyer).gold == goldBefore + Catalog.Products.Consumables.seasonPass.price * 10, "A second season purchase becomes Gold")
 	end
 	-- Bundles: the receipt pays Gold and credits heroes by rarity; the player then chooses them one by one.
 	-- (Its own closure: the enclosing block is at Luau's local register limit.)
@@ -1270,6 +1288,49 @@ do
 		end)
 		local _, capped = service:Handle(a, "TradeOffer", { userId = 89 }, true)
 		check(not capped and service:Get(a).tradesLeft == 0, "The day's limit stops a new trade")
+		clockOffset -= 2 * Catalog.Trade.lockSeconds
+	end)()
+	-- A trade whose second half fails is undone: no hero is duplicated.
+	;(function()
+		local a, b = player(94), player(95)
+		service:Load(a); service:Load(b)
+		friends["94:95"], friends["95:94"] = true, true
+		service:_transaction(a, function(profile, now) service:_grantHero(profile, "thor", now); profile.loadout = { "ironman" }; return true end)
+		service:_transaction(b, function(profile, now) service:_grantHero(profile, "wanda", now); profile.loadout = { "ironman" }; return true end)
+		local function trade()
+			service:Handle(a, "TradeOffer", { userId = 95 }, true)
+			service:Handle(b, "TradeAccept", {}, true)
+			service:Handle(a, "TradeSet", { heroId = "thor" }, true)
+			service:Handle(b, "TradeSet", { heroId = "wanda" }, true)
+			clockOffset += Catalog.Trade.lockSeconds
+			service:Handle(a, "TradeConfirm", {}, true)
+			return service:Handle(b, "TradeConfirm", {}, true)
+		end
+		-- The partner's half fails (a store error at the worst moment).
+		local original = service._transaction
+		service._transaction = function(self, who, mutate, operationId, options)
+			if type(operationId) == "string" and string.sub(operationId, -3) == ":95" then return false, "store down" end
+			return original(self, who, mutate, operationId, options)
+		end
+		local _, failed = trade()
+		service._transaction = original
+		local pa, pb = service:Get(a), service:Get(b)
+		check(not failed and pa.heroes.thor ~= nil and pa.heroes.wanda == nil and pb.heroes.wanda ~= nil and pb.heroes.thor == nil, "A failed second half undoes the first: each keeps their own hero")
+		-- Now the server closes before the first half can be settled: the next load settles it.
+		service._transaction = function(self, who, mutate, operationId, options)
+			if type(operationId) == "string" and (string.sub(operationId, -3) == ":95" or string.find(operationId, ":settle", 1, true)) then return false, "server closing" end
+			return original(self, who, mutate, operationId, options)
+		end
+		trade()
+		service._transaction = original
+		check(service:Get(a).heroes.wanda ~= nil and service:Get(a).heroes.thor == nil, "(setup) the first half landed and could not be settled")
+		local _, stuck = service:Handle(a, "TradeOffer", { userId = 95 }, true)
+		service:Handle(a, "TradeCancel", {}, true)
+		service:Release(a)
+		service:Load(a)
+		local settled = service:Get(a)
+		check(settled.heroes.thor ~= nil and settled.heroes.wanda == nil and service:Get(b).heroes.wanda ~= nil, "The next load undoes a half-written trade")
+		check(#settled.loadout >= 1 and table.find(settled.loadout, "wanda") == nil, "The undone hero leaves the team too")
 		clockOffset -= 2 * Catalog.Trade.lockSeconds
 	end)()
 	-- The day's market: an exact hero for Gold, once per account per day.

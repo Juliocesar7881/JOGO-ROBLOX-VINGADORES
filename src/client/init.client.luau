@@ -960,9 +960,7 @@ renderLobby = function()
 			elseif tonumber(p.starterOfferEndsAt) and p.starterOfferEndsAt>os.time() and kit.productConfigured and kit.productConfigured("product","starterPack") then
 				-- Nothing waiting: the welcome offer, with how long it still points here.
 				local pack=Catalog.Products.Consumables.starterPack
-				local left=p.starterOfferEndsAt-os.time()
-				local clock=left>=86400 and (math.floor(left/86400)..T(" dias"," days")) or (math.floor(left/3600).."h "..string.format("%02d",math.floor((left%3600)/60)).."m")
-				key,suggestion="starter",{T("Pacote Inicial: ","Starter Pack: ")..L(Catalog.Heroes[pack.heroId].name).." + "..number(pack.gold)..T(" Ouro  •  termina em "," Gold  •  ends in ")..clock,function() openContext("premium",{hud=true,shopKind="product"}) end}
+				key,suggestion="starter",{T("Pacote Inicial: ","Starter Pack: ")..L(Catalog.Heroes[pack.heroId].name).." + "..number(pack.gold)..T(" Ouro  •  só uma vez por conta"," Gold  •  once per account"),function() openContext("premium",{hud=true,shopKind="product"}) end}
 			end
 		end
 		if not force and key==kit.suggestionKey and (key==nil or refs.firstVisitHint and refs.firstVisitHint.Parent) then return end

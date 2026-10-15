@@ -556,9 +556,9 @@ function Panels.new(ctx)
 		if not pack or profile().starterPack or not configured("product","starterPack") then return end
 		local info=productInfo["product:starterPack"]
 		local ready=type(info)=="table"
-		local endsAt=tonumber(profile().starterOfferEndsAt)
-		local left=endsAt and math.max(0,endsAt-os.time()) or nil
-		local urgency=left and (left>=86400 and (T("Oferta de boas-vindas: ","Welcome offer: ")..math.floor(left/86400)..T(" dias"," days")) or (T("Termina em ","Ends in ")..math.floor(left/3600).."h "..string.format("%02d",math.floor((left%3600)/60)).."m")) or T("Só uma vez","One time only")
+		-- The pack stays for sale, so the banner never shows a countdown (Roblox:
+		-- no timer that is not accurate). What is true: once per account.
+		local urgency=T("Boas-vindas  •  só uma vez por conta","Welcome  •  once per account")
 		local label=ready and (tostring(info.price).." Robux"..(info.preview and T(" • Teste"," • Preview") or ""))
 			or info=="retry" and T("Tentar de novo","Try again") or info==nil and T("Carregando preço…","Loading price…") or T("Indisponível","Unavailable")
 		local function purchase()
@@ -581,7 +581,7 @@ function Panels.new(ctx)
 		local row=UI.roundFrame(body,{Name="StarterPack",Size=UDim2.new(1,-6,0,132),BackgroundColor3=C.gold:Lerp(C.panel,0.45)},C.gold)
 		UI.candy(row)
 		heroPortrait(row,pack.heroId,{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(104,116)})
-		local chip=UI.chip(row,urgency,left and C.green or C.red,{Name="StarterUrgency",Position=UDim2.fromOffset(120,10),Size=UDim2.fromOffset(left and 230 or 120,24),TextSize=13})
+		local chip=UI.chip(row,urgency,C.green,{Name="StarterUrgency",Position=UDim2.fromOffset(120,10),Size=UDim2.fromOffset(260,24),TextSize=13})
 		UI.fit(chip,9)
 		UI.label(row,Catalog.Upper(L(pack.name)),{Position=UDim2.fromOffset(120,34),Size=UDim2.new(1,-130,0,28),Font=UI.Fonts.display,TextSize=22,TextColor3=C.gold})
 		UI.oneLine(UI.label(row,L(Catalog.Heroes[pack.heroId].name).." + "..UI.format(pack.gold)..T(" Ouro"," Gold"),{Position=UDim2.fromOffset(120,60),Size=UDim2.new(1,-130,0,22),Font=UI.Fonts.display,TextSize=16}),10)
@@ -598,9 +598,14 @@ function Panels.new(ctx)
 		for _,group in ipairs({{kind="hero",items=Catalog.Products.Heroes},{kind="pass",items=Catalog.Products.Passes},{kind="product",items=Catalog.Products.Consumables}}) do
 			if group.kind~=premiumCategory then continue end
 			-- Cheapest first; the starter pack has its own banner above.
-			local keys={}; for key in pairs(group.items) do if key~="starterPack" and configured(group.kind,key) then table.insert(keys,key) end end
+			local keys={}
+			for key in pairs(group.items) do
+				-- The permanent season pass gives way to the per-season product (still shown to its owners).
+				local retired=group.kind=="pass" and key=="season" and (profile().passes or {}).season~=true and configured("product","seasonPass")
+				if key~="starterPack" and configured(group.kind,key) and not retired then table.insert(keys,key) end
+			end
 			-- Things you do not own come first: a shop that opens on "already yours" sells nothing.
-			local function ownedKey(key) return group.kind=="hero" and (profile().heroes or {})[key]~=nil or group.kind=="pass" and (profile().passes or {})[key]==true end
+			local function ownedKey(key) return group.kind=="hero" and (profile().heroes or {})[key]~=nil or group.kind=="pass" and (profile().passes or {})[key]==true or group.kind=="product" and key=="seasonPass" and (profile().seasonStatus or {}).owned==true end
 			table.sort(keys,function(a,b)
 				local oa,ob=ownedKey(a),ownedKey(b)
 				if oa~=ob then return not oa end
@@ -623,7 +628,7 @@ function Panels.new(ctx)
 			end
 			for _,key in ipairs(keys) do
 				local def=group.items[key]; local info=productInfo[group.kind..":"..key]
-				local owned=group.kind=="hero" and (profile().heroes or {})[key] or group.kind=="pass" and (profile().passes or {})[key]
+				local owned=ownedKey(key)
 				local tint=group.kind=="hero" and UI.color(Catalog.Rarities[Catalog.Heroes[key].rarity].color) or group.kind=="pass" and C.green or C.gold
 				-- A short phone screen gets a slimmer row, so more than one product shows.
 				local slim=UI.sizeClass(screenSize().X,screenSize().Y).short
@@ -1105,7 +1110,7 @@ function Panels.new(ctx)
 		local wide=width>=640
 		-- Bases have their own dock entry and screen.
 		-- Trading with a friend starts here: the heroes are already on screen.
-		UI.button(body,T("Trocar herói com amigo","Trade a hero with a friend"),function() openContext("trade",{}) end,{Name="OpenTrade",Size=UDim2.new(1,-6,0,40),BackgroundColor3=C.blue,TextSize=16})
+		if profile().tradeAllowed~=false then UI.button(body,T("Trocar herói com amigo","Trade a hero with a friend"),function() openContext("trade",{}) end,{Name="OpenTrade",Size=UDim2.new(1,-6,0,40),BackgroundColor3=C.blue,TextSize=16}) end
 		local team=UI.row(body,104)
 		team.Name="TeamRow"
 		local lineup=UI.frame(team,{Name="SquadSlots",Size=UDim2.new(1,0,0,104),BackgroundTransparency=1})

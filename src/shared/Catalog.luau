@@ -1061,8 +1061,8 @@ Catalog.Products = {
 		gold30000 = { id = 0, price = 79, gold = 30000, name = text("30.000 de Ouro", "30,000 Gold") },
 		-- Once per account: an epic hero and Gold. Bought again (a second
 		-- prompt racing the first), it is paid in Gold instead of the hero.
-		-- offerSeconds: how long after the account's first visit the lobby keeps
-		-- pointing at the pack with a countdown. The pack itself stays for sale.
+		-- offerSeconds: how long after the account's first visit the lobby strip
+		-- suggests the pack. No countdown is shown: the pack stays for sale.
 		starterPack = { id = 0, price = 19, gold = 5000, heroId = "hulk", repeatGold = 2500, offerSeconds = 3 * 86400, name = text("Pacote Inicial", "Starter Pack"),
 			description = text("Uma vez por conta: Gigante Furioso (épico) + 5.000 de Ouro.", "Once per account: Raging Giant (epic) + 5,000 Gold.") },
 		-- The season's premium track, bought for the season running at purchase

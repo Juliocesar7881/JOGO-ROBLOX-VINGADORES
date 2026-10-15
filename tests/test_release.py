@@ -112,7 +112,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn(('MapImages.asgard', 4242), configured)
         original = (ROOT / 'src/shared/Config.luau').read_text(encoding='utf-8')
         source = release.config_source(original, data, self.template)
-        harness = 'local original=(function()\n' + original + '\nend)()\nlocal c=(function()\n' + source + '\nend)()\nassert(c.MapImages.asgard==4242)\nfor key,id in pairs(original.MapImages) do if key~="asgard" then assert(id>0 and c.MapImages[key]==id, "release must preserve shipped photographs") end end\n'
+        harness = 'local original=(function()\n' + original + '\nend)()\nlocal c=(function()\n' + source + '\nend)()\nassert(c.MapImages.asgard==4242)\nfor key,id in pairs(original.MapImages) do if key~="asgard" then assert(c.MapImages[key]==id, "release must preserve shipped photographs (0 keeps the drawn diorama)") end end\n'
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'config.luau'
             path.write_text(harness, encoding='utf-8')

@@ -940,7 +940,7 @@ local function session(screen)
 		push(lobbySnapshot(fresh))
 		fx({ kind = "OpenPanel", panel = "premium" })
 		local urgency = named(gui, "StarterUrgency")
-		check(urgency ~= nil and string.find(urgency.Text, "2 dias", 1, true) ~= nil, tag .. ": the shop banner counts the offer down in days, got " .. tostring(urgency and urgency.Text))
+		check(urgency ~= nil and string.find(urgency.Text, "uma vez", 1, true) ~= nil and string.find(urgency.Text, "dias", 1, true) == nil and string.find(urgency.Text, "Termina", 1, true) == nil, tag .. ": the shop banner says once per account and shows no countdown, got " .. tostring(urgency and urgency.Text))
 		if contextOpen() then click("X") end
 		local strip = named(gui, "GuideTip")
 		check(strip ~= nil and string.find(strip.Text, "Pacote Inicial", 1, true) ~= nil, tag .. ": with nothing else waiting, the lobby strip points at the welcome offer, got " .. tostring(strip and strip.Text))

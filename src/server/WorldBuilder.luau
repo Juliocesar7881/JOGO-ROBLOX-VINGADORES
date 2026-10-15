@@ -3121,7 +3121,6 @@ ENEMY_EXTRAS.redskull = function(f)
 	f.add("Head", "Nose", Vector3.new(0.16, 0.18, 0.05) * s, f.face(0, -0.12, 0.0), EC.ink, FABRIC, "wedge")
 	f.add("Head", "Teeth", Vector3.new(0.6, 0.2, 0.06) * s, f.face(0, -0.44, 0.0), EC.bone, FABRIC)
 	f.add("UpperTorso", "Collar", c * Vector3.new(0.8, 0.26, 1.1), CFrame.new(0, c.Y * 0.44, 0), coat:Lerp(FIGURE_WHITE, 0.08), FABRIC)
-	f.add("LeftUpperArm", "Armband", f.sizes.upperArm * Vector3.new(1.08, 0.26, 1.08), CFrame.new(0, -0.1 * s, 0), Color3.fromRGB(180, 30, 36), FABRIC)
 	belt(f, Color3.fromRGB(70, 56, 40), Color3.fromRGB(214, 172, 72))
 	f.add("RightHand", "Cube", Vector3.new(0.6, 0.6, 0.6) * s, CFrame.new(0, -0.5 * s, -0.1 * s) * CFrame.Angles(0.6, 0.6, 0), Color3.fromRGB(110, 200, 255), NEON)
 end
@@ -7156,7 +7155,7 @@ local FACADES = {}
 local CITY_BILLBOARDS = {
 	{ "FERRO INDÚSTRIAS", { 255, 196, 72 } }, { "NOTÍCIAS DA CIDADE", { 255, 90, 90 } }, { "NEO CORP", { 110, 220, 255 } },
 	{ "MULTIVERSO", { 240, 240, 255 } }, { "AGÊNCIA", { 140, 200, 255 } }, { "QUANTUM TECH", { 255, 120, 150 } },
-	{ "ROXXON", { 255, 160, 60 } }, { "BAXTER", { 120, 170, 255 } },
+	{ "ÓRBITA", { 255, 160, 60 } }, { "VOLT ENERGIA", { 120, 170, 255 } },
 }
 
 -- `face` sits at the bottom centre of the building's inner face, looking into

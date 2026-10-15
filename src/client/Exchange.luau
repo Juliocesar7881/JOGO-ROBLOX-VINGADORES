@@ -69,6 +69,10 @@ function Exchange.new(ctx)
 		local p=profile()
 		local trade=type(p.trade)=="table" and p.trade or nil
 		local left=tonumber(p.tradesLeft) or 0
+		if p.tradeAllowed==false then
+			UI.label(body,T("Trocas não estão disponíveis para esta conta.","Trading is not available for this account."),{Name="TradeBlocked",Size=UDim2.new(1,-6,0,48),TextWrapped=true,TextSize=16,TextColor3=C.muted})
+			return
+		end
 		if not trade then
 			UI.label(body,T("Troque 1 herói por 1 herói com um amigo do Roblox que esteja neste servidor. Nunca Ouro, nunca heróis iniciais nem os da sua equipe.","Trade 1 hero for 1 hero with a Roblox friend in this server. Never Gold, never starter heroes or the ones on your team."),{Name="TradeIntro",Size=UDim2.new(1,-6,0,64),TextWrapped=true,TextSize=15,TextColor3=C.muted})
 			UI.label(body,left==1 and T("1 troca restante hoje","1 trade left today") or (tostring(left)..T(" trocas restantes hoje"," trades left today")),{Name="TradesLeft",Size=UDim2.new(1,-6,0,24),TextSize=14,TextColor3=C.gold})

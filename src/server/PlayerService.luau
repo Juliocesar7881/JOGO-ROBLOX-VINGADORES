@@ -496,23 +496,27 @@ function PlayerService:Load(player)
 	if not result then return nil, failure end
 	self:_refreshPasses(player)
 	self:_refreshPolicy(player)
+	-- A trade left half-written by a closed server is settled before play.
+	self:_settleTrades(player)
 	task.spawn(function() self:_flushBoards(player) end)
 	self:_notify(player)
 	return self:Snapshot(player)
 end
 
--- Some regions do not allow paid random items. Gold from Robux can end up in a
--- chest, so a restricted player is not offered Gold packs. Chests themselves
--- stay open to everyone: they cost earned Gold, and every hero also has a
--- direct Robux price, so nothing is locked behind chance.
+-- Roblox's per-account rules. Where paid random items are restricted, chests
+-- are closed to the account (OpenChest refuses; it buys exact heroes with
+-- BuyGuaranteed instead), so Gold bought with Robux can never become a random
+-- item and every Robux product stays on sale. Paid item trading follows
+-- IsPaidItemTradingAllowed; when the policy cannot be read, no trading.
 function PlayerService:_refreshPolicy(player)
 	local record = self.records[player.UserId]
 	if not record or self.memory then return end
-	local ok, restricted = pcall(function()
-		local policy = game:GetService("PolicyService"):GetPolicyInfoForPlayerAsync(player)
-		return policy.ArePaidRandomItemsRestricted == true
+	local ok, policy = pcall(function()
+		return game:GetService("PolicyService"):GetPolicyInfoForPlayerAsync(player)
 	end)
-	record.randomRestricted = ok and restricted == true
+	local known = ok and type(policy) == "table"
+	record.randomRestricted = known and policy.ArePaidRandomItemsRestricted == true
+	record.tradeAllowed = known and policy.IsPaidItemTradingAllowed ~= false
 end
 
 function PlayerService:_refreshPasses(player)
@@ -531,7 +535,7 @@ function PlayerService:_transaction(player, mutate, operationId, options)
 	operationId = operationId or HttpService:GenerateGUID(false)
 	local ok, result = self:_withLock(player.UserId, function()
 		local record = self.records[player.UserId]
-		if not record or record.player ~= player or record.lost or (record.closing and not options.releasing) then return false, "Perfil ainda não disponível. / Profile not available yet." end
+		if not record or record.player ~= player or record.lost or (record.closing and not options.releasing and not options.force) then return false, "Perfil ainda não disponível. / Profile not available yet." end
 		local rejected, value, lost = nil, nil, false
 		-- Fixed before the callback, which UpdateAsync may run more than once.
 		local elapsed = math.clamp(os.time() - (record.playMark or os.time()), 0, PLAYTIME_CAP)
@@ -820,7 +824,8 @@ function PlayerService:Snapshot(player)
 		local endsAt = (tonumber(record.profile.createdAt) or now) + pack.offerSeconds
 		if endsAt > now then result.starterOfferEndsAt = endsAt end
 	end
-	result.rewards = self.rules.RewardsStatus(record.profile, now, math.clamp(now - (record.playMark or now), 0, PLAYTIME_CAP), record.passes.vip == true)
+	result.rewards = self.rules.RewardsStatus(record.profile, now, math.clamp(now - (record.playMark or now), 0, PLAYTIME_CAP), record.passes.vip == true and not record.randomRestricted)
+	result.tradeAllowed = record.tradeAllowed ~= false
 	result.xpNext = result.level < 50 and xpThreshold(result.level + 1) or result.xp
 	result.xpFloor = xpThreshold(result.level)
 	result.season = self:_season()
@@ -906,6 +911,9 @@ end
 function PlayerService:_tradeable(profile, partnerProfile, heroId)
 	local hero = type(heroId) == "string" and self.catalog.Heroes[heroId]
 	if not hero or not profile.heroes[heroId] then return "Você não tem este herói. / You do not own this hero." end
+	for _, entry in ipairs(type(profile._trades) == "table" and profile._trades or {}) do
+		if entry.pending and entry.got == heroId then return "Esta troca ainda está sendo confirmada. / This trade is still being confirmed." end
+	end
 	if hero.starter then return "Heróis iniciais não são trocados. / Starter heroes cannot be traded." end
 	for _, id in ipairs(profile.loadout or {}) do
 		if id == heroId then return "Tire o herói da equipe antes de trocar. / Remove the hero from your team before trading." end
@@ -945,15 +953,17 @@ end
 
 function PlayerService:_trade(player, record, action, payload)
 	local config = self.catalog.Trade
-	if not config then return false, "Trocas desligadas. / Trading is off." end
+	if not config or self.closed then return false, "Trocas desligadas. / Trading is off." end
 	local userId, now = player.UserId, os.time()
 	local session = self.trades[userId]
+	if action == "TradeOffer" and record.tradeAllowed == false then return false, "Trocas não estão disponíveis para esta conta. / Trading is not available for this account." end
 	if action == "TradeOffer" then
 		if session then return false, "Você já está em uma troca. / You are already trading." end
 		local targetId = integer(payload.userId, 1, 9007199254740991) and math.floor(payload.userId)
 		local target = targetId and self.records[targetId]
 		if not target or targetId == userId or target.closing or target.lost then return false, "Esse jogador não está aqui. / That player is not here." end
 		if self.trades[targetId] then return false, "Seu amigo já está em outra troca. / Your friend is already trading." end
+		if target.tradeAllowed == false then return false, "Trocas não estão disponíveis para a conta do seu amigo. / Trading is not available for your friend's account." end
 		local friends = false
 		pcall(function() friends = player:IsFriendsWith(targetId) == true end)
 		if not friends then return false, "Trocas só entre amigos do Roblox. / Trades are only between Roblox friends." end
@@ -1013,35 +1023,82 @@ function PlayerService:_executeTrade(session)
 	-- The hero travels as it is: mastery, stars, rank, cards, shiny, ability rank.
 	local recA, rankA = copy(a.profile.heroes[giveA]), a.profile.abilities[giveA] or 1
 	local recB, rankB = copy(b.profile.heroes[giveB]), b.profile.abilities[giveB] or 1
-	local function move(profile, now, give, get, getRecord, getRank, withId)
+	-- `first`: the half written first is marked pending with a copy of the hero
+	-- it gave, so it can be undone if the partner's half never lands.
+	local function move(profile, now, give, get, getRecord, getRank, withId, first)
 		local why = self:_tradeable(profile, nil, give)
 		if why then return false, why end
 		if profile.heroes[get] then return false, "Você já tem este herói. / You already own this hero." end
 		if tradesToday(profile, now) >= self.catalog.Trade.perDay then return false, "Limite de trocas de hoje atingido. / Today's trade limit was reached." end
+		local entry = { id = session.id, with = withId, gave = give, got = get, at = now }
+		if first then entry.pending, entry.gaveRecord, entry.gaveRank = true, copy(profile.heroes[give]), profile.abilities[give] or 1 end
 		profile.heroes[give], profile.abilities[give] = nil, nil
 		profile.heroes[get], profile.abilities[get] = copy(getRecord), getRank
 		profile._trades = type(profile._trades) == "table" and profile._trades or {}
-		table.insert(profile._trades, { id = session.id, with = withId, gave = give, got = get, at = now })
+		table.insert(profile._trades, entry)
 		while #profile._trades > self.catalog.Trade.keep do table.remove(profile._trades, 1) end
 		return true, { gave = give, got = get }
 	end
-	local okA, whyA = self:_transaction(a.player, function(profile, now) return move(profile, now, giveA, giveB, recB, rankB, session.to) end, "trade:" .. session.id .. ":" .. tostring(session.from), { silent = true })
+	if a.closing or b.closing or a.lost or b.lost then self:_endTrade(session, "cancelled"); return false, "Seu amigo saiu. / Your friend left." end
+	local okA, whyA = self:_transaction(a.player, function(profile, now) return move(profile, now, giveA, giveB, recB, rankB, session.to, true) end, "trade:" .. session.id .. ":" .. tostring(session.from), { silent = true })
 	if not okA then self:_endTrade(session, "cancelled"); return false, whyA end
-	local okB, whyB = self:_transaction(b.player, function(profile, now) return move(profile, now, giveB, giveA, recA, rankA, session.from) end, "trade:" .. session.id .. ":" .. tostring(session.to), { silent = true })
+	local okB, whyB = self:_transaction(b.player, function(profile, now) return move(profile, now, giveB, giveA, recA, rankA, session.from, false) end, "trade:" .. session.id .. ":" .. tostring(session.to), { silent = true })
+	-- Settle the first half against what the partner's store holds now: kept
+	-- if the second half landed, undone if it did not (or at the next load).
+	self:_settleTrades(a.player)
 	if not okB then
-		-- Undo the first half: the hero goes back exactly as it was.
-		self:_transaction(a.player, function(profile)
-			profile.heroes[giveA], profile.abilities[giveA] = recA, rankA
-			profile.heroes[giveB], profile.abilities[giveB] = nil, nil
-			local trades = type(profile._trades) == "table" and profile._trades or {}
-			if trades[#trades] and trades[#trades].id == session.id then table.remove(trades) end
-			return true
-		end, "trade:" .. session.id .. ":undo", { silent = true })
 		self:_endTrade(session, "cancelled")
 		return false, whyB
 	end
 	self:_endTrade(session, "done", { [session.from] = giveB, [session.to] = giveA })
 	return true
+end
+
+-- The latest stored copy of an account, read through UpdateAsync with a
+-- transform that writes nothing (GetAsync may serve a cached copy). nil when
+-- the store could not be read, false when the account has no profile.
+function PlayerService:_peekProfile(userId)
+	local seen
+	local ok = self:_update(userId, function(raw) seen = raw ~= nil and copy(raw) or false; return nil end)
+	if not ok then return nil end
+	return seen
+end
+
+-- A trade is written one account at a time. The first half carries a pending
+-- mark and a copy of the hero it gave. Settling looks the partner up in the
+-- store: their half landed -> the mark is cleared; it did not -> the first
+-- half is undone (the hero comes back, the received one goes). An account
+-- that left before settling is settled at its next load. No duplicates.
+function PlayerService:_settleTrades(player)
+	local record = self.records[player.UserId]
+	if not record then return end
+	for _, entry in ipairs(type(record.profile._trades) == "table" and record.profile._trades or {}) do
+		if entry.pending then
+			local theirs = self:_peekProfile(entry.with)
+			if theirs ~= nil then
+				local landed = false
+				for _, other in ipairs(type(theirs) == "table" and type(theirs._trades) == "table" and theirs._trades or {}) do
+					if other.id == entry.id then landed = true end
+				end
+				self:_transaction(player, function(profile)
+					for _, mine in ipairs(type(profile._trades) == "table" and profile._trades or {}) do
+						if mine.id == entry.id and mine.pending then
+							if not landed then
+								if profile.heroes[mine.got] and not profile.heroes[mine.gave] and type(mine.gaveRecord) == "table" then
+									profile.heroes[mine.gave], profile.abilities[mine.gave] = copy(mine.gaveRecord), mine.gaveRank or 1
+									profile.heroes[mine.got], profile.abilities[mine.got] = nil, nil
+									for index = #profile.loadout, 1, -1 do if profile.loadout[index] == mine.got then table.remove(profile.loadout, index) end end
+								end
+								mine.undone = true
+							end
+							mine.pending, mine.gaveRecord, mine.gaveRank = nil, nil, nil
+						end
+					end
+					return true
+				end, "trade:" .. entry.id .. ":settle", { silent = true, force = true })
+			end
+		end
+	end
 end
 
 function PlayerService:_validHeroes(profile, heroes)
@@ -1204,7 +1261,8 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			local state, config = profile.rewards, self.catalog.Rewards.freeChest
 			if now < state.freeChestAt then return false, "O baú grátis ainda não está pronto. / The free chest is not ready yet." end
 			-- A VIP's chest comes back sooner (Catalog.Products.Passes.vip.freeChestScale).
-			state.freeChestAt = now + self.rules.FreeChestCooldown(current.passes.vip == true)
+			-- Not where paid random items are restricted: a paid pass must not buy more chests.
+			state.freeChestAt = now + self.rules.FreeChestCooldown(current.passes.vip == true and not current.randomRestricted)
 			return true, { chest = self:_openChest(profile, config.chestId, rolls, now), gold = 0, xp = 0 }
 		elseif action == "ClaimGift" then
 			-- A chest a friend sent (SendGift): opened here, one per claim.
@@ -1356,10 +1414,12 @@ function PlayerService:_productInfo(payload, record)
 	local category = PRODUCT_CATEGORY[payload.kind]
 	local product = category and type(payload.key) == "string" and self.products[category][payload.key]
 	if not product or not integer(product.id, 1, 9007199254740991) then return false, "Produto ainda não configurado. / Product not set up yet." end
-	if category == "Consumables" and record and record.randomRestricted then
-		return false, "Indisponível na sua região. / Unavailable in your region."
-	end
 	if category == "Heroes" and record and record.profile.heroes[payload.key] then return false, "Você já possui este herói. / You already own this hero." end
+	-- This season's premium track is already open: nothing to sell twice.
+	local season = record and record.profile.season
+	if product.seasonPass and record and (record.passes.season == true or (type(season) == "table" and season.id == self:_season() and season.premium == true)) then
+		return false, "A trilha premium desta temporada já é sua. / This season's premium track is already yours."
+	end
 	local ok, info = pcall(function()
 		return MarketplaceService:GetProductInfoAsync(product.id, category == "Passes" and Enum.InfoType.GamePass or Enum.InfoType.Product)
 	end)
@@ -1415,8 +1475,16 @@ function PlayerService:_receipt(receipt)
 			self:_grantHero(profile, heroId, now, { refundGold = price * GOLD_PER_ROBUX, mastery = 0 })
 		else
 			profile.gold += product.gold or 0
-			-- The season pass opens the premium track of the season running now.
-			if product.seasonPass then self:_seasonOf(profile).premium = true end
+			-- The season pass opens the premium track of the season running now;
+			-- bought again while it is open (a racing second prompt), it pays Gold.
+			if product.seasonPass then
+				local season = self:_seasonOf(profile)
+				local holder = self.records[player.UserId]
+				if season.premium or (holder and holder.passes.season == true) then
+					profile.gold += (product.price or 0) * GOLD_PER_ROBUX
+				end
+				season.premium = true
+			end
 			-- A bundle's heroes are chosen afterwards (PickHero): credits by rarity.
 			if type(product.heroPicks) == "table" then
 				profile.heroPicks = type(profile.heroPicks) == "table" and profile.heroPicks or {}
