@@ -1,0 +1,93 @@
+{
+  "universeId": 10768165352,
+  "placeId": 97132875544830,
+  "owner": {
+    "name": "LoopsDev7881",
+    "userId": 11694002188
+  },
+  "title": "Multiverse Doomsday Tower Defense",
+  "sourceLocalePreserved": "en-us",
+  "autoTranslatedLanguagesPreserved": 17,
+  "descriptionsApplied": [
+    "en-us",
+    "pt-br",
+    "es-es"
+  ],
+  "apiServicesPreserved": [
+    {
+      "type": "CheckBox",
+      "name": "Enable Studio access to API services",
+      "state": 1
+    },
+    {
+      "type": "CheckBox",
+      "name": "Enable Mesh / Image APIs",
+      "state": 0
+    }
+  ],
+  "icon": {
+    "file": "assets/store/promo-2026-10-15/icone.png",
+    "saved": true,
+    "publicState": "Completed",
+    "publicVisualChecked": true
+  },
+  "thumbnailsDetail": {
+    "count": 4,
+    "allApproved": true,
+    "ids": {
+      "thumbnail-01": 140326426504170,
+      "thumbnail-02": 86852778868880,
+      "thumbnail-03": 107286642963113,
+      "thumbnail-04": 106659593225061
+    },
+    "altTextSaved": true
+  },
+  "thumbnailsHome": {
+    "activeCount": 4,
+    "personalization": "on",
+    "oldThumbnailsRetainedInactive": 2,
+    "persistedAfterNavigation": true
+  },
+  "video": {
+    "state": "uploaded; under review",
+    "visibleRequirements": {
+      "formats": [
+        "mp4",
+        "mov"
+      ],
+      "maxMB": 100,
+      "maxSeconds": 60,
+      "ratio": "16:9",
+      "minResolution": "640x360",
+      "maxResolution": "1920x1080",
+      "monthlyQuota": 3,
+      "maxVideos": 1
+    },
+    "file": "assets/store/promo-2026-10-15/trailer.mp4",
+    "bytes": 7627001,
+    "sha256": "1948491105773c88dc351020745dbcfdc2b35e66ce8c3882e8b859ba58ceb6e4",
+    "durationSeconds": 24,
+    "resolution": "1280x720",
+    "fps": 30,
+    "codecs": "H264/AAC 48kHz stereo",
+    "uploadSuccessful": true,
+    "uploadAttempts": 1,
+    "uploadsRemaining": 2,
+    "assetTypeId": 86,
+    "imageId": 136040769273965,
+    "mediaId": 8568662179705711,
+    "approved": false,
+    "firstInPublicMediaList": true,
+    "legalDeclarationAccepted": false
+  },
+  "audienceReadOnly": {
+    "availableAges": "16+",
+    "highlyEngagedPlayers": 0,
+    "requiredHighlyEngagedPlayers": 250,
+    "reachTask": "Incomplete",
+    "contentRatingReview": "Complete",
+    "publishingFee": "Paid",
+    "settingsChanged": false
+  },
+  "recommendationServiceReadOnly": "Page configures recommendations inside experience, not a listing eligibility status. No settings changed."
+}

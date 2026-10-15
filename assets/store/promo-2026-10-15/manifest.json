@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-15",
+  "generator": "built-in image_gen",
+  "exports": [
+    {
+      "id": "icone",
+      "file": "icone.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 349972,
+      "sha256": "d5e725dd9ab2cfb1da50c67b7e93a7a4d6f9ad6b18ee73b44f6b94cc374fe863",
+      "original": "originais/icone.png",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "original_sha256": "2749076ac3b536f97534a25b8f2c51569bba28f80669ff83d41acecf594bc139",
+      "notes": "AI promotional illustration guided by actual project screenshots; not a gameplay screenshot."
+    },
+    {
+      "id": "thumbnail-01",
+      "file": "thumbnail-01.jpg",
+      "size": [
+        1920,
+        1080
+      ],
+      "bytes": 802504,
+      "sha256": "0890c2beaa03a20981a534ce85bfe9c15285249314793e7591141a816f9bc462",
+      "original": "originais/thumbnail-01.png",
+      "original_size": [
+        1672,
+        941
+      ],
+      "original_sha256": "9ce9dc9a129a5d740a5f61b3b199151fd10fb9cd2a7794d759c2460480d81888",
+      "notes": "AI promotional illustration guided by actual project screenshots; not a gameplay screenshot."
+    },
+    {
+      "id": "thumbnail-02",
+      "file": "thumbnail-02.jpg",
+      "size": [
+        1920,
+        1080
+      ],
+      "bytes": 819895,
+      "sha256": "bbb8c6feab2eda016d0ae2f250e7a10071cb59a25d9238a88d9e3a88326b227d",
+      "original": "originais/thumbnail-02.png",
+      "original_size": [
+        1672,
+        941
+      ],
+      "original_sha256": "9a38b9b8f2455c27349071c0506a047f4779bba1adf3d79db1c83d20b75b28d7",
+      "notes": "AI promotional illustration guided by actual project screenshots; not a gameplay screenshot."
+    },
+    {
+      "id": "thumbnail-03",
+      "file": "thumbnail-03.jpg",
+      "size": [
+        1920,
+        1080
+      ],
+      "bytes": 678672,
+      "sha256": "734e8a8a31081e113035717ac0a7df0735c28c934acf9edc3330808261700560",
+      "original": "originais/thumbnail-03.png",
+      "original_size": [
+        1672,
+        941
+      ],
+      "original_sha256": "c00a3bdfdf2a7fc2dcd32c1ce72fb8b6b936aa5fa6ffe7762743c7e274cdf47e",
+      "notes": "AI promotional illustration guided by actual project screenshots; not a gameplay screenshot."
+    },
+    {
+      "id": "thumbnail-04",
+      "file": "thumbnail-04.jpg",
+      "size": [
+        1920,
+        1080
+      ],
+      "bytes": 939448,
+      "sha256": "cd1e2d678096e4c1057f9f00249c7ca0f305799b63cf196c427773eee0573621",
+      "original": "originais/thumbnail-04.png",
+      "original_size": [
+        1672,
+        941
+      ],
+      "original_sha256": "0ef554316d9e0bc5d1c6f37bf6d0668d8ce503aecbba6eedc2335629be35921b",
+      "notes": "AI promotional illustration guided by actual project screenshots; not a gameplay screenshot."
+    }
+  ]
+}

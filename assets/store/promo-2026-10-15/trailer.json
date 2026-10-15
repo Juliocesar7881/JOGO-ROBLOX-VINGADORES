@@ -1,0 +1,80 @@
+{
+  "language": "none",
+  "seconds": 24.0,
+  "width": 1280,
+  "height": 720,
+  "framesPerSecond": 30,
+  "music": "C:\\Users\\loops\\Documents\\Roblox Game\\assets\\audio\\battle.wav",
+  "credit": "Music: original composition and synthesis by the Multiverse Doomsday project.",
+  "scenes": [
+    {
+      "source": "C:\\Users\\loops\\Documents\\Roblox Game\\test-results\\marketing-20261015\\clips\\01-lobby.mp4",
+      "sourceSeconds": 7.0,
+      "sourceSize": [
+        1278,
+        720
+      ],
+      "start": 1.0,
+      "seconds": 4.0,
+      "caption": "",
+      "sourceSha256": "ef15844b1654f636a4dcb3d9990e3d99082625a3f8756427066173e4102da2db"
+    },
+    {
+      "source": "C:\\Users\\loops\\Documents\\Roblox Game\\test-results\\marketing-20261015\\clips\\02-combat.mp4",
+      "sourceSeconds": 8.0,
+      "sourceSize": [
+        1278,
+        720
+      ],
+      "start": 0.2,
+      "seconds": 6.0,
+      "caption": "",
+      "sourceSha256": "512c533c9eed611013924e854d56a51727b76d2f5f850c85c58a13df51637af1"
+    },
+    {
+      "source": "C:\\Users\\loops\\Documents\\Roblox Game\\test-results\\marketing-20261015\\clips\\03-power.mp4",
+      "sourceSeconds": 10.0,
+      "sourceSize": [
+        1278,
+        720
+      ],
+      "start": 3.0,
+      "seconds": 5.0,
+      "caption": "",
+      "sourceSha256": "bc782c303e57729e90c042146f621de93a1fd76f5b288902408a79b753272a25"
+    },
+    {
+      "source": "C:\\Users\\loops\\Documents\\Roblox Game\\test-results\\marketing-20261015\\clips\\04-team.mp4",
+      "sourceSeconds": 6.0,
+      "sourceSize": [
+        1278,
+        720
+      ],
+      "start": 1.5,
+      "seconds": 4.0,
+      "caption": "",
+      "sourceSha256": "8f497e1762dcc428cc8d2510f903db0d8259b8fadf661f9b8dd8322135612bfa"
+    },
+    {
+      "source": "C:\\Users\\loops\\Documents\\Roblox Game\\test-results\\marketing-20261015\\clips\\05-boss.mp4",
+      "sourceSeconds": 8.0,
+      "sourceSize": [
+        1278,
+        720
+      ],
+      "start": 0.0,
+      "seconds": 5.0,
+      "caption": "",
+      "sourceSha256": "0e81121b0c46c618a90cff49fbee257c26ff3226891bd3c1c41e224ff11e5217"
+    }
+  ],
+  "sha256": "1948491105773c88dc351020745dbcfdc2b35e66ce8c3882e8b859ba58ceb6e4",
+  "verification": {
+    "decodedWithoutErrors": true,
+    "blackIntervals": 0,
+    "integratedLufs": -18.32,
+    "truePeakDbtp": -5.01,
+    "teamToastExcluded": true,
+    "lastBossFrameInspected": 23.9
+  }
+}
