@@ -1324,6 +1324,19 @@ function Panels.new(ctx)
 		UI.label(body, T("1 a 5: escolher herói  •  Q: poder do líder  •  F: velocidade  •  C: ficha\nClique no chão: coloca o herói na hora  •  botão direito ou Esc: cancela\nClique num herói em campo: melhorar, mirar ou vender  •  G: marcar um local para o grupo\nShift: correr  •  pule de novo no ar: pulo duplo",
 			"1 to 5: choose hero  •  Q: leader power  •  F: speed  •  C: sheet\nClick the ground: places the hero at once  •  right click or Esc: cancel\nClick a hero on the field: upgrade, target or sell  •  G: ping a spot for the squad\nShift: run  •  jump again in the air: double jump"),
 			{Name = "ControlsHelp", Size = UDim2.new(1, -6, 0, 120), TextColor3 = C.muted, TextSize = 17, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
+		-- The credit each battle track's Creative Commons licence asks for, for
+		-- the tracks this place really plays (Catalog.MusicCredits).
+		local credits = {}
+		for _, credit in ipairs(Catalog.MusicCredits or {}) do
+			if (tonumber((Config.Audio or {})[credit.key]) or 0) > 0 then
+				table.insert(credits, "\"" .. credit.title .. "\"  •  " .. credit.author .. "  •  " .. credit.license)
+			end
+		end
+		if #credits > 0 then
+			UI.section(body, T("Créditos da música", "Music credits"))
+			UI.label(body, table.concat(credits, "\n"), {Name = "MusicCredits", Size = UDim2.new(1, -6, 0, 26 * #credits + 8), TextColor3 = C.muted, TextSize = 16,
+				TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top})
+		end
 	end
 
 	local talentSelected = nil

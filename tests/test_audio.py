@@ -68,6 +68,24 @@ state.match={mapId='hydra'};audio:Update(state)
 assert(audio.ambient=='ambHydra','A different map switches the ambience')
 state.phase='Lobby';audio:Update(state)
 assert(audio.ambient=='ambLobby','Returning restores the lobby ambience instead of keeping a battle map loop')
+-- Each map's own battle track: played when uploaded, the shared one otherwise,
+-- and the shared one again when the map's own will not load.
+local musicBefore=settings.music
+settings.music=true
+Config.Audio.battleGamma=31
+state.phase='Wave';state.match={mapId='gamma'};audio:Update(state)
+assert(audio.track=='battleGamma' and audio.sounds.battleGamma.IsPlaying and audio.sounds.battleGamma.Looped,'A map with its own track plays it in battle')
+assert(audio.sounds.battleGamma.SoundId=='rbxassetid://31','The map track uses its configured upload')
+state.match={mapId='hydra'};audio:Update(state)
+assert(audio.track=='battle' and audio.sounds.battle.IsPlaying,'A map without its own upload plays the shared battle track')
+state.match={mapId='gamma'};delayed={};audio:Update(state)
+audio.sounds.battleGamma.IsLoaded=false
+for _,fn in ipairs(table.clone(delayed)) do fn() end
+assert(audio.track=='battle' and audio.sounds.battle.IsPlaying,'A map track that will not load falls back to the shared battle track')
+assert(audio:BattleTrack('gamma')=='battle','A map track that failed to load is not tried again in this session')
+Config.Audio.battleGamma=nil
+state.phase='Lobby';state.match=nil;audio:Update(state)
+settings.music=musicBefore
 -- Weapon cues: a hard budget per 300 ms, per-family spacing and distance.
 local plays=0
 local originalNew=Instance.new

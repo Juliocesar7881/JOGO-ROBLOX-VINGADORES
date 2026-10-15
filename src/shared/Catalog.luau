@@ -462,14 +462,14 @@ Catalog.Enemies = {
 	-- that are stun-proof (and their aura) shrug it off.
 	saboteur = { id = "saboteur", name = text("Sabotador", "Saboteur"), hp = 92, speed = 10.4, leak = 2, reward = 15, armor = 0.04, air = false, stealth = false, boss = false, color = { 90, 190, 255 }, shock = { radius = 15, seconds = 1.6, every = 7, warn = 1.2, first = 2 }, trait = text("Paralisa as torres por perto: derrube-o cedo ou use heróis imunes.", "Stuns nearby towers: take it down early or field stun-proof heroes.") },
 	splitling = { id = "splitling", name = text("Fragmento", "Fragment"), hp = 36, speed = 12.4, leak = 1, reward = 5, armor = 0, air = false, stealth = false, boss = false, color = { 140, 236, 180 }, fragment = true, trait = text("Pedaço de um Gosmento: pequeno, rápido e não racha de novo.", "A piece of a Splitter: small, fast and it never splits again.") },
-	lizard = { id = "lizard", name = text("Gekko Colosso", "Colossal Gecko"), hp = 1962, speed = 7.5, leak = 35, reward = 100, armor = 0.12, air = false, stealth = false, boss = true, color = { 113, 205, 85 }, hint = text("Concentre dano para interromper a regeneração.", "Focus your damage to interrupt regeneration.") },
-	abomination = { id = "abomination", name = text("Megabruto infectado", "Infected Megabrute"), hp = 2314, speed = 6.9, leak = 40, reward = 110, armor = 0.2, air = false, stealth = false, boss = true, color = { 174, 167, 86 }, hint = text("Impactos anunciados interrompem torres próximas.", "Telegraphed impacts interrupt nearby towers.") },
-	redskull = { id = "redskull", name = text("Comandante Sombra", "Shadow Commander"), hp = 2114, speed = 8.0, leak = 40, reward = 110, armor = 0.18, air = false, stealth = false, boss = true, color = { 226, 71, 63 }, hint = text("Soldados próximos recebem o bônus de comando.", "Nearby soldiers receive a command boost.") },
-	killmonger = { id = "killmonger", name = text("Rei Saqueador infectado", "Infected Raider King"), hp = 2466, speed = 8.4, leak = 45, reward = 120, armor = 0.3, air = false, stealth = false, boss = true, color = { 212, 166, 71 }, hint = text("A descarga de cristal é anunciada antes do impacto.", "The crystal discharge is telegraphed before impact.") },
-	loki = { id = "loki", name = text("Mestre das Ilusões", "Illusion Master"), hp = 2640, speed = 8.2, leak = 48, reward = 125, armor = 0.22, air = false, stealth = false, boss = true, color = { 82, 196, 104 }, hint = text("Ilusões confundem as torres, mas somem sozinhas.", "Illusions confuse towers but fade on their own.") },
+	lizard = { id = "lizard", name = text("Gekko Colosso", "Colossal Gecko"), hp = 1962, speed = 7.5, leak = 35, reward = 100, armor = 0.12, air = false, stealth = false, boss = true, color = { 64, 210, 196 }, hint = text("Concentre dano para interromper a regeneração.", "Focus your damage to interrupt regeneration.") },
+	abomination = { id = "abomination", name = text("Megabruto infectado", "Infected Megabrute"), hp = 2314, speed = 6.9, leak = 40, reward = 110, armor = 0.2, air = false, stealth = false, boss = true, color = { 236, 124, 56 }, hint = text("Impactos anunciados interrompem torres próximas.", "Telegraphed impacts interrupt nearby towers.") },
+	redskull = { id = "redskull", name = text("Comandante Sombra", "Shadow Commander"), hp = 2114, speed = 8.0, leak = 40, reward = 110, armor = 0.18, air = false, stealth = false, boss = true, color = { 255, 176, 72 }, hint = text("Soldados próximos recebem o bônus de comando.", "Nearby soldiers receive a command boost.") },
+	killmonger = { id = "killmonger", name = text("Rei Saqueador infectado", "Infected Raider King"), hp = 2466, speed = 8.4, leak = 45, reward = 120, armor = 0.3, air = false, stealth = false, boss = true, color = { 176, 120, 255 }, hint = text("A descarga de cristal é anunciada antes do impacto.", "The crystal discharge is telegraphed before impact.") },
+	loki = { id = "loki", name = text("Mestre das Ilusões", "Illusion Master"), hp = 2640, speed = 8.2, leak = 48, reward = 125, armor = 0.22, air = false, stealth = false, boss = true, color = { 236, 96, 220 }, hint = text("Ilusões confundem as torres, mas somem sozinhas.", "Illusions confuse towers but fade on their own.") },
 	-- Loki's decoys: never in a wave pool, never worth anything, gone in seconds.
-	illusion = { id = "illusion", name = text("Ilusão do Mestre", "Master's Illusion"), hp = 70, speed = 9.5, leak = 0, reward = 0, armor = 0, air = false, stealth = false, boss = false, color = { 120, 230, 140 }, illusion = true },
-	doom = { id = "doom", name = text("Tirano de Ferro", "Iron Tyrant"), hp = 2818, speed = 7.5, leak = 50, reward = 130, armor = 0.28, air = false, stealth = false, boss = true, color = { 87, 220, 126 }, hint = text("Armadura, magia e portais mudam a cada fase.", "Armor, magic and portals change with each phase.") },
+	illusion = { id = "illusion", name = text("Ilusão do Mestre", "Master's Illusion"), hp = 70, speed = 9.5, leak = 0, reward = 0, armor = 0, air = false, stealth = false, boss = false, color = { 244, 160, 236 }, illusion = true },
+	doom = { id = "doom", name = text("Tirano de Ferro", "Iron Tyrant"), hp = 2818, speed = 7.5, leak = 50, reward = 130, armor = 0.28, air = false, stealth = false, boss = true, color = { 80, 200, 255 }, hint = text("Armadura, magia e portais mudam a cada fase.", "Armor, magic and portals change with each phase.") },
 }
 
 
@@ -539,6 +539,18 @@ Catalog.Difficulties = {
 		description = text("Inimigos com 50% mais vida. +50% de Ouro e XP.", "Enemies with 50% more health. +50% Gold and XP.") },
 	nightmare = { id = "nightmare", winKey = "nightmare", requires = "hard", name = text("Pesadelo", "Nightmare"), hpMultiplier = 2.2, speedMultiplier = 1.1, rewardMultiplier = 2, color = { 214, 64, 96 },
 		description = text("Inimigos com mais que o dobro de vida e mais rápidos. Ouro e XP em dobro.", "Enemies with over twice the health, and faster. Double Gold and XP.") },
+}
+
+-- Each map's battle music: Creative Commons BY tracks (tools/prepare_music.py,
+-- assets/audio/music_credits.json). The licence asks for this credit, which
+-- Options shows for every track the place really plays (Config.Audio[key] > 0).
+Catalog.MusicCredits = {
+	{ key = "battleManhattan", mapId = "manhattan", title = "Chase", author = "Alexander Nakarada (CreatorChords)", license = "CC BY 4.0" },
+	{ key = "battleGamma", mapId = "gamma", title = "Checkpoint", author = "Hayden Folker", license = "CC BY 3.0" },
+	{ key = "battleHydra", mapId = "hydra", title = "Pursuit", author = "Hayden Folker", license = "CC BY 3.0" },
+	{ key = "battleWakanda", mapId = "wakanda", title = "Pirates of the Quarantine", author = "Alexander Nakarada (CreatorChords)", license = "CC BY 4.0" },
+	{ key = "battleLatveria", mapId = "latveria", title = "Storm", author = "Keys of Moon", license = "CC BY 4.0" },
+	{ key = "battleAsgard", mapId = "asgard", title = "Valhalla", author = "Alexander Nakarada (CreatorChords)", license = "CC BY 4.0" },
 }
 
 Catalog.ModeOrder = { "tutorial", "normal", "ranked", "cards" }

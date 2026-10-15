@@ -21,3 +21,5 @@ assets/audio/sonniss/audition/
 assets/audio/sonniss/uploads.local.json
 .DS_Store
 Thumbs.db
+# Licensed (Creative Commons BY) battle music: prepared by tools/prepare_music.py, uploaded to Roblox; credits in assets/audio/music_credits.json.
+assets/audio/licensed_music/

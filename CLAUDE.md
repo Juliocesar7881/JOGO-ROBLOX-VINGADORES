@@ -125,5 +125,10 @@ restarts Studio).
 - Language follows the Roblox locale; every server message is "pt / en".
 - Hero names are descriptive epithets (see `docs/HEROES.md`); exact third-party names
   stay on `tests/ip_blocklist.json`. The look of the league heroes is a close homage:
-  flag the IP risk before any public release.
+  flag the IP risk before any public release. The owner keeps the name "Capitão Men"
+  (decided 15/10); the starter armour (pearl and cobalt with a chest bolt) and the six
+  bosses are original by design, and `tests/world_boot.spec.luau` keeps them so.
+- Battle music: one Creative Commons BY track per map, credited in Options
+  (`Catalog.MusicCredits`, `tools/prepare_music.py`); never upload audio whose author
+  and licence are unknown.
 - Run `python tools/test.py > out.txt; echo $?`: piping into `tail` hides a failing exit code.

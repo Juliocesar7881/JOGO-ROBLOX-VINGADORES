@@ -108,6 +108,40 @@ do
 	end
 	table.sort(report)
 	print("  parts: " .. table.concat(report, " "))
+	-- Original villains (IP_POLICY): no boss brings back a known villain's
+	-- signature piece or palette, and the starter armour is not red and gold.
+	local banned = {
+		lizard = { "Coat", "CoatTail" }, abomination = { "Fin", "Gill" },
+		redskull = { "Cube", "Socket", "Nose", "CommandMantle" }, killmonger = { "Ear", "Muzzle", "Fang" },
+		doom = { "Hood", "Slit", "Grille", "Mask" }, loki = { "Horn", "Helmet", "Gem", "Scepter" },
+	}
+	for id, names in pairs(banned) do
+		local figure = enemies and enemies:FindFirstChild(id)
+		for _, name in ipairs(names) do
+			check(figure ~= nil and figure:FindFirstChild(name, true) == nil, id .. " no longer carries the villain piece " .. name)
+		end
+	end
+	local function share(figure, test)
+		local hits, total = 0, 0
+		for _, item in ipairs(figure and figure:GetDescendants() or {}) do
+			if item:IsA("BasePart") and item.Name ~= "HumanoidRootPart" and (item.Transparency or 0) < 1 then
+				total += 1
+				local color = item.Color
+				if test(color.R * 255, color.G * 255, color.B * 255) then hits += 1 end
+			end
+		end
+		return total > 0 and hits / total or 1
+	end
+	local function green(r, g, b) return g > r + 25 and g > b + 15 end
+	local function red(r, g, b) return r > 150 and g < 90 and b < 90 end
+	local function gold(r, g, b) return r > 200 and g > 150 and b < 110 end
+	check(share(enemies:FindFirstChild("redskull"), red) < 0.05, "the foundry commander wears no red head or red coat")
+	check(share(enemies:FindFirstChild("doom"), green) < 0.05 and share(enemies:FindFirstChild("loki"), green) < 0.05, "the tyrant and the illusion master wear no green")
+	check(share(enemies:FindFirstChild("killmonger"), gold) < 0.05, "the raider king wears no gold")
+	check(share(enemies:FindFirstChild("lizard"), green) < 0.1, "the gecko is not green")
+	local armor = storage:FindFirstChild("DoomHeroPortraits") and storage.DoomHeroPortraits:FindFirstChild("ironman")
+	check(armor ~= nil and armor:FindFirstChild("ArcReactorCore", true) == nil and armor:FindFirstChild("ChestBolt", true) ~= nil, "the starter armour carries a bolt, not a round chest reactor")
+	check(share(armor, red) + share(armor, gold) < 0.05, "the starter armour is not red and gold")
 end
 
 -- A preview figure can be posed by hand (Motion.Rig / Motion.Solve): the same
@@ -366,7 +400,7 @@ do
 			check(count == sourceCount, id .. ": complete gameplay costume reused without substitute pieces")
 			local chest = figure:FindFirstChild("UpperTorso")
 			check(chest.Size == source.UpperTorso.Size * 2, id .. ": body proportions follow the original model")
-			check(figure:FindFirstChild(id == "ironman" and "ArcReactorCore" or "Shield", true) ~= nil, id .. ": original signature equipment is present")
+			check(figure:FindFirstChild(id == "ironman" and "ChestBolt" or "Shield", true) ~= nil, id .. ": original signature equipment is present")
 			local hips = figure.LowerTorso:FindFirstChild("BodyContour")
 			check(hips.MeshType == Enum.MeshType.Brick and hips.Scale == Vector3.one, id .. ": waist has a continuous silhouette")
 			-- The monument strikes a pose and still stands on its pedestal: the soles

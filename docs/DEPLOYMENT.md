@@ -23,6 +23,36 @@ O modo de dois lugares separados abaixo continua disponível: preencher
 `LobbyPlaceId` e `MatchPlaceId` com lugares diferentes tem prioridade sobre o
 `SinglePlace`.
 
+## Música de batalha por mapa (Creative Commons BY)
+
+Cada mapa tem a sua faixa. As seis são Creative Commons BY: uso comercial
+liberado, desde que o autor seja creditado. O jogo mostra os créditos em
+Opções para cada faixa que estiver em uso (`Catalog.MusicCredits`).
+
+| Mapa | Faixa | Autor | Licença |
+|---|---|---|---|
+| Ruas de Manhattan | Chase | Alexander Nakarada (CreatorChords) | CC BY 4.0 |
+| Complexo Gama | Checkpoint | Hayden Folker | CC BY 3.0 |
+| Fundição Sombria | Pursuit | Hayden Folker | CC BY 3.0 |
+| Selva de Cristal | Pirates of the Quarantine | Alexander Nakarada (CreatorChords) | CC BY 4.0 |
+| Cidadela do Tirano | Storm | Keys of Moon | CC BY 4.0 |
+| Ponte Celeste | Valhalla | Alexander Nakarada (CreatorChords) | CC BY 4.0 |
+
+1. `python tools/prepare_music.py` gera `assets/audio/licensed_music/battle_<mapa>.ogg`
+   (fora do git), já com o silêncio das pontas cortado, volume igualado em
+   -16 LUFS e fade para o loop. Os créditos e o hash de cada arquivo ficam em
+   `assets/audio/music_credits.json`.
+2. **Dono:** enviar os seis OGGs como Áudio (Creator Hub > Creations >
+   Development Items > Audio, ou Studio > Gerenciador de ativos > Importação
+   em massa). O envio pede a sua confirmação de que você tem o direito de
+   usar o áudio. A licença CC BY dá esse direito com crédito ao autor.
+3. Colocar cada ID em `Config.Audio.battle<Mapa>`. Um mapa com 0 toca a
+   faixa geral `battle`. Uma faixa que não carregar (moderação) também
+   volta para a geral, e depois para o arranjo próprio.
+
+O "rock instrumental" de autor desconhecido ("no rights") ficou de fora:
+sem autor e licença identificáveis, não dá para declarar o direito de uso.
+
 ## Códigos promocionais sem publicar (Experience Configs)
 
 Um código por vídeo ou canal, criado no Creator Hub, sem gerar nem publicar o

@@ -26,7 +26,8 @@ class ReleaseTests(unittest.TestCase):
         checked = json.loads((ROOT / 'deployment/template.json').read_text(encoding='utf-8'))
         self.assertEqual(checked, self.template)
         missing, configured = release.validate(checked, self.template)
-        self.assertEqual(len(missing), 99)
+        # 99 before the six licensed battle tracks (one per map, Config.Audio.battle<Map>).
+        self.assertEqual(len(missing), 105)
         self.assertEqual(configured, [])
 
     def test_uploaded_audio_ids_match_the_manifest_and_the_files(self):
@@ -197,7 +198,13 @@ class ReleaseTests(unittest.TestCase):
         summon = json.loads((base / 'summon/manifest.json').read_text(encoding='utf-8'))
         sonniss = json.loads((base / 'sonniss/manifest.json').read_text(encoding='utf-8'))
         bank_keys = {entry['configKey'] for entry in sonniss['assets'].values()}
-        self.assertEqual(set(manifest['assets']) | set(summon['assets']) | bank_keys, set(self.template['Audio']),
+        # The licensed battle music (tools/prepare_music.py): credited, hashed, one per map.
+        music = json.loads((base / 'music_credits.json').read_text(encoding='utf-8'))
+        for key, entry in music.items():
+            self.assertRegex(entry['license'], r'^CC BY \d\.\d$', key)
+            self.assertTrue(entry['title'] and entry['author'] and entry['source'].startswith('https://'), key)
+            self.assertTrue(-17.0 <= entry['lufs'] <= -15.0 and entry['truePeak'] <= -1.0, key + ' is levelled with the others')
+        self.assertEqual(set(manifest['assets']) | set(summon['assets']) | bank_keys | set(music), set(self.template['Audio']),
                          'Every configured sound must have a source in one of the packs')
         for name, entry in manifest['assets'].items():
             path = base / entry['file']

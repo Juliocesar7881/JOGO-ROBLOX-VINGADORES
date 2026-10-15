@@ -1,0 +1,74 @@
+{
+  "battleManhattan": {
+    "map": "manhattan",
+    "title": "Chase",
+    "author": "Alexander Nakarada (CreatorChords)",
+    "license": "CC BY 4.0",
+    "source": "https://creatorchords.com/music/chase/",
+    "file": "licensed_music/battle_manhattan.ogg",
+    "seconds": 123.95,
+    "lufs": -16.01,
+    "truePeak": -7.37,
+    "sha256": "b31b881c3f90c773d8868f91503b9f3e03c90fa7694de6f6a18fc89a94f7acdc"
+  },
+  "battleGamma": {
+    "map": "gamma",
+    "title": "Checkpoint",
+    "author": "Hayden Folker",
+    "license": "CC BY 3.0",
+    "source": "https://www.free-stock-music.com/hayden-folker-checkpoint.html",
+    "file": "licensed_music/battle_gamma.ogg",
+    "seconds": 178.97,
+    "lufs": -16.02,
+    "truePeak": -2.0,
+    "sha256": "260f00e7a9f81669cd83b253f4fcd797967e6753ec4619a2c7b83fd2d8615459"
+  },
+  "battleHydra": {
+    "map": "hydra",
+    "title": "Pursuit",
+    "author": "Hayden Folker",
+    "license": "CC BY 3.0",
+    "source": "https://www.free-stock-music.com/hayden-folker-pursuit.html",
+    "file": "licensed_music/battle_hydra.ogg",
+    "seconds": 156.15,
+    "lufs": -16.01,
+    "truePeak": -2.49,
+    "sha256": "fcf810a4fbc6c7dd7262b69fee3c0f5b5b0c1e94e0b660c154c4e70a14800f46"
+  },
+  "battleWakanda": {
+    "map": "wakanda",
+    "title": "Pirates of the Quarantine",
+    "author": "Alexander Nakarada (CreatorChords)",
+    "license": "CC BY 4.0",
+    "source": "https://alexandernakarada.bandcamp.com/track/pirates-of-the-quarantine",
+    "file": "licensed_music/battle_wakanda.ogg",
+    "seconds": 136.8,
+    "lufs": -16.15,
+    "truePeak": -1.23,
+    "sha256": "747302e7379b0a9fe0aafceb0d52605daef566d8b187659b0dd70296df8c7fb8"
+  },
+  "battleLatveria": {
+    "map": "latveria",
+    "title": "Storm",
+    "author": "Keys of Moon",
+    "license": "CC BY 4.0",
+    "source": "https://www.free-stock-music.com/keys-of-moon-storm.html",
+    "file": "licensed_music/battle_latveria.ogg",
+    "seconds": 207.76,
+    "lufs": -16.04,
+    "truePeak": -3.19,
+    "sha256": "d8509ca8748c93a899317a7273524a012bb20035a52be2f8c8ed801c0e2ae5c4"
+  },
+  "battleAsgard": {
+    "map": "asgard",
+    "title": "Valhalla",
+    "author": "Alexander Nakarada (CreatorChords)",
+    "license": "CC BY 4.0",
+    "source": "https://alexandernakarada.bandcamp.com/track/valhalla-2",
+    "file": "licensed_music/battle_asgard.ogg",
+    "seconds": 338.64,
+    "lufs": -16.1,
+    "truePeak": -3.4,
+    "sha256": "f51ca8ec466a30aaa12795bf6d1196ed5aba064d0ccac1a358e6b60669af4bd7"
+  }
+}

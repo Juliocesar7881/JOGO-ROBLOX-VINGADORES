@@ -35,10 +35,12 @@ local ids = string.split("__IDS__", ",")
 for index, id in ipairs(ids) do
 	local holder = Instance.new("Model")
 	holder.Parent = workspace
-	local figure = WorldBuilder.Figure.Hero(holder, id, Catalog.Heroes[id], 1)
-	if __STATUE__ then WorldBuilder.Figure.PoseStatic(figure.model, WorldBuilder.StatuePose[id]) end
-	figure.model:PivotTo(CFrame.new((index - 1) * 6, 0, 0))
-	print("H|" .. id .. "|" .. num((index - 1) * 6))
+	-- "enemy:<id>" draws an enemy or boss (Figure.Enemy) instead of a hero.
+	local enemyId = string.match(id, "^enemy:(.+)$")
+	local figure = enemyId and WorldBuilder.Figure.Enemy(holder, Catalog.Enemies[enemyId]) or WorldBuilder.Figure.Hero(holder, id, Catalog.Heroes[id], 1)
+	if __STATUE__ and not enemyId then WorldBuilder.Figure.PoseStatic(figure.model, WorldBuilder.StatuePose[id]) end
+	figure.model:PivotTo(CFrame.new((index - 1) * 24, 0, 0))
+	print("H|" .. id .. "|" .. num((index - 1) * 24))
 	for _, item in ipairs(figure.model:GetDescendants()) do
 		if item:IsA("BasePart") and (item.Transparency or 0) < 0.99 then
 			local cf, size, color = item.CFrame, item.Size, item.Color or Color3.new(0.5, 0.5, 0.5)
@@ -341,7 +343,7 @@ def main() -> int:
             image = render(own, center, eye, (w, h))
             sheet.paste(image, ((index * 3 + v) * w, 26))
             draw.text(((index * 3 + v) * w + 8, 6), f"{hero}  {label}", fill=(20, 24, 34))
-    name = args.name or "_".join(args.ids)
+    name = args.name or "_".join(args.ids).replace(":", "-")
     path = out / f"{name}.png"
     sheet.save(path)
     print(path)

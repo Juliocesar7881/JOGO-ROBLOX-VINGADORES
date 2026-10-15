@@ -100,6 +100,10 @@ return {
 		lobby = 90120138259155, battle = 138426860300125, collect = 89386392576030, victory = 85206381307425, defeat = 89940652537869,
 		breach = 88806730855390, place = 110695275250497, upgrade = 123473912601268, levelUp = 87307736942781, ability = 106314680284413,
 		boss = 78255398419469, wave = 75814374915023, chest = 121229565044752,
+		-- One battle track per map: licensed Creative Commons BY music prepared by
+		-- tools/prepare_music.py (credits: assets/audio/music_credits.json and
+		-- Catalog.MusicCredits, shown in Options). 0 = that map plays `battle`.
+		battleManhattan = 0, battleGamma = 0, battleHydra = 0, battleWakanda = 0, battleLatveria = 0, battleAsgard = 0,
 		-- One ambience loop per map, and a short cue per weapon family.
 		ambManhattan = 132352626399475, ambGamma = 101885347333293, ambHydra = 134964091158105,
 		ambWakanda = 109955783634978, ambAsgard = 107103621057466, ambLatveria = 131878071679857,

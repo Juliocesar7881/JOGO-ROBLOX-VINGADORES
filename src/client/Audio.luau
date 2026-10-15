@@ -11,14 +11,22 @@ local Audio = {}
 Audio.__index = Audio
 
 local MUSIC = { lobby = true, battle = true }
+-- Each map's own battle track (Config.Audio.battle<Map>, Catalog.MusicCredits).
+local BATTLE_BY_MAP = { manhattan = "battleManhattan", gamma = "battleGamma", hydra = "battleHydra", wakanda = "battleWakanda", latveria = "battleLatveria", asgard = "battleAsgard" }
+local BATTLE_TRACKS = {}
+for mapId, name in pairs(BATTLE_BY_MAP) do BATTLE_TRACKS[name] = mapId; MUSIC[name] = true end
+Audio.BattleByMap = BATTLE_BY_MAP
 -- Each map has its own ambience under the music: street, reactor, yard,
 -- savanna, bridge or fortress.
 local AMBIENCE = { manhattan = "ambManhattan", gamma = "ambGamma", hydra = "ambHydra", wakanda = "ambWakanda", asgard = "ambAsgard", latveria = "ambLatveria" }
 local LOOPED = { lobby = true, battle = true }
 for _, name in pairs(AMBIENCE) do LOOPED[name] = true end
+for name in pairs(BATTLE_TRACKS) do LOOPED[name] = true end
 local VOLUME = { lobby = 0.16, battle = 0.18, victory = 0.26, defeat = 0.18, collect = 0.08, breach = 0.16, place = 0.12, upgrade = 0.16, levelUp = 0.22, ability = 0.17, boss = 0.2, wave = 0.1, chest = 0.2,
 	abilityReady = 0.09, click = 0.065, open = 0.085, shotTech = 0.085, shotArrow = 0.075, shotMagic = 0.07, shotMelee = 0.1, shotBlast = 0.11 }
 for _, name in pairs(AMBIENCE) do VOLUME[name] = 0.1 end
+-- The licensed tracks are mastered to -16 LUFS: one level for all of them.
+for name in pairs(BATTLE_TRACKS) do VOLUME[name] = 0.2 end
 -- Combat is dense: only a few weapon sounds per quarter second reach the
 -- speakers, quieter with distance, and none from beyond earshot.
 local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.3, 3, 90, 3
@@ -309,7 +317,17 @@ function Audio:Step()
 	end
 end
 
+-- The battle track for a map: its own when uploaded and playable, else the
+-- shared `battle` (which in turn falls back to the action arrangement).
+function Audio:BattleTrack(mapId)
+	local own = BATTLE_BY_MAP[mapId or ""]
+	if own and (tonumber((Config.Audio or {})[own]) or 0) > 0 and not (self.unplayable and self.unplayable[own]) then return own end
+	return "battle"
+end
+
 function Audio:Music(name)
+	-- A map's own track that is missing or would not load: the shared battle one.
+	if BATTLE_TRACKS[name] and name ~= self:BattleTrack(BATTLE_TRACKS[name]) then name = "battle" end
 	-- Keep the lobby untouched. An unavailable battle upload uses the action
 	-- stems rather than the lobby's peaceful melody.
 	if name == "battle" and (((Config.Audio or {}).battle or 0) <= 0 or (self.unplayable and self.unplayable.battle)) then name = "action" end
@@ -341,7 +359,7 @@ function Audio:Music(name)
 					self.unplayable[name] = true
 					self:_stopMusic(nil)
 					self.track = nil
-					self:Music(name)
+					self:Music(BATTLE_TRACKS[name] and "battle" or name)
 				end
 			end)
 		end
@@ -608,7 +626,7 @@ function Audio:Update(state)
 		self:Music("lobby")
 		self:Ambience("ambLobby")
 	elseif phase == "Preparing" or phase == "Wave" then
-		self:Music("battle")
+		self:Music(self:BattleTrack(state.match and state.match.mapId))
 		self:Ambience(AMBIENCE[state.match and state.match.mapId])
 	elseif phase == "Results" then
 		self:Ambience(nil)
