@@ -169,7 +169,7 @@ function Panels.new(ctx)
 				end,{Size=UDim2.new(1,-6,0,46),TextSize=16,BackgroundColor3=contains(p.loadout,id) and C.card or C.green})
 			else
 				UI.button(body,T("Ganhe na invocação","Get it at the summon halls"),function() routePreview.goShop() end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=17})
-				UI.secondary(body,T("Comprar com Robux","Buy with Robux"),function() openContext("premium",{hud=true}) end,{Size=UDim2.new(1,-6,0,44),TextSize=15})
+				UI.secondary(body,T("Comprar com Robux","Buy with Robux"),function() openContext("premium",{hud=true,shopKind="hero",shopKey=id}) end,{Name="HeroBuyRobux",Size=UDim2.new(1,-6,0,44),TextSize=15})
 			end
 		end
 		if short then drawActions() end
@@ -589,24 +589,35 @@ function Panels.new(ctx)
 		if not ready and info~="retry" or ready and info.preview then UI.disabled(buy) end
 	end
 
-	local function contextPremium(body)
+	-- A Gold pack sells Gold and nothing else; every other consumable (bundles,
+	-- the season pass, the Gold boost) is an offer with a tab of its own.
+	local function goldPack(def) return def.gold~=nil and def.heroPicks==nil and def.boostSeconds==nil and def.seasonPass==nil end
+	local function contextPremium(body,data)
+	 -- A shortcut names the tab it wants (shopKind) and, for a hero, which one (shopKey).
+	 local focus
+	 if type(data)=="table" then
+		if data.shopKind then premiumCategory=data.shopKind; data.shopKind=nil end
+		focus=data.shopKey; data.shopKey=nil
+	 end
 	 starterOffer(body)
 	 -- Heroes bought but not yet chosen: the way to them stays on top of the shop.
 	 local picksLeft=heroPicksLeft()
 	 if picksLeft>0 then UI.button(body,picksLeft==1 and T("Você tem 1 herói para escolher","You have 1 hero to choose") or T("Você tem "..picksLeft.." heróis para escolher","You have "..picksLeft.." heroes to choose"),function() openContext("pick",{}) end,{Name="PickHeroes",Size=UDim2.new(1,-6,0,48),BackgroundColor3=C.green,TextSize=18}) end
-	 categoryTabs(body,"PremiumTabs",{{id="hero",label=T("Heróis","Heroes"),icon="hero",color=C.coral},{id="pass",label=T("Passes","Passes"),icon="star",color=C.blue},{id="product",label=T("Ouro","Gold"),icon="coin",color=C.gold}},premiumCategory,function(id) premiumCategory=id; renderContext() end)
-		for _,group in ipairs({{kind="hero",items=Catalog.Products.Heroes},{kind="pass",items=Catalog.Products.Passes},{kind="product",items=Catalog.Products.Consumables}}) do
-			if group.kind~=premiumCategory then continue end
+	 categoryTabs(body,"PremiumTabs",{{id="hero",label=T("Heróis","Heroes"),icon="hero",color=C.coral},{id="offer",label=T("Ofertas","Offers"),icon="star",color=C.green},{id="pass",label=T("Passes","Passes"),icon="star",color=C.blue},{id="product",label=T("Ouro","Gold"),icon="coin",color=C.gold}},premiumCategory,function(id) premiumCategory=id; renderContext() end)
+		for _,group in ipairs({{tab="hero",kind="hero",items=Catalog.Products.Heroes},{tab="offer",kind="product",items=Catalog.Products.Consumables,only=function(def) return not goldPack(def) end},{tab="pass",kind="pass",items=Catalog.Products.Passes},{tab="product",kind="product",items=Catalog.Products.Consumables,only=goldPack}}) do
+			if group.tab~=premiumCategory then continue end
 			-- Cheapest first; the starter pack has its own banner above.
 			local keys={}
 			for key in pairs(group.items) do
 				-- The permanent season pass gives way to the per-season product (still shown to its owners).
 				local retired=group.kind=="pass" and key=="season" and (profile().passes or {}).season~=true and configured("product","seasonPass")
-				if key~="starterPack" and configured(group.kind,key) and not retired then table.insert(keys,key) end
+				if key~="starterPack" and configured(group.kind,key) and not retired and (not group.only or group.only(group.items[key])) then table.insert(keys,key) end
 			end
 			-- Things you do not own come first: a shop that opens on "already yours" sells nothing.
 			local function ownedKey(key) return group.kind=="hero" and (profile().heroes or {})[key]~=nil or group.kind=="pass" and (profile().passes or {})[key]==true or group.kind=="product" and key=="seasonPass" and (profile().seasonStatus or {}).owned==true end
 			table.sort(keys,function(a,b)
+				-- The item a shortcut asked for leads (the hero page's "Buy with Robux").
+				if a==focus or b==focus then return a==focus end
 				local oa,ob=ownedKey(a),ownedKey(b)
 				if oa~=ob then return not oa end
 				local pa,pb=group.items[a].price or 0,group.items[b].price or 0
@@ -726,8 +737,7 @@ function Panels.new(ctx)
 	end
 
 	local function contextShop(body, data)
-		if data.shopKind then premiumCategory=data.shopKind; data.shopKind=nil end
-		contextPremium(body)
+		contextPremium(body, data)
 	end
 
 	-- Today's missions, the week's mission, and any older ones still unclaimed
@@ -997,7 +1007,7 @@ function Panels.new(ctx)
 			end, {Name = "ClaimSeason", Position = UDim2.fromOffset(12, 158), Size = UDim2.new(1, -24, 0, 48), BackgroundColor3 = season.claimable > 0 and C.green or C.card, TextSize = 20})
 			if season.claimable == 0 then UI.disabled(claimSeason) end
 			if not season.owned then
-				UI.button(seasonCard, T("Liberar trilha premium", "Unlock the premium track"), function() openContext("shop", {shopKind = configured("product", "seasonPass") and "product" or "pass"}) end,
+				UI.button(seasonCard, T("Liberar trilha premium", "Unlock the premium track"), function() openContext("shop", {shopKind = configured("product", "seasonPass") and "offer" or "pass"}) end,
 					{Name = "SeasonUnlock", Position = UDim2.fromOffset(12, 210), Size = UDim2.new(1, -24, 0, 36), BackgroundColor3 = C.violet, TextSize = 18})
 			end
 		end

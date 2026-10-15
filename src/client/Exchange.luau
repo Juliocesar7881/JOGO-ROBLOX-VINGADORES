@@ -59,7 +59,7 @@ function Exchange.new(ctx)
 		end
 		if not any then
 			UI.label(body,T("Nenhuma escolha pendente. Os pacotes Lendário e Equipe dão heróis à sua escolha.","No pick pending. The Legendary and Team packs give heroes of your choice."),{Size=UDim2.new(1,-6,0,60),TextWrapped=true,TextSize=16,TextColor3=C.muted})
-			UI.button(body,T("Ver pacotes","See packs"),function() openContext("premium",{shopKind="product"}) end,{Name="PickToShop",Size=UDim2.new(1,-6,0,48),BackgroundColor3=C.gold,TextSize=17})
+			UI.button(body,T("Ver pacotes","See packs"),function() openContext("premium",{shopKind="offer"}) end,{Name="PickToShop",Size=UDim2.new(1,-6,0,48),BackgroundColor3=C.gold,TextSize=17})
 		end
 	end
 

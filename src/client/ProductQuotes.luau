@@ -35,7 +35,9 @@ end
 
 function ProductQuotes:Fetch(kind)
 	local ctx = self.ctx
-	local groups = { hero = ctx.catalog.Heroes, pass = ctx.catalog.Passes, product = ctx.catalog.Consumables }
+	-- The Offers tab sells consumables too: same quotes, same cache keys.
+	local groups = { hero = ctx.catalog.Heroes, pass = ctx.catalog.Passes, product = ctx.catalog.Consumables, offer = ctx.catalog.Consumables }
+	local itemKind = kind == "offer" and "product" or kind
 	local p = ctx.profile()
 	-- Switching tabs prioritizes the new tab; old in-flight quotes may finish,
 	-- but unseen catalog entries no longer delay the visible products.
@@ -47,10 +49,10 @@ function ProductQuotes:Fetch(kind)
 			table.insert(self.queue, { kind = itemKind, key = key, cacheKey = cacheKey, price = def.price or 0 })
 		end
 	end
-	for key, def in pairs(groups[kind] or {}) do add(kind, key, def) end
+	for key, def in pairs(groups[kind] or {}) do add(itemKind, key, def) end
 	table.sort(self.queue, function(a, b) return a.price < b.price or a.price == b.price and a.key < b.key end)
 	local starter = ctx.catalog.Consumables.starterPack
-	if starter and not p.starterPack and kind ~= "product" then add("product", "starterPack", starter) end
+	if starter and not p.starterPack and itemKind ~= "product" then add("product", "starterPack", starter) end
 	self:_pump()
 end
 

@@ -1076,7 +1076,7 @@ Catalog.Products = {
 		-- lasts. Buying it again adds another hour to the end. The server keeps
 		-- the clock (profile.boostUntil) and applies it; the client only shows it.
 		goldBoost = { id = 0, price = 29, boostSeconds = 3600, boostScale = 2, name = text("Ouro em dobro • 1 hora", "Double Gold • 1 hour"),
-			description = text("Por uma hora, cada onda e cada vitória pagam o dobro de Ouro. Comprar de novo soma mais uma hora.", "For one hour every wave and victory pays double Gold. Buying again adds another hour.") },
+			description = text("Por uma hora de jogo, cada onda e cada vitória pagam o dobro de Ouro (o tempo pausa quando você sai). Comprar de novo soma mais uma hora.", "For one hour of play every wave and victory pays double Gold (the clock pauses while you are away). Buying again adds another hour.") },
 		-- Bundles: the Gold lands at once, the heroes are chosen afterwards. The
 		-- receipt credits profile.heroPicks[rarity]; PickHero spends one credit
 		-- on any hero of that rarity (one already owned pays like a duplicate).

@@ -438,6 +438,18 @@ do
 	-- A boost that already ran out (the stored clock is in the past) does not anchor the next one.
 	stores.Tests.values.p_1.boostUntil = os.time() - 10
 	check(service:_receipt({ PlayerId = 1, ProductId = 104, PurchaseId = "boost-3" }) == "granted" and service:Get(p1).boostUntil == os.time() + boost.boostSeconds, "A boost bought after the old one ran out starts from now")
+	-- Time away does not count: leaving pauses what is left, coming back resumes it.
+	do
+		local away = player(98)
+		service:Load(away)
+		check(service:_receipt({ PlayerId = 98, ProductId = 104, PurchaseId = "boost-98" }) == "granted", "(setup) a boost is bought")
+		local left = service:Get(away).boostUntil - os.time()
+		service:Release(away)
+		check(stores.Tests.values.p_98.boostLeft == left and stores.Tests.values.p_98.boostUntil == 0, "Leaving pauses the boost with what is left")
+		stores.Tests.values.p_98._session = nil
+		service:Load(away)
+		check(service:Get(away).boostUntil == os.time() + left, "Coming back resumes the same time left")
+	end
 end
 
 -- Some regions restrict paid random items, so Gold packs are withheld there.

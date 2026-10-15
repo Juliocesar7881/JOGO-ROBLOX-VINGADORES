@@ -930,8 +930,21 @@ local function session(screen)
 		push(lobbySnapshot(broke))
 		fx({ kind = "OpenPanel", panel = "chests" })
 		check(contextOpen() and named(gui, "BuyGoldShortcut") ~= nil, tag .. ": without Gold the chest hall offers the Gold packs")
-		clickNamed("BuyGoldShortcut")
-		check(named(gui, "PremiumTabs_product") ~= nil and named(gui, "BuyGoldShortcut") == nil, tag .. ": the shortcut opens the Robux shop on the Gold tab")
+			clickNamed("BuyGoldShortcut")
+		check(named(gui, "PremiumTabs_product") ~= nil and named(gui, "BuyGoldShortcut") == nil, tag .. ": the shortcut opens the Robux shop")
+		check(named(gui, "Product_gold1000") ~= nil and named(gui, "Product_legendaryBundle") == nil, tag .. ": on the Gold tab, with Gold packs only")
+		if contextOpen() then click("X") end
+		-- The offers live on their own tab.
+		fx({ kind = "OpenPanel", panel = "shop", shopKind = "offer" })
+		check(named(gui, "Product_legendaryBundle") ~= nil and named(gui, "Product_goldBoost") ~= nil and named(gui, "Product_gold1000") == nil, tag .. ": the Offers tab holds the bundles and the boost, no Gold packs")
+		if contextOpen() then click("X") end
+		-- "Buy with Robux" on a hero's page opens the hero tab with that hero.
+		fx({ kind = "OpenPanel", panel = "hero", heroId = "thor" })
+		local buyRobux = named(gui, "HeroBuyRobux")
+		if buyRobux and shown(buyRobux, gui) then
+			clickNamed("HeroBuyRobux")
+			check(named(gui, "Product_thor") ~= nil and named(gui, "Product_gold1000") == nil, tag .. ": the hero's Robux button opens the hero tab with that hero")
+		end
 		-- The welcome offer: a new account sees the countdown in the shop and on the lobby strip.
 		local fresh = veteranProfile({ gold = 0 })
 		fresh.starterOfferEndsAt = os.time() + 2 * 86400 + 3600

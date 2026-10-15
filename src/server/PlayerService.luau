@@ -108,7 +108,7 @@ local function newProfile(now)
 		loadout = { "ironman", "hawkeye" }, abilities = { ironman = 1, hawkeye = 1 },
 		pity = { legendary = 0 },
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
-		codes = {}, starterPack = false, boostUntil = 0, heroPicks = {}, _trades = {}, market = { day = 0, bought = {} }, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
+		codes = {}, starterPack = false, boostUntil = 0, boostLeft = 0, heroPicks = {}, _trades = {}, market = { day = 0, bought = {} }, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		campaign = {}, tutorialComplete = false, title = "",
 		settings = { language = "pt", languageSet = false, lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = true, fastForward = true },
 		quests = {}, achievements = {}, best = {},
@@ -483,6 +483,9 @@ function PlayerService:Load(player)
 			if session and session.id ~= self.sessionId and (session.expires or 0) > now then lockFailure = "Seu perfil ainda está em outro servidor. Aguarde alguns segundos. / Your profile is still on another server. Wait a few seconds."; return nil end
 			lockFailure = nil
 			profile._session = { id = self.sessionId, expires = now + self.leaseSeconds }
+			-- A Gold boost paused when the player left resumes now.
+			local left = math.floor(tonumber(profile.boostLeft) or 0)
+			if left > 0 then profile.boostUntil, profile.boostLeft = now + left, 0 end
 			refreshQuests(profile, now)
 			if profile.settings.languageSet ~= true then profile.settings.language = localeLanguage(player) or profile.settings.language end
 			profile.updatedAt = now
@@ -1740,7 +1743,12 @@ function PlayerService:Release(player)
 	if self.records[player.UserId] ~= record or record.player ~= player then return end
 	record.closing = true
 	if self.trades and self.trades[player.UserId] then self:_endTrade(self.trades[player.UserId], "cancelled") end
-	local ok = self:_transaction(player, function() return true end, nil, { releasing = true, silent = true })
+	local ok = self:_transaction(player, function(profile, now)
+		-- The Gold boost counts time in the game: what is left waits for the next visit.
+		local until_ = math.floor(tonumber(profile.boostUntil) or 0)
+		if until_ > now then profile.boostLeft, profile.boostUntil = until_ - now, 0 end
+		return true
+	end, nil, { releasing = true, silent = true })
 	-- Mutations already commit immediately. If lease release fails, the next
 	-- server waits for expiry rather than taking ownership prematurely.
 	if self.records[player.UserId] == record then self.records[player.UserId] = nil end
