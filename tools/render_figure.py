@@ -252,7 +252,7 @@ def intersect(piece: Piece, origin, dirs):
     return t, n
 
 
-def render(pieces, center, eye, size=(480, 600), fov=30):
+def render(pieces, center, eye, size=(480, 600), fov=30, transparent=False):
     w, h = size
     forward = center - eye
     forward /= np.linalg.norm(forward)
@@ -293,6 +293,15 @@ def render(pieces, center, eye, size=(480, 600), fov=30):
     edge[:, 1:] |= finite[:, 1:] != finite[:, :-1]
     edge[1:, :] |= finite[1:, :] != finite[:-1, :]
     img[edge] = (30, 34, 46)
+    if transparent:
+        # The figure alone (outline included) on a clear background, for icons.
+        grown = finite.copy()
+        grown[:, 1:] |= finite[:, :-1]
+        grown[:, :-1] |= finite[:, 1:]
+        grown[1:, :] |= finite[:-1, :]
+        grown[:-1, :] |= finite[1:, :]
+        alpha = (grown * 255).astype(np.uint8)
+        return Image.fromarray(np.dstack([img, alpha]), "RGBA")
     return Image.fromarray(img)
 
 
