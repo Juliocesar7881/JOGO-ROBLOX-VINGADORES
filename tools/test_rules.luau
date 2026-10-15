@@ -42,7 +42,7 @@ equal(#Catalog.AbilityOrder, 43, "One ability per hero")
 check(Catalog.Modes.daily == nil and Catalog.Modes.bossrush == nil, "Daily challenge and boss rush are gone")
 check(Catalog.Modes.infinite == nil and Catalog.Modes.hard == nil, "The casual endless and hard modes are gone")
 check(Catalog.Skills == nil and Catalog.Protocols == nil, "The old skill and protocol systems are gone")
-equal(Catalog.Modes.tutorial.waves, 12, "Training runs 12 waves")
+equal(Catalog.Modes.tutorial.waves, 6, "Training runs 6 waves (a short first session)")
 equal(Catalog.Modes.cards.waves, 50, "Cards run 50 waves")
 equal(Catalog.Modes.ranked.waves, 0, "Competitive is endless")
 for mapId, waves in { manhattan = 40, gamma = 50, hydra = 50, wakanda = 50, asgard = 50, latveria = 70 } do
@@ -422,7 +422,7 @@ end
 for wave = 1, 80 do
 	equal(Rules.IsBossWave("normal", wave, "latveria"), wave % 10 == 0, "Boss on every tenth wave: " .. wave)
 	equal(Rules.IsBossWave("ranked", wave, "hydra"), wave % 10 == 0, "Competitive boss on every tenth wave: " .. wave)
-	equal(Rules.IsBossWave("tutorial", wave, "manhattan"), wave == 12, "Training has one simplified boss, at the end")
+	equal(Rules.IsBossWave("tutorial", wave, "manhattan"), wave == Catalog.Modes.tutorial.waves, "Training has one simplified boss, at the end")
 end
 for _, mapId in Catalog.MapOrder do
 	local total = Rules.WaveCount("normal", mapId)

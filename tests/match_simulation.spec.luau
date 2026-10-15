@@ -426,9 +426,9 @@ if tutorial then
 	check(tutorial.match.phase == "Results", "tutorial reaches the results screen")
 	check(tutorial.results ~= nil, "tutorial produces a result")
 	check(tutorial.results.victory == true, "a defended tutorial is a win")
-	check(tutorial.results.waves == 12, "tutorial clears all 12 waves, got " .. tostring(tutorial.results.waves))
-	check(tutorial.seconds >= 180 and tutorial.seconds <= 1500,
-		"tutorial lasts 3-25 min, got " .. string.format("%.1f min", tutorial.seconds / 60))
+	check(tutorial.results.waves == Catalog.Modes.tutorial.waves, "tutorial clears all its waves, got " .. tostring(tutorial.results.waves))
+	check(tutorial.seconds >= 90 and tutorial.seconds <= 360,
+		"training fits a short first session (1.5-6 min), got " .. string.format("%.1f min", tutorial.seconds / 60))
 	check(tutorial.bossSeen, "the tutorial boss shows up")
 	check(tutorial.world.towers > 0, "towers are built in the world")
 	-- Teaching is paced across the run: a new commander should be told about
@@ -1008,6 +1008,9 @@ do
 	local remembered, rememberedPlayer = stage({ profile = { settings = { fastForward = true, autoSkip = true } } })
 	remembered:Step(Config.SimulationStep)
 	check(remembered:Speed() == 2 and remembered.participants[rememberedPlayer.UserId].autoSkip, "saved 2x and auto-skip apply to the next match")
+	-- Training is a lesson: it starts at 1x without auto-skip whatever is saved.
+	local lesson, lessonPlayer = stage({ modeId = "tutorial", profile = { settings = { fastForward = true, autoSkip = true } } })
+	check(lesson:Speed() == 1 and not lesson.participants[lessonPlayer.UserId].autoSkip, "training ignores saved 2x and auto-skip")
 
 	-- Party: 2x waits for everyone, and a player leaving never locks it at 2x.
 	local first, second = newPlayer(7101), newPlayer(7102)

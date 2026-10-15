@@ -220,7 +220,9 @@ function Tutorial:_matchStep(state)
 		local record = refs.abilityButtons and refs.abilityButtons[ability.id]
 		return {
 			id = "ability", number = 4, total = total,
-			text = T("Use o poder do líder: o botão grande (tecla Q)", "Use your leader's power: the big button (Q key)"),
+			-- The Q key only means something with a keyboard.
+			text = UserInputService.KeyboardEnabled and T("Use o poder do líder: o botão grande (tecla Q)", "Use your leader's power: the big button (Q key)")
+				or T("Use o poder do líder: toque no botão grande", "Use your leader's power: tap the big button"),
 			gui = record and record.button,
 		}
 	elseif ability and (ability.cooldown or 0) > 0 then

@@ -1276,7 +1276,7 @@ function Panels.new(ctx)
 	end
 
 	local function contextSettings(body)
-	 UI.button(body,T("Aprender a jogar • 12 ondas","Learn to play • 12 waves"),startTraining,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,52),TextSize=21})
+	 UI.button(body,T("Aprender a jogar • "..tostring(Catalog.Modes.tutorial.waves).." ondas","Learn to play • "..tostring(Catalog.Modes.tutorial.waves).." waves"),startTraining,{Name="OptionalTutorial",Size=UDim2.new(1,-6,0,52),TextSize=21})
 		UI.section(body, T("Seu jeito de jogar", "Your experience"), T("Acessibilidade e apresentação. As regras de combate são iguais para todos.", "Accessibility and presentation. Combat rules are the same for everyone."))
 		local settings = profile().settings or {}
 		local effectsOn = settings.effects
@@ -1655,8 +1655,8 @@ function Panels.new(ctx)
 		if not profile().tutorialComplete then
 			local first=UI.roundFrame(body,{Name="FirstMission",Size=UDim2.new(1,-6,0,168),BackgroundColor3=C.gold:Lerp(C.panel,0.78)},C.gold)
 			UI.label(first,T("Comece aqui!","Start here!"),{Position=UDim2.fromOffset(14,8),Size=UDim2.new(1,-28,0,36),TextSize=26,Font=Enum.Font.FredokaOne,TextColor3=C.gold})
-			UI.label(first,T("Aprenda em 12 ondas e ganhe 1.000 Ouro na primeira vitória.","Learn in 12 waves and earn 1,000 Gold on your first victory."),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
-			UI.button(first,T("Jogar o treino • 12 ondas","Play training • 12 waves"),startTraining,{Name="FindTrainingPortal",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
+			UI.label(first,T("Aprenda em "..tostring(Catalog.Modes.tutorial.waves).." ondas e ganhe 1.000 Ouro na primeira vitória.","Learn in "..tostring(Catalog.Modes.tutorial.waves).." waves and earn 1,000 Gold on your first victory."),{Position=UDim2.fromOffset(14,46),Size=UDim2.new(1,-28,0,58),TextSize=13,TextWrapped=true})
+			UI.button(first,T("Jogar o treino • "..tostring(Catalog.Modes.tutorial.waves).." ondas","Play training • "..tostring(Catalog.Modes.tutorial.waves).." waves"),startTraining,{Name="FindTrainingPortal",Position=UDim2.fromOffset(12,112),Size=UDim2.new(1,-24,0,46),BackgroundColor3=C.gold,TextSize=14})
 		end
 		local colors={manhattan=C.coral,gamma=C.green,asgard=C.gold,hydra=C.red,wakanda=C.violet,latveria=C.blue}
 		-- Destinations as picture cards, two side by side where the window is wide:
@@ -1686,7 +1686,7 @@ function Panels.new(ctx)
 					center={T("Campanha","Campaign"),T("Os três portais do centro do refúgio. Comece por aqui!","The three portals in the middle of the refuge. Start here!")},
 					expedition={T("Expedições","Expeditions"),T("Campanhas mais longas nas ilhas: Selva de Cristal e Ponte Celeste na ilha oeste, a final, Cidadela do Tirano (70 ondas), na ilha leste.","Longer campaigns on the islands: Crystal Jungle and Sky Bridge on the west island, the finale, Tyrant's Citadel (70 waves), on the east island.")},
 					arena={T("Arena competitiva","Competitive arena"),T("Três portais vizinhos. Cada mapa tem seu placar e exige uma estratégia diferente.","Three neighboring portals. Each map has its own leaderboard and calls for a different strategy.")},
-					special={T("Treino e cartas","Training & cards"),T("Na ilha norte: o treino de 12 ondas e o roguelike de cartas.","On the north island: the 12-wave training and the card roguelike.")},
+					special={T("Treino e cartas","Training & cards"),T("Na ilha norte: o treino de "..tostring(Catalog.Modes.tutorial.waves).." ondas e o roguelike de cartas.","On the north island: the "..tostring(Catalog.Modes.tutorial.waves).."-wave training and the card roguelike.")},
 				}
 				local heading=headings[district]
 				if heading then UI.section(body,heading[1],heading[2]) end
@@ -1745,7 +1745,7 @@ function Panels.new(ctx)
 			end
 		end
 		if profile().tutorialComplete then
-			UI.secondary(body,T("Treinar de novo • 12 ondas","Train again • 12 waves"),startTraining,{Size=UDim2.new(1,-6,0,44)})
+			UI.secondary(body,T("Treinar de novo • "..tostring(Catalog.Modes.tutorial.waves).." ondas","Train again • "..tostring(Catalog.Modes.tutorial.waves).." waves"),startTraining,{Size=UDim2.new(1,-6,0,44)})
 		end
 	end
 

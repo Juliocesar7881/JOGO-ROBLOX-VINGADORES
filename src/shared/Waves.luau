@@ -30,7 +30,7 @@ function Waves.Generate(mapId, modeId, wave, partySize, seed, difficultyId)
 	-- Every extra commander brings a whole roster: enemies carry one player's
 	-- health per commander, and five at a full squad of four.
 	local partyScale = ({ 1, 2, 3, 5 })[partySize]
-	-- Training climbs at half speed, so its 12 waves stay gentle.
+	-- Training climbs at half speed, so its waves stay gentle.
 	local progress = if modeId == "tutorial" then math.floor((math.min(wave, 20) + 1) / 2) else wave
 	-- Health climbs steadily, then a little faster once the late waves begin.
 	local growth = 1 + (progress - 1) * 0.045 + math.max(0, progress - 30) * 0.012

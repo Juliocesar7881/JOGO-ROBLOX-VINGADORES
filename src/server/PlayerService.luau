@@ -110,7 +110,7 @@ local function newProfile(now)
 		rewards = { freeChestAt = 0, loginDay = -1, loginStreak = 0, playDay = -1, playSeconds = 0, playClaimed = {}, collection = {}, groupClaimed = false },
 		codes = {}, starterPack = false, boostUntil = 0, heroPicks = {}, _trades = {}, market = { day = 0, bought = {} }, season = { id = 0, xp = 0, freeClaimed = 0, premiumClaimed = 0 },
 		campaign = {}, tutorialComplete = false, title = "",
-		settings = { language = "pt", languageSet = false, lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = false, fastForward = false },
+		settings = { language = "pt", languageSet = false, lowFX = false, shake = true, music = true, effects = true, interface = true, autoSkip = true, fastForward = true },
 		quests = {}, achievements = {}, best = {},
 		stats = { waves = 0, bosses = 0, wins = 0, matches = 0, goldEarned = 0, chests = 0 },
 		createdAt = now, updatedAt = now,

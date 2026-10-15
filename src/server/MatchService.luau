@@ -30,29 +30,30 @@ local STATUS = { stunned = 1, slowed = 2, marked = 4, burning = 8, shielded = 16
 local VULNERABLE_SECONDS, VULNERABLE_BONUS = 3, 0.25
 
 -- One lesson per tutorial wave, in the order a new commander actually needs
--- them. Keyed by wave number; waves without an entry stay quiet on purpose.
+-- them (the training is short: Catalog.Modes.tutorial.waves). Keyed by wave
+-- number; the "final" lesson always goes with the last wave, the boss.
 local TUTORIAL_LESSONS = {
-	[2] = {
+	[1] = {
 		"Cada inimigo derrotado derruba Ouro no chão. Ande perto das moedas para pegar: é com esse Ouro que você compra e melhora heróis.",
 		"Every defeated enemy drops Gold on the ground. Walk near the coins to pick them up: that Gold buys and upgrades your heroes.",
 	},
-	[3] = {
+	[2] = {
 		"Toque em uma torre para melhorar, vender ou mudar a prioridade.",
 		"Select a tower to upgrade, sell or change targeting.",
 	},
-	[5] = {
+	[3] = {
 		"Sua habilidade ativa vem do herói no PRIMEIRO slot da equipe. Use o botão grande durante a onda: ela recarrega sozinha.",
 		"Your active ability comes from the hero in the FIRST slot of your squad. Use the big button during a wave; it recharges on its own.",
 	},
-	[7] = {
-		"Antes de cada onda o aviso mostra as ameaças. Tocar em PRONTO começa a onda mais cedo.",
-		"Before each wave the banner lists the threats. Pressing READY starts the wave early.",
+	[4] = {
+		"Antes de cada onda o aviso mostra as ameaças. Tocar em PRONTO começa a onda mais cedo; 2x e AUTO deixam a partida mais rápida.",
+		"Before each wave the banner lists the threats. Pressing READY starts the wave early; 2x and AUTO speed the match up.",
 	},
-	[9] = {
+	[5] = {
 		"Na árvore de Evolução do lobby, Magnetismo aumenta o raio do ímã que puxa o Ouro do chão.",
 		"In the lobby's Talent tree, Magnetism widens the magnet that pulls Gold off the ground.",
 	},
-	[12] = {
+	final = {
 		"Última onda: derrote o chefe para concluir o treino e ganhar 1.000 de Ouro para abrir baús no lobby.",
 		"Final wave: beat the boss to finish training and earn 1,000 Gold to open chests in the lobby.",
 	},
@@ -209,8 +210,9 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 			masteryEarned={},rallyUntil=0,rallyStat=nil,rallyValue=0,
 			-- Remembered between matches: a commander who plays on 2x and
 			-- auto-skip does not have to switch them on every single run.
-			speedVote=(profile.settings and profile.settings.fastForward) and 2 or 1,
-			autoSkip=(profile.settings and profile.settings.autoSkip)==true}
+			-- Training always starts at 1x without auto-skip: it is a lesson.
+			speedVote=(profile.settings and profile.settings.fastForward and modeId~="tutorial") and 2 or 1,
+			autoSkip=(profile.settings and profile.settings.autoSkip)==true and modeId~="tutorial"}
 		local p=self.participants[player.UserId]
 		local baseId=profile.equippedBase or "outpost"
 		if not self.catalog.Bases[baseId] or (baseId~="outpost" and not (profile.bases or {})[baseId]) then baseId="outpost" end
@@ -390,7 +392,8 @@ function Match:_beginWave()
 	-- the opening notice: place, then upgrade, then abilities, then pacing,
 	-- and finally what to spend the reward on.
 	if self.modeId=="tutorial" then
-		local lesson=TUTORIAL_LESSONS[self.wave]
+		local final=self.wave>=self.rules.WaveCount(self.modeId,self.mapId)
+		local lesson=final and TUTORIAL_LESSONS.final or TUTORIAL_LESSONS[self.wave]
 		if lesson then self:_notice(lesson[1],lesson[2]) end
 	end
 end

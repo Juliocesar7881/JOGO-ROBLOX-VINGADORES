@@ -114,6 +114,7 @@ check(service.memory == false, "A live server must ignore StudioMemory=true")
 local initial = service:Load(p1)
 check(initial and initial.gold == 0 and initial.level == 1, "New account defaults")
 check(initial.heroes.ironman and initial.heroes.hawkeye and #initial.loadout == 2, "Starter heroes")
+check(initial.settings.fastForward == true and initial.settings.autoSkip == true, "A new commander plays at 2x with auto-skip on (short sessions)")
 check(initial._receipts == nil and initial._session == nil and initial._awards == nil, "Secrets never replicate")
 initial.gold = 999999
 check(service:Get(p1).gold == 0, "Public snapshots cannot mutate saved state")
