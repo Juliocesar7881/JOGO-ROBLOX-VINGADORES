@@ -103,7 +103,9 @@ return {
 		-- One battle track per map: licensed Creative Commons BY music prepared by
 		-- tools/prepare_music.py (credits: assets/audio/music_credits.json and
 		-- Catalog.MusicCredits, shown in Options). 0 = that map plays `battle`.
-		battleManhattan = 0, battleGamma = 0, battleHydra = 0, battleWakanda = 0, battleLatveria = 0, battleAsgard = 0,
+		-- Uploaded to the owner's account on 15/10 (Creator Hub, moderation applies).
+		battleManhattan = 97545750349415, battleGamma = 131099793893363, battleHydra = 123106203425536,
+		battleWakanda = 101674039226442, battleLatveria = 94715672061348, battleAsgard = 122417071033216,
 		-- One ambience loop per map, and a short cue per weapon family.
 		ambManhattan = 132352626399475, ambGamma = 101885347333293, ambHydra = 134964091158105,
 		ambWakanda = 109955783634978, ambAsgard = 107103621057466, ambLatveria = 131878071679857,
