@@ -3027,18 +3027,29 @@ local function session(screen)
 		local visuals = workspace:FindFirstChild("DoomClientVisuals")
 		local shot = {kind = "Shot", heroId = "cyclops", towerId = "refine-beam", from = v3(70, 4, 70), to = v3(70, 2, 50), color = Color3.fromRGB(220, 50, 70)}
 		fx(shot)
-		local beams = 0
+		local cores, glows, sparks = 0, 0, 0
 		for _, item in ipairs(visuals:GetChildren()) do
 			if item.Name == "CombatEffect" and item.Size.Z > 10 and item.Shape == Enum.PartType.Block then
-				beams += 1
+				cores += 1
 				check(item.Size.X < .6 and item.Transparency >= .15, tag .. ": laser does not cover the enemy with an opaque slab")
 			end
 		end
-		check(beams == 2, tag .. ": laser uses a narrow core and a restrained outer beam")
+		for _, item in ipairs(visuals:GetDescendants()) do
+			if item.Name == "CombatBeam" and item.Enabled == true then
+				glows += 1
+				check(item.FaceCamera == true and item.Width0 < 2 and (item.LightEmission or 0) <= 0.2, tag .. ": the outer glow is a narrow camera-facing beam with tame light")
+			end
+			if item.ClassName == "ParticleEmitter" then sparks += item.Emitted or 0 end
+		end
+		check(cores == 1 and glows == 1, tag .. ": laser uses a narrow core part and a restrained outer Beam")
+		check(sparks > 0, tag .. ": the hit throws particle sparks instead of pool parts")
 		for _ = 1, 40 do fx(shot) end
 		check(countNamed(visuals, "CombatEffect") <= 80, tag .. ": dense fire stays within the shared effect budget")
 		frames(1 / 30, 25)
 		check(countNamed(visuals, "CombatEffect") == 0, tag .. ": all attack primitives expire from the scene")
+		local lit = 0
+		for _, item in ipairs(visuals:GetDescendants()) do if item.Name == "CombatBeam" and item.Enabled == true then lit += 1 end end
+		check(lit == 0, tag .. ": every laser Beam switches off and returns to its pool")
 	end)
 
 	step("heroes move between shots: breathing, upgrade, cast and interruption", function()
@@ -3325,6 +3336,13 @@ local function session(screen)
 		local again = named(gui, "ResultPlayAgain")
 		local againRect = again and screenRect(again, gui, SCREEN)
 		check(againRect ~= nil and againRect.y + againRect.h <= view().h and againRect.h >= 44, tag .. ": PLAY AGAIN sits beside the return button without scrolling")
+		-- One quiet offer closes the results; it opens Roblox's own prompt only when pressed.
+		local offer = named(gui, "ResultOfferBuy")
+		check(offer ~= nil and named(gui, "ResultOfferName") ~= nil, tag .. ": the results end with one offer")
+		local promptsBefore = #prompts
+		if offer then offer.Activated:Fire(); flush() end
+		check(#prompts == promptsBefore + 1 and string.find(prompts[#prompts] or "", "product:", 1, true) ~= nil, tag .. ": the offer opens Roblox's purchase prompt")
+		if #prompts > promptsBefore then table.remove(prompts) end
 		local invite = named(gui, "ResultInvite")
 		local inviteRect = invite and screenRect(invite, gui, SCREEN)
 		check(inviteRect ~= nil and againRect ~= nil and inviteRect.x >= againRect.x + againRect.w and inviteRect.y + inviteRect.h <= view().h, tag .. ": a friend invite sits beside PLAY AGAIN on the results screen")

@@ -81,6 +81,15 @@ services.AnalyticsService = {
 	LogOnboardingFunnelStepEvent = function() end,
 }
 services.PolicyService = { GetPolicyInfoForPlayerAsync = function() return { ArePaidRandomItemsRestricted = false, IsPaidItemTradingAllowed = true } end }
+-- Experience Configs as the engine has them: one snapshot, a JSON value per key.
+configCodes = { video1 = { gold = 77 }, BROKEN = { gold = "lots" } }
+services.ConfigService = { GetConfigAsync = function()
+	return {
+		GetValue = function(_, key) if key == "codes" then return configCodes end return nil end,
+		Refresh = function() end,
+		UpdateAvailable = newSignal(),
+	}
+end }
 '''
 
 TELEPORT = r'''local teleports = {}
@@ -118,6 +127,16 @@ end
 local ana = join(501, "Ana")
 check(latest(ana) and latest(ana).role == "Lobby", "a public server of the single place is a lobby, got " .. tostring(latest(ana) and latest(ana).role))
 check(latest(ana).profile ~= nil, "the lobby loads the profile from the DataStore")
+-- A code published in Experience Configs works like a built-in one, once; a broken one is skipped and named.
+do
+	local before = latest(ana).profile.gold
+	check(request(ana, "RedeemCode", { code = "Video 1" }).ok and latest(ana).profile.gold == before + 77, "a code from Experience Configs pays its Gold")
+	check(not request(ana, "RedeemCode", { code = "VIDEO1" }).ok, "a config code is redeemed once per account")
+	check(not request(ana, "RedeemCode", { code = "BROKEN" }).ok, "a malformed config code is not a code")
+	local named = false
+	for _, line in ipairs(warnings) do if string.find(line, "Config codes skipped: BROKEN", 1, true) then named = true end end
+	check(named, "a malformed config code is named in a warning")
+end
 check(workspace:FindFirstChild("DoomLobby") ~= nil and workspace:FindFirstChild("DoomArrival") == nil, "a lobby server builds the lobby")
 stepInto(ana, "normal")
 for _ = 1, 30 do

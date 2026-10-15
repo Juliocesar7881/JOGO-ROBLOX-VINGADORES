@@ -23,6 +23,25 @@ O modo de dois lugares separados abaixo continua disponível: preencher
 `LobbyPlaceId` e `MatchPlaceId` com lugares diferentes tem prioridade sobre o
 `SinglePlace`.
 
+## Códigos promocionais sem publicar (Experience Configs)
+
+Um código por vídeo ou canal, criado no Creator Hub, sem gerar nem publicar o
+lugar de novo:
+
+1. Creator Hub > a experiência > **Configs** > criar a chave `codes`, tipo
+   **JSON**.
+2. Valor (exemplo): `{"VIDEO1": {"gold": 300, "chest": "rare", "expires": 1798761600}}`.
+   Campos aceitos: `gold` (0 a 10.000), `xp` (0 a 5.000), `chest` (um baú do
+   `Catalog.Chests`, por exemplo `rare`) e `expires` (segundos Unix UTC). O
+   nome do código: só letras e números, 3 a 32 caracteres.
+3. Publicar as configs. Os servidores abertos leem a mudança sozinhos
+   (`UpdateAvailable`); o jogador digita em qualquer caixa, com ou sem acento.
+
+Uma entrada malformada não vira código e aparece no aviso
+`[Doomsday] Config codes skipped: ...` (validação em `Rules.ConfigCodes`). Os
+códigos de `src/server/Codes.luau` continuam valendo; uma chave igual na config
+substitui a do arquivo. Cada conta resgata cada código uma vez.
+
 ## Lugares separados (opcional)
 
 O jogo local está em `dist/Doomsday-Studio.rbxlx`. Os arquivos Lobby e Match

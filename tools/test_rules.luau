@@ -329,6 +329,16 @@ do
 	local quickBoss = false
 	for _, spec in ipairs(quickSpecs) do if spec.enemyId == Catalog.Maps.manhattan.bossId then quickBoss = true end end
 	check(quickBoss and #Waves.Generate("manhattan", "quick", 21, 1, 7) == 0, "quick waves end at 20 with the map's boss")
+	-- Codes from Experience Configs: only well-formed entries become codes.
+	local configCodes, refusedCodes = Rules.ConfigCodes({
+		video1 = { gold = 300, chest = "rare", expires = 1798761600 }, XP = { xp = 10 },
+		LOTS = { gold = 99999 }, ODD = { gold = 10, title = "x" }, NOCHEST = { chest = "platinum" }, EMPTY = {},
+		["two words"] = { gold = 5 }, ZERO = { gold = 0 }, FRACTION = { gold = 1.5 },
+	})
+	check(configCodes.VIDEO1 ~= nil and configCodes.VIDEO1.gold == 300 and configCodes.VIDEO1.chest == "rare" and configCodes.VIDEO1.expires == 1798761600, "a config code is read in capitals with its reward")
+	check(configCodes.XP == nil and configCodes.LOTS == nil and configCodes.ODD == nil and configCodes.NOCHEST == nil and configCodes.EMPTY == nil and configCodes.ZERO == nil and configCodes.FRACTION == nil, "short, oversized, unknown, empty or broken config codes are refused")
+	check(#refusedCodes == 8 and table.find(refusedCodes, "two words") ~= nil, "every refused config code is named for the warning")
+	check(next((Rules.ConfigCodes(nil))) == nil and next((Rules.ConfigCodes("codes"))) == nil, "a missing or non-table config gives no codes")
 	-- Badges follow the saved profile.
 	local function has(list, key) return table.find(list, key) ~= nil end
 	check(#Rules.EarnedBadges({}) == 0 and #Rules.EarnedBadges(nil) == 0, "a fresh or missing profile earns no badge")

@@ -680,6 +680,8 @@ function MatchHud.new(ctx)
 		local goalText=goal and L(goal.text) or T("Evolua a habilidade do líder ou recrute nos baús.","Upgrade your leader ability or recruit from chests.")
 		if goal and (goal.total or 1)>1 then goalText..="  "..tostring(goal.progress).."/"..tostring(goal.total) end
 		UI.fit(UI.label(content,T("Próximo objetivo: ","Next goal: ")..goalText,{Name="ResultNextGoal",Size=UDim2.new(1,-6,0,40),TextWrapped=true,TextColor3=C.cream,TextSize=15,Font=UI.Fonts.display}),11)
+		-- Last, below everything that was won: one quiet offer (init.client).
+		if ctx.resultOffer then ctx.resultOffer(content, result) end
 		welcomePanel(panel)
 	end
 

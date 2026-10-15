@@ -102,6 +102,40 @@ profiles.onInviteThanks = function(player, result)
 	notify(player, text("Seus amigos entraram pelo seu convite: +" .. result.gold .. " Ouro!", "Your friends joined from your invite: +" .. result.gold .. " Gold!"))
 end
 
+-- Codes from Experience Configs (Creator Hub > the experience > Configs, key
+-- "codes", type JSON): {"VIDEO1": {"gold": 300, "chest": "rare", "expires": 1798761600}}.
+-- A code per video or channel without a new publish. They join Codes.luau and
+-- follow the same rules (once per account, any case, with or without accents);
+-- a malformed entry is skipped with a warning (Rules.ConfigCodes). Read on the
+-- server only, and again whenever the configs are republished.
+local builtInCodes = table.clone(Codes)
+local function applyConfigCodes(raw)
+	if type(raw) == "string" then
+		local decoded, value = pcall(function() return HttpService:JSONDecode(raw) end)
+		raw = decoded and value or nil
+	end
+	local fresh, refused = Rules.ConfigCodes(raw)
+	for code in pairs(Codes) do Codes[code] = nil end
+	for code, reward in pairs(builtInCodes) do Codes[code] = reward end
+	for code, reward in pairs(fresh) do Codes[code] = reward end
+	if #refused > 0 then warn("[Doomsday] Config codes skipped: " .. table.concat(refused, ", ")) end
+end
+task.spawn(function()
+	local loaded, snapshot = pcall(function() return game:GetService("ConfigService"):GetConfigAsync() end)
+	if not loaded or snapshot == nil then return end
+	local function read()
+		local got, value = pcall(function() return snapshot:GetValue("codes") end)
+		if got then applyConfigCodes(value) end
+	end
+	read()
+	pcall(function()
+		snapshot.UpdateAvailable:Connect(function()
+			pcall(function() snapshot:Refresh() end)
+			read()
+		end)
+	end)
+end)
+
 local purchaseAnalytics
 profiles.onPurchase = function(player, phase, kind, key, id)
 	if phase == "start" then

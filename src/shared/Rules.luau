@@ -382,6 +382,39 @@ function Rules.WaveMutation(modeId, mapId, wave, seed)
 	return Catalog.MutationOrder[math.floor(hash / 4) % #Catalog.MutationOrder + 1]
 end
 
+-- Promo codes kept in Experience Configs (Creator Hub > Configs, key "codes",
+-- a JSON object { CODE = { gold?, xp?, chest?, expires? } }): a code per video
+-- or channel without a new publish. Only a well-formed entry becomes a code;
+-- the rest come back by name so the server warns instead of trusting a typo.
+local CONFIG_CODE_LIMITS = { gold = 10000, xp = 5000 }
+function Rules.ConfigCodes(raw)
+	local codes, refused = {}, {}
+	if type(raw) ~= "table" then return codes, refused end
+	for key, entry in pairs(raw) do
+		local code = type(key) == "string" and string.upper(key) or ""
+		local ok = #code >= 3 and #code <= 32 and not string.find(code, "[^%w]") and type(entry) == "table"
+		local reward = {}
+		if ok then
+			for field, value in pairs(entry) do
+				if CONFIG_CODE_LIMITS[field] then
+					ok = ok and type(value) == "number" and value == math.floor(value) and value >= 0 and value <= CONFIG_CODE_LIMITS[field]
+				elseif field == "chest" then
+					ok = ok and type(value) == "string" and Catalog.Chests[value] ~= nil
+				elseif field == "expires" then
+					ok = ok and type(value) == "number" and value == value and value > 0
+				else
+					ok = false
+				end
+				reward[field] = value
+			end
+			ok = ok and ((reward.gold or 0) > 0 or (reward.xp or 0) > 0 or reward.chest ~= nil)
+		end
+		if ok then codes[code] = reward else table.insert(refused, tostring(key)) end
+	end
+	table.sort(refused)
+	return codes, refused
+end
+
 -- The Roblox badges a profile has earned, by Config.Badges key. Pure: the
 -- server awards whatever this lists that the player does not hold yet.
 Rules.BadgeCollection = 12

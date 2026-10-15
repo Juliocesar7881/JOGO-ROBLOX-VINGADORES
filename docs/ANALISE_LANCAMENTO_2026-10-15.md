@@ -314,15 +314,15 @@ Regras do plano:
 
 Acesso e conta
 - [ ] Verificação de identidade com documento e 2FA
-- [ ] Taxa reembolsável de 1.000 Robux (ou Plus/Premium por 2 meses)
+- [x] Taxa reembolsável de 1.000 Robux (ou Plus/Premium por 2 meses): paga pelo dono em 15/10
 - [ ] Conferir no Audience Reach se a meta é 250 jogadas ou 25 jogadores; acompanhar o número
 - [ ] Refazer o questionário de maturidade, depois que a correção da troca estiver publicada
 - [ ] Pedir a avaliação Kids/Select; mudar para todas as idades só depois de aprovado
 - [ ] Criar a conta DevEx (libera os Creator Rewards)
 
 Lugares e servidores
-- [ ] Criar o lugar "Partida" e publicar os dois arquivos de `dist/release`
-- [ ] Tamanho do servidor: Partida = 4, Lobby = 20 a 24; até separar, o servidor atual em 4
+- [x] ~~Criar o lugar "Partida"~~: não precisa mais. Desde 15/10 é um lugar só (`Config.SinglePlace`): cada batalha vai para um servidor reservado do mesmo lugar, sem lobby montado
+- [ ] Tamanho do servidor do lugar: 20 a 24 (as batalhas já levam só o grupo, até 4, para o servidor reservado)
 - [ ] Teste com 1 e com 4 contas reais: 5º jogador recusado, cair e voltar, falha de viagem, volta ao lobby
 - [ ] Conferir os dispositivos: desmarcar Console até haver suporte a controle
 - [ ] Ligar servidores privados (grátis ou cerca de 100 Robux/mês; mudar o preço depois cancela as assinaturas)
@@ -338,14 +338,14 @@ Marca e página
 Dinheiro
 - [ ] Tirar de venda o game pass permanente da temporada (2026575250)
 - [ ] Rodada de compras reais (cerca de 292 Robux)
-- [ ] Ícones dos produtos (primeiro passes, Pacote Inicial e os 4 pacotes novos)
+- [x] Ícones dos produtos: os 55 enviados em 15/10 (`tools/product_icons.py`); aparecem para os jogadores depois da moderação do Roblox
 - [ ] Decidir se reabre a escada de preços
 
 Testes e conteúdo
 - [ ] Celular real: Android barato e iPhone antigo
 - [ ] Subir `refined/battle.wav`. Não subir `assets/audio/summon/reelStart` e `reelTick`: são recortes de um MP3 de terceiros e você não pode declarar autoria deles
-- [ ] Criar as insígnias (5 grátis por dia)
-- [ ] Criar as chaves de Experience Configs e os Share Links
+- [x] Criar as insígnias: 5 criadas em 15/10 e concedidas pelo servidor
+- [ ] Share Links. Códigos por Experience Configs já funcionam no código: criar a chave `codes` (JSON) quando quiser um código novo (`docs/DEPLOYMENT.md`)
 - [ ] Escolher o canal oficial (YouTube e/ou Discord 13+) e mostrar o jogo em parte dos Shorts
 - [ ] Marcar a data do lançamento para crianças (12 a 19/12) e o evento de Natal
 - [ ] Depois de liberar todas as idades: rodada com 5 a 10 crianças sem explicação

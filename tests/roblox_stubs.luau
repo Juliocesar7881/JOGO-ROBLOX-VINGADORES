@@ -312,6 +312,12 @@ end
 
 local METHODS = {}
 
+-- ParticleEmitter:Emit, counted so a test can see a burst happen.
+function METHODS:Emit(count)
+	local props = rawget(self, "__props")
+	props.Emitted = (props.Emitted or 0) + (tonumber(count) or 0)
+end
+
 function METHODS:IsA(className)
 	local own = rawget(self, "__class")
 	if own == className or className == "Instance" then return true end

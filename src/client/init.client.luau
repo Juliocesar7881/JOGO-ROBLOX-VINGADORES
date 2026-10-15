@@ -1311,6 +1311,32 @@ local function closeTowerPanel()
 	if towerRing then towerRing:Destroy(); towerRing = nil end
 end
 
+-- One quiet offer at the end of the results, never after training: the
+-- Starter Pack while the account has not bought it, else Double Gold while no
+-- boost runs. Roblox's own prompt shows the price; the server's receipt grants it.
+local function resultOffer(parent, result)
+	if type(result) ~= "table" or result.modeId == "tutorial" then return end
+	local p = profile()
+	local consumables = Config.Products and Config.Products.Consumables or {}
+	local function configured(key) return (tonumber(consumables[key] and consumables[key].id) or 0) > 0 end
+	local okNow, now = pcall(function() return workspace:GetServerTimeNow() end)
+	if not okNow or type(now) ~= "number" then now = os.time() end
+	local key = (not p.starterPack and configured("starterPack")) and "starterPack"
+		or (((tonumber(p.boostUntil) or 0) <= now and configured("goldBoost")) and "goldBoost" or nil)
+	local def = key and Catalog.Products.Consumables[key]
+	if not def then return end
+	local info = productInfo["product:" .. key]
+	local price = type(info) == "table" and not info.preview and info.price or nil
+	local card = UI.roundFrame(parent, {Name = "ResultOffer", Size = UDim2.new(1, -6, 0, 66), BackgroundColor3 = UI.Skin.slot}, C.gold)
+	UI.icon(card, key == "starterPack" and "chest" or "coin", C.gold, {Position = UDim2.fromOffset(10, 15), Size = UDim2.fromOffset(36, 36)})
+	UI.fit(UI.label(card, L(def.name), {Name = "ResultOfferName", Position = UDim2.fromOffset(54, 6), Size = UDim2.new(1, -206, 0, 26), Font = UI.Fonts.display, TextSize = 18, TextColor3 = C.gold}), 11)
+	UI.fit(UI.label(card, L(def.description), {Name = "ResultOfferLine", Position = UDim2.fromOffset(54, 32), Size = UDim2.new(1, -206, 0, 28), TextSize = 14, TextWrapped = true, TextColor3 = C.muted}), 9)
+	UI.button(card, price and (tostring(price) .. " Robux") or T("Ver oferta", "See offer"), function()
+		local ok = pcall(function() MarketplaceService:PromptProductPurchase(player, consumables[key].id) end)
+		if not ok then showToast(T("Falha ao abrir compra.", "Could not open purchase."), true) end
+	end, {Name = "ResultOfferBuy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(140, 46), BackgroundColor3 = C.green, TextSize = 16})
+end
+
 -- The battle's panels and the results screen live in MatchHud.luau.
 local matchHud = MatchHud.new({
 	state = function() return state end,
@@ -1321,7 +1347,7 @@ local matchHud = MatchHud.new({
 	T = T, L = L, number = number, player = player, act = act, audio = audio, celebrate = celebrate,
 	main = main, overlays = overlays, at = at, dims = dims, screenSize = screenSize, sizeClass = sizeClass, mobile = mobile,
 	heroName = heroName, colorFor = colorFor, mapName = mapName, modeName = modeName, profile = profile, heroPortrait = heroPortrait,
-	livePortrait = livePortrait, registerShowcase = registerShowcase, inviteFriends = inviteFriends,
+	livePortrait = livePortrait, registerShowcase = registerShowcase, inviteFriends = inviteFriends, resultOffer = resultOffer,
 	activeMatch = activeMatch, levelProgress = levelProgress, welcomePanel = welcomePanel,
 	currentMatchLayout = currentMatchLayout, closeTowerPanel = closeTowerPanel, selectTower = selectTower,
 	selectedTower = function() return selectedTower end,

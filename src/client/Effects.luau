@@ -668,7 +668,101 @@ end
 function Effects:_burst(position, color, size)
 	self:_impact(position, color, size * 1.1)
 	self:_ring(position, color, size, size * 3.5, 0.22)
-	self:_sparks(position, color, 3, size * 2)
+	if not self:_emit("spark", position, color, math.clamp(math.floor(size * 3), 4, 9)) then self:_sparks(position, color, 3, size * 2) end
+end
+
+-- Particles and beams are engine effects, not parts of the capped pool: they
+-- hang from attachments of one invisible anchored part. An emitter is moved to
+-- each point and emits at once (particles live in world space, so earlier
+-- bursts stay where they were born); one per kind and colour, made on first
+-- use and capped. Engine textures, no light emission (the glow stays tame),
+-- and none at all with reduced effects: the old part sparks stand in.
+local PARTICLES = {
+	spark = { texture = "rbxasset://textures/particles/sparkles_main.dds", lifetime = { 0.16, 0.32 }, speed = { 10, 18 }, size = { 0.5, 0.04 }, drag = 7, accel = Vector3.new(0, -24, 0) },
+	dust = { texture = "rbxasset://textures/particles/smoke_main.dds", lifetime = { 0.35, 0.55 }, speed = { 2.5, 5 }, size = { 1.1, 2.6 }, drag = 4, accel = Vector3.new(0, 3, 0) },
+}
+local MAX_EMITTERS, MAX_BEAMS = 24, 24
+
+function Effects:_reduced()
+	local state = self.getState()
+	return state and state.profile and state.profile.settings and state.profile.settings.lowFX
+end
+
+function Effects:_particleRoot()
+	if not self.particleRoot or self.particleRoot.Parent == nil then
+		local root = part(self.folder, Vector3.one, Color3.new(1, 1, 1))
+		root.Name, root.Transparency, root.CFrame = "ParticleRoot", 1, CFrame.new()
+		self.particleRoot, self.emitters, self.emitterCount, self.beams, self.beamPool = root, {}, 0, {}, {}
+	end
+	return self.particleRoot
+end
+
+function Effects:_emitter(kind, color)
+	local spec = PARTICLES[kind]
+	if not spec then return nil end
+	local root = self:_particleRoot()
+	local key = string.format("%s:%d:%d:%d", kind, math.floor(color.R * 255 + 0.5), math.floor(color.G * 255 + 0.5), math.floor(color.B * 255 + 0.5))
+	local found = self.emitters[key]
+	if found then return found end
+	if self.emitterCount >= MAX_EMITTERS then
+		-- Past the cap a burst borrows another colour's emitter of its kind.
+		for other, entry in pairs(self.emitters) do if string.sub(other, 1, #kind + 1) == kind .. ":" then return entry end end
+		return nil
+	end
+	local attachment = Instance.new("Attachment")
+	attachment.Name = key
+	attachment.Parent = root
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Name, emitter.Texture, emitter.Rate, emitter.Enabled = kind, spec.texture, 0, true
+	emitter.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25), color)
+	emitter.Lifetime, emitter.Speed = NumberRange.new(spec.lifetime[1], spec.lifetime[2]), NumberRange.new(spec.speed[1], spec.speed[2])
+	emitter.Size, emitter.Transparency = NumberSequence.new(spec.size[1], spec.size[2]), NumberSequence.new(0.15, 1)
+	emitter.Drag, emitter.Acceleration, emitter.SpreadAngle = spec.drag, spec.accel, Vector2.new(180, 180)
+	emitter.Rotation, emitter.RotSpeed = NumberRange.new(0, 360), NumberRange.new(-180, 180)
+	emitter.LightEmission, emitter.LightInfluence = 0, 0.4
+	emitter.Parent = attachment
+	local entry = { attachment = attachment, emitter = emitter }
+	self.emitters[key] = entry
+	self.emitterCount += 1
+	return entry
+end
+
+-- A burst of `count` particles of a kind at a point. False when reduced
+-- effects are on (or no emitter can be had), so the caller can fall back.
+function Effects:_emit(kind, position, color, count)
+	if self:_reduced() then return false end
+	local entry = self:_emitter(kind, color)
+	if not entry then return false end
+	entry.attachment.WorldPosition = position
+	entry.emitter:Emit(count)
+	return true
+end
+
+-- A soft ribbon between two points that always faces the camera: a stretched
+-- box reads as a slab from the side. Fades out over its life (see Step).
+function Effects:_beam(from, to, color, width, duration)
+	if self:_reduced() then return false end
+	local root = self:_particleRoot()
+	if #self.beams >= MAX_BEAMS then return false end
+	local entry = table.remove(self.beamPool)
+	if not entry then
+		local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+		a0.Name, a1.Name = "BeamFrom", "BeamTo"
+		a0.Parent, a1.Parent = root, root
+		local beam = Instance.new("Beam")
+		beam.Name, beam.Attachment0, beam.Attachment1 = "CombatBeam", a0, a1
+		beam.FaceCamera, beam.Segments, beam.LightEmission, beam.LightInfluence = true, 1, 0.1, 0
+		beam.Parent = root
+		entry = { beam = beam, a0 = a0, a1 = a1 }
+	end
+	entry.a0.WorldPosition, entry.a1.WorldPosition = from, to
+	entry.beam.Color = ColorSequence.new(color)
+	entry.beam.Width0, entry.beam.Width1 = width, width
+	entry.beam.Transparency = NumberSequence.new(0.5)
+	entry.beam.Enabled = true
+	entry.born, entry.expires = self.clock, self.clock + duration
+	table.insert(self.beams, entry)
+	return true
 end
 
 -- A narrow beam with a coloured core. Fewer primitives and restrained glow
@@ -678,7 +772,10 @@ function Effects:_laser(from, to, color, width, duration)
 	local length = (to - from).Magnitude
 	if length < 0.05 then return end
 	local middle = CFrame.lookAt((from + to) / 2, to)
-	self:_effect(Vector3.new(width * 1.8, width * 1.8, length), middle, color, duration, nil, 0.62)
+	-- The soft outer glow is a Beam; reduced effects keep the old part.
+	if not self:_beam(from, to, color, width * 1.8, duration) then
+		self:_effect(Vector3.new(width * 1.8, width * 1.8, length), middle, color, duration, nil, 0.62)
+	end
 	self:_effect(Vector3.new(width * 0.65, width * 0.65, length), middle, color:Lerp(Color3.new(1, 1, 1), 0.22), duration * 0.85, nil, 0.16)
 	self:_muzzle(from, color, width * 1.8)
 	self:_burst(to, color, width * 1.4)
@@ -1284,6 +1381,7 @@ function Effects:Handle(event)
 			self.poofBudget = (self.poofBudget or 0) + 1
 			local height = fallen.def.air and (fallen.airLift or 6) + 3 or 2.2 * (fallen.scale or 1)
 			self:_impact(fallen.position + Vector3.new(0, height, 0), event.split and Color3.fromRGB(150, 255, 190) or Color3.fromRGB(214, 255, 190), (event.split and 2.8 or 1.8) * math.max(0.8, fallen.scale or 1))
+			self:_emit("dust", fallen.position + Vector3.new(0, height * 0.5, 0), event.split and Color3.fromRGB(150, 220, 170) or Color3.fromRGB(196, 206, 186), 6)
 		end
 		self:Release(tostring(event.id))
 		if event.boss and typeof(event.position)=="Vector3" then
@@ -1789,6 +1887,17 @@ function Effects:Step(dt)
 					effect.part.CFrame = CFrame.new(position) * CFrame.Angles(life * 3, 0, life * 4)
 				end
 			end
+		end
+	end
+	for i = #(self.beams or {}), 1, -1 do
+		local entry = self.beams[i]
+		if self.clock >= entry.expires then
+			entry.beam.Enabled = false
+			table.insert(self.beamPool, entry)
+			table.remove(self.beams, i)
+		else
+			local life = math.clamp((self.clock - entry.born) / math.max(entry.expires - entry.born, 1e-3), 0, 1)
+			entry.beam.Transparency = NumberSequence.new(0.5 + 0.5 * life)
 		end
 	end
 	for i = #self.popups, 1, -1 do
