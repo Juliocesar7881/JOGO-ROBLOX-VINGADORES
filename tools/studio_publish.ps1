@@ -21,19 +21,15 @@ Start-Sleep -Milliseconds 400
 # Studio 0.743 renamed the item to a plain "Publicar"/"Publish" ("Publicar como" is the other one).
 $names = @('Publicar na Roblox', 'Publish to Roblox', 'Publicar', 'Publish')
 $target = $null
-foreach ($name in $names) {
-  $target = $studio.FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $name)))
-  if ($target) { break }
-}
-if (-not $target) {
-  # The open menu may answer as its own popup window.
+# The open menu answers as its own popup window: enumerate every menu item on
+# the desktop and take the exact name (never "Publicar como").
+for ($attempt = 1; $attempt -le 6 -and -not $target; $attempt++) {
+  Start-Sleep -Milliseconds 500
   $desktop = [System.Windows.Automation.AutomationElement]::RootElement
-  foreach ($name in $names) {
-    $target = $desktop.FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $name)))
-    if ($target) { break }
-  }
+  $items = $desktop.FindAll([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem)))
+  foreach ($item in $items) { if ($names -contains $item.Current.Name) { $target = $item; break } }
 }
-if (-not $target) { try { $fileMenu.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse() } catch { }; throw 'Studio did not expose "Publicar na Roblox".' }
+if (-not $target) { try { $fileMenu.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse() } catch { }; throw 'Studio did not expose "Publicar".' }
 $logDir = Join-Path $env:LOCALAPPDATA 'Roblox\logs'
 $log = Get-ChildItem $logDir -Filter '*_Studio_*_last.log' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 $before = if ($log) { (Select-String -Path $log.FullName -Pattern 'Go to PublishSuccessful' -SimpleMatch | Measure-Object).Count } else { 0 }

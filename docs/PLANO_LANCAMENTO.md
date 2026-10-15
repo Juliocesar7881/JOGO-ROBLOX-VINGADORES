@@ -239,6 +239,27 @@ primeira torre → primeiro baú) antes de gastar em divulgação.
 
 ---
 
+## Estado em 14/10/2026 (fim do dia)
+
+Feito e **publicado** no place 97132875544830 (Studio log `Go to
+PublishSuccessful`, 01:59 UTC de 15/10):
+
+- Fase 0 inteira; Fase 1 (código): `release.py` preserva IDs.
+- Fase 2: funil de compra, Pacote Inicial com contador, pacotes Lendário e
+  Equipe, passe por temporada com herói brilhante exclusivo, VIP (baú grátis
+  2x mais rápido, nome dourado), boost de Ouro 2x por 1 h, atalho "Comprar
+  Ouro". **Os 4 produtos novos existem no Creator Hub** (IDs em
+  `Config.Products.Consumables`) e a loja só desenha produtos com ID real:
+  nada à venda que não funcione. Faltam só os ícones (dono).
+- Fase 3: troca segura entre amigos, mercado do dia, evento de fim de semana,
+  login de 28 dias, presente entre amigos, comemoração de vitória (VIP com
+  holofote), abate de chefe com peso. Não feitos: modo rápido (um portal novo
+  estoura o orçamento de peças do lobby), skins por maestria.
+- Fase 4: brilho do herói "shiny" na torre em partida; flash e tremor no chefe.
+  O resto depende de imagens (rostos, skybox, texturas) que só o dono envia.
+- Fase 5: tudo do dono continua pendente (identidade/2FA, marca, lugares
+  separados, trilha de batalha, ícones, compras de teste, aparelho real, D1/D7).
+
 ## Ordem de execução recomendada
 
 Fase 0 → Fase 1 (código) → Fase 2 itens 1, 2, 9 → Fase 3 itens 1, 2, 3 →
