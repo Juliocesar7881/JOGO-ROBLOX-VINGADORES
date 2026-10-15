@@ -438,7 +438,18 @@ function Tutorial:_guiPointer(target)
 	local x = ((position and position.X or 0) - (origin and origin.X or 0) + (size and size.X or 0) / 2) / scale
 	local y = ((position and position.Y or 0) - (origin and origin.Y or 0)) / scale
 	local bob = math.sin(self.clock * 6) * 6
-	if self.step and self.step.side == "left" then
+	-- A button stacked in a column (the lobby dock on a wide screen) is pointed
+	-- at from its right: from above, the arrow would sit on the button over it.
+	local side = self.step and self.step.side
+	local holder = target.Parent
+	local stack = holder and holder:IsA("GuiObject") and holder.AbsoluteSize
+	if not side and stack and stack.Y > stack.X * 1.5 then side = "right" end
+	if side == "right" then
+		self.pointer.Text = "◀"
+		self.pointer.AnchorPoint = Vector2.new(0, 0.5)
+		local right = ((position and position.X or 0) - (origin and origin.X or 0) + (size and size.X or 0)) / scale
+		self.pointer.Position = UDim2.fromOffset(right + 6 - bob, y + (size and size.Y or 0) / 2 / scale)
+	elseif side == "left" then
 		-- A wide button (READY) is pointed at from its left side, so the pointer
 		-- never covers the text above it.
 		self.pointer.Text = "▶"

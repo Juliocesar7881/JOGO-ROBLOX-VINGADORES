@@ -1672,6 +1672,18 @@ local function session(screen)
 		local badge = named(gui, "RewardsBadge")
 		check(badge ~= nil and badge.Visible == true, tag .. ": the nav badge appears when rewards are claimable")
 		check(badge ~= nil and badge.Text == "3", tag .. ": the badge counts what can be claimed, got " .. tostring(badge and badge.Text))
+		-- A tile with news bobs as one piece: icon, name and count move together.
+		local giftTile = named(gui, "Nav_rewards")
+		local giftDisc, giftCaption = giftTile and named(giftTile, "Disc"), giftTile and named(giftTile, "Caption")
+		local together = true
+		for _ = 1, 8 do
+			frames(0.11, 1)
+			if giftDisc and giftCaption and badge then
+				local lift = giftDisc.Position.Y.Offset - 2
+				together = together and math.abs((giftCaption.Position.Y.Offset + 4) - lift) < 1e-6 and math.abs((badge.Position.Y.Offset - 8) - lift) < 1e-6
+			end
+		end
+		check(giftDisc ~= nil and giftCaption ~= nil and together, tag .. ": the gift tile's icon, name and count bob together")
 
 		clickNamed("Nav_rewards")
 		check(contextOpen(), tag .. ": the gift tab opens the rewards panel")
@@ -1849,7 +1861,19 @@ local function session(screen)
 				end
 			end
 			clickNamed("ElevatorFriends")
-			check(asked("ElevatorFriends"), tag .. ": the heart asks the server to close the queue to friends")
+			check(asked("ElevatorFriends"), tag .. ": the lock asks the server to close the queue to friends")
+			-- The server's answer redraws the card: the lock lights up and the riders' line says so.
+			riding.elevator.friendsOnly = true
+			push(riding)
+			local friends = named(gui, "ElevatorFriends")
+			local lit = friends and friends.BackgroundColor3
+			check(lit ~= nil and math.abs(lit.R - UILayout.Colors.coral.R) < 1e-3 and math.abs(lit.G - UILayout.Colors.coral.G) < 1e-3 and math.abs(lit.B - UILayout.Colors.coral.B) < 1e-3,
+				tag .. ": a friends-only queue lights its lock button")
+			local ridersLine = named(gui, "PortalRiders")
+			check(ridingLayout.class.short or (ridersLine ~= nil and string.find(ridersLine.Text, "Só amigos", 1, true) ~= nil), tag .. ": the riders' line says the queue is friends-only")
+			riding.elevator.friendsOnly = nil
+			push(riding)
+			card = frameAt(main, ridingLayout.elevator)
 		end
 		local tip = named(gui, "FirstVisitHint")
 		check(tip == nil or tip.Visible == false, tag .. ": the tip strip steps aside while the queue card is up")
@@ -1894,6 +1918,26 @@ local function session(screen)
 		check(card ~= nil and arrows == nil, tag .. ": only the first rider gets the sector switch")
 		push(lobbySnapshot(veteranProfile()))
 		check(frameAt(main, ridingLayout.elevator) == nil, tag .. ": stepping off removes the card")
+	end)
+
+	step("a portal's light goes out when the ride is over", function()
+		local riding = lobbySnapshot(veteranProfile())
+		riding.elevator = { portalId = "normal", modeId = "normal", mapId = "manhattan", carId = "glow-car", queueId = "q-glow", max = 4, remaining = 3, host = true,
+			riders = { { userId = LOCAL_ID, name = "Tester" } } }
+		push(riding)
+		local visuals = workspace:FindFirstChild("DoomClientVisuals")
+		check(countNamed(visuals, "RideColumn") == 1, tag .. ": the pad this player rides lights up")
+		riding.elevator.departing = true
+		push(riding)
+		push(matchSnapshot(veteranProfile(), "Preparing"))
+		check(countNamed(visuals, "RideColumn") == 0, tag .. ": the light goes out when the battle starts")
+		push(lobbySnapshot(veteranProfile()))
+		check(countNamed(visuals, "RideColumn") == 0, tag .. ": and the lobby comes back without the white light")
+		-- The old path: a lobby redraw with no queue (after the results) used to keep it.
+		push(riding)
+		push(resultsSnapshot(veteranProfile()))
+		push(lobbySnapshot(veteranProfile()))
+		check(countNamed(visuals, "RideColumn") == 0, tag .. ": a lobby redrawn after the results keeps no pad light")
 	end)
 
 	step("walking away closes the panel that belongs to a place", function()
@@ -2447,6 +2491,10 @@ local function session(screen)
 		frames(1/30,3)
 		local freeText=named(gui,"TutorialText")
 		check(freeText and string.find(freeText.Text,"grátis",1,true)~=nil,tag..": first chest points to free reward before spending")
+		-- The arrow never sits on another button: a dock in a column is pointed at from the side.
+		local dockFrame, arrow = named(gui, "LobbyNavigation"), named(gui, "TutorialPointer")
+		local column = dockFrame and dockFrame.AbsoluteSize.Y > dockFrame.AbsoluteSize.X * 1.5
+		check(arrow ~= nil and arrow.Text == (column and "◀" or "▼"), tag .. ": the gifts arrow points " .. (column and "from the side of the column" or "down at the dock") .. ", got " .. tostring(arrow and arrow.Text))
 		fresh.rewards.freeChest.ready=false
 		fresh.rewards.claimable=0
 		push(lobbySnapshot(fresh))

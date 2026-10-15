@@ -728,14 +728,16 @@ renderElevator = function()
 	else
 		kit.elevatorDeadline = nil
 	end
-	local signature = e and HttpService:JSONEncode({e.portalId, e.queueId, e.slot, e.departing, e.modeId, e.difficultyId, e.mapId or "random", #(e.riders or {}), e.host, e.carId, profile().equippedBase, language}) or nil
+	local signature = e and HttpService:JSONEncode({e.portalId, e.queueId, e.slot, e.departing, e.modeId, e.difficultyId, e.mapId or "random", #(e.riders or {}), e.host, e.carId, e.friendsOnly == true, profile().equippedBase, language}) or nil
+	-- The pad this player rides lights up: a column of light and rising sparks
+	-- in the portal's colour, flaring white when the queue departs. A light
+	-- that no longer matches the ride goes first, before the early return: the
+	-- lobby redraws with no queue after a battle and must not keep the white one.
+	local rideKey = e and tostring(e.queueId or e.portalId) or nil
+	local glow = effects.rideGlow
+	if glow and glow.key ~= rideKey then glow.part:Destroy(); effects.rideGlow, glow = nil, nil end
 	if signature == kit.elevatorSignature and (refs.elevator ~= nil) == (e ~= nil) then return false end
 	kit.elevatorSignature = signature
-	-- The pad this player rides lights up: a column of light and rising sparks
-	-- in the portal's colour, flaring white when the queue departs.
-	local glow = effects.rideGlow
-	local rideKey = e and tostring(e.queueId or e.portalId) or nil
-	if glow and glow.key ~= rideKey then glow.part:Destroy(); effects.rideGlow, glow = nil, nil end
 	if e and not glow then
 		local lobby = workspace:FindFirstChild("DoomLobby")
 		local station = lobby and lobby:FindFirstChild("Portal_" .. tostring(e.portalId))
@@ -813,9 +815,22 @@ renderElevator = function()
 		local startW = compact and 96 or 120
 		UI.button(card, T("Começar", "Start"), function() act("ElevatorStart", {}) end, {Name = "ElevatorStartNow", Position = UDim2.new(1, -(leaveW + startW + 20), 0, rowY), Size = UDim2.fromOffset(startW, rowH), BackgroundColor3 = C.green, TextSize = compact and 14 or 17})
 		statusRight += startW + 8
-		-- A heart closes the queue to the host's Roblox friends (the server checks).
-		local friendsButton = UI.button(card, "", function() act("ElevatorFriends", { on = not e.friendsOnly }) end, {Name = "ElevatorFriends", Position = UDim2.new(1, -(statusRight + rowH - 8), 0, rowY), Size = UDim2.fromOffset(rowH, rowH), BackgroundColor3 = e.friendsOnly and C.coral or C.card})
-		UI.icon(friendsButton, "heart", e.friendsOnly and C.text or C.coral, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(rowH - 12, rowH - 12)})
+		-- A lock closes the queue to the host's Roblox friends (the server checks):
+		-- lit while closed, the riders' line says so, and a toast answers the tap.
+		local friendsButton = UI.button(card, "", function()
+			local closing = not e.friendsOnly
+			act("ElevatorFriends", { on = closing }, function()
+				showToast(closing and T("Fila fechada: só seus amigos do Roblox podem entrar.", "Queue closed: only your Roblox friends can join.")
+					or T("Fila aberta para todos.", "Queue open to everyone."), false)
+			end)
+		end, {Name = "ElevatorFriends", Position = UDim2.new(1, -(statusRight + rowH - 8), 0, rowY), Size = UDim2.fromOffset(rowH, rowH), BackgroundColor3 = e.friendsOnly and C.coral or C.card})
+		UI.icon(friendsButton, "lock", e.friendsOnly and C.text or C.coral, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(rowH - 14, rowH - 14)})
+		UI.hover(friendsButton, function(box)
+			UI.label(box, T("Só amigos", "Friends only"), {LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 24), TextSize = 18, Font = UI.Fonts.display, TextColor3 = C.gold})
+			UI.label(box, e.friendsOnly and T("Ligado: só seus amigos do Roblox entram nesta fila. Toque para abrir a todos.", "On: only your Roblox friends can join this queue. Tap to open it to everyone.")
+				or T("Toque para que só seus amigos do Roblox possam entrar nesta fila.", "Tap so only your Roblox friends can join this queue."),
+				{LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextSize = 15, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, TextColor3 = C.cream})
+		end, 260)
 		statusRight += rowH + 6
 	end
 	-- Anyone aboard can invite Roblox friends to come and fill the queue.
@@ -968,7 +983,7 @@ renderLobby = function()
 		end
 		local line=UI.frame(button,{Name="SelectedTab",AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,2),Size=UDim2.new(0.7,0,0,4),BackgroundColor3=entry[3],Visible=false})
 		UI.corner(line,2)
-		refs.navigation[entry[1]]={button=button,line=line,tint=entry[3],badge=badge,count=entry[5],icon=disc,iconX=0,phase=i*0.9}
+		refs.navigation[entry[1]]={button=button,line=line,tint=entry[3],badge=badge,count=entry[5],icon=disc,iconX=0,phase=i*0.9,caption=button:FindFirstChild("Caption")}
 	end
 
 	-- What to do next. A newcomer is taught by the arrows of Tutorial.luau; once
@@ -1709,6 +1724,8 @@ end
 
 render = function()
 	backdrop.Enabled = state ~= nil and state.phase == "Results"
+	-- A queue's pad light ends with the lobby (a battle may run in this server).
+	if effects.rideGlow and not (state and state.phase == "Lobby") then effects.rideGlow.part:Destroy(); effects.rideGlow = nil end
 	local ability = activeMatch() and state.match.ability
 	local aiming = selectedSkill and ability and ability.id == selectedSkill and ability.target == "area" and (ability.cooldown or 0) <= 0 and selectedSkill or nil
 	local aimPosition, aimPinned = selectedPosition, placementPinned
@@ -2286,7 +2303,11 @@ RunService.RenderStepped:Connect(function(dt)
 			if entry.icon and entry.icon.Parent then
 				local flag = waiting[id] or entry.badge
 				local news = flag ~= nil and flag.Parent ~= nil and flag.Visible ~= false
-				entry.icon.Position = UDim2.new(0.5, entry.iconX, 0, 2 + (news and math.sin(now * 2.2 + entry.phase) * 3 or 0))
+				local lift = news and math.sin(now * 2.2 + entry.phase) * 3 or 0
+				entry.icon.Position = UDim2.new(0.5, entry.iconX, 0, 2 + lift)
+				-- The name and the count ride with the icon: the tile moves as one.
+				if entry.caption and entry.caption.Parent then entry.caption.Position = UDim2.new(0.5, 0, 1, -4 + lift) end
+				if entry.badge and entry.badge.Parent then entry.badge.Position = UDim2.new(1, -10, 0, 8 + lift) end
 			end
 		end
 		for _, badge in ipairs({refs.rewardsBadge}) do
