@@ -3240,6 +3240,18 @@ local function session(screen)
 			if string.match(voice.Name, "^Bank_score_") and voice.IsPlaying then scored += 1 end
 		end
 		check(scored >= 2, tag .. ": the commander's power plays its score after the first sound, got " .. scored .. " notes")
+		-- A power that falls sounds as it lands: its score has a note there.
+		local unsung = {}
+		for _, heroId in ipairs(Catalog.HeroOrder) do
+			local def = Catalog.Abilities[Catalog.Heroes[heroId].ability]
+			local landing = Rules.AbilityLanding(def, 1)
+			if landing > 0 then
+				local heard = false
+				for _, note in ipairs(scores[heroId] or {}) do if math.abs(note[1] - landing) <= 0.03 then heard = true end end
+				if not heard then table.insert(unsung, heroId) end
+			end
+		end
+		check(#unsung == 0, tag .. ": every power that falls has a note as it lands: " .. table.concat(unsung, ", "))
 		fx({kind = "Clear"})
 	end)
 
@@ -3267,6 +3279,53 @@ local function session(screen)
 			check(most > 0 and most <= 60, tag .. ": " .. heroId .. "'s power look peaks at a bounded part count, got " .. most)
 			check(probe:Count() == 0, tag .. ": " .. heroId .. "'s power look leaves nothing behind")
 		end
+		-- A power that falls lands as the server strikes (Rules.AbilityLanding):
+		-- some layer of its look appears at every landing, missile by missile and
+		-- bolt by bolt; and a bolt goes to where its enemy is by then.
+		local born, offbeat = {}, {}
+		local spawnRecord = probe._spawn
+		probe._spawn = function(self, record)
+			local result = spawnRecord(self, record)
+			table.insert(born, record.born)
+			return result
+		end
+		local targets, points = {}, {}
+		for index = 1, 4 do targets[index], points[index] = "e" .. index, v3(index * 2, 0, -index) end
+		for _, heroId in ipairs(Catalog.HeroOrder) do
+			local ability = Catalog.Abilities[Catalog.Heroes[heroId].ability]
+			if Rules.AbilityLanding(ability, 1) > 0 then
+				probe:Clear()
+				table.clear(born)
+				local cast = probe.clock
+				probe:Cast({heroId = heroId, abilityId = ability.id, abilityKind = ability.kind, position = v3(0, 0, 0), radius = 12, points = points, targets = targets},
+					Color3.fromRGB(ability.color[1], ability.color[2], ability.color[3]))
+				for _ = 1, 60 do probe:Step(1 / 30) end
+				local landings = if ability.kind == "chain" then #points else Rules.AbilityHits(ability)
+				for index = 1, landings do
+					local at, seen = Rules.AbilityLanding(ability, index), false
+					for _, moment in ipairs(born) do if moment - cast >= at - 0.001 and moment - cast <= at + 0.05 then seen = true end end
+					if not seen then table.insert(offbeat, heroId .. "#" .. index) end
+				end
+			end
+		end
+		check(#offbeat == 0, tag .. ": every power that falls draws its landing as the server strikes: " .. table.concat(offbeat, ", "))
+		probe._spawn = nil
+		probe:Clear()
+		local tracked = v3(20, 0, 20)
+		probe.locate = function(id) return if id == "e7" then tracked else nil end
+		local thunder = Catalog.Abilities.thunderCall
+		probe:Cast({heroId = "thor", abilityId = thunder.id, abilityKind = thunder.kind, position = v3(0, 0, 0), radius = 12, points = {v3(3, 0, 2)}, targets = {"e7"}},
+			Color3.fromRGB(120, 220, 255))
+		local reached = false
+		for _ = 1, 30 do
+			probe:Step(1 / 30)
+			for _, item in ipairs(probe.folder:GetChildren()) do
+				if item.Name == "PowerEffect" and (item.Position - (tracked + v3(0, 1, 0))).Magnitude < 1.5 then reached = true end
+			end
+		end
+		check(reached, tag .. ": thunder's bolt goes to where its enemy stands when it lands")
+		probe.locate = nil
+		probe:Clear()
 		probe.folder:Destroy()
 		for kind, spec in pairs(PowerFXModule.PARTICLES) do
 			check(type(spec[1]) == "string" and string.match(spec[1], "^[%w_]+%.dds$") ~= nil, tag .. ": particle " .. kind .. " uses an engine texture")

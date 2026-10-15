@@ -247,6 +247,11 @@ function Effects.new(player, request, getState, audio)
 	self.shotSerial = 0
 	-- Every hero's power has a look of its own, with a part pool of its own.
 	self.powerFX = PowerFX.new(self.folder)
+	-- A power's bolt goes to where its enemy is on this screen when it lands.
+	self.powerFX.locate = function(id)
+		local enemy = self.enemies[tostring(id)]
+		return enemy and enemy.position
+	end
 	self.connection = RunService.RenderStepped:Connect(function(dt) self:Step(dt) end)
 	-- Runs after the camera has been positioned for this frame, so the offset
 	-- is not immediately overwritten.
@@ -1515,7 +1520,12 @@ function Effects:Handle(event)
 			local own=self.player~=nil and event.ownerId==self.player.UserId
 			local distance=camera and (event.position-camera.CFrame.Position).Magnitude or 0
 			local reach=own and 1 or math.clamp(1-(distance-40)/120,0,1)
-			if reach>0 then self:Shake(math.min(tonumber(event.shake),0.8)*reach) end
+			-- A power that falls shakes the ground as it lands, not as it is cast.
+			if reach>0 then
+				local amount=math.min(tonumber(event.shake),0.8)*reach
+				local landing=PowerFX.Landing(event).at
+				if landing>0 then self.powerFX:After(landing,function() self:Shake(amount) end) else self:Shake(amount) end
+			end
 		end
 		if self.audio then
 			local camera=workspace.CurrentCamera

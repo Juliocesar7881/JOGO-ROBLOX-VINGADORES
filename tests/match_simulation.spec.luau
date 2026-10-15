@@ -803,6 +803,16 @@ do
 		local again = match:Handle(player, "CastSkill", payload)
 		check(not again, "a recharging ability cannot be cast again: " .. label)
 		check(p.contributed and p.waveHeroes[heroId], "casting counts as taking part and credits the hero: " .. label)
+		-- A power that falls lands with its look: nothing is struck before then.
+		if Rules.AbilityLanding(def, 1) > 0 then
+			local untouched = true
+			for index, enemy in ipairs(near) do
+				untouched = untouched and enemy.hp == hpBefore[index] and enemy.stunUntil <= match.elapsed and enemy.slow == 0
+					and enemy.markUntil <= match.elapsed and enemy.armorBreak == 0 and enemy.progress == 100 + (index - 1) * 0.5
+			end
+			check(untouched, "a power in flight strikes nothing before it lands: " .. label)
+		end
+		match:_landingsStep(5)
 
 		if def.kind == "blast" then
 			for index, enemy in ipairs(near) do
@@ -834,6 +844,7 @@ do
 			p.cooldowns[def.id] = 0
 			local heldUntil = boss.stunUntil
 			match:Handle(player, "CastSkill", payload)
+			match:_landingsStep(5)
 			check(boss.stunUntil == heldUntil, "a boss just stunned cannot be stunned again: " .. label)
 		elseif def.kind == "slow" then
 			for _, enemy in ipairs(near) do check(enemy.slow > 0 and enemy.slowUntil > match.elapsed, "slow applies: " .. label) end
@@ -877,6 +888,7 @@ do
 			p.cooldowns[def.id] = 0
 			local before = strongest.hp
 			match:Handle(player, "CastSkill", { skillId = def.id })
+			match:_landingsStep(5)
 			check(strongest.hp < before, "smite goes for the strongest enemy: " .. label)
 		end
 
@@ -915,6 +927,7 @@ do
 		for index, enemy in ipairs(near) do before[index] = enemy.hp end
 		local ok = match:Handle(player, "CastSkill", { skillId = def.id, position = near[1].position })
 		check(ok, "ultimate casts: " .. heroId)
+		match:_landingsStep(5)
 		local announced
 		for _, event in ipairs(events) do if event.kind == "Ability" then announced = event end end
 		return match, near, far, boss, before, announced, Rules.AbilityStats(def, 1), Rules.AbilityExtras(def, 1), def
@@ -972,6 +985,101 @@ do
 		for _, enemy in ipairs(near) do
 			check(enemy.dot ~= nil and enemy.slow > 0 and enemy.stunUntil > match.elapsed, "hellfire burns, slows and stuns")
 		end
+	end
+end
+
+print("--- powers land with their look ---")
+do
+	-- The sun reaches the ground 0.55 real seconds after the cast: no damage,
+	-- stun or burn before, all of it as it lands, at 1x and at 3x alike (the
+	-- client draws the look in real time).
+	for _, speed in ipairs({ 1, 3 }) do
+		local match, player = stage({ loadout = { "solartitan", "ironman" } })
+		if speed == 3 then
+			local p = match.participants[player.UserId]
+			p.profile.passes = p.profile.passes or {}
+			p.profile.passes.speed3 = true
+			check(match:Handle(player, "SetSpeed", { speed = 3 }) and match:Speed() == 3, "the landing test runs at 3x")
+		end
+		local near = {}
+		for offset = 0, 3 do table.insert(near, spawn(match, "zombie", 100 + offset * 0.5, 4)) end
+		local events = {}
+		local original = match._fx
+		match._fx = function(self, event, ...) table.insert(events, event) return original(self, event, ...) end
+		check(match:Handle(player, "CastSkill", { skillId = "solarWrath", position = near[1].position }), "the sun is called down at " .. speed .. "x")
+		local announced = false
+		for _, event in ipairs(events) do if event.kind == "Ability" then announced = true end end
+		check(announced, "the look starts as the power is cast, at " .. speed .. "x")
+		for _ = 1, 5 do match:Step(Config.SimulationStep * speed) end
+		local early = true
+		for _, enemy in ipairs(near) do early = early and enemy.hp == enemy.maxHP and enemy.stunUntil <= match.elapsed and enemy.dot == nil end
+		check(early, "half a real second in, the sun is still falling: nothing is hit, at " .. speed .. "x")
+		match:Step(Config.SimulationStep * speed)
+		local landed = true
+		for _, enemy in ipairs(near) do landed = landed and enemy.hp < enemy.maxHP and enemy.stunUntil > match.elapsed and enemy.dot ~= nil end
+		check(landed, "as it lands it burns, stuns and blasts the area, at " .. speed .. "x")
+	end
+
+	-- A barrage's damage lands missile by missile and adds up to the whole.
+	do
+		local match, player = stage({ loadout = { "ironman" } })
+		local def = Catalog.Abilities.repulsorBarrage
+		local stats = Rules.AbilityStats(def, 1)
+		local hits = Rules.AbilityHits(def)
+		local target = spawn(match, "zombie", 100, 4)
+		check(match:Handle(player, "CastSkill", { skillId = def.id, position = target.position }), "the barrage is cast")
+		match:_landingsStep(Rules.AbilityLanding(def, 1))
+		check(math.abs(target.hp - target.maxHP * (1 - stats.power / hits)) < 0.001, "the first missile takes its share only")
+		check(match.syncTimer >= Config.EnemySyncInterval, "a landing sends the health bars out at once")
+		match:_landingsStep(Rules.AbilityLanding(def, hits))
+		check(math.abs(target.hp - target.maxHP * (1 - stats.power)) < 0.001, "all the missiles together deal the whole barrage")
+	end
+
+	-- A chain picks its targets as it is cast and strikes them one by one; the
+	-- client is told who, so each bolt goes to where its enemy is by then.
+	do
+		local match, player = stage({ loadout = { "thor" } })
+		local def = Catalog.Abilities.thunderCall
+		local stats = Rules.AbilityStats(def, 1)
+		local near = {}
+		for offset = 0, 5 do table.insert(near, spawn(match, "zombie", 100 + offset * 0.5, 4)) end
+		local events = {}
+		local original = match._fx
+		match._fx = function(self, event, ...) table.insert(events, event) return original(self, event, ...) end
+		check(match:Handle(player, "CastSkill", { skillId = def.id, position = near[1].position }), "thunder is called")
+		local announced
+		for _, event in ipairs(events) do if event.kind == "Ability" then announced = event end end
+		local byId = {}
+		for _, enemy in ipairs(near) do byId[enemy.id] = enemy end
+		local named = announced and announced.targets or {}
+		local known = #named > 0 and #named == #(announced.points or {})
+		for _, id in ipairs(named) do known = known and byId[id] ~= nil end
+		check(known, "the client is told which enemy each bolt goes to")
+		local function struck()
+			local count = 0
+			for _, enemy in ipairs(near) do if match.enemies[enemy.id] == enemy and enemy.hp < enemy.maxHP then count += 1 end end
+			return count
+		end
+		check(struck() == 0 and near[1].stunUntil <= match.elapsed, "no bolt has landed as the storm gathers")
+		match:_landingsStep(Rules.AbilityLanding(def, 1))
+		check(struck() == 1 and byId[named[1]].hp < byId[named[1]].maxHP, "the first bolt strikes the first target")
+		check(near[6].stunUntil > match.elapsed, "the stun lands with the first bolt")
+		-- A target that falls to a tower before its bolt arrives is not struck twice.
+		local doomed = byId[named[3]]
+		match:_damage(doomed, doomed.hp + 1, nil, { trueDamage = true })
+		match:_landingsStep(Rules.AbilityLanding(def, stats.count))
+		check(struck() == #near - 1 and match.enemies[doomed.id] == nil, "the other bolts strike their targets, the fallen one is skipped")
+	end
+
+	-- A wave that ends leaves nothing for a power in flight to land on.
+	do
+		local match, player = stage({ loadout = { "ironman" } })
+		local target = spawn(match, "zombie", 100, 4)
+		check(match:Handle(player, "CastSkill", { skillId = "repulsorBarrage", position = target.position }), "a barrage is in the air")
+		check(#match.landings > 0, "its missiles wait to land")
+		match:_endWave()
+		check(#match.landings == 0, "the end of the wave clears them")
+		match:_landingsStep(5)
 	end
 end
 

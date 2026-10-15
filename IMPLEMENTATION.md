@@ -233,6 +233,29 @@ duration, power}, ...}`; the client's `Effects:_ultimateBurst` reads those
 two fields to draw one light-pillar + three-shockwave burst plus one ring
 per extra, in that extra's own tint, instead of the plain per-kind pulse.
 
+## Powers land with their look — 15/10/2026
+
+A power that falls or flies strikes when its look lands, never as it is
+cast (owner, 15/10: the meteor's damage comes when the meteor hits the
+ground). `Catalog.Abilities[id].impact = {at, every?, hits?}`: `at` real
+seconds from the cast to the first landing, `every` the gap to the next (a
+chain's targets one by one, a barrage's missiles), `hits` the equal parts a
+barrage's blast damage is split into. `Rules.AbilityLanding(def, index)` and
+`Rules.AbilityHits(def)` turn it into times, and both sides read them:
+`MatchService:_resolve` queues each effect that touches enemies on a real-time
+clock (`_later`, `_landingsStep(realDt)` during the wave, so 1x, 2x and 3x
+land at the same real moment the client draws), while buffs, Gold, core
+shields and heals still act at once (`SELF_KINDS`). Chain and smite targets
+are picked as the power is cast and struck at their own landing if still
+standing; the `Ability` FX event then carries `targets` (enemy ids, aligned
+with `points`) so the client's bolt goes to where that enemy is when it
+lands. A landing forces an `EnemySync` that step, so the health bars and hit
+numbers show as it lands. A wave that ends drops whatever was still in
+flight (`_endWave`). `PowerFX` signatures take a `land` table (`at`,
+`every`, `hits`, `time(index)`) from `PowerFX.Landing(event)` for every
+layer that lands, and `Effects` shakes the camera on the landing, not on the
+cast. Abilities without `impact` behave exactly as before.
+
 Rewards (`Catalog.Rewards`, `Rules.RewardsStatus`/`Rules.LoginClaim`) are
 four independent loops stored in `profile.rewards` (never sent to the
 client raw — `PlayerService:Snapshot` computes and attaches

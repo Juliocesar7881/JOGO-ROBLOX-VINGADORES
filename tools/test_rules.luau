@@ -734,6 +734,38 @@ end
 for _, heroId in Catalog.HeroOrder do
 	check(Catalog.Abilities[Catalog.Heroes[heroId].ability] ~= nil, "Ability resolves from " .. heroId)
 end
+-- A power that falls or flies lands when its look does (Catalog impact): soon,
+-- on a chosen area, and only a power that strikes enemies waits (a buff, Gold,
+-- a shield or a heal never does). A barrage only splits a blast's damage.
+do
+	local SELF_KINDS = { rally = true, energy = true, barrier = true, heal = true, overdrive = true }
+	local landed = 0
+	for _, id in Catalog.AbilityOrder do
+		local def = Catalog.Abilities[id]
+		local impact = def.impact
+		if impact then
+			landed += 1
+			check(type(impact.at) == "number" and impact.at > 0 and impact.at <= 1.2, "A landing comes soon after the cast: " .. id)
+			check(not SELF_KINDS[def.kind], "Only a power that strikes enemies waits to land: " .. id)
+			check(def.target == "area", "A falling power lands on a chosen area: " .. id)
+			if impact.hits then check(def.kind == "blast" and impact.hits >= 2 and (impact.every or 0) > 0, "Only a blast splits into a barrage: " .. id) end
+			if def.kind == "chain" then check((impact.every or 0) > 0, "A chain's bolts reach their targets one by one: " .. id) end
+			local last = if def.kind == "chain" then Rules.AbilityStats(def, ranks.max).count else Rules.AbilityHits(def)
+			check(Rules.AbilityLanding(def, last) <= 1.5, "Every landing of a power comes within 1.5 s: " .. id)
+		else
+			equal(Rules.AbilityLanding(def, 1), 0, "A power without an impact strikes as it is cast: " .. id)
+			equal(Rules.AbilityHits(def), 1, "A power without an impact lands in one piece: " .. id)
+		end
+	end
+	check(landed >= 10, "The powers that fall or fly land with their look, got " .. landed)
+	approx(Rules.AbilityLanding(Catalog.Abilities.solarWrath, 1), 0.55, "The sun lands as it reaches the ground")
+	approx(Rules.AbilityLanding(Catalog.Abilities.repulsorBarrage, 3), 0.42 + 2 * 0.07, "The third missile lands two gaps after the first")
+	equal(Rules.AbilityHits(Catalog.Abilities.repulsorBarrage), 7, "The barrage lands in seven missiles")
+	approx(Rules.AbilityLanding(Catalog.Abilities.thunderCall, 10), 0.54 + 9 * 0.04, "The tenth bolt reaches its target last")
+	equal(Rules.AbilityLanding(nil, 1), 0, "No ability, no wait")
+	equal(Rules.AbilityLanding({ impact = { at = -1, every = 0 / 0 } }, 3), 0, "A broken impact never waits a negative or undefined time")
+	equal(Rules.AbilityHits({ impact = { hits = 0 } }), 1, "A barrage always lands at least once")
+end
 
 do
 	local def = Catalog.Abilities.repulsorBarrage

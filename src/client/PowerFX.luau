@@ -7,11 +7,19 @@
 -- Toolbox.
 --
 -- Purely cosmetic: it draws what the server's Ability event already decided.
+-- A power that falls or flies (a meteor, an arrow, a rain of missiles, bolts
+-- racing to their targets) lands at the very times the server strikes, read
+-- from the same rule (Catalog impact, Rules.AbilityLanding): the damage never
+-- comes before the meteor does. A bolt goes to where its enemy is by then.
 -- Its parts come from a pool of their own (MAX_PARTS), apart from the attacks'
 -- pool, so a power is never starved by a busy wave, and every delay runs on
 -- its own clock (Step), so a test or a scene change sees a final state. No
 -- light emission and Neon only in small cores: the tame bloom never washes
 -- out. Reduced effects draws none of it (Effects keeps its single ring).
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("DoomShared")
+local Catalog = require(Shared:WaitForChild("Catalog"))
+local Rules = require(Shared:WaitForChild("Rules"))
+
 local PowerFX = {}
 PowerFX.__index = PowerFX
 
@@ -106,6 +114,33 @@ end
 
 function PowerFX:_later(delay, action)
 	table.insert(self.queue, { at = self.clock + delay, action = action })
+end
+
+-- Something to do on this clock later (Effects shakes the camera as a power lands).
+function PowerFX:After(delay, action)
+	self:_later(math.max(0, tonumber(delay) or 0), action)
+end
+
+-- When a cast lands, by the rule the server strikes by: at, the first
+-- landing; every, the gap to the next; hits, a barrage's missiles;
+-- time(index), any landing. All zero for a power that strikes as it is cast.
+function PowerFX.Landing(event)
+	local hero = Catalog.Heroes[event and event.heroId or ""]
+	local def = Catalog.Abilities[event and event.abilityId or ""] or (hero and Catalog.Abilities[hero.ability])
+	local first = Rules.AbilityLanding(def, 1)
+	return { at = first, every = Rules.AbilityLanding(def, 2) - first, hits = Rules.AbilityHits(def),
+		time = function(index) return Rules.AbilityLanding(def, index) end }
+end
+
+-- Where the index-th enemy a power strikes stands now: the client's own enemy
+-- (Effects sets locate) when the server named it, else where it stood when the
+-- power was cast.
+function PowerFX:_target(event, index)
+	local id = event.targets and event.targets[index]
+	local live = type(id) == "string" and id ~= "" and self.locate and self.locate(id)
+	if typeof(live) == "Vector3" then return live end
+	local point = event.points and event.points[index]
+	return if typeof(point) == "Vector3" then point else nil
 end
 
 function PowerFX:_emitter(kind, color)
@@ -557,7 +592,7 @@ function PowerFX:Cracks(center, radius, color, count, delay)
 end
 
 -- A wall of water (or wind) running out from the centre and sinking.
-function PowerFX:Wave(center, radius, color, count, delay)
+function PowerFX:Wave(center, radius, color, count, delay, life)
 	local base = ground(center, 0)
 	for index = 1, count do
 		local angle = index * math.pi * 2 / count
@@ -565,7 +600,7 @@ function PowerFX:Wave(center, radius, color, count, delay)
 		local part = self:_part(Enum.PartType.Block, color, Enum.Material.Glass, 0.35)
 		if part then
 			local arc = 2 * math.pi * radius / count
-			self:_spawn({ part = part, life = 0.9, delay = delay,
+			self:_spawn({ part = part, life = life or 0.9, delay = delay,
 				update = function(record, t)
 					local e = ease("out", t)
 					local reach = radius * (0.25 + 0.95 * e)
@@ -617,16 +652,19 @@ function PowerFX:Circle(center, radius, color, delay, life)
 end
 
 -- A beam from high above sweeping across the area (an optic blast, a heat
--- ray), setting the ground alight where it passes.
-function PowerFX:Sweep(center, radius, color, width, delay)
+-- ray), setting the ground alight where it passes; flares (seconds after the
+-- delay) burst under the beam at the moments it burns.
+function PowerFX:Sweep(center, radius, color, width, delay, flares)
 	local base = ground(center, 0.3)
 	local origin = base + Vector3.new(-radius * 0.6, 28, -radius * 0.9)
 	local side = Vector3.new(1, 0, -0.4).Unit
+	local life = 0.7
+	local function under(seconds) return base + side * radius * (ease("inout", math.clamp(seconds / life, 0, 1)) * 2 - 1) end
 	local part = self:_part(Enum.PartType.Block, color:Lerp(WHITE, 0.2), Enum.Material.Neon, 0.15)
 	if part then
-		self:_spawn({ part = part, life = 0.7, delay = delay,
+		self:_spawn({ part = part, life = life, delay = delay,
 			update = function(record, t)
-				local target = base + side * radius * (ease("inout", t) * 2 - 1)
+				local target = under(t * life)
 				local length = (target - origin).Magnitude
 				record.part.Size = Vector3.new(width * (1 - t * 0.5), width * (1 - t * 0.5), length)
 				record.part.CFrame = CFrame.lookAt((origin + target) / 2, target)
@@ -634,9 +672,12 @@ function PowerFX:Sweep(center, radius, color, width, delay)
 			end })
 	end
 	for index = 0, 5 do
-		local spot = base + side * radius * (index / 5 * 2 - 1)
+		local spot = under(index * 0.12)
 		self:Emit("fire", spot + UP * 0.5, color, 3, (delay or 0) + index * 0.12)
 		self:Emit("spark", spot + UP, color, 5, (delay or 0) + index * 0.12)
+	end
+	for _, seconds in ipairs(flares or {}) do
+		self:Flash(under(seconds) + UP * 0.6, color:Lerp(WHITE, 0.3), 1.2, 4, 0.25, (delay or 0) + seconds, 0.3)
 	end
 end
 
@@ -657,16 +698,18 @@ local function spread(index)
 end
 
 -- Armour of Iron: a barrage of micro-missiles drops out of the sky.
-SIGNATURES.ironman = function(fx, c, r, color)
-	fx:Rain(c, r * 0.75, Color3.fromRGB(150, 225, 255), { count = 7, size = Vector3.new(0.45, 0.45, 2), trail = 0.5, boom = 2.4, boomColor = color, spacing = 0.07 })
+SIGNATURES.ironman = function(fx, c, r, color, _, land)
+	fx:Rain(c, r * 0.75, Color3.fromRGB(150, 225, 255), { count = land.hits, size = Vector3.new(0.45, 0.45, 2), trail = 0.5, boom = 2.4, boomColor = color,
+		spacing = land.every, life = land.at })
 	fx:Ring(c, color, r * 0.2, r * 1.1, 0.5, 0.6)
 end
 -- Eagle Eye: the target is locked, then one great arrow falls on it.
-SIGNATURES.hawkeye = function(fx, c, r, color)
+SIGNATURES.hawkeye = function(fx, c, r, color, _, land)
 	fx:Ring(c, color, r * 1.3, r * 0.15, 0.45)
 	fx:Ring(c, color:Lerp(WHITE, 0.4), r * 0.9, r * 0.1, 0.45, 0.08)
+	local flight = math.min(0.25, land.at)
 	fx:Projectile(ground(c, 34) + Vector3.new(6, 0, 3), ground(c, 0.6), Color3.fromRGB(230, 210, 255),
-		{ size = Vector3.new(0.35, 0.35, 5), trail = 0.7, delay = 0.35, life = 0.25, land = function() fx:Boom(c, color, 3.2); fx:Rays(c, color, 8, r * 0.9, 0) end })
+		{ size = Vector3.new(0.35, 0.35, 5), trail = 0.7, delay = land.at - flight, life = flight, land = function() fx:Boom(c, color, 3.2); fx:Rays(c, color, 8, r * 0.9, 0) end })
 end
 -- Wing Man: his drone sweeps circles over the squad and lifts them.
 SIGNATURES.falcon = function(fx, c, r, color)
@@ -705,11 +748,14 @@ SIGNATURES.antman = function(fx, c, r, color)
 	end)
 end
 -- Queen Bee: a swarm of stings darting about.
-SIGNATURES.wasp = function(fx, c, r, color, event)
+SIGNATURES.wasp = function(fx, c, r, color, event, land)
 	fx:Orbit(ground(c, 0), color, { count = 10, r0 = r * 0.2, r1 = r * 0.9, h0 = 1, h1 = 3.5, speed = 11, alternate = true, size = Vector3.one * 0.35, trail = 0.25, trailLife = 0.18, life = 1 })
-	for index, point in ipairs(event.points or {}) do
-		if index > 6 then break end
-		if typeof(point) == "Vector3" then fx:Bolt(ground(c, 3), point + UP, color, 0.14, 0.1 + index * 0.05, 3) end
+	-- Each sting reaches its enemy as the server strikes it.
+	for index = 1, #(event.points or {}) do
+		fx:_later(land.time(index), function()
+			local point = fx:_target(event, index)
+			if point then fx:Bolt(ground(c, 3), point + UP, color, 0.14, 0, 3) end
+		end)
 	end
 end
 -- Sharpshooter Raccoon: salvage flying out of the scrap, coins and gears.
@@ -729,11 +775,13 @@ SIGNATURES.daredevil = function(fx, c, r, color)
 	fx:Flash(ground(c, 1), color, 1, 3, 0.3)
 end
 -- Master of the Rings: ten golden rings circle the road and close in.
-SIGNATURES.shangchi = function(fx, c, r, color)
+SIGNATURES.shangchi = function(fx, c, r, color, _, land)
+	-- The rings snap tight as the enemies are thrown back.
 	fx:Orbit(ground(c, 0), color, { count = 10, r0 = r * 1.1, r1 = r * 0.15, h0 = 2.5, h1 = 1.2, speed = 5, size = Vector3.new(0.1, 1.6, 1.6),
-		shape = Enum.PartType.Cylinder, ring = true, life = 1.1, spin = Vector3.new(0, 0, 3), alternate = true })
+		shape = Enum.PartType.Cylinder, ring = true, life = math.max(0.4, land.at + 0.2), spin = Vector3.new(0, 0, 3), alternate = true })
 	fx:Emit("vortex", ground(c, 1), color, 2, 0.4)
-	fx:Emit("spark", ground(c, 1.5), color, 12, 0.9)
+	fx:Emit("spark", ground(c, 1.5), color, 12, land.at)
+	fx:Ring(c, color, r * 0.15, r * 1.2, 0.45, land.at)
 end
 -- Shield Captain: the shield ricochets around the area, then a dome of force.
 SIGNATURES.captain = function(fx, c, r, color)
@@ -767,9 +815,9 @@ SIGNATURES.vision = function(fx, c, r, color)
 	fx:Dome(c, r * 0.9, color, 1.2, 0.35)
 end
 -- Armoured Soldier: a heavy bombardment.
-SIGNATURES.warmachine = function(fx, c, r, color)
-	fx:Rain(c, r, Color3.fromRGB(205, 210, 220), { count = 10, size = Vector3.new(0.6, 0.6, 2.2), trail = 0.6, trailColor = Color3.fromRGB(150, 150, 160),
-		boom = 2.8, boomColor = Color3.fromRGB(255, 150, 60), spacing = 0.06, material = Enum.Material.Metal })
+SIGNATURES.warmachine = function(fx, c, r, color, _, land)
+	fx:Rain(c, r, Color3.fromRGB(205, 210, 220), { count = land.hits, size = Vector3.new(0.6, 0.6, 2.2), trail = 0.6, trailColor = Color3.fromRGB(150, 150, 160),
+		boom = 2.8, boomColor = Color3.fromRGB(255, 150, 60), spacing = land.every, life = land.at, material = Enum.Material.Metal })
 end
 -- Star Pirate: the mixtape plays, rings pulse to the beat in every colour.
 SIGNATURES.starlord = function(fx, c, r, color)
@@ -786,26 +834,30 @@ SIGNATURES.groot = function(fx, c, r, color)
 	fx:Ring(c, color, r * 0.2, r * 1.2, 0.6)
 end
 -- Thunder God: the storm answers, a great bolt and a crown of strikes.
-SIGNATURES.thor = function(fx, c, r, color, event)
+SIGNATURES.thor = function(fx, c, r, color, event, land)
 	fx:Emit("smoke", ground(c, 24), Color3.fromRGB(70, 80, 100), 8)
 	fx:SkyStrike(c, color, 4, 0.15)
 	for index = 1, 4 do
 		local at = ground(around(c, r * 0.8, index * math.pi / 2 + 0.6), 0.4)
 		fx:Bolt(at + Vector3.new(1, 30, 0), at, color, 0.3, 0.3 + index * 0.07, 5)
 	end
-	for index, point in ipairs(event.points or {}) do
-		if index > 6 then break end
-		if typeof(point) == "Vector3" then fx:Bolt(ground(c, 3), point + UP, color, 0.22, 0.5 + index * 0.04, 4) end
+	-- Then a bolt races to every enemy struck, landing as the server strikes it.
+	for index = 1, #(event.points or {}) do
+		fx:_later(land.time(index), function()
+			local point = fx:_target(event, index)
+			if point then fx:Bolt(ground(c, 3), point + UP, color, 0.22, 0, 4) end
+		end)
 	end
 	fx:Ring(c, color, r * 0.3, r * 1.7, 0.7, 0.2)
 end
 -- Chaos Witch: crimson runes circle the area and close on it.
-SIGNATURES.wanda = function(fx, c, r, color)
-	fx:Circle(c, r, color, 0, 1.4)
+SIGNATURES.wanda = function(fx, c, r, color, _, land)
+	-- The runes close on the area and reality snaps as the hex lands.
+	fx:Circle(c, r, color, 0, math.max(1.4, land.at + 0.3))
 	fx:Orbit(ground(c, 0), color, { count = 6, r0 = r, r1 = r * 0.1, h0 = 3, h1 = 1, speed = 4, size = Vector3.new(1, 1, 0.15), shape = Enum.PartType.Block,
-		spin = Vector3.new(2, 3, 0), life = 1, delay = 0.2 })
+		spin = Vector3.new(2, 3, 0), life = math.max(0.3, land.at - 0.2), delay = 0.2 })
 	fx:Emit("vortex", ground(c, 1), color, 3, 0.6)
-	fx:Flash(ground(c, 1.5), color, 2, r, 0.4, 1.1, 0.3)
+	fx:Flash(ground(c, 1.5), color, 2, r, 0.4, land.at, 0.3)
 end
 -- Mystic Doctor: a golden magic circle that slows time.
 SIGNATURES.strange = function(fx, c, r, color)
@@ -843,8 +895,11 @@ SIGNATURES.wolverine = function(fx, c, r, color)
 	fx:Emit("spark", ground(c, 2), color, 14, 0.25)
 end
 -- Ruby Eye: a beam sweeps the road from above.
-SIGNATURES.cyclops = function(fx, c, r, color)
-	fx:Sweep(c, r, color, 1.6)
+SIGNATURES.cyclops = function(fx, c, r, color, _, land)
+	-- The beam burns in bursts as it sweeps, one per strike.
+	local flares = {}
+	for index = 1, land.hits do flares[index] = land.time(index) end
+	fx:Sweep(c, r, color, 1.6, 0, flares)
 	fx:Ring(c, color, r * 0.2, r * 1.2, 0.5, 0.5)
 end
 -- Weather Goddess: a cyclone of wind with lightning around it.
@@ -879,8 +934,8 @@ SIGNATURES.iceman = function(fx, c, r, color)
 	fx:Ring(c, color, r * 0.2, r * 1.2, 0.7)
 end
 -- Card Master: a rain of charged cards, each one going off.
-SIGNATURES.gambit = function(fx, c, r, color)
-	fx:Rain(c, r, color, { count = 9, size = Vector3.new(0.9, 0.08, 1.3), spin = Vector3.new(0, 12, 6), trail = 0.35, boom = 1.8, spacing = 0.06, slant = 4, life = 0.5 })
+SIGNATURES.gambit = function(fx, c, r, color, _, land)
+	fx:Rain(c, r, color, { count = land.hits, size = Vector3.new(0.9, 0.08, 1.3), spin = Vector3.new(0, 12, 6), trail = 0.35, boom = 1.8, spacing = land.every, slant = 4, life = land.at })
 end
 -- Blue Teleporter: puffs of smoke all around as he blinks in and out.
 SIGNATURES.nightcrawler = function(fx, c, r, color)
@@ -942,20 +997,25 @@ SIGNATURES.capmen = function(fx, c, r, color)
 	fx:Emit("star", ground(c, 2), Color3.fromRGB(255, 205, 80), 16, 0.25)
 end
 -- Golden Amazon: the lasso spins wide and tightens.
-SIGNATURES.amazon = function(fx, c, r, color)
-	fx:Orbit(ground(c, 0), color, { count = 12, r0 = r * 1.2, r1 = r * 0.3, h0 = 1.6, h1 = 1.2, speed = 6, size = Vector3.one * 0.55, trail = 0.5, trailLife = 0.3, life = 1 })
-	fx:Ring(c, color, r * 1.2, r * 0.3, 1)
-	fx:Flash(ground(c, 1.5), color, 1, r * 0.8, 0.4, 0.9, 0.35)
+SIGNATURES.amazon = function(fx, c, r, color, _, land)
+	-- The lasso tightens on the area as its mark lands.
+	local pull = math.max(0.4, land.at + 0.1)
+	fx:Orbit(ground(c, 0), color, { count = 12, r0 = r * 1.2, r1 = r * 0.3, h0 = 1.6, h1 = 1.2, speed = 6, size = Vector3.one * 0.55, trail = 0.5, trailLife = 0.3, life = pull })
+	fx:Ring(c, color, r * 1.2, r * 0.3, pull)
+	fx:Flash(ground(c, 1.5), color, 1, r * 0.8, 0.4, land.at, 0.35)
 end
 -- King of the Seas: a tidal wave runs out over the road.
-SIGNATURES.seaking = function(fx, c, r, color)
-	fx:Wave(c, r * 1.2, color, 16)
+SIGNATURES.seaking = function(fx, c, r, color, _, land)
+	-- The wave's front reaches the edge of the area as it drives the enemies
+	-- back, and breaks there in foam.
+	fx:Wave(c, r * 1.2, color, 16, 0, math.max(0.5, land.at * 3))
 	fx:Ring(c, color, r * 0.2, r * 1.4, 0.8, 0.1)
+	fx:Ring(c, color:Lerp(WHITE, 0.6), r * 0.85, r * 1.2, 0.35, land.at)
 end
 -- Green Guardian: a giant fist of green light slams down.
-SIGNATURES.emerald = function(fx, c, r, color)
+SIGNATURES.emerald = function(fx, c, r, color, _, land)
 	fx:Projectile(ground(c, 26) + Vector3.new(4, 0, 2), ground(c, 2.5), color, { size = Vector3.new(r * 0.55, r * 0.5, r * 0.55), fade = 0.25,
-		trail = 2, life = 0.38, look = false, land = function()
+		trail = 2, life = land.at, look = false, land = function()
 			fx:Boom(c, color, 4)
 			fx:Cracks(c, r, color, 7)
 			fx:Ring(c, color, r * 0.3, r * 1.6, 0.6)
@@ -973,9 +1033,9 @@ SIGNATURES.speedster = function(fx, c, r, color)
 	fx:Ring(c, color, r * 0.2, r * 1.3, 0.5, 0.5)
 end
 -- Solar Guardian: a small sun comes down and flares out.
-SIGNATURES.solartitan = function(fx, c, r, color)
+SIGNATURES.solartitan = function(fx, c, r, color, _, land)
 	local fire = Color3.fromRGB(255, 160, 60)
-	fx:Projectile(ground(c, 30), ground(c, 3), fire, { shape = Enum.PartType.Ball, size = Vector3.one * r * 0.45, fade = 0.15, trail = 2, life = 0.55, look = false,
+	fx:Projectile(ground(c, 30), ground(c, 3), fire, { shape = Enum.PartType.Ball, size = Vector3.one * r * 0.45, fade = 0.15, trail = 2, life = land.at, look = false,
 		land = function()
 			fx:Flash(ground(c, 3), fire, r * 0.5, r * 1.8, 0.5, 0, 0.2)
 			fx:Rays(c, color, 12, r * 1.2, 0, 2, 0.55)
@@ -1004,7 +1064,7 @@ function PowerFX:Cast(event, tint)
 	local signature = SIGNATURES[event.heroId or ""] or SIGNATURES[BY_KIND[event.abilityKind or ""] or ""]
 	if not signature then return false end
 	local radius = math.clamp(tonumber(event.radius) or 8, 5, 40)
-	local ok, problem = pcall(signature, self, ground(event.position, 0.3), radius, tint, event)
+	local ok, problem = pcall(signature, self, ground(event.position, 0.3), radius, tint, event, PowerFX.Landing(event))
 	if not ok then self.lastError = problem end
 	return ok
 end

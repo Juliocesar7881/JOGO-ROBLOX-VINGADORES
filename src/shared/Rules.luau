@@ -678,6 +678,23 @@ function Rules.AbilityStats(def, rank, options)
 	}
 end
 
+-- When a power lands (Catalog impact), in real seconds after the cast: the
+-- index-th landing of a barrage, or of a chain's targets one after another; 0
+-- for a power that strikes as it is cast. The server strikes then and PowerFX
+-- draws the landing then, so the damage never comes before the meteor does.
+function Rules.AbilityLanding(def, index)
+	local impact = def and def.impact
+	if type(impact) ~= "table" then return 0 end
+	local step = math.max(0, math.floor(number(index, 1)) - 1)
+	return math.max(0, number(impact.at, 0)) + math.max(0, number(impact.every, 0)) * step
+end
+
+-- How many equal parts a barrage's damage lands in, one per missile.
+function Rules.AbilityHits(def)
+	local impact = def and def.impact
+	return math.max(1, math.floor(number(type(impact) == "table" and impact.hits or nil, 1)))
+end
+
 local function trimmed(value)
 	local rounded = math.floor(value * 10 + 0.5) / 10
 	return if rounded % 1 == 0 then tostring(math.floor(rounded)) else string.format("%.1f", rounded)

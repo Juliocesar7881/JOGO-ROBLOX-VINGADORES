@@ -62,7 +62,8 @@ local TUTORIAL_LESSONS = {
 function Match.new(config, catalog, rules, waves, profiles, world, remotes, changed)
 	return setmetatable({ config=config, catalog=catalog, rules=rules, waves=waves, profiles=profiles,
 		world=world, remotes=remotes, changed=changed, running=false, phase="Lobby", participants={},
-		enemies={}, towers={}, rewardQueue={}, nextId=0, syncTimer=0, rewardTimer=0, hitBuffer={}, speed=1 }, Match)
+		enemies={}, towers={}, rewardQueue={}, nextId=0, syncTimer=0, rewardTimer=0, hitBuffer={}, speed=1,
+		landings={}, landingClock=0, landingSerial=0 }, Match)
 end
 
 -- How many seconds of match time pass per real second. 2 only while every
@@ -180,6 +181,7 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 	self.hazardTimer, self.hazardState, self.hazardCount = 0, {}, 0
 	self.speed = 1
 	self.hitBuffer = {}
+	self.landings, self.landingClock, self.landingSerial = {}, 0, 0
 	-- One seed for the whole run keeps every wave and every card offer stable.
 	self.seed, self.nextThreats, self.criticalWarned = math.floor(os.time() / 86400), {}, false
 	self.cardMode = self.catalog.Modes[modeId].cards == true
@@ -1045,6 +1047,7 @@ function Match:_endWave()
 	if self.wave <= self.completedWaves then return end
 	self.completedWaves=self.wave
 	self.mines={}
+	self.landings={}
 	if self.wave % 5 == 0 and self.recovery > 0 then
 		self.baseHP = math.min(self.maxBaseHP, self.baseHP + self.recovery)
 	end
@@ -1200,6 +1203,31 @@ function Match:_percentDamage(p, enemy, fraction)
 	self:_damage(enemy, enemy.maxHP * fraction * share, nil, { trueDamage = true })
 end
 
+-- Powers that act on the caster's side (a buff, Gold, a core shield or heal)
+-- take effect as they are cast; only a power that strikes enemies waits for
+-- its look to land.
+local SELF_KINDS = { rally = true, energy = true, barrier = true, heal = true, overdrive = true }
+
+-- A targeted power picks its targets as it is cast, so the look can draw a
+-- bolt to each of them.
+local TARGETS = {}
+
+function TARGETS.chain(self, stats, at)
+	local near = self:_inRadius(at, stats.radius)
+	table.sort(near, function(a, b) return distanceXZ(a.position, at) < distanceXZ(b.position, at) end)
+	local targets = {}
+	for index = 1, math.min(#near, stats.count) do targets[index] = near[index] end
+	return targets
+end
+
+function TARGETS.smite(self)
+	local strongest
+	for _, enemy in pairs(self.enemies) do
+		if not strongest or enemy.hp > strongest.hp then strongest = enemy end
+	end
+	return { strongest }
+end
+
 local ABILITY_HANDLERS = {}
 
 function ABILITY_HANDLERS.blast(self, p, stats, at)
@@ -1251,12 +1279,10 @@ function ABILITY_HANDLERS.overdrive(self, p, stats, at, tower)
 end
 
 function ABILITY_HANDLERS.chain(self, p, stats, at)
-	local near = self:_inRadius(at, stats.radius)
-	table.sort(near, function(a, b) return distanceXZ(a.position, at) < distanceXZ(b.position, at) end)
 	local points = {}
-	for index = 1, math.min(#near, stats.count) do
-		table.insert(points, near[index].position)
-		self:_percentDamage(p, near[index], stats.power)
+	for index, enemy in ipairs(TARGETS.chain(self, stats, at)) do
+		points[index] = enemy.position
+		self:_percentDamage(p, enemy, stats.power)
 	end
 	return points
 end
@@ -1303,13 +1329,66 @@ function ABILITY_HANDLERS.burn(self, p, stats, at)
 end
 
 function ABILITY_HANDLERS.smite(self, p, stats)
-	local strongest
-	for _, enemy in pairs(self.enemies) do
-		if not strongest or enemy.hp > strongest.hp then strongest = enemy end
-	end
+	local strongest = TARGETS.smite(self)[1]
 	if not strongest then return nil end
 	self:_percentDamage(p, strongest, stats.power)
 	return { strongest.position }
+end
+
+-- A power in flight waits in a queue on real time, so the meteor's damage
+-- comes as the meteor reaches the ground at 1x, 2x or 3x alike: the client
+-- draws the look in real time. Entries run in the order they fall due.
+function Match:_later(delay, action)
+	self.landingSerial += 1
+	table.insert(self.landings, { due = self.landingClock + delay, serial = self.landingSerial, action = action })
+end
+
+function Match:_landingsStep(realDt)
+	self.landingClock += realDt
+	if #self.landings == 0 then return end
+	local due, waiting = {}, {}
+	for _, entry in ipairs(self.landings) do
+		table.insert(entry.due <= self.landingClock + 1e-6 and due or waiting, entry)
+	end
+	if #due == 0 then return end
+	self.landings = waiting
+	table.sort(due, function(a, b) if a.due ~= b.due then return a.due < b.due end return a.serial < b.serial end)
+	for _, entry in ipairs(due) do entry.action() end
+	-- The hit is shown as it lands: the health bars and numbers go out this
+	-- step instead of waiting for the next regular sync.
+	self.syncTimer = math.max(self.syncTimer, self.config.EnemySyncInterval)
+end
+
+-- One effect of a cast, now or when the power lands (Catalog impact). A
+-- barrage splits its damage over its missiles; a targeted power strikes each
+-- target as its bolt arrives, if it is still standing. Returns the points it
+-- strikes for the client's bolts and, when they are struck later, the
+-- targets' ids, so each bolt is drawn to where its enemy is by then.
+function Match:_resolve(p, def, kind, stats, at, tower, main)
+	if SELF_KINDS[kind] or self.rules.AbilityLanding(def, 1) <= 0 then
+		return ABILITY_HANDLERS[kind](self, p, stats, at, tower)
+	end
+	local pick = TARGETS[kind]
+	if pick then
+		local points, ids = {}, {}
+		for index, enemy in ipairs(pick(self, stats, at)) do
+			points[index], ids[index] = enemy.position, enemy.id
+			self:_later(self.rules.AbilityLanding(def, index), function()
+				if self.enemies[enemy.id] == enemy and enemy.hp > 0 then self:_percentDamage(p, enemy, stats.power) end
+			end)
+		end
+		return points, ids
+	end
+	local hits = (main and kind == "blast") and self.rules.AbilityHits(def) or 1
+	local share = stats
+	if hits > 1 then
+		share = table.clone(stats)
+		share.power = stats.power / hits
+	end
+	for index = 1, hits do
+		self:_later(self.rules.AbilityLanding(def, index), function() ABILITY_HANDLERS[kind](self, p, share, at, tower) end)
+	end
+	return nil
 end
 
 function Match:_castAbility(player, p, payload)
@@ -1332,15 +1411,21 @@ function Match:_castAbility(player, p, payload)
 	else
 		at = self.corePosition
 	end
-	local handler = ABILITY_HANDLERS[def.kind]
-	local points = handler(self, p, stats, at, tower)
+	-- The main effect first, then the extras, each now or as the power lands.
+	local points, targets, later = nil, nil, false
+	local function gather(found, ids)
+		if not found then return end
+		points, targets = points or {}, targets or {}
+		for index, point in ipairs(found) do
+			table.insert(points, point)
+			table.insert(targets, ids and ids[index] or "")
+			later = later or ids ~= nil
+		end
+	end
+	gather(self:_resolve(p, def, def.kind, stats, at, tower, true))
 	local extraFx = {}
 	for _, extra in ipairs(extras) do
-		local extraPoints = ABILITY_HANDLERS[extra.kind](self, p, extra, at, tower)
-		if extraPoints then
-			points = points or {}
-			for _, point in ipairs(extraPoints) do table.insert(points, point) end
-		end
+		gather(self:_resolve(p, def, extra.kind, extra, at, tower, false))
 		table.insert(extraFx, { kind = extra.kind, radius = extra.radius, duration = extra.duration, power = extra.power })
 	end
 	-- Casting counts as taking part, and the hero whose ability it is earns the
@@ -1351,7 +1436,7 @@ function Match:_castAbility(player, p, payload)
 	-- An area power also sweeps up the caster's Gold lying inside it.
 	if def.target == "area" and (stats.radius or 0) > 0 then self:_collectAround(p, at, stats.radius) end
 	self:_fx({kind="Ability", abilityId=def.id, abilityKind=def.kind, heroId=heroId, position=at, radius=stats.radius,
-		duration=stats.duration, power=stats.power, points=points, towerId=tower and tower.id, ownerId=player.UserId,
+		duration=stats.duration, power=stats.power, points=points, targets=later and targets or nil, towerId=tower and tower.id, ownerId=player.UserId,
 		ultimate=def.ultimate or nil, extras=#extraFx>0 and extraFx or nil,
 		color=Color3.fromRGB(def.color[1], def.color[2], def.color[3]),
 		shake=def.ultimate and 1.1 or ((def.kind=="blast" or def.kind=="smite") and 0.5 or 0.15)})
@@ -1519,6 +1604,7 @@ function Match:Step(dt)
 				end
 			end
 		end
+		self:_landingsStep(realDt)
 		self:_flushSplits()
 		self:_enemiesStep(dt)
 		self:_minesStep()

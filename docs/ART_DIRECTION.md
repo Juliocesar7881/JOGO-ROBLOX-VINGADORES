@@ -110,6 +110,15 @@ raio cai, gelo rachando). Ataques que voam deixam rastro (Trail). Menos
 efeitos não desenha nada disso. Herói novo: acrescentar sua entrada em SIGNATURES (o
 teste do cliente exige uma por herói, sem erro e com até 60 peças).
 
+Dano no impacto (15/10): poder que cai ou voa (sol, punho, flecha, chuva de
+mísseis e cartas, raios até cada alvo, feixe varrendo, laço, anéis, onda) só
+causa dano quando o visual chega ao chão. O tempo mora no Catalog
+(`impact`), o servidor e o PowerFX leem a mesma regra
+(`Rules.AbilityLanding`), em tempo real em 1x, 2x e 3x; a tela treme no
+impacto. Poder novo que cai: pôr `impact` no Catalog e usar `land` na
+assinatura; o teste do cliente exige uma camada nascendo em cada pouso e uma
+nota da trilha no primeiro.
+
 ## Som e avaliação
 
 Armas, golpes, controle e magia têm timbres e ritmos próprios, com volume,

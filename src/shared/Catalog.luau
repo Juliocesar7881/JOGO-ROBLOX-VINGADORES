@@ -579,6 +579,14 @@ Catalog.Modes = {
 -- rank-1 values and grow with AbilityRanks.growth. unit says how power reads:
 -- pct is a fraction shown as a percentage, the rest are shown as they are.
 --   target: "area" needs a point on the map, "tower" one of your towers, "self" nothing.
+--   impact: when a power that falls or flies strikes (a meteor, an arrow, a rain
+--   of missiles, bolts racing to their targets), so its damage comes as its look
+--   in PowerFX lands and never before: at real seconds after the cast, at any
+--   match speed; every between one landing and the next (a chain's targets one
+--   by one, a barrage's missiles); hits splits a barrage's damage into equal
+--   parts. Rules.AbilityLanding turns it into times for the server and the look
+--   alike. A power without one strikes as it is cast, as every buff, shield,
+--   heal and Gold power does.
 Catalog.AbilityRanks = {
 	max = 5,
 	-- Gold to reach rank N, before the hero's rarity multiplier. Rank 1 is free.
@@ -600,9 +608,9 @@ local function ability(id, kind, target, cooldown, fields, name, description)
 	return fields
 end
 Catalog.Abilities = {
-	repulsorBarrage = ability("repulsorBarrage", "blast", "area", 55, { power = 0.35, radius = 22, unit = "pct", color = { 255, 90, 70 } },
+	repulsorBarrage = ability("repulsorBarrage", "blast", "area", 55, { power = 0.35, radius = 22, unit = "pct", color = { 255, 90, 70 }, impact = { at = 0.42, every = 0.07, hits = 7 } },
 		text("Rajada de Plasma", "Plasma Barrage"), text("Rajada em área: {power}% da vida máxima de cada inimigo em {radius} studs.", "Area barrage: {power}% of each enemy's max health within {radius} studs.")),
-	deadeye = ability("deadeye", "execute", "area", 50, { power = 0.22, radius = 14, unit = "pct", color = { 190, 120, 255 } },
+	deadeye = ability("deadeye", "execute", "area", 50, { power = 0.22, radius = 14, unit = "pct", color = { 190, 120, 255 }, impact = { at = 0.6 } },
 		text("Tiro Mortal", "Deadeye"), text("Elimina inimigos comuns com menos de {power}% de vida em {radius} studs. Chefes sofrem dano menor.", "Eliminates ordinary enemies below {power}% health within {radius} studs. Bosses take less.")),
 	airCommand = ability("airCommand", "rally", "self", 60, { power = 0.25, duration = 8, stat = "speed", unit = "pct", color = { 255, 110, 110 } },
 		text("Comando Aéreo", "Air Command"), text("Todas as suas torres atacam {power}% mais rápido por {duration} s.", "All your towers attack {power}% faster for {duration} s.")),
@@ -614,13 +622,13 @@ Catalog.Abilities = {
 		text("Marca da Viúva", "Widow's Mark"), text("Revela camuflados e faz alvos sofrerem +{power}% de dano por {duration} s em {radius} studs.", "Reveals hidden enemies and makes targets take +{power}% damage for {duration} s within {radius} studs.")),
 	growth = ability("growth", "overdrive", "tower", 45, { power = 0.5, duration = 8, unit = "pct", color = { 255, 150, 90 } },
 		text("Partículas Quânticas", "Quantum Particles"), text("Uma torre sua ataca {power}% mais rápido por {duration} s.", "One of your towers attacks {power}% faster for {duration} s.")),
-	swarmSting = ability("swarmSting", "chain", "area", 50, { power = 0.16, count = 6, radius = 40, unit = "pct", color = { 255, 220, 80 } },
+	swarmSting = ability("swarmSting", "chain", "area", 50, { power = 0.16, count = 6, radius = 40, unit = "pct", color = { 255, 220, 80 }, impact = { at = 0.15, every = 0.05 } },
 		text("Enxame Elétrico", "Electric Swarm"), text("Ferroa {count} inimigos: {power}% da vida máxima de cada um.", "Stings {count} enemies: {power}% of each one's max health.")),
 	salvage = ability("salvage", "energy", "self", 60, { power = 0.6, unit = "pct", color = { 120, 220, 255 } },
 		text("Sucata Valiosa", "Valuable Scrap"), text("Recebe Ouro da partida na hora: {power}% de uma onda inteira de renda.", "Gain match Gold at once: {power}% of a full wave's income.")),
 	radarSense = ability("radarSense", "reveal", "area", 70, { power = 0.12, duration = 14, radius = 45, unit = "pct", color = { 255, 60, 60 } },
 		text("Sentido Radar", "Radar Sense"), text("Revela camuflados por {duration} s e marca alvos (+{power}% de dano) em {radius} studs.", "Reveals hidden enemies for {duration} s and marks targets (+{power}% damage) within {radius} studs.")),
-	tenRings = ability("tenRings", "pull", "area", 55, { power = 26, radius = 24, unit = "studs", color = { 255, 170, 60 } },
+	tenRings = ability("tenRings", "pull", "area", 55, { power = 26, radius = 24, unit = "studs", color = { 255, 170, 60 }, impact = { at = 0.9 } },
 		text("Anéis Celestes", "Sky Rings"), text("Empurra inimigos {power} studs para trás na rota em {radius} studs. Chefes não são afetados.", "Pushes enemies {power} studs back along the path within {radius} studs. Bosses are unaffected.")),
 	vibraniumShield = ability("vibraniumShield", "barrier", "self", 90, { power = 20, duration = 10, unit = "hp", color = { 90, 150, 255 } },
 		text("Escudo Égide", "Aegis Shield"), text("Um escudo absorve {power} de dano à base por {duration} s.", "A shield absorbs {power} core damage for {duration} s.")),
@@ -633,17 +641,17 @@ Catalog.Abilities = {
 	phaseShift = ability("phaseShift", "weaken", "area", 55, { power = 0.45, duration = 10, radius = 40, unit = "pct", color = { 255, 210, 90 },
 		extras = { { kind = "reveal", power = 0.15, duration = 10 } } },
 		text("Fase Densa", "Phase Shift"), text("Reduz a armadura dos inimigos em {power}% por {duration} s em {radius} studs e os marca (+{e1.power}% de dano).", "Reduces enemy armor by {power}% for {duration} s within {radius} studs and marks them (+{e1.power}% damage).")),
-	bombardment = ability("bombardment", "blast", "area", 65, { power = 0.28, radius = 42, unit = "pct", color = { 200, 210, 225 } },
+	bombardment = ability("bombardment", "blast", "area", 65, { power = 0.28, radius = 42, unit = "pct", color = { 200, 210, 225 }, impact = { at = 0.42, every = 0.06, hits = 10 } },
 		text("Bombardeio", "Bombardment"), text("Bombardeio: {power}% da vida máxima de cada inimigo em {radius} studs.", "Bombardment: {power}% of each enemy's max health within {radius} studs.")),
 	awesomeMix = ability("awesomeMix", "rally", "self", 65, { power = 0.25, duration = 9, stat = "damage", unit = "pct", color = { 255, 90, 140 } },
 		text("Batida Cósmica", "Cosmic Beat"), text("Todas as suas torres causam {power}% mais dano por {duration} s.", "All your towers deal {power}% more damage for {duration} s.")),
 	rootWall = ability("rootWall", "stun", "area", 60, { duration = 3, radius = 22, unit = "pct", color = { 150, 200, 90 },
 		extras = { { kind = "slow", power = 0.5, duration = 5 } } },
 		text("Muralha de Raízes", "Root Wall"), text("Prende inimigos por {duration} s em {radius} studs e os desacelera em {e1.power}% depois. Chefes resistem.", "Roots enemies for {duration} s within {radius} studs, then slows them {e1.power}%. Bosses resist.")),
-	thunderCall = ability("thunderCall", "chain", "area", 75, { power = 0.3, count = 10, radius = 70, unit = "pct", color = { 120, 220, 255 }, ultimate = true,
+	thunderCall = ability("thunderCall", "chain", "area", 75, { power = 0.3, count = 10, radius = 70, unit = "pct", color = { 120, 220, 255 }, ultimate = true, impact = { at = 0.54, every = 0.04 },
 		extras = { { kind = "stun", duration = 1.5 } } },
 		text("Chamado do Trovão", "Thunder Call"), text("ULTIMATE: relâmpagos atingem {count} inimigos ({power}% da vida máxima de cada) e os paralisam por {e1.duration} s.", "ULTIMATE: lightning strikes {count} enemies ({power}% of each one's max health) and stuns them for {e1.duration} s.")),
-	hexBind = ability("hexBind", "stun", "area", 80, { duration = 3.5, radius = 34, unit = "pct", color = { 255, 80, 130 }, ultimate = true,
+	hexBind = ability("hexBind", "stun", "area", 80, { duration = 3.5, radius = 34, unit = "pct", color = { 255, 80, 130 }, ultimate = true, impact = { at = 1.1 },
 		extras = { { kind = "weaken", power = 0.4, duration = 8 }, { kind = "blast", power = 0.2 } } },
 		text("Feitiço Rubi", "Hex Bind"), text("ULTIMATE: a realidade se dobra. Paralisa por {duration} s em {radius} studs, derrete {e1.power}% da armadura e causa {e2.power}% da vida máxima. Chefes resistem.", "ULTIMATE: reality bends. Stuns for {duration} s within {radius} studs, melts {e1.power}% of armor and deals {e2.power}% of max health. Bosses resist.")),
 	dimensionalSlow = ability("dimensionalSlow", "slow", "area", 85, { power = 0.85, duration = 9, radius = 70, unit = "pct", color = { 255, 180, 80 }, ultimate = true,
@@ -858,6 +866,9 @@ Catalog.Abilities.stormPower.description=text("Relâmpagos: {power}% da vida de 
 Catalog.Abilities.jeanPower.extras={{kind="weaken",power=0.2,duration=6}}
 Catalog.Abilities.jeanPower.description=text("Chama: {power}% de vida por segundo por {duration} s; remove {e1.power}% de armadura. Chefes resistem.","Flame: {power}% HP per second for {duration} s; removes {e1.power}% armor. Bosses resist.")
 Catalog.Abilities.novaPower.extras={{kind="reveal",power=0.12,duration=6}}
+-- The charged cards rain down and each one goes off; the optic beam burns as it sweeps.
+Catalog.Abilities.gambitPower.impact={at=0.5,every=0.06,hits=9}
+Catalog.Abilities.cyclopsPower.impact={at=0.05,every=0.2,hits=3}
 Catalog.Abilities.novaPower.description=text("Explosão: {power}% da vida em {radius} studs; revela e marca (+{e1.power}% dano). Chefes resistem.","Blast: {power}% HP within {radius} studs; reveals and marks (+{e1.power}% damage). Bosses resist.")
 local identities={
 	wolverine={text("Garras contra elites","Claws against elites"),text("Caçador de chefes","Boss hunter"),{set("bossDamage",0.8),mul("damage",1.25)},text("Frenesi","Frenzy"),{mul("interval",0.55),add("range",3)}},
@@ -988,19 +999,19 @@ end
 Catalog.Abilities.indestructible = ability("indestructible", "barrier", "self", 80, { power = 30, duration = 12, unit = "hp", color = { 226, 70, 56 },
 	extras = { { kind = "heal", power = 8 } } },
 	text("Indestrutível", "Unbreakable"), text("Um escudo absorve {power} de dano ao núcleo por {duration} s e o núcleo recupera {e1.power} de vida.", "A shield absorbs {power} core damage for {duration} s and the core recovers {e1.power} health."))
-Catalog.Abilities.emeraldConstruct = ability("emeraldConstruct", "stun", "area", 80, { duration = 3, radius = 36, unit = "pct", color = { 48, 220, 110 }, ultimate = true,
+Catalog.Abilities.emeraldConstruct = ability("emeraldConstruct", "stun", "area", 80, { duration = 3, radius = 36, unit = "pct", color = { 48, 220, 110 }, ultimate = true, impact = { at = 0.38 },
 	extras = { { kind = "pull", power = 10 }, { kind = "weaken", power = 0.3, duration = 7 } } },
 	text("Construção Esmeralda", "Emerald Construct"), text("ULTIMATE: uma gaiola de energia paralisa por {duration} s em {radius} studs, puxa os inimigos {e1.power} studs para trás e derrete {e2.power}% da armadura. Chefes resistem.", "ULTIMATE: an energy cage stuns for {duration} s within {radius} studs, drags enemies back {e1.power} studs and melts {e2.power}% of their armor. Bosses resist."))
-Catalog.Abilities.solarWrath = ability("solarWrath", "blast", "area", 85, { power = 0.5, radius = 55, unit = "pct", color = { 255, 90, 60 }, ultimate = true,
+Catalog.Abilities.solarWrath = ability("solarWrath", "blast", "area", 85, { power = 0.5, radius = 55, unit = "pct", color = { 255, 90, 60 }, ultimate = true, impact = { at = 0.55 },
 	extras = { { kind = "stun", duration = 2 }, { kind = "burn", power = 0.3, duration = 5 } } },
 	text("Fúria Solar", "Solar Wrath"), text("ULTIMATE: uma explosão de calor varre {radius} studs: {power}% da vida máxima de cada inimigo, atordoa por {e1.duration} s e queima {e2.power}% em {e2.duration} s. Chefes sofrem bem menos.", "ULTIMATE: a burst of heat sweeps {radius} studs: {power}% of each enemy's max health, stuns for {e1.duration} s and burns {e2.power}% over {e2.duration} s. Bosses take far less."))
 Catalog.Abilities.superSpeed = ability("superSpeed", "rally", "self", 80, { power = 0.4, duration = 10, stat = "speed", unit = "pct", color = { 236, 58, 58 }, ultimate = true,
 	extras = { { kind = "slow", power = 0.5, duration = 6, radius = 200 } } },
 	text("Supervelocidade", "Super Speed"), text("ULTIMATE: o mundo desacelera para a sua equipe. Todas as suas torres atacam {power}% mais rápido por {duration} s e todos os inimigos andam {e1.power}% mais devagar por {e1.duration} s.", "ULTIMATE: the world slows down for your team. All your towers attack {power}% faster for {duration} s and every enemy moves {e1.power}% slower for {e1.duration} s."))
-Catalog.Abilities.truthLasso = ability("truthLasso", "reveal", "area", 60, { power = 0.3, duration = 10, radius = 40, unit = "pct", color = { 244, 190, 60 },
+Catalog.Abilities.truthLasso = ability("truthLasso", "reveal", "area", 60, { power = 0.3, duration = 10, radius = 40, unit = "pct", color = { 244, 190, 60 }, impact = { at = 0.9 },
 	extras = { { kind = "weaken", power = 0.3, duration = 8 } } },
 	text("Laço da Verdade", "Lasso of Truth"), text("Revela camuflados e faz alvos sofrerem +{power}% de dano por {duration} s em {radius} studs, e derrete {e1.power}% da armadura.", "Reveals hidden enemies and makes targets take +{power}% damage for {duration} s within {radius} studs, and melts {e1.power}% of their armor."))
-Catalog.Abilities.tidalWave = ability("tidalWave", "pull", "area", 70, { power = 30, radius = 45, unit = "studs", color = { 40, 170, 214 },
+Catalog.Abilities.tidalWave = ability("tidalWave", "pull", "area", 70, { power = 30, radius = 45, unit = "studs", color = { 40, 170, 214 }, impact = { at = 0.3 },
 	extras = { { kind = "slow", power = 0.5, duration = 5 } } },
 	text("Maremoto", "Tidal Wave"), text("Uma onda empurra os inimigos {power} studs para trás em {radius} studs e os desacelera em {e1.power}% depois. Chefes não saem do lugar.", "A wave drives enemies back {power} studs within {radius} studs, then slows them {e1.power}%. Bosses hold their ground."))
 Catalog.Abilities.smokeBomb = ability("smokeBomb", "stun", "area", 70, { duration = 3, radius = 34, unit = "pct", color = { 90, 100, 130 },
