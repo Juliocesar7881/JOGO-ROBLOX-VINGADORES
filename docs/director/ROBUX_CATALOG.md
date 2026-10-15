@@ -1,3 +1,29 @@
+# Robux — preços atuais (15/10/2026)
+
+**15/10/2026: preços aumentados para os valores comuns no Roblox (pedido do
+dono).** Os 55 itens foram alterados no Creator Hub (universo 10768165352) e
+conferidos nas listas de produtos e passes; `Catalog.Products` tem os mesmos
+valores (commit 81416c1). O jogador continua vendo a cotação regional do Roblox.
+
+| Item | Antes | Agora |
+|---|---:|---:|
+| Herói Comum (14 produtos) | 9 | 49 |
+| Herói Raro (15 produtos) | 29 | 149 |
+| Herói Lendário (12 produtos) | 79 | 399 |
+| Drone coletor, Velocidade 3x (passes) | 19 | 99 |
+| Treinamento acelerado (passe) | 29 | 99 |
+| Pacote VIP (passe) | 29 | 199 |
+| Passe de Temporada permanente (passe antigo) | 49 | 499 |
+| 1.000 / 5.000 / 12.000 / 30.000 de Ouro | 5 / 19 / 39 / 79 | 25 / 99 / 199 / 399 |
+| Pacote Inicial | 19 | 99 |
+| Ouro em dobro • 1 hora | 29 | 49 |
+| Passe da Temporada (por temporada) | 49 | 199 |
+| Pacote Equipe | 49 | 299 |
+| Pacote Lendário | 99 | 499 |
+
+O passe permanente da temporada ficou acima do passe por temporada para não
+competir com ele; a análise de lançamento recomenda tirá-lo de venda.
+
 # Robux — configuração executada em 12/10/2026
 
 **41/41 heróis, cinco passes e cinco consumíveis cadastrados.** Os cinco

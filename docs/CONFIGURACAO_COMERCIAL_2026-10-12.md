@@ -6,6 +6,11 @@ metadados e publicação no projeto oficial; nenhuma cópia foi criada.
 
 ## Preços e produtos cadastrados
 
+> **15/10/2026:** os preços abaixo foram substituídos pelos valores comuns no
+> Roblox (heróis 49/149/399, passes 99–499, Ouro 25–399, pacotes 49–499). A
+> tabela vigente está em [director/ROBUX_CATALOG.md](director/ROBUX_CATALOG.md);
+> os IDs continuam os mesmos.
+
 Foram cadastrados os 26 produtos de heróis restantes e o Passe de Temporada.
 Os produtos anteriores foram atualizados, sem criar IDs duplicados. Todos os
 51 itens têm IDs reais em `Config.Products`, nomes/descrições conferidos e
