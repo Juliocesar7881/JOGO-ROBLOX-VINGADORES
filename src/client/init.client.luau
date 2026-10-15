@@ -109,6 +109,11 @@ local function copy(array) return table.clone(array or {}) end
 local gui = UI.create("ScreenGui", {Name = "DoomsdayUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 10}, player:WaitForChild("PlayerGui"))
 local main = UI.frame(gui, {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1)})
 local overlays = UI.frame(gui, {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50})
+-- The end screen darkens the whole screen evenly, Roblox's top bar included:
+-- a ScreenGui of its own that ignores the inset, drawn under the interface.
+local backdrop = UI.create("ScreenGui", {Name = "DoomBackdrop", ResetOnSpawn = false, IgnoreGuiInset = true, ScreenInsets = Enum.ScreenInsets.None,
+	DisplayOrder = 9, Enabled = false}, player:WaitForChild("PlayerGui"))
+UI.frame(backdrop, {Name = "ResultBackdrop", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.background, BackgroundTransparency = 0.35})
 
 -- The interface is laid out on a logical canvas about 1150 x 640 and drawn
 -- scaled up to the real window, the way the big Roblox games grow with the
@@ -1705,6 +1710,7 @@ updateMatch = function()
 end
 
 render = function()
+	backdrop.Enabled = state ~= nil and state.phase == "Results"
 	local ability = activeMatch() and state.match.ability
 	local aiming = selectedSkill and ability and ability.id == selectedSkill and ability.target == "area" and (ability.cooldown or 0) <= 0 and selectedSkill or nil
 	local aimPosition, aimPinned = selectedPosition, placementPinned

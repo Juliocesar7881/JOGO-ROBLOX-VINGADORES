@@ -3397,14 +3397,14 @@ local function session(screen)
 		push(results)
 		local mvp = named(gui, "MvpName")
 		check(mvp ~= nil and mvp.Text == "Ally" and named(gui, "ResultTeam_2") ~= nil, tag .. ": the end screen names the MVP and lists the squad")
-		-- A desktop win: the commander's lead hero celebrates alive; a VIP's in a golden spotlight.
-		if named(gui, "ResultChampionRight") ~= nil then
-			check(named(gui, "ResultChampionLeft") ~= nil and named(gui, "ResultVipChip") ~= nil and named(gui, "ResultVipRing") ~= nil, tag .. ": the VIP's lead hero takes the victory stage with its spotlight")
-			local plain = resultsSnapshot(veteranProfile({ passes = {} }))
-			push(plain)
-			check(named(gui, "ResultChampionLeft") ~= nil and named(gui, "ResultVipChip") == nil, tag .. ": without VIP the hero still celebrates, without the spotlight")
-			push(results)
-		end
+		-- The end screen: no hero figures beside the panel, and one even dark veil
+		-- over the whole screen (Roblox's top bar included), gone after the results.
+		check(named(gui, "ResultChampionLeft") == nil and named(gui, "ResultChampionRight") == nil and named(gui, "ResultVipRing") == nil, tag .. ": no hero figures stand beside the end screen")
+		local backdrop = localPlayer.PlayerGui:FindFirstChild("DoomBackdrop")
+		local shade = backdrop and backdrop:FindFirstChild("ResultBackdrop")
+		check(backdrop ~= nil and backdrop.Enabled == true and backdrop.IgnoreGuiInset == true and shade ~= nil and shade.Size.X.Scale == 1 and shade.Size.Y.Scale == 1 and shade.Size.X.Offset == 0 and shade.Size.Y.Offset == 0 and shade.BackgroundTransparency < 0.5,
+			tag .. ": the end screen darkens the whole screen, top bar included")
+		check(named(gui, "ResultVeil") ~= nil and named(gui, "ResultVeil").BackgroundTransparency == 1, tag .. ": the panel's own veil adds no second, partial shade")
 		local again = named(gui, "ResultPlayAgain")
 		local againRect = again and screenRect(again, gui, SCREEN)
 		check(againRect ~= nil and againRect.y + againRect.h <= view().h and againRect.h >= 44, tag .. ": PLAY AGAIN sits beside the return button without scrolling")
