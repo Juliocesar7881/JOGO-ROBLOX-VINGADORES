@@ -100,10 +100,13 @@ return {
 		battle = 138426860300125, collect = 89386392576030, victory = 85206381307425, defeat = 89940652537869,
 		breach = 88806730855390, place = 110695275250497, upgrade = 123473912601268, levelUp = 87307736942781, ability = 106314680284413,
 		boss = 78255398419469, wave = 75814374915023, chest = 121229565044752,
-		-- The lobby's music since 15/10 (owner: an electronic track of the kind
-		-- lobbies play): "Electrodoodle" by Kevin MacLeod, CC BY 4.0, prepared by
-		-- tools/prepare_music.py and credited in Options like the battle tracks.
-		lobby = 96735553222959,
+		-- The lobby's music since 16/10 (the owner's pick): "Marlboro Lite" by
+		-- Spazz Cardigan, a YouTube Audio Library track marked Creative Commons
+		-- Attribution (CC BY 3.0), prepared by tools/prepare_music.py and credited
+		-- in Options like the battle tracks. Uploaded to the owner's account on
+		-- 16/10 (Creator Hub). Before it: "Electrodoodle" by Kevin MacLeod
+		-- (96735553222959, 15/10).
+		lobby = 124459741137134,
 		-- One battle track per map: licensed Creative Commons BY music prepared by
 		-- tools/prepare_music.py (credits: assets/audio/music_credits.json and
 		-- Catalog.MusicCredits, shown in Options). 0 = that map plays `battle`.

@@ -31,13 +31,19 @@ em Opções para cada faixa que estiver em uso (`Catalog.MusicCredits`).
 
 | Onde | Faixa | Autor | Licença |
 |---|---|---|---|
-| Lobby | Electrodoodle | Kevin MacLeod (incompetech.com) | CC BY 4.0 |
+| Lobby | Marlboro Lite | Spazz Cardigan (YouTube Audio Library) | CC BY 3.0 |
 | Ruas de Manhattan | Undaunted | Kevin MacLeod (incompetech.com) | CC BY 4.0 |
 | Complexo Gama | Checkpoint | Hayden Folker | CC BY 3.0 |
 | Fundição Sombria | Pursuit | Hayden Folker | CC BY 3.0 |
 | Selva de Cristal | Firebrand | Kevin MacLeod (incompetech.com) | CC BY 4.0 |
 | Cidadela do Tirano | Storm | Keys of Moon | CC BY 4.0 |
 | Ponte Celeste | Five Armies | Kevin MacLeod (incompetech.com) | CC BY 4.0 |
+
+O lobby toca, desde 16/10, a faixa escolhida pelo dono: "Marlboro Lite" de
+Spazz Cardigan, da Audio Library do YouTube (lançada em 18/09/2018). As listagens
+da faixa a marcam como Creative Commons Atribuição (CC BY 3.0), por isso ela é
+creditada em Opções como as outras. Enviada em 16/10 (ID 124459741137134). Antes
+dela, o lobby tocava "Electrodoodle" de Kevin MacLeod (96735553222959).
 
 As primeiras faixas de Manhattan, Selva de Cristal e Ponte Celeste (Chase,
 Pirates of the Quarantine e Valhalla, de Alexander Nakarada) foram

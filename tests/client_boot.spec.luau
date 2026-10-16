@@ -1418,30 +1418,29 @@ local function session(screen)
 			clickNamed("OpenChest_rare")
 			clickNamed("ConfirmChest_rare")
 		end
-		local function opening() return overlays:FindFirstChild("ChestOpening") end
-		-- A chest charges up to its prize's rarity (a ring of light climbing
-		-- grey, blue, purple, gold, red), then breaks open on the prize's card;
-		-- a tap charges it at once, a second tap opens it.
+		local function reel() return overlays:FindFirstChild("ChestReel") end
+		-- A chest opens like a case (owner, 16/10: the roulette stays): a strip
+		-- of prizes slows to a stop on the one the server drew; a tap lands it,
+		-- a second tap goes on to the prize card.
 		local function throughReel()
 			clickNamed("RevealSkip")
 			clickNamed("RevealSkip")
 			frames(1 / 30, 3)
 		end
-		local function sameColor(a, b) return a ~= nil and math.abs(a.R - b.R) < 0.02 and math.abs(a.G - b.G) < 0.02 and math.abs(a.B - b.B) < 0.02 end
 		chestResult = { chestId = "rare", heroId = "thor", rarity = "legendary", duplicate = false, refundGold = 0, refundMastery = 0 }
 		openRare()
-		local strip = opening()
-		check(strip ~= nil, tag .. ": confirming a chest opens the full-screen opening")
-		check(strip ~= nil and named(strip, "OpeningChest") ~= nil and string.find(named(strip, "OpeningTitle").Text, Catalog.Upper(Catalog.Chests.rare.name.pt), 1, true) ~= nil,
-			tag .. ": the chest itself stands on the stage, under its name")
-		local glow = strip and named(strip, "RevealGlow")
-		local legendary = Color3.fromRGB(table.unpack(Catalog.Rarities.legendary.color))
-		check(glow ~= nil and sameColor(glow.BackgroundColor3, Color3.fromRGB(table.unpack(Catalog.Rarities[Catalog.RarityOrder[1]].color))), tag .. ": the light starts at the first rarity")
-		frames(1 / 30, 45)
-		check(glow ~= nil and sameColor(glow.BackgroundColor3, legendary), tag .. ": and climbs to the prize's rarity before it opens")
-		check(opening() ~= nil and reveal() == nil, tag .. ": the chest is still charging")
-		frames(1 / 30, 20)
-		check(opening() == nil, tag .. ": then it breaks open by itself")
+		local strip = reel()
+		check(strip ~= nil, tag .. ": confirming a chest opens the full-screen reel")
+		check(strip ~= nil and countNamed(strip, "ReelTile") == 46 and named(strip, "ReelMarker") ~= nil, tag .. ": a strip of prizes passes a marker")
+		check(strip ~= nil and string.find(named(strip, "ReelTitle").Text, Catalog.Upper(Catalog.Chests.rare.name.pt), 1, true) ~= nil, tag .. ": the reel is titled with the chest's name")
+		frames(1 / 30, 15)
+		local track = strip and named(strip, "ReelTrack")
+		check(track ~= nil and track.Position.X.Offset < -100, tag .. ": the strip rushes past the marker")
+		clickNamed("RevealSkip")
+		check(strip and named(strip, "ReelPrize").Text == Catalog.Upper(Catalog.Heroes.thor.name.pt), tag .. ": it stops on the hero the server granted, got " .. tostring(strip and named(strip, "ReelPrize").Text))
+		clickNamed("RevealSkip")
+		frames(1 / 30, 3)
+		check(reel() == nil, tag .. ": a second tap moves on from the reel")
 		local stage = reveal()
 		check(stage ~= nil, tag .. ": then the prize card opens")
 		local card = stage and named(stage, "RevealHeroCard")
@@ -1717,10 +1716,10 @@ local function session(screen)
 		check(asked("ClaimFreeChest"), tag .. ": the free chest sends its claim intent")
 		rewardResult={chest={chestId="rare",heroId="widow",rarity="rare",duplicate=false}}
 		clickNamed("ClaimFreeChest")
-		check(named(overlays,"ChestOpening") ~= nil and named(overlays,"ChestReveal") == nil, tag .. ": a reward chest starts the same opening as a purchased chest")
+		check(named(overlays,"ChestReel") ~= nil and named(overlays,"ChestReveal") == nil, tag .. ": a reward chest starts the same reel as a purchased chest")
 		clickNamed("RevealSkip"); clickNamed("RevealSkip"); frames(1/30,3)
 		local receipt=named(overlays,"ChestReveal")
-		check(receipt and named(receipt,"RevealHeroCard").Visible and named(receipt,"ChestView") == nil, tag .. ": the reward opening finishes with a receipt, no second opening")
+		check(receipt and named(receipt,"RevealHeroCard").Visible and named(receipt,"ChestView") == nil, tag .. ": reward reel finishes with a receipt, no second opening")
 		check(receipt and named(receipt,"RevealName").Text==Catalog.Heroes.widow.name.pt, tag .. ": reward receipt displays the server-granted hero")
 		clickNamed("RevealContinue")
 		rewardResult=nil
@@ -1754,12 +1753,12 @@ local function session(screen)
 			{chestId="legendary",heroId="thor",rarity="legendary",duplicate=false},
 		}}
 		clickNamed("ClaimSeason")
-		check(named(overlays,"ChestOpening")~=nil,tag..": a season batch starts its first opening")
+		check(named(overlays,"ChestReel")~=nil,tag..": a season batch starts its first reel")
 		clickNamed("RevealSkip");clickNamed("RevealSkip");frames(1/30,45)
-		local second=named(overlays,"ChestOpening")
-		check(second and string.find(named(second,"OpeningTitle").Text,Catalog.Upper(Catalog.Chests.base_epic.name.pt),1,true)~=nil,
+		local second=named(overlays,"ChestReel")
+		check(second and string.find(named(second,"ReelTitle").Text,Catalog.Upper(Catalog.Chests.base_epic.name.pt),1,true)~=nil,
 			tag..": mixed rewards use the second prize's actual base chest")
-		clickNamed("OpeningSkipAll")
+		clickNamed("ReelSkipAll")
 		local summary=named(overlays,"ChestSummary")
 		check(summary and countNamed(summary,"SummaryTile")==3,tag..": reward batches preserve all prizes in one summary")
 		clickNamed("RevealContinue")
@@ -3738,10 +3737,10 @@ local function session(screen)
 			localPlayer:SetAttribute("DoomReview", "sheet"); flush()
 			localPlayer:SetAttribute("DoomReview", "skillaim"); flush()
 			check(named(gui,"CommanderSheet") == nil and named(workspace,"SkillRangePreview") ~= nil, tag .. ": aiming review closes the previous sheet and keeps its radius visible")
-			check(not overlays:FindFirstChild("ChestOpening") and not overlays:FindFirstChild("ChestReveal"), tag .. ": the next fixture clears the chest sequence")
+			check(not overlays:FindFirstChild("ChestReel") and not overlays:FindFirstChild("ChestReveal"), tag .. ": the next fixture clears the chest sequence")
 			localPlayer:SetAttribute("DoomReview", "reel"); flush(); advance(1); flush()
 			localPlayer:SetAttribute("DoomReview", "afk"); flush(); advance(5); flush()
-			check(not overlays:FindFirstChild("ChestOpening") and not overlays:FindFirstChild("ChestReveal"), tag .. ": an old opening never returns over the AFK fixture")
+			check(not overlays:FindFirstChild("ChestReel") and not overlays:FindFirstChild("ChestReveal"), tag .. ": an old reel never returns over the AFK fixture")
 			check(not gui:FindFirstChild("ContextPanel", true), tag .. ": the AFK fixture clears the previous hero window")
 			localPlayer:SetAttribute("DoomReviewSize", "667x375")
 			localPlayer:SetAttribute("DoomReview", "wave")

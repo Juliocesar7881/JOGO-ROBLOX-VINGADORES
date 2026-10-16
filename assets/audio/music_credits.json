@@ -72,14 +72,14 @@
     "sha256": "057f4e4f798f430ec2c220a67a2def2cfca86f6fc6dd2fc2d36506c026949a55"
   },
   "lobby": {
-    "title": "Electrodoodle",
-    "author": "Kevin MacLeod (incompetech.com)",
-    "license": "CC BY 4.0",
-    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200079",
+    "title": "Marlboro Lite",
+    "author": "Spazz Cardigan",
+    "license": "CC BY 3.0",
+    "source": "https://www.youtube.com/audiolibrary",
     "file": "licensed_music/lobby.ogg",
-    "seconds": 165.69,
-    "lufs": -16.08,
-    "truePeak": -5.59,
-    "sha256": "47395ae7ab8e32a34850c92e69fa0eb9f5b30281400894ab911ff3b7975561ec"
+    "seconds": 175.27,
+    "lufs": -16.13,
+    "truePeak": -5.15,
+    "sha256": "3494046976d3d861200c861b93c9875abd88fcff75c1b39ee94f02199365e1af"
   }
 }

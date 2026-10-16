@@ -547,7 +547,7 @@ Catalog.Difficulties = {
 -- for this credit, which Options shows for every track the place really plays
 -- (Config.Audio[key] > 0).
 Catalog.MusicCredits = {
-	{ key = "lobby", title = "Electrodoodle", author = "Kevin MacLeod (incompetech.com)", license = "CC BY 4.0" },
+	{ key = "lobby", title = "Marlboro Lite", author = "Spazz Cardigan", license = "CC BY 3.0" },
 	{ key = "battleManhattan", mapId = "manhattan", title = "Undaunted", author = "Kevin MacLeod (incompetech.com)", license = "CC BY 4.0" },
 	{ key = "battleGamma", mapId = "gamma", title = "Checkpoint", author = "Hayden Folker", license = "CC BY 3.0" },
 	{ key = "battleHydra", mapId = "hydra", title = "Pursuit", author = "Hayden Folker", license = "CC BY 3.0" },

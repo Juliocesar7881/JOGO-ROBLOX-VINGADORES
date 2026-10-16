@@ -51,13 +51,15 @@ MUSIC = {
                "license": "CC BY 4.0", "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100875"},
 }
 
-# Config.Audio key -> what to prepare: every map's battle track, then the lobby's
-# (owner, 15/10: an electronic track of the kind lobbies play, in place of the
-# synthesized one). The author asks for the credit on a Credits screen in the
-# settings, which Options is (incompetech.com FAQ).
+# Config.Audio key -> what to prepare: every map's battle track, then the lobby's.
+# The lobby plays "Marlboro Lite" by Spazz Cardigan (owner, 16/10: the track he
+# picked, in place of Kevin MacLeod's "Electrodoodle" of 15/10). It is a YouTube
+# Audio Library track released 18/09/2018; its listings mark it Creative Commons
+# Attribution (reuse allowed, CC BY 3.0, e.g. https://audiograb.com/bm8Dl84Xf),
+# so the game credits the author in Options like every other track.
 TRACKS = {"battle" + mapId[0].upper() + mapId[1:]: {**info, "map": mapId, "file": f"battle_{mapId}.ogg"} for mapId, info in MUSIC.items()}
-TRACKS["lobby"] = {"match": "Electrodoodle", "title": "Electrodoodle", "author": "Kevin MacLeod (incompetech.com)",
-                   "license": "CC BY 4.0", "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200079",
+TRACKS["lobby"] = {"match": "Marlboro Lite", "title": "Marlboro Lite", "author": "Spazz Cardigan",
+                   "license": "CC BY 3.0", "source": "https://www.youtube.com/audiolibrary",
                    "file": "lobby.ogg"}
 
 

@@ -225,7 +225,7 @@ end
 --==============================================================================
 -- The chest reveal
 --==============================================================================
--- Rarity accents belong to the card; the opening owns the build-up.
+-- Rarity accents belong to the card; the reel owns the build-up.
 local CHEST_GOLD = Color3.fromRGB(255, 200, 70)
 local STAGE_INK = Color3.fromRGB(8, 10, 30)
 local NEW_GREEN = Color3.fromRGB(120, 236, 92)
@@ -423,81 +423,156 @@ function Celebrate:Chest(result, chestId, onClosed, options)
 end
 
 --==============================================================================
--- The opening: the chest charges up to its prize's rarity, then breaks open
+-- The reel: opening a chest like opening a case
 --==============================================================================
--- The chest sits in a ring of light that climbs the rarities (grey, blue,
--- purple, gold, red) up to the one the server drew, a tick at every step, the
--- chest shaking harder each time; then it breaks open onto the prize's card.
--- A tap skips to the card. Nothing here picks a prize: it is already granted.
-function Celebrate:_open(result, chestId, position, total, onDone, flow)
+local REEL_TILES, REEL_FINAL = 46, 38
+local REEL_PITCH, REEL_TILE, REEL_WIDTH = 150, 138, 900
+local REEL_INK = Color3.fromRGB(14, 18, 44)
+local REEL_GOLD = Color3.fromRGB(255, 210, 63)
+-- Confetti when the strip lands, by the prize's tier (the card adds its own).
+local CONFETTI_BY_TIER = { 8, 28, 56 }
+
+-- Picks a decoy for the strip, favouring what the chest really gives.
+function Celebrate:_reelFiller(fillers)
+	if type(fillers) == "table" and #fillers > 0 then
+		local total = 0
+		for _, entry in ipairs(fillers) do total += math.max(entry.chance or 0, 0.4) end
+		local roll = self.random:NextNumber(0, total)
+		for _, entry in ipairs(fillers) do
+			roll -= math.max(entry.chance or 0, 0.4)
+			if roll <= 0 then return entry.id, entry.rarity end
+		end
+		return fillers[1].id, fillers[1].rarity
+	end
+	local id = Catalog.HeroOrder[self.random:NextInteger(1, #Catalog.HeroOrder)]
+	return id, Catalog.Heroes[id].rarity
+end
+
+-- One strip of prizes rushes past a marker and slows to a stop on the one the
+-- server drew. Only the tiles near the window carry their artwork.
+function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, flow)
 	local UI = self.UI
 	local lowFX = self.lowFX()
 	local chest = Catalog.Chests[chestId or "rare"] or Catalog.Chests.rare
+	if not fillers then
+		-- Reward chests use the same eligible collection as shop chests. These
+		-- are visual decoys only; the server's committed result stays final.
+		fillers = Rules.ChestOutcomes(chest.id,0,{})
+	end
 	local prizeRarity = Catalog.Rarities[result.rarity] or Catalog.Rarities.common
 	local prizeTier = table.find(Catalog.RarityOrder, prizeRarity.id) or 1
-	local screen = UI.toLogical(self.root.AbsoluteSize)
-	local portrait = screen.X < 600
-	local w, h = portrait and 500 or 900, portrait and 640 or 520
-	local root = UI.frame(self.root, { Name = "ChestOpening", Size = UDim2.fromScale(1, 1), BackgroundColor3 = STAGE_INK, BackgroundTransparency = 0.1, ZIndex = 80, Active = true })
+	local root = UI.frame(self.root, { Name = "ChestReel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(8, 10, 30), BackgroundTransparency = 0.5, ZIndex = 80, Active = true })
 	UI.button(root, "", function() self:SkipReveal() end, { Name = "RevealSkip", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 81, AutoButtonColor = false })
-	local stage = UI.frame(root, { Name = "OpeningStage", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.48), Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, ZIndex = 82 })
-	UI.create("UIScale", { Scale = math.clamp(math.min(screen.X / (w + 40), screen.Y / (h + 80)), 0.5, 1.3) }, stage)
+	local stage = UI.frame(root, { Name = "ReelStage", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.fromOffset(REEL_WIDTH, 380), BackgroundTransparency = 1, ZIndex = 82 })
+	local screen = UI.toLogical(self.root.AbsoluteSize)
+	UI.create("UIScale", { Scale = math.clamp(math.min(screen.X / 960, screen.Y / 520), 0.5, 1.3) }, stage)
 	local title = self:_t(chest.name) .. (total > 1 and ("   " .. position .. "/" .. total) or "")
-	local titleLabel = UI.label(stage, Catalog.Upper(title), { Name = "OpeningTitle", Size = UDim2.new(1, 0, 0, 56), Font = Enum.Font.FredokaOne, TextSize = 40, TextColor3 = CHEST_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 86 })
+	local titleLabel = UI.label(stage, Catalog.Upper(title), { Name = "ReelTitle", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 52), Font = Enum.Font.FredokaOne, TextSize = 36, TextColor3 = REEL_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
 	UI.outline(titleLabel, 3)
-	UI.oneLine(titleLabel, 22)
-	local cx, cy = w / 2, h * 0.53
-	local first = UI.color(Catalog.Rarities[Catalog.RarityOrder[1]].color)
-	local rays = lowFX and {} or self:_rays(stage, cx, cy, portrait and 300 or 340, first, 8, 83)
-	local glow = self:_glow(stage, cx, cy, portrait and 400 or 460, first, 83)
-	local holder = UI.frame(stage, { Name = "OpeningHolder", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(cx, cy), Size = UDim2.fromOffset(250, 250), BackgroundTransparency = 1, ZIndex = 85 })
-	local grow = UI.create("UIScale", { Scale = 1 }, holder)
-	UI.illustration(holder, "crate", UI.color(chest.color or { 255, 200, 70 }), { Name = "OpeningChest", Rarity = chest.id, Size = UDim2.fromScale(1, 1), ZIndex = 85 })
-	local hint = UI.label(stage, self:_t({ pt = "TOQUE PARA ABRIR", en = "TAP TO OPEN" }), { Name = "OpeningHint", Position = UDim2.new(0, 0, 1, -36), Size = UDim2.new(1, 0, 0, 32), TextSize = 19, Font = UI.Fonts.bold, TextColor3 = Color3.fromRGB(206, 218, 255), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 86 })
-	if flow and total > 1 then
-		UI.button(root, self:_t({ pt = "PULAR TUDO", en = "SKIP ALL" }), function() flow.skipAll() end, { Name = "OpeningSkipAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(180, 52), BackgroundColor3 = Color3.fromRGB(255, 77, 94), TextSize = 18, ZIndex = 95 })
+	local titlePlate=UI.frame(stage,{Name="ReelTitlePlate",Position=UDim2.fromOffset(100,0),Size=UDim2.new(1,-200,0,52),BackgroundColor3=UI.Colors.background,ZIndex=83})
+	UI.angular(titlePlate,REEL_GOLD,{cut=12})
+	UI.oneLine(titleLabel,22)
+	local window = UI.frame(stage, { Name = "ReelWindow", Position = UDim2.fromOffset(0, 72), Size = UDim2.fromOffset(REEL_WIDTH, 196), BackgroundColor3 = REEL_INK, ClipsDescendants = true, ZIndex = 83 })
+	UI.corner(window, 14)
+	UI.stroke(window, REEL_GOLD, 3)
+	UI.angular(window, REEL_GOLD, {cut=14})
+	local track = UI.frame(window, { Name = "ReelTrack", Position = UDim2.fromOffset(0, 29), Size = UDim2.fromOffset(REEL_PITCH * REEL_TILES, REEL_TILE), BackgroundTransparency = 1, ZIndex = 84 })
+	-- The tiles: the prize at REEL_FINAL, decoys everywhere else.
+	local tiles = {}
+	for index = 1, REEL_TILES do
+		local id, rarityId
+		if index == REEL_FINAL then
+			id, rarityId = result.baseId or result.heroId, result.rarity
+		else
+			id, rarityId = self:_reelFiller(fillers)
+		end
+		local def = Catalog.Bases[id] or Catalog.Heroes[id]
+		local rarity = Catalog.Rarities[rarityId] or Catalog.Rarities.common
+		local tint = UI.color(rarity.color)
+		local frame = UI.frame(track, { Name = "ReelTile", Position = UDim2.fromOffset((index - 1) * REEL_PITCH + (REEL_PITCH - REEL_TILE) / 2, 0), Size = UDim2.fromOffset(REEL_TILE, REEL_TILE), BackgroundColor3 = tint:Lerp(REEL_INK, 0.62), ZIndex = 85 })
+		UI.cardSkin(frame, tint)
+		UI.frame(frame, { Name = "RarityBar", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 8), BackgroundColor3 = tint, ZIndex = 87 })
+		local nameText = UI.label(frame, self:_t(def.name), { Name = "TileName", Position = UDim2.new(0, 4, 1, -44), Size = UDim2.new(1, -8, 0, 34), Font = Enum.Font.FredokaOne, TextSize = 15, TextWrapped = true, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 88 })
+		UI.outline(nameText, 1.5)
+		tiles[index] = { frame = frame, id = id, isBase = Catalog.Bases[id] ~= nil, def = def, art = nil }
 	end
-	-- The build-up: one step per rarity up to the prize's; later chests of a run are quicker.
-	local duration = lowFX and 0.35 or (position == 1 and 1.75 or 1.05)
-	local climb = duration * 0.86
-	local reached = 0
+	local function ensureArt(index, wanted)
+		local tile = tiles[index]
+		if wanted and not tile.art then
+			if tile.isBase then
+				tile.art = UI.basePortrait(tile.frame, tile.def, { Name = "TileArt", Position = UDim2.fromOffset(8, 6), Size = UDim2.new(1, -16, 1, -54), ZIndex = 86 })
+			elseif self.portrait then
+				local made, art = pcall(self.portrait, tile.frame, tile.id, { Name = "TileArt", Position = UDim2.fromOffset(8, 6), Size = UDim2.new(1, -16, 1, -54), BackgroundTransparency = 1, ZIndex = 86 })
+				if made then tile.art = art or tile.frame:FindFirstChild("TileArt") end
+			end
+		elseif not wanted and tile.art then
+			if typeof(tile.art) == "Instance" then tile.art:Destroy() end
+			tile.art = nil
+		end
+	end
+	-- The marker.
+	local marker = UI.frame(stage, { Name = "ReelMarker", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(REEL_WIDTH / 2, 62), Size = UDim2.fromOffset(5, 216), BackgroundColor3 = REEL_GOLD, ZIndex = 90 })
+	for _, top in ipairs({ true, false }) do
+		UI.frame(marker, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, top and 0 or 1, 0), Size = UDim2.fromOffset(26, 26), Rotation = 45, BackgroundColor3 = REEL_GOLD, ZIndex = 90 })
+	end
+	for _, left in ipairs({ true, false }) do
+		local fade = UI.frame(window, { Name = "ReelFade", AnchorPoint = Vector2.new(left and 0 or 1, 0), Position = UDim2.fromScale(left and 0 or 1, 0), Size = UDim2.new(0, 160, 1, 0), BackgroundColor3 = Color3.fromRGB(8, 10, 30), ZIndex = 89 })
+		UI.create("UIGradient", { Transparency = NumberSequence.new(left and 0 or 1, left and 1 or 0), Rotation = 0 }, fade)
+	end
+	local hint = UI.label(stage, self:_t({ pt = "TOQUE PARA PULAR", en = "TAP TO SKIP" }), { Name = "ReelHint", Position = UDim2.fromOffset(0, 290), Size = UDim2.new(1, 0, 0, 30), TextSize = 18, Font = UI.Fonts.bold, TextColor3 = Color3.fromRGB(206, 218, 255), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
+	local nameLabel = UI.label(stage, "", { Name = "ReelPrize", Position = UDim2.fromOffset(0, 286), Size = UDim2.new(1, 0, 0, 52), Font = Enum.Font.FredokaOne, TextSize = 38, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
+	UI.outline(nameLabel, 3)
+	if flow and total > 1 then
+		UI.button(root, self:_t({ pt = "PULAR TUDO", en = "SKIP ALL" }), function() flow.skipAll() end, { Name = "ReelSkipAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(180, 52), BackgroundColor3 = Color3.fromRGB(255, 77, 94), TextSize = 18, ZIndex = 95 })
+	end
+
+	-- Where the strip stops: the prize's tile under the marker, a little off
+	-- centre like a real case, never off the tile.
+	local jitter = self.random:NextNumber(-0.28, 0.28) * REEL_TILE
+	local distance = (REEL_FINAL - 1) * REEL_PITCH + REEL_PITCH / 2 + jitter - REEL_WIDTH / 2
+	local duration = lowFX and 0.9 or (position == 1 and 6 or 3.6)
+	local hold = lowFX and 0.15 or 0.45
+	local landed, lastTile = false, 0
 	self:_summon("start")
 	local reveal = { root = root, finalAt = duration, onClosed = onDone, result = result }
 	self.reveal = reveal
-	reveal.anim = self:_add({ duration = duration, update = function(t)
+	reveal.anim = self:_add({ duration = duration + hold, update = function(t)
 		if not root.Parent then return end
-		local step = math.clamp(math.floor(t / climb * prizeTier) + 1, 1, prizeTier)
-		if t >= duration then step = prizeTier end
-		local tint = UI.color(Catalog.Rarities[Catalog.RarityOrder[step]].color)
-		if step ~= reached then
-			reached = step
-			if t > 0 then self:_summon("tick") end
-			for _, ring in ipairs(glow) do ring.frame.BackgroundColor3 = tint end
-			for _, ray in ipairs(rays) do ray.frame.BackgroundColor3 = tint:Lerp(WHITE, 0.15) end
+		local u = clamp01(t / duration)
+		local travelled = distance * (1 - (1 - u) ^ 3.6)
+		track.Position = UDim2.fromOffset(-travelled, 29)
+		local crossing = math.floor((travelled + REEL_WIDTH / 2) / REEL_PITCH)
+		if crossing ~= lastTile then
+			lastTile = crossing
+			-- A skipped/slow frame never queues the missed ticks. The final
+			-- slow crossings stay audible; landing has one rarity signature.
+			if t > 0 and u < 1 then self:_summon("tick") end
 		end
-		local since = t - (step - 1) / prizeTier * climb
-		local thump = math.exp(-since * 9)
-		local power = step / prizeTier
-		for _, ring in ipairs(glow) do
-			local size = ring.size * ring.scale * (0.82 + 0.18 * power + 0.12 * thump)
-			ring.frame.Size = UDim2.fromOffset(size, size)
-			ring.frame.BackgroundTransparency = math.clamp(ring.base - 0.05 * power - 0.08 * thump, 0.55, 1)
+		for index = 1, REEL_TILES do
+			local x = (index - 1) * REEL_PITCH - travelled
+			ensureArt(index, x > -REEL_PITCH * 1.5 and x < REEL_WIDTH + REEL_PITCH * 0.5)
 		end
-		stepRays(rays, t, 40 * power, math.clamp(0.25 + 0.75 * power, 0, 1))
-		if not lowFX then
-			holder.Rotation = math.sin(t * 34) * (2 + 7 * power) * (0.4 + thump)
-			grow.Scale = 1 + 0.05 * power + 0.08 * thump
+		hint.Visible = u < 1
+		if u >= 1 and not landed then
+			landed = true
+			local win = tiles[REEL_FINAL]
+			UI.stroke(win.frame, WHITE, 5)
+			local tint = UI.color(prizeRarity.color)
+			nameLabel.Text = Catalog.Upper(self:_t(win.def.name))
+			nameLabel.TextColor3 = tint:Lerp(WHITE, 0.25)
+			self:_summon("reward", prizeRarity.id)
+			self:Confetti(math.floor((CONFETTI_BY_TIER[prizeTier] or 8) / 2), 0.4)
 		end
-		hint.Visible = t < duration
 	end, done = function() if self.reveal == reveal then self:_closeReveal() end end })
-	-- A second tap, once it has charged, goes straight on.
-	reveal.advance = function() if self.reveal == reveal then self:_closeReveal() end end
+	-- A second tap, once the strip has stopped, goes straight on.
+	reveal.advance = function() reveal.anim.start = self.clock() - reveal.anim.duration end
 	return root
 end
 
--- Several chests, one after the other: opening, prize card, next opening. The
--- last screen sums them up. `options.onClosed` runs when it is all over.
--- (`options.fillers`, the chest's possible prizes, are no longer drawn.)
+-- Several chests, one after the other: reel, prize card, next reel. The last
+-- screen sums them up. `options.fillers` are the chest's possible prizes
+-- ({ id, rarity, chance }); `options.onClosed` runs when it is all over.
+-- (Owner, 16/10: the roulette stays; the prize card after it is the new one.)
 function Celebrate:Reel(results, chestId, options)
 	options = options or {}
 	if type(results) ~= "table" or #results == 0 then return end
@@ -521,13 +596,11 @@ function Celebrate:Reel(results, chestId, options)
 		if flow.stopped then return end
 		if index > total then finish() return end
 		local source = results[index].chestId or chestId
-		self:_open(results[index], source, index, total, function()
+		self:_reelOne(results[index], source, options.fillers, index, total, function()
 			if flow.stopped then return end
-			local rarity = Catalog.Rarities[results[index].rarity] or Catalog.Rarities.common
-			self:_summon("reward", rarity.id)
 			self:Chest(results[index], source, function() step(index + 1) end, { quick = true, burst = true, autoClose = total > 1 and 1.3 or nil })
 			if total > 1 and self.reveal then
-				self.UI.button(self.reveal.root, self:_t({ pt = "PULAR TUDO", en = "SKIP ALL" }), function() flow.skipAll() end, { Name = "OpeningSkipAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(180, 52), BackgroundColor3 = Color3.fromRGB(255, 77, 94), TextSize = 18, ZIndex = 96 })
+				self.UI.button(self.reveal.root, self:_t({ pt = "PULAR TUDO", en = "SKIP ALL" }), function() flow.skipAll() end, { Name = "ReelSkipAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(180, 52), BackgroundColor3 = Color3.fromRGB(255, 77, 94), TextSize = 18, ZIndex = 96 })
 			end
 		end, flow)
 	end
