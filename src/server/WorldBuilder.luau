@@ -657,7 +657,7 @@ local HERO_LOOK = {
 	speedster = { body = { width = 0.9, arm = 0.88, leg = 1.04, legLength = 1.06 }, colors = { head = Color3.fromRGB(222, 50, 50), chest = Color3.fromRGB(222, 50, 50), pelvis = Color3.fromRGB(222, 50, 50), upperArm = Color3.fromRGB(222, 50, 50), lowerArm = Color3.fromRGB(240, 196, 60), hand = Color3.fromRGB(222, 50, 50), upperLeg = Color3.fromRGB(222, 50, 50), lowerLeg = Color3.fromRGB(222, 50, 50), foot = Color3.fromRGB(240, 196, 60) }, face = "fierce" },
 	amazon = { body = { width = 0.9, arm = 0.88, leg = 0.94 }, colors = { chest = Color3.fromRGB(196, 40, 56), pelvis = Color3.fromRGB(30, 56, 140), upperArm = HC.skin, lowerArm = Color3.fromRGB(240, 196, 60), hand = HC.skin, upperLeg = HC.skin, lowerLeg = Color3.fromRGB(30, 56, 140), foot = Color3.fromRGB(196, 40, 56) }, face = "smile", hair = { Color3.fromRGB(36, 28, 30), "long" } },
 	nightstalker = { body = { width = 1.04, arm = 1.0, leg = 1.0 }, colors = { head = Color3.fromRGB(26, 28, 40), chest = Color3.fromRGB(52, 60, 86), pelvis = Color3.fromRGB(26, 28, 40), upperArm = Color3.fromRGB(52, 60, 86), lowerArm = Color3.fromRGB(26, 28, 40), hand = Color3.fromRGB(26, 28, 40), upperLeg = Color3.fromRGB(52, 60, 86), lowerLeg = Color3.fromRGB(26, 28, 40), foot = Color3.fromRGB(26, 28, 40) } },
-	seaking = { body = { width = 1.12, arm = 1.12, chest = 1.08, leg = 1.04 }, colors = { chest = Color3.fromRGB(232, 150, 44), pelvis = Color3.fromRGB(20, 120, 124), upperArm = Color3.fromRGB(232, 150, 44), lowerArm = Color3.fromRGB(20, 120, 124), hand = HC.tan, upperLeg = Color3.fromRGB(20, 120, 124), lowerLeg = Color3.fromRGB(20, 120, 124), foot = Color3.fromRGB(232, 150, 44) }, face = "fierce", hair = { Color3.fromRGB(226, 190, 90), "long" } },
+	seaking = { body = { width = 1.12, arm = 1.12, chest = 1.08, leg = 1.04 }, colors = { chest = Color3.fromRGB(232, 150, 44), pelvis = Color3.fromRGB(20, 120, 124), upperArm = Color3.fromRGB(232, 150, 44), lowerArm = Color3.fromRGB(20, 120, 124), hand = HC.tan, upperLeg = Color3.fromRGB(20, 120, 124), lowerLeg = Color3.fromRGB(20, 120, 124), foot = Color3.fromRGB(232, 150, 44) }, face = "fierce", hair = { Color3.fromRGB(240, 216, 150), "long" } },
 }
 Figure.HeroLook = HERO_LOOK
 
@@ -2862,7 +2862,9 @@ local function finishHeroCostume(f)
 				chestFront=math.min(chestFront,fit.C0.Position.Z-piece.Size.Z/2)
 				if piece:IsA("Part") and piece.Shape==Enum.PartType.Block then
 					local bevel=piece:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
-					bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",Enum.MeshType.Torso,piece
+					-- A moulded breastplate, curved across the chest (16/10, checked in
+					-- Studio: a flat tapered plate read as a box glued to the torso).
+					bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",Enum.MeshType.Head,piece
 				end
 			end
 			if ratio.X <= 1.5 and ratio.Y <= 1.3 and ratio.Z <= 1.5 and volume > 0.5 and (not cover[host] or volume > cover[host].volume) and not piece:GetAttribute("OpenFace") then
