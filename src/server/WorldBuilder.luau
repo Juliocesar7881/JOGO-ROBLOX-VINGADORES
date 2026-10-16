@@ -2820,6 +2820,9 @@ local function armourHero(f, look)
 		local hips = f.parts.LowerTorso:FindFirstChild("BodyContour")
 		hips.MeshType, hips.Scale = Enum.MeshType.Brick, Vector3.one
 	end
+	-- The under-suit shows at the waist too, between the chest armour and the belt.
+	local waist = f.model:FindFirstChild("Waist")
+	if waist then waist.Color = UNDERSUIT:Lerp(f.parts.UpperTorso.Color, 0.2) end
 	local shelled, domes, trims, kneeCaps = {}, {}, {}, {}
 	for _, piece in ipairs(f.model:GetChildren()) do
 		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
