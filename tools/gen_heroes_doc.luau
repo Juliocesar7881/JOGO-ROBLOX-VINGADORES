@@ -24,6 +24,7 @@ line("única habilidade, e é sempre a do herói no **slot 1** da formação que
 line("comandante usa em combate — por isso o slot 1 é visualmente destacado na UI.")
 line("Habilidades dos heróis lendários são **ultimates**: além do efeito principal,")
 line("elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.")
+line("Todo herói ataca inimigos no chão e voando.")
 line("")
 
 for _, rarity in ipairs(Catalog.RarityOrder) do
@@ -38,9 +39,10 @@ for _, rarity in ipairs(Catalog.RarityOrder) do
 		if hero.rarity == rarity then
 			local ability = Catalog.Abilities[hero.ability]
 			local abilityName = ability.name.pt .. (ability.ultimate and " ⚡ (ultimate)" or "")
-			line(string.format("| **%s** — %s | %d | %s%s | %d | %d | %.2fs | %s |",
+			-- (Every hero hits ground and flying enemies, so the table no longer marks it.)
+			line(string.format("| **%s** — %s | %d | %s | %d | %d | %.2fs | %s |",
 				hero.name.pt, hero.role.pt, hero.cost, ATTACK_PT[hero.attack] or hero.attack,
-				hero.air and " (ar)" or "", hero.damage, hero.range, hero.interval, abilityName))
+				hero.damage, hero.range, hero.interval, abilityName))
 		end
 	end
 	line("")

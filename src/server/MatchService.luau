@@ -388,7 +388,7 @@ function Match:_beginWave()
 		self.shockTold=true
 		self:_notice("Sabotadores chegando: eles paralisam as torres por perto. Elimine-os cedo; heróis imunes a paralisia protegem a linha.","Saboteurs incoming: they stun nearby towers. Take them out early; stun-proof heroes keep the line firing.")
 	elseif threats.stealth then self:_notice("Camuflados chegando: Viúva Sombria, Vigilante Cego ou uma habilidade de revelar mostram os alvos.","Cloaked enemies incoming: Shadow Widow, Blind Vigilante or a reveal ability shows them.")
-	elseif threats.air then self:_notice("Ameaça aérea: use heróis que atinjam voadores.","Air threat: use heroes that target flying enemies.")
+	elseif threats.air then self:_notice("Ameaça aérea: voadores passam por cima de minas, barreiras e soldados.","Air threat: flyers pass over mines, barriers and soldiers.")
 	elseif threats.armor then self:_notice("Blindados: perfuração e dano mágico são eficientes.","Armored enemies: piercing and magic are effective.") end
 	-- The tutorial teaches one idea per wave instead of dumping everything in
 	-- the opening notice: place, then upgrade, then abilities, then pacing,

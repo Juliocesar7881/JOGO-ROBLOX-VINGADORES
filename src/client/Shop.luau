@@ -216,7 +216,6 @@ function Shop.new(ctx, helpers)
 							UI.label(cell,entry[1],{Position=UDim2.fromOffset(6,4),Size=UDim2.new(1,-12,0,20),TextSize=14,Font=UI.Fonts.display,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center})
 							UI.label(cell,entry[2],{Position=UDim2.fromOffset(6,26),Size=UDim2.new(1,-12,0,40),TextSize=30,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 						end
-						UI.label(details,hero.air and T("Acerta inimigos no chão e voando","Hits ground and flying enemies") or T("Acerta só inimigos no chão","Hits ground enemies only"),{Size=UDim2.new(1,0,0,24),TextSize=15,Font=UI.Fonts.display,TextColor3=hero.air and C.green or C.coral})
 						for _,trait in ipairs(UI.heroTraits(hero,T)) do UI.label(details,"• "..trait,{Size=UDim2.new(1,0,0,24),TextSize=15,TextColor3=C.cream,TextWrapped=true,TextTruncate=Enum.TextTruncate.None}) end
 						local ability=Catalog.Abilities[hero.ability]
 						if ability then

@@ -99,6 +99,10 @@ equal(starters, 2, "Exactly two starters")
 
 -- Economy is per hero; merging collectible colours must not rebalance combat.
 for _,id in ipairs(Catalog.HeroOrder) do check(Catalog.Heroes[id].economy.abilityCost>0,"Explicit hero economy: "..id) end
+-- Every hero hits ground and flying enemies (owner, 16/10), at every level.
+for _,id in ipairs(Catalog.HeroOrder) do
+	check(Catalog.Heroes[id].air==true and Rules.TowerStats(id,1).air==true and Rules.TowerStats(id,5,2).air==true,"Hits flyers too: "..id)
+end
 
 -- Branch data reproduces the behaviour the game was balanced around.
 equal(Rules.TowerStats("ironman", 5, 1).attack, "splash", "Iron Man missiles")

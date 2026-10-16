@@ -81,7 +81,6 @@ function Panels.new(ctx)
 		local perSecond = (stats.interval or 0) > 0 and 1 / stats.interval or 0
 		UI.tooltipLine(box, T("Dano ", "Damage ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.damage) .. "</b></font>   " .. T("Alcance ", "Range ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.range) .. "</b></font>   "
 			.. T("Ataques/s ", "Hits/s ") .. '<font color="#FFFFFF"><b>' .. string.format("%.1f", perSecond) .. "</b></font>", C.muted, 3, 17)
-		UI.tooltipLine(box, def.air and T("Acerta inimigos no chão e voando", "Hits ground and flying enemies") or T("Acerta só inimigos no chão", "Hits ground enemies only"), def.air and C.green or C.coral, 4, 15)
 		for index, trait in ipairs(UI.heroTraits(def, T, stats.slow)) do UI.tooltipLine(box, "• " .. trait, C.cream, 4 + index, 15) end
 		local ability = def.ability and Catalog.Abilities[def.ability]
 		if ability then UI.tooltipLine(box, T("Poder de líder: ", "Leader power: ") .. L(ability.name), C.gold, 20, 15) end
@@ -188,7 +187,6 @@ function Panels.new(ctx)
 			local value=UI.label(card,entry[3],{Position=UDim2.fromOffset(8,34),Size=UDim2.new(1,-16,0,46),TextSize=36,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 			UI.outline(value,3)
 		end
-		UI.label(body,def.air and T("Acerta inimigos no chão e voando","Hits ground and flying enemies") or T("Acerta só inimigos no chão","Hits ground enemies only"),{Name="HeroTargets",Size=UDim2.new(1,-6,0,28),TextColor3=def.air and C.green or C.coral,Font=UI.Fonts.display,TextSize=19,TextWrapped=true})
 		-- What sets this hero apart from the rest, one line each.
 		for _,trait in ipairs(UI.heroTraits(def,T,nowStats.slow)) do UI.label(body,"• "..trait,{Name="HeroTrait",Size=UDim2.new(1,-6,0,28),TextColor3=C.cream,Font=UI.Fonts.display,TextSize=18,TextWrapped=true}) end
 		if not short then drawActions() end
@@ -1015,7 +1013,7 @@ function Panels.new(ctx)
 			end
 		end
 		local roles=UI.row(body,44);roles.Name="HeroRoleFilters"
-		local roleOptions={"all","air","area","control","support"}
+		local roleOptions={"all","area","control","support"}
 		for index,id in ipairs(roleOptions) do
 			local def=Catalog.HeroRoles[id]
 			local active=kit.inventoryView.role==id
@@ -1059,7 +1057,6 @@ function Panels.new(ctx)
 			local pills=UI.frame(pick,{Name="ChoiceTraits",Position=UDim2.fromOffset(14,264),Size=UDim2.new(1,-28,0,72),BackgroundTransparency=1})
 			local flow=UI.list(pills,6,true)
 			pcall(function() flow.Wraps=true end)
-			UI.pill(pills,def.air and T("Chão e ar","Ground + air") or T("Só chão","Ground only"),def.air and C.green:Lerp(C.ink,0.2) or C.coral:Lerp(C.ink,0.2),{TextSize=14})
 			for _,trait in ipairs(UI.heroTraits(def,T,stats.slow)) do
 				local short=string.match(trait,"^([^,;:]+)") or trait
 				if #short>26 then short=string.sub(short,1,24).."…" end

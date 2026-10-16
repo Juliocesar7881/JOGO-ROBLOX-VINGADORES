@@ -152,7 +152,6 @@ function MatchHud.new(ctx)
 					UI.pill(extras, T("Lentidão ", "Slow ") .. percent(current.slow) .. ((nextSlow and nextSlow > current.slow + 0.001) and ("  → " .. percent(nextSlow)) or ""), Color3.fromRGB(70, 150, 230), {TextSize = 14, Size = UDim2.fromOffset(0, 26)})
 				end
 				if (current.splash or 0) > 0 then UI.pill(extras, T("Área ", "Area ") .. tenth(current.splash), C.coral:Lerp(C.ink, 0.15), {TextSize = 14, Size = UDim2.fromOffset(0, 26)}) end
-				UI.pill(extras, def.air and T("Chão e ar", "Ground + air") or T("Só chão", "Ground only"), def.air and C.green:Lerp(C.ink, 0.25) or C.coral:Lerp(C.ink, 0.25), {TextSize = 14, Size = UDim2.fromOffset(0, 26)})
 			end
 			refresh(tower)
 			ctx.refs().towerRefresh = refresh

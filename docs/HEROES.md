@@ -9,27 +9,28 @@ pelos cinco baús do lobby ou pela compra direta na Loja Robux. Cada herói tem 
 comandante usa em combate — por isso o slot 1 é visualmente destacado na UI.
 Habilidades dos heróis lendários são **ultimates**: além do efeito principal,
 elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
+Todo herói ataca inimigos no chão e voando.
 
 ## Comum — 16 heróis
 
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Armadura de Ferro** — Dano tecnológico versátil | 250 | único (ar) | 20 | 27 | 0.90s | Rajada de Plasma |
-| **Olho de Águia** — Longo alcance e alvos prioritários | 180 | único (ar) | 27 | 33 | 1.60s | Tiro Mortal |
-| **Homem-Asa** — Ataque rápido contra voadores | 220 | único (ar) | 16 | 30 | 0.68s | Comando Aéreo |
+| **Armadura de Ferro** — Dano tecnológico versátil | 250 | único | 20 | 27 | 0.90s | Rajada de Plasma |
+| **Olho de Águia** — Longo alcance e alvos prioritários | 180 | único | 27 | 33 | 1.60s | Tiro Mortal |
+| **Homem-Asa** — Ataque rápido contra voadores | 220 | único | 16 | 30 | 0.68s | Comando Aéreo |
 | **Soldado de Prata** — Perfuração de armadura | 300 | único | 28 | 28 | 1.00s | Emboscada |
 | **Aranha Urbana** — Desaceleração e controle | 280 | área | 14 | 24 | 1.10s | Rede Gigante |
-| **Viúva Sombria** — Revela camuflados e marca alvos | 260 | único (ar) | 18 | 25 | 0.75s | Marca da Viúva |
+| **Viúva Sombria** — Revela camuflados e marca alvos | 260 | único | 18 | 25 | 0.75s | Marca da Viúva |
 | **Homem Miúdo** — Ataques rápidos e pisões | 380 | único | 22 | 26 | 0.70s | Partículas Quânticas |
-| **Abelha Rainha** — Ferrão rápido que desacelera | 240 | único (ar) | 10 | 22 | 0.40s | Enxame Elétrico |
-| **Guaxinim Atirador** — Explosivos em área | 330 | área (ar) | 19 | 26 | 1.30s | Sucata Valiosa |
+| **Abelha Rainha** — Ferrão rápido que desacelera | 240 | único | 10 | 22 | 0.40s | Enxame Elétrico |
+| **Guaxinim Atirador** — Explosivos em área | 330 | área | 19 | 26 | 1.30s | Sucata Valiosa |
 | **Vigilante Cego** — Enxerga camuflados | 270 | único | 17 | 20 | 0.60s | Sentido Radar |
 | **Mestre dos Anéis** — Combate corpo a corpo veloz | 340 | único | 14 | 18 | 0.40s | Anéis Celestes |
-| **Olho Rubi** — Feixe que atravessa a horda | 320 | feixe (ar) | 28 | 32 | 1.35s | Explosão óptica |
+| **Olho Rubi** — Feixe que atravessa a horda | 320 | feixe | 28 | 32 | 1.35s | Explosão óptica |
 | **Gelo Vivo** — Congela o avanço de grupos | 300 | área | 11 | 25 | 1.05s | Era do gelo |
 | **Teleportador Azul** — Ataques rápidos e recuo tático | 290 | único | 24 | 22 | 0.80s | Puf! |
 | **Acrobata Peludo** — Impactos curtos contra hordas | 270 | área | 15 | 18 | 0.95s | Salto selvagem |
-| **Cavaleiro Lunar** — Revela camuflados na rota | 310 | único (ar) | 34 | 25 | 1.05s | Luz da Lua |
+| **Cavaleiro Lunar** — Revela camuflados na rota | 310 | único | 34 | 25 | 1.05s | Luz da Lua |
 
 ## Raro — 15 heróis
 
@@ -38,14 +39,14 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 | **Capitão Escudo** — Ricochetes e suporte às torres | 360 | corrente | 17 | 23 | 1.05s | Escudo Égide |
 | **Rei Pantera** — Ataques rápidos e enfraquece armadura | 400 | único | 19 | 19 | 0.48s | Garra da Noite |
 | **Gigante Furioso** — Dano de área terrestre | 450 | área | 34 | 24 | 1.60s | Gigante Esmaga! |
-| **Androide Prisma** — Feixe que atravessa alinhados | 480 | feixe (ar) | 44 | 30 | 1.30s | Fase Densa |
-| **Soldado Blindado** — Artilharia pesada em área | 520 | área (ar) | 27 | 28 | 1.40s | Bombardeio |
-| **Pirata Estelar** — Rajadas rápidas de blasters | 430 | único (ar) | 16 | 25 | 0.32s | Batida Cósmica |
+| **Androide Prisma** — Feixe que atravessa alinhados | 480 | feixe | 44 | 30 | 1.30s | Fase Densa |
+| **Soldado Blindado** — Artilharia pesada em área | 520 | área | 27 | 28 | 1.40s | Bombardeio |
+| **Pirata Estelar** — Rajadas rápidas de blasters | 430 | único | 16 | 25 | 0.32s | Batida Cósmica |
 | **Gigante Verde** — Controle e dano em área terrestre | 420 | área | 19 | 23 | 1.50s | Muralha de Raízes |
 | **Garra de Aço** — Garras contra elites | 420 | único | 36 | 16 | 0.65s | Fúria das garras |
-| **Mestre das Cartas** — Cartas explosivas contra grupos | 390 | área (ar) | 35 | 29 | 1.15s | Ás explosivo |
+| **Mestre das Cartas** — Cartas explosivas contra grupos | 390 | área | 35 | 29 | 1.15s | Ás explosivo |
 | **Ninja Psíquica** — Lâminas psíquicas perfurantes | 400 | único | 32 | 23 | 0.70s | Corte psíquico |
-| **Mercenário Falante** — Rajadas rápidas e apoio ofensivo | 380 | único (ar) | 24 | 28 | 0.60s | Trabalho em equipe |
+| **Mercenário Falante** — Rajadas rápidas e apoio ofensivo | 380 | único | 24 | 28 | 0.60s | Trabalho em equipe |
 | **Capitão Men** — Socos que empurram, imbatível | 400 | único | 29 | 17 | 0.60s | Indestrutível |
 | **Amazona Dourada** — Laço da verdade e espada | 420 | corrente | 18 | 24 | 0.90s | Laço da Verdade |
 | **Rei dos Mares** — Marés que atrasam e empurram | 430 | área | 19 | 25 | 1.40s | Maremoto |
@@ -55,18 +56,18 @@ elas disparam um ou mais efeitos secundários (`extras`) no mesmo cast.
 
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Deus do Trovão** — Relâmpagos encadeados e defesa aérea | 550 | corrente (ar) | 32 | 26 | 1.50s | Chamado do Trovão ⚡ (ultimate) |
-| **Bruxa do Caos** — Dano mágico persistente em área | 650 | queima contínua (ar) | 34 | 26 | 1.80s | Feitiço Rubi ⚡ (ultimate) |
-| **Doutor Místico** — Controle espacial e suporte mágico | 560 | área (ar) | 36 | 28 | 1.50s | Dilatação do Tempo ⚡ (ultimate) |
+| **Deus do Trovão** — Relâmpagos encadeados e defesa aérea | 550 | corrente | 32 | 26 | 1.50s | Chamado do Trovão ⚡ (ultimate) |
+| **Bruxa do Caos** — Dano mágico persistente em área | 650 | queima contínua | 34 | 26 | 1.80s | Feitiço Rubi ⚡ (ultimate) |
+| **Doutor Místico** — Controle espacial e suporte mágico | 560 | área | 36 | 28 | 1.50s | Dilatação do Tempo ⚡ (ultimate) |
 | **Motoqueiro Chama** — Fogo fantasma persistente | 620 | queima contínua | 28 | 26 | 1.40s | Fogo Fantasma ⚡ (ultimate) |
-| **Capitã Estelar** — Feixe cósmico devastador | 780 | feixe (ar) | 68 | 30 | 1.50s | Nova Fotônica ⚡ (ultimate) |
-| **Surfista Cósmico** — Energia cósmica encadeada | 800 | corrente (ar) | 34 | 32 | 1.20s | Julgamento Cósmico ⚡ (ultimate) |
-| **Deusa do Clima** — Relâmpagos e defesa aérea | 600 | corrente (ar) | 40 | 34 | 1.40s | Olho da tempestade ⚡ (ultimate) |
-| **Psíquica Radiante** — Explosões de energia psíquica | 760 | área (ar) | 44 | 30 | 1.30s | Chama Aurora ⚡ (ultimate) |
-| **Guardião Cósmico** — Feixe cósmico antiaéreo | 590 | feixe (ar) | 48 | 32 | 1.05s | Supernova ⚡ (ultimate) |
-| **Guardião Verde** — Construções de energia e controle | 600 | área (ar) | 30 | 28 | 1.50s | Construção Esmeralda ⚡ (ultimate) |
-| **Velocista Rubro** — Golpes ultrarrápidos | 560 | corrente (ar) | 11 | 24 | 0.18s | Supervelocidade ⚡ (ultimate) |
-| **Guardião Solar** — Visão de calor e força suprema | 800 | feixe (ar) | 50 | 32 | 1.30s | Fúria Solar ⚡ (ultimate) |
+| **Capitã Estelar** — Feixe cósmico devastador | 780 | feixe | 68 | 30 | 1.50s | Nova Fotônica ⚡ (ultimate) |
+| **Surfista Cósmico** — Energia cósmica encadeada | 800 | corrente | 34 | 32 | 1.20s | Julgamento Cósmico ⚡ (ultimate) |
+| **Deusa do Clima** — Relâmpagos e defesa aérea | 600 | corrente | 40 | 34 | 1.40s | Olho da tempestade ⚡ (ultimate) |
+| **Psíquica Radiante** — Explosões de energia psíquica | 760 | área | 44 | 30 | 1.30s | Chama Aurora ⚡ (ultimate) |
+| **Guardião Cósmico** — Feixe cósmico antiaéreo | 590 | feixe | 48 | 32 | 1.05s | Supernova ⚡ (ultimate) |
+| **Guardião Verde** — Construções de energia e controle | 600 | área | 30 | 28 | 1.50s | Construção Esmeralda ⚡ (ultimate) |
+| **Velocista Rubro** — Golpes ultrarrápidos | 560 | corrente | 11 | 24 | 0.18s | Supervelocidade ⚡ (ultimate) |
+| **Guardião Solar** — Visão de calor e força suprema | 800 | feixe | 50 | 32 | 1.30s | Fúria Solar ⚡ (ultimate) |
 
 ## Habilidades
 
