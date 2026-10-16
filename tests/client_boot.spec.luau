@@ -2962,6 +2962,16 @@ local function session(screen)
 		frames(0.1, 20)
 		local after = onChest and (handOnChest() - onChest).Magnitude or math.huge
 		check(after < 0.01, tag .. ": after the cheer a hero stands at rest again, off by " .. after)
+		-- A hero just placed (the server's placement pulse names its tower) hops
+		-- onto its pedestal, then stands on it again.
+		local chestY = chest and chest.Position.Y
+		fx({ kind = "Pulse", position = v3(10, 0, 10), radius = 5, duration = 0.45, color = Color3.fromRGB(220, 48, 51), towerId = "t1" })
+		frames(0.1, 3)
+		check(chest and chest.Position.Y > chestY + 0.3, tag .. ": a hero just placed hops onto its pedestal")
+		frames(0.1, 10)
+		-- (Within a breath: a hero at rest breathes a few hundredths of a stud.)
+		local settle = chest and math.abs(chest.Position.Y - chestY) or math.huge
+		check(settle < 0.08, tag .. ": after the hop it stands on its pedestal again, off by " .. settle)
 		fx({ kind = "CoinRemove", id = "c1" })
 		for _,heroId in ipairs(Catalog.HeroOrder) do
 			local ability=Catalog.Abilities[Catalog.Heroes[heroId].ability]

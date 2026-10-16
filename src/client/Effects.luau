@@ -1731,6 +1731,13 @@ function Effects:Handle(event)
 			end
 		end
 	elseif event.kind == "Pulse" and typeof(event.position) == "Vector3" then
+		-- A hero just placed jumps onto its pedestal, arms up, the same hop an
+		-- upgrade plays (owner, 16/10: placing a hero should feel like a cheer).
+		if event.towerId ~= nil then
+			local placed = self:_towerModel(event.towerId)
+			local record = placed and self:_record(placed)
+			if record then record.hopAt = self.clock end
+		end
 		local radius = event.radius or 8
 		-- A telegraph carries its own duration and holds at full size: it marks
 		-- an area the player has to read and act on, not an impact already over.

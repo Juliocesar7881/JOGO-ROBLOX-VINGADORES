@@ -1751,7 +1751,8 @@ function Match:Handle(player,action,payload)
 		local owned=p.profile.heroes and p.profile.heroes[id]
 		tower.model=self.world:MakeTower(towerId,id,pos,player.UserId,{shiny=type(owned)=="table" and owned.shiny==true})
 		self.towers[towerId]=tower p.cash-=cost p.towerCount+=1
-		self:_fx({kind="Pulse",position=pos,radius=5,color=Color3.fromRGB(unpack(hero.color)),duration=0.45})
+		-- towerId only lets every client play the hero's arrival hop (a look).
+		self:_fx({kind="Pulse",position=pos,radius=5,color=Color3.fromRGB(unpack(hero.color)),duration=0.45,towerId=towerId})
 		return true,{towerId=towerId,cost=cost}
 	elseif action=="UpgradeTower" or action=="SellTower" or action=="SetPriority" then
 		local tower=self.towers[payload.towerId]
