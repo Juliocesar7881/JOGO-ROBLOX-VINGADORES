@@ -1099,7 +1099,12 @@ HERO_EXTRAS.falcon = function(f)
 	for _, side in ipairs({ -1, 1 }) do
 		f.add("UpperTorso", "ThrusterNozzle", Vector3.new(0.22 * s, 0.32 * s, 0.28 * s), CFrame.new(side * c.X * 0.24, -c.Y * 0.28, c.Z / 2 + 0.38 * s), HC.ink, METAL)
 		f.add("UpperTorso", "WingRoot", Vector3.new(0.4 * s, 0.18 * s, 0.6 * s), CFrame.new(side * (c.X * 0.34 + 0.4 * s), 0.28 * s, c.Z / 2 + 0.28 * s) * CFrame.Angles(0, side * 0.3, side * 0.4), steel, METAL)
-		f.add("UpperTorso", "WingSpan", Vector3.new(2.4 * s, 0.08 * s, 0.82 * s), CFrame.new(side * (c.X * 0.34 + 1.4 * s), 0.32 * s, c.Z / 2 + 0.32 * s) * CFrame.Angles(0, side * 0.42, side * 0.52), HC.silver, METAL, "wedge")
+		-- Three broad feathers fanned out behind the shoulder, their faces to
+		-- the front and the back (a single blade seen edge-on read as a stick).
+		for i, feather in ipairs({ { 2.7, 0.56, 0.62, 0.58 }, { 2.3, 0.5, 0.2, 0.32 }, { 1.9, 0.44, -0.18, 0.06 } }) do
+			local length, width, rise, tilt = feather[1] * s, feather[2] * s, feather[3] * s, feather[4]
+			f.add("UpperTorso", "WingFeather" .. i, Vector3.new(length, width, 0.07 * s), CFrame.new(side * (c.X * 0.34 + length * 0.46), rise, c.Z / 2 + 0.34 * s + i * 0.03 * s) * CFrame.Angles(0, side * 0.32, side * tilt), i == 1 and HC.silver or steel, METAL)
+		end
 	end
 	belt(f, HC.leather, steel)
 	-- Arms: shoulder pads with wing motifs, forearm bracers and gauntlets;
@@ -2815,7 +2820,12 @@ local function armourHero(f, look)
 		local hips = f.parts.LowerTorso:FindFirstChild("BodyContour")
 		hips.MeshType, hips.Scale = Enum.MeshType.Brick, Vector3.one
 	end
-	local shelled = {}
+	local shelled, domes, trims, kneeCaps = {}, {}, {}, {}
+	for _, piece in ipairs(f.model:GetChildren()) do
+		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+		if fit and fit.Part0 and (piece.Name == "PauldronTrim" or piece.Name == "ShoulderTrim") then trims[fit.Part0.Name] = piece.Color end
+		if fit and fit.Part0 and piece.Name == "KneeCap" then kneeCaps[fit.Part0.Name] = piece.Color end
+	end
 	for _, piece in ipairs(f.model:GetChildren()) do
 		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
 		local host = fit and fit.Part0
@@ -2827,6 +2837,7 @@ local function armourHero(f, look)
 			local pad = f.add(host.Name, "Pauldron", Vector3.new(arm.X * 1.34, arm.Y * 0.74, arm.Z * 1.3), CFrame.new(0, arm.Y * 0.36, 0), piece.Color, piece.Material, "ball")
 			pad.Reflectance = piece.Reflectance
 			pad:SetAttribute("Tint", piece:GetAttribute("Tint"))
+			domes[host.Name] = pad
 			piece:Destroy()
 		elseif string.find(host.Name, "Foot") then
 			-- Boots are tall blocks over the whole foot, on a dark sole that shows
@@ -2860,6 +2871,24 @@ local function armourHero(f, look)
 				mesh.MeshType, mesh.Parent = Enum.MeshType.Head, piece
 				if not mesh.Name or mesh.Name == "SpecialMesh" then mesh.Name = "CostumeContour" end
 			end
+		end
+	end
+	-- Gold studs like the picture's: a diamond on the front of each domed pad
+	-- and on each knee that has no cap of its own, in the hero's trim colour.
+	for _, side in ipairs({ "Left", "Right" }) do
+		local sign = side == "Left" and -1 or 1
+		local accent = trims[side .. "UpperArm"] or kneeCaps[side .. "LowerLeg"] or HC.gold
+		local s = f.scale
+		local pad = domes[side .. "UpperArm"]
+		if pad then
+			local arm = f.parts[side .. "UpperArm"].Size
+			local at = Vector3.new(sign * arm.X * 0.49, arm.Y * 0.4, -arm.Z * 0.49)
+			f.add(side .. "UpperArm", "PadStud", Vector3.new(0.24, 0.24, 0.08) * s, CFrame.lookAt(at, at + Vector3.new(sign, 0, -1)) * CFrame.Angles(0, 0, math.pi / 4), accent, METAL)
+		end
+		if not kneeCaps[side .. "LowerLeg"] then
+			local thigh = f.sizes.upperLeg
+			local reach = math.min(thigh.X, thigh.Z, f.sizes.lowerLeg.X, f.sizes.lowerLeg.Z) * 0.42 + 0.03 * s
+			f.add(side .. "UpperLeg", "KneeStud", Vector3.new(0.26, 0.26, 0.08) * s, CFrame.new(0, -thigh.Y / 2, -reach) * CFrame.Angles(0, 0, math.pi / 4), accent, METAL)
 		end
 	end
 	f.model:SetAttribute("ArmourFinish", "chunky")
