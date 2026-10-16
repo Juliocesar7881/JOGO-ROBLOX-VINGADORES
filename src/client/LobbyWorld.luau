@@ -142,6 +142,11 @@ function LobbyWorld.new(ctx)
 		idleFrame += 1
 		local camera = workspace.CurrentCamera
 		local eye = camera and camera.CFrame.Position
+		-- The heroes notice a visitor: within 18 studs in front of one, its head
+		-- turns to them and it waves, once every 14 seconds at most.
+		local character = player and player.Character
+		local me = character and character:FindFirstChild("HumanoidRootPart")
+		local mePosition = me and me:IsA("BasePart") and me.Position
 		for index = #idleFigures, 1, -1 do
 			local figure = idleFigures[index]
 			if not figure.model.Parent then
@@ -149,12 +154,23 @@ function LobbyWorld.new(ctx)
 			elseif (idleFrame + index) % 2 == 0 and (not eye or (figure.rig.root.Position - eye).Magnitude < 150) then
 				local t = now + figure.phase
 				local joints = figure.rig.joints
-				Motion.Hero(joints, { breathe = math.sin(t * 1.7), style = "idle", t = t })
+				local turn
+				if mePosition and not figure.guard then
+					local rel = figure.rig.root.CFrame:Inverse() * mePosition
+					if Vector3.new(rel.X, 0, rel.Z).Magnitude < 18 and rel.Z < 4 then
+						turn = math.clamp(-math.atan2(rel.X, -rel.Z), -0.9, 0.9)
+						if not figure.wavedAt or now - figure.wavedAt > 14 then figure.wavedAt = now end
+					end
+				end
+				local waveAge = figure.wavedAt and now - figure.wavedAt or math.huge
+				local wave = waveAge < 2.6 and math.clamp(math.min(waveAge / 0.3, (2.6 - waveAge) / 0.4), 0, 1) or 0
+				Motion.Hero(joints, { breathe = math.sin(t * 1.7), style = "idle", t = t, wave = wave })
 				if figure.eyes == nil then figure.eyes = Motion.Eyes(figure.model) or false end
 				if figure.eyes then Motion.SetEyes(figure.eyes, Motion.BlinkClosed(t, figure.phase)) end
-				-- Heads turn slowly to one side, hold and come back.
+				-- Heads turn slowly to one side, hold and come back, or follow the visitor.
 				local glance = math.max(0, math.sin(t * 0.31)) ^ 0.5 * math.sin(t * 0.9) * 0.45
-				if joints.Neck then joints.Neck.Transform = CFrame.Angles(-0.02 * math.sin(t * 1.7), glance, 0) end
+				figure.look = (figure.look or 0) + ((turn or glance) - (figure.look or 0)) * 0.15
+				if joints.Neck then joints.Neck.Transform = CFrame.Angles(-0.02 * math.sin(t * 1.7), figure.look, 0) end
 				if figure.guard and joints.LeftShoulder and joints.RightShoulder then
 					-- Hands folded in front, as staff stand at a post.
 					joints.LeftShoulder.Transform = CFrame.Angles(0.5, 0, 0.3)

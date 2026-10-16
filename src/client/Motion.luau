@@ -260,6 +260,7 @@ function Motion.Hero(joints, pose)
 	local rShoulder, rRoll, rElbow = 0.08, 0.12, 0.18
 	local waist, neck = 0.03 * breathe, -0.02 * breathe
 	local twist, lift, shift = 0, 0, 0
+	local rElbowRoll = 0
 	local progress = math.clamp(pose.fireProgress or 0, 0, 1)
 	local recover = sin(progress * pi) * (1 - progress)
 	if style == "bow" then
@@ -322,6 +323,15 @@ function Motion.Hero(joints, pose)
 		lShoulder, lRoll, lElbow = 0.05 + 0.04 * breathe, -0.1 - 0.025 * breathe, 0.22 + 0.04 * breathe
 		rShoulder, rRoll, rElbow = 0.05 - 0.04 * breathe, 0.1 + 0.025 * breathe, 0.22 - 0.04 * breathe
 		shift = 0.045 * sin(t * 0.55) + 0.012 * sin(t * 1.3)
+		-- A wave (pose.wave 0..1, for a visitor walking up): the right arm goes up
+		-- and out, the forearm swings from side to side.
+		local wave = math.clamp(pose.wave or 0, 0, 1)
+		if wave > 0 then
+			rShoulder = rShoulder + (2.7 - rShoulder) * wave
+			rRoll = rRoll + (0.38 - rRoll) * wave
+			rElbow = rElbow + (0.35 - rElbow) * wave
+			rElbowRoll = 0.55 * sin(t * 10) * wave
+		end
 	else
 		-- Point and shoot: the right arm levels at the target and kicks back.
 		rShoulder, rRoll, rElbow = 0.65+0.75*prepare+0.95*fire, 0.12*(1-fire), 0.18+0.32*fire
@@ -347,7 +357,7 @@ function Motion.Hero(joints, pose)
 	set(joints, "LeftShoulder", angles(lShoulder, 0, lRoll))
 	set(joints, "RightShoulder", angles(rShoulder, 0, rRoll))
 	set(joints, "LeftElbow", angles(lElbow, 0, 0))
-	set(joints, "RightElbow", angles(rElbow, 0, 0))
+	set(joints, "RightElbow", angles(rElbow, 0, rElbowRoll))
 	set(joints, "Waist", angles(waist, twist, -shift * 0.7))
 	set(joints, "Neck", angles(neck, 0, 0))
 	-- A slight crouch when landing a heavy blow or bracing a cast; a flier's legs

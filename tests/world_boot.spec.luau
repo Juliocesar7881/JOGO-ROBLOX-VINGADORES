@@ -1252,12 +1252,19 @@ do
 	check(shut / frames > 0.02 and shut / frames < 0.07, "the eyes are shut 2-7% of the time, got " .. shut / frames)
 	check(longest <= 9, "one blink lasts at most 0.15 s, got " .. longest .. " frames")
 	check(together < shut * 0.5, "two neighbours do not blink in unison")
-	-- At ease, a lobby hero's weight shifts from foot to foot.
+	-- At ease, a lobby hero's weight shifts from foot to foot; greeting a
+	-- visitor, it raises its right arm and swings the forearm.
 	local rig = thor and Motion.Rig(thor)
 	if rig and rig.joints and rig.joints.Root then
 		Motion.Hero(rig.joints, { breathe = 0, style = "idle", t = 2.8 })
 		local roll = rig.joints.Root.Transform.UpVector.X
 		check(math.abs(roll) > 0.01, "an idle hero shifts its weight, lean " .. roll)
+		local rest = rig.joints.RightShoulder.Transform.UpVector.Y
+		Motion.Hero(rig.joints, { breathe = 0, style = "idle", t = 2.95, wave = 1 })
+		local raised = rig.joints.RightShoulder.Transform.UpVector.Y
+		local swing = rig.joints.RightElbow.Transform.UpVector.X
+		check(raised < -0.8 and rest > 0.9, "a waving hero raises its right arm overhead, up " .. raised .. " from " .. rest)
+		check(math.abs(swing) > 0.05, "a waving hero swings its forearm, " .. swing)
 		Motion.Reset(rig.joints)
 	end
 end
