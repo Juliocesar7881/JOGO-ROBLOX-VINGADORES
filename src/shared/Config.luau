@@ -30,6 +30,9 @@ return {
 	-- Text-free, authored comic art. Sources, prompts and delivery hashes:
 	-- assets/ui/illustrated/manifest.json. IDs are set only after Studio upload.
 	UiArt = {window=117794482905127,button=91879736431596,icons=76122046230704,observatory=93095245078402,chests=137153627143583,card=77752406707285,launch=113377652302568,afk=126038966446275},
+	-- The heroes' armour block and its painted finish (tools/gen_armor_assets.py,
+	-- uploaded through Studio's 3D importer). 0 keeps the classic chamfered blocks.
+	Art = { armorMesh = 0, armorTexture = 0 },
 	BaseHP = 100,
 	-- Match Gold each commander starts a run with (enemies drop the rest).
 	StartCash = 600,
