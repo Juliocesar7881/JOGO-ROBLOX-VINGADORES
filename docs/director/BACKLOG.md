@@ -388,4 +388,13 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M42.16 Vilões variados (pedido do dono 16/10): roupas por família (escritório, pedreiro, cozinheiro, gamer, turista, roqueiro; corredor, entregador, skatista; lutador, lenhador; cavaleiro de sucata, segurança; hélice, aviador), escolhidas pelo id do inimigo (todo jogador vê a mesma multidão), até 40 peças; sobrancelhas tortas e dente nos infectados; membros arredondados e placas moldadas.
 - [x] M42.17 Heróis robustos de armadura (pedido do dono 16/10 com imagem de referência: "não vai deixar meus heróis palito"): membros ~40% mais grossos, punhos grandes, botas altas com sola escura, peito mais largo, cabeça maior, postura com vão entre as pernas; cada segmento é uma casca lisa de junta a junta com junta escura no cotovelo e no joelho; ombreiras em domo. Malhas conferidas no Studio (Head só onde a peça é redonda; Torso é caixa reta).
 - [x] M42.18 Losangos dourados nas ombreiras em domo e nos joelhos (como na imagem do dono); asas do Homem-Asa com três penas largas, visíveis de frente e de costas.
+- [x] M42.19 Faixa escura do traje de baixo na cintura.
+- [x] M42.20 Segunda imagem do dono ("algo neste nível"): armadura em blocos chanfrados (malhas do avatar clássico que o Roblox instala em todo aparelho), manoplas e grevas maiores, frisos brilhantes na cor de cada herói; assinaturas em geometria brilhante (fogo, chapéu e círculo mágico, orbes e estilhaços, nuvens e raios, luas e capa estrelada); capas de herói abrem embaixo.
+- [x] M42.21 Toda ombreira com aro e losango dourados, friso dourado na gola, fivelas grandes.
+- [x] M42.22 Assinaturas vivas no cliente (glifos e luas orbitam, chamas tremulam, brilhos pulsam), sem emissores.
+- [x] M42.23 Cores sem lavar: metal colorido vira plástico brilhante, dourado rico.
+- [x] M42.24 Segunda camada dos cinco da imagem (casaco longo, saia longa, armadura branca, gema e frisos, correntes).
+- [x] M42.25 Reator, propulsores, raios do sol e estrela vermelha brilhando (heróis da primeira imagem e o inicial).
+- [x] M42.26 Poderes brilhantes de todos os heróis pulsam/tremulam; raio na mão da Deusa do Clima.
+- [ ] M42.27 Segunda camada (silhueta + detalhes) para os demais heróis, do mais visto ao menos visto, lobby < 4550 peças.
 
