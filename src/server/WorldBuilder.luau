@@ -3018,6 +3018,14 @@ end
 -- a spell circle, chaos shards, orbiting moons. Shapes, never particles: a
 -- battle of towers emits only at its portals and core (world_boot keeps it so).
 local HERO_SIGNATURE = {}
+-- Glowing power pieces of the costumes that pulse (or flicker, for flames).
+local LIVING_POWERS = {
+	FistGlow = "pulse", BlasterGlow = "pulse", ClubGlow = "pulse", MindGem = "pulse", PowerRing = "pulse", ConstructFist = "pulse",
+	ConstructKnuckles = "pulse", SpeedTrail = "pulse", MineLight = "pulse", PsychicBlade = "pulse", PsychicFlame = "flicker",
+	HeatEye = "pulse", TenRing = "pulse", CannonMuzzle = "pulse", ReactorCore = "pulse", GunMuzzle = "pulse", EnergyString = "pulse",
+	EnergyArrow = "pulse", SonarVisor = "pulse", CosmicSigil = "pulse", TridentProng = "pulse", TiaraGem = "pulse", CoreSeam = "pulse",
+	PhotonGauntlet = "pulse", StormSigil = "pulse", EmberSigil = "pulse", HammerRune = "pulse", ChestRingCore = "pulse",
+}
 -- Tags a piece for the client to move (Motion.Accents): orbit (rad/s) round
 -- an axis through a pivot in its host's frame, flicker or pulse.
 local function animate(part, kind, amount, pivot, axis)
@@ -3051,6 +3059,14 @@ local function seams(f, color, legs)
 		seam(f, name .. "LowerArm", "EnergySeam", side, color)
 		if legs then seam(f, name .. "LowerLeg", "EnergySeam", side, color) end
 	end
+end
+HERO_SIGNATURE.storm = function(f)
+	local spark, s = Color3.fromRGB(170, 230, 255), f.scale
+	bolt(f, "RightHand", "Lightning", { Vector3.new(-0.2, -0.3, -0.2) * s, Vector3.new(0.1, -0.7, -0.3) * s, Vector3.new(-0.12, -1.0, -0.2) * s, Vector3.new(0.18, -1.4, -0.3) * s }, 0.06 * s, spark)
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "Lightning" then animate(piece, "FxPulse", 0.7) end
+	end
+	seams(f, f.glow or spark, true)
 end
 HERO_SIGNATURE.ironman = function(f)
 	local cyan = Color3.fromRGB(80, 214, 255)
@@ -3645,6 +3661,14 @@ function Figure.Hero(parent, heroId, hero, scale)
 		end
 	end
 	armourHero(figure, look)
+	-- Every hero's glowing power pieces come alive (the client pulses or
+	-- flickers them): fists, blasters, rings, blades, flames, prongs, visors.
+	for _, piece in ipairs(figure.model:GetDescendants()) do
+		local living = piece:IsA("BasePart") and piece.Material == NEON and LIVING_POWERS[piece.Name]
+		if living and not piece:GetAttribute("FxPulse") and not piece:GetAttribute("FxFlicker") then
+			piece:SetAttribute(living == "flicker" and "FxFlicker" or "FxPulse", living == "flicker" and 0.12 or 0.3)
+		end
+	end
 	if HERO_SIGNATURE[heroId] then
 		HERO_SIGNATURE[heroId](figure)
 	elseif figure.glow and not look.matte then
