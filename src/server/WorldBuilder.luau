@@ -2843,7 +2843,16 @@ end
 -- near-white finish tinted by VertexColor, made by tools/gen_armor_assets.py
 -- and uploaded once (Config.Art). While their ids are 0 the classic chamfered
 -- blocks stay. Set by World.new from the config.
-local ARMOUR_ART = { mesh = 0, texture = 0 }
+local ARMOUR_ART = { mesh = 0, texture = 0, galaxy = 0, flames = 0, runes = 0 }
+-- A painted pattern on one face of a piece (tools/gen_hero_textures.py), when
+-- its id is set.
+local function pattern(part, key, face)
+	local id = ARMOUR_ART[key] or 0
+	if id == 0 or not part then return nil end
+	local decal = Instance.new("Decal")
+	decal.Name, decal.Texture, decal.Face, decal.Parent = "Pattern", "rbxassetid://" .. tostring(id), face, part
+	return decal
+end
 -- Last pass on a hero: every chamfered piece wears the armour's own block and
 -- finish in its own colour (after every recolour of the costume).
 local function paintArmour(f)
@@ -3394,6 +3403,17 @@ HERO_SIGNATURE.ghostrider = function(f)
 		if string.find(piece.Name, "^CrownFlame") then animate(piece, "FxFlicker", 0.12) end
 	end
 	chain(f, 5, Color3.fromRGB(196, 200, 208))
+	-- Dark leather pads and sleeves with flames painted on them, like the picture's.
+	if ARMOUR_ART.flames ~= 0 then
+		for _, name in ipairs({ "LeftUpperArm", "RightUpperArm" }) do f.parts[name].Color = Color3.fromRGB(46, 42, 50) end
+	end
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "SpikedPauldron" then
+			if ARMOUR_ART.flames ~= 0 then piece.Color = Color3.fromRGB(38, 34, 40) end
+			-- Every face: the pad is a wedge turned round for the left arm.
+			for _, face in ipairs({ Enum.NormalId.Top, Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }) do pattern(piece, "flames", face) end
+		end
+	end
 	for _, side in ipairs({ -1, 1 }) do
 		animate(f.add("Head", "CrownFlameBack", Vector3.new(0.4, 1.0, 0.4) * s, CFrame.new(side * h.X * 0.16, h.Y * 0.62, h.Z * 0.28) * CFrame.Angles(0.3, math.pi / 4, side * -0.3), fire, NEON), "FxFlicker", 0.12)
 		-- Flames licking up from each shoulder pad.
@@ -3441,7 +3461,7 @@ HERO_SIGNATURE.strange = function(f)
 			local z = back and p.Z * 0.56 or -p.Z * 0.56
 			local frame = CFrame.new(side * p.X * 0.27, -p.Y * 0.4, z) * CFrame.Angles(back and 0.16 or -0.1, 0, side * 0.06)
 			local length = (back and 2.3 or 1.9) * s
-			f.add("LowerTorso", "CoatPanel", Vector3.new(p.X * 0.46, length, 0.08 * s), frame * CFrame.new(0, -length / 2, 0), teal, FABRIC)
+			pattern(f.add("LowerTorso", "CoatPanel", Vector3.new(p.X * 0.46, length, 0.08 * s), frame * CFrame.new(0, -length / 2, 0), teal, FABRIC), "runes", back and Enum.NormalId.Back or Enum.NormalId.Front)
 			f.add("LowerTorso", "CoatEdge", Vector3.new(0.09 * s, length, 0.1 * s), frame * CFrame.new(side * p.X * 0.23, -length / 2, 0), gold, FABRIC)
 			if not back then
 				animate(f.add("LowerTorso", "CoatRune", Vector3.new(0.22, 0.22, 0.06) * s, frame * CFrame.new(0, -length * 0.55, -0.05 * s) * CFrame.Angles(0, 0, math.pi / 4), amber, NEON), "FxPulse", 0.35)
@@ -3523,6 +3543,9 @@ HERO_SIGNATURE.silversurfer = function(f)
 		if string.find(piece.Name, "^OrbitSegment") or piece.Name == "MoonOrb" then animate(piece, "FxOrbit", 0.6, Vector3.new(0, 0.92 * s, 0), Vector3.new(0, 1, 0)) end
 	end
 	cape(f, night, 3.4, Color3.fromRGB(200, 210, 220))
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "Cape" or piece.Name == "CapeHem" then pattern(piece, "galaxy", Enum.NormalId.Back) end
+	end
 	-- White armour over the cosmic suit (forearms, shins, boots), like the
 	-- picture's two-tone herald.
 	local white = Color3.fromRGB(232, 238, 248)
@@ -5744,6 +5767,7 @@ function World.new(catalog, openPanel, config, options)
 	-- The armour's own block and finish, once uploaded (0 keeps the classic chamfer).
 	local art = config and config.Art
 	ARMOUR_ART.mesh, ARMOUR_ART.texture = art and art.armorMesh or 0, art and art.armorTexture or 0
+	ARMOUR_ART.galaxy, ARMOUR_ART.flames, ARMOUR_ART.runes = art and art.galaxy or 0, art and art.flames or 0, art and art.runes or 0
 	-- Match places need the same portraits even when their lobby is removed.
 	local storage = game:GetService("ReplicatedStorage")
 	local previous = storage:FindFirstChild("DoomHeroPortraits")

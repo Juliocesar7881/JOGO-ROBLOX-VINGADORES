@@ -1402,6 +1402,20 @@ do
 	end
 	check(swapped >= 20 and tinted == swapped, "the armour wears its own block and finish in each piece's colour, got " .. swapped .. "/" .. tinted)
 	check(same >= swapped * 0.9, "the armour block keeps each piece's drawn size, got " .. same .. "/" .. swapped)
+	-- The painted patterns of the owner's picture: galaxy cape, flame pads, rune coat.
+	local savedPatterns = { art.galaxy, art.flames, art.runes }
+	art.galaxy, art.flames, art.runes = 31, 32, 33
+	local function patterns(id, texture)
+		local figure, n = WorldBuilder.Figure.Hero(holder, id, Catalog.Heroes[id], 1), 0
+		for _, d in ipairs(figure.model:GetDescendants()) do
+			if d:IsA("Decal") and d.Name == "Pattern" and d.Texture == "rbxassetid://" .. texture then n += 1 end
+		end
+		return n
+	end
+	check(patterns("silversurfer", 31) >= 2, "the cosmic surfer's cape is a galaxy")
+	check(patterns("ghostrider", 32) >= 8, "the flame rider's pads are painted with flames")
+	check(patterns("strange", 33) >= 2, "the mystic's coat carries gold runes")
+	art.galaxy, art.flames, art.runes = savedPatterns[1], savedPatterns[2], savedPatterns[3]
 	holder:Destroy()
 end
 

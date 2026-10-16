@@ -32,7 +32,9 @@ return {
 	UiArt = {window=117794482905127,button=91879736431596,icons=76122046230704,observatory=93095245078402,chests=137153627143583,card=77752406707285,launch=113377652302568,afk=126038966446275},
 	-- The heroes' armour block and its painted finish (tools/gen_armor_assets.py,
 	-- uploaded through Studio's 3D importer). 0 keeps the classic chamfered blocks.
-	Art = { armorMesh = 117802835003514, armorTexture = 117812857455019 },
+	-- Signature patterns (tools/gen_hero_textures.py): the Surfer's galaxy cape,
+	-- the Rider's flames, the Mystic's runes. 0 leaves the piece plain.
+	Art = { armorMesh = 117802835003514, armorTexture = 117812857455019, galaxy = 98885280567335, flames = 111186421217436, runes = 118425714210399 },
 	BaseHP = 100,
 	-- Match Gold each commander starts a run with (enemies drop the rest).
 	StartCash = 600,

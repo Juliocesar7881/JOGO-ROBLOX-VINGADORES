@@ -59,7 +59,9 @@ local World = fresh(SSS.DoomServer.WorldBuilder)
 -- The armour's own block and finish, as the game's World.new hands them over.
 local config = fresh(RS.DoomShared.Config)
 if config.Art and World.Figure and World.Figure.ArmourArt then
-	World.Figure.ArmourArt.mesh, World.Figure.ArmourArt.texture = config.Art.armorMesh or 0, config.Art.armorTexture or 0
+	local art = World.Figure.ArmourArt
+	art.mesh, art.texture = config.Art.armorMesh or 0, config.Art.armorTexture or 0
+	art.galaxy, art.flames, art.runes = config.Art.galaxy or 0, config.Art.flames or 0, config.Art.runes or 0
 end
 local towers = Instance.new("Folder")
 towers.Name, towers.Parent = "Towers", room
@@ -77,7 +79,7 @@ local width = math.min(#ids, perRow) * spacing
 -- Frame the whole group: the wider of its width and a tall hero's height.
 local distance = (math.max(width, 14) * 0.95 + (rows - 1) * 10) * __ZOOM__
 local look = Vector3.new(0, 3.2 + rows, ORIGIN_Z + (rows - 1) * rowGap * 0.5)
-local eye = look + Vector3.new(distance * math.sin(math.rad(35)), 4 + distance * 0.12, -distance * math.cos(math.rad(35)))
+local eye = look + Vector3.new(distance * math.sin(math.rad(35)), 4 + distance * 0.12, __SIDE__ * distance * math.cos(math.rad(35)))
 -- Studio's editor camera re-aims at its Focus; set both.
 workspace.CurrentCamera.CFrame = CFrame.lookAt(eye, look)
 workspace.CurrentCamera.Focus = CFrame.new(look)
@@ -169,6 +171,7 @@ def main() -> None:
     parser.add_argument("--spacing", type=float, default=9)
     parser.add_argument("--name", default=None)
     parser.add_argument("--keep", action="store_true", help="Leave the showroom in the place after the capture")
+    parser.add_argument("--behind", action="store_true", help="look at the figures from behind (capes, packs, wings)")
     parser.add_argument("--zoom", type=float, default=1.0, help="Camera distance factor; smaller is closer")
     parser.add_argument("--window-handle", type=int, default=0, help="Target a specific Studio window")
     args = parser.parse_args()
@@ -183,7 +186,8 @@ def main() -> None:
         code = SETUP + ENEMIES.replace("__BOSSES__", "true" if args.kind == "bosses" else "false").replace(
             "__ROWGAP__", "22" if args.kind == "bosses" else "12")
     code = (code.replace("__IDS__", lua_list(args.ids)).replace("__PERROW__", str(args.per_row))
-            .replace("__SPACING__", str(args.spacing)).replace("__ZOOM__", str(args.zoom)).replace("__MARKER__", marker))
+            .replace("__SPACING__", str(args.spacing)).replace("__ZOOM__", str(args.zoom)).replace("__MARKER__", marker)
+            .replace("__SIDE__", "1" if args.behind else "-1"))
     studio_sync.run_command(f'print("{marker}_MODE", game:GetService("RunService"):IsEdit())', 900)
     if not studio_sync.wait_for(f"{marker}_MODE", started, 30).endswith("true"):
         raise SystemExit("Studio is in a playtest: press Stop first.")

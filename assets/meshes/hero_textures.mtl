@@ -1,0 +1,20 @@
+newmtl galaxy
+Ka 1 1 1
+Kd 1 1 1
+d 1
+illum 1
+map_Kd galaxy.png
+
+newmtl flames
+Ka 1 1 1
+Kd 1 1 1
+d 1
+illum 1
+map_Kd flames.png
+
+newmtl runes
+Ka 1 1 1
+Kd 1 1 1
+d 1
+illum 1
+map_Kd runes.png
