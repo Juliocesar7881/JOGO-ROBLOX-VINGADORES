@@ -529,6 +529,13 @@ function Effects:_turnTowers(dt, onlyModel)
 						breathe = idle and math.sin(self.clock * 2.1 + record.breath) or 0, stunned = stunned, style = record.poseStyle,
 						count = record.fireCount or 0, t = self.clock,
 					})
+					-- A hero with nothing to shoot for a few seconds glances about, as
+					-- the lobby's heroes do; the first shot snaps the head back.
+					local neck = record.rig.Neck
+					if neck and idle and not (stunned or casting or hopping) and (not record.firedAt or self.clock - record.firedAt > 3) then
+						local t = self.clock * 0.9 + record.breath
+						neck.Transform = neck.Transform * CFrame.Angles(0, math.max(0, math.sin(t * 0.35)) ^ 0.5 * math.sin(t) * 0.4, 0)
+					end
 				end
 			end
 			local wobble = stunned and math.sin(self.clock * 6) * 0.1 or 0
