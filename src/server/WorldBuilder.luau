@@ -3520,7 +3520,13 @@ function Figure.Hero(parent, heroId, hero, scale)
 		end
 	end
 	armourHero(figure, look)
-	if HERO_SIGNATURE[heroId] then HERO_SIGNATURE[heroId](figure) end
+	if HERO_SIGNATURE[heroId] then
+		HERO_SIGNATURE[heroId](figure)
+	elseif figure.glow and not look.matte then
+		-- Every other armoured hero: glowing seams down the gauntlets and
+		-- greaves in its own colour, like the pictures' armour.
+		seams(figure, figure.glow, true)
+	end
 	if not figure.model:FindFirstChild("Muzzle", true) then muzzle(figure, "RightHand", Vector3.new(0, -figure.sizes.hand.Y / 2 - 0.1 * figure.scale, 0)) end
 	return figure
 end
