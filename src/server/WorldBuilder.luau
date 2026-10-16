@@ -3026,6 +3026,7 @@ local LIVING_POWERS = {
 	EnergyArrow = "pulse", SonarVisor = "pulse", CosmicSigil = "pulse", TridentProng = "pulse", TiaraGem = "pulse", CoreSeam = "pulse",
 	PhotonGauntlet = "pulse", StormSigil = "pulse", EmberSigil = "pulse", HammerRune = "pulse", ChestRingCore = "pulse",
 	MagmaVein = "pulse", MagmaCrack = "pulse", VeinCore = "pulse", GlowBud = "pulse",
+	Lasso = "pulse", BoltTop = "pulse", BoltBottom = "pulse", TideEmblem = "pulse", CircletGem = "pulse", ChestRing = "pulse",
 }
 -- Tags a piece for the client to move (Motion.Accents): orbit (rad/s) round
 -- an axis through a pivot in its host's frame, flicker or pulse.
