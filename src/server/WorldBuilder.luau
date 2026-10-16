@@ -2840,6 +2840,9 @@ Figure.Chamfer = chamfer
 -- girth: gauntlets and greaves are bulkier than the upper arm and the thigh,
 -- like the pictures' armour.
 local ARMOUR_SEGMENTS = { UpperArm = { 0.94, 0.03, 1 }, LowerArm = { 0.95, -0.025, 1.14 }, UpperLeg = { 0.94, 0.03, 1.02 }, LowerLeg = { 0.95, -0.025, 1.12 } }
+-- The shoulder pieces that become the armour's pads (a spiked, icy or rocky
+-- pad keeps its own shape).
+local PADS = { Pauldron = true, ShoulderPad = true, ShoulderGuard = true }
 local function armourHero(f, look)
 	if look.matte then return end
 	for _, side in ipairs({ "Left", "Right" }) do
@@ -2874,7 +2877,7 @@ local function armourHero(f, look)
 		local host = fit and fit.Part0
 		if not host or piece.Material == NEON then continue end
 		local limb = string.find(host.Name, "Arm") or string.find(host.Name, "Leg") or string.find(host.Name, "Hand") or string.find(host.Name, "Foot")
-		if piece.Name == "Pauldron" and piece:IsA("WedgePart") then
+		if PADS[piece.Name] and string.find(host.Name, "UpperArm") and not pads[host.Name] then
 			-- A big chamfered block over the shoulder: its top stands above the
 			-- shoulder line and its sides overhang the arm.
 			local arm = host.Size
@@ -2923,6 +2926,13 @@ local function armourHero(f, look)
 				and math.min(piece.Size.X, piece.Size.Y, piece.Size.Z) >= 0.12 * f.scale then
 				chamfer(mesh or Instance.new("SpecialMesh"), piece.Size).Parent = piece
 			end
+		elseif (piece.Name == "Buckle" or piece.Name == "BeltBuckle") and host.Name == "LowerTorso" then
+			-- A big buckle, like the pictures' belts.
+			local front = fit.C0.Position
+			piece.Size = Vector3.new(0.6, 0.44, 0.12) * f.scale
+			fit.C0 = CFrame.new(front.X, front.Y, -host.Size.Z * 0.56 - 0.04 * f.scale)
+			piece.CFrame = host.CFrame * fit.C0
+			chamfer(piece:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh"), piece.Size).Parent = piece
 		elseif (host.Name == "UpperTorso" or host.Name == "LowerTorso") and piece:IsA("Part") and piece.Shape == Enum.PartType.Block then
 			-- Chest plates, belts and packs are chamfered blocks.
 			local mesh = piece:FindFirstChildOfClass("SpecialMesh")
@@ -2967,12 +2977,15 @@ local function armourHero(f, look)
 		end
 		local c = f.sizes.chest
 		f.add("UpperTorso", "ChestTrim", Vector3.new(c.X * 1.01, 0.08 * s, c.Z * 1.05), CFrame.new(0, -c.Y * 0.18, 0), glow, NEON)
+		-- And a gold collar line along the plate's top edge, framing the chest.
+		local collar = trims.LeftUpperArm or trims.RightUpperArm or HC.gold
+		f.add("UpperTorso", "CollarLine", Vector3.new(c.X * 0.86, 0.1 * s, 0.06 * s), CFrame.new(0, c.Y * 0.43, -c.Z * 0.51 - 0.03 * s), collar, METAL)
 	end
 	-- Gold studs like the pictures': a diamond on the front of each shoulder
 	-- pad and on each knee that has no cap of its own, in the hero's trim colour.
 	for _, side in ipairs({ "Left", "Right" }) do
 		local sign = side == "Left" and -1 or 1
-		local accent = trims[side .. "UpperArm"] or kneeCaps[side .. "LowerLeg"] or HC.gold
+		local accent = trims[side .. "UpperArm"] or HC.gold
 		local s = f.scale
 		if pads[side .. "UpperArm"] then
 			local arm = f.parts[side .. "UpperArm"].Size
