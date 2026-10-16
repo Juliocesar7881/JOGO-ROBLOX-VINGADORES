@@ -2999,6 +2999,61 @@ end
 local function bolt(f, host, name, points, thickness, color)
 	for i = 1, #points - 1 do f.rod(host, name, points[i], points[i + 1], thickness, color, NEON) end
 end
+-- A glowing seam down the outer side of a limb segment's armour.
+local function seam(f, host, name, side, color)
+	local size, girth = f.parts[host].Size, 1
+	for _, piece in ipairs(f.model:GetChildren()) do
+		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+		if fit and fit.Part0 and fit.Part0.Name == host and piece.Material ~= NEON and piece.Size.Y > size.Y * 0.5 then girth = math.max(girth, piece.Size.X / size.X) end
+	end
+	local contour = f.parts[host]:FindFirstChild("BodyContour")
+	if contour and contour.MeshType == Enum.MeshType.FileMesh then girth = math.max(girth, contour.Scale.X / size.X) end
+	return f.add(host, name, Vector3.new(0.08 * f.scale, size.Y * 0.66, 0.08 * f.scale), CFrame.new(side * (size.X * girth / 2 + 0.02 * f.scale), 0, -size.Z * 0.16), color, NEON)
+end
+-- The armour heroes: their tech glows along the arms and legs.
+local function seams(f, color, legs)
+	for _, side in ipairs({ -1, 1 }) do
+		local name = side < 0 and "Left" or "Right"
+		seam(f, name .. "LowerArm", "EnergySeam", side, color)
+		if legs then seam(f, name .. "LowerLeg", "EnergySeam", side, color) end
+	end
+end
+HERO_SIGNATURE.ironman = function(f)
+	local cyan = Color3.fromRGB(80, 214, 255)
+	seams(f, cyan, true)
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "RepulsorCore" or piece.Name == "ThrusterSole" or piece.Name == "EnergyLineL" or piece.Name == "EnergyLineR" then piece.Color, piece.Material = cyan, NEON end
+	end
+end
+HERO_SIGNATURE.captain = function(f)
+	-- A glowing ring round the shield's rim, just behind it.
+	local shield = f.model:FindFirstChild("Shield")
+	local fit = shield and shield:FindFirstChild("Fit")
+	if fit then
+		local base = fit.C0 * CFrame.Angles(0, -math.pi / 2, 0)
+		f.disc(fit.Part0.Name, "ShieldGlow", shield.Size.Y * 1.07, 0.05 * f.scale, base * CFrame.new(0, 0, shield.Size.X / 2 + 0.04 * f.scale), Color3.fromRGB(80, 230, 220), NEON)
+	end
+end
+HERO_SIGNATURE.panther = function(f)
+	-- Vibranium energy: violet lines down the arms and legs, glowing claws.
+	local violet = Color3.fromRGB(186, 104, 255)
+	seams(f, violet, true)
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "Claw" or piece.Name == "ChestGem" then piece.Color, piece.Material = violet, NEON end
+	end
+end
+HERO_SIGNATURE.widow = function(f)
+	-- Electric bracelets and a glowing hourglass.
+	local shock = Color3.fromRGB(70, 196, 255)
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "Bracelet" then piece.Color, piece.Material = shock, NEON end
+		if piece.Name == "WidowInsignia" then piece.Color, piece.Material = Color3.fromRGB(255, 50, 70), NEON end
+	end
+	seams(f, shock, false)
+end
+HERO_SIGNATURE.hawkeye = function(f)
+	seams(f, Color3.fromRGB(100, 255, 120), false)
+end
 HERO_SIGNATURE.ghostrider = function(f)
 	local s, h = f.scale, f.parts.Head.Size
 	local fire, flare = Color3.fromRGB(255, 118, 28), Color3.fromRGB(255, 214, 84)
@@ -3045,8 +3100,9 @@ HERO_SIGNATURE.strange = function(f)
 	cylinderAt(f, "Head", "HatBand", h.X * 0.87, 0.12 * s, CFrame.new(0, h.Y * 0.56, 0), gold, METAL)
 	f.add("Head", "HatGem", Vector3.new(0.26, 0.26, 0.08) * s, CFrame.new(0, h.Y * 0.62, -h.X * 0.45) * CFrame.Angles(0, 0, math.pi / 4), amber, NEON)
 	-- The spell circle at his left hand is a glowing disc behind its glyphs.
-	f.disc("LeftHand", "MagicCircle", 1.56 * s, 0.04 * s, CFrame.new(0, -0.42 * s, -0.5 * s), amber, NEON).Transparency = 0.62
-	f.disc("LeftHand", "MagicCore", 0.5 * s, 0.05 * s, CFrame.new(0, -0.42 * s, -0.53 * s), gold, NEON).Transparency = 0.2
+	-- (Off the glyphs' planes: coplanar faces flicker.)
+	f.disc("LeftHand", "MagicCircle", 1.56 * s, 0.03 * s, CFrame.new(0, -0.42 * s, -0.463 * s), amber, NEON).Transparency = 0.62
+	f.disc("LeftHand", "MagicCore", 0.5 * s, 0.05 * s, CFrame.new(0, -0.42 * s, -0.533 * s), gold, NEON).Transparency = 0.2
 end
 HERO_SIGNATURE.wanda = function(f)
 	local s = f.scale
@@ -5720,7 +5776,8 @@ local function buildShopStand(lobby, x, z, shopKind, shopKey, displayName, openP
 	-- with what it gives, and the Robux purchase opens at once (the server
 	-- prompts it, init.server). The hero and Gold stands open their list.
 	local offer = shopKind == "pass"
-	local plaque = wallSign(model,"ProductPlaque",CFrame.new(x,y+0.85,z-3.7),V(6.6,1.3,0.15),displayName,offer and "COMPRAR" or "VER LOJA",tint)
+	-- The plaque stands clear of the ring road's light strips at its feet.
+	local plaque = wallSign(model,"ProductPlaque",CFrame.new(x,y+1.2,z-3.7),V(6.6,1.3,0.15),displayName,offer and "COMPRAR" or "VER LOJA",tint)
 	local nameTag = plaque:FindFirstChild("Title",true)
 	nameTag:SetAttribute("LobbyTextPT",displayName); nameTag:SetAttribute("LobbyTextEN",displayEN or displayName)
 	local hint=plaque:FindFirstChild("Subtitle",true)
