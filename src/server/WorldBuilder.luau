@@ -684,8 +684,24 @@ local function cape(figure, color, length, trim)
 	local chest = figure.parts.UpperTorso.Size
 	local s = figure.scale
 	local long = length or 3.4
-	figure.add("UpperTorso", "Cape", Vector3.new(chest.X * 0.96, long * s, 0.1 * s), CFrame.new(0, chest.Y / 2 - long * s / 2 + 0.05 * s, chest.Z / 2 + 0.08 * s) * CFrame.Angles(-0.06, 0, 0), color, FABRIC)
-	if trim then figure.add("UpperTorso", "CapeCollar", Vector3.new(chest.X * 0.7, 0.34 * s, 0.4 * s), CFrame.new(0, chest.Y / 2 + 0.05 * s, chest.Z / 2 - 0.05 * s), trim, FABRIC) end
+	if not figure.model:GetAttribute("HeroId") then
+		-- A villain's cape stays one board (a boss's illusion lives in the crowd's 40 parts).
+		figure.add("UpperTorso", "Cape", Vector3.new(chest.X * 0.96, long * s, 0.1 * s), CFrame.new(0, chest.Y / 2 - long * s / 2 + 0.05 * s, chest.Z / 2 + 0.08 * s) * CFrame.Angles(-0.06, 0, 0), color, FABRIC)
+		if trim then figure.add("UpperTorso", "CapeCollar", Vector3.new(chest.X * 0.7, 0.34 * s, 0.4 * s), CFrame.new(0, chest.Y / 2 + 0.05 * s, chest.Z / 2 - 0.05 * s), trim, FABRIC) end
+		return
+	end
+	-- A hero's cape hangs from the shoulders and flares out below the waist, a
+	-- trim along its hem (owner's pictures, 16/10: a flat board read as a sign).
+	local upper = long * 0.55
+	figure.add("UpperTorso", "Cape", Vector3.new(chest.X * 0.96, upper * s, 0.1 * s), CFrame.new(0, chest.Y / 2 - upper * s / 2 + 0.05 * s, chest.Z / 2 + 0.08 * s) * CFrame.Angles(-0.06, 0, 0), color, FABRIC)
+	local hemTop = chest.Y / 2 + 0.05 * s - upper * s
+	local hem = long * 0.5 * s
+	local flare = CFrame.new(0, hemTop, chest.Z / 2 + 0.08 * s + upper * s * 0.06) * CFrame.Angles(-0.2, 0, 0)
+	figure.add("UpperTorso", "CapeHem", Vector3.new(chest.X * 1.24, hem, 0.1 * s), flare * CFrame.new(0, -hem / 2 + 0.04 * s, 0), color, FABRIC)
+	if trim then
+		figure.add("UpperTorso", "CapeCollar", Vector3.new(chest.X * 0.7, 0.34 * s, 0.4 * s), CFrame.new(0, chest.Y / 2 + 0.05 * s, chest.Z / 2 - 0.05 * s), trim, FABRIC)
+		figure.add("UpperTorso", "CapeTrim", Vector3.new(chest.X * 1.26, 0.12 * s, 0.13 * s), flare * CFrame.new(0, -hem + 0.06 * s, 0), trim, METAL)
+	end
 end
 
 local function belt(figure, color, buckle)
@@ -2971,6 +2987,127 @@ local function armourHero(f, look)
 	f.model:SetAttribute("ArmourFinish", "chunky")
 end
 
+-- Signatures (owner, 16/10, with a picture of five heroes "neste nível"): each
+-- hero's power shows on the figure itself in glowing shapes, fire, lightning,
+-- a spell circle, chaos shards, orbiting moons. Shapes, never particles: a
+-- battle of towers emits only at its portals and core (world_boot keeps it so).
+local HERO_SIGNATURE = {}
+local function cylinderAt(f, host, name, diameter, height, offset, color, surface)
+	return f.add(host, name, Vector3.new(height, diameter, diameter), offset * CFrame.Angles(0, 0, math.pi / 2), color, surface, Enum.PartType.Cylinder)
+end
+-- A zigzag bolt of glowing segments through the given points (host frame).
+local function bolt(f, host, name, points, thickness, color)
+	for i = 1, #points - 1 do f.rod(host, name, points[i], points[i + 1], thickness, color, NEON) end
+end
+HERO_SIGNATURE.ghostrider = function(f)
+	local s, h = f.scale, f.parts.Head.Size
+	local fire, flare = Color3.fromRGB(255, 118, 28), Color3.fromRGB(255, 214, 84)
+	-- A crown of fire: the three tongues burn orange and gold, taller, with two
+	-- more behind them.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		local i = tonumber(string.match(piece.Name, "^CrownFlame(%-?%d)$"))
+		if i then
+			piece.Size = Vector3.new(0.46 * s, (1.5 - math.abs(i) * 0.34) * s, 0.46 * s)
+			piece.Color, piece.Material, piece.Transparency = i == 0 and flare or fire, NEON, 0.05
+			local fit = piece:FindFirstChild("Fit")
+			fit.C0 = CFrame.new(i * h.X * 0.26, h.Y * 0.5 + piece.Size.Y * 0.42, 0.04 * s) * CFrame.Angles(0, math.pi / 4, i * -0.18)
+			piece.CFrame = f.parts.Head.CFrame * fit.C0
+		end
+	end
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "CrownFlameBack", Vector3.new(0.4, 1.0, 0.4) * s, CFrame.new(side * h.X * 0.16, h.Y * 0.62, h.Z * 0.28) * CFrame.Angles(0.3, math.pi / 4, side * -0.3), fire, NEON)
+		-- Flames licking up from each shoulder pad.
+		local arm = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local a = f.parts[arm].Size
+		for i, tongue in ipairs({ { 0.14, 0.9, flare }, { -0.2, 0.66, fire } }) do
+			f.add(arm, "PadFlame", Vector3.new(0.28 * s, tongue[2] * s, 0.28 * s), CFrame.new(side * a.X * tongue[1], a.Y * 0.62 + tongue[2] * s * 0.32, 0) * CFrame.Angles(0, math.pi / 4, side * (0.3 + i * 0.25)), tongue[3], NEON)
+		end
+		-- And from each boot's heel.
+		local foot = side < 0 and "LeftFoot" or "RightFoot"
+		local b = f.parts[foot].Size
+		f.add(foot, "HeelFlame", Vector3.new(0.18, 0.5, 0.18) * s, CFrame.new(side * b.X * 0.3, b.Y * 0.6, b.Z * 0.42) * CFrame.Angles(0.3, math.pi / 4, side * 0.4), fire, NEON)
+	end
+end
+HERO_SIGNATURE.strange = function(f)
+	local s, h = f.scale, f.parts.Head.Size
+	local gold, amber = HC.gold, Color3.fromRGB(255, 200, 90)
+	local teal = Color3.fromRGB(30, 150, 140)
+	-- A wizard's hat: a wide round brim, a cone of three tiers bending back
+	-- and a gold band with a glowing gem.
+	for _, name in ipairs({ "HatBrim", "HatCone" }) do
+		local old = f.model:FindFirstChild(name)
+		if old then teal = old.Color; old:Destroy() end
+	end
+	cylinderAt(f, "Head", "HatBrim", h.X * 1.8, 0.1 * s, CFrame.new(0, h.Y * 0.47, 0), teal, FABRIC)
+	f.add("Head", "HatCone", Vector3.new(h.X * 0.86, h.Y * 0.74, h.X * 0.86), CFrame.new(0, h.Y * 0.62, 0), teal, FABRIC, "ball")
+	f.add("Head", "HatCone", Vector3.new(h.X * 0.48, h.Y * 0.72, h.X * 0.48), CFrame.new(0, h.Y * 0.98, h.Z * 0.1) * CFrame.Angles(0.34, 0, 0), teal, FABRIC, "ball")
+	f.add("Head", "HatTip", Vector3.new(0.24, 0.24, 0.24) * s, CFrame.new(0, h.Y * 1.3, h.Z * 0.3), teal, FABRIC, "ball")
+	cylinderAt(f, "Head", "HatBand", h.X * 0.87, 0.12 * s, CFrame.new(0, h.Y * 0.56, 0), gold, METAL)
+	f.add("Head", "HatGem", Vector3.new(0.26, 0.26, 0.08) * s, CFrame.new(0, h.Y * 0.62, -h.X * 0.45) * CFrame.Angles(0, 0, math.pi / 4), amber, NEON)
+	-- The spell circle at his left hand is a glowing disc behind its glyphs.
+	f.disc("LeftHand", "MagicCircle", 1.56 * s, 0.04 * s, CFrame.new(0, -0.42 * s, -0.5 * s), amber, NEON).Transparency = 0.62
+	f.disc("LeftHand", "MagicCore", 0.5 * s, 0.05 * s, CFrame.new(0, -0.42 * s, -0.53 * s), gold, NEON).Transparency = 0.2
+end
+HERO_SIGNATURE.wanda = function(f)
+	local s = f.scale
+	local chaos, deep = Color3.fromRGB(255, 56, 190), Color3.fromRGB(176, 30, 130)
+	-- Chaos magic is magenta: the orbs, the gems and shards floating round
+	-- each hand.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "ChaosOrb" or piece.Name == "BrowGem" or piece.Name == "BodiceGem" then piece.Color = chaos end
+	end
+	for _, side in ipairs({ -1, 1 }) do
+		local hand = side < 0 and "LeftHand" or "RightHand"
+		for i, shard in ipairs({ { 0.5, -0.2 }, { -0.42, -0.62 }, { 0.36, -0.95 } }) do
+			f.add(hand, "ChaosShard", Vector3.new(0.18, 0.28, 0.06) * s, CFrame.new(side * shard[1] * s, shard[2] * s, -0.3 * s) * CFrame.Angles(0, i, math.pi / 4), chaos, NEON)
+		end
+	end
+	-- A flared skirt from the belt, front, back and sides.
+	local p = f.parts.LowerTorso.Size
+	for i = 0, 3 do
+		local yaw = i * math.pi / 2
+		local wide = (i % 2 == 0) and p.X * 0.96 or p.Z * 0.9
+		local reach = (i % 2 == 0) and p.Z * 0.5 or p.X * 0.5
+		f.add("LowerTorso", "SkirtFlare", Vector3.new(wide, 0.95 * s, 0.1 * s), CFrame.Angles(0, yaw, 0) * CFrame.new(0, -p.Y * 0.5 - 0.3 * s, -reach - 0.12 * s) * CFrame.Angles(0.32, 0, 0), deep, FABRIC)
+	end
+end
+HERO_SIGNATURE.thor = function(f)
+	local s = f.scale
+	local spark, cloud = Color3.fromRGB(140, 220, 255), Color3.fromRGB(244, 248, 255)
+	for _, side in ipairs({ -1, 1 }) do
+		local arm = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local a = f.parts[arm].Size
+		-- Storm-cloud pads: two white puffs on each.
+		f.add(arm, "CloudPuff", Vector3.new(0.7, 0.56, 0.7) * s, CFrame.new(side * a.X * 0.34, a.Y * 0.62, -a.Z * 0.12), cloud, FABRIC, "ball")
+		f.add(arm, "CloudPuff", Vector3.new(0.56, 0.46, 0.56) * s, CFrame.new(side * a.X * 0.62, a.Y * 0.5, a.Z * 0.18), cloud, FABRIC, "ball")
+		-- Lightning crawling down each gauntlet.
+		local forearm = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		local l = f.parts[forearm].Size
+		local x = side * l.X * 0.66
+		bolt(f, forearm, "Lightning", { Vector3.new(x, l.Y * 0.42, -l.Z * 0.1), Vector3.new(x + side * 0.16 * s, l.Y * 0.12, l.Z * 0.12), Vector3.new(x, -l.Y * 0.14, -l.Z * 0.14), Vector3.new(x + side * 0.2 * s, -l.Y * 0.46, 0) }, 0.06 * s, spark)
+	end
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "PadStud" then piece.Color, piece.Material = spark, NEON end
+	end
+	-- And arcing round the hammer's head.
+	bolt(f, "RightHand", "Lightning", { Vector3.new(-0.42, 1.0, -0.1) * s, Vector3.new(-0.2, 1.24, -0.32) * s, Vector3.new(0.1, 1.08, -0.3) * s, Vector3.new(0.4, 1.4, -0.12) * s }, 0.05 * s, spark)
+end
+HERO_SIGNATURE.silversurfer = function(f)
+	local s, c = f.scale, f.sizes.chest
+	local cosmic, starlight, night = Color3.fromRGB(100, 180, 255), Color3.fromRGB(255, 230, 140), Color3.fromRGB(58, 34, 132)
+	-- Three moons on the orbit, and a cape of the night sky with stars on it.
+	local orbitRadius = 1.52 * s
+	for i, tint in ipairs({ cosmic, Color3.fromRGB(196, 120, 255) }) do
+		local a = i * math.pi * 2 / 3
+		f.add("UpperTorso", "MoonOrb", Vector3.new(0.3, 0.3, 0.3) * s, CFrame.new(math.cos(a) * orbitRadius, 0.92 * s, math.sin(a) * orbitRadius), tint, NEON, "ball")
+	end
+	cape(f, night, 3.4, Color3.fromRGB(200, 210, 220))
+	for i, star in ipairs({ { -0.3, -0.5 }, { 0.22, -0.95 }, { -0.12, -1.45 }, { 0.36, -1.85 }, { -0.4, -2.2 } }) do
+		local depth = c.Z / 2 + 0.16 * s - star[2] * s * 0.08 + (star[2] < -1.6 and 0.2 * s or 0)
+		f.add("UpperTorso", "CapeStar", Vector3.new(0.14, 0.14, 0.06) * s, CFrame.new(c.X * star[1], c.Y / 2 + star[2] * s, depth) * CFrame.Angles(0, 0, math.pi / 4), i % 2 == 0 and starlight or cosmic, NEON)
+	end
+end
+
 -- Masked and helmeted heroes (owner, 15/10: refine the faces). A visor or a
 -- jaw plate was a flat bar that stood out past the round head in a
 -- three-quarter view: each now wraps the front of the head, a band whose back
@@ -3327,6 +3464,7 @@ function Figure.Hero(parent, heroId, hero, scale)
 		end
 	end
 	armourHero(figure, look)
+	if HERO_SIGNATURE[heroId] then HERO_SIGNATURE[heroId](figure) end
 	if not figure.model:FindFirstChild("Muzzle", true) then muzzle(figure, "RightHand", Vector3.new(0, -figure.sizes.hand.Y / 2 - 0.1 * figure.scale, 0)) end
 	return figure
 end
