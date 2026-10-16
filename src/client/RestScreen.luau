@@ -73,4 +73,17 @@ function RestScreen.new(UI, parent, T, Catalog, size, kind, callbacks)
 	return {root=root,Update=update,kind=kind,sizeKey=tostring(w)..":"..tostring(h)}
 end
 
+-- The cover shown during a trip to (kind) or from (nil) an AFK farm: the same
+-- composition the destination's loader draws, so nothing else flashes between.
+function RestScreen.TravelCover(T, Catalog, kind, size)
+	local farm = kind and Catalog.Afk[kind] and {kind = kind, title = Catalog.Upper(T(Catalog.Afk[kind].name.pt, Catalog.Afk[kind].name.en))} or nil
+	local gui = Instance.new("ScreenGui")
+	gui.Name, gui.IgnoreGuiInset, gui.ResetOnSpawn = "DoomTravelCover", true, false
+	local canvas = Instance.new("Frame")
+	canvas.Name, canvas.Size, canvas.BackgroundColor3, canvas.BorderSizePixel = "Cover", UDim2.fromScale(1, 1), Color3.fromRGB(5, 13, 29), 0
+	canvas.Parent = gui
+	Art.Loading(canvas, T, size, nil, farm)
+	return gui
+end
+
 return RestScreen

@@ -40,7 +40,9 @@ def literals(source: str):
 
 def hits() -> list[str]:
     terms = json.loads((ROOT / "tests" / "ip_blocklist.json").read_text(encoding="utf-8"))["terms"]
-    patterns = [(term, re.compile(r"(?<![\w])" + re.escape(term) + r"(?![\w])")) for term in sorted(set(terms), key=len, reverse=True)]
+    # Signs and titles are written in capitals: "LATVERIA" is as forbidden as "Latveria".
+    variants = set(terms) | {term.upper() for term in terms}
+    patterns = [(term, re.compile(r"(?<![\w])" + re.escape(term) + r"(?![\w])")) for term in sorted(variants, key=len, reverse=True)]
     found = []
     for path in sorted((ROOT / "src").rglob("*.luau")):
         source = path.read_text(encoding="utf-8-sig")

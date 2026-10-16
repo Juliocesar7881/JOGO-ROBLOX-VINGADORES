@@ -9,6 +9,7 @@ local Stubs = __STUBS__
 local v3 = Stubs.v3
 
 local Catalog = __CATALOG__
+local Config = __CONFIG__
 local WorldBuilder = __WORLD__
 local Motion = __MOTION__
 local InteractionHud = __INTERACTION__
@@ -61,7 +62,7 @@ print("--- lobby ---")
 local panels = {}
 local ok, world = pcall(WorldBuilder.new, Catalog, function(player, panel, data)
 	table.insert(panels, { player=player,panel = panel, data = data or {} })
-end)
+end, Config)
 check(ok, "WorldBuilder.new builds the lobby: " .. tostring(world))
 if not ok then
 	print("FAIL match: world could not be constructed")
@@ -580,7 +581,11 @@ do
 		local surface=model.MapBillboard.MapBoard
 		local picture=surface.MapPicture
 		check(picture and picture:IsA("ViewportFrame") and picture.CurrentCamera==picture.PictureCamera,modeId..": map board contains a rendered picture with its own camera")
-		check(picture.MapScene:FindFirstChild("Road")~=nil,modeId..": picture includes the map route")
+		if surface:FindFirstChild("MapPhoto") then
+			check(picture.Visible==false and #picture.MapScene:GetChildren()==0,modeId..": a photographed map builds no hidden diorama")
+		else
+			check(picture.MapScene:FindFirstChild("Road")~=nil,modeId..": picture includes the map route")
+		end
 		check(surface.MapTitle:GetAttribute("LobbyTextEN")==Catalog.Maps[model:GetAttribute("MapId")].name.en,modeId..": picture identifies the real destination")
 		for slot=1,3 do
 			local id=slot==1 and modeId or modeId..":"..slot
@@ -832,7 +837,9 @@ do
 				if #panels ~= before + 1 or not opened then
 					table.insert(wrong, model.Name .. ":near-refused")
 				else
-					local want = kind == "Board" and model:GetAttribute("BoardId") or expectedPanel[kind]
+					-- A pass stand sells its pass on a card of its own (owner, 15/10).
+				local want = kind == "Board" and model:GetAttribute("BoardId")
+					or (kind == "ShopStand" and model:GetAttribute("ShopKind") == "pass" and "offer") or expectedPanel[kind]
 					if opened.panel ~= want then table.insert(wrong, model.Name .. ":panel=" .. tostring(opened.panel)) end
 					local data = opened.data
 					if kind == "HeroPedestal" and data.heroId ~= model:GetAttribute("HeroId") then table.insert(wrong, model.Name .. ":hero") end
@@ -1203,6 +1210,58 @@ do
 	art:Destroy()
 end
 
+-- Heroes blink (owner, 16/10): every hero with drawn eyes can shut them; a
+-- blink hides the open eye and drops the lid, opening puts each piece back
+-- exactly, and the timing is a short blink every few seconds, out of step
+-- between neighbours. Masks and helmets keep their own eyes.
+do
+	local library = game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
+	local blinkers, missing = 0, {}
+	for _, heroId in ipairs(Catalog.HeroOrder) do
+		local figure = library and library:FindFirstChild(heroId) and library[heroId]:FindFirstChild("HeroFigure")
+		local style = figure and figure:GetAttribute("FaceStyle")
+		local drawn = style == "smile" or style == "grin" or style == "fierce" or style == "angry"
+		local eyes = figure and Motion.Eyes(figure)
+		if eyes then blinkers += 1 elseif drawn then table.insert(missing, heroId) end
+	end
+	check(#missing == 0 and blinkers >= 20, "every hero with drawn eyes blinks (" .. blinkers .. "), missing: " .. table.concat(missing, ", "))
+	local thor = library and library.thor:FindFirstChild("HeroFigure")
+	local eyes = thor and Motion.Eyes(thor)
+	check(eyes ~= nil and #eyes.open >= 8 and #eyes.lids >= 2, "thor's eyes have whites, irises, pupils, highlights and lids")
+	if eyes then
+		local lid = eyes.lids[1]
+		local restY = lid.weld.C0.Position.Y
+		Motion.SetEyes(eyes, true)
+		local hidden = true
+		for _, piece in ipairs(eyes.open) do hidden = hidden and piece.part.Transparency == 1 end
+		check(hidden and lid.weld.C0.Position.Y < restY - 0.04, "a blink hides the open eye and drops the lid")
+		Motion.SetEyes(eyes, false)
+		local shown = true
+		for _, piece in ipairs(eyes.open) do shown = shown and piece.part.Transparency == piece.shown end
+		check(shown and math.abs(lid.weld.C0.Position.Y - restY) < 1e-6, "opening the eyes puts every piece back")
+	end
+	local masked = library and library.ironman:FindFirstChild("HeroFigure")
+	check(masked ~= nil and Motion.Eyes(masked) == nil, "a helmet's eyes do not blink")
+	local frames, shut, run, longest, together = 60 * 120, 0, 0, 0, 0
+	for frame = 0, frames - 1 do
+		local t = 1000 + frame / 60
+		local a, b = Motion.BlinkClosed(t, 0), Motion.BlinkClosed(t, 1.7)
+		if a then shut += 1; run += 1; longest = math.max(longest, run) else run = 0 end
+		if a and b then together += 1 end
+	end
+	check(shut / frames > 0.02 and shut / frames < 0.07, "the eyes are shut 2-7% of the time, got " .. shut / frames)
+	check(longest <= 9, "one blink lasts at most 0.15 s, got " .. longest .. " frames")
+	check(together < shut * 0.5, "two neighbours do not blink in unison")
+	-- At ease, a lobby hero's weight shifts from foot to foot.
+	local rig = thor and Motion.Rig(thor)
+	if rig and rig.joints and rig.joints.Root then
+		Motion.Hero(rig.joints, { breathe = 0, style = "idle", t = 2.8 })
+		local roll = rig.joints.Root.Transform.UpVector.X
+		check(math.abs(roll) > 0.01, "an idle hero shifts its weight, lean " .. roll)
+		Motion.Reset(rig.joints)
+	end
+end
+
 print("--- towers ---")
 local portraits = game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
 check(portraits ~= nil, "portrait library survives separately from the map")
@@ -1337,7 +1396,9 @@ do
 	local board = workspace.DoomLobby.Portal_normal.MapBillboard.MapBoard
 	local photo = board:FindFirstChild("MapPhoto")
 	check(photo ~= nil and photo.Image == "rbxassetid://12" and board.MapPicture.Visible == false, "a configured photograph covers the rendered diorama")
-	check(workspace.DoomLobby.Portal_normal_gamma.MapBillboard.MapBoard:FindFirstChild("MapPhoto") == nil, "a map without a photograph keeps its diorama")
+	check(board.MapPicture.MapScene:FindFirstChild("Road") == nil and board.MapPicture.CurrentCamera ~= nil, "under a photograph the sign keeps its camera and builds no diorama")
+	local gamma = workspace.DoomLobby.Portal_normal_gamma.MapBillboard.MapBoard
+	check(gamma:FindFirstChild("MapPhoto") == nil and gamma.MapPicture.MapScene:FindFirstChild("Road") ~= nil, "a map without a photograph keeps its diorama")
 end
 
 -- A battle server builds the bay and an arrival deck, never the lobby.

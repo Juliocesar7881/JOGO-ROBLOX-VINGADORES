@@ -379,11 +379,19 @@ local function heroSource(id)
 	return source or (lobby and lobby:FindFirstChild("Hero_" .. id))
 end
 
+-- A portrait stands on its rarity's colour (owner, 15/10): every hero of one
+-- rarity shares the same card, wherever it is drawn.
+local function rarityColor(id)
+	local hero = Catalog.Heroes[id]
+	local rarity = hero and Catalog.Rarities[hero.rarity]
+	return rarity and UI.color(rarity.color) or colorFor(id)
+end
+kit.rarityColor = rarityColor
 local function heroPortrait(parent, id, properties)
-	return UI.heroPortrait(parent, id, heroSource(id), colorFor(id), properties)
+	return UI.heroPortrait(parent, id, heroSource(id), rarityColor(id), properties)
 end
 local function livePortrait(parent, id, properties)
-	return UI.heroPortraitLive(parent, id, heroSource(id), colorFor(id), properties)
+	return UI.heroPortraitLive(parent, id, heroSource(id), rarityColor(id), properties)
 end
 -- Heroes on show (the hero page): each idles on its own clock until its frame is gone.
 local showcases, showcaseFrame = {}, 0
@@ -611,6 +619,8 @@ renderContext = function()
 	titles.bases=T("Minhas Bases","My Bases")
 	titles.chests=Catalog.Chests[kit.selectedChest].kind=="base" and T("Invocar Bases","Summon Bases") or T("Invocar Heróis","Summon Heroes"); titles.premium=T("Loja Robux","Robux Shop")
 	titles.inventory=T("Meus Heróis","My Heroes"); titles.modes=T("Portais","Portals"); titles.rewards=T("Prêmios Diários","Daily Rewards"); titles.pick=T("Escolha seu Herói","Choose Your Hero"); titles.trade=T("Troca entre Amigos","Friend Trade")
+	local offered=contextPanel.kind=="offer" and Catalog.Products.Passes[contextPanel.shopKey or ""]
+	titles.offer=offered and L(offered.name) or T("Oferta","Offer")
 	local narrow=size.X<560
 	local ribbonH=narrow and 46 or 56
 	local ribbonW=math.min(slot.w-70,narrow and 300 or 470)
@@ -1881,7 +1891,11 @@ local function applyState(nextState)
 	if state.notice then showToast(state.notice) end
 	-- Handoff only after the real HUD mounted successfully, never just because
 	-- a packet arrived. Optional images/audio are not prerequisites for entry.
-	if not kit.readySignalled and state.profile and not refs.loading then
+	-- On the AFK place the farm's own screen goes up under the cover first: the
+	-- lobby HUD must never flash between the loading screen and the farm.
+	if not kit.readySignalled and state.profile and not refs.loading and player:GetAttribute("AfkServer") and kit.updateAfkBanner then kit.updateAfkBanner() end
+	kit.afkWaitSince = kit.afkWaitSince or os.clock()
+	if not kit.readySignalled and state.profile and not refs.loading and (not player:GetAttribute("AfkServer") or kit.afkScreenUp or os.clock() - kit.afkWaitSince > 4) then
 		kit.readySignalled = true
 		pcall(function() player:SetAttribute("DoomReady", true) end)
 	end
@@ -2150,8 +2164,18 @@ kit.afkBanner, kit.afkTitle, kit.afkDetail, kit.afkBannerAt = nil, nil, nil, 0
 -- Power saving while farming: the 3D world stops rendering and a quiet
 -- screen shows the session. It always switches back when the farm ends.
 local afk = { eco = false, screen = nil, view = nil, travel = nil, autoEco = false }
+-- The farm a player is in: the lobby chamber (AfkZone, set by the payout loop)
+-- or, on the AFK place, the one they travelled to (AfkServer, set on arrival,
+-- so the farm screen can go up before the first payout tick).
+local function afkKind() return player:GetAttribute("AfkZone") or player:GetAttribute("AfkServer") end
+-- The farm's own art covers a trip between places, instead of Roblox's plain
+-- teleport screen and our generic loading screen: the destination's loader
+-- draws the same picture, then the farm screen does.
+local function travelCover(kind)
+	pcall(function() game:GetService("TeleportService"):SetTeleportGui(kit.restScreen.TravelCover(T, Catalog, kind, screenSize())) end)
+end
 local function setAfkEco(on)
-	local kind = player:GetAttribute("AfkZone")
+	local kind = afkKind()
 	on = on and Catalog.Afk[kind] ~= nil
 	afk.eco = on
 	pcall(function() RunService:Set3dRenderingEnabled(not on) end)
@@ -2165,13 +2189,16 @@ local function setAfkEco(on)
 		kit.sheet:Close()
 		afk.view = kit.restScreen.new(UI, overlays, T, Catalog, size, kind, {
 			show = function() setAfkEco(false) end,
-			leave = function() setAfkEco(false); act("LeaveAfk", {}) end,
+			leave = function() setAfkEco(false); if player:GetAttribute("AfkServer") then travelCover(nil) end; act("LeaveAfk", {}) end,
 		})
 		afk.screen, afk.viewKey = afk.view.root, key
+		-- The AFK place hops to a fresh server now and then: the farm art covers that trip too.
+		if player:GetAttribute("AfkServer") then travelCover(kind) end
 	end
+	kit.afkScreenUp = afk.screen ~= nil
 end
 local function updateAfkBanner()
-	local kind = player:GetAttribute("AfkZone")
+	local kind = afkKind()
 	local farm = kind and Catalog.Afk[kind]
 	if not farm then
 		if kit.afkBanner then kit.afkBanner.Visible = false end
@@ -2180,7 +2207,7 @@ local function updateAfkBanner()
 	end
 	if not kit.afkBanner then
 		kit.afkView = kit.interactionHud.afk(UI, overlays, math.min(500, screenSize().X - 24), T, {
-			travel = function() act("EnterAfkServer", {}) end, saver = function() setAfkEco(true) end,
+			travel = function() travelCover(afkKind()); act("EnterAfkServer", {}) end, saver = function() setAfkEco(true) end,
 		})
 		kit.afkBanner, kit.afkTitle, kit.afkDetail, afk.travel = kit.afkView.banner, kit.afkView.title, kit.afkView.detail, kit.afkView.travel
 	end
@@ -2216,6 +2243,7 @@ local function updateAfkBanner()
 		afk.view.Update({session=session, earned=earned, saving=saving, nextPayment=player:GetAttribute("AfkNext")})
 	end
 end
+kit.updateAfkBanner = updateAfkBanner
 pcall(function()
 	player.Idled:Connect(function()
 		if not player:GetAttribute("AfkZone") then return end

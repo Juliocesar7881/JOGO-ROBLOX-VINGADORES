@@ -294,6 +294,9 @@ local function newInstance(className)
 	rawset(self, "__attributes", {})
 	rawset(self, "__id", instanceCount)
 	if className=="BillboardGui" then rawget(self,"__props").StudsOffsetWorldSpace=v3(0,0,0) end
+	-- A Part is a block until told otherwise, as in the engine (costume
+	-- finishing rounds plain blocks, so tests and renders must see one).
+	if className == "Part" then rawget(self, "__props").Shape = Enum.PartType.Block end
 	if className == "ImageLabel" or className == "ImageButton" then
 		rawget(self,"__props").IsLoaded=true
 	end

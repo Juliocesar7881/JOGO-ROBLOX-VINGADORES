@@ -160,6 +160,18 @@ local world = WorldBuilder.new(Catalog, function(player, panel, data)
 		kind = "OpenPanel", panel = panel, modeId = data.modeId, heroId = data.heroId,
 		chestId = data.chestId, shopKind = data.shopKind, shopKey = data.shopKey,
 	})
+	-- A pass stand's E is the decision to buy it (owner, 15/10): the Robux
+	-- purchase opens with the pass's card, unless the pass is already theirs.
+	-- The grant still waits for Roblox's receipt (PlayerService).
+	if panel == "offer" and data.shopKind == "pass" then
+		local entry = Config.Products and Config.Products.Passes and Config.Products.Passes[data.shopKey]
+		local id = entry and tonumber(entry.id) or 0
+		local snapshot = profiles:Snapshot(player)
+		local owned = snapshot and snapshot.passes and snapshot.passes[data.shopKey] == true
+		if id > 0 and not owned then
+			pcall(function() game:GetService("MarketplaceService"):PromptGamePassPurchase(player, id) end)
+		end
+	end
 end, Config, { lobby = role ~= "Match" })
 
 local match = MatchService.new(Config, Catalog, Rules, Waves, profiles, world, remotes, function(player)

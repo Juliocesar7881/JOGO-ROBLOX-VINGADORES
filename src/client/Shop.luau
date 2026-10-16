@@ -239,7 +239,58 @@ function Shop.new(ctx, helpers)
 		contextPremium(body, data)
 	end
 
-	return { configured = configured, contextPremium = contextPremium, contextShop = contextShop }
+	-- One pass, from its stand in the plaza (owner, 15/10): what it gives and its
+	-- price on one card, never the whole list. The server opened the Robux
+	-- purchase when the stand was used; the button here opens it again.
+	local PASS_ART = { collector = "magnet", training = "star", speed3 = "clock", season = "gift", vip = "trophy" }
+	local PASS_TINT = { collector = Color3.fromRGB(118, 211, 183), training = Color3.fromRGB(172, 149, 239), speed3 = Color3.fromRGB(90, 190, 255),
+		season = Color3.fromRGB(255, 159, 215), vip = Color3.fromRGB(235, 173, 93) }
+	local function contextOffer(body, data)
+		local key = type(data) == "table" and data.shopKey
+		local def = key and Catalog.Products.Passes[key]
+		if not def or not configured("pass", key) then return contextPremium(body, { shopKind = "pass" }) end
+		local tint = PASS_TINT[key] or C.gold
+		local owned = (profile().passes or {})[key] == true
+		local cacheKey = "pass:" .. key
+		local info = productInfo[cacheKey]
+		local slim = UI.sizeClass(screenSize().X, screenSize().Y).short
+		local headH, artW = slim and 104 or 140, slim and 88 or 124
+		-- The pass on its stage, its name, and that it is forever.
+		local top = UI.roundFrame(body, { Name = "OfferHeader", Size = UDim2.new(1, -6, 0, headH), BackgroundColor3 = UI.Skin.slot }, tint)
+		UI.stroke(top, tint, 3)
+		local art = UI.portraitStage(top, tint, { Name = "OfferArt", Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(artW, headH - 16) })
+		UI.illustration(art, PASS_ART[key] or "star", C.gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(slim and 56 or 76, slim and 56 or 76) })
+		local left = artW + 20
+		UI.chip(top, owned and T("JÁ É SEU", "YOURS") or T("PASSE PERMANENTE", "PERMANENT PASS"), owned and C.green or tint, { Name = "OfferChip", Position = UDim2.fromOffset(left, 10), Size = UDim2.fromOffset(170, 22), TextSize = 12 })
+		UI.fit(UI.label(top, Catalog.Upper(L(def.name)), { Name = "OfferName", Position = UDim2.fromOffset(left, 36), Size = UDim2.new(1, -left - 10, 0, slim and 30 or 40), Font = UI.Fonts.display, TextSize = slim and 24 or 32, TextColor3 = tint:Lerp(C.text, 0.35) }), 14)
+		if not slim then
+			UI.fit(UI.label(top, L(def.description), { Name = "OfferLine", Position = UDim2.fromOffset(left, 80), Size = UDim2.new(1, -left - 10, 0, 50), TextWrapped = true, TextSize = 15, TextColor3 = C.muted, TextYAlignment = Enum.TextYAlignment.Top }), 10)
+		end
+		-- What it gives, a line each, ticked.
+		UI.section(body, T("O que você ganha", "What you get"))
+		for index, line in ipairs(def.benefits or { def.description }) do
+			local row = UI.roundFrame(body, { Name = "OfferBenefit_" .. index, Size = UDim2.new(1, -6, 0, slim and 40 or 48), BackgroundColor3 = tint:Lerp(C.panel, 0.82) }, tint)
+			local badge = UI.frame(row, { Name = "Check", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(26, 26), BackgroundColor3 = C.green })
+			UI.corner(badge, 13)
+			UI.label(badge, "✓", { Size = UDim2.fromScale(1, 1), TextSize = 17, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center })
+			UI.fit(UI.label(row, L(line), { Name = "BenefitText", Position = UDim2.fromOffset(46, 0), Size = UDim2.new(1, -54, 1, 0), TextWrapped = true, TextSize = slim and 15 or 17, TextColor3 = C.text }), 10)
+		end
+		-- The purchase at the price this player's region pays, or that it is theirs.
+		local buy = UI.button(body, quoteLabel(info, owned), function()
+			if owned then return end
+			local current = productInfo[cacheKey]
+			if current == "retry" then productInfo[cacheKey] = nil; fetchProducts("pass"); renderContext(); return end
+			if type(current) ~= "table" or current.preview then return end
+			local ok = pcall(function() MarketplaceService:PromptGamePassPurchase(player, current.id) end)
+			if not ok then showToast(T("Falha ao abrir compra.", "Could not open purchase."), true) end
+		end, { Name = "Buy_" .. cacheKey, Size = UDim2.new(1, -6, 0, slim and 50 or 60), BackgroundColor3 = owned and C.card or C.green, TextSize = slim and 20 or 24 })
+		buy:SetAttribute("Owned", owned)
+		if not quoteUsable(info, owned) then UI.disabled(buy) end
+		UI.secondary(body, T("Ver todos os passes", "See every pass"), function() openContext("premium", { hud = true, shopKind = "pass" }) end, { Name = "OfferAll", Size = UDim2.new(1, -6, 0, 40), TextSize = 15 })
+		fetchProducts("pass")
+	end
+
+	return { configured = configured, contextPremium = contextPremium, contextShop = contextShop, contextOffer = contextOffer }
 end
 
 return Shop

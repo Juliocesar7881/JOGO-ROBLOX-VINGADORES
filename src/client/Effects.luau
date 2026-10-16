@@ -415,6 +415,7 @@ function Effects:_record(model)
 		if figure:GetAttribute("HeroRig") then
 			record.rig = Motion.Joints(figure)
 			record.emitterRig = Motion.Rig(figure)
+			record.eyes = Motion.Eyes(figure)
 			record.poseStyle = figure:GetAttribute("PoseStyle")
 		end
 	end
@@ -499,6 +500,7 @@ function Effects:_turnTowers(dt, onlyModel)
 			for _, star in ipairs(record.stars) do star:Destroy() end
 			record.stars = nil
 		end
+		if record.eyes then Motion.SetEyes(record.eyes, idle and not stunned and Motion.BlinkClosed(self.clock, record.breath)) end
 		if record.active or firing or casting or hopping or stunned or idle or record.posed then
 			local delta = ((record.target - record.yaw + math.pi) % (2 * math.pi)) - math.pi
 			local settled = math.abs(delta) < 0.01

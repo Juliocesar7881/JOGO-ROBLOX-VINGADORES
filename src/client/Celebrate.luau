@@ -23,8 +23,6 @@ local CONFETTI = {
 	Color3.fromRGB(255, 206, 82), Color3.fromRGB(255, 129, 134), Color3.fromRGB(120, 212, 255),
 	Color3.fromRGB(135, 235, 113), Color3.fromRGB(203, 170, 255), Color3.fromRGB(255, 159, 215),
 }
--- Three collectible rarities: the top tier keeps its celebratory weight.
-local CONFETTI_BY_TIER = { 8, 28, 56 }
 
 local function clamp01(x) return math.clamp(x, 0, 1) end
 local function lerp(a, b, t) return a + (b - a) * t end
@@ -227,265 +225,279 @@ end
 --==============================================================================
 -- The chest reveal
 --==============================================================================
--- Rarity accents belong to the receipt; the reel owns the opening.
+-- Rarity accents belong to the card; the opening owns the build-up.
 local CHEST_GOLD = Color3.fromRGB(255, 200, 70)
+local STAGE_INK = Color3.fromRGB(8, 10, 30)
+local NEW_GREEN = Color3.fromRGB(120, 236, 92)
+-- Confetti by prize rarity: an epic is a party, a mythic a storm.
+local CONFETTI_BY_RARITY = { common = 0, rare = 6, epic = 18, legendary = 36, mythic = 60 }
+
+-- Rays of light behind a prize: bars through one centre, each fading to both
+-- ends, turned one by one (a rotation pivots on the bar's own middle, which is
+-- the centre they share). The brightest middle sits under the prize.
+function Celebrate:_rays(parent, cx, cy, length, tint, count, z)
+	local UI = self.UI
+	local rays = {}
+	for index = 1, count do
+		local wide = index % 2 == 0
+		local ray = UI.frame(parent, { Name = "RevealRay", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(cx, cy),
+			Size = UDim2.fromOffset(length * (wide and 0.12 or 0.06), length * 2), Rotation = index * 180 / count,
+			BackgroundColor3 = tint, ZIndex = z, Active = false })
+		UI.create("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.78), NumberSequenceKeypoint.new(0.5, 0.42),
+			NumberSequenceKeypoint.new(0.7, 0.78), NumberSequenceKeypoint.new(1, 1) }) }, ray)
+		rays[index] = { frame = ray, angle = index * 180 / count, length = length, wide = wide }
+	end
+	return rays
+end
+
+-- A soft round glow: four discs, fainter the wider.
+function Celebrate:_glow(parent, cx, cy, size, tint, z)
+	local UI = self.UI
+	local rings = {}
+	for index, scale in ipairs({ 1, 0.76, 0.54, 0.36 }) do
+		local ring = UI.frame(parent, { Name = "RevealGlow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(cx, cy),
+			Size = UDim2.fromOffset(size * scale, size * scale), BackgroundColor3 = tint, BackgroundTransparency = 0.95 - index * 0.045, ZIndex = z, Active = false })
+		UI.corner(ring, math.ceil(size))
+		rings[index] = { frame = ring, scale = scale, base = 0.95 - index * 0.045, size = size }
+	end
+	return rings
+end
+
+-- Little four-point stars twinkling around a prize.
+function Celebrate:_sparkles(parent, cx, cy, spread, tint, count, z)
+	local UI = self.UI
+	local list = {}
+	for index = 1, count do
+		local angle = self.random:NextNumber(0, math.pi * 2)
+		local distance = self.random:NextNumber(spread * 0.5, spread)
+		local x, y = cx + math.cos(angle) * distance, cy + math.sin(angle) * distance * 0.82
+		local size = self.random:NextInteger(7, 15)
+		local star = UI.frame(parent, { Name = "RevealSparkle", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, y),
+			Size = UDim2.fromOffset(size, size), Rotation = 45, BackgroundColor3 = index % 3 == 0 and WHITE or tint:Lerp(WHITE, 0.5), ZIndex = z, Active = false })
+		list[index] = { frame = star, x = x, y = y, phase = self.random:NextNumber(0, math.pi * 2), speed = self.random:NextNumber(2.2, 4.2) }
+	end
+	return list
+end
+
+local function stepRays(rays, t, spin, grow)
+	for _, ray in ipairs(rays) do
+		ray.frame.Rotation = ray.angle + t * spin
+		ray.frame.Size = UDim2.fromOffset(ray.length * (ray.wide and 0.12 or 0.06), ray.length * 2 * grow)
+	end
+end
+
+local function stepSparkles(list, t)
+	for _, star in ipairs(list) do
+		local wave = 0.5 + 0.5 * math.sin(t * star.speed + star.phase)
+		star.frame.BackgroundTransparency = 0.15 + 0.85 * (1 - wave) ^ 2
+		star.frame.Position = UDim2.fromOffset(star.x, star.y - (t * 9 + star.phase * 4) % 26)
+	end
+end
 
 -- result: the server's committed OpenChest result {heroId, rarity, duplicate,
 -- refundGold, refundMastery}. chestId picks the chest's own colour.
--- options.quick is a receipt only: no second chest, charge, flash or sound
--- after the reel. options.autoClose closes the card by itself that many seconds
--- after it is shown, which a run of several chests uses to flow on.
+-- options.quick: a receipt after the opening (no second fanfare). options.burst:
+-- the opening just broke open, so the card starts with its flash. options.autoClose
+-- closes the card by itself that many seconds after it is shown, which a run of
+-- several chests uses to flow on.
 function Celebrate:Chest(result, chestId, onClosed, options)
 	if type(result) ~= "table" or not (Catalog.Heroes[result.heroId] or Catalog.Bases[result.baseId]) then return end
-	if self.reveal then self.reveal.onClosed=nil; self:_closeReveal() end
-	options=options or {}
-	local UI=self.UI
-	local lowFX=self.lowFX()
-	local def=Catalog.Bases[result.baseId] or Catalog.Heroes[result.heroId]
-	local rarity=Catalog.Rarities[result.rarity] or Catalog.Rarities[def.rarity]
-	local tier=table.find(Catalog.RarityOrder,rarity.id) or 1
-	local tint=UI.color(rarity.color)
-	local screen=UI.toLogical(self.root.AbsoluteSize)
-	local portrait=screen.X<600
-	local w,h=portrait and 500 or 900,portrait and 620 or 440
-	local root=UI.frame(self.root,{Name="ChestReveal",Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.fromRGB(5,12,26),BackgroundTransparency=0.08,Active=true,ZIndex=80})
-	UI.button(root,"",function() self:SkipReveal() end,{Name="RevealSkip",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=81,AutoButtonColor=false})
-	local stage=UI.frame(root,{Name="RevealStage",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.46),Size=UDim2.fromOffset(w,h),BackgroundTransparency=1,ZIndex=82})
-	UI.create("UIScale",{Scale=math.min(screen.X/(w+40),screen.Y/(h+120),1.35)},stage)
-	local card=UI.frame(stage,{Name="RevealHeroCard",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Visible=true,ZIndex=83})
-	-- Compatibility marker: there is one reveal, never another chest or flash
-	-- after the reel has already landed on a server-committed reward.
-	UI.frame(stage,{Name="RevealChest",Visible=false,BackgroundTransparency=1})
-	UI.frame(root,{Name="RevealFlash",Visible=false,BackgroundTransparency=1})
-	local cx,cy=portrait and 250 or 230,portrait and 158 or 215
-	local radius=portrait and 260 or 350
-	local halo=UI.frame(card,{Name="RecruitPortal",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset(cx,cy),Size=UDim2.fromOffset(radius,radius),BackgroundColor3=tint,BackgroundTransparency=0.93,ZIndex=84})
-	UI.corner(halo,200)
-	local haloStroke=UI.stroke(halo,tint,3)
-	local orbit=UI.frame(card,{Name="RecruitOrbit",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset(cx,cy),Size=UDim2.fromOffset(radius*0.82,radius*0.82),BackgroundTransparency=1,Rotation=45,ZIndex=84})
-	UI.angular(orbit,tint,{cut=32})
-	local rays={}
-	for i=1,12 do
-		local angle=i*math.pi/6
-		local ray=UI.frame(card,{Name="RecruitParticle",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset(cx+math.cos(angle)*radius/2,cy+math.sin(angle)*radius/2),Size=UDim2.fromOffset(5,i%3==0 and 22 or 10),Rotation=i*30,BackgroundColor3=tint,BackgroundTransparency=0.25,ZIndex=85,Visible=not lowFX})
-		table.insert(rays,{frame=ray,angle=angle})
-	end
-	local px,py,pw,ph=portrait and 45 or -5,portrait and -16 or -20,portrait and 410 or 470,portrait and 340 or 460
-	local properties={Name="RevealPortrait",Position=UDim2.fromOffset(px,py),Size=UDim2.fromOffset(pw,ph),BackgroundTransparency=1,NoBackdrop=true,FullFigure=true,ZIndex=88}
+	if self.reveal then self.reveal.onClosed = nil; self:_closeReveal() end
+	options = options or {}
+	local UI = self.UI
+	local lowFX = self.lowFX()
+	local def = Catalog.Bases[result.baseId] or Catalog.Heroes[result.heroId]
+	local rarity = Catalog.Rarities[result.rarity] or Catalog.Rarities[def.rarity]
+	local tier = table.find(Catalog.RarityOrder, rarity.id) or 1
+	local tint = UI.color(rarity.color)
+	local screen = UI.toLogical(self.root.AbsoluteSize)
+	local portrait = screen.X < 600
+	local w, h = portrait and 500 or 900, portrait and 720 or 520
+	local root = UI.frame(self.root, { Name = "ChestReveal", Size = UDim2.fromScale(1, 1), BackgroundColor3 = STAGE_INK, BackgroundTransparency = 0.06, Active = true, ZIndex = 80 })
+	-- The stage is lit from behind in the prize's colour.
+	UI.create("UIGradient", { Rotation = 90, Color = ColorSequence.new(STAGE_INK:Lerp(tint, 0.22), STAGE_INK) }, root)
+	UI.button(root, "", function() self:SkipReveal() end, { Name = "RevealSkip", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 81, AutoButtonColor = false })
+	local stage = UI.frame(root, { Name = "RevealStage", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, ZIndex = 82 })
+	UI.create("UIScale", { Scale = math.min(screen.X / (w + 40), screen.Y / (h + 120), 1.35) }, stage)
+	local card = UI.frame(stage, { Name = "RevealHeroCard", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = true, ZIndex = 83 })
+	-- Compatibility markers: one opening, never a second chest or flash after it.
+	UI.frame(stage, { Name = "RevealChest", Visible = false, BackgroundTransparency = 1 })
+	UI.frame(root, { Name = "RevealFlash", Visible = false, BackgroundTransparency = 1 })
+	local cx, cy = portrait and 250 or 300, portrait and 250 or 262
+	local rays = lowFX and {} or self:_rays(card, cx, cy, portrait and 330 or 380, tint:Lerp(WHITE, 0.15), 10, 84)
+	local glow = self:_glow(card, cx, cy, portrait and 470 or 540, tint, 84)
+	-- A pedestal of light under the prize's feet.
+	local floor = UI.frame(card, { Name = "RevealFloor", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(cx, cy + (portrait and 205 or 222)),
+		Size = UDim2.fromOffset(portrait and 300 or 340, 46), BackgroundColor3 = tint, BackgroundTransparency = 0.55, ZIndex = 85 })
+	UI.corner(floor, 30)
+	UI.stroke(floor, tint:Lerp(WHITE, 0.4), 3)
+	local sparkles = lowFX and {} or self:_sparkles(card, cx, cy, portrait and 230 or 270, tint, 14, 89)
+	-- The prize, big, in a holder that pops in.
+	local holder = UI.frame(card, { Name = "RevealPrize", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(cx, cy), Size = UDim2.fromOffset(portrait and 380 or 440, portrait and 440 or 500), BackgroundTransparency = 1, ZIndex = 86 })
+	local pop = UI.create("UIScale", { Scale = (lowFX or not options.burst) and 1 or 0.55 }, holder)
+	local properties = { Name = "RevealPortrait", Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, NoBackdrop = true, FullFigure = true, ZIndex = 88 }
 	local performer
 	if result.baseId then
-		local baseProperties=table.clone(properties)
-		baseProperties.FullFigure=nil; baseProperties.NoBackdrop=nil
-		UI.basePortrait(card,def,baseProperties)
+		local baseProperties = table.clone(properties)
+		baseProperties.FullFigure = nil; baseProperties.NoBackdrop = nil
+		UI.basePortrait(holder, def, baseProperties)
 	elseif self.livePortrait then
-		local ok,live=pcall(self.livePortrait,card,result.heroId,properties)
-		if ok and live and Motion.Prepare(live) then performer=live end
+		local ok, live = pcall(self.livePortrait, holder, result.heroId, properties)
+		if ok and live and Motion.Prepare(live) then performer = live end
 	end
-	if not result.baseId and not performer and self.portrait then pcall(self.portrait,card,result.heroId,properties) end
-	local x,y,dw=portrait and 24 or 470,portrait and 324 or 48,portrait and 452 or 414
-	local dossier=UI.frame(card,{Name="RecruitDossier",Position=UDim2.fromOffset(x,y),Size=UDim2.fromOffset(dw,portrait and 282 or 344),BackgroundColor3=Color3.fromRGB(10,22,40),BackgroundTransparency=0.05,ZIndex=89})
-	UI.angular(dossier,tint,{cut=16})
-	local function words(name,text,yy,height,size,color)
-		local label=UI.label(dossier,text,{Name=name,Position=UDim2.fromOffset(22,yy),Size=UDim2.fromOffset(dw-44,height),Font=UI.Fonts.display,TextSize=size,TextColor3=color or WHITE,TextWrapped=true,ZIndex=90})
-		UI.fit(label,14)
-		return label
+	if not result.baseId and not performer and self.portrait then pcall(self.portrait, holder, result.heroId, properties) end
+	-- A new prize wears a sticker.
+	if not result.duplicate then
+		local badge = UI.frame(card, { Name = "RevealNewBadge", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(cx + (portrait and 140 or 165), cy - (portrait and 190 or 205)),
+			Size = UDim2.fromOffset(132, 50), Rotation = -12, BackgroundColor3 = NEW_GREEN, ZIndex = 92 })
+		UI.corner(badge, 12)
+		UI.stroke(badge, WHITE, 3)
+		local word = UI.label(badge, self:_t(result.baseId and { pt = "NOVA!", en = "NEW!" } or { pt = "NOVO!", en = "NEW!" }), { Size = UDim2.fromScale(1, 1), Font = Enum.Font.FredokaOne, TextSize = 28, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 93 })
+		UI.outline(word, 2)
 	end
-	words("RecruitKicker",self:_t(result.baseId and {pt="ARSENAL / RECRUTAMENTO",en="ARSENAL / RECRUITMENT"} or {pt="MULTIVERSO / RECRUTAMENTO",en="MULTIVERSE / RECRUITMENT"}),18,26,14,Color3.fromRGB(180,201,219))
-	local rarityLabel=words("RevealRarity",Catalog.Upper(self:_t(rarity.name)).."!",52,36,25,tint)
-	UI.oneLine(rarityLabel,16)
-	words("RevealName",self:_t(def.name),portrait and 94 or 104,portrait and 54 or 80,portrait and 32 or 38)
-	UI.frame(dossier,{Name="RecruitDivider",Position=UDim2.fromOffset(22,portrait and 156 or 196),Size=UDim2.fromOffset(dw-44,2),BackgroundColor3=tint,BackgroundTransparency=0.35,ZIndex=90})
-	local cards=result.cards or 0
+	-- The words: rarity ribbon and stars, the name, what it became.
+	local infoX, infoW = portrait and 20 or 560, portrait and 460 or 320
+	local ribbonY = portrait and 492 or 78
+	local ribbon = UI.frame(card, { Name = "RevealRibbon", Position = UDim2.fromOffset(portrait and 85 or infoX, ribbonY), Size = UDim2.fromOffset(330, 56), BackgroundColor3 = tint, ZIndex = 90 })
+	UI.angular(ribbon, tint:Lerp(WHITE, 0.35), { cut = 14 })
+	local rarityLabel = UI.label(ribbon, Catalog.Upper(self:_t(rarity.name)) .. "!", { Name = "RevealRarity", Size = UDim2.fromScale(1, 1), Font = Enum.Font.FredokaOne, TextSize = 30, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 91 })
+	UI.outline(rarityLabel, 2.5)
+	UI.oneLine(rarityLabel, 16)
+	local starsLabel = UI.label(card, string.rep("★", tier), { Name = "RevealStars", Position = UDim2.fromOffset(portrait and 85 or infoX, ribbonY + 58), Size = UDim2.fromOffset(330, 30), Font = Enum.Font.FredokaOne, TextSize = 26, TextColor3 = CHEST_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 90 })
+	UI.outline(starsLabel, 2)
+	local nameY = portrait and ribbonY + 92 or ribbonY + 96
+	local nameLabel = UI.label(card, self:_t(def.name), { Name = "RevealName", Position = UDim2.fromOffset(infoX, nameY), Size = UDim2.fromOffset(infoW, portrait and 64 or 104), Font = Enum.Font.FredokaOne, TextSize = portrait and 40 or 46,
+		TextWrapped = true, TextColor3 = WHITE, TextXAlignment = portrait and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left, ZIndex = 91 })
+	UI.create("UIGradient", { Rotation = 90, Color = ColorSequence.new(WHITE, tint:Lerp(WHITE, 0.45)) }, nameLabel)
+	UI.outline(nameLabel, 3)
+	UI.fit(nameLabel, 22)
+	local cards = result.cards or 0
 	local statusText
 	if result.duplicate then
-		statusText=(cards>0 and ("+"..cards..self:_t(cards==1 and {pt=" CARTA  •  ",en=" CARD  •  "} or {pt=" CARTAS  •  ",en=" CARDS  •  "})) or "")
-			..(result.starGained and ("+1 ★ ("..tostring(result.stars or 1).."/5)  •  ") or "")
-			.."+"..tostring(result.refundGold or 0)..self:_t({pt=" Ouro",en=" Gold"})
+		statusText = (cards > 0 and ("+" .. cards .. self:_t(cards == 1 and { pt = " CARTA  •  ", en = " CARD  •  " } or { pt = " CARTAS  •  ", en = " CARDS  •  " })) or "")
+			.. (result.starGained and ("+1 ★ (" .. tostring(result.stars or 1) .. "/5)  •  ") or "")
+			.. "+" .. tostring(result.refundGold or 0) .. self:_t({ pt = " Ouro", en = " Gold" })
 	else
-		statusText=self:_t(result.baseId and {pt="NOVA BASE!",en="NEW BASE!"} or {pt="NOVO HERÓI!",en="NEW HERO!"})
+		statusText = self:_t(result.baseId and { pt = "NOVA BASE!", en = "NEW BASE!" } or { pt = "NOVO HERÓI!", en = "NEW HERO!" })
 	end
-	if result.shiny then statusText=self:_t({pt="BRILHANTE!  ",en="SHINY!  "})..statusText end
-	words("RevealStatus",statusText,portrait and 170 or 212,56,result.duplicate and 20 or 27,result.duplicate and CHEST_GOLD or tint:Lerp(WHITE,0.35))
-	words("RecruitSaved",self:_t(result.duplicate and {pt="Recompensa do repetido recebida",en="Duplicate rewards received"} or {pt="Adicionado à sua coleção",en="Added to your collection"}),portrait and 238 or 290,26,16,Color3.fromRGB(180,201,219))
-	local continueButton=UI.button(root,self:_t({pt="CONTINUAR",en="CONTINUE"}),function() self:_closeReveal() end,{
-		Name="RevealContinue",AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-18),Size=UDim2.fromOffset(math.min(screen.X-32,300),52),BackgroundColor3=tint,TextSize=22,Visible=true,ZIndex=95})
-	-- The reel owns the impact sound; direct grants own it here. A receipt
-	-- never plays a second reward fanfare, but its hero still performs.
-	if not options.quick then self:_summon("reward",rarity.id) end
-	local finalAt=0
-	local reveal={root=root,finalAt=finalAt,onClosed=onClosed,result=result}
-	self.reveal=reveal
-	local nextPose=0
-	reveal.anim=self:_add({duration=options.autoClose or math.huge,update=function(t)
+	if result.shiny then statusText = self:_t({ pt = "BRILHANTE!  ", en = "SHINY!  " }) .. statusText end
+	local statusY = nameY + (portrait and 66 or 108)
+	local status = UI.label(card, statusText, { Name = "RevealStatus", Position = UDim2.fromOffset(infoX, statusY), Size = UDim2.fromOffset(infoW, 44), Font = Enum.Font.FredokaOne, TextSize = result.duplicate and 22 or 30,
+		TextWrapped = true, TextColor3 = result.duplicate and CHEST_GOLD or NEW_GREEN, TextXAlignment = portrait and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left, ZIndex = 91 })
+	UI.outline(status, 2)
+	UI.fit(status, 14)
+	UI.fit(UI.label(card, self:_t(result.duplicate and { pt = "Recompensa do repetido recebida", en = "Duplicate rewards received" } or { pt = "Adicionado à sua coleção", en = "Added to your collection" }),
+		{ Name = "RecruitSaved", Position = UDim2.fromOffset(infoX, statusY + 46), Size = UDim2.fromOffset(infoW, 26), TextSize = 17, Font = UI.Fonts.bold, TextColor3 = Color3.fromRGB(190, 206, 226),
+			TextXAlignment = portrait and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left, ZIndex = 91 }), 12)
+	UI.button(root, self:_t({ pt = "CONTINUAR", en = "CONTINUE" }), function() self:_closeReveal() end, {
+		Name = "RevealContinue", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18), Size = UDim2.fromOffset(math.min(screen.X - 32, 320), 58), BackgroundColor3 = tint, TextSize = 24, Visible = true, ZIndex = 95 })
+	-- The moment it breaks open: one white burst, fading in a blink.
+	local burst = options.burst and not lowFX and UI.frame(root, { Name = "RevealBurst", Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE:Lerp(tint, 0.2), BackgroundTransparency = 0.12, ZIndex = 94, Active = false }) or nil
+	-- A direct grant plays its own fanfare; a receipt's came with the opening.
+	if not options.quick and not options.burst then self:_summon("reward", rarity.id) end
+	if not options.quick or options.burst then self:Confetti(lowFX and 0 or (CONFETTI_BY_RARITY[rarity.id] or 0), 0.3) end
+	local entrance = lowFX and 0 or 0.55
+	local reveal = { root = root, finalAt = entrance, onClosed = onClosed, result = result }
+	self.reveal = reveal
+	local nextPose = 0
+	reveal.anim = self:_add({ duration = options.autoClose or math.huge, update = function(t)
 		if not root.Parent then return end
-		local enter=lowFX and 1 or backOut(t/0.55)
-		dossier.Position=UDim2.fromOffset(x+(1-enter)*45,y)
-		halo.Size=UDim2.fromOffset(radius*(0.88+0.12*math.min(t/0.5,1)),radius*(0.88+0.12*math.min(t/0.5,1)))
-		haloStroke.Transparency=lowFX and 0.25 or 0.2+0.18*math.sin(t*1.8)^2
-		if not lowFX then
-			orbit.Rotation=45+t*4
-			for _,particle in ipairs(rays) do
-				local distance=radius*(0.50+0.12*math.min(t,1))
-				particle.frame.Position=UDim2.fromOffset(cx+math.cos(particle.angle+t*0.12)*distance,cy+math.sin(particle.angle+t*0.12)*distance)
-			end
+		local enter = entrance > 0 and backOut(t / entrance) or 1
+		if options.burst and not lowFX then pop.Scale = 0.55 + 0.45 * enter end
+		ribbon.Position = UDim2.fromOffset((portrait and 85 or infoX) + (1 - math.min(enter, 1)) * 120, ribbonY)
+		if burst then burst.BackgroundTransparency = math.clamp(0.12 + t / 0.32, 0, 1) end
+		stepRays(rays, t, 9, math.clamp(t / 0.45, 0.15, 1))
+		for _, ring in ipairs(glow) do
+			local breathe = 1 + 0.035 * math.sin(t * 2.2 + ring.scale * 3)
+			ring.frame.Size = UDim2.fromOffset(ring.size * ring.scale * breathe, ring.size * ring.scale * breathe)
 		end
-		-- A capped pose update costs the same across all three rarities.
-		if performer and t>=nextPose then
-			nextPose=t+1/30
-			pcall(Motion.Perform,performer,t,lowFX and "rest" or "arrival")
+		stepSparkles(sparkles, t)
+		-- A capped pose update costs the same across every rarity.
+		if performer and t >= nextPose then
+			nextPose = t + 1 / 30
+			pcall(Motion.Perform, performer, t, lowFX and "rest" or "arrival")
 		end
-	end,done=function() if self.reveal==reveal then self:_closeReveal() end end})
+	end, done = function() if self.reveal == reveal then self:_closeReveal() end end })
 	return root
 end
 
 --==============================================================================
--- The reel: opening a chest like opening a case
+-- The opening: the chest charges up to its prize's rarity, then breaks open
 --==============================================================================
-local REEL_TILES, REEL_FINAL = 46, 38
-local REEL_PITCH, REEL_TILE, REEL_WIDTH = 150, 138, 900
-local REEL_INK = Color3.fromRGB(14, 18, 44)
-local REEL_GOLD = Color3.fromRGB(255, 210, 63)
-
--- Picks a decoy for the strip, favouring what the chest really gives.
-function Celebrate:_reelFiller(fillers)
-	if type(fillers) == "table" and #fillers > 0 then
-		local total = 0
-		for _, entry in ipairs(fillers) do total += math.max(entry.chance or 0, 0.4) end
-		local roll = self.random:NextNumber(0, total)
-		for _, entry in ipairs(fillers) do
-			roll -= math.max(entry.chance or 0, 0.4)
-			if roll <= 0 then return entry.id, entry.rarity end
-		end
-		return fillers[1].id, fillers[1].rarity
-	end
-	local id = Catalog.HeroOrder[self.random:NextInteger(1, #Catalog.HeroOrder)]
-	return id, Catalog.Heroes[id].rarity
-end
-
--- One strip of prizes rushes past a marker and slows to a stop on the one the
--- server drew. Only the tiles near the window carry their artwork.
-function Celebrate:_reelOne(result, chestId, fillers, position, total, onDone, flow)
+-- The chest sits in a ring of light that climbs the rarities (grey, blue,
+-- purple, gold, red) up to the one the server drew, a tick at every step, the
+-- chest shaking harder each time; then it breaks open onto the prize's card.
+-- A tap skips to the card. Nothing here picks a prize: it is already granted.
+function Celebrate:_open(result, chestId, position, total, onDone, flow)
 	local UI = self.UI
 	local lowFX = self.lowFX()
 	local chest = Catalog.Chests[chestId or "rare"] or Catalog.Chests.rare
-	if not fillers then
-		-- Reward chests use the same eligible collection as shop chests. These
-		-- are visual decoys only; the server's committed result stays final.
-		fillers = Rules.ChestOutcomes(chest.id,0,{})
-	end
 	local prizeRarity = Catalog.Rarities[result.rarity] or Catalog.Rarities.common
 	local prizeTier = table.find(Catalog.RarityOrder, prizeRarity.id) or 1
-	local root = UI.frame(self.root, { Name = "ChestReel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(8, 10, 30), BackgroundTransparency = 0.5, ZIndex = 80, Active = true })
-	UI.button(root, "", function() self:SkipReveal() end, { Name = "RevealSkip", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 81, AutoButtonColor = false })
-	local stage = UI.frame(root, { Name = "ReelStage", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.fromOffset(REEL_WIDTH, 380), BackgroundTransparency = 1, ZIndex = 82 })
 	local screen = UI.toLogical(self.root.AbsoluteSize)
-	UI.create("UIScale", { Scale = math.clamp(math.min(screen.X / 960, screen.Y / 520), 0.5, 1.3) }, stage)
+	local portrait = screen.X < 600
+	local w, h = portrait and 500 or 900, portrait and 640 or 520
+	local root = UI.frame(self.root, { Name = "ChestOpening", Size = UDim2.fromScale(1, 1), BackgroundColor3 = STAGE_INK, BackgroundTransparency = 0.1, ZIndex = 80, Active = true })
+	UI.button(root, "", function() self:SkipReveal() end, { Name = "RevealSkip", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 81, AutoButtonColor = false })
+	local stage = UI.frame(root, { Name = "OpeningStage", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.48), Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, ZIndex = 82 })
+	UI.create("UIScale", { Scale = math.clamp(math.min(screen.X / (w + 40), screen.Y / (h + 80)), 0.5, 1.3) }, stage)
 	local title = self:_t(chest.name) .. (total > 1 and ("   " .. position .. "/" .. total) or "")
-	local titleLabel = UI.label(stage, Catalog.Upper(title), { Name = "ReelTitle", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 52), Font = Enum.Font.FredokaOne, TextSize = 36, TextColor3 = REEL_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
+	local titleLabel = UI.label(stage, Catalog.Upper(title), { Name = "OpeningTitle", Size = UDim2.new(1, 0, 0, 56), Font = Enum.Font.FredokaOne, TextSize = 40, TextColor3 = CHEST_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 86 })
 	UI.outline(titleLabel, 3)
-	local titlePlate=UI.frame(stage,{Name="ReelTitlePlate",Position=UDim2.fromOffset(100,0),Size=UDim2.new(1,-200,0,52),BackgroundColor3=UI.Colors.background,ZIndex=83})
-	UI.angular(titlePlate,REEL_GOLD,{cut=12})
-	UI.oneLine(titleLabel,22)
-	local window = UI.frame(stage, { Name = "ReelWindow", Position = UDim2.fromOffset(0, 72), Size = UDim2.fromOffset(REEL_WIDTH, 196), BackgroundColor3 = REEL_INK, ClipsDescendants = true, ZIndex = 83 })
-	UI.corner(window, 14)
-	UI.stroke(window, REEL_GOLD, 3)
-	UI.angular(window, REEL_GOLD, {cut=14})
-	local track = UI.frame(window, { Name = "ReelTrack", Position = UDim2.fromOffset(0, 29), Size = UDim2.fromOffset(REEL_PITCH * REEL_TILES, REEL_TILE), BackgroundTransparency = 1, ZIndex = 84 })
-	-- The tiles: the prize at REEL_FINAL, decoys everywhere else.
-	local tiles = {}
-	for index = 1, REEL_TILES do
-		local id, rarityId
-		if index == REEL_FINAL then
-			id, rarityId = result.baseId or result.heroId, result.rarity
-		else
-			id, rarityId = self:_reelFiller(fillers)
-		end
-		local def = Catalog.Bases[id] or Catalog.Heroes[id]
-		local rarity = Catalog.Rarities[rarityId] or Catalog.Rarities.common
-		local tint = UI.color(rarity.color)
-		local frame = UI.frame(track, { Name = "ReelTile", Position = UDim2.fromOffset((index - 1) * REEL_PITCH + (REEL_PITCH - REEL_TILE) / 2, 0), Size = UDim2.fromOffset(REEL_TILE, REEL_TILE), BackgroundColor3 = tint:Lerp(REEL_INK, 0.62), ZIndex = 85 })
-		UI.cardSkin(frame, tint)
-		UI.frame(frame, { Name = "RarityBar", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 8), BackgroundColor3 = tint, ZIndex = 87 })
-		local nameText = UI.label(frame, self:_t(def.name), { Name = "TileName", Position = UDim2.new(0, 4, 1, -44), Size = UDim2.new(1, -8, 0, 34), Font = Enum.Font.FredokaOne, TextSize = 15, TextWrapped = true, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 88 })
-		UI.outline(nameText, 1.5)
-		tiles[index] = { frame = frame, id = id, isBase = Catalog.Bases[id] ~= nil, def = def, art = nil }
-	end
-	local function ensureArt(index, wanted)
-		local tile = tiles[index]
-		if wanted and not tile.art then
-			if tile.isBase then
-				tile.art = UI.basePortrait(tile.frame, tile.def, { Name = "TileArt", Position = UDim2.fromOffset(8, 6), Size = UDim2.new(1, -16, 1, -54), ZIndex = 86 })
-			elseif self.portrait then
-				local made, art = pcall(self.portrait, tile.frame, tile.id, { Name = "TileArt", Position = UDim2.fromOffset(8, 6), Size = UDim2.new(1, -16, 1, -54), BackgroundTransparency = 1, ZIndex = 86 })
-				if made then tile.art = art or tile.frame:FindFirstChild("TileArt") end
-			end
-		elseif not wanted and tile.art then
-			if typeof(tile.art) == "Instance" then tile.art:Destroy() end
-			tile.art = nil
-		end
-	end
-	-- The marker.
-	local marker = UI.frame(stage, { Name = "ReelMarker", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(REEL_WIDTH / 2, 62), Size = UDim2.fromOffset(5, 216), BackgroundColor3 = REEL_GOLD, ZIndex = 90 })
-	for _, top in ipairs({ true, false }) do
-		UI.frame(marker, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, top and 0 or 1, 0), Size = UDim2.fromOffset(26, 26), Rotation = 45, BackgroundColor3 = REEL_GOLD, ZIndex = 90 })
-	end
-	for _, left in ipairs({ true, false }) do
-		local fade = UI.frame(window, { Name = "ReelFade", AnchorPoint = Vector2.new(left and 0 or 1, 0), Position = UDim2.fromScale(left and 0 or 1, 0), Size = UDim2.new(0, 160, 1, 0), BackgroundColor3 = Color3.fromRGB(8, 10, 30), ZIndex = 89 })
-		UI.create("UIGradient", { Transparency = NumberSequence.new(left and 0 or 1, left and 1 or 0), Rotation = 0 }, fade)
-	end
-	local hint = UI.label(stage, self:_t({ pt = "TOQUE PARA PULAR", en = "TAP TO SKIP" }), { Name = "ReelHint", Position = UDim2.fromOffset(0, 290), Size = UDim2.new(1, 0, 0, 30), TextSize = 18, Font = UI.Fonts.bold, TextColor3 = Color3.fromRGB(206, 218, 255), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
-	local nameLabel = UI.label(stage, "", { Name = "ReelPrize", Position = UDim2.fromOffset(0, 286), Size = UDim2.new(1, 0, 0, 52), Font = Enum.Font.FredokaOne, TextSize = 38, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 84 })
-	UI.outline(nameLabel, 3)
+	UI.oneLine(titleLabel, 22)
+	local cx, cy = w / 2, h * 0.53
+	local first = UI.color(Catalog.Rarities[Catalog.RarityOrder[1]].color)
+	local rays = lowFX and {} or self:_rays(stage, cx, cy, portrait and 300 or 340, first, 8, 83)
+	local glow = self:_glow(stage, cx, cy, portrait and 400 or 460, first, 83)
+	local holder = UI.frame(stage, { Name = "OpeningHolder", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(cx, cy), Size = UDim2.fromOffset(250, 250), BackgroundTransparency = 1, ZIndex = 85 })
+	local grow = UI.create("UIScale", { Scale = 1 }, holder)
+	UI.illustration(holder, "crate", UI.color(chest.color or { 255, 200, 70 }), { Name = "OpeningChest", Rarity = chest.id, Size = UDim2.fromScale(1, 1), ZIndex = 85 })
+	local hint = UI.label(stage, self:_t({ pt = "TOQUE PARA ABRIR", en = "TAP TO OPEN" }), { Name = "OpeningHint", Position = UDim2.new(0, 0, 1, -36), Size = UDim2.new(1, 0, 0, 32), TextSize = 19, Font = UI.Fonts.bold, TextColor3 = Color3.fromRGB(206, 218, 255), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 86 })
 	if flow and total > 1 then
-		UI.button(root, self:_t({ pt = "PULAR TUDO", en = "SKIP ALL" }), function() flow.skipAll() end, { Name = "ReelSkipAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(180, 52), BackgroundColor3 = Color3.fromRGB(255, 77, 94), TextSize = 18, ZIndex = 95 })
+		UI.button(root, self:_t({ pt = "PULAR TUDO", en = "SKIP ALL" }), function() flow.skipAll() end, { Name = "OpeningSkipAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(180, 52), BackgroundColor3 = Color3.fromRGB(255, 77, 94), TextSize = 18, ZIndex = 95 })
 	end
-
-	-- Where the strip stops: the prize's tile under the marker, a little off
-	-- centre like a real case, never off the tile.
-	local jitter = self.random:NextNumber(-0.28, 0.28) * REEL_TILE
-	local distance = (REEL_FINAL - 1) * REEL_PITCH + REEL_PITCH / 2 + jitter - REEL_WIDTH / 2
-	local duration = lowFX and 0.9 or (position == 1 and 6 or 3.6)
-	local hold = lowFX and 0.15 or 0.45
-	local landed, lastTile = false, 0
+	-- The build-up: one step per rarity up to the prize's; later chests of a run are quicker.
+	local duration = lowFX and 0.35 or (position == 1 and 1.75 or 1.05)
+	local climb = duration * 0.86
+	local reached = 0
 	self:_summon("start")
 	local reveal = { root = root, finalAt = duration, onClosed = onDone, result = result }
 	self.reveal = reveal
-	reveal.anim = self:_add({ duration = duration + hold, update = function(t)
+	reveal.anim = self:_add({ duration = duration, update = function(t)
 		if not root.Parent then return end
-		local u = clamp01(t / duration)
-		local travelled = distance * (1 - (1 - u) ^ 3.6)
-		track.Position = UDim2.fromOffset(-travelled, 29)
-		local crossing = math.floor((travelled + REEL_WIDTH / 2) / REEL_PITCH)
-		if crossing ~= lastTile then
-			lastTile = crossing
-			-- A skipped/slow frame never queues the missed ticks. The final
-			-- slow crossings stay audible; landing has one rarity signature.
-			if t > 0 and u < 1 then self:_summon("tick") end
+		local step = math.clamp(math.floor(t / climb * prizeTier) + 1, 1, prizeTier)
+		if t >= duration then step = prizeTier end
+		local tint = UI.color(Catalog.Rarities[Catalog.RarityOrder[step]].color)
+		if step ~= reached then
+			reached = step
+			if t > 0 then self:_summon("tick") end
+			for _, ring in ipairs(glow) do ring.frame.BackgroundColor3 = tint end
+			for _, ray in ipairs(rays) do ray.frame.BackgroundColor3 = tint:Lerp(WHITE, 0.15) end
 		end
-		for index = 1, REEL_TILES do
-			local x = (index - 1) * REEL_PITCH - travelled
-			ensureArt(index, x > -REEL_PITCH * 1.5 and x < REEL_WIDTH + REEL_PITCH * 0.5)
+		local since = t - (step - 1) / prizeTier * climb
+		local thump = math.exp(-since * 9)
+		local power = step / prizeTier
+		for _, ring in ipairs(glow) do
+			local size = ring.size * ring.scale * (0.82 + 0.18 * power + 0.12 * thump)
+			ring.frame.Size = UDim2.fromOffset(size, size)
+			ring.frame.BackgroundTransparency = math.clamp(ring.base - 0.05 * power - 0.08 * thump, 0.55, 1)
 		end
-		hint.Visible = u < 1
-		if u >= 1 and not landed then
-			landed = true
-			local win = tiles[REEL_FINAL]
-			UI.stroke(win.frame, WHITE, 5)
-			local tint = UI.color(prizeRarity.color)
-			nameLabel.Text = Catalog.Upper(self:_t(win.def.name))
-			nameLabel.TextColor3 = tint:Lerp(WHITE, 0.25)
-			self:_summon("reward", prizeRarity.id)
-			self:Confetti(math.floor((CONFETTI_BY_TIER[prizeTier] or 8) / 2), 0.4)
+		stepRays(rays, t, 40 * power, math.clamp(0.25 + 0.75 * power, 0, 1))
+		if not lowFX then
+			holder.Rotation = math.sin(t * 34) * (2 + 7 * power) * (0.4 + thump)
+			grow.Scale = 1 + 0.05 * power + 0.08 * thump
 		end
+		hint.Visible = t < duration
 	end, done = function() if self.reveal == reveal then self:_closeReveal() end end })
-	-- A second tap, once the strip has stopped, goes straight on.
-	reveal.advance = function() reveal.anim.start = self.clock() - reveal.anim.duration end
+	-- A second tap, once it has charged, goes straight on.
+	reveal.advance = function() if self.reveal == reveal then self:_closeReveal() end end
 	return root
 end
 
--- Several chests, one after the other: reel, prize card, next reel. The last
--- screen sums them up. `options.fillers` are the chest's possible prizes
--- ({ id, rarity, chance }); `options.onClosed` runs when it is all over.
+-- Several chests, one after the other: opening, prize card, next opening. The
+-- last screen sums them up. `options.onClosed` runs when it is all over.
+-- (`options.fillers`, the chest's possible prizes, are no longer drawn.)
 function Celebrate:Reel(results, chestId, options)
 	options = options or {}
 	if type(results) ~= "table" or #results == 0 then return end
@@ -509,11 +521,13 @@ function Celebrate:Reel(results, chestId, options)
 		if flow.stopped then return end
 		if index > total then finish() return end
 		local source = results[index].chestId or chestId
-		self:_reelOne(results[index], source, options.fillers, index, total, function()
+		self:_open(results[index], source, index, total, function()
 			if flow.stopped then return end
-			self:Chest(results[index], source, function() step(index + 1) end, { quick = true, autoClose = total > 1 and 1.3 or nil })
+			local rarity = Catalog.Rarities[results[index].rarity] or Catalog.Rarities.common
+			self:_summon("reward", rarity.id)
+			self:Chest(results[index], source, function() step(index + 1) end, { quick = true, burst = true, autoClose = total > 1 and 1.3 or nil })
 			if total > 1 and self.reveal then
-				self.UI.button(self.reveal.root, self:_t({ pt = "PULAR TUDO", en = "SKIP ALL" }), function() flow.skipAll() end, { Name = "ReelSkipAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(180, 52), BackgroundColor3 = Color3.fromRGB(255, 77, 94), TextSize = 18, ZIndex = 96 })
+				self.UI.button(self.reveal.root, self:_t({ pt = "PULAR TUDO", en = "SKIP ALL" }), function() flow.skipAll() end, { Name = "OpeningSkipAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(180, 52), BackgroundColor3 = Color3.fromRGB(255, 77, 94), TextSize = 18, ZIndex = 96 })
 			end
 		end, flow)
 	end
@@ -534,7 +548,7 @@ function Celebrate:_summary(results, onClosed)
 		cards += r.cards or 0
 		gold += r.refundGold or 0
 	end
-	local titleLabel = UI.label(panel, self:_t({ pt = "RESULTADO", en = "RESULTS" }), { Name = "SummaryTitle", Size = UDim2.new(1, 0, 0, 48), Font = Enum.Font.FredokaOne, TextSize = 38, TextColor3 = REEL_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 83 })
+	local titleLabel = UI.label(panel, self:_t({ pt = "RESULTADO", en = "RESULTS" }), { Name = "SummaryTitle", Size = UDim2.new(1, 0, 0, 48), Font = Enum.Font.FredokaOne, TextSize = 38, TextColor3 = CHEST_GOLD, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 83 })
 	UI.outline(titleLabel, 3)
 	UI.label(panel, self:_t({ pt = tostring(fresh) .. " novos  •  +" .. tostring(cards) .. " cartas  •  +" .. tostring(gold) .. " Ouro", en = tostring(fresh) .. " new  •  +" .. tostring(cards) .. " cards  •  +" .. tostring(gold) .. " Gold" }), { Name = "SummaryTotals", Position = UDim2.fromOffset(0, 50), Size = UDim2.new(1, 0, 0, 34), TextSize = 22, Font = UI.Fonts.bold, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 83 })
 	local grid = UI.scroll(panel, { Name = "SummaryGrid", Position = UDim2.fromOffset(0, 92), Size = UDim2.new(1, 0, 1, -170), ZIndex = 83 })
@@ -545,7 +559,7 @@ function Celebrate:_summary(results, onClosed)
 		local rarity = Catalog.Rarities[r.rarity] or Catalog.Rarities.common
 		local tint = UI.color(rarity.color)
 		local col, row = (index - 1) % columns, math.floor((index - 1) / columns)
-		local tile = UI.frame(grid, { Name = "SummaryTile", Position = UDim2.fromOffset(col * 150 + 6, row * 158 + 6), Size = UDim2.fromOffset(138, 146), BackgroundColor3 = tint:Lerp(REEL_INK, 0.6), ZIndex = 84 })
+		local tile = UI.frame(grid, { Name = "SummaryTile", Position = UDim2.fromOffset(col * 150 + 6, row * 158 + 6), Size = UDim2.fromOffset(138, 146), BackgroundColor3 = tint:Lerp(STAGE_INK, 0.6), ZIndex = 84 })
 		UI.corner(tile, 12)
 		UI.stroke(tile, tint, 3)
 		if r.baseId then
@@ -563,7 +577,7 @@ function Celebrate:_summary(results, onClosed)
 		else
 			note = "+" .. tostring(r.refundGold or 0)
 		end
-		UI.label(tile, note, { Position = UDim2.new(0, 4, 1, -28), Size = UDim2.new(1, -8, 0, 22), Font = UI.Fonts.bold, TextSize = 15, TextColor3 = r.duplicate and REEL_GOLD or Color3.fromRGB(150, 255, 120), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 86 })
+		UI.label(tile, note, { Position = UDim2.new(0, 4, 1, -28), Size = UDim2.new(1, -8, 0, 22), Font = UI.Fonts.bold, TextSize = 15, TextColor3 = r.duplicate and CHEST_GOLD or Color3.fromRGB(150, 255, 120), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 86 })
 	end
 	UI.button(root, self:_t({ pt = "INCRÍVEL!", en = "AWESOME!" }), function() self:_closeReveal() end, { Name = "RevealContinue", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18), Size = UDim2.fromOffset(280, 64), BackgroundColor3 = Color3.fromRGB(88, 224, 79), TextSize = 26, ZIndex = 95 })
 	self.reveal = { root = root, finalAt = 0, onClosed = onClosed, result = results }

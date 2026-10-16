@@ -455,14 +455,121 @@ function Figure.Face(figure, style, options)
 	end
 end
 
+-- A hero's face (owner, 15/10: refine the faces above all): eyes with a white,
+-- a coloured iris, a pupil and a highlight; rounded brows in the hair's colour;
+-- a mouth that is a shape, not a line (an open smile with a tongue, a grin with
+-- teeth, a half smile, a roar); lids that narrow a determined eye, rosy cheeks
+-- on a cheerful one, lashes where the hero wears them. Every feature is a small
+-- part that follows the round of the head (placed on its curve and turned to
+-- face out), so the three-quarter portraits read it as well as the front does,
+-- and viewports draw it like the world. Masks, lenses and visors use Figure.Face.
+function Figure.HeroFace(figure, style, options)
+	options = options or {}
+	if style ~= "smile" and style ~= "grin" and style ~= "fierce" and style ~= "angry" then
+		return Figure.Face(figure, style, options)
+	end
+	local head = figure.parts.Head
+	local h = head.Size
+	local k = h.X / BODY.head.X
+	local ink = options.ink or FIGURE_INK
+	local V = Vector3.new
+	local smooth = Enum.Material.SmoothPlastic
+	-- A point on the round of the head, turned to face out from it.
+	local function on(x, y, lift)
+		local a = math.asin(math.clamp(x * h.X / h.Z, -0.95, 0.95))
+		local recess = h.Z / 2 * (1 - math.cos(a))
+		return figure.face(x, y, (lift or 0) - recess) * CFrame.Angles(0, -a, 0)
+	end
+	local iris = options.iris or Color3.fromRGB(92, 58, 40)
+	local brow = options.brow or ink
+	local determined = style == "fierce" or style == "angry"
+	local tilt = style == "angry" and 0.42 or (style == "fierce" and 0.24 or -0.12)
+	for _, side in ipairs({ -1, 1 }) do
+		local x = side * 0.27
+		-- The eye: the white, an iris looking a touch inward, the pupil, a highlight.
+		figure.add("Head", "Sclera", V(0.29, 0.36, 0.05) * k, on(x, 0.1, 0.0), FIGURE_WHITE, smooth, "ball")
+		figure.add("Head", "Iris", V(0.19, 0.26, 0.05) * k, on(x - side * 0.03, 0.07, 0.01), iris, smooth, "ball")
+		figure.add("Head", "Pupil", V(0.1, 0.15, 0.05) * k, on(x - side * 0.03, 0.06, 0.02), ink, smooth, "ball")
+		figure.add("Head", "Catchlight", V(0.07, 0.08, 0.04) * k, on(x - side * 0.065, 0.16, 0.032), FIGURE_WHITE, smooth, "ball")
+		-- The upper lid is a drawn line along the top of the white: thin on a
+		-- cheerful eye, thick and slanted like the brow on a determined one.
+		if determined then
+			figure.add("Head", "EyeLine", V(0.35, 0.075, 0.04) * k, on(x, 0.255, 0.038) * CFrame.Angles(0, 0, side * tilt * 0.75), ink, smooth, "ball")
+		else
+			figure.add("Head", "EyeLine", V(0.3, 0.05, 0.04) * k, on(x, 0.27, 0.036), ink, smooth, "ball")
+		end
+		if options.lashes then
+			figure.add("Head", "Lash", V(0.12, 0.05, 0.04) * k, on(side * 0.41, 0.25, 0.034) * CFrame.Angles(0, 0, side * 0.62), ink, smooth, "ball")
+		end
+		-- A determined brow sits a little higher, so it never reads as a second lid.
+		figure.add("Head", "Brow", V(0.38, determined and 0.09 or 0.1, 0.05) * k, on(side * 0.29, determined and 0.5 or 0.45, 0.034) * CFrame.Angles(0, 0, side * tilt), brow, smooth, "ball")
+		if not determined then
+			local cheek = figure.add("Head", "Blush", V(0.19, 0.1, 0.03) * k, on(side * 0.4, -0.17, 0.006), Color3.fromRGB(255, 142, 152), smooth, "ball")
+			cheek.Transparency = 0.45
+		end
+	end
+	local mouthInk = Color3.fromRGB(78, 26, 36)
+	if style == "smile" then
+		-- A smile: a curve of five strokes, each turned along it.
+		for index = 0, 4 do
+			local x = -0.18 + index * 0.09
+			local y = -0.47 + 2.2 * x * x
+			local slope = 4.4 * x * h.Y / h.X
+			figure.add("Head", "Mouth", V(0.12, 0.06, 0.04) * k, on(x, y, 0.012) * CFrame.Angles(0, 0, math.atan(slope)), mouthInk, smooth, "ball")
+		end
+	elseif style == "grin" then
+		-- A laugh: an open mouth, the top teeth and the tongue showing.
+		figure.add("Head", "Mouth", V(0.34, 0.2, 0.03) * k, on(0, -0.43, 0.004), mouthInk, smooth, "ball")
+		figure.add("Head", "Teeth", V(0.27, 0.06, 0.03) * k, on(0, -0.365, 0.012), FIGURE_WHITE, smooth, "ball")
+		figure.add("Head", "Tongue", V(0.16, 0.075, 0.03) * k, on(0, -0.485, 0.012), Color3.fromRGB(236, 104, 118), smooth, "ball")
+	elseif style == "fierce" then
+		-- A confident half smile.
+		figure.add("Head", "Mouth", V(0.28, 0.065, 0.04) * k, on(-0.02, -0.44, 0.012) * CFrame.Angles(0, 0, 0.1), mouthInk, smooth, "ball")
+		figure.add("Head", "Mouth", V(0.12, 0.06, 0.04) * k, on(0.14, -0.395, 0.012) * CFrame.Angles(0, 0, 0.62), mouthInk, smooth, "ball")
+	else
+		-- A roar: an open mouth with its teeth showing.
+		figure.add("Head", "Mouth", V(0.32, 0.17, 0.04) * k, on(0, -0.43, 0.0), mouthInk, smooth, "ball")
+		figure.add("Head", "Teeth", V(0.28, 0.06, 0.04) * k, on(0, -0.38, 0.008), FIGURE_WHITE, smooth)
+	end
+	figure.model:SetAttribute("FaceStyle", style)
+end
+
+-- Eye colours and lashes, by hero; everyone else has warm brown eyes.
+local HERO_IRIS = {
+	captain = Color3.fromRGB(70, 130, 210), thor = Color3.fromRGB(70, 130, 210), captainmarvel = Color3.fromRGB(70, 130, 210), iceman = Color3.fromRGB(110, 190, 240),
+	jean = Color3.fromRGB(70, 150, 90), wanda = Color3.fromRGB(80, 140, 70), strange = Color3.fromRGB(90, 150, 110),
+	emerald = Color3.fromRGB(60, 170, 100), seaking = Color3.fromRGB(60, 150, 170), amazon = Color3.fromRGB(90, 120, 190),
+	vision = Color3.fromRGB(230, 180, 60), solartitan = Color3.fromRGB(240, 170, 60), silversurfer = Color3.fromRGB(150, 170, 200),
+	storm = Color3.fromRGB(120, 130, 160), widow = Color3.fromRGB(80, 140, 90),
+}
+local HERO_LASHES = { widow = true, wanda = true, captainmarvel = true, storm = true, jean = true, psylocke = true, amazon = true }
+-- Costume bands that cross the eyes, and the pieces an eye is made of.
+local EYE_BANDS = { VisorBand = true, EyeBand = true, GoggleBand = true, Visor = true, VisorRidge = true, MaskBand = true }
+-- Pieces that wrap a whole head, and the heroes whose coloured head is their skin.
+local HEAD_SHELLS = { HoodShell = true, HelmetBase = true, MaskBase = true, MaskShell = true, HelmetShell = true, HelmShell = true, CowlShell = true, CowlBase = true }
+local COLOURED_SKIN = { vision = true, silversurfer = true, groot = true, hulk = true, iceman = true, rocket = true }
+-- The league's faces are open: no visor across the eyes.
+local OPEN_LEAGUE = { capmen = true, amazon = true, seaking = true, solartitan = true, speedster = true }
+local EYE_PIECES = { Sclera = true, Iris = true, Pupil = true, Catchlight = true, EyeLine = true, Lash = true }
+
 -- Hair: a cap over the crown and back of the head, plus an optional style.
-function Figure.Hair(figure, color, style)
+-- Every lock is rounded (a slab of hair read as a plank in a close portrait):
+-- long hair falls down the back with a lock at each side framing the face; a
+-- fringe sweeps across the forehead. `plain` leaves out the side locks (a
+-- crowd figure counts every part).
+function Figure.Hair(figure, color, style, plain)
 	local h = figure.parts.Head.Size
-	figure.add("Head", "Hair", Vector3.new(h.X * 1.08, h.Y * 0.62, h.Z * 1.08), CFrame.new(0, h.Y * 0.28, h.Z * 0.04), color, Enum.Material.SmoothPlastic, "ball")
+	-- The cap is tilted: high at the forehead, low at the nape, and it wraps
+	-- the whole crown (an upright one let the top of the head show through as
+	-- a band of skin across the hair) while the brows stay clear.
+	figure.add("Head", "Hair", Vector3.new(h.X * 1.12, h.Y * 0.76, h.Z * 1.2), CFrame.new(0, h.Y * 0.26, h.Z * 0.08) * CFrame.Angles(0.25, 0, 0), color, Enum.Material.SmoothPlastic, "ball")
 	if style == "long" then
-		figure.add("Head", "HairBack", Vector3.new(h.X * 1.02, h.Y * 1.05, h.Z * 0.34), CFrame.new(0, -h.Y * 0.18, h.Z * 0.42), color, Enum.Material.SmoothPlastic)
+		figure.add("Head", "HairBack", Vector3.new(h.X * 1.06, h.Y * 1.1, h.Z * 0.5), CFrame.new(0, -h.Y * 0.16, h.Z * 0.34), color, Enum.Material.SmoothPlastic, "head")
+		for _, side in ipairs(plain and {} or { -1, 1 }) do
+			figure.add("Head", "HairLock", Vector3.new(h.X * 0.2, h.Y * 0.84, h.Z * 0.62), CFrame.new(side * h.X * 0.5, -h.Y * 0.1, h.Z * 0.1), color, Enum.Material.SmoothPlastic, "head")
+		end
 	elseif style == "fringe" then
-		figure.add("Head", "Fringe", Vector3.new(h.X * 0.62, h.Y * 0.2, h.Z * 0.2), CFrame.new(h.X * 0.14, h.Y * 0.36, -h.Z * 0.46) * CFrame.Angles(0, 0, -0.22), color, Enum.Material.SmoothPlastic)
+		figure.add("Head", "Fringe", Vector3.new(h.X * 0.66, h.Y * 0.22, h.Z * 0.26), CFrame.new(h.X * 0.14, h.Y * 0.36, -h.Z * 0.43) * CFrame.Angles(0, 0, -0.22), color, Enum.Material.SmoothPlastic, "head")
 	elseif style == "spiky" then
 		for i = -2, 2 do
 			figure.add("Head", "HairSpike", Vector3.new(h.X * 0.2, h.Y * 0.34, h.Z * 0.5), CFrame.new(i * h.X * 0.2, h.Y * 0.5, -h.Z * 0.1) * CFrame.Angles(0, 0, -i * 0.28), color, Enum.Material.SmoothPlastic, "wedge")
@@ -503,7 +610,7 @@ local HERO_LOOK = {
 	hawkeye = { colors = { chest = Color3.fromRGB(52, 128, 80), pelvis = HC.ink, upperArm = HC.skin, lowerArm = HC.ink, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.leather }, face = "fierce", hair = { Color3.fromRGB(122, 88, 54), "fringe" } },
 	falcon = { colors = { skin = HC.brown, chest = Color3.fromRGB(60, 150, 230), pelvis = HC.ink, upperArm = Color3.fromRGB(60, 150, 230), lowerArm = HC.ink, hand = HC.ink, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "smile", hair = { HC.ink } },
 	bucky = { colors = { chest = Color3.fromRGB(78, 96, 58), pelvis = HC.ink, upperArm = HC.silver, lowerArm = HC.silver, hand = HC.silver, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { Color3.fromRGB(58, 42, 34), "long" } },
-	spiderman = { body = { width = 0.9, arm = 0.9, leg = 0.92 }, colors = { chest = Color3.fromRGB(128, 70, 210), pelvis = Color3.fromRGB(250, 140, 40), upperArm = Color3.fromRGB(128, 70, 210), lowerArm = Color3.fromRGB(250, 140, 40), hand = Color3.fromRGB(250, 140, 40), upperLeg = Color3.fromRGB(128, 70, 210), lowerLeg = Color3.fromRGB(250, 140, 40), foot = Color3.fromRGB(128, 70, 210) }, face = "smile", hair = { Color3.fromRGB(92, 52, 34), "long" } },
+	spiderman = { body = { width = 0.9, arm = 0.9, leg = 0.92 }, colors = { chest = Color3.fromRGB(128, 70, 210), pelvis = Color3.fromRGB(250, 140, 40), upperArm = Color3.fromRGB(128, 70, 210), lowerArm = Color3.fromRGB(250, 140, 40), hand = Color3.fromRGB(250, 140, 40), upperLeg = Color3.fromRGB(128, 70, 210), lowerLeg = Color3.fromRGB(250, 140, 40), foot = Color3.fromRGB(128, 70, 210) }, face = "smile" },
 	widow = { body = { width = 0.88, arm = 0.88, leg = 0.9, chest = 0.94 }, colors = { chest = Color3.fromRGB(34, 36, 80), pelvis = Color3.fromRGB(34, 36, 80), upperArm = Color3.fromRGB(34, 36, 80), lowerArm = Color3.fromRGB(34, 36, 80), hand = Color3.fromRGB(34, 36, 80), upperLeg = Color3.fromRGB(34, 36, 80), lowerLeg = Color3.fromRGB(34, 36, 80), foot = Color3.fromRGB(34, 36, 80) }, face = "fierce", hair = { Color3.fromRGB(220, 224, 236), "long" } },
 	antman = { colors = { head = Color3.fromRGB(110, 200, 70), chest = Color3.fromRGB(110, 200, 70), pelvis = HC.ink, upperArm = Color3.fromRGB(110, 200, 70), lowerArm = HC.ink, hand = HC.ink, upperLeg = Color3.fromRGB(110, 200, 70), lowerLeg = HC.ink, foot = HC.ink }, shiny = true },
 	wasp = { body = { scale = 0.9, width = 0.86, arm = 0.86, leg = 0.88 }, colors = { head = Color3.fromRGB(150, 230, 90), chest = Color3.fromRGB(150, 230, 90), pelvis = Color3.fromRGB(30, 70, 60), upperArm = Color3.fromRGB(30, 70, 60), lowerArm = Color3.fromRGB(150, 230, 90), hand = Color3.fromRGB(30, 70, 60), upperLeg = Color3.fromRGB(30, 70, 60), lowerLeg = Color3.fromRGB(150, 230, 90), foot = Color3.fromRGB(30, 70, 60) } },
@@ -511,7 +618,7 @@ local HERO_LOOK = {
 	daredevil = { colors = { head = Color3.fromRGB(70, 82, 110), chest = Color3.fromRGB(70, 82, 110), pelvis = Color3.fromRGB(44, 52, 74), upperArm = Color3.fromRGB(70, 82, 110), lowerArm = Color3.fromRGB(70, 82, 110), hand = Color3.fromRGB(44, 52, 74), upperLeg = Color3.fromRGB(70, 82, 110), lowerLeg = Color3.fromRGB(70, 82, 110), foot = Color3.fromRGB(44, 52, 74) } },
 	shangchi = { colors = { chest = Color3.fromRGB(40, 150, 110), pelvis = HC.ink, upperArm = Color3.fromRGB(40, 150, 110), lowerArm = HC.skin, hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { HC.ink, "fringe" } },
 	-- Shield Captain: teal uniform, navy trousers, gloves and boots; a bigger head and hands read at the game camera.
-	captain = { suit = Color3.fromRGB(28, 50, 108), body = { width = 1.08, chest = 1.06, arm = 1.08, hand = 1.18, head = 1.1, leg = 1.04 }, colors = { skin = Color3.fromRGB(222, 164, 124), head = Color3.fromRGB(222, 164, 124), chest = Color3.fromRGB(20, 148, 140), pelvis = Color3.fromRGB(28, 50, 108), upperArm = Color3.fromRGB(20, 148, 140), lowerArm = Color3.fromRGB(28, 50, 108), hand = Color3.fromRGB(28, 50, 108), upperLeg = Color3.fromRGB(28, 50, 108), lowerLeg = Color3.fromRGB(28, 50, 108), foot = Color3.fromRGB(28, 50, 108) } },
+	captain = { suit = Color3.fromRGB(28, 50, 108), body = { width = 1.08, chest = 1.06, arm = 1.08, hand = 1.18, head = 1.1, leg = 1.04 }, colors = { skin = Color3.fromRGB(222, 164, 124), head = Color3.fromRGB(222, 164, 124), chest = Color3.fromRGB(20, 148, 140), pelvis = Color3.fromRGB(28, 50, 108), upperArm = Color3.fromRGB(20, 148, 140), lowerArm = Color3.fromRGB(28, 50, 108), hand = Color3.fromRGB(28, 50, 108), upperLeg = Color3.fromRGB(28, 50, 108), lowerLeg = Color3.fromRGB(28, 50, 108), foot = Color3.fromRGB(28, 50, 108) }, face = "fierce" },
 	panther = { colors = { head = Color3.fromRGB(58, 36, 96), chest = Color3.fromRGB(58, 36, 96), pelvis = Color3.fromRGB(44, 28, 74), upperArm = Color3.fromRGB(58, 36, 96), lowerArm = Color3.fromRGB(58, 36, 96), hand = Color3.fromRGB(44, 28, 74), upperLeg = Color3.fromRGB(58, 36, 96), lowerLeg = Color3.fromRGB(58, 36, 96), foot = Color3.fromRGB(44, 28, 74) }, shiny = true },
 	hulk = { body = { scale = 1.72, width = 1.1, depth = 1.12, chest = 1.14, head = 0.8, arm = 1.55, hand = 1.3, leg = 1.36, legLength = 0.88, torsoLength = 1.1, foot = 1.1 },
 		colors = { skin = Color3.fromRGB(152, 138, 120), head = Color3.fromRGB(152, 138, 120), chest = Color3.fromRGB(152, 138, 120), pelvis = Color3.fromRGB(86, 76, 66), upperArm = Color3.fromRGB(152, 138, 120), lowerArm = Color3.fromRGB(140, 126, 110), hand = Color3.fromRGB(152, 138, 120), upperLeg = Color3.fromRGB(86, 76, 66), lowerLeg = Color3.fromRGB(140, 126, 110), foot = Color3.fromRGB(120, 108, 96) }, face = "angry" },
@@ -667,17 +774,8 @@ HERO_EXTRAS.captain = function(f)
 	for _, side in ipairs({ -1, 1 }) do
 		bar("Head", "HelmetBadge", brow, 0, 0.1 * s, side * 0.2 * s, -0.06 * s, 0.1 * s, 0.06 * s, gold)
 	end
-	-- A determined, friendly face: big eyes with a glint, lowered brows, a smile.
-	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "Eye", Vector3.new(0.22, 0.32, 0.06) * s, f.face(side * 0.27, 0.08, 0), HC.ink, FABRIC, "ball")
-		f.add("Head", "Catchlight", Vector3.new(0.07, 0.08, 0.04) * s, f.face(side * 0.27 - 0.03, 0.16, 0.02), HC.white, FABRIC, "ball")
-		f.add("Head", "Brow", Vector3.new(0.34, 0.09, 0.06) * s, f.face(side * 0.29, 0.34, 0) * CFrame.Angles(0, 0, side * 0.22), Color3.fromRGB(96, 62, 40), FABRIC)
-	end
-	local mouth = Color3.fromRGB(110, 46, 42)
-	f.add("Head", "Mouth", Vector3.new(0.3, 0.07, 0.05) * s, f.face(0, -0.42, 0), mouth, FABRIC)
-	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "Mouth", Vector3.new(0.14, 0.07, 0.05) * s, f.face(side * 0.24, -0.36, 0) * CFrame.Angles(0, 0, side * 0.5), mouth, FABRIC)
-	end
+	-- His face is the roster's drawn hero face (Figure.HeroFace): determined,
+	-- blue-eyed, under the open helmet.
 	-- Torso: the winged badge on the teal chest, a navy collar seating the head,
 	-- a gold belt with a navy buckle.
 	badge("UpperTorso", "Chest", CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.03 * s), s * 1.25)
@@ -713,7 +811,9 @@ HERO_EXTRAS.captain = function(f)
 end
 HERO_EXTRAS.spiderman = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local crimson, navy, webWhite = Color3.fromRGB(180, 40, 40), Color3.fromRGB(30, 50, 120), Color3.fromRGB(220, 220, 230)
+	-- The mask and plates wear the suit's own violet, the webbing a deep violet
+	-- (its original look of 01/10): no stray red mask or hair over the mask.
+	local crimson, navy, webWhite = Color3.fromRGB(128, 70, 210), Color3.fromRGB(64, 30, 118), Color3.fromRGB(220, 220, 230)
 	-- Arachnid: sleek red/blue suit with segmented web-pattern armor,
 	-- large expressive eye lenses, chest emblem and wrist-mounted web
 	-- shooter; silhouette reads as agile acrobat even at thumbnail size.
@@ -931,12 +1031,8 @@ HERO_EXTRAS.widow = function(f)
 	-- Shadow Operative: sleek stealth suit with violet insignia, tactical
 	-- harness, dual pistols and forearm bracelets; silhouette reads as
 	-- agile infiltrator even at thumbnail size.
-	-- Head: masked face with angular eye lenses and subtle crest.
-	f.add("Head", "MaskBase", Vector3.new(h.X * 0.9, h.Y * 0.86, h.Z * 0.9), CFrame.new(), ink, FABRIC)
-	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "EyeLens", Vector3.new(h.X * 0.28, h.Y * 0.22, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), violet, NEON, "wedge")
-	end
-	f.add("Head", "Crest", Vector3.new(0.12 * s, h.Y * 0.32, h.Z * 0.88), CFrame.new(0, h.Y * 0.36, 0), ink, METAL)
+	-- Head: an open face under the long hair (no mask: a dark head read as a
+	-- dark skin with drawn eyes).
 	-- Torso: fitted suit with central insignia, tactical harness and belt.
 	f.add("UpperTorso", "WidowInsignia", Vector3.new(0.32 * s, 0.32 * s, 0.05 * s), CFrame.new(0, c.Y * 0.12, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, math.pi / 4), violet, NEON)
 	f.rod("UpperTorso", "HarnessStrap", Vector3.new(-c.X * 0.38, c.Y * 0.42, -c.Z / 2 - 0.03 * s), Vector3.new(c.X * 0.38, -c.Y * 0.38, -c.Z / 2 - 0.03 * s), 0.12 * s, ink, FABRIC)
@@ -1014,8 +1110,7 @@ HERO_EXTRAS.bucky = function(f)
 	-- Winter Soldier: tactical olive drab suit with segmented metal left
 	-- arm bearing a red star insignia, chest harness and assault rifle;
 	-- silhouette reads as covert operative even at thumbnail size.
-	-- Head: masked face with angular eye lenses and chin strap.
-	f.add("Head", "MaskBase", Vector3.new(h.X * 0.9, h.Y * 0.86, h.Z * 0.9), CFrame.new(), olive, FABRIC)
+	-- Head: his own face under the long hair, dark paint around the eyes.
 	for _, side in ipairs({ -1, 1 }) do
 		f.add("Head", "EyeLens", Vector3.new(h.X * 0.26, h.Y * 0.2, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), steel, METAL, "wedge")
 	end
@@ -1245,12 +1340,7 @@ HERO_EXTRAS.shangchi = function(f)
 	-- Ten Rings Master: sleek martial arts suit with glowing golden rings,
 	-- armored chest plate and flowing sash; silhouette reads as mystical
 	-- warrior even at thumbnail size.
-	-- Head: masked face with angular eye lenses and headband crest.
-	f.add("Head", "MaskBase", Vector3.new(h.X * 0.9, h.Y * 0.86, h.Z * 0.9), CFrame.new(), crimson, FABRIC)
-	f.add("Head", "Headband", Vector3.new(h.X * 0.92, 0.18 * s, 0.07 * s), f.face(0, 0.32, 0.02), gold, METAL)
-	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "EyeLens", Vector3.new(h.X * 0.24, h.Y * 0.18, 0.06 * s), f.face(side * 0.22, 0.12, -0.02), neonGold, NEON, "wedge")
-	end
+	-- Head: an open face under the fringe.
 	-- Torso: fitted martial arts vest with central seam, diagonal harness
 	-- and utility belt; ten rings glow on the left forearm.
 	f.add("UpperTorso", "VestFront", Vector3.new(c.X * 0.88, c.Y * 0.82, 0.12 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), crimson, FABRIC)
@@ -1507,6 +1597,16 @@ HERO_EXTRAS.groot = function(f)
 	end
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2 - 0.3 * s, 0))
 end
+-- A circlet: a thin rounded band around the head at the hairline. Its top and
+-- inside sit in the hair, so only the gold ring shows across the forehead (a
+-- flat plate up there read as a box hat). Returns the band's height on the
+-- face (figure.face units), for a gem or a point standing on it.
+local function circlet(f, name, color)
+	local h = f.parts.Head.Size
+	f.add("Head", name, Vector3.new(h.X * 1.14, h.Y * 0.12, h.Z * 1.14), CFrame.new(0, h.Y * 0.34, h.Z * 0.02), color, METAL, "head")
+	return 0.68
+end
+
 HERO_EXTRAS.wanda = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
 	local crimson, chaos, gold = Color3.fromRGB(160, 30, 50), Color3.fromRGB(240, 200, 90), Color3.fromRGB(220, 170, 70)
@@ -1514,11 +1614,11 @@ HERO_EXTRAS.wanda = function(f)
 	-- cape and chaos orbs hovering above both palms; silhouette reads as
 	-- arcane sovereign even at thumbnail size.
 	-- Head: crowned tiara with side spikes and glowing brow gem.
-	f.add("Head", "TiaraBase", Vector3.new(h.X * 0.88, h.Y * 0.22, h.Z * 0.88), CFrame.new(0, h.Y * 0.42, 0), gold, METAL)
+	local band = circlet(f, "TiaraBase", gold)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "CrownSpike", Vector3.new(0.1 * s, 0.52 * s, 0.08 * s), f.face(side * 0.22, 0.64, 0.02) * CFrame.Angles(0, 0, side * 0.42), gold, METAL, "wedge")
+		f.add("Head", "CrownSpike", Vector3.new(0.1 * s, 0.46 * s, 0.08 * s), f.face(side * 0.2, band + 0.3, 0.06) * CFrame.Angles(0, 0, side * 0.42), gold, METAL, "wedge")
 	end
-	f.add("Head", "BrowGem", Vector3.new(0.16 * s, 0.16 * s, 0.06 * s), f.face(0, 0.32, -0.04), chaos, NEON, "ball")
+	f.add("Head", "BrowGem", Vector3.new(0.18 * s, 0.18 * s, 0.08 * s), f.face(0, band, 0.1), chaos, NEON, "ball")
 	-- Torso: fitted bodice with central gem, layered skirt segments and
 	-- sash; cape anchors at the shoulders.
 	f.add("UpperTorso", "BodiceGem", Vector3.new(0.22 * s, 0.28 * s, 0.06 * s), CFrame.new(0, c.Y * 0.18, -c.Z / 2 - 0.04 * s), chaos, NEON)
@@ -1660,10 +1760,8 @@ HERO_EXTRAS.captainmarvel = function(f)
 	-- Nova Prime: regal flight suit with radiant sun emblem, golden sash,
 	-- photon-charged gauntlets and aerodynamic helmet; silhouette reads as
 	-- cosmic powerhouse even at thumbnail size.
-	-- Head: streamlined helmet with glowing visor band and crest fin.
-	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.92, h.Y * 0.9, h.Z * 0.92), CFrame.new(), crimson, METAL)
-	f.add("Head", "VisorBand", Vector3.new(h.X * 0.82, 0.16 * s, 0.08 * s), f.face(0, 0.12, -0.02), photon, NEON)
-	f.add("Head", "CrestFin", Vector3.new(0.12 * s, h.Y * 0.42, h.Z * 0.88), CFrame.new(0, h.Y * 0.38, 0), gold, METAL, "wedge")
+	-- Head: an open face framed by the long hair; the star sits on the forehead.
+	f.add("Head", "BrowStar", Vector3.new(0.2 * s, 0.2 * s, 0.06 * s), f.face(0, 0.64, 0.04) * CFrame.Angles(0, 0, math.pi / 4), gold, METAL)
 	-- Torso: fitted flight suit with central sun emblem and radiating rays,
 	-- diagonal sash and reinforced collar; belt anchors the waist.
 	f.disc("UpperTorso", "SunEmblem", 0.32 * s, 0.07 * s, CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.05 * s), gold, METAL)
@@ -1839,10 +1937,10 @@ HERO_EXTRAS.storm = function(f)
 	-- and lightning-charged hands; silhouette reads as weather sovereign
 	-- even at thumbnail size.
 	-- Head: regal tiara with central gem and side wings; hair flows back.
-	f.add("Head", "TiaraBase", Vector3.new(h.X * 0.86, h.Y * 0.18, h.Z * 0.86), CFrame.new(0, h.Y * 0.44, 0), gold, METAL)
-	f.add("Head", "TiaraGem", Vector3.new(0.14 * s, 0.14 * s, 0.06 * s), f.face(0, 0.44, -0.04), sky, NEON, "ball")
+	local band = circlet(f, "TiaraBase", gold)
+	f.add("Head", "TiaraGem", Vector3.new(0.16 * s, 0.16 * s, 0.08 * s), f.face(0, band, 0.1), sky, NEON, "ball")
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "TiaraWing", Vector3.new(0.22 * s, 0.28 * s, 0.08 * s), CFrame.new(side * h.X * 0.36, h.Y * 0.46, 0) * CFrame.Angles(0, 0, -side * 0.35), gold, METAL, "wedge")
+		f.add("Head", "TiaraWing", Vector3.new(0.08 * s, 0.3 * s, 0.26 * s), CFrame.new(side * h.X * 0.58, h.Y * 0.42, -h.Z * 0.1) * CFrame.Angles(0, 0, side * 0.5), gold, METAL, "wedge")
 	end
 	-- Torso: fitted bodice with silver trim, layered skirt segments and
 	-- sash; cape anchors at the shoulders with golden clasps.
@@ -1886,10 +1984,10 @@ HERO_EXTRAS.jean = function(f)
 	-- psychic flames hovering above both palms; silhouette reads as
 	-- telekinetic sovereign even at thumbnail size.
 	-- Head: circlet with central gem and side ornaments; hair flows back.
-	f.add("Head", "CircletBase", Vector3.new(h.X * 0.86, h.Y * 0.16, h.Z * 0.86), CFrame.new(0, h.Y * 0.44, 0), HC.gold, METAL)
-	f.add("Head", "CircletGem", Vector3.new(0.14 * s, 0.14 * s, 0.06 * s), f.face(0, 0.44, -0.04), phoenix, NEON, "ball")
+	local band = circlet(f, "CircletBase", HC.gold)
+	f.add("Head", "CircletGem", Vector3.new(0.16 * s, 0.16 * s, 0.08 * s), f.face(0, band, 0.1), phoenix, NEON, "ball")
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "CircletOrnament", Vector3.new(0.18 * s, 0.24 * s, 0.08 * s), CFrame.new(side * h.X * 0.36, h.Y * 0.46, 0) * CFrame.Angles(0, 0, -side * 0.3), HC.gold, METAL, "wedge")
+		f.add("Head", "CircletOrnament", Vector3.new(0.08 * s, 0.24 * s, 0.2 * s), CFrame.new(side * h.X * 0.58, h.Y * 0.4, -h.Z * 0.1) * CFrame.Angles(0, 0, side * 0.4), HC.gold, METAL, "wedge")
 	end
 	-- Torso: fitted bodice with phoenix emblem, layered skirt segments
 	-- and sash; cape anchors at the shoulders with golden clasps.
@@ -2385,7 +2483,7 @@ HERO_EXTRAS.solartitan = function(f)
 	f.add("Head", "VisorBand", Vector3.new(h.X * 0.78, 0.18 * s, 0.08 * s), f.face(0, 0.12, -0.02), gold, NEON)
 	f.add("Head", "CrestFin", Vector3.new(0.12 * s, h.Y * 0.38, h.Z * 0.88), CFrame.new(0, h.Y * 0.36, 0), gold, METAL, "wedge")
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "HeatEye", Vector3.new(0.2 * s, 0.12 * s, 0.06 * s), f.face(side * 0.25, 0.14, 0.04), neonRed, NEON)
+		f.add("Head", "HeatEye", Vector3.new(0.2 * s, 0.12 * s, 0.06 * s), f.face(side * 0.25, 0.14, -0.14), neonRed, NEON)
 	end
 	-- Torso: fitted golden armor with central sun emblem, diagonal
 	-- harness and utility belt; long cape anchors at the shoulders.
@@ -2474,8 +2572,8 @@ HERO_EXTRAS.amazon = function(f)
 	-- Head: streamlined helmet with wide visor band and tiara crest.
 	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), crimson, METAL)
 	f.add("Head", "VisorBand", Vector3.new(h.X * 0.76, 0.16 * s, 0.07 * s), f.face(0, 0.12, -0.02), neonBlue, NEON)
-	f.add("Head", "Tiara", Vector3.new(h.X * 0.8, 0.16 * s, 0.1 * s), CFrame.new(0, h.Y * 0.4, -h.Z * 0.46), gold, METAL)
-	f.add("Head", "TiaraStar", Vector3.new(0.2 * s, 0.2 * s, 0.06 * s), CFrame.new(0, h.Y * 0.46, -h.Z * 0.5) * CFrame.Angles(0, 0, math.pi / 4), neonBlue, METAL)
+	local band = circlet(f, "Tiara", gold)
+	f.add("Head", "TiaraStar", Vector3.new(0.2 * s, 0.2 * s, 0.06 * s), f.face(0, band, 0.1) * CFrame.Angles(0, 0, math.pi / 4), neonBlue, METAL)
 	-- Torso: fitted golden armor with central eagle emblem, diagonal
 	-- harness and utility belt; shield mounts on the left forearm.
 	f.add("UpperTorso", "GoldenArmor", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), gold, METAL)
@@ -2556,8 +2654,13 @@ HERO_EXTRAS.seaking = function(f)
 	-- Head: streamlined helmet with wide visor band and crown crest.
 	f.add("Head", "HelmetShell", Vector3.new(h.X * 0.94, h.Y * 0.92, h.Z * 0.94), CFrame.new(), deepSea, METAL)
 	f.add("Head", "VisorBand", Vector3.new(h.X * 0.76, 0.16 * s, 0.07 * s), f.face(0, 0.12, -0.02), neonTeal, NEON)
-	f.add("Head", "Crown", Vector3.new(h.X * 0.92, 0.2 * s, h.Z * 0.92), CFrame.new(0, h.Y * 0.48, 0), gold, METAL)
-	for i = -1, 1 do f.add("Head", "CrownPoint", Vector3.new(0.14 * s, 0.34 * s, 0.14 * s), CFrame.new(i * h.X * 0.3, h.Y * 0.66, 0), gold, METAL, "wedge") end
+	-- The crown rings the hair; three points rise from its front.
+	f.add("Head", "Crown", Vector3.new(h.X * 1.18, h.Y * 0.14, h.Z * 1.22), CFrame.new(0, h.Y * 0.42, h.Z * 0.06), gold, METAL, "head")
+	for i = -1, 1 do
+		local x = i * 0.3
+		local z = 0.06 - 0.61 * math.sqrt(1 - (x / 0.59) ^ 2)
+		f.add("Head", "CrownPoint", Vector3.new(0.14 * s, 0.34 * s, 0.14 * s), CFrame.new(x * h.X, h.Y * 0.49 + 0.17 * s, z * h.Z), gold, METAL, "wedge")
+	end
 	-- Torso: fitted deep-sea armor with scale plates, central tide
 	-- emblem and diagonal harness; utility belt secures the waist.
 	f.add("UpperTorso", "SeaArmor", Vector3.new(c.X * 0.9, c.Y * 0.84, 0.13 * s), CFrame.new(0, 0, -c.Z / 2 - 0.02 * s), deepSea, METAL)
@@ -2601,8 +2704,103 @@ HERO_EXTRAS.seaking = function(f)
 end
 
 -- Faces for the heroes whose extras do not already draw one.
-local DRAWN_FACE = { nightstalker = true, ironman = true, captain = true, spiderman = true, antman = true, wasp = true, daredevil = true, panther = true,
+local DRAWN_FACE = { nightstalker = true, ironman = true, spiderman = true, antman = true, wasp = true, daredevil = true, panther = true,
 	warmachine = true, starlord = true, ghostrider = true, wolverine = true, cyclops = true, deadpool = true, moonknight = true, nova = true }
+
+-- The whole roster gets the finish of a painted action figure (owner, 15/10:
+-- refine the heroes): a soft gloss on costume and armour, never on skin, so
+-- every fold catches the light; and no costume colour so dark that it reads as
+-- a hole in a small portrait. Glow, eyes and mouths keep their own colours.
+local HERO_SKIN = Color3.fromRGB(232, 181, 147)
+local FACE_PARTS = { Sclera = true, Eye = true, Iris = true, Pupil = true, EyeRim = true, Catchlight = true, Brow = true, Lash = true,
+	EyeLine = true, Mouth = true, Teeth = true, Tongue = true, Blush = true }
+local NIGHT_LIFT = Color3.fromRGB(70, 74, 88)
+local function polishHero(f, skin)
+	for _, item in ipairs(f.model:GetChildren()) do
+		if item:IsA("BasePart") and item.Name ~= "HumanoidRootPart" and not FACE_PARTS[item.Name] and item.Material ~= Enum.Material.Neon
+			and item.Material ~= Enum.Material.Glass and item.Material ~= Enum.Material.ForceField then
+			local color = item.Color
+			if math.max(color.R, color.G, color.B) < 0.2 then item.Color = color:Lerp(NIGHT_LIFT, 0.42) end
+			local skinLike = math.abs(color.R - skin.R) + math.abs(color.G - skin.G) + math.abs(color.B - skin.B) < 0.06
+			if not skinLike then item.Reflectance = math.max(item.Reflectance or 0, item.Material == Enum.Material.Metal and 0.15 or 0.1) end
+		end
+	end
+	f.model:SetAttribute("HeroFinish", "polished")
+end
+
+-- Masked and helmeted heroes (owner, 15/10: refine the faces). A visor or a
+-- jaw plate was a flat bar that stood out past the round head in a
+-- three-quarter view: each now wraps the front of the head, a band whose back
+-- half sits inside it (depth: how far its front stands off the face, in head
+-- depths); lenses and eye slits turn with the round of the face.
+local FRONT_WRAP = { VisorBand = 0.085, SonarVisor = 0.085, EyeSlits = 0.085, SpiritVisor = 0.085, OpticVisor = 0.085, HoodTrim = 0.07,
+	ChinGuard = 0.06, JawRidge = 0.06, FacePlate = 0.05 }
+-- Lenses: how far each stands off the face (a rim or patch under its lens).
+local FRONT_TURN = { EyeLens = 0.026, EyeSlit = 0.026, EyeGlow = 0.03, EyeRim = 0.012, EyePatch = 0.012 }
+local function wrapMaskedFace(figure)
+	local head = figure.parts.Head
+	local h = head.Size
+	-- The lenses of a pair stand apart by the widest of them, so two ovals
+	-- never run into one another between the eyes.
+	local spread = 0
+	for _, piece in ipairs(figure.model:GetChildren()) do
+		if FRONT_TURN[piece.Name] and piece:IsA("BasePart") then
+			spread = math.max(spread, math.max(piece.Size.X, piece.Size.Y) / h.X / 2 + 0.025)
+		end
+	end
+	for _, piece in ipairs(figure.model:GetChildren()) do
+		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+		if not (fit and fit.Part0 == head) then continue end
+		local depth = FRONT_WRAP[piece.Name]
+		if depth then
+			local band = piece
+			if not piece:IsA("Part") then
+				-- A wedge takes no mesh: a plain part takes its place.
+				band = figurePart(figure.model, piece.Name, piece.Size, piece.CFrame, piece.Color, piece.Material)
+				band.Transparency, band.Reflectance = piece.Transparency or 0, piece.Reflectance or 0
+				band:SetAttribute("HeroVisual", true)
+				piece:Destroy()
+				figureWeld(head, band)
+				fit = band:FindFirstChild("Fit")
+			end
+			local y = fit.C0.Position.Y
+			band.Size = Vector3.new(h.X, math.min(band.Size.Y, h.Y * 0.62), h.Z)
+			local mesh = band:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
+			mesh.MeshType, mesh.Parent = Enum.MeshType.Head, band
+			fit.C0 = CFrame.new(0, y, -h.Z * depth)
+			band.CFrame = head.CFrame * fit.C0
+		elseif FRONT_TURN[piece.Name] then
+			-- A lens is an oval laid on the round of the face, wider than tall,
+			-- its inner corner a little lower (a wedge read as a jagged crown
+			-- up close, half buried in the head).
+			local lens = piece
+			if not piece:IsA("Part") then
+				lens = figurePart(figure.model, piece.Name, piece.Size, piece.CFrame, piece.Color, piece.Material)
+				lens.Transparency, lens.Reflectance = piece.Transparency or 0, piece.Reflectance or 0
+				lens:SetAttribute("HeroVisual", true)
+				piece:Destroy()
+				figureWeld(head, lens)
+				fit = lens:FindFirstChild("Fit")
+			end
+			local mesh = lens:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
+			mesh.MeshType, mesh.Parent = Enum.MeshType.Sphere, lens
+			local wide, tall = math.max(lens.Size.X, lens.Size.Y), math.min(lens.Size.X, lens.Size.Y)
+			lens.Size = Vector3.new(wide, tall * 0.9, h.Z * 0.05)
+			local at = fit.C0.Position
+			local side = at.X >= 0 and 1 or -1
+			local x = side * math.max(math.abs(at.X), spread * h.X)
+			local a = math.asin(math.clamp(x / (h.Z / 2), -0.95, 0.95))
+			local recess = h.Z / 2 * (1 - math.cos(a))
+			fit.C0 = CFrame.new(x, at.Y, -h.Z / 2 - h.Z * FRONT_TURN[piece.Name] + recess) * CFrame.Angles(0, -a, 0) * CFrame.Angles(0, 0, side * 0.22)
+			lens.CFrame = head.CFrame * fit.C0
+		elseif piece.Name == "MouthLine" then
+			-- The mouth is drawn on the wrapped chin, in front of it.
+			local at = fit.C0.Position
+			fit.C0 = CFrame.new(at.X, at.Y, -h.Z * (0.5 + FRONT_WRAP.ChinGuard) - piece.Size.Z / 2)
+			piece.CFrame = head.CFrame * fit.C0
+		end
+	end
+end
 
 -- Finish the entire roster from its authored costume. Undersuits follow the
 -- armour above them, rather than exposing unrelated bright balls at joints.
@@ -2639,7 +2837,7 @@ local function finishHeroCostume(f)
 					bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",Enum.MeshType.Torso,piece
 				end
 			end
-			if ratio.X <= 1.5 and ratio.Y <= 1.3 and ratio.Z <= 1.5 and volume > 0.5 and (not cover[host] or volume > cover[host].volume) then
+			if ratio.X <= 1.5 and ratio.Y <= 1.3 and ratio.Z <= 1.5 and volume > 0.5 and (not cover[host] or volume > cover[host].volume) and not piece:GetAttribute("OpenFace") then
 				cover[host] = {volume=volume, color=piece.Color}
 			end
 			if ratio.X<=1.5 and ratio.Y<=1.3 and ratio.Z<=1.5 and volume>0.35 and piece:IsA("Part") and piece.Shape==Enum.PartType.Block and not piece:FindFirstChildOfClass("SpecialMesh") then
@@ -2687,15 +2885,18 @@ function Figure.Hero(parent, heroId, hero, scale)
 	local look = HERO_LOOK[heroId] or { colors = { chest = rgb(hero.color) } }
 	local spec = table.clone(look.body or {})
 	spec.scale = (spec.scale or 1) * (scale or 1)
+	-- A hero's head is a touch bigger than a stranger's: a friendlier figure
+	-- whose face reads in a small portrait (owner, 15/10). The body gives back
+	-- what the head gained, so a hero stands as tall as before (a boss is twice it).
+	spec.head = (spec.head or 1) * 1.12
+	spec.scale = spec.scale * 0.975
 	local figure = Figure.Build(parent, spec, look.colors, look.material or Enum.Material.SmoothPlastic)
 	-- The same finish applies to towers, portraits, ghosts and lobby cameos.
 	-- Use existing rig parts, so the entire roster gains material separation
 	-- without multiplying geometry or changing pivots and emission points.
 	for name, body in pairs(figure.parts) do
 		if name ~= "HumanoidRootPart" and not look.material then
-			if heroId == "hulk" then
-				body.Material = Enum.Material.Slate
-			elseif look.shiny then
+			if look.shiny then
 				body.Material = Enum.Material.Metal
 			end
 		end
@@ -2706,11 +2907,116 @@ function Figure.Hero(parent, heroId, hero, scale)
 		for _, item in ipairs(figure.model:GetChildren()) do if item:IsA("BasePart") and item.Name ~= "HumanoidRootPart" then item.Reflectance = 0.06 end end
 	end
 	if look.hair then Figure.Hair(figure, look.hair[1], look.hair[2]) end
-	if not DRAWN_FACE[heroId] then Figure.Face(figure, look.face or "smile", look.faceOptions) end
+	if not DRAWN_FACE[heroId] then
+		local faceOptions = table.clone(look.faceOptions or {})
+		faceOptions.iris = faceOptions.iris or HERO_IRIS[heroId]
+		-- Brows follow the hair, always darker than the skin (white hair gets grey brows).
+		local hair = look.hair and look.hair[1]
+		local browTone = hair and hair:Lerp(FIGURE_INK, math.max(hair.R, hair.G, hair.B) > 0.55 and 0.62 or 0.35)
+		faceOptions.brow = faceOptions.brow or browTone
+		faceOptions.lashes = faceOptions.lashes or HERO_LASHES[heroId]
+		Figure.HeroFace(figure, look.face or "smile", faceOptions)
+	end
 	local extras = HERO_EXTRAS[heroId]
 	if extras then extras(figure) end
+	if DRAWN_FACE[heroId] then wrapMaskedFace(figure) end
+	-- An open face (owner, 15/10: refine the faces): a hero with drawn eyes is
+	-- never a coloured head (a red or green face read as the hero's skin). A
+	-- hood, cowl, mask or helmet that wrapped the whole head sits back on it
+	-- instead, a little wider and taller, framing a face of the hero's own skin;
+	-- it no longer tints the head. Coloured-skin heroes keep their shell.
+	if figure.model:FindFirstChild("Sclera") and not COLOURED_SKIN[heroId] then
+		local head = figure.parts.Head
+		for _, piece in ipairs(figure.model:GetChildren()) do
+			local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+			if fit and fit.Part0 == head and HEAD_SHELLS[piece.Name] then
+				if figure.model:FindFirstChild("Hair") then
+					piece.Size = piece.Size * Vector3.new(1.1, 1.08, 1)
+					fit.C0 = fit.C0 * CFrame.new(0, head.Size.Y * 0.03, head.Size.Z * 0.15)
+				else
+					-- No hair: the cowl takes its place over the crown, the same tilted
+					-- cap, and a second shell covers the back of the head to the neck.
+					local h = head.Size
+					local nape = figure.add("Head", "CowlNape", Vector3.new(h.X * 1.03, h.Y * 0.98, h.Z * 0.94), CFrame.new(0, -h.Y * 0.02, h.Z * 0.15), piece.Color, piece.Material, "head")
+					nape:SetAttribute("OpenFace", true)
+					piece.Size = Vector3.new(h.X * 1.16, h.Y * 0.8, h.Z * 1.24)
+					fit.C0 = CFrame.new(0, h.Y * 0.26, h.Z * 0.08) * CFrame.Angles(0.25, 0, 0)
+					local mesh = piece:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
+					mesh.MeshType, mesh.Parent = Enum.MeshType.Sphere, piece
+				end
+				piece.CFrame = head.CFrame * fit.C0
+				piece:SetAttribute("OpenFace", true)
+				head.Color = look.colors and look.colors.skin or HERO_SKIN
+			end
+		end
+	end
+	-- Bands across the eyes (a domino mask, a goggle strap, a glowing visor)
+	-- sit behind them: the eyes come forward through the band, so a mask frames
+	-- the eyes instead of hiding them. A drawn face keeps its chin and mouth
+	-- free: a hood's chin plate covered the smile like a gag.
+	if not DRAWN_FACE[heroId] then
+		local head = figure.parts.Head
+		local drawn = figure.model:FindFirstChild("Sclera") ~= nil
+		local solidFront, banded
+		for _, piece in ipairs(figure.model:GetChildren()) do
+			local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+			if not (fit and fit.Part0 == head) then continue end
+			if drawn and (piece.Name == "ChinGuard" or piece.Name == "ChinStrap" or piece.Name == "EyeLens"
+				or (EYE_BANDS[piece.Name] and (OPEN_LEAGUE[heroId] or banded))) then
+				-- Leftovers of a full mask (lenses, chin plates), a second band, and the
+				-- visors of the league, whose faces are open.
+				piece:Destroy()
+			elseif EYE_BANDS[piece.Name] then
+				if drawn then
+					-- A band across drawn eyes is a mask tied round the head at eye
+					-- level: it follows the round of the head (a flat bar stood out past
+					-- the cheeks) and the eyes come forward through it, without glow.
+					piece.Size = Vector3.new(head.Size.X * 1.06, head.Size.Y * 0.26, head.Size.Z * 1.06)
+					if piece.Material == Enum.Material.Neon then piece.Material = Enum.Material.SmoothPlastic end
+					piece.Transparency = 0
+					local mesh = piece:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
+					mesh.MeshType, mesh.Parent = Enum.MeshType.Head, piece
+					fit.C0 = CFrame.new(0, head.Size.Y * 0.05, 0)
+					piece.CFrame = head.CFrame * fit.C0
+					banded = true
+				end
+				local z = (head.CFrame:Inverse() * piece.CFrame).Position.Z - piece.Size.Z / 2
+				solidFront = math.min(solidFront or z, z)
+			end
+		end
+		if banded then
+			for _, piece in ipairs(figure.model:GetChildren()) do
+				if piece.Name == "Blush" then piece:Destroy() end
+			end
+		end
+		local sclera = figure.model:FindFirstChild("Sclera")
+		if solidFront and sclera then
+			local shift = (head.CFrame:Inverse() * sclera.CFrame).Position.Z - sclera.Size.Z / 2 - solidFront + 0.012
+			if shift > 0 then
+				for _, piece in ipairs(figure.model:GetChildren()) do
+					if EYE_PIECES[piece.Name] and piece:IsA("BasePart") then
+						piece.CFrame = head.CFrame * CFrame.new(0, 0, -shift) * (head.CFrame:Inverse() * piece.CFrame)
+						local fit = piece:FindFirstChild("Fit")
+						if fit then fit.C0 = head.CFrame:Inverse() * piece.CFrame end
+					end
+				end
+			end
+		end
+	end
+	-- A face drawn over a full mask does not blush.
+	local masked = false
+	for _, piece in ipairs(figure.model:GetChildren()) do
+		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+		if fit and fit.Part0 == figure.parts.Head and (piece.Name == "MaskBase" or piece.Name == "MaskShell" or piece.Name == "WarMask") and not piece:GetAttribute("OpenFace") then masked = true; break end
+	end
+	if masked then
+		for _, piece in ipairs(figure.model:GetChildren()) do
+			if piece.Name == "Blush" then piece:Destroy() end
+		end
+	end
 	Figure.Finish(figure, true)
 	finishHeroCostume(figure)
+	polishHero(figure, look.colors and look.colors.skin or HERO_SKIN)
 	if look.suit then
 		-- Plated suits (look.suit is the suit colour) need continuous solid
 		-- sleeves and a full waist. A tapered torso mesh on each limb left
@@ -3235,7 +3541,7 @@ ENEMY_EXTRAS.loki = function(f, def)
 	local robe, silver, mantle, magenta, mirror = Color3.fromRGB(46, 32, 74), Color3.fromRGB(204, 210, 222), Color3.fromRGB(92, 50, 150), Color3.fromRGB(236, 96, 220), Color3.fromRGB(220, 226, 255)
 	for _, name in ipairs({ "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" }) do f.parts[name].Color = robe end
 	Figure.Face(f, "fierce", { eye = magenta })
-	Figure.Hair(f, Color3.fromRGB(236, 236, 242), "long")
+	Figure.Hair(f, Color3.fromRGB(236, 236, 242), "long", def and def.illusion)
 	-- A silver circlet; behind the head, a halo of floating mirror shards.
 	f.add("Head", "Circlet", h * Vector3.new(1.06, 0.14, 1.06), CFrame.new(0, h.Y * 0.32, 0), silver, METAL)
 	-- The decoys keep the crowd budget: everything but the circlet's gem.
@@ -4359,13 +4665,23 @@ end
 -- A real 3D vignette with this map's authored roads. Rendering it into the
 -- sign avoids blank thumbnails while an image upload is awaiting moderation.
 -- Its camera is bound again by each client (CurrentCamera does not replicate).
-local function mapVignette(parent,map,tint)
+-- `bare` (a photograph covers the sign) keeps the frame and its camera but
+-- builds no scene: hidden parts would only cost the lobby's budget.
+local function mapVignette(parent,map,tint,bare)
 	local viewport=Instance.new("ViewportFrame")
 	viewport.Name,viewport.Size,viewport.BackgroundColor3="MapPicture",UDim2.fromScale(1,0.75),Color3.fromRGB(116,193,225)
 	viewport.BorderSizePixel=0; viewport.Ambient=Color3.fromRGB(190,190,190)
 	viewport.LightColor,viewport.LightDirection=Color3.fromRGB(255,240,211),Vector3.new(-1,-1,-0.5)
 	viewport.Parent=parent
 	local scene=Instance.new("WorldModel"); scene.Name="MapScene"; scene.Parent=viewport
+	local function bindCamera()
+		local camera=Instance.new("Camera"); camera.Name="PictureCamera"
+		camera.CFrame=CFrame.lookAt(Vector3.new(100,120,140),Vector3.new(0,7,0)); camera.FieldOfView=40
+		viewport:SetAttribute("PictureCFrame",camera.CFrame)
+		viewport:SetAttribute("PictureFieldOfView",camera.FieldOfView)
+		camera.Parent=viewport; viewport.CurrentCamera=camera
+	end
+	if bare then bindCamera(); return end
 	local green=map.id=="wakanda" or map.id=="gamma"
 	local ground=green and Color3.fromRGB(69,126,75) or Color3.fromRGB(86,96,108)
 	if map.id=="asgard" then ground=Color3.fromRGB(172,154,102) end
@@ -4396,11 +4712,7 @@ local function mapVignette(parent,map,tint)
 			part(scene,"Crown",Vector3.new(16,4,16),CFrame.new(x,h+15,z),map.id=="asgard" and ART.gold or tint)
 		end
 	end
-	local camera=Instance.new("Camera"); camera.Name="PictureCamera"
-	camera.CFrame=CFrame.lookAt(Vector3.new(100,120,140),Vector3.new(0,7,0)); camera.FieldOfView=40
-	viewport:SetAttribute("PictureCFrame",camera.CFrame)
-	viewport:SetAttribute("PictureFieldOfView",camera.FieldOfView)
-	camera.Parent=viewport; viewport.CurrentCamera=camera
+	bindCamera()
 	for _,p in ipairs(scene:GetDescendants()) do if p:IsA("BasePart") then
 		p.CanCollide,p.CanTouch,p.CanQuery=false,false,false
 		p:SetAttribute("MapPicturePart",true)
@@ -4442,10 +4754,11 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 	local surface=Instance.new("SurfaceGui"); surface.Name="MapBoard"; surface.Face=Enum.NormalId.Front
 	surface.LightInfluence,surface.CanvasSize,surface.SizingMode=0,Vector2.new(880,344),Enum.SurfaceGuiSizingMode.FixedSize
 	surface.Parent=board
-	mapVignette(surface,map,tint)
 	-- A photograph of the real map, once imported and configured
 	-- (Config.MapImages), covers the rendered diorama.
-	if (tonumber(photo) or 0)>0 then
+	local photographed=(tonumber(photo) or 0)>0
+	mapVignette(surface,map,tint,photographed)
+	if photographed then
 		local image=Instance.new("ImageLabel")
 		image.Name,image.Size,image.BackgroundTransparency,image.ZIndex="MapPhoto",UDim2.fromScale(1,0.75),1,0
 		image.Image,image.ScaleType="rbxassetid://"..tostring(math.floor(photo)),Enum.ScaleType.Crop
@@ -4731,16 +5044,20 @@ local function buildShopStand(lobby, x, z, shopKind, shopKey, displayName, openP
 		Kit.block(model,"TrainingScreen",V(3.3,1.9,0.18),CFrame.new(x,y+3.35,z+0.55)*CFrame.Angles(-0.12,0,0),HQ.ink,Enum.Material.SmoothPlastic)
 		for i=1,3 do Kit.block(model,"TrainingBar",V(0.4,0.45+i*0.35,0.12),CFrame.new(x-1.25+i*0.62,y+3.1,z+0.4),tint,Enum.Material.Metal) end
 	end
-	local plaque = wallSign(model,"ProductPlaque",CFrame.new(x,y+0.85,z-3.7),V(6.6,1.3,0.15),displayName,"VER LOJA",tint)
+	-- A pass stand sells that pass (owner, 15/10): pressing E shows its card,
+	-- with what it gives, and the Robux purchase opens at once (the server
+	-- prompts it, init.server). The hero and Gold stands open their list.
+	local offer = shopKind == "pass"
+	local plaque = wallSign(model,"ProductPlaque",CFrame.new(x,y+0.85,z-3.7),V(6.6,1.3,0.15),displayName,offer and "COMPRAR" or "VER LOJA",tint)
 	local nameTag = plaque:FindFirstChild("Title",true)
 	nameTag:SetAttribute("LobbyTextPT",displayName); nameTag:SetAttribute("LobbyTextEN",displayEN or displayName)
 	local hint=plaque:FindFirstChild("Subtitle",true)
-	hint:SetAttribute("LobbyTextPT","VER LOJA"); hint:SetAttribute("LobbyTextEN","VIEW SHOP")
+	hint:SetAttribute("LobbyTextPT",offer and "COMPRAR" or "VER LOJA"); hint:SetAttribute("LobbyTextEN",offer and "BUY" or "VIEW SHOP")
 	for _, p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p ~= stand then p.CanCollide = false end end
 	model.PrimaryPart = stand
-	local prompt = interactable(stand, displayName, function(player) openPanel(player, "shop", { shopKind = shopKind, shopKey = shopKey }) end)
+	local prompt = interactable(stand, displayName, function(player) openPanel(player, offer and "offer" or "shop", { shopKind = shopKind, shopKey = shopKey }) end)
 	prompt:SetAttribute("ObjectPT", displayName); prompt:SetAttribute("ObjectEN", displayEN or displayName)
-	prompt:SetAttribute("ActionPT", "Abrir"); prompt:SetAttribute("ActionEN", "Open")
+	prompt:SetAttribute("ActionPT", offer and "Comprar" or "Abrir"); prompt:SetAttribute("ActionEN", offer and "Buy" or "Open")
 	return model
 end
 
@@ -6200,7 +6517,7 @@ function World:BuildIslands(hq)
 		end
 		Kit.sign(hq, "LatveriaSign", CFrame.lookAt(V(c.X + 21, 33, c.Z), V(HUB.X, 33, c.Z)), 30, 8, {
 			premium = true,
-			title = { "CIDADELA", "LATVERIA" }, subtitle = { "EXPEDIÇÃO FINAL • 70 ONDAS", "FINAL EXPEDITION • 70 WAVES" },
+			title = { "CIDADELA", "CITADEL" }, subtitle = { "EXPEDIÇÃO FINAL • 70 ONDAS", "FINAL EXPEDITION • 70 WAVES" },
 			top = Color3.fromRGB(90, 200, 130), bottom = Color3.fromRGB(20, 60, 50), accent = green,
 			art = "castle", artX = 0.17, artW = 0.3, titleX = 0.6, titleW = 0.74, legs = GROUND_Y,
 		})

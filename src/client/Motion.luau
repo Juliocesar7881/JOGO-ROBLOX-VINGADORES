@@ -82,6 +82,73 @@ function Motion.Solve(rig)
 	end
 end
 
+-- Blinking (owner, 16/10): a hero's eyes shut for a moment every few seconds,
+-- now and then twice in a row. Nothing is added to the figure: the white, the
+-- iris, the pupil, the highlight and any glow in the eye hide, and the drawn lid (EyeLine, and the
+-- lash with it) drops to the middle of the eye on its weld, so a figure in the
+-- world and one in a viewport (Motion.Solve) blink alike. A face without drawn
+-- eyes (a mask, a visor, the infected) is left alone.
+local OPEN_EYE = { Sclera = true, Iris = true, Pupil = true, Catchlight = true, EyeGlow = true }
+local LID = { EyeLine = true, Lash = true }
+local BLINK_SPAN, BLINK_SHUT = 4.2, 0.13
+
+local function noise(n)
+	local x = sin(n * 12.9898 + 78.233) * 43758.5453
+	return x - math.floor(x)
+end
+
+-- Whether the eyes are shut at `t` seconds; `seed` keeps neighbours out of step.
+-- One blink in every 4.2 s window, somewhere in its first 3.4 s; about one in
+-- five is a double blink.
+function Motion.BlinkClosed(t, seed)
+	seed = seed or 0
+	local shift = seed * 1.618
+	local cycle = math.floor((t + shift) / BLINK_SPAN)
+	local at = cycle * BLINK_SPAN - shift + 0.5 + noise(cycle + seed * 7.31) * 2.9
+	local since = t - at
+	if since >= 0 and since < BLINK_SHUT then return true end
+	return noise(cycle * 3.7 + seed) < 0.22 and since >= 0.24 and since < 0.24 + BLINK_SHUT
+end
+
+-- The pieces that blink on a figure (its face parts are welded to its Head),
+-- or nil when it has no drawn eye.
+function Motion.Eyes(model)
+	local head = model and model:FindFirstChild("Head")
+	if not (head and head:IsA("BasePart")) then return nil end
+	local open, lids, whites = {}, {}, {}
+	for _, piece in ipairs(model:GetChildren()) do
+		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+		if fit and fit:IsA("Weld") and fit.Part0 == head then
+			if OPEN_EYE[piece.Name] then
+				table.insert(open, { part = piece, shown = piece.Transparency or 0 })
+				if piece.Name == "Sclera" then table.insert(whites, fit.C0.Position) end
+			elseif LID[piece.Name] then
+				table.insert(lids, { weld = fit, rest = fit.C0 })
+			end
+		end
+	end
+	if #whites == 0 or #lids == 0 then return nil end
+	-- Each lid shuts a little below the middle of the eye on its own side.
+	for _, lid in ipairs(lids) do
+		local x, eye = lid.rest.Position.X, nil
+		for _, white in ipairs(whites) do
+			if not eye or abs(white.X - x) < abs(eye.X - x) then eye = white end
+		end
+		local drop = max(0, lid.rest.Position.Y - (eye.Y - head.Size.Y * 0.02))
+		lid.shut = CFrame.new(0, -drop, 0) * lid.rest
+	end
+	return { open = open, lids = lids, closed = false }
+end
+
+-- Opens or shuts the eyes found by Motion.Eyes; only a change touches a part.
+function Motion.SetEyes(eyes, shut)
+	shut = shut == true
+	if not eyes or eyes.closed == shut then return end
+	eyes.closed = shut
+	for _, piece in ipairs(eyes.open) do piece.part.Transparency = shut and 1 or piece.shown end
+	for _, lid in ipairs(eyes.lids) do lid.weld.C0 = shut and lid.shut or lid.rest end
+end
+
 -- How each family walks. stride: studs per step (at scale 1); hip/knee/arm:
 -- swing in radians; lean: forward tilt of the whole body; arms: resting
 -- shoulder pitch (1.3 = reaching forward like the classic shambler).
@@ -192,7 +259,7 @@ function Motion.Hero(joints, pose)
 	local lShoulder, lRoll, lElbow = 0.08, -0.12, 0.18
 	local rShoulder, rRoll, rElbow = 0.08, 0.12, 0.18
 	local waist, neck = 0.03 * breathe, -0.02 * breathe
-	local twist, lift = 0, 0
+	local twist, lift, shift = 0, 0, 0
 	local progress = math.clamp(pose.fireProgress or 0, 0, 1)
 	local recover = sin(progress * pi) * (1 - progress)
 	if style == "bow" then
@@ -247,6 +314,14 @@ function Motion.Hero(joints, pose)
 	elseif style == "throw" then
 		rShoulder, rRoll, rElbow = 0.4 + 1.3 * fire, 0.2, 0.8 * (1 - fire)
 		lShoulder, lElbow = 0.3 + 1.1 * fire, 1.2 * fire
+	elseif style == "idle" then
+		-- At ease (the lobby's heroes): the arms hang a little out from the body
+		-- and sway with each breath, and the weight moves slowly from one foot to
+		-- the other, the chest leaning back against it.
+		local t = pose.t or 0
+		lShoulder, lRoll, lElbow = 0.05 + 0.04 * breathe, -0.1 - 0.025 * breathe, 0.22 + 0.04 * breathe
+		rShoulder, rRoll, rElbow = 0.05 - 0.04 * breathe, 0.1 + 0.025 * breathe, 0.22 - 0.04 * breathe
+		shift = 0.045 * sin(t * 0.55) + 0.012 * sin(t * 1.3)
 	else
 		-- Point and shoot: the right arm levels at the target and kicks back.
 		rShoulder, rRoll, rElbow = 0.65+0.75*prepare+0.95*fire, 0.12*(1-fire), 0.18+0.32*fire
@@ -273,20 +348,20 @@ function Motion.Hero(joints, pose)
 	set(joints, "RightShoulder", angles(rShoulder, 0, rRoll))
 	set(joints, "LeftElbow", angles(lElbow, 0, 0))
 	set(joints, "RightElbow", angles(rElbow, 0, 0))
-	set(joints, "Waist", angles(waist, twist, 0))
+	set(joints, "Waist", angles(waist, twist, -shift * 0.7))
 	set(joints, "Neck", angles(neck, 0, 0))
 	-- A slight crouch when landing a heavy blow or bracing a cast; a flier's legs
 	-- trail behind it instead.
 	local brace = (style == "smash" and (fire * 0.35+prepare*0.18+recover*0.12) or 0) + 0.2 * cast
 	local trail = lift > 0 and 0.35 or 0
-	set(joints, "LeftHip", angles(brace + trail, 0, -0.05))
-	set(joints, "RightHip", angles(brace + trail * 0.8, 0, 0.05))
+	set(joints, "LeftHip", angles(brace + trail, 0, -0.05 - shift))
+	set(joints, "RightHip", angles(brace + trail * 0.8, 0, 0.05 - shift))
 	set(joints, "LeftKnee", angles(-brace * 1.6 - trail * 0.2, 0, 0))
 	set(joints, "RightKnee", angles(-brace * 1.6 - trail * 0.3, 0, 0))
 	set(joints, "LeftAnkle", angles(brace * 0.6, 0, 0))
 	set(joints, "RightAnkle", angles(brace * 0.6, 0, 0))
 	-- Breathing lifts the whole figure a little; a brace lowers it; a flier hovers.
-	set(joints, "Root", CFrame.new(0, 0.03 * breathe - brace * 0.5 + lift, 0))
+	set(joints, "Root", CFrame.new(0, 0.03 * breathe - brace * 0.5 + lift, 0) * angles(0, 0, shift))
 end
 
 -- Rigs a live portrait (UI.heroPortraitLive) for Perform: its joint tree, where
@@ -372,6 +447,8 @@ function Motion.Perform(live, since, mode)
 		pose.count = math.floor((since - 2.7) / 2.4)
 	end
 	Motion.Hero(rig.joints, pose)
+	if live.eyes == nil then live.eyes = Motion.Eyes(live.figure or live.model) or false end
+	if live.eyes then Motion.SetEyes(live.eyes, mode ~= "rest" and since > 0.4 and Motion.BlinkClosed(since, 0.6)) end
 	if squash > 0 and rig.joints.Root then rig.joints.Root.Transform = CFrame.new(0, -0.45 * squash, 0) * rig.joints.Root.Transform end
 	rig.root.CFrame = live.baseRoot * CFrame.new(0, lift, 0) * CFrame.Angles(0, yaw, 0)
 	Motion.Solve(rig)

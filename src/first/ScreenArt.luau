@@ -161,11 +161,15 @@ end
 -- Both the early loader and the reconnect splash use this same composition.
 -- The optional UI adapter applies the game's scale-aware text limits once it
 -- exists; ReplicatedFirst itself never waits for the client or shared modules.
-function ScreenArt.Loading(parent, T, size, UI)
+-- farm ({kind = "gold"|"xp", title}) is a trip to an AFK farm: its own art and
+-- words, the same picture the farm screen then shows (owner, 15/10: no other
+-- screen may flash on the way in).
+function ScreenArt.Loading(parent, T, size, UI, farm)
 	local w,h=size.X,size.Y
 	local compact=w<600
 	local root=make("Frame",parent,{Name="LoadingSplash",Size=UDim2.fromScale(1,1),BackgroundColor3=P.ink,BorderSizePixel=0,Active=true,ZIndex=80})
-	local backdrop=ScreenArt.Draw(root,"loading",w,h+80,80)
+	if farm then root:SetAttribute("AfkKind",farm.kind) end
+	local backdrop=ScreenArt.Draw(root,farm and farm.kind or "loading",w,h+80,80)
 	backdrop.Position=UDim2.fromOffset(0,-80)
 	backdrop.Size=UDim2.new(1,0,1,80)
 	local height=math.min(h-40,360)
@@ -183,9 +187,16 @@ function ScreenArt.Loading(parent, T, size, UI)
 		return made
 	end
 	local small=height<330
-	label("SplashKicker",T("MULTIVERSO / ÚLTIMA DEFESA","MULTIVERSE / LAST DEFENSE"),0,26,small and 14 or 17,P.gold,true)
-	label("SplashTitle","DOOMSDAY",small and 30 or 32,small and 66 or 86,compact and 49 or (small and 48 or 68))
-	label("SplashSubtitle",T("O próximo mundo precisa de você.","The next world needs you."),small and 100 or 122,36,small and 16 or 20,P.muted,true)
+	local accent=farm and (farm.kind=="gold" and P.gold or P.violet) or P.gold
+	-- The game's name, "Multiverse Heroes: Doomsday Tower Defense" (owner, 15/10).
+	label("SplashKicker",farm and T("MULTIVERSO / REFÚGIO","MULTIVERSE / REFUGE") or "DOOMSDAY  •  TOWER DEFENSE",0,26,small and 14 or 17,accent,true)
+	local titleSize=farm and (compact and 34 or (small and 36 or 48)) or (compact and 40 or (small and 40 or 56))
+	local title=label("SplashTitle",farm and farm.title or "MULTIVERSE HEROES",small and 30 or 32,small and 66 or 86,titleSize)
+	-- Long words on a narrow phone shrink instead of spilling out of the box.
+	title.TextScaled=true
+	if not title:FindFirstChildOfClass("UITextSizeConstraint") then make("UITextSizeConstraint",title,{MaxTextSize=titleSize,MinTextSize=18}) end
+	if farm then title.TextColor3=accent end
+	label("SplashSubtitle",farm and T("Seu farm continua enquanto você descansa.","Your farm keeps going while you rest.") or T("O próximo mundo precisa de você.","The next world needs you."),small and 100 or 122,36,small and 16 or 20,P.muted,true)
 	local statusY=small and 148 or 183
 	local status=label("SplashStatus","",statusY,28,17,P.blue,true)
 	local track=frame(box,"SplashTrack",compact and 16 or 0,statusY+38,compact and w-64 or math.min(w*0.43,490),10,P.steel,91)
@@ -198,11 +209,16 @@ function ScreenArt.Loading(parent, T, size, UI)
 		chip.Size=UDim2.new(1/3,compact and -24 or -8,0,22)
 		steps[i]=chip
 	end
-	label("SplashTip",T("DICA  •  O primeiro herói da equipe define seu poder na partida.","TIP  •  Your first equipped hero sets your power in battle."),height-48,48,small and 13 or 15,P.muted,true)
+	label("SplashTip",farm and T("DICA  •  Fique no farm: o pagamento cai a cada minuto, mesmo com a tela parada.","TIP  •  Stay in the farm: a payment lands every minute, even with the screen still.")
+		or T("DICA  •  O primeiro herói da equipe define seu poder na partida.","TIP  •  Your first equipped hero sets your power in battle."),height-48,48,small and 13 or 15,P.muted,true)
 	local function step(elapsed,worldLoaded,ready,reduced)
 		if not root.Parent then return end
 		local phase=ready and 3 or (worldLoaded and 2 or 1)
-		status.Text=phase==3 and T("Tudo pronto. Vamos defender!","All set. Time to defend!") or (phase==2 and T("Conectando seu perfil…","Connecting your profile…") or T("Carregando o refúgio…","Loading the refuge…"))
+		if farm then
+			status.Text=phase==3 and T("Farm pronto!","Farm ready!") or (phase==2 and T("Conectando seu perfil…","Connecting your profile…") or T("Entrando no farm…","Entering the farm…"))
+		else
+			status.Text=phase==3 and T("Tudo pronto. Vamos defender!","All set. Time to defend!") or (phase==2 and T("Conectando seu perfil…","Connecting your profile…") or T("Carregando o refúgio…","Loading the refuge…"))
+		end
 		if elapsed>=15 and not ready then
 			status.Text=T("A conexão está demorando. Tentando novamente…","Connection is taking longer. Retrying…")
 		end

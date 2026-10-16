@@ -543,7 +543,7 @@ function Panels.new(ctx)
 
 	-- The Robux shop and the starter pack draw in their own module (Shop.luau).
 	local shop = Shop.new(ctx, { categoryTabs = categoryTabs, heroTooltip = heroTooltip, heroPicksLeft = heroPicksLeft })
-	local configured, contextPremium, contextShop = shop.configured, shop.contextPremium, shop.contextShop
+	local configured, contextPremium, contextShop, contextOffer = shop.configured, shop.contextPremium, shop.contextShop, shop.contextOffer
 
 	-- Today's missions, the week's mission, and any older ones still unclaimed
 	-- (a mission lives three days after it was drawn). The newest set of each
@@ -1659,7 +1659,7 @@ function Panels.new(ctx)
 		bases=contextBases,
 		modes=contextModes,
 		talents = contextTalents,
-		hero = contextHero, chests = contextChests, premium = contextPremium, pick = exchange.pick, trade = exchange.trade, inventory = contextSquad, shop = contextShop,
+		hero = contextHero, chests = contextChests, premium = contextPremium, pick = exchange.pick, trade = exchange.trade, inventory = contextSquad, shop = contextShop, offer = contextOffer,
 		quests = contextQuests, leaderboard = contextLeaderboard, squad = contextSquad, settings = contextSettings,
 		rewards = contextRewards,
 	}

@@ -18,6 +18,7 @@ function LobbyWorld.new(ctx)
 	kit.CONTEXT_ANCHOR = {
 		chests = {kind="ChestStand",attribute="ChestId",field="chestId"},
 		shop = { kind = "ShopStand", attribute = "ShopKey", field = "shopKey" },
+		offer = { kind = "ShopStand", attribute = "ShopKey", field = "shopKey" },
 		quests = { kind = "Board", attribute = "BoardId", value = "quests" },
 		leaderboard = { kind = "Board", attribute = "BoardId", value = "leaderboard" },
 	}
@@ -149,6 +150,8 @@ function LobbyWorld.new(ctx)
 				local t = now + figure.phase
 				local joints = figure.rig.joints
 				Motion.Hero(joints, { breathe = math.sin(t * 1.7), style = "idle", t = t })
+				if figure.eyes == nil then figure.eyes = Motion.Eyes(figure.model) or false end
+				if figure.eyes then Motion.SetEyes(figure.eyes, Motion.BlinkClosed(t, figure.phase)) end
 				-- Heads turn slowly to one side, hold and come back.
 				local glance = math.max(0, math.sin(t * 0.31)) ^ 0.5 * math.sin(t * 0.9) * 0.45
 				if joints.Neck then joints.Neck.Transform = CFrame.Angles(-0.02 * math.sin(t * 1.7), glance, 0) end
@@ -159,6 +162,10 @@ function LobbyWorld.new(ctx)
 					joints.LeftElbow.Transform = CFrame.Angles(1.25, 0, 0)
 					joints.RightElbow.Transform = CFrame.Angles(1.25, 0, 0)
 				end
+				Motion.Solve(figure.rig)
+			elseif figure.eyes and figure.eyes.closed then
+				-- Out of range it stops moving: never with its eyes shut.
+				Motion.SetEyes(figure.eyes, false)
 				Motion.Solve(figure.rig)
 			end
 		end

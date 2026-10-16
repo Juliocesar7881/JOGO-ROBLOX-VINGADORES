@@ -10,6 +10,16 @@ local player = Players.LocalPlayer
 local portuguese = true
 pcall(function() portuguese = string.sub(string.lower(LocalizationService.RobloxLocaleId),1,2)=="pt" end)
 local function T(pt,en) return portuguese and pt or en end
+-- Arriving at an AFK farm: the cover is that farm's, not the game's launch
+-- screen, and it stays until the farm screen is up (the client holds DoomReady).
+local farm
+pcall(function()
+	local data = game:GetService("TeleportService"):GetLocalPlayerTeleportData()
+	local kind = type(data) == "table" and data.afkKind
+	if kind == "gold" or kind == "xp" then
+		farm = {kind = kind, title = kind == "gold" and T("FARM DE OURO AFK", "AFK GOLD FARM") or T("FARM DE XP AFK", "AFK XP FARM")}
+	end
+end)
 
 local gui = Instance.new("ScreenGui")
 gui.Name,gui.IgnoreGuiInset,gui.ResetOnSpawn,gui.DisplayOrder="DoomLoader",true,false,1000
@@ -33,7 +43,7 @@ local function resize()
 	if key==lastSize then return end
 	lastSize=key
 	if view then view.root:Destroy() end
-	view=Art.Loading(canvas,T,logical)
+	view=Art.Loading(canvas,T,logical,nil,farm)
 end
 -- Cover first, then remove Roblox's default, avoiding a black-frame gap.
 resize()

@@ -1104,12 +1104,34 @@ end
 
 Catalog.Products = {
 	Passes = {
-		collector = { id = 0, price = 99, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold.") },
-		training = { id = 0, price = 99, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP.") },
-		speed3 = { id = 0, price = 99, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. A partida acelera quando todo o grupo escolhe 3x.", "Unlocks 3x in matches. The match speeds up when the whole squad picks 3x.") },
-		season = { id = 0, price = 499, name = text("Passe de Temporada", "Season Pass"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title.") },
+		-- benefits: what the pass gives, one line each, on its stand's card in the
+		-- plaza (owner, 15/10: show what is being bought). Only what the code does.
+		collector = { id = 0, price = 99, name = text("Drone coletor", "Collector Drone"), description = text("Coleta suas moedas automaticamente. Não aumenta o Ouro total.", "Collects your coins automatically. Does not increase total Gold."),
+			benefits = { text("Pega todas as suas moedas de Ouro sozinho, em qualquer lugar do mapa", "Picks up all your Gold coins by itself, anywhere on the map"),
+				text("Um drone voa ao seu lado em toda partida", "A drone flies beside you in every match"),
+				text("Você só defende: nada de correr atrás de moeda", "You just defend: no more chasing coins"),
+				text("É seu para sempre", "Yours forever") } },
+		training = { id = 0, price = 99, name = text("Treinamento acelerado", "Accelerated Training"), description = text("+25% de XP de conta e de maestria.", "+25% account and mastery XP."),
+			benefits = { text("+25% de XP na conta: sobe de nível mais rápido", "+25% account XP: level up faster"),
+				text("+25% de maestria nos heróis: libera as melhorias antes", "+25% hero mastery: unlock upgrades sooner"),
+				text("Mais pontos na Árvore de Evolução, mais cedo", "More Talent Tree points, sooner"),
+				text("É seu para sempre", "Yours forever") } },
+		speed3 = { id = 0, price = 99, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. Com o passe, você liga o 3x para o grupo todo.", "Unlocks 3x in matches. With the pass, you switch the whole squad to 3x."),
+			benefits = { text("Partidas na velocidade 3x", "Matches at 3x speed"),
+				text("Você liga o 3x para o grupo todo", "You switch the whole squad to 3x"),
+				text("Mais ondas no mesmo tempo de jogo", "More waves in the same playing time"),
+				text("É seu para sempre", "Yours forever") } },
+		season = { id = 0, price = 499, name = text("Passe de Temporada", "Season Pass"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title."),
+			benefits = { text("Trilha premium da temporada", "The season's premium track"),
+				text("O dobro de Ouro nas recompensas da trilha", "Double the Gold on the track's rewards"),
+				text("Mais baús e um título exclusivo", "More chests and an exclusive title") } },
 		-- freeChestScale: the free chest comes back this much sooner for VIPs.
-		vip = { id = 0, price = 199, freeChestScale = 0.5, name = text("Pacote VIP", "VIP Pack"), description = text("Baú grátis duas vezes mais rápido, nome dourado, título, emote, trilha e drone dourado.", "Free chest twice as fast, golden name, title, emote, trail and a golden drone.") },
+		vip = { id = 0, price = 199, freeChestScale = 0.5, name = text("Pacote VIP", "VIP Pack"), description = text("Baú grátis duas vezes mais rápido, nome dourado, título, saudação e rastro dourado.", "Free chest twice as fast, golden name, title, salute and a golden trail."),
+			benefits = { text("Baú grátis 2x mais rápido: a cada 3 horas", "Free chest twice as fast: every 3 hours"),
+				text("Nome dourado com VIP e o título Patrono da Resistência", "Golden VIP name and the Resistance Patron title"),
+				text("Rastro dourado no seu personagem", "A golden trail on your character"),
+				text("Saudação VIP nas partidas e confete na vitória", "VIP salute in matches and confetti on victory"),
+				text("Com o Drone coletor, o drone fica dourado", "With the Collector Drone, the drone turns gold") } },
 	},
 	Consumables = {
 		gold1000 = { id = 0, price = 25, gold = 1000, name = text("1.000 de Ouro", "1,000 Gold") },

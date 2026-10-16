@@ -11,6 +11,7 @@ import tempfile
 TOKENS = {
     "__STUBS__": Path("tests/roblox_stubs.luau"),
     "__CATALOG__": Path("src/shared/Catalog.luau"),
+    "__CONFIG__": Path("src/shared/Config.luau"),
     "__WORLD__": Path("src/server/WorldBuilder.luau"),
     "__MOTION__": Path("src/client/Motion.luau"),
     "__INTERACTION__": Path("src/client/InteractionHud.luau"),
