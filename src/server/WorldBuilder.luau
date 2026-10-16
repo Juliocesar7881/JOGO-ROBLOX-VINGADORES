@@ -2868,7 +2868,9 @@ local function finishHeroCostume(f)
 				bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",Enum.MeshType.Head,piece
 			end
 			local contour=piece:FindFirstChild("CostumeContour")
-			if contour and (string.find(host.Name,"Arm") or string.find(host.Name,"Leg")) then contour.MeshType=Enum.MeshType.Torso end
+			-- Sleeves, cuffs and guards are round like the limbs under them (16/10:
+			-- square cuffs on round limbs read as a robot's joints).
+			if contour and (string.find(host.Name,"Arm") or string.find(host.Name,"Leg")) then contour.MeshType=Enum.MeshType.Head end
 		end
 		-- Secondary luminous piping should read as enamel; eyes and power
 		-- sources keep their glow and their individual colour signatures.
@@ -2881,8 +2883,11 @@ local function finishHeroCostume(f)
 		if cover[body] then body.Color = cover[body].color:Lerp(FIGURE_INK,0.18) end
 		local contour = body:FindFirstChild("BodyContour")
 		if contour and (string.find(name,"Arm") or string.find(name,"Leg")) then
-			contour.MeshType = Enum.MeshType.Torso
-			contour.Scale = Vector3.new(1,1.12,1)
+			-- Rounded vinyl-toy limbs (16/10, checked in Studio): each segment runs
+			-- 16% past its joint, so the round ends overlap and no gap opens when a
+			-- limb bends. Plated suits keep straight sleeves (Figure.Hero).
+			contour.MeshType = Enum.MeshType.Head
+			contour.Scale = Vector3.new(1,1.16,1)
 		end
 		-- Flat matte cloth stays legible in small portraits; the repeating
 		-- fabric texture otherwise overwhelms seams and costume colours.
