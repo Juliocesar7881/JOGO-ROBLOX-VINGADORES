@@ -2,6 +2,7 @@
 
     python tools/render_figure.py ironman captain            # front and 3/4 views
     python tools/render_figure.py captain --out test-results/figures --size 480
+    python tools/render_figure.py enemy:zombie@chef enemy:lizard          # enemies, outfits, bosses
 
 Builds each hero with the real WorldBuilder (Figure.Hero) against the test
 stand-ins, dumps every visible part (CFrame, size, colour, material, shape and
@@ -35,9 +36,12 @@ local ids = string.split("__IDS__", ",")
 for index, id in ipairs(ids) do
 	local holder = Instance.new("Model")
 	holder.Parent = workspace
-	-- "enemy:<id>" draws an enemy or boss (Figure.Enemy) instead of a hero.
+	-- "enemy:<id>" draws an enemy or boss (Figure.Enemy) instead of a hero;
+	-- "enemy:<id>@<outfit>" one of a plain family's other looks.
 	local enemyId = string.match(id, "^enemy:(.+)$")
-	local figure = enemyId and WorldBuilder.Figure.Enemy(holder, Catalog.Enemies[enemyId]) or WorldBuilder.Figure.Hero(holder, id, Catalog.Heroes[id], 1)
+	local outfit = enemyId and string.match(enemyId, "@(.+)$")
+	if outfit then enemyId = string.match(enemyId, "^(.-)@") end
+	local figure = enemyId and WorldBuilder.Figure.Enemy(holder, Catalog.Enemies[enemyId], outfit) or WorldBuilder.Figure.Hero(holder, id, Catalog.Heroes[id], 1)
 	if __STATUE__ and not enemyId then WorldBuilder.Figure.PoseStatic(figure.model, WorldBuilder.StatuePose[id]) end
 	figure.model:PivotTo(CFrame.new((index - 1) * 24, 0, 0))
 	print("H|" .. id .. "|" .. num((index - 1) * 24))
@@ -48,11 +52,13 @@ for index, id in ipairs(ids) do
 			local mesh = item:FindFirstChildOfClass("SpecialMesh")
 			local meshType = mesh and mesh.MeshType and mesh.MeshType.Name or ""
 			local scale = mesh and mesh.Scale or Vector3.new(1, 1, 1)
+			local offset = mesh and mesh.Offset or Vector3.new(0, 0, 0)
 			print(table.concat({ "P", item.Name, num(cf.X), num(cf.Y), num(cf.Z), num(r.X), num(r.Y), num(r.Z),
 				num(u.X), num(u.Y), num(u.Z), num(-l.X), num(-l.Y), num(-l.Z), num(size.X), num(size.Y), num(size.Z),
 				num(color.R), num(color.G), num(color.B), num(item.Transparency or 0),
 				item.Material and item.Material.Name or "Plastic", item.Shape and item.Shape.Name or "Block",
-				item.ClassName or "Part", meshType, num(scale.X), num(scale.Y), num(scale.Z), id }, "|"))
+				item.ClassName or "Part", meshType, num(scale.X), num(scale.Y), num(scale.Z), id,
+				num(offset.X), num(offset.Y), num(offset.Z) }, "|"))
 		end
 	end
 end
@@ -81,10 +87,10 @@ def swap_costume(world: str, hero: str, look: Path | None, extras: Path | None) 
     return "\n".join(lines)
 
 
-def dump(ids: list[str], swaps=None, statue=False) -> str:
+def dump(ids: list[str], swaps=None, statue=False, world: Path | None = None) -> str:
     source = DUMP.replace("__IDS__", ",".join(ids)).replace("__STATUE__", "true" if statue else "false")
     for token, relative in (("__STUBS__", "tests/roblox_stubs.luau"), ("__CATALOG__", "src/shared/Catalog.luau"), ("__WORLD__", "src/server/WorldBuilder.luau")):
-        body = (ROOT / relative).read_text(encoding="utf-8-sig")
+        body = ((world if token == "__WORLD__" and world else ROOT / relative)).read_text(encoding="utf-8-sig")
         if token == "__WORLD__" and swaps:
             for hero, look, extras in swaps:
                 body = swap_costume(body, hero, look, extras)
@@ -116,6 +122,10 @@ class Piece:
         self.mesh = fields[24]
         self.mscale = np.array([float(x) for x in fields[25:28]])
         self.hero = fields[28]
+        # A SpecialMesh's Offset moves the drawn shape inside the part (local axes).
+        self.moffset = np.array([float(x) for x in fields[29:32]]) if len(fields) >= 32 else np.zeros(3)
+        if self.mesh:
+            self.c = self.c + self.moffset @ self.R
 
 
 def parse(text: str):
@@ -231,9 +241,14 @@ def intersect(piece: Piece, origin, dirs):
         r = min(size[1], size[2]) / 2
         e, l, n = _cylinder(o, d, 0, np.array([r, r]), half[0])
     elif piece.mesh == "Head":
-        # Roblox's head mesh: a cylinder standing on Y with rounded rims.
-        e1, l1, n1 = _cylinder(o, d, 1, np.array([half[0], half[2]]), half[1])
-        e2, l2, n2 = _ellipsoid(o, d, half * np.array([1.08, 1.45, 1.08]))
+        # Roblox's head mesh: a cylinder standing on Y with rounded rims, always
+        # round across: its diameter is the part's smaller horizontal side times
+        # the mesh scale (checked in Studio 16/10: a 4x2x1 part shows a 1-stud
+        # capsule), so it never stretches into a wide oval.
+        base = min(piece.size[0], piece.size[2]) / 2
+        r = np.array([base * piece.mscale[0], base * piece.mscale[2]])
+        e1, l1, n1 = _cylinder(o, d, 1, r, half[1])
+        e2, l2, n2 = _ellipsoid(o, d, np.array([r[0] * 1.08, half[1] * 1.45, r[1] * 1.08]))
         e = np.maximum(e1, e2)
         l = np.minimum(l1, l2)
         n = np.where((e2 > e1)[:, None], n2, n1)
@@ -316,13 +331,14 @@ def main() -> int:
     parser.add_argument("--statue", action="store_true", help="pose each hero like its lobby statue (World.StatuePose)")
     parser.add_argument("--look", action="append", default=[], metavar="HERO=FILE", help="replace HERO's HERO_LOOK line with FILE's one-line table (in memory only)")
     parser.add_argument("--extras", action="append", default=[], metavar="HERO=FILE", help="replace HERO_EXTRAS.HERO with the function in FILE (in memory only)")
+    parser.add_argument("--world", type=Path, default=None, help="build from this copy of WorldBuilder.luau instead (to compare a variant)")
     args = parser.parse_args()
     swaps = {}
     for kind, entries in (("look", args.look), ("extras", args.extras)):
         for entry in entries:
             hero, _, file = entry.partition("=")
             swaps.setdefault(hero, {"look": None, "extras": None})[kind] = Path(file)
-    pieces, heroes = parse(dump(args.ids, [(hero, v["look"], v["extras"]) for hero, v in swaps.items()], args.statue))
+    pieces, heroes = parse(dump(args.ids, [(hero, v["look"], v["extras"]) for hero, v in swaps.items()], args.statue, args.world))
     out = ROOT / args.out
     out.mkdir(parents=True, exist_ok=True)
     w = args.size

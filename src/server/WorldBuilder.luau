@@ -197,6 +197,16 @@ World.Figure = Figure
 local FIGURE_INK = Color3.fromRGB(24, 28, 39)
 local FIGURE_WHITE = Color3.fromRGB(236, 240, 244)
 
+-- The rounded mesh a piece can wear, as Roblox draws it (checked in Studio,
+-- 16/10): the Head mesh is always round across, its diameter the smaller of
+-- the part's X and Z (a mesh scale does not stretch it to an oval), so on a
+-- wide plate it shrinks to a thin rod; only a piece nearly round across gets
+-- it. Any other gets the Torso mesh, which Roblox draws as a plain box.
+local function roundedMeshType(size)
+	local wide, deep = math.max(size.X, size.Z), math.min(size.X, size.Z)
+	return deep >= wide * 0.85 and Enum.MeshType.Head or Enum.MeshType.Torso
+end
+
 local function figurePart(parent, name, size, cf, color, material, class)
 	local made = Instance.new(class or "Part")
 	made.Name, made.Size, made.CFrame = name, size, cf
@@ -238,7 +248,8 @@ local BODY = {
 Figure.Body = BODY
 
 -- spec: scale, width, depth, chest (shoulders over hips), head, arm, leg,
--- hand, foot, legLength, armLength, torsoLength, neck.
+-- hand, foot, footHeight, legLength, armLength, torsoLength, neck, stance
+-- (how far apart the legs stand, in thigh widths between the hips' outer edges).
 -- colors: skin, head, chest, pelvis, upperArm, lowerArm, hand, upperLeg,
 -- lowerLeg, foot (each falls back to the one it sits next to).
 function Figure.Build(parent, spec, colors, material)
@@ -260,7 +271,7 @@ function Figure.Build(parent, spec, colors, material)
 	model.Name = "HeroFigure"
 	model.Parent = parent
 	local sizes = {
-		foot = V(BODY.foot.X * leg, BODY.foot.Y, BODY.foot.Z * (spec.foot or 1) * math.sqrt(leg)) * s,
+		foot = V(BODY.foot.X * leg, BODY.foot.Y * (spec.footHeight or 1), BODY.foot.Z * (spec.foot or 1) * math.sqrt(leg)) * s,
 		lowerLeg = V(BODY.lowerLeg.X * leg, BODY.lowerLeg.Y * legLength, BODY.lowerLeg.Z * leg) * s,
 		upperLeg = V(BODY.upperLeg.X * leg, BODY.upperLeg.Y * legLength, BODY.upperLeg.Z * leg) * s,
 		chest = V(BODY.chest.X * w * (spec.chest or 1), BODY.chest.Y * (spec.torsoLength or 1), BODY.chest.Z * d) * s,
@@ -269,7 +280,7 @@ function Figure.Build(parent, spec, colors, material)
 		hand = V(BODY.hand.X * arm * hand, BODY.hand.Y * hand * math.sqrt(arm), BODY.hand.Z * arm * hand) * s,
 		head = BODY.head * (spec.head or 1) * s,
 	}
-	sizes.pelvis = V(math.max(BODY.pelvis.X * w, sizes.upperLeg.X * 2.02 / s), BODY.pelvis.Y, BODY.pelvis.Z * d) * s
+	sizes.pelvis = V(math.max(BODY.pelvis.X * w, sizes.upperLeg.X * (spec.stance or 2.02) / s), BODY.pelvis.Y, BODY.pelvis.Z * d) * s
 	local hipX = sizes.pelvis.X / 2 - sizes.upperLeg.X / 2
 	local ankleY = sizes.foot.Y
 	local kneeY = ankleY + sizes.lowerLeg.Y
@@ -332,6 +343,9 @@ function Figure.Build(parent, spec, colors, material)
 		elseif shape == "head" then
 			local mesh = Instance.new("SpecialMesh")
 			mesh.MeshType, mesh.Parent = Enum.MeshType.Head, made
+		elseif shape == "torso" then
+			local mesh = Instance.new("SpecialMesh")
+			mesh.MeshType, mesh.Parent = Enum.MeshType.Torso, made
 		elseif shape == "wedge" then
 			made:Destroy()
 			made = figurePart(model, name, size, base.CFrame * offset, color, surface or material, "WedgePart")
@@ -569,12 +583,12 @@ function Figure.Hair(figure, color, style, plain)
 	-- a band of skin across the hair) while the brows stay clear.
 	figure.add("Head", "Hair", Vector3.new(h.X * 1.12, h.Y * 0.76, h.Z * 1.2), CFrame.new(0, h.Y * 0.26, h.Z * 0.08) * CFrame.Angles(0.25, 0, 0), color, Enum.Material.SmoothPlastic, "ball")
 	if style == "long" then
-		figure.add("Head", "HairBack", Vector3.new(h.X * 1.06, h.Y * 1.1, h.Z * 0.5), CFrame.new(0, -h.Y * 0.16, h.Z * 0.34), color, Enum.Material.SmoothPlastic, "head")
+		figure.add("Head", "HairBack", Vector3.new(h.X * 1.06, h.Y * 1.1, h.Z * 0.5), CFrame.new(0, -h.Y * 0.16, h.Z * 0.34), color, Enum.Material.SmoothPlastic, "ball")
 		for _, side in ipairs(plain and {} or { -1, 1 }) do
-			figure.add("Head", "HairLock", Vector3.new(h.X * 0.2, h.Y * 0.84, h.Z * 0.62), CFrame.new(side * h.X * 0.5, -h.Y * 0.1, h.Z * 0.1), color, Enum.Material.SmoothPlastic, "head")
+			figure.add("Head", "HairLock", Vector3.new(h.X * 0.2, h.Y * 0.84, h.Z * 0.62), CFrame.new(side * h.X * 0.5, -h.Y * 0.1, h.Z * 0.1), color, Enum.Material.SmoothPlastic, "ball")
 		end
 	elseif style == "fringe" then
-		figure.add("Head", "Fringe", Vector3.new(h.X * 0.66, h.Y * 0.22, h.Z * 0.26), CFrame.new(h.X * 0.14, h.Y * 0.36, -h.Z * 0.43) * CFrame.Angles(0, 0, -0.22), color, Enum.Material.SmoothPlastic, "head")
+		figure.add("Head", "Fringe", Vector3.new(h.X * 0.66, h.Y * 0.22, h.Z * 0.26), CFrame.new(h.X * 0.14, h.Y * 0.36, -h.Z * 0.43) * CFrame.Angles(0, 0, -0.22), color, Enum.Material.SmoothPlastic, "ball")
 	elseif style == "spiky" then
 		for i = -2, 2 do
 			figure.add("Head", "HairSpike", Vector3.new(h.X * 0.2, h.Y * 0.34, h.Z * 0.5), CFrame.new(i * h.X * 0.2, h.Y * 0.5, -h.Z * 0.1) * CFrame.Angles(0, 0, -i * 0.28), color, Enum.Material.SmoothPlastic, "wedge")
@@ -896,7 +910,7 @@ HERO_EXTRAS.hulk = function(f)
 	end
 	for i = 1, 3 do
 		local width = 1 - (i - 2) * 0.14
-		f.add("LowerTorso", "AbdomenSegment" .. i, Vector3.new(c.X * 0.68 * width, 0.2 * s, 0.22 * s), CFrame.new(0, -c.Y * 0.22 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), stone, rock, "head")
+		f.add("LowerTorso", "AbdomenSegment" .. i, Vector3.new(c.X * 0.68 * width, 0.2 * s, 0.22 * s), CFrame.new(0, -c.Y * 0.22 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), stone, rock, "torso")
 	end
 	-- Arms: massive shoulder boulders, forearm plates with moss accents and
 	-- reinforced knuckle guards that sell the punch impact.
@@ -2743,12 +2757,112 @@ local function polishHero(f, skin, matte)
 				table.sort(dims)
 				if dims[2] >= 0.12 * f.scale and dims[1] < dims[2] * 0.5 then
 					local mesh = Instance.new("SpecialMesh")
-					mesh.Name, mesh.MeshType, mesh.Parent = "CostumeContour", Enum.MeshType.Head, item
+					mesh.Name, mesh.MeshType, mesh.Parent = "CostumeContour", roundedMeshType(item.Size), item
 				end
 			end
 		end
 	end
 	f.model:SetAttribute("HeroFinish", "polished")
+end
+
+-- A sculpted torso (owner, 16/10: the last pass on the heroes, "make them
+-- incredible"): a broad, rounded chest over a narrower rounded waist, like an
+-- action figure, instead of a box with a wedge for each shoulder (the box was
+-- the one square shape left among the rounded limbs). One part for two.
+local function sculptTorso(f)
+	local chest, c = f.parts.UpperTorso, f.sizes.chest
+	local core = chest:FindFirstChild("BodyContour")
+	if not core then return end
+	for _, item in ipairs(f.model:GetChildren()) do
+		if item.Name == "TorsoSlope" then item:Destroy() end
+	end
+	core.MeshType, core.Scale, core.Offset = Enum.MeshType.Torso, Vector3.new(1, 0.68, 1.02), Vector3.new(0, c.Y * 0.16, 0)
+	local waist = f.add("UpperTorso", "Waist", Vector3.new(c.X * 0.74, c.Y * 0.56, c.Z * 0.92), CFrame.new(0, -c.Y * 0.22, 0), chest.Color, chest.Material, "torso")
+	waist:SetAttribute("Tint", chest:GetAttribute("Tint"))
+	waist.Reflectance = chest.Reflectance
+	f.model:SetAttribute("TorsoFinish", "sculpted")
+end
+
+-- Armour finish (owner, 16/10, with a picture of the level they want: "não vai
+-- deixar meus heróis palito"): every limb segment is a thick rounded block, as
+-- chunky as the armour on it, and stops a little short of its elbow or knee,
+-- where a dark under-suit joint shows between the plates; the wrist, ankle and
+-- shoulder ends still reach their joints, so nothing opens there. Shoulder
+-- pads are domes over the shoulder (a ramp or a box read as a crate in
+-- Studio), boots and hips are blocks. Roblox draws the Torso mesh as a sharp
+-- box, so a limb keeps the rounded Head mesh: its rounded ends are the bevel.
+-- Stone and bark keep their overlapping limbs: a golem's boulders and a
+-- tree's logs are not armour.
+local UNDERSUIT = Color3.fromRGB(46, 48, 60)
+-- Each segment's length (mesh scale) and how far it slides away from the elbow
+-- or knee (mesh offset, in lengths): the far end stays on its joint.
+local ARMOUR_SEGMENTS = { UpperArm = { 0.94, 0.03 }, LowerArm = { 0.95, -0.025 }, UpperLeg = { 0.94, 0.03 }, LowerLeg = { 0.95, -0.025 } }
+local function armourHero(f, look)
+	if look.matte then return end
+	for _, side in ipairs({ "Left", "Right" }) do
+		for segment, fit in pairs(ARMOUR_SEGMENTS) do
+			local limb = f.parts[side .. segment]
+			local contour = limb:FindFirstChild("BodyContour")
+			contour.MeshType, contour.Scale, contour.Offset = Enum.MeshType.Head, Vector3.new(1, fit[1], 1), Vector3.new(0, limb.Size.Y * fit[2], 0)
+		end
+		local foot = f.parts[side .. "Foot"]:FindFirstChild("BodyContour")
+		foot.MeshType, foot.Scale = Enum.MeshType.Brick, Vector3.one
+		local ua, la, ul, ll = f.sizes.upperArm, f.sizes.lowerArm, f.sizes.upperLeg, f.sizes.lowerLeg
+		f.add(side .. "UpperArm", "ElbowJoint", Vector3.one * math.min(ua.X, ua.Z, la.X, la.Z) * 0.84, CFrame.new(0, -ua.Y / 2, 0), UNDERSUIT, FABRIC, "ball")
+		f.add(side .. "UpperLeg", "KneeJoint", Vector3.one * math.min(ul.X, ul.Z, ll.X, ll.Z) * 0.84, CFrame.new(0, -ul.Y / 2, 0), UNDERSUIT, FABRIC, "ball")
+	end
+	if not look.suit then
+		local hips = f.parts.LowerTorso:FindFirstChild("BodyContour")
+		hips.MeshType, hips.Scale = Enum.MeshType.Brick, Vector3.one
+	end
+	local shelled = {}
+	for _, piece in ipairs(f.model:GetChildren()) do
+		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+		local host = fit and fit.Part0
+		if not host then continue end
+		if piece.Name == "Pauldron" and piece:IsA("WedgePart") then
+			-- A dome over the shoulder: its crown stands above the shoulder line
+			-- and its rim overhangs the arm.
+			local arm = host.Size
+			local pad = f.add(host.Name, "Pauldron", Vector3.new(arm.X * 1.34, arm.Y * 0.74, arm.Z * 1.3), CFrame.new(0, arm.Y * 0.36, 0), piece.Color, piece.Material, "ball")
+			pad.Reflectance = piece.Reflectance
+			pad:SetAttribute("Tint", piece:GetAttribute("Tint"))
+			piece:Destroy()
+		elseif string.find(host.Name, "Foot") then
+			-- Boots are tall blocks over the whole foot, on a dark sole that shows
+			-- around them (a low slab read as a sandal).
+			local mesh = piece:FindFirstChildOfClass("SpecialMesh")
+			if mesh and mesh.MeshType == Enum.MeshType.Head then mesh.MeshType = Enum.MeshType.Brick end
+			local ratio = Vector3.new(piece.Size.X / host.Size.X, piece.Size.Y / host.Size.Y, piece.Size.Z / host.Size.Z)
+			if piece.Name == "BootSole" then
+				piece.Size = host.Size * Vector3.new(1.3, 0.26, 1.3)
+				fit.C0 = CFrame.new(0, -host.Size.Y * 0.4, -host.Size.Z * 0.02)
+			elseif ratio.X >= 1.04 and ratio.Z >= 1.04 and piece.Material ~= NEON then
+				piece.Size = Vector3.new(piece.Size.X, host.Size.Y * 1.02, piece.Size.Z)
+				fit.C0 = CFrame.new(0, host.Size.Y * 0.02, fit.C0.Position.Z)
+			end
+			piece.CFrame = host.CFrame * fit.C0
+		else
+			-- A plate around an arm or a leg becomes the shell of its whole
+			-- segment, one smooth block from joint to joint like the armour of
+			-- the picture (a band round the middle of each read as a stack of
+			-- tyres).
+			local segment = string.match(host.Name, "^%a-(%u%l+%u%l+)$")
+			local shell = ARMOUR_SEGMENTS[segment]
+			local ratio = Vector3.new(piece.Size.X / host.Size.X, piece.Size.Y / host.Size.Y, piece.Size.Z / host.Size.Z)
+			if shell and piece.Material ~= NEON and ratio.X >= 1.04 and ratio.Z >= 1.04 and ratio.Y >= 0.3 and ratio.Y <= 1.05
+				and not shelled[host] and not string.find(piece.Name, "Pauldron") and not string.find(piece.Name, "Shoulder") then
+				shelled[host] = true
+				piece.Size = Vector3.new(piece.Size.X, host.Size.Y * shell[1], piece.Size.Z)
+				fit.C0 = CFrame.new(0, host.Size.Y * shell[2], 0)
+				piece.CFrame = host.CFrame * fit.C0
+				local mesh = piece:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
+				mesh.MeshType, mesh.Parent = Enum.MeshType.Head, piece
+				if not mesh.Name or mesh.Name == "SpecialMesh" then mesh.Name = "CostumeContour" end
+			end
+		end
+	end
+	f.model:SetAttribute("ArmourFinish", "chunky")
 end
 
 -- Masked and helmeted heroes (owner, 15/10: refine the faces). A visor or a
@@ -2849,7 +2963,7 @@ local function finishHeroCostume(f)
 		seen[signature] = true
 		if roundSet[piece.Name] and piece:IsA("Part") and piece.Shape == Enum.PartType.Block and not piece:FindFirstChildOfClass("SpecialMesh") then
 			local bevel = Instance.new("SpecialMesh")
-			bevel.Name, bevel.MeshType, bevel.Parent = "CostumeContour", Enum.MeshType.Head, piece
+			bevel.Name, bevel.MeshType, bevel.Parent = "CostumeContour", roundedMeshType(piece.Size), piece
 		end
 		if piece.Material ~= NEON and not string.find(piece.Name,"Cape") and not string.find(piece.Name,"Hair") then
 			local ratio = Vector3.new(piece.Size.X/host.Size.X,piece.Size.Y/host.Size.Y,piece.Size.Z/host.Size.Z)
@@ -2862,9 +2976,9 @@ local function finishHeroCostume(f)
 				chestFront=math.min(chestFront,fit.C0.Position.Z-piece.Size.Z/2)
 				if piece:IsA("Part") and piece.Shape==Enum.PartType.Block then
 					local bevel=piece:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
-					-- A moulded breastplate, curved across the chest (16/10, checked in
-					-- Studio: a flat tapered plate read as a box glued to the torso).
-					bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",Enum.MeshType.Head,piece
+					-- A breastplate with rounded edges that fills the chest (the Head
+					-- mesh shrank it to a rod down the middle).
+					bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",Enum.MeshType.Torso,piece
 				end
 			end
 			if ratio.X <= 1.5 and ratio.Y <= 1.3 and ratio.Z <= 1.5 and volume > 0.5 and (not cover[host] or volume > cover[host].volume) and not piece:GetAttribute("OpenFace") then
@@ -2872,12 +2986,13 @@ local function finishHeroCostume(f)
 			end
 			if ratio.X<=1.5 and ratio.Y<=1.3 and ratio.Z<=1.5 and volume>0.35 and piece:IsA("Part") and piece.Shape==Enum.PartType.Block and not piece:FindFirstChildOfClass("SpecialMesh") then
 				local bevel=Instance.new("SpecialMesh")
-				bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",Enum.MeshType.Head,piece
+				bevel.Name,bevel.MeshType,bevel.Parent="CostumeContour",roundedMeshType(piece.Size),piece
 			end
 			local contour=piece:FindFirstChild("CostumeContour")
 			-- Sleeves, cuffs and guards are round like the limbs under them (16/10:
-			-- square cuffs on round limbs read as a robot's joints).
-			if contour and (string.find(host.Name,"Arm") or string.find(host.Name,"Leg")) then contour.MeshType=Enum.MeshType.Head end
+			-- square cuffs on round limbs read as a robot's joints) when they are
+			-- round across; a flat guard keeps rounded edges.
+			if contour and (string.find(host.Name,"Arm") or string.find(host.Name,"Leg")) then contour.MeshType=roundedMeshType(piece.Size) end
 		end
 		-- Secondary luminous piping should read as enamel; eyes and power
 		-- sources keep their glow and their individual colour signatures.
@@ -2923,8 +3038,25 @@ function Figure.Hero(parent, heroId, hero, scale)
 	-- A hero's head is a touch bigger than a stranger's: a friendlier figure
 	-- whose face reads in a small portrait (owner, 15/10). The body gives back
 	-- what the head gained, so a hero stands as tall as before (a boss is twice it).
-	spec.head = (spec.head or 1) * 1.12
-	spec.scale = spec.scale * 0.975
+	spec.head = (spec.head or 1) * 1.2
+	spec.scale = spec.scale * 0.955
+	-- Chunky armoured-toy proportions (owner, 16/10, with a picture: "não vai
+	-- deixar meus heróis palito"): limbs about 40% thicker, the slender and the
+	-- brawny closer together, big fists and boots and a deeper chest. Lengths
+	-- stay, so every pose, pedestal and portrait frame still fits.
+	local function toward(value, amount) return 1 + ((value or 1) - 1) * amount end
+	spec.depth = toward(spec.depth or spec.width, 0.5) * 1.12
+	spec.width = toward(spec.width, 0.5)
+	spec.chest = (spec.chest or 1) * 1.16
+	-- A planted stance: a gap between the thighs and between the boots.
+	spec.stance = 2.3
+	spec.arm = toward(spec.arm, 0.5) * 1.4
+	spec.leg = toward(spec.leg, 0.5) * 1.28
+	spec.hand = (spec.hand or 1) * 1.04
+	-- Tall, heavy boots: the sole and ankle rise and the shins give it back.
+	spec.foot = (spec.foot or 1) * 1.12
+	spec.footHeight = (spec.footHeight or 1) * 1.5
+	spec.legLength = (spec.legLength or 1) * 0.94
 	local figure = Figure.Build(parent, spec, look.colors, look.material or Enum.Material.SmoothPlastic)
 	-- The same finish applies to towers, portraits, ghosts and lobby cameos.
 	-- Use existing rig parts, so the entire roster gains material separation
@@ -3055,6 +3187,7 @@ function Figure.Hero(parent, heroId, hero, scale)
 	end
 	Figure.Finish(figure, true)
 	finishHeroCostume(figure)
+	sculptTorso(figure)
 	polishHero(figure, look.colors and look.colors.skin or HERO_SKIN, look.matte)
 	if look.suit then
 		-- Plated suits (look.suit is the suit colour) need continuous solid
@@ -3073,6 +3206,7 @@ function Figure.Hero(parent, heroId, hero, scale)
 			end
 		end
 	end
+	armourHero(figure, look)
 	if not figure.model:FindFirstChild("Muzzle", true) then muzzle(figure, "RightHand", Vector3.new(0, -figure.sizes.hand.Y / 2 - 0.1 * figure.scale, 0)) end
 	return figure
 end
@@ -3218,9 +3352,14 @@ local function infectedFace(f, eye, detailed)
 		if detailed then f.add("Head", "Socket", (size + Vector3.new(0.1, 0.1, 0)) * k, f.face(side * 0.28, 0.12, -0.01), EC.ink, FABRIC, "ball") end
 		f.add("Head", "Eye", size * k, f.face(side * 0.28, 0.12, 0.02), eye or EC.eye, NEON, "ball")
 	end
-	f.add("Head", "Brow", Vector3.new(0.9, 0.14, 0.12) * k, f.face(0, 0.42, -0.02), f.parts.Head.Color:Lerp(EC.ink, 0.35), FABRIC)
+	-- Two crooked brows (one higher than the other) and a snaggle tooth: a
+	-- goofy grump, not a blank bar (owner, 16/10: refine the villains).
+	local brow = f.parts.Head.Color:Lerp(EC.ink, 0.45)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "Brow", Vector3.new(0.42, 0.13, 0.12) * k, f.face(side * 0.28, side < 0 and 0.44 or 0.38, -0.02) * CFrame.Angles(0, 0, side * (side < 0 and 0.32 or 0.18)), brow, FABRIC)
+	end
 	f.add("Head", "Jaw", Vector3.new(0.46, 0.2, 0.06) * k, f.face(0.04, -0.42, 0.0), EC.ink, FABRIC, "ball")
-	if detailed then f.add("Head", "Tooth", Vector3.new(0.1, 0.08, 0.05) * k, f.face(-0.08, -0.36, 0.02), EC.bone, FABRIC) end
+	f.add("Head", "Tooth", Vector3.new(0.1, 0.09, 0.05) * k, f.face(-0.08, -0.36, 0.02), EC.bone, FABRIC)
 end
 
 -- Clothes: a shirt over chest and upper arms, pants over hips and thighs.
@@ -3437,7 +3576,7 @@ ENEMY_EXTRAS.lizard = function(f)
 	for _, name in ipairs({ "LowerTorso", "LeftUpperLeg", "RightUpperLeg" }) do f.parts[name].Color = Color3.fromRGB(64, 68, 78) end
 	for _, name in ipairs({ "LeftLowerLeg", "RightLowerLeg" }) do f.parts[name].Color = hide end
 	-- A long snout with teeth, teal slit-pupil eyes and a glowing throat sac.
-	f.add("Head", "Snout", Vector3.new(h.X * 0.7, h.Y * 0.44, h.Z * 0.7), CFrame.new(0, -h.Y * 0.18, -h.Z * 0.56), hide, FABRIC)
+	f.add("Head", "Snout", Vector3.new(h.X * 0.7, h.Y * 0.44, h.Z * 0.7), CFrame.new(0, -h.Y * 0.18, -h.Z * 0.56), hide, FABRIC, "head")
 	f.add("Head", "Teeth", Vector3.new(h.X * 0.64, 0.1 * s, h.Z * 0.5), CFrame.new(0, -h.Y * 0.4, -h.Z * 0.6), EC.bone, FABRIC)
 	f.add("Head", "ThroatSac", Vector3.new(h.X * 0.46, h.Y * 0.3, h.Z * 0.36), CFrame.new(0, -h.Y * 0.46, -h.Z * 0.46), teal, NEON, "ball")
 	for _, side in ipairs({ -1, 1 }) do
@@ -3502,7 +3641,7 @@ ENEMY_EXTRAS.redskull = function(f)
 	for _, name in ipairs({ "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" }) do f.parts[name].Color = soot end
 	for _, name in ipairs({ "LeftHand", "RightHand", "LeftFoot", "RightFoot" }) do f.parts[name].Color = bronze:Lerp(EC.ink, 0.45) end
 	-- A soot-black foundry helm: one molten visor slit, a respirator, a ridge.
-	f.add("Head", "ForgeHelm", h * Vector3.new(1.08, 1.06, 1.08), CFrame.new(0, 0.02 * s, 0), soot:Lerp(EC.ink, 0.3), METAL)
+	f.add("Head", "ForgeHelm", h * Vector3.new(1.08, 1.06, 1.08), CFrame.new(0, 0.02 * s, 0), soot:Lerp(EC.ink, 0.3), METAL, "head")
 	f.add("Head", "Visor", Vector3.new(h.X * 0.74, 0.12 * s, 0.06 * s), f.face(0, 0.18, 0.06), molten, NEON)
 	f.add("Head", "Respirator", Vector3.new(h.X * 0.46, h.Y * 0.3, 0.16 * s), f.face(0, -0.42, 0.08), bronze, METAL)
 	for i = -1, 1 do f.add("Head", "RespiratorSlot", Vector3.new(0.05, 0.2, 0.04) * s, f.face(i * 0.12, -0.42, 0.18), EC.ink, METAL) end
@@ -3601,7 +3740,223 @@ ENEMY_EXTRAS.loki = function(f, def)
 end
 ENEMY_EXTRAS.illusion = ENEMY_EXTRAS.loki
 
-function Figure.Enemy(parent, def)
+-- Outfits (owner, 16/10: variety of villains is very good): the plain
+-- families come in several looks, so a wave is a crowd of different people
+-- and not copies of one. Each look is a few pieces over the family's own, in
+-- the crowd's part budget. The server publishes every look ("zombie",
+-- "zombie#2"...) and the client picks one per enemy from its server id, so
+-- every player sees the same enemy dressed the same. Rules never read it.
+local function strip(f, names)
+	for _, item in ipairs(f.model:GetChildren()) do
+		if table.find(names, item.Name) then item:Destroy() end
+	end
+end
+-- A fixed colour on these body parts instead of the crowd's random shirt.
+local function wear(f, names, color)
+	for _, name in ipairs(names) do
+		local body = f.parts[name]
+		if body then body:SetAttribute("Tint", nil); body.Color = color end
+	end
+end
+local function brimmed(f, name, height, color)
+	local h, s = f.parts.Head.Size, f.scale
+	return f.add("Head", name, Vector3.new(0.1 * s, h.X * 1.4, h.Z * 1.4), CFrame.new(0, h.Y * height, 0) * CFrame.Angles(0, 0, math.pi / 2), color, FABRIC, Enum.PartType.Cylinder)
+end
+local OUTFITS = {}
+-- The office worker: a white shirt, a blue tie and a staff badge.
+OUTFITS.office = function(f)
+	local c, s = f.sizes.chest, f.scale
+	local tie = Color3.fromRGB(46, 78, 168)
+	wear(f, { "UpperTorso", "LeftUpperArm", "RightUpperArm" }, Color3.fromRGB(226, 232, 240))
+	f.add("UpperTorso", "Tie", Vector3.new(0.26 * s, c.Y * 0.66, 0.06 * s), CFrame.new(0, -c.Y * 0.06, -c.Z / 2 - 0.04 * s), tie, FABRIC)
+	f.add("UpperTorso", "TieKnot", Vector3.new(0.3, 0.22, 0.1) * s, CFrame.new(0, c.Y * 0.36, -c.Z / 2 - 0.05 * s), tie, FABRIC, "ball")
+	f.add("UpperTorso", "Badge", Vector3.new(0.34, 0.24, 0.05) * s, CFrame.new(c.X * 0.26, c.Y * 0.14, -c.Z / 2 - 0.04 * s), Color3.fromRGB(250, 250, 250), FABRIC)
+end
+-- The builder: a hard hat and a hi-vis vest with reflective stripes.
+OUTFITS.builder = function(f)
+	local h, c, s = f.parts.Head.Size, f.sizes.chest, f.scale
+	local yellow, orange, silver = Color3.fromRGB(250, 200, 40), Color3.fromRGB(255, 122, 32), Color3.fromRGB(222, 228, 234)
+	strip(f, { "Hair" })
+	f.add("Head", "HardHat", h * Vector3.new(1.12, 0.62, 1.12), CFrame.new(0, h.Y * 0.34, 0), yellow, FABRIC, "ball")
+	brimmed(f, "HatBrim", 0.2, yellow)
+	f.add("UpperTorso", "Vest", c * Vector3.new(0.82, 0.92, 1.08), CFrame.new(0, -c.Y * 0.03, 0), orange, FABRIC)
+	for _, y in ipairs({ -0.2, 0.14 }) do
+		f.add("UpperTorso", "VestStripe", Vector3.new(c.X * 0.84, 0.12 * s, c.Z * 1.1), CFrame.new(0, c.Y * y, 0), silver, FABRIC)
+	end
+end
+-- The cook: a tall white hat, an apron and a red neckerchief.
+OUTFITS.chef = function(f)
+	local h, c, s = f.parts.Head.Size, f.sizes.chest, f.scale
+	local white = Color3.fromRGB(244, 244, 238)
+	strip(f, { "Hair" })
+	f.add("Head", "ChefHat", Vector3.new(h.Y * 0.62, h.X * 0.84, h.X * 0.84), CFrame.new(0, h.Y * 0.74, 0) * CFrame.Angles(0, 0, math.pi / 2), white, FABRIC, Enum.PartType.Cylinder)
+	f.add("Head", "ChefPuff", Vector3.new(h.X * 1.02, h.Y * 0.42, h.Z * 1.02), CFrame.new(0, h.Y * 1.06, 0), white, FABRIC, "ball")
+	f.add("UpperTorso", "Apron", Vector3.new(c.X * 0.62, c.Y * 1.5, 0.06 * s), CFrame.new(0, -c.Y * 0.3, -c.Z / 2 - 0.05 * s), white, FABRIC)
+	f.add("UpperTorso", "Neckerchief", Vector3.new(0.56, 0.3, 0.3) * s, CFrame.new(0, c.Y * 0.44, -c.Z * 0.34), Color3.fromRGB(214, 52, 52), FABRIC, "ball")
+end
+-- The gamer: a cap turned backwards, headphones and a backpack.
+OUTFITS.gamer = function(f)
+	local h, c, s = f.parts.Head.Size, f.sizes.chest, f.scale
+	local cap, phones = Color3.fromRGB(40, 176, 124), Color3.fromRGB(36, 38, 46)
+	strip(f, { "Hair" })
+	f.add("Head", "Cap", h * Vector3.new(1.08, 0.5, 1.08), CFrame.new(0, h.Y * 0.32, 0), cap, FABRIC, "ball")
+	f.add("Head", "CapBrim", Vector3.new(h.X * 0.62, 0.08 * s, h.Z * 0.5), CFrame.new(0, h.Y * 0.2, h.Z * 0.62), cap, FABRIC)
+	f.add("Head", "PhoneBand", Vector3.new(h.X * 1.12, 0.12 * s, 0.16 * s), CFrame.new(0, h.Y * 0.5, 0), phones, FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "PhoneCup", Vector3.new(0.2, 0.5, 0.46) * s, CFrame.new(side * h.X * 0.54, 0, 0), phones, FABRIC, "ball")
+	end
+	f.add("UpperTorso", "Backpack", Vector3.new(c.X * 0.66, c.Y * 0.8, 0.5 * s), CFrame.new(0, -c.Y * 0.04, c.Z / 2 + 0.25 * s), Color3.fromRGB(222, 82, 60), FABRIC)
+end
+-- The tourist: a bucket hat and a camera on its strap.
+OUTFITS.tourist = function(f)
+	local h, c, s = f.parts.Head.Size, f.sizes.chest, f.scale
+	local hat, camera = Color3.fromRGB(236, 214, 150), Color3.fromRGB(40, 42, 48)
+	strip(f, { "Hair" })
+	f.add("Head", "BucketHat", h * Vector3.new(1.06, 0.46, 1.06), CFrame.new(0, h.Y * 0.36, 0), hat, FABRIC, "ball")
+	brimmed(f, "HatBrim", 0.22, hat)
+	f.add("UpperTorso", "Camera", Vector3.new(0.6, 0.42, 0.26) * s, CFrame.new(0, -c.Y * 0.1, -c.Z / 2 - 0.16 * s), camera, METAL)
+	f.disc("UpperTorso", "CameraLens", 0.3 * s, 0.2 * s, CFrame.new(0, -c.Y * 0.1, -c.Z / 2 - 0.34 * s), Color3.fromRGB(120, 170, 220), Enum.Material.Glass)
+	f.rod("UpperTorso", "CameraStrap", Vector3.new(-c.X * 0.3, c.Y * 0.48, -c.Z / 2 - 0.04 * s), Vector3.new(-0.2 * s, -c.Y * 0.04, -c.Z / 2 - 0.05 * s), 0.08 * s, camera, FABRIC)
+end
+-- The rocker: a pink mohawk, a black leather jacket and studded shoulders.
+OUTFITS.rocker = function(f)
+	local h, s = f.parts.Head.Size, f.scale
+	local leather, spike, stud = Color3.fromRGB(34, 34, 40), Color3.fromRGB(236, 60, 160), Color3.fromRGB(210, 214, 222)
+	strip(f, { "Hair" })
+	wear(f, { "UpperTorso", "LeftUpperArm", "RightUpperArm" }, leather)
+	for i = -1.5, 1.5 do
+		f.add("Head", "Mohawk", Vector3.new(0.22 * s, h.Y * 0.5, h.Z * 0.3), CFrame.new(0, h.Y * 0.66, i * h.Z * 0.2), spike, FABRIC, "wedge")
+	end
+	for _, side in ipairs({ -1, 1 }) do
+		local arm = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		f.add(arm, "Stud", Vector3.new(0.22, 0.22, 0.22) * s, CFrame.new(0, f.sizes.upperArm.Y * 0.36, -f.sizes.upperArm.Z * 0.5), stud, METAL, "ball")
+	end
+end
+-- The jogger: earbuds and wristbands, no scarf.
+OUTFITS.jogger = function(f)
+	local h, s = f.parts.Head.Size, f.scale
+	strip(f, { "Scarf" })
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "Earbud", Vector3.new(0.2, 0.2, 0.2) * s, CFrame.new(side * h.X * 0.52, -h.Y * 0.04, 0), Color3.fromRGB(245, 245, 245), FABRIC, "ball")
+		local arm = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		f.add(arm, "Wristband", f.sizes.lowerArm * Vector3.new(1.12, 0.22, 1.12), CFrame.new(0, -f.sizes.lowerArm.Y * 0.36, 0), Color3.fromRGB(80, 200, 255), FABRIC)
+	end
+end
+-- The delivery rider: a red cap and the delivery box on its back.
+OUTFITS.delivery = function(f)
+	local h, c, s = f.parts.Head.Size, f.sizes.chest, f.scale
+	local red, white = Color3.fromRGB(214, 54, 48), Color3.fromRGB(250, 246, 236)
+	strip(f, { "Headband", "Scarf" })
+	f.add("Head", "Cap", h * Vector3.new(1.06, 0.48, 1.06), CFrame.new(0, h.Y * 0.33, 0), red, FABRIC, "ball")
+	f.add("Head", "CapBrim", Vector3.new(h.X * 0.62, 0.08 * s, h.Z * 0.5), CFrame.new(0, h.Y * 0.18, -h.Z * 0.62), red, FABRIC)
+	f.add("UpperTorso", "DeliveryBox", Vector3.new(c.X * 0.9, c.Y * 0.9, 0.9 * s), CFrame.new(0, c.Y * 0.06, c.Z / 2 + 0.46 * s), red, FABRIC)
+	f.add("UpperTorso", "BoxLogo", Vector3.new(c.X * 0.5, c.Y * 0.36, 0.05 * s), CFrame.new(0, c.Y * 0.1, c.Z / 2 + 0.93 * s), white, FABRIC)
+end
+-- The skater: a helmet, knee pads and elbow pads.
+OUTFITS.skater = function(f)
+	local h, s = f.parts.Head.Size, f.scale
+	local helmet, pad = Color3.fromRGB(90, 200, 90), Color3.fromRGB(40, 44, 52)
+	strip(f, { "Headband", "Scarf" })
+	f.add("Head", "SkateHelmet", h * Vector3.new(1.14, 0.66, 1.14), CFrame.new(0, h.Y * 0.3, 0), helmet, FABRIC, "ball")
+	for _, side in ipairs({ -1, 1 }) do
+		local leg, arm = side < 0 and "LeftLowerLeg" or "RightLowerLeg", side < 0 and "LeftLowerArm" or "RightLowerArm"
+		f.add(leg, "KneePad", f.sizes.lowerLeg * Vector3.new(1.12, 0.32, 0.9), CFrame.new(0, f.sizes.lowerLeg.Y * 0.38, -f.sizes.lowerLeg.Z * 0.22), pad, FABRIC, "ball")
+		f.add(arm, "ElbowPad", f.sizes.lowerArm * Vector3.new(1.12, 0.28, 0.9), CFrame.new(0, f.sizes.lowerArm.Y * 0.38, f.sizes.lowerArm.Z * 0.16), pad, FABRIC, "ball")
+	end
+end
+-- The wrestler: a champion's belt, a bandana and wristbands.
+OUTFITS.wrestler = function(f)
+	local h, p, s = f.parts.Head.Size, f.sizes.pelvis, f.scale
+	local gold, band = Color3.fromRGB(240, 196, 60), Color3.fromRGB(200, 40, 60)
+	f.add("LowerTorso", "ChampionBelt", p * Vector3.new(1.1, 0.42, 1.12), CFrame.new(0, p.Y * 0.2, 0), Color3.fromRGB(40, 36, 44), FABRIC)
+	f.disc("LowerTorso", "BeltPlate", p.X * 0.36, 0.14 * s, CFrame.new(0, p.Y * 0.1, -p.Z * 0.66), gold, METAL)
+	f.add("Head", "Bandana", h * Vector3.new(1.06, 0.26, 1.06), CFrame.new(0, h.Y * 0.3, 0), band, FABRIC, "head")
+	for _, side in ipairs({ -1, 1 }) do
+		local arm = side < 0 and "LeftLowerArm" or "RightLowerArm"
+		f.add(arm, "Wristband", f.sizes.lowerArm * Vector3.new(1.1, 0.28, 1.1), CFrame.new(0, -f.sizes.lowerArm.Y * 0.34, 0), band, FABRIC)
+	end
+end
+-- The lumberjack: a red shirt, an orange beanie and a big beard.
+OUTFITS.lumberjack = function(f)
+	local h = f.parts.Head.Size
+	strip(f, { "Jaw", "Tooth" })
+	wear(f, { "UpperTorso" }, Color3.fromRGB(196, 50, 46))
+	f.add("Head", "Beanie", h * Vector3.new(1.08, 0.56, 1.08), CFrame.new(0, h.Y * 0.36, 0), Color3.fromRGB(230, 120, 40), FABRIC, "ball")
+	f.add("Head", "Beard", Vector3.new(h.X * 0.92, h.Y * 0.56, h.Z * 0.44), CFrame.new(0, -h.Y * 0.2, -h.Z * 0.38), Color3.fromRGB(96, 60, 36), FABRIC, "ball")
+end
+-- The scrap knight: a bucket for a helmet and a bin lid for a shield.
+OUTFITS.scrap = function(f)
+	local h, s = f.parts.Head.Size, f.scale
+	local tin = Color3.fromRGB(150, 156, 162)
+	strip(f, { "Helmet", "Shield" })
+	f.add("Head", "Bucket", Vector3.new(h.Y * 0.62, h.X * 1.12, h.X * 1.12), CFrame.new(0, h.Y * 0.36, 0) * CFrame.Angles(0, 0, math.pi / 2), tin, METAL, Enum.PartType.Cylinder)
+	local arm = f.sizes.lowerArm
+	f.disc("LeftLowerArm", "BinLid", 1.7 * s, 0.14 * s, CFrame.new(-arm.X / 2 - 0.12 * s, 0.1 * s, -0.1 * s) * CFrame.Angles(0, math.pi / 2, 0), tin, METAL)
+	f.add("LeftLowerArm", "LidHandle", Vector3.new(0.12, 0.2, 0.5) * s, CFrame.new(-arm.X / 2 - 0.26 * s, 0.1 * s, -0.1 * s), tin:Lerp(EC.ink, 0.3), METAL)
+end
+-- The guard: a navy helmet with a clear visor and a clear riot shield.
+OUTFITS.guard = function(f)
+	local h, s = f.parts.Head.Size, f.scale
+	local navy, glass = Color3.fromRGB(40, 50, 76), Color3.fromRGB(150, 200, 230)
+	strip(f, { "Helmet", "Shield" })
+	f.add("Head", "GuardHelmet", h * Vector3.new(1.14, 0.7, 1.14), CFrame.new(0, h.Y * 0.28, 0), navy, METAL, "ball")
+	f.add("Head", "GuardVisor", Vector3.new(h.X * 0.96, h.Y * 0.5, 0.06 * s), f.face(0, 0.1, 0.08), glass, Enum.Material.Glass, "ball").Transparency = 0.55
+	local arm = f.sizes.lowerArm
+	f.add("LeftLowerArm", "ClearShield", Vector3.new(0.12, 2.6, 1.5) * s, CFrame.new(-arm.X / 2 - 0.14 * s, 0.2 * s, -0.1 * s), glass, Enum.Material.Glass).Transparency = 0.45
+end
+-- The propeller flyer: a beanie with a propeller on top.
+OUTFITS.propeller = function(f)
+	local h, s = f.parts.Head.Size, f.scale
+	f.add("Head", "Beanie", h * Vector3.new(1.08, 0.54, 1.08), CFrame.new(0, h.Y * 0.34, 0), Color3.fromRGB(70, 130, 230), FABRIC, "ball")
+	f.add("Head", "PropellerHub", Vector3.new(0.4 * s, 0.16 * s, 0.16 * s), CFrame.new(0, h.Y * 0.66, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(250, 210, 60), METAL, Enum.PartType.Cylinder)
+	for _, angle in ipairs({ 0, math.pi / 2 }) do
+		f.add("Head", "PropellerBlade", Vector3.new(1.6 * s, 0.06 * s, 0.28 * s), CFrame.new(0, h.Y * 0.86, 0) * CFrame.Angles(0, angle, 0.15), Color3.fromRGB(230, 60, 60), FABRIC)
+	end
+end
+-- The aviator: a leather flying cap and a long white scarf.
+OUTFITS.aviator = function(f)
+	local h, c, s = f.parts.Head.Size, f.sizes.chest, f.scale
+	f.add("Head", "AviatorCap", h * Vector3.new(1.1, 0.8, 1.1), CFrame.new(0, h.Y * 0.18, h.Z * 0.06), Color3.fromRGB(120, 76, 44), FABRIC, "ball")
+	f.add("UpperTorso", "Scarf", Vector3.new(0.5, 0.16, 2.2) * s, CFrame.new(-0.3 * s, c.Y * 0.42, c.Z / 2 + 0.9 * s) * CFrame.Angles(-0.4, 0, 0), Color3.fromRGB(245, 240, 230), FABRIC)
+end
+-- The looks each plain family comes in, besides its own.
+local ENEMY_OUTFITS = {
+	zombie = { "office", "builder", "chef", "gamer", "tourist", "rocker" },
+	runner = { "jogger", "delivery", "skater" },
+	brute = { "wrestler", "lumberjack" },
+	armored = { "scrap", "guard" },
+	flyer = { "propeller", "aviator" },
+}
+Figure.EnemyOutfits = ENEMY_OUTFITS
+
+-- Villains get the heroes' finish (owner, 16/10: refine every villain):
+-- rounded vinyl limbs whose ends overlap at the joints and flat costume plates
+-- with rounded edges instead of planks. The big bodies keep their V of chest
+-- and shoulders (a round barrel read as a balloon). No part is added.
+local LIMBS = { "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" }
+local function polishVillain(f, family)
+	for _, name in ipairs(LIMBS) do
+		local contour = f.parts[name] and f.parts[name]:FindFirstChild("BodyContour")
+		if contour then contour.MeshType, contour.Scale = Enum.MeshType.Head, Vector3.new(0.98, 1.14, 0.98) end
+	end
+	for _, item in ipairs(f.model:GetChildren()) do
+		if item:IsA("Part") and item.Shape == Enum.PartType.Block and not item:FindFirstChildOfClass("SpecialMesh") and item.Material ~= NEON then
+			local fit = item:FindFirstChild("Fit")
+			local host = fit and fit.Part0
+			if host and host.Name ~= "Head" then
+				local dims = { item.Size.X, item.Size.Y, item.Size.Z }
+				table.sort(dims)
+				if dims[2] >= 0.12 * f.scale and dims[1] < dims[2] * 0.5 then
+					local mesh = Instance.new("SpecialMesh")
+					mesh.Name, mesh.MeshType, mesh.Parent = "CostumeContour", roundedMeshType(item.Size), item
+				end
+			end
+		end
+	end
+	f.model:SetAttribute("VillainFinish", "polished")
+end
+
+function Figure.Enemy(parent, def, outfit)
 	local family = def.family or def.id
 	local look = ENEMY_LOOK[def.id] or ENEMY_LOOK[family] or ENEMY_LOOK.zombie
 	local skin = look.skin
@@ -3612,6 +3967,10 @@ function Figure.Enemy(parent, def)
 	local extras = ENEMY_EXTRAS[def.id] or ENEMY_EXTRAS[family] or ENEMY_EXTRAS.zombie
 	extras(figure, def)
 	if def.faction and FACTION_GEAR[def.faction] then FACTION_GEAR[def.faction](figure) end
+	if outfit and OUTFITS[outfit] then
+		OUTFITS[outfit](figure)
+		figure.model:SetAttribute("Outfit", outfit)
+	end
 	for name, body in pairs(figure.parts) do
 		if name ~= "HumanoidRootPart" then
 			if family == "doom" then
@@ -3625,6 +3984,7 @@ function Figure.Enemy(parent, def)
 	-- The disposable illusion already carries the boss's coat/horns. Preserve
 	-- its 40-part crowd budget rather than duplicating an obscured torso edge.
 	Figure.Finish(figure, def.boss == true, def.id == "illusion")
+	polishVillain(figure, family)
 	Figure.Release(figure)
 	return figure
 end
@@ -3651,6 +4011,16 @@ function Figure.PublishEnemies(catalog)
 		figure.model.Name = id
 		aimHeights[id] = def.air and 8 or figure.model:GetAttribute("ChestHeight")
 		figure.model.Parent = enemies
+		-- The plain families' other looks, published beside it as "id#2", "id#3"...
+		local outfits = not def.faction and not def.boss and ENEMY_OUTFITS[id]
+		if outfits then
+			figure.model:SetAttribute("Outfits", #outfits + 1)
+			for index, outfit in ipairs(outfits) do
+				local look = Figure.Enemy(holder, def, outfit)
+				look.model.Name = id .. "#" .. (index + 1)
+				look.model.Parent = enemies
+			end
+		end
 		holder:Destroy()
 	end
 	folder.Parent = storage

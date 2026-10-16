@@ -109,6 +109,29 @@ do
 	end
 	table.sort(report)
 	print("  parts: " .. table.concat(report, " "))
+	-- Variety (owner, 16/10): the plain families come in several outfits, each
+	-- published beside the family's own look and inside the crowd's budget.
+	local looks = {}
+	for _, figure in ipairs(enemies and enemies:GetChildren() or {}) do
+		local base, index = string.match(figure.Name, "^(.-)#(%d+)$")
+		if base then
+			local def = Catalog.Enemies[base]
+			local parts = 0
+			for _, item in ipairs(figure:GetDescendants()) do if item:IsA("BasePart") then parts += 1 end end
+			check(def ~= nil and not def.boss and def.faction == nil, figure.Name .. " dresses a plain family")
+			check(parts <= 40, figure.Name .. " stays inside the crowd's part budget, got " .. parts)
+			check(figure:GetAttribute("Outfit") ~= nil and figure:GetAttribute("Gait") == enemies[base]:GetAttribute("Gait"), figure.Name .. " is an outfit that walks like its family")
+			if base == "armored" then
+				local plate = figure:FindFirstChild("Pauldron")
+				check(plate and plate:IsA("WedgePart"), figure.Name .. " keeps its sloped armour")
+			end
+			looks[base] = math.max(looks[base] or 1, tonumber(index))
+		end
+	end
+	for id, wanted in pairs({ zombie = 7, runner = 4, brute = 3, armored = 3, flyer = 3 }) do
+		local base = enemies and enemies:FindFirstChild(id)
+		check(base ~= nil and base:GetAttribute("Outfits") == wanted and looks[id] == wanted, id .. " comes in " .. wanted .. " looks, got " .. tostring(looks[id]))
+	end
 	-- Original villains (IP_POLICY): no boss brings back a known villain's
 	-- signature piece or palette, and the starter armour is not red and gold.
 	local banned = {
@@ -1352,11 +1375,37 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 	check(portrait and portrait:FindFirstChild("UpperTorso", true) ~= nil, heroId .. " has a portrait torso")
 	check(portrait and portrait:FindFirstChild("Head", true) ~= nil, heroId .. " has a portrait head")
 	if portrait then
+		local rig = portrait:FindFirstChild("HeroFigure")
+		local armoured = rig ~= nil and rig:GetAttribute("ArmourFinish") == "chunky"
 		for _,side in ipairs({"Left","Right"}) do
 			for _,segment in ipairs({"UpperArm","LowerArm","UpperLeg","LowerLeg"}) do
 				local limb=portrait:FindFirstChild(side..segment,true)
 				local contour=limb and limb:FindFirstChild("BodyContour")
-				check(contour and contour.Scale.Y>=1,heroId..": limb silhouette reaches the joint: "..side..segment)
+				if armoured and contour then
+					-- Armour (owner, 16/10): a segment reaches its shoulder, wrist, hip
+					-- or ankle and stops short of its elbow or knee, over a dark joint.
+					local half = limb.Size.Y / 2
+					local top, bottom = contour.Offset.Y + contour.Scale.Y * half, contour.Offset.Y - contour.Scale.Y * half
+					local reach = string.find(segment, "Upper") and top or -bottom
+					check(reach >= half - 1e-3, heroId .. ": armour reaches the outer joint: " .. side .. segment)
+				else
+					check(contour and contour.Scale.Y>=1,heroId..": limb silhouette reaches the joint: "..side..segment)
+				end
+			end
+			if armoured then
+				local s = rig:GetAttribute("FigureScale") or 1
+				for _, pair in ipairs({ { "UpperArm", "LowerArm", "ElbowJoint" }, { "UpperLeg", "LowerLeg", "KneeJoint" } }) do
+					local upper, lower = portrait:FindFirstChild(side .. pair[1], true), portrait:FindFirstChild(side .. pair[2], true)
+					local joint
+					for _, item in ipairs(rig:GetChildren()) do
+						local fit = item.Name == pair[3] and item:FindFirstChild("Fit")
+						if fit and fit.Part0 and fit.Part0.Name == side .. pair[1] then joint = item end
+					end
+					local cu, cl = upper.BodyContour, lower.BodyContour
+					local gapUpper = cu.Offset.Y - cu.Scale.Y * upper.Size.Y / 2 + upper.Size.Y / 2
+					local gapLower = lower.Size.Y / 2 - (cl.Offset.Y + cl.Scale.Y * lower.Size.Y / 2) + 0.02 * s
+					check(joint ~= nil and joint.Size.Y / 2 >= math.max(gapUpper, gapLower), heroId .. ": a dark joint fills the gap at the " .. pair[3] .. ": " .. side)
+				end
 			end
 		end
 		if heroId=="ironman" then
@@ -1387,7 +1436,9 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 			elseif piece.Name=="Thumb" then thumbs+=1
 			elseif piece.Name=="BootSole" then soles+=1 end
 		end
-		check(slopes==2 and thumbs==2 and soles==2,heroId..": finished torso, hands and boots share the portrait rig")
+		-- A sculpted torso (a broad chest over a waist) has no shoulder wedges.
+		local sculpted = rig ~= nil and rig:GetAttribute("TorsoFinish") == "sculpted"
+		check((sculpted and slopes == 0 and rig:FindFirstChild("Waist") ~= nil or not sculpted and slopes == 2) and thumbs==2 and soles==2,heroId..": finished torso, hands and boots share the portrait rig")
 	end
 end
 world:Build("manhattan")

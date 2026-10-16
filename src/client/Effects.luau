@@ -139,6 +139,21 @@ local function figureTemplate(id)
 	return template and template:IsA("Model") and template or nil
 end
 
+-- Which published look an enemy wears: the plain families come in several
+-- outfits ("zombie", "zombie#2"...), picked from the enemy's server id so every
+-- player sees it dressed the same. Also the pool key for reusing its visual.
+local function enemyLook(def, id)
+	if artTemplate("Enemies", def.id) or artTemplate("Enemies", def.family) then return def.id, nil end
+	local base = figureTemplate(def.id) or figureTemplate(def.family)
+	local looks = base and base:GetAttribute("Outfits")
+	if base and type(looks) == "number" and looks > 1 then
+		local pick = (math.floor(tonumber(id) or 0) % looks) + 1
+		local dressed = pick > 1 and figureTemplate(base.Name .. "#" .. pick)
+		if dressed then return dressed.Name, dressed end
+	end
+	return base and base.Name or def.id, base
+end
+
 -- A jointed enemy: every infected wears its own shirt and pants, and Motion
 -- walks it with the family's gait. Pivot at the feet, like final art.
 local function buildRigEnemy(def, template)
@@ -203,11 +218,15 @@ local function buildRigEnemy(def, template)
 	}
 end
 
-local function buildEnemy(def)
+local function buildEnemy(def, id)
 	local template = artTemplate("Enemies", def.id) or artTemplate("Enemies", def.family)
 	if template then return buildArtEnemy(def, template) end
-	local figure = figureTemplate(def.id) or figureTemplate(def.family)
-	if figure then return buildRigEnemy(def, figure) end
+	local key, figure = enemyLook(def, id)
+	if figure then
+		local record = buildRigEnemy(def, figure)
+		record.poolKey = key
+		return record
+	end
 	-- The server publishes every figure before anyone can join a match; wait a
 	-- moment for it on a slow join rather than drawing nothing.
 	local folder = ReplicatedStorage:WaitForChild("DoomFigures", 5)
@@ -305,10 +324,11 @@ function Effects:_poolEnemy(record)
 	record.hitAt, record.statusFlags, record.revealed, record.link, record.lastStep = nil, nil, nil, nil, nil
 	record.road, record.progress, record.syncProgress, record.syncAt, record.speed = nil, nil, nil, nil, nil
 	record.model.Parent = nil
-	self.pool[record.def.id] = self.pool[record.def.id] or {}
-	table.insert(self.pool[record.def.id], record)
+	local key = record.poolKey or record.def.id
+	self.pool[key] = self.pool[key] or {}
+	table.insert(self.pool[key], record)
 	-- A sudden wave clear must not leave 180 sleeping Models per archetype.
-	if #self.pool[record.def.id] > 24 then table.remove(self.pool[record.def.id], 1).model:Destroy() end
+	if #self.pool[key] > 24 then table.remove(self.pool[key], 1).model:Destroy() end
 end
 
 function Effects:Release(id, instant)
@@ -1580,8 +1600,8 @@ function Effects:Handle(event)
 			local current = self.enemies[key]
 			if not current then
 				local def = Catalog.Enemies[enemy.enemyId] or Catalog.Enemies.zombie
-				local pool = self.pool[def.id]
-				current = pool and table.remove(pool) or buildEnemy(def)
+				local pool = self.pool[(enemyLook(def, enemy.id))]
+				current = pool and table.remove(pool) or buildEnemy(def, enemy.id)
 				current.position, current.direction = enemy.position, Vector3.new(0, 0, -1)
 				current.phase = (tonumber(enemy.id) or #key * 17) * 1.73
 				current.model.Parent = self.folder

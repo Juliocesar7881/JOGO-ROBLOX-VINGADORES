@@ -3,6 +3,7 @@
     python tools/studio_showroom.py heroes                # all heroes, rows of 6
     python tools/studio_showroom.py heroes ironman hulk   # just these
     python tools/studio_showroom.py enemies               # every enemy and variant
+    python tools/studio_showroom.py enemies zombie#2 zombie#3   # a plain family's outfits
     python tools/studio_showroom.py bosses
     python tools/studio_showroom.py clean                 # remove the showroom
 
@@ -101,8 +102,10 @@ if #ids == 0 then
 end
 local perRow, spacing, rowGap = __PERROW__, __SPACING__, __ROWGAP__
 for index, id in ipairs(ids) do
-	local def = catalog.Enemies[id]
-	local record = effects.BuildEnemy(def)
+	-- "zombie#3" is a plain family's third look (its outfits, Effects.enemyLook).
+	local base, look = string.match(id, "^(.-)#(%d+)$")
+	local def = catalog.Enemies[base or id]
+	local record = effects.BuildEnemy(def, look and tonumber(look) - 1 or nil)
 	local column, row = (index - 1) % perRow, math.floor((index - 1) / perRow)
 	local x = (column - (math.min(#ids, perRow) - 1) / 2) * spacing
 	local lift = record.art and 0 or 2 * record.scale
