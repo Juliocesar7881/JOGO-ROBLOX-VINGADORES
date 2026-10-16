@@ -3088,6 +3088,14 @@ local function animate(part, kind, amount, pivot, axis)
 	if axis then part:SetAttribute("FxAxis", axis) end
 	return part
 end
+-- (The rider's chain: links hanging from his belt on the left hip.)
+local function chain(f, links, color)
+	local p, s = f.parts.LowerTorso.Size, f.scale
+	for i = 1, links do
+		local turn = (i % 2 == 0) and math.pi / 2 or 0
+		f.add("LowerTorso", "ChainLink", Vector3.new(0.08, 0.3, 0.2) * s, CFrame.new(-p.X * 0.42 - 0.02 * s * i, -p.Y * 0.3 - i * 0.24 * s, -p.Z * 0.3 + i * 0.06 * s) * CFrame.Angles(0, turn, 0.25), color, METAL)
+	end
+end
 HERO_SIGNATURE.ghostrider = function(f)
 	local s, h = f.scale, f.parts.Head.Size
 	local fire, flare = Color3.fromRGB(255, 118, 28), Color3.fromRGB(255, 214, 84)
@@ -3106,6 +3114,7 @@ HERO_SIGNATURE.ghostrider = function(f)
 	for _, piece in ipairs(f.model:GetChildren()) do
 		if string.find(piece.Name, "^CrownFlame") then animate(piece, "FxFlicker", 0.12) end
 	end
+	chain(f, 5, Color3.fromRGB(196, 200, 208))
 	for _, side in ipairs({ -1, 1 }) do
 		animate(f.add("Head", "CrownFlameBack", Vector3.new(0.4, 1.0, 0.4) * s, CFrame.new(side * h.X * 0.16, h.Y * 0.62, h.Z * 0.28) * CFrame.Angles(0.3, math.pi / 4, side * -0.3), fire, NEON), "FxFlicker", 0.12)
 		-- Flames licking up from each shoulder pad.
@@ -3114,6 +3123,8 @@ HERO_SIGNATURE.ghostrider = function(f)
 		for i, tongue in ipairs({ { 0.14, 0.9, flare }, { -0.2, 0.66, fire } }) do
 			animate(f.add(arm, "PadFlame", Vector3.new(0.28 * s, tongue[2] * s, 0.28 * s), CFrame.new(side * a.X * tongue[1], a.Y * 0.62 + tongue[2] * s * 0.32, 0) * CFrame.Angles(0, math.pi / 4, side * (0.3 + i * 0.25)), tongue[3], NEON), "FxFlicker", 0.14)
 		end
+		-- A glowing rim under each spiked pad.
+		f.add(arm, "PadGlow", Vector3.new(a.X * 1.3, 0.08 * s, a.Z * 1.26), CFrame.new(0, a.Y * 0.04, 0), fire, NEON)
 		-- And from each boot's heel.
 		local foot = side < 0 and "LeftFoot" or "RightFoot"
 		local b = f.parts[foot].Size
@@ -3143,6 +3154,23 @@ HERO_SIGNATURE.strange = function(f)
 	for _, piece in ipairs(f.model:GetChildren()) do
 		if piece.Name == "SpellGlyph" then animate(piece, "FxOrbit", 0.9, Vector3.new(0, -0.42 * s, -0.52 * s), Vector3.new(0, 0, 1)) end
 	end
+	-- A long open coat: two front panels and two tails hanging from the waist
+	-- to the shins, gold along their outer edges, a glowing rune on each front.
+	local p = f.parts.LowerTorso.Size
+	for _, side in ipairs({ -1, 1 }) do
+		for _, back in ipairs({ false, true }) do
+			local z = back and p.Z * 0.56 or -p.Z * 0.56
+			local frame = CFrame.new(side * p.X * 0.27, -p.Y * 0.4, z) * CFrame.Angles(back and 0.16 or -0.1, 0, side * 0.06)
+			local length = (back and 2.3 or 1.9) * s
+			f.add("LowerTorso", "CoatPanel", Vector3.new(p.X * 0.46, length, 0.08 * s), frame * CFrame.new(0, -length / 2, 0), teal, FABRIC)
+			f.add("LowerTorso", "CoatEdge", Vector3.new(0.09 * s, length, 0.1 * s), frame * CFrame.new(side * p.X * 0.23, -length / 2, 0), gold, FABRIC)
+			if not back then
+				animate(f.add("LowerTorso", "CoatRune", Vector3.new(0.22, 0.22, 0.06) * s, frame * CFrame.new(0, -length * 0.55, -0.05 * s) * CFrame.Angles(0, 0, math.pi / 4), amber, NEON), "FxPulse", 0.35)
+			end
+		end
+	end
+	local c = f.sizes.chest
+	f.add("UpperTorso", "CollarFlare", Vector3.new(c.X * 0.84, 0.62 * s, 0.1 * s), CFrame.new(0, c.Y / 2 + 0.2 * s, c.Z * 0.42) * CFrame.Angles(-0.32, 0, 0), teal, FABRIC)
 end
 HERO_SIGNATURE.wanda = function(f)
 	local s = f.scale
@@ -3160,13 +3188,20 @@ HERO_SIGNATURE.wanda = function(f)
 				"FxOrbit", side * 1.3, Vector3.new(0, -0.52 * s, -0.12 * s), Vector3.new(0, 1, 0))
 		end
 	end
-	-- A flared skirt from the belt, front, back and sides.
+	-- Gold lines down the bodice, like a corset's.
+	local c = f.sizes.chest
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "BodiceLine", Vector3.new(0.08 * s, c.Y * 0.6, 0.06 * s), CFrame.new(side * c.X * 0.24, c.Y * 0.12, -c.Z * 0.51 - 0.03 * s), Color3.fromRGB(255, 196, 60), FABRIC)
+	end
+	-- A long flared skirt from the belt, front, back and sides, gold at the hem.
 	local p = f.parts.LowerTorso.Size
 	for i = 0, 3 do
 		local yaw = i * math.pi / 2
 		local wide = (i % 2 == 0) and p.X * 0.96 or p.Z * 0.9
 		local reach = (i % 2 == 0) and p.Z * 0.5 or p.X * 0.5
-		f.add("LowerTorso", "SkirtFlare", Vector3.new(wide, 0.95 * s, 0.1 * s), CFrame.Angles(0, yaw, 0) * CFrame.new(0, -p.Y * 0.5 - 0.3 * s, -reach - 0.12 * s) * CFrame.Angles(0.32, 0, 0), deep, FABRIC)
+		local hang = CFrame.Angles(0, yaw, 0) * CFrame.new(0, -p.Y * 0.2, -reach - 0.08 * s) * CFrame.Angles(0.24, 0, 0)
+		f.add("LowerTorso", "SkirtFlare", Vector3.new(wide * 1.08, 1.6 * s, 0.1 * s), hang * CFrame.new(0, -0.8 * s, 0), deep, FABRIC)
+		f.add("LowerTorso", "SkirtHem", Vector3.new(wide * 1.12, 0.12 * s, 0.12 * s), hang * CFrame.new(0, -1.6 * s, 0), Color3.fromRGB(255, 196, 60), FABRIC)
 	end
 end
 HERO_SIGNATURE.thor = function(f)
@@ -3188,6 +3223,11 @@ HERO_SIGNATURE.thor = function(f)
 		if piece.Name == "PadStud" then piece.Color, piece.Material = spark, NEON end
 		if piece.Name == "Lightning" then animate(piece, "FxPulse", 0.7) end
 	end
+	local c = f.sizes.chest
+	f.add("UpperTorso", "StormGem", Vector3.new(0.34, 0.34, 0.08) * s, CFrame.new(0, c.Y * 0.2, -c.Z * 0.51 - 0.07 * s) * CFrame.Angles(0, 0, math.pi / 4), spark, NEON)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "ChestGoldLine", Vector3.new(0.08 * s, c.Y * 0.62, 0.06 * s), CFrame.new(side * c.X * 0.36, c.Y * 0.12, -c.Z * 0.51 - 0.03 * s), Color3.fromRGB(255, 196, 60), FABRIC)
+	end
 	-- And arcing round the hammer's head.
 	bolt(f, "RightHand", "Lightning", { Vector3.new(-0.42, 1.0, -0.1) * s, Vector3.new(-0.2, 1.24, -0.32) * s, Vector3.new(0.1, 1.08, -0.3) * s, Vector3.new(0.4, 1.4, -0.12) * s }, 0.05 * s, spark)
 end
@@ -3204,6 +3244,20 @@ HERO_SIGNATURE.silversurfer = function(f)
 		if string.find(piece.Name, "^OrbitSegment") or piece.Name == "MoonOrb" then animate(piece, "FxOrbit", 0.6, Vector3.new(0, 0.92 * s, 0), Vector3.new(0, 1, 0)) end
 	end
 	cape(f, night, 3.4, Color3.fromRGB(200, 210, 220))
+	-- White armour over the cosmic suit (forearms, shins, boots), like the
+	-- picture's two-tone herald.
+	local white = Color3.fromRGB(232, 238, 248)
+	for _, name in ipairs({ "LeftLowerArm", "RightLowerArm", "LeftLowerLeg", "RightLowerLeg", "LeftFoot", "RightFoot" }) do
+		f.parts[name].Color = white
+	end
+	for _, piece in ipairs(f.model:GetChildren()) do
+		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+		local host = fit and fit.Part0 and fit.Part0.Name
+		if host and (string.find(host, "LowerArm") or string.find(host, "LowerLeg") or string.find(host, "Foot")) and piece.Material ~= NEON and piece.Name ~= "BootSole" and piece.Name ~= "KneeCap" then
+			piece.Color = white
+		end
+	end
+	f.add("UpperTorso", "CosmicCore", Vector3.new(0.5, 0.5, 0.08) * s, CFrame.new(0, c.Y * 0.16, -c.Z * 0.51 - 0.06 * s), Color3.fromRGB(255, 236, 160), NEON)
 	for i, star in ipairs({ { -0.3, -0.5 }, { 0.22, -0.95 }, { -0.12, -1.45 }, { 0.36, -1.85 }, { -0.4, -2.2 } }) do
 		local depth = c.Z / 2 + 0.16 * s - star[2] * s * 0.08 + (star[2] < -1.6 and 0.2 * s or 0)
 		f.add("UpperTorso", "CapeStar", Vector3.new(0.14, 0.14, 0.06) * s, CFrame.new(c.X * star[1], c.Y / 2 + star[2] * s, depth) * CFrame.Angles(0, 0, math.pi / 4), i % 2 == 0 and starlight or cosmic, NEON)
