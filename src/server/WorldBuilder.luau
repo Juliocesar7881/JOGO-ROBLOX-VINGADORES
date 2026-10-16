@@ -4776,8 +4776,9 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 	artPart(model,"PlinthLip",Vector3.new(33,0.36,14),at(0,0.14,0),HQ.trim,Enum.Material.SmoothPlastic)
 	artPart(model,"PlinthGlow",Vector3.new(32.6,0.14,0.3),at(0,0.36,6.72),tint,Enum.Material.Neon)
 	for _,side in ipairs({-1,1}) do
-		part(model,"SignPillar",Vector3.new(1.4,17,1.6),at(side*14.6,8.5,-4.8),HQ.navy,Enum.Material.Metal).CastShadow=true
-		artPart(model,"SignLight",Vector3.new(0.3,14,0.2),at(side*14.6,9,-3.95),tint,Enum.Material.Neon)
+		-- Behind the board: their tops crossed its lower corners, over the text.
+		part(model,"SignPillar",Vector3.new(1.4,17,1.6),at(side*14.6,8.5,-5.9),HQ.navy,Enum.Material.Metal).CastShadow=true
+		artPart(model,"SignLight",Vector3.new(0.3,14,0.2),at(side*14.6,9,-5.0),tint,Enum.Material.Neon)
 	end
 	local board=part(model,"MapBillboard",Vector3.new(32,12.5,0.8),at(0,20,-4.5)*CFrame.Angles(0,math.pi,0),HQ.ink,Enum.Material.Metal)
 	-- A thick navy frame, a neon rim in the map's colour and gold studs: the
@@ -4953,16 +4954,19 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 	rolled.Shape=Enum.PartType.Cylinder
 	artPart(model,"RoofGlow",Vector3.new(29.3,0.3,23.3),at(0,15.9,0),HQ.gold,Enum.Material.Metal)
 	-- Sloping eaves give each hall a roof silhouette instead of a flat box.
+	-- (The front gable stands behind the header sign: owner, 16/10, nothing may
+	-- cross a sign's letters. The sign's back reaches z = 8.)
 	for _, side in ipairs({-1,1}) do
 		local span = origin*Vector3.new(0,3.5,0)-origin.Position
 		local chord = origin*Vector3.new(side*14.5,0,0)-origin.Position
 		Kit.triangle(model,"HallEave",at(0,17,-10).Position,span,chord,0.5,HQ.navy,Enum.Material.Metal)
-		Kit.triangle(model,"HallEave",at(0,17,9.8).Position,span,chord,0.5,HQ.navy,Enum.Material.Metal)
+		Kit.triangle(model,"HallEave",at(0,17,7.5).Position,span,chord,0.5,HQ.navy,Enum.Material.Metal)
 	end
 	part(model,"EntranceLintel",Vector3.new(13,2,1.4),at(0,15,10),HQ.gold,Enum.Material.Metal)
 	for _,side in ipairs({-1,1}) do
 		Kit.beam(model,"HallPediment",at(side*7,15.2,10.8).Position,at(side*5,17.2,10.8).Position,0.8,1.2,HQ.gold,Enum.Material.Metal)
-		Kit.block(model,"HallHeaderSupport",Vector3.new(1,4.2,1),at(side*7,18.5,9.8),HQ.gold,Enum.Material.Metal)
+		-- The header's supports hold it from behind (they used to cross its letters).
+		Kit.block(model,"HallHeaderSupport",Vector3.new(1,4.2,1),at(side*7,18.5,7.6),HQ.gold,Enum.Material.Metal)
 	end
 	Kit.sign(model,"SummonHeader",at(0,21.2,9.6)*CFrame.Angles(0,math.pi,0),22,6.4,{
 		title=isBase and {"INVOCAR BASES","SUMMON BASES"} or {"INVOCAR HERÓIS","SUMMON HEROES"},
@@ -4996,9 +5000,10 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 		artPart(model,"SummonChip",Vector3.new(1.7,0.18,1.7),column.CFrame*CFrame.new(0,column.Size.Y/2+0.05,0),tint,Enum.Material.Neon)
 	end
 	-- The crest sits on the roof/header, replacing unsupported floating chests.
-	local crest=artPart(model,"HallCrest",Vector3.new(0.5,5.2,5.2),at(0,25,9.7)*CFrame.Angles(0,math.pi/2,0),HQ.navy,Enum.Material.Metal)
+	-- It stands on the header's top rim, clear of the title.
+	local crest=artPart(model,"HallCrest",Vector3.new(0.5,5.2,5.2),at(0,26.7,9.7)*CFrame.Angles(0,math.pi/2,0),HQ.navy,Enum.Material.Metal)
 	crest.Shape=Enum.PartType.Cylinder
-	Kit.star(model,"HallCrestStar",at(0,25,10.05).Position,origin.RightVector,origin.UpVector,1.9,HQ.gold,Enum.Material.Metal,0.1)
+	Kit.star(model,"HallCrestStar",at(0,26.7,10.05).Position,origin.RightVector,origin.UpVector,1.9,HQ.gold,Enum.Material.Metal,0.1)
 	Kit.light(reactor,secondary,20,0.6)
 	artPart(model,"HallGlow",Vector3.new(24,0.4,0.3),at(0,13.5,-9.85),tint,Enum.Material.Neon)
 	Kit.disc(model,"HallFloorRing",at(0,0.62,-3).Position,13,0.1,secondary,Enum.Material.Metal)
@@ -5601,7 +5606,8 @@ function World:BuildHeroesHub(lobby)
 			local foot = b - dir * 1 + right * side * 8.6
 			Kit.block(hq, "GatePillar", V(2, 12, 2), CFrame.new(foot + V(0, GROUND_Y + 6, 0)), HQ.navy, metal, true).CastShadow = true
 			Kit.block(hq, "GateLight", V(0.4, 9, 0.4), CFrame.new(foot - dir * 1.05 + V(0, GROUND_Y + 6, 0)), gate.color, Enum.Material.Neon)
-			Kit.block(hq, "GateCapital", V(2.7, 0.7, 2.7), CFrame.new(foot + V(0, GROUND_Y + 12.35, 0)), HQ.gold, metal)
+			-- The capital crowns the pillar just under the lintel (it crossed the sign).
+			Kit.block(hq, "GateCapital", V(2.7, 0.7, 2.7), CFrame.new(foot + V(0, GROUND_Y + 10.9, 0)), HQ.gold, metal)
 		end
 		local top = b - dir * 1 + V(0, GROUND_Y + 12.4, 0)
 		local lintel = Kit.block(hq, "GateLintel", V(19.6, 2.2, 2.4), CFrame.lookAt(top, top - dir), HQ.navy, metal)
@@ -6178,8 +6184,10 @@ function World:BuildMarket(lobby, hq)
 		local _, zone = buildChestStand(lobby, at.X, at.Z, chests[i], self.catalog.Chests[chests[i]], self.openPanel, yaw)
 		self.shopZones[chests[i]] = zone
 	end
+	-- The district's name stands behind the two halls, high enough to read over
+	-- their headers from the plaza (at 28 studs its ends hid behind them).
 	local signAt = polar(137.5, 142, 0)
-	Kit.sign(hq, "SummonSign", CFrame.lookAt(signAt + V(0, 28, 0), V(HUB.X, 28, HUB.Z)), 32, 6, {
+	Kit.sign(hq, "SummonSign", CFrame.lookAt(signAt + V(0, 33, 0), V(HUB.X, 33, HUB.Z)), 32, 6, {
 		title = { "INVOCAÇÃO", "SUMMONING" }, premium = true,
 		top = Color3.fromRGB(255, 190, 90), bottom = Color3.fromRGB(190, 70, 150), accent = HQ.gold,
 		titleX = 0.5, titleY = 0.5, titleW = 0.94, titleH = 0.7, legs = GRASS_Y,
@@ -7686,12 +7694,14 @@ function FACADES.city(folder, theme, rng, face, width, height, depth)
 		local tint = Color3.fromRGB(brand[2][1], brand[2][2], brand[2][3])
 		local w, h = math.min(width * 0.75, 15), 4.6
 		local panelCf = face * CFrame.new(0, height + 2.5 + h / 2, 2)
+		local set = string.format("%.1f:%.1f", spot.X, spot.Z)
 		for _, lateral in ipairs({ -w / 3, w / 3 }) do
-			prop(folder, "BillboardLeg", Vector3.new(0.35, 1.6, 0.35), face * CFrame.new(lateral, height + 1.7, 2.3), Color3.fromRGB(40, 42, 46), Enum.Material.Metal)
+			prop(folder, "BillboardLeg", Vector3.new(0.35, 1.6, 0.35), face * CFrame.new(lateral, height + 1.7, 2.3), Color3.fromRGB(40, 42, 46), Enum.Material.Metal):SetAttribute("BillboardSet", set)
 		end
 		local panel = prop(folder, "Billboard", Vector3.new(w, h, 0.4), panelCf, Color3.fromRGB(18, 20, 30), Enum.Material.SmoothPlastic)
+		panel:SetAttribute("BillboardSet", set)
 		for _, edge in ipairs({ -1, 1 }) do
-			prop(folder, "BillboardTrim", Vector3.new(w + 0.4, 0.3, 0.5), panelCf * CFrame.new(0, edge * (h / 2 + 0.1), -0.02), tint, Enum.Material.Neon)
+			prop(folder, "BillboardTrim", Vector3.new(w + 0.4, 0.3, 0.5), panelCf * CFrame.new(0, edge * (h / 2 + 0.1), -0.02), tint, Enum.Material.Neon):SetAttribute("BillboardSet", set)
 		end
 		local gui = Instance.new("SurfaceGui")
 		gui.Name, gui.Face, gui.CanvasSize = "Artwork", Enum.NormalId.Front, Vector2.new(math.floor(w * 40), math.floor(h * 40))
@@ -7820,6 +7830,58 @@ function FACADES.castle(folder, theme, rng, face, width, height, depth)
 	end
 end
 
+-- Oriented boxes ({c = centre, a = three unit axes, h = three half sizes})
+-- that intersect, by the separating-axis test.
+local function boxesOverlap(A, B)
+	local function dot(a, b) return a.X * b.X + a.Y * b.Y + a.Z * b.Z end
+	local axes = {}
+	for _, u in ipairs(A.a) do table.insert(axes, u) end
+	for _, u in ipairs(B.a) do table.insert(axes, u) end
+	for _, u in ipairs(A.a) do for _, w in ipairs(B.a) do
+		local c = u:Cross(w)
+		if c.Magnitude > 1e-6 then table.insert(axes, c.Unit) end
+	end end
+	local d = B.c - A.c
+	for _, axis in ipairs(axes) do
+		local ra, rb = 0, 0
+		for i = 1, 3 do ra += A.h[i] * math.abs(dot(A.a[i], axis)); rb += B.h[i] * math.abs(dot(B.a[i], axis)) end
+		if math.abs(dot(d, axis)) > ra + rb then return false end
+	end
+	return true
+end
+local function partBox(p)
+	return { c = p.Position, a = { p.CFrame.RightVector, p.CFrame.UpVector, p.CFrame.LookVector }, h = { p.Size.X / 2, p.Size.Y / 2, p.Size.Z / 2 } }
+end
+
+-- A rooftop billboard at a street corner can have the next street's corner
+-- building, taller, standing right in front of it (owner, 16/10: nothing may
+-- hide a sign's letters). Such a billboard, its trims and its legs go.
+local function clearBlockedBillboards(folder)
+	local bodies, sets = {}, {}
+	for _, item in ipairs(folder:GetChildren()) do
+		if item:IsA("BasePart") then
+			if item.Name == "Skyline" then table.insert(bodies, item) end
+			local set = item:GetAttribute("BillboardSet")
+			if set then sets[set] = sets[set] or {}; table.insert(sets[set], item) end
+		end
+	end
+	for _, pieces in pairs(sets) do
+		for _, panel in ipairs(pieces) do
+			if panel.Name == "Billboard" then
+				local n = panel.CFrame.LookVector
+				local front = { c = panel.Position + n * (panel.Size.Z / 2 + 3.05), a = { panel.CFrame.RightVector, panel.CFrame.UpVector, n },
+					h = { panel.Size.X / 2 * 0.92, panel.Size.Y / 2 * 0.86, 3 } }
+				for _, body in ipairs(bodies) do
+					if boxesOverlap(front, partBox(body)) then
+						for _, piece in ipairs(pieces) do piece:Destroy() end
+						break
+					end
+				end
+			end
+		end
+	end
+end
+
 local function buildCityWall(self, map, theme, streets, rng)
 	local folder = Instance.new("Folder")
 	folder.Name, folder.Parent = "City", self.Scenery
@@ -7878,6 +7940,7 @@ local function buildCityWall(self, map, theme, streets, rng)
 			end
 		end
 	end
+	clearBlockedBillboards(folder)
 end
 
 --==============================================================================

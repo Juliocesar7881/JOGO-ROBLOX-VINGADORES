@@ -507,6 +507,77 @@ do
 	check(countClass(lobby, "BasePart") < 4550, "the lobby remains under its geometry budget, got " .. tostring(countClass(lobby, "BasePart")))
 	print("  lobby: " .. tostring(countClass(lobby, "BasePart")) .. " parts")
 end
+-- Nothing stands in front of a sign's letters (owner, 16/10: the summon
+-- halls' gold supports crossed their titles). For every SurfaceGui in the
+-- lobby that shows text, the box from its face to 6 studs out (inset a little
+-- at the edges, where rims and studs frame a sign) holds no other visible part
+-- than the sign's own. Oriented boxes, separating-axis test. The battle maps
+-- are checked the same way below (their rooftop billboards).
+local function blockedSigns(root)
+	local function dot(a, b) return a.X * b.X + a.Y * b.Y + a.Z * b.Z end
+	local function cross(a, b) return v3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X) end
+	local function overlap(A, B)
+		local axes = {}
+		for _, u in ipairs(A.a) do table.insert(axes, u) end
+		for _, u in ipairs(B.a) do table.insert(axes, u) end
+		for _, u in ipairs(A.a) do for _, w in ipairs(B.a) do
+			local c = cross(u, w)
+			if c.Magnitude > 1e-6 then table.insert(axes, c.Unit) end
+		end end
+		local d = B.c - A.c
+		for _, axis in ipairs(axes) do
+			local ra, rb = 0, 0
+			for i = 1, 3 do ra += A.h[i] * math.abs(dot(A.a[i], axis)); rb += B.h[i] * math.abs(dot(B.a[i], axis)) end
+			if math.abs(dot(d, axis)) > ra + rb then return false end
+		end
+		return true
+	end
+	local function face(part, name)
+		local cf, s = part.CFrame, part.Size
+		if name == "Back" then return -cf.LookVector, s.Z, cf.RightVector, s.X, cf.UpVector, s.Y end
+		if name == "Right" then return cf.RightVector, s.X, cf.LookVector, s.Z, cf.UpVector, s.Y end
+		if name == "Left" then return -cf.RightVector, s.X, cf.LookVector, s.Z, cf.UpVector, s.Y end
+		if name == "Top" then return cf.UpVector, s.Y, cf.RightVector, s.X, cf.LookVector, s.Z end
+		if name == "Bottom" then return -cf.UpVector, s.Y, cf.RightVector, s.X, cf.LookVector, s.Z end
+		return cf.LookVector, s.Z, cf.RightVector, s.X, cf.UpVector, s.Y
+	end
+	local function within(node, ancestor)
+		while node do if node == ancestor then return true end node = node.Parent end
+		return false
+	end
+	local solids = {}
+	for _, item in ipairs(root:GetDescendants()) do
+		if item:IsA("BasePart") and (item.Transparency or 0) < 0.9 then table.insert(solids, item) end
+	end
+	local blocked, signs = {}, 0
+	for _, gui in ipairs(root:GetDescendants()) do
+		local host = gui:IsA("SurfaceGui") and gui.Parent
+		local words
+		if host and host:IsA("BasePart") then
+			for _, label in ipairs(gui:GetDescendants()) do
+				if label:IsA("TextLabel") and (label.Text or "") ~= "" then words = label.Text break end
+			end
+		end
+		if words then
+			signs += 1
+			local n, depth, u, width, w, height = face(host, gui.Face and gui.Face.Name or "Front")
+			local box = { c = host.Position + n * (depth / 2 + 3.05), a = { u, w, n }, h = { width / 2 * 0.92, height / 2 * 0.86, 3 } }
+			-- The sign's own pieces (a Kit.sign model: back, rims, studs) frame it.
+			local own = host.Parent and host.Parent:IsA("Model") and (host.Parent:FindFirstChild("SignBack") or host.Parent:FindFirstChild("SignFace")) and host.Parent
+			for _, other in ipairs(solids) do
+				if other ~= host and not (own and within(other, own)) then
+					local B = { c = other.Position, a = { other.CFrame.RightVector, other.CFrame.UpVector, other.CFrame.LookVector }, h = { other.Size.X / 2, other.Size.Y / 2, other.Size.Z / 2 } }
+					if overlap(box, B) then table.insert(blocked, words .. ": " .. other.Name .. " in " .. tostring(other.Parent and other.Parent.Name)) end
+				end
+			end
+		end
+	end
+	return signs, blocked
+end
+do
+	local signs, blocked = blockedSigns(lobby)
+	check(signs >= 20 and #blocked == 0, "no lobby part stands in front of a sign's letters (" .. signs .. " signs), got: " .. table.concat(blocked, "; ", 1, math.min(#blocked, 8)))
+end
 -- Coplanar overlapping faces flicker (z-fighting) as the camera moves.
 do
 	local flickers, names = WorldBuilder.CoplanarConflicts(lobby)
@@ -893,6 +964,10 @@ for _, mapId in ipairs(Catalog.MapOrder) do
 	print("--- map: " .. mapId .. " ---")
 	local built, problem = pcall(function() world:Build(mapId) end)
 	check(built, mapId .. " builds: " .. tostring(problem))
+	do
+		local _, blocked = blockedSigns(workspace:FindFirstChild("DoomWorld"))
+		check(#blocked == 0, mapId .. ": nothing stands in front of a sign's letters, got: " .. table.concat(blocked, "; ", 1, math.min(#blocked, 6)))
+	end
 	local trailSegments,arrows,expectedSegments={},0,{}
 	for _,route in ipairs(Catalog.Maps[mapId].paths) do
 		for index=1,#route-1 do
