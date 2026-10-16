@@ -1385,7 +1385,9 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 					-- Armour (owner, 16/10): a segment reaches its shoulder, wrist, hip
 					-- or ankle and stops short of its elbow or knee, over a dark joint.
 					local half = limb.Size.Y / 2
-					local top, bottom = contour.Offset.Y + contour.Scale.Y * half, contour.Offset.Y - contour.Scale.Y * half
+					-- A file mesh's scale is in mesh units (the chamfered limb block is 2 tall).
+					local drawn = contour.MeshType == Enum.MeshType.FileMesh and contour.Scale.Y or contour.Scale.Y * half
+					local top, bottom = contour.Offset.Y + drawn, contour.Offset.Y - drawn
 					local reach = string.find(segment, "Upper") and top or -bottom
 					check(reach >= half - 1e-3, heroId .. ": armour reaches the outer joint: " .. side .. segment)
 				else
@@ -1402,8 +1404,9 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 						if fit and fit.Part0 and fit.Part0.Name == side .. pair[1] then joint = item end
 					end
 					local cu, cl = upper.BodyContour, lower.BodyContour
-					local gapUpper = cu.Offset.Y - cu.Scale.Y * upper.Size.Y / 2 + upper.Size.Y / 2
-					local gapLower = lower.Size.Y / 2 - (cl.Offset.Y + cl.Scale.Y * lower.Size.Y / 2) + 0.02 * s
+					local function drawnHalf(contour, limb) return contour.MeshType == Enum.MeshType.FileMesh and contour.Scale.Y or contour.Scale.Y * limb.Size.Y / 2 end
+					local gapUpper = cu.Offset.Y - drawnHalf(cu, upper) + upper.Size.Y / 2
+					local gapLower = lower.Size.Y / 2 - (cl.Offset.Y + drawnHalf(cl, lower)) + 0.02 * s
 					check(joint ~= nil and joint.Size.Y / 2 >= math.max(gapUpper, gapLower), heroId .. ": a dark joint fills the gap at the " .. pair[3] .. ": " .. side)
 				end
 			end

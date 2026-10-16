@@ -2781,49 +2781,73 @@ local function sculptTorso(f)
 	for _, item in ipairs(f.model:GetChildren()) do
 		if item.Name == "TorsoSlope" then item:Destroy() end
 	end
-	core.MeshType, core.Scale, core.Offset = Enum.MeshType.Torso, Vector3.new(1, 0.68, 1.02), Vector3.new(0, c.Y * 0.16, 0)
+	-- Chamfered blocks: Roblox's own classic torso mesh (see armourHero).
+	core.MeshType, core.MeshId = Enum.MeshType.FileMesh, "rbxasset://avatar/meshes/torso.mesh"
+	core.Scale, core.Offset = Vector3.new(c.X / 2, c.Y * 0.68 / 2, c.Z * 1.02), Vector3.new(0, c.Y * 0.16, 0)
 	local waist = f.add("UpperTorso", "Waist", Vector3.new(c.X * 0.74, c.Y * 0.56, c.Z * 0.92), CFrame.new(0, -c.Y * 0.22, 0), chest.Color, chest.Material, "torso")
+	local waistMesh = waist:FindFirstChildOfClass("SpecialMesh")
+	waistMesh.MeshType, waistMesh.MeshId = Enum.MeshType.FileMesh, "rbxasset://avatar/meshes/torso.mesh"
+	waistMesh.Scale = Vector3.new(waist.Size.X / 2, waist.Size.Y / 2, waist.Size.Z)
 	waist:SetAttribute("Tint", chest:GetAttribute("Tint"))
 	waist.Reflectance = chest.Reflectance
 	f.model:SetAttribute("TorsoFinish", "sculpted")
 end
 
--- Armour finish (owner, 16/10, with a picture of the level they want: "não vai
--- deixar meus heróis palito"): every limb segment is a thick rounded block, as
--- chunky as the armour on it, and stops a little short of its elbow or knee,
--- where a dark under-suit joint shows between the plates; the wrist, ankle and
--- shoulder ends still reach their joints, so nothing opens there. Shoulder
--- pads are domes over the shoulder (a ramp or a box read as a crate in
--- Studio), boots and hips are blocks. Roblox draws the Torso mesh as a sharp
--- box, so a limb keeps the rounded Head mesh: its rounded ends are the bevel.
--- Stone and bark keep their overlapping limbs: a golem's boulders and a
--- tree's logs are not armour.
+-- Armour finish (owner, 16/10, with two pictures of the level they want: "não
+-- vai deixar meus heróis palito"): every limb segment, fist, boot, shoulder pad
+-- and chest plate is a chunky block with chamfered edges, and each segment
+-- stops a little short of its elbow or knee, where a dark under-suit joint
+-- shows; the wrist, ankle and shoulder ends still reach their joints, so
+-- nothing opens there. Roblox ships the classic avatar's blocks with every
+-- client, a 1x2x1 limb and a 2x2x1 torso whose edges are chamfered (decoded
+-- and checked in Studio, 16/10): the armour wears them as file meshes, so the
+-- bevels cost no part. Stone and bark keep their rounded, overlapping limbs:
+-- a golem's boulders and a tree's logs are not armour.
 local UNDERSUIT = Color3.fromRGB(46, 48, 60)
--- Each segment's length (mesh scale) and how far it slides away from the elbow
--- or knee (mesh offset, in lengths): the far end stays on its joint.
-local ARMOUR_SEGMENTS = { UpperArm = { 0.94, 0.03 }, LowerArm = { 0.95, -0.025 }, UpperLeg = { 0.94, 0.03 }, LowerLeg = { 0.95, -0.025 } }
+-- A trim colour other than the catalogue's, where the costume asks for it.
+local HERO_GLOW = {
+	thor = Color3.fromRGB(90, 170, 255), wanda = Color3.fromRGB(255, 60, 190), strange = Color3.fromRGB(255, 196, 60),
+	ghostrider = Color3.fromRGB(255, 120, 30), silversurfer = Color3.fromRGB(80, 210, 255),
+}
+local CHAMFER_LIMB, CHAMFER_TORSO = "rbxasset://avatar/meshes/leftarm.mesh", "rbxasset://avatar/meshes/torso.mesh"
+-- Dresses a mesh as a chamfered block `size` big (the wide block for a piece
+-- much wider than it is deep, so the bevels stay even).
+local function chamfer(mesh, size)
+	local torso = size.X > size.Z * 1.35
+	mesh.MeshType, mesh.MeshId = Enum.MeshType.FileMesh, torso and CHAMFER_TORSO or CHAMFER_LIMB
+	mesh.Scale = torso and Vector3.new(size.X / 2, size.Y / 2, size.Z) or Vector3.new(size.X, size.Y / 2, size.Z)
+	return mesh
+end
+Figure.Chamfer = chamfer
+-- Each segment's length (of the limb), how far it slides away from the elbow
+-- or knee (mesh offset, in lengths: the far end stays on its joint) and its
+-- girth: gauntlets and greaves are bulkier than the upper arm and the thigh,
+-- like the pictures' armour.
+local ARMOUR_SEGMENTS = { UpperArm = { 0.94, 0.03, 1 }, LowerArm = { 0.95, -0.025, 1.14 }, UpperLeg = { 0.94, 0.03, 1.02 }, LowerLeg = { 0.95, -0.025, 1.12 } }
 local function armourHero(f, look)
 	if look.matte then return end
 	for _, side in ipairs({ "Left", "Right" }) do
 		for segment, fit in pairs(ARMOUR_SEGMENTS) do
 			local limb = f.parts[side .. segment]
-			local contour = limb:FindFirstChild("BodyContour")
-			contour.MeshType, contour.Scale, contour.Offset = Enum.MeshType.Head, Vector3.new(1, fit[1], 1), Vector3.new(0, limb.Size.Y * fit[2], 0)
+			local contour = chamfer(limb:FindFirstChild("BodyContour"), Vector3.new(limb.Size.X * fit[3], limb.Size.Y * fit[1], limb.Size.Z * fit[3]))
+			contour.Offset = Vector3.new(0, limb.Size.Y * fit[2], 0)
 		end
-		local foot = f.parts[side .. "Foot"]:FindFirstChild("BodyContour")
-		foot.MeshType, foot.Scale = Enum.MeshType.Brick, Vector3.one
+		for _, name in ipairs({ "Hand", "Foot" }) do
+			local part = f.parts[side .. name]
+			chamfer(part:FindFirstChild("BodyContour"), part.Size)
+		end
 		local ua, la, ul, ll = f.sizes.upperArm, f.sizes.lowerArm, f.sizes.upperLeg, f.sizes.lowerLeg
 		f.add(side .. "UpperArm", "ElbowJoint", Vector3.one * math.min(ua.X, ua.Z, la.X, la.Z) * 0.84, CFrame.new(0, -ua.Y / 2, 0), UNDERSUIT, FABRIC, "ball")
 		f.add(side .. "UpperLeg", "KneeJoint", Vector3.one * math.min(ul.X, ul.Z, ll.X, ll.Z) * 0.84, CFrame.new(0, -ul.Y / 2, 0), UNDERSUIT, FABRIC, "ball")
 	end
 	if not look.suit then
-		local hips = f.parts.LowerTorso:FindFirstChild("BodyContour")
-		hips.MeshType, hips.Scale = Enum.MeshType.Brick, Vector3.one
+		local pelvis = f.parts.LowerTorso
+		chamfer(pelvis:FindFirstChild("BodyContour"), pelvis.Size)
 	end
 	-- The under-suit shows at the waist too, between the chest armour and the belt.
 	local waist = f.model:FindFirstChild("Waist")
 	if waist then waist.Color = UNDERSUIT:Lerp(f.parts.UpperTorso.Color, 0.2) end
-	local shelled, domes, trims, kneeCaps = {}, {}, {}, {}
+	local shelled, pads, trims, kneeCaps = {}, {}, {}, {}
 	for _, piece in ipairs(f.model:GetChildren()) do
 		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
 		if fit and fit.Part0 and (piece.Name == "PauldronTrim" or piece.Name == "ShoulderTrim") then trims[fit.Part0.Name] = piece.Color end
@@ -2832,61 +2856,111 @@ local function armourHero(f, look)
 	for _, piece in ipairs(f.model:GetChildren()) do
 		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
 		local host = fit and fit.Part0
-		if not host then continue end
+		if not host or piece.Material == NEON then continue end
+		local limb = string.find(host.Name, "Arm") or string.find(host.Name, "Leg") or string.find(host.Name, "Hand") or string.find(host.Name, "Foot")
 		if piece.Name == "Pauldron" and piece:IsA("WedgePart") then
-			-- A dome over the shoulder: its crown stands above the shoulder line
-			-- and its rim overhangs the arm.
+			-- A big chamfered block over the shoulder: its top stands above the
+			-- shoulder line and its sides overhang the arm.
 			local arm = host.Size
-			local pad = f.add(host.Name, "Pauldron", Vector3.new(arm.X * 1.34, arm.Y * 0.74, arm.Z * 1.3), CFrame.new(0, arm.Y * 0.36, 0), piece.Color, piece.Material, "ball")
+			local pad = f.add(host.Name, "Pauldron", Vector3.new(arm.X * 1.36, arm.Y * 0.56, arm.Z * 1.32), CFrame.new(0, arm.Y * 0.32, 0), piece.Color, piece.Material)
+			chamfer(Instance.new("SpecialMesh"), pad.Size).Parent = pad
 			pad.Reflectance = piece.Reflectance
 			pad:SetAttribute("Tint", piece:GetAttribute("Tint"))
-			domes[host.Name] = pad
+			pads[host.Name] = pad
 			piece:Destroy()
 		elseif string.find(host.Name, "Foot") then
-			-- Boots are tall blocks over the whole foot, on a dark sole that shows
-			-- around them (a low slab read as a sandal).
-			local mesh = piece:FindFirstChildOfClass("SpecialMesh")
-			if mesh and mesh.MeshType == Enum.MeshType.Head then mesh.MeshType = Enum.MeshType.Brick end
+			-- Boots are tall chamfered blocks over the whole foot, on a dark sole
+			-- that shows around them (a low slab read as a sandal).
 			local ratio = Vector3.new(piece.Size.X / host.Size.X, piece.Size.Y / host.Size.Y, piece.Size.Z / host.Size.Z)
 			if piece.Name == "BootSole" then
 				piece.Size = host.Size * Vector3.new(1.3, 0.26, 1.3)
 				fit.C0 = CFrame.new(0, -host.Size.Y * 0.4, -host.Size.Z * 0.02)
-			elseif ratio.X >= 1.04 and ratio.Z >= 1.04 and piece.Material ~= NEON then
+			elseif ratio.X >= 1.04 and ratio.Z >= 1.04 then
 				piece.Size = Vector3.new(piece.Size.X, host.Size.Y * 1.02, piece.Size.Z)
 				fit.C0 = CFrame.new(0, host.Size.Y * 0.02, fit.C0.Position.Z)
 			end
 			piece.CFrame = host.CFrame * fit.C0
-		else
-			-- A plate around an arm or a leg becomes the shell of its whole
-			-- segment, one smooth block from joint to joint like the armour of
-			-- the picture (a band round the middle of each read as a stack of
-			-- tyres).
+			if piece:IsA("Part") and piece.Shape == Enum.PartType.Block then
+				chamfer(piece:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh"), piece.Size).Parent = piece
+			end
+		elseif limb then
+			-- A plate around an arm or a leg becomes the armour of its whole
+			-- segment, one block from joint to joint like the pictures' (a band
+			-- round the middle of each read as a stack of tyres); other pieces on
+			-- the limbs (pads, bracers, gloves) are chamfered blocks too.
 			local segment = string.match(host.Name, "^%a-(%u%l+%u%l+)$")
 			local shell = ARMOUR_SEGMENTS[segment]
 			local ratio = Vector3.new(piece.Size.X / host.Size.X, piece.Size.Y / host.Size.Y, piece.Size.Z / host.Size.Z)
-			if shell and piece.Material ~= NEON and ratio.X >= 1.04 and ratio.Z >= 1.04 and ratio.Y >= 0.3 and ratio.Y <= 1.05
+			local mesh = piece:FindFirstChildOfClass("SpecialMesh")
+			if shell and ratio.X >= 1.04 and ratio.Z >= 1.04 and ratio.Y >= 0.3 and ratio.Y <= 1.05
 				and not shelled[host] and not string.find(piece.Name, "Pauldron") and not string.find(piece.Name, "Shoulder") then
 				shelled[host] = true
-				piece.Size = Vector3.new(piece.Size.X, host.Size.Y * shell[1], piece.Size.Z)
+				local girth = math.max(ratio.X, shell[3] + 0.06)
+				piece.Size = Vector3.new(host.Size.X * girth, host.Size.Y * shell[1], host.Size.Z * math.max(ratio.Z, shell[3] + 0.06))
 				fit.C0 = CFrame.new(0, host.Size.Y * shell[2], 0)
 				piece.CFrame = host.CFrame * fit.C0
-				local mesh = piece:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
-				mesh.MeshType, mesh.Parent = Enum.MeshType.Head, piece
-				if not mesh.Name or mesh.Name == "SpecialMesh" then mesh.Name = "CostumeContour" end
+				mesh = mesh or Instance.new("SpecialMesh")
+				mesh.Name = "CostumeContour"
+				chamfer(mesh, piece.Size).Parent = piece
+			elseif piece:IsA("Part") and piece.Shape == Enum.PartType.Block and piece.Name ~= "Thumb"
+				and (not mesh or mesh.MeshType == Enum.MeshType.Head or mesh.MeshType == Enum.MeshType.Torso or mesh.MeshType == Enum.MeshType.Brick)
+				and math.min(piece.Size.X, piece.Size.Y, piece.Size.Z) >= 0.12 * f.scale then
+				chamfer(mesh or Instance.new("SpecialMesh"), piece.Size).Parent = piece
+			end
+		elseif (host.Name == "UpperTorso" or host.Name == "LowerTorso") and piece:IsA("Part") and piece.Shape == Enum.PartType.Block then
+			-- Chest plates, belts and packs are chamfered blocks.
+			local mesh = piece:FindFirstChildOfClass("SpecialMesh")
+			if (not mesh or mesh.MeshType == Enum.MeshType.Torso or mesh.MeshType == Enum.MeshType.Brick)
+				and math.min(piece.Size.X, piece.Size.Y, piece.Size.Z) >= 0.12 * f.scale then
+				chamfer(mesh or Instance.new("SpecialMesh"), piece.Size).Parent = piece
 			end
 		end
 	end
-	-- Gold studs like the picture's: a diamond on the front of each domed pad
-	-- and on each knee that has no cap of its own, in the hero's trim colour.
+	-- Glowing trims in the hero's own colour, like the pictures' edges: round
+	-- each gauntlet's wrist, round each boot's top and along the chest plate's
+	-- lower edge. A pad's gold trim runs round its lower rim.
+	local glow = f.glow
+	if glow then
+		local s = f.scale
+		for _, side in ipairs({ "Left", "Right" }) do
+			local forearm = f.parts[side .. "LowerArm"].Size
+			local girth = 0
+			for _, piece in ipairs(f.model:GetChildren()) do
+				local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+				if fit and fit.Part0 and fit.Part0.Name == side .. "LowerArm" and shelled[fit.Part0] and piece.Name ~= "ElbowJoint" then girth = math.max(girth, piece.Size.X / forearm.X) end
+			end
+			girth = math.max(girth, ARMOUR_SEGMENTS.LowerArm[3]) + 0.04
+			f.add(side .. "LowerArm", "CuffGlow", Vector3.new(forearm.X * girth, 0.08 * s, forearm.Z * girth), CFrame.new(0, -forearm.Y * 0.42, 0), glow, NEON)
+			local foot = f.parts[side .. "Foot"].Size
+			local boot = 1.04
+			for _, piece in ipairs(f.model:GetChildren()) do
+				local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
+				if fit and fit.Part0 and fit.Part0.Name == side .. "Foot" and piece.Name ~= "BootSole" and piece.Material ~= NEON then boot = math.max(boot, piece.Size.X / foot.X) end
+			end
+			f.add(side .. "Foot", "BootGlow", Vector3.new(foot.X * (boot + 0.04), 0.08 * s, foot.Z * 0.62), CFrame.new(0, foot.Y * 0.5, foot.Z * 0.2), glow, NEON)
+			local pad = pads[side .. "UpperArm"]
+			if pad then
+				local arm = f.parts[side .. "UpperArm"].Size
+				local rim = Vector3.new(pad.Size.X * 1.03, 0.08 * s, pad.Size.Z * 1.03)
+				local trim = trims[side .. "UpperArm"] or HC.gold
+				f.add(side .. "UpperArm", "PadRim", rim, CFrame.new(0, arm.Y * 0.32 - pad.Size.Y / 2 + 0.04 * s, 0), trim, METAL)
+			end
+		end
+		for _, piece in ipairs(f.model:GetChildren()) do
+			if piece.Name == "PauldronTrim" and piece:FindFirstChild("Fit") and pads[piece.Fit.Part0.Name] then piece:Destroy() end
+		end
+		local c = f.sizes.chest
+		f.add("UpperTorso", "ChestTrim", Vector3.new(c.X * 1.01, 0.08 * s, c.Z * 1.05), CFrame.new(0, -c.Y * 0.18, 0), glow, NEON)
+	end
+	-- Gold studs like the pictures': a diamond on the front of each shoulder
+	-- pad and on each knee that has no cap of its own, in the hero's trim colour.
 	for _, side in ipairs({ "Left", "Right" }) do
 		local sign = side == "Left" and -1 or 1
 		local accent = trims[side .. "UpperArm"] or kneeCaps[side .. "LowerLeg"] or HC.gold
 		local s = f.scale
-		local pad = domes[side .. "UpperArm"]
-		if pad then
+		if pads[side .. "UpperArm"] then
 			local arm = f.parts[side .. "UpperArm"].Size
-			local at = Vector3.new(sign * arm.X * 0.49, arm.Y * 0.4, -arm.Z * 0.49)
-			f.add(side .. "UpperArm", "PadStud", Vector3.new(0.24, 0.24, 0.08) * s, CFrame.lookAt(at, at + Vector3.new(sign, 0, -1)) * CFrame.Angles(0, 0, math.pi / 4), accent, METAL)
+			f.add(side .. "UpperArm", "PadStud", Vector3.new(0.24, 0.24, 0.08) * s, CFrame.new(sign * arm.X * 0.28, arm.Y * 0.34, -arm.Z * 0.66 - 0.03 * s) * CFrame.Angles(0, 0, math.pi / 4), accent, METAL)
 		end
 		if not kneeCaps[side .. "LowerLeg"] then
 			local thigh = f.sizes.upperLeg
@@ -3236,6 +3310,20 @@ function Figure.Hero(parent, heroId, hero, scale)
 				local contour = piece:FindFirstChild("BodyContour") or piece:FindFirstChild("CostumeContour")
 				if contour then contour.MeshType = Enum.MeshType.Brick end
 			end
+		end
+	end
+	-- The hero's own colour (the catalogue's), bright and saturated, for the
+	-- armour's glowing trims; HERO_GLOW overrides it where the costume asks.
+	local tone = HERO_GLOW[heroId] or (hero and hero.color and Color3.fromRGB(hero.color[1], hero.color[2], hero.color[3]))
+	if tone then
+		-- Stretched so the strongest channel is full and the weakest drops: a
+		-- saturated glow, never a pale one (a near-grey colour gets cyan).
+		local high, low = math.max(tone.R, tone.G, tone.B), math.min(tone.R, tone.G, tone.B)
+		if high - low < 0.15 then
+			figure.glow = Color3.fromRGB(80, 210, 255)
+		else
+			local function vivid(x) return math.clamp((x - low) / (high - low) * 0.85 + 0.15 * x / high, 0, 1) end
+			figure.glow = Color3.new(vivid(tone.R), vivid(tone.G), vivid(tone.B))
 		end
 	end
 	armourHero(figure, look)
