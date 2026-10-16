@@ -3025,6 +3025,7 @@ local LIVING_POWERS = {
 	HeatEye = "pulse", TenRing = "pulse", CannonMuzzle = "pulse", ReactorCore = "pulse", GunMuzzle = "pulse", EnergyString = "pulse",
 	EnergyArrow = "pulse", SonarVisor = "pulse", CosmicSigil = "pulse", TridentProng = "pulse", TiaraGem = "pulse", CoreSeam = "pulse",
 	PhotonGauntlet = "pulse", StormSigil = "pulse", EmberSigil = "pulse", HammerRune = "pulse", ChestRingCore = "pulse",
+	MagmaVein = "pulse", MagmaCrack = "pulse", VeinCore = "pulse", GlowBud = "pulse",
 }
 -- Tags a piece for the client to move (Motion.Accents): orbit (rad/s) round
 -- an axis through a pivot in its host's frame, flicker or pulse.
@@ -3059,6 +3060,41 @@ local function seams(f, color, legs)
 		seam(f, name .. "LowerArm", "EnergySeam", side, color)
 		if legs then seam(f, name .. "LowerLeg", "EnergySeam", side, color) end
 	end
+end
+HERO_SIGNATURE.hulk = function(f)
+	-- The stone giant cracks with lava down its arms and thighs.
+	local glow, s = Color3.fromRGB(255, 140, 50), f.scale
+	for _, side in ipairs({ -1, 1 }) do
+		local name = side < 0 and "Left" or "Right"
+		for _, segment in ipairs({ "UpperArm", "UpperLeg" }) do
+			local size = f.parts[name .. segment].Size
+			local reach = math.min(size.X, size.Z) * 0.5
+			f.add(name .. segment, "MagmaCrack", Vector3.new(0.09 * s, size.Y * 0.56, 0.07 * s), CFrame.new(side * reach * 0.82, 0, -reach * 0.56) * CFrame.Angles(0, side * 0.6, side * 0.35), glow, NEON)
+		end
+	end
+end
+HERO_SIGNATURE.groot = function(f)
+	-- The tree giant buds with glowing green life on its shoulders and crown.
+	local bud, s, h = Color3.fromRGB(120, 255, 140), f.scale, f.parts.Head.Size
+	for _, side in ipairs({ -1, 1 }) do
+		local arm = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		f.add(arm, "GlowBud", Vector3.new(0.22, 0.22, 0.22) * s, CFrame.new(side * f.sizes.upperArm.X * 0.3, f.sizes.upperArm.Y * 0.56, -0.1 * s), bud, NEON, "ball")
+	end
+	f.add("Head", "GlowBud", Vector3.new(0.24, 0.24, 0.24) * s, CFrame.new(-h.X * 0.18, h.Y * 0.62, 0.04 * s), bud, NEON, "ball")
+end
+HERO_SIGNATURE.wasp = function(f)
+	-- Her wings shimmer as if buzzing.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "Wing" then animate(piece, "FxPulse", 0.25) end
+	end
+	seams(f, f.glow or Color3.fromRGB(255, 220, 60), true)
+end
+HERO_SIGNATURE.spiderman = function(f)
+	-- The spider on his chest glows orange.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "SpiderEmblem" then piece.Color, piece.Material = Color3.fromRGB(255, 140, 40), NEON; animate(piece, "FxPulse", 0.25) end
+	end
+	seams(f, f.glow or Color3.fromRGB(255, 140, 40), true)
 end
 HERO_SIGNATURE.storm = function(f)
 	local spark, s = Color3.fromRGB(170, 230, 255), f.scale
@@ -3110,9 +3146,14 @@ HERO_SIGNATURE.captain = function(f)
 	end
 end
 HERO_SIGNATURE.panther = function(f)
-	-- Vibranium energy: violet lines down the arms and legs, glowing claws.
+	-- Vibranium energy: violet lines down the arms and legs, glowing claws and
+	-- a necklace of claws at the collar.
 	local violet = Color3.fromRGB(186, 104, 255)
 	seams(f, violet, true)
+	local c, s = f.sizes.chest, f.scale
+	for i, x in ipairs({ -0.27, -0.09, 0.09, 0.27 }) do
+		f.add("UpperTorso", "NecklaceClaw", Vector3.new(0.12, 0.3, 0.1) * s, CFrame.new(c.X * x, c.Y * 0.36 - math.abs(x) * 0.25 * s, -c.Z * 0.51 - 0.06 * s) * CFrame.Angles(0, 0, x * 1.2), violet, NEON)
+	end
 	for _, piece in ipairs(f.model:GetChildren()) do
 		if piece.Name == "Claw" or piece.Name == "ChestGem" then piece.Color, piece.Material = violet, NEON end
 	end
