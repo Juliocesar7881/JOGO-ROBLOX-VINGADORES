@@ -1373,6 +1373,8 @@ do
 	local holder = Instance.new("Model")
 	holder.Parent = workspace
 	local art = WorldBuilder.Figure.ArmourArt
+	local savedMesh, savedTexture = art.mesh, art.texture
+	art.mesh, art.texture = 0, 0
 	local plain = WorldBuilder.Figure.Hero(holder, "thor", Catalog.Heroes.thor, 1)
 	local function key(part)
 		local at = part:FindFirstChild("Fit") and part.Fit.C0.Position or part.Position
@@ -1386,7 +1388,7 @@ do
 	end
 	art.mesh, art.texture = 123, 456
 	local painted = WorldBuilder.Figure.Hero(holder, "thor", Catalog.Heroes.thor, 1)
-	art.mesh, art.texture = 0, 0
+	art.mesh, art.texture = savedMesh, savedTexture
 	local swapped, tinted, same = 0, 0, 0
 	for _, part in ipairs(painted.model:GetDescendants()) do
 		local mesh = part:IsA("BasePart") and part:FindFirstChildOfClass("SpecialMesh")

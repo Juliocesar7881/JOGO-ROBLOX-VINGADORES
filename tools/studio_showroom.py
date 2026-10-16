@@ -56,6 +56,11 @@ floor.Parent = room
 
 HEROES = r'''
 local World = fresh(SSS.DoomServer.WorldBuilder)
+-- The armour's own block and finish, as the game's World.new hands them over.
+local config = fresh(RS.DoomShared.Config)
+if config.Art and World.Figure and World.Figure.ArmourArt then
+	World.Figure.ArmourArt.mesh, World.Figure.ArmourArt.texture = config.Art.armorMesh or 0, config.Art.armorTexture or 0
+end
 local towers = Instance.new("Folder")
 towers.Name, towers.Parent = "Towers", room
 local fake = { catalog = catalog, Towers = towers, ClearClutter = function() end }

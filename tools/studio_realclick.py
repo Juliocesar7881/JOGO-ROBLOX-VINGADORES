@@ -114,9 +114,10 @@ def main() -> int:
     parser.add_argument("--wheel", type=int, help="scroll the wheel by this many notches (negative = down) over the point instead of clicking")
     args = parser.parse_args()
     name = title(args.window_handle)
-    # The Studio window itself, or the "Importação de arquivo" confirmation Studio
-    # opens (a separate window) for an upload the owner asked for.
-    if ("doomsday" not in name.lower() or "studio" not in name.lower()) and name not in ("Importação de arquivo", "File Import"):
+    # The Studio window itself, or the "Importação de arquivo" confirmation and the
+    # 3D importer's "Importar prévia" window Studio opens (separate windows) for an
+    # upload the owner asked for (16/10: "faça tudo necessário... só gratuito").
+    if ("doomsday" not in name.lower() or "studio" not in name.lower()) and name not in ("Importação de arquivo", "File Import", "Importar prévia", "Import Preview"):
         print(f"Refusing: window {args.window_handle} is '{name}', not the Doomsday Studio window.")
         return 2
     rect = wintypes.RECT()

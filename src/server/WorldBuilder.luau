@@ -2800,10 +2800,12 @@ local function sculptTorso(f)
 	-- Chamfered blocks: Roblox's own classic torso mesh (see armourHero).
 	core.MeshType, core.MeshId = Enum.MeshType.FileMesh, "rbxasset://avatar/meshes/torso.mesh"
 	core.Scale, core.Offset = Vector3.new(c.X / 2, c.Y * 0.68 / 2, c.Z * 1.02), Vector3.new(0, c.Y * 0.16, 0)
+	core:SetAttribute("MeshNative", Vector3.new(2, 2, 1))
 	local waist = f.add("UpperTorso", "Waist", Vector3.new(c.X * 0.74, c.Y * 0.56, c.Z * 0.92), CFrame.new(0, -c.Y * 0.22, 0), chest.Color, chest.Material, "torso")
 	local waistMesh = waist:FindFirstChildOfClass("SpecialMesh")
 	waistMesh.MeshType, waistMesh.MeshId = Enum.MeshType.FileMesh, "rbxasset://avatar/meshes/torso.mesh"
 	waistMesh.Scale = Vector3.new(waist.Size.X / 2, waist.Size.Y / 2, waist.Size.Z)
+	waistMesh:SetAttribute("MeshNative", Vector3.new(2, 2, 1))
 	waist:SetAttribute("Tint", chest:GetAttribute("Tint"))
 	waist.Reflectance = chest.Reflectance
 	f.model:SetAttribute("TorsoFinish", "sculpted")
