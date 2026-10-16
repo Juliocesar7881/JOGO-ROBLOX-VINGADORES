@@ -2866,6 +2866,19 @@ local function armourHero(f, look)
 	-- The under-suit shows at the waist too, between the chest armour and the belt.
 	local waist = f.model:FindFirstChild("Waist")
 	if waist then waist.Color = UNDERSUIT:Lerp(f.parts.UpperTorso.Color, 0.2) end
+	-- Colour reads as colour, like the pictures' glossy toys: Roblox's Metal
+	-- mirrors the sky and washed a gold, red or blue suit out to khaki and
+	-- grey in Studio (16/10), so a coloured metal piece is smooth plastic with
+	-- a light gloss; grey metals stay metal. Gold takes a rich gold.
+	for _, item in ipairs(f.model:GetDescendants()) do
+		if item:IsA("BasePart") and item.Material == METAL then
+			local c = item.Color
+			if math.max(c.R, c.G, c.B) - math.min(c.R, c.G, c.B) > 0.25 then
+				if c.R > 0.78 and c.G > 0.5 and c.G < 0.84 and c.B < 0.42 then c = Color3.fromRGB(255, 186, 38):Lerp(c, 0.2) end
+				item.Color, item.Material, item.Reflectance = c, FABRIC, 0.06
+			end
+		end
+	end
 	local shelled, pads, trims, kneeCaps = {}, {}, {}, {}
 	for _, piece in ipairs(f.model:GetChildren()) do
 		local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
