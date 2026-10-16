@@ -155,3 +155,4 @@ Uma linha por passo, a mais nova embaixo.
 - 2026-10-16 19:26 — FEITO M42.25: brilho de reator, propulsores, raios do sol e estrela vermelha (Ferro, Homem-Asa, Capita Estelar, Soldado de Prata); commit 83efcca; suite exit 0; lobby 4349; publicado 16/10 19:26.
 - 2026-10-16 19:33 — FEITO M42.26: poderes brilhantes de todos os herois pulsam/tremulam (sem pecas novas) e raio na mao da Deusa do Clima; commit e27ec5e; suite exit 0; publicado 16/10 19:32.
 - 2026-10-16 19:43 — FEITO M42.27 (parte): rachaduras de lava no Gigante Furioso, brotos no Gigante Verde, asas da Abelha cintilando, aranha acesa, colar de garras da Pantera; commit 0225134; suite exit 0; lobby 4360; publicado 16/10 19:43.
+- 2026-10-16 19:49 — FEITO M42.27 (parte 2): emblemas brilhantes pulsam (raios do Velocista e do Capitao Men, laco da Amazona, emblema do Rei dos Mares, joias de diadema, anel do Guardiao Verde); commit 74b39b3; suite exit 0; publicado 16/10 19:49.
