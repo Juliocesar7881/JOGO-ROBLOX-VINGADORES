@@ -396,5 +396,6 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M42.24 Segunda camada dos cinco da imagem (casaco longo, saia longa, armadura branca, gema e frisos, correntes).
 - [x] M42.25 Reator, propulsores, raios do sol e estrela vermelha brilhando (heróis da primeira imagem e o inicial).
 - [x] M42.26 Poderes brilhantes de todos os heróis pulsam/tremulam; raio na mão da Deusa do Clima.
-- [ ] M42.27 Segunda camada (silhueta + detalhes) para os demais heróis, do mais visto ao menos visto, lobby < 4550 peças.
+- [x] M42.27 Segunda camada (silhueta + brilho próprio) para todos os heróis restantes.
+- [x] M42.28 Arte própria enviada pelo importador 3D do Studio (gratuito, autorizado pelo dono): bloco de armadura arredondado com acabamento pintado em todos os heróis, capa de galáxia, ombreiras com chamas, runas no casaco (tools/gen_armor_assets.py, tools/gen_hero_textures.py, Config.Art).
 
