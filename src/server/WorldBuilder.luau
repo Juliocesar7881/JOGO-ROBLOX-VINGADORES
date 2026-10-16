@@ -2787,7 +2787,12 @@ local function wrapMaskedFace(figure)
 				fit = band:FindFirstChild("Fit")
 			end
 			local y = fit.C0.Position.Y
-			band.Size = Vector3.new(h.X, math.min(band.Size.Y, h.Y * 0.62), h.Z)
+			-- A jaw piece is a little narrower than the head, so the head's own
+			-- round hides it at the sides and the back: it shows only at the front
+			-- (a full ring read as a collar, a skin-coloured one as a scarf).
+			local jaw = band.Name == "ChinGuard" or band.Name == "JawRidge" or band.Name == "FacePlate"
+			local across = jaw and 0.93 or 1
+			band.Size = Vector3.new(h.X * across, math.min(band.Size.Y, h.Y * 0.62), h.Z * across)
 			local mesh = band:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh")
 			mesh.MeshType, mesh.Parent = Enum.MeshType.Head, band
 			fit.C0 = CFrame.new(0, y, -h.Z * depth)

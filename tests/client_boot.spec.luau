@@ -2948,6 +2948,20 @@ local function session(screen)
 		check(hand and (hand.Position-handRest.Position).Magnitude > 0.025, tag .. ": firing moves the hand around its authored shoulder")
 		frames(0.1, 5)
 		check(hand and (hand.Position-handRest.Position).Magnitude < 0.001, tag .. ": firing restores the pose without accumulating displacement")
+		-- A cleared wave: the heroes cheer, arms in the air with a little hop,
+		-- then stand at rest again (owner, 16/10: heroes come alive).
+		-- Measured against the chest: the new phase may turn the whole figure.
+		local function handOnChest() return chest.CFrame:Inverse() * hand.Position end
+		local onChest = hand and chest and handOnChest()
+		push(matchSnapshot(profile, "Wave"))
+		frames(0.1, 1)
+		push(matchSnapshot(profile, "Preparing"))
+		frames(0.1, 7)
+		local raised = onChest and (handOnChest() - onChest).Magnitude or 0
+		check(raised > 0.05, tag .. ": a cleared wave makes the heroes cheer, hand moved " .. raised)
+		frames(0.1, 20)
+		local after = onChest and (handOnChest() - onChest).Magnitude or math.huge
+		check(after < 0.01, tag .. ": after the cheer a hero stands at rest again, off by " .. after)
 		fx({ kind = "CoinRemove", id = "c1" })
 		for _,heroId in ipairs(Catalog.HeroOrder) do
 			local ability=Catalog.Abilities[Catalog.Heroes[heroId].ability]

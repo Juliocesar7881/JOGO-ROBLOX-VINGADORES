@@ -58,15 +58,16 @@ def main() -> int:
         print("No Studio log found.")
         return 2
     before = count_marker(args.place_id)
-    # The first click on a busy Studio sometimes only takes focus: try twice.
+    # The first click on a busy Studio sometimes only takes focus (always right
+    # after a playtest stops): try three times.
     found = None
-    for _ in range(2):
+    for _ in range(3):
         menu = subprocess.run([sys.executable, str(ROOT / "tools" / "studio_menu.py"), "open", "--window-handle", str(args.window_handle), str(MENU_TITLE[0]), str(MENU_TITLE[1])], capture_output=True, text=True)
         print(menu.stdout.strip())
         found = re.search(r"popup (\d+) at \(-?\d+,-?\d+\) size (\d+)x(\d+) class='RobloxStudio'", menu.stdout)
         if found:
             break
-        time.sleep(0.8)
+        time.sleep(1.5)
     if not found:
         print("The File menu did not open as a popup; nothing was clicked.")
         return 1

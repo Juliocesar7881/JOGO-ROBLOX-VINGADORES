@@ -465,9 +465,17 @@ function Effects:_registerIdle()
 	end
 end
 
+local CHEER_SECONDS = 1.3
+
 function Effects:_turnTowers(dt, onlyModel)
 	local state = self.getState()
 	local reduced = state and state.profile and state.profile.settings and state.profile.settings.lowFX
+	-- A cleared wave: every hero on the field cheers (owner, 16/10: make the
+	-- heroes come alive), arms thrown up, two little hops and eyes shut in a
+	-- happy squint, each a moment after the last so the squad ripples.
+	local phase = state and state.phase
+	if self.towerPhase == "Wave" and phase == "Preparing" then self.cheerAt = self.clock end
+	self.towerPhase = phase
 	if self.clock >= (self.idleScanAt or 0) then
 		self.idleScanAt = self.clock + IDLE_SCAN
 		if not reduced then self:_registerIdle() end
@@ -494,20 +502,29 @@ function Effects:_turnTowers(dt, onlyModel)
 		local hopAge = record.hopAt and self.clock - record.hopAt or 1
 		local hopping = hopAge < 0.55
 		local stunned = record.stunUntil and self.clock < record.stunUntil
+		local cheerAge = self.cheerAt and self.clock - self.cheerAt - (record.breath % 0.45) or math.huge
+		-- A hero that shoots again is back at work: its cheer ends there.
+		local cheering = not stunned and not reduced and cheerAge >= 0 and cheerAge < CHEER_SECONDS
+			and not (record.firedAt and record.firedAt >= self.cheerAt)
 		local near = eye and (eye - record.pivot.Position).Magnitude < IDLE_DISTANCE
 		local idle = not reduced and near
 		if record.stars and not stunned then
 			for _, star in ipairs(record.stars) do star:Destroy() end
 			record.stars = nil
 		end
-		if record.eyes then Motion.SetEyes(record.eyes, stunned or (idle and Motion.BlinkClosed(self.clock, record.breath))) end
-		if record.active or firing or casting or hopping or stunned or idle or record.posed then
+		if record.eyes then Motion.SetEyes(record.eyes, stunned or cheering or (idle and Motion.BlinkClosed(self.clock, record.breath))) end
+		if record.active or firing or casting or hopping or stunned or idle or cheering or record.posed then
 			local delta = ((record.target - record.yaw + math.pi) % (2 * math.pi)) - math.pi
 			local settled = math.abs(delta) < 0.01
 			record.yaw = settled and record.target or record.yaw + delta * math.min(1, dt * 14)
 			local pulse = impact
 			local cast = casting and math.sin(math.clamp(castAge / 0.75, 0, 1) * math.pi) or 0
 			local hop = hopping and math.sin(math.clamp(hopAge / 0.55, 0, 1) * math.pi) or 0
+			if cheering then
+				local u = cheerAge / CHEER_SECONDS
+				cast = math.max(cast, math.sin(math.pi * u))
+				hop = math.max(hop, 0.32 * math.abs(math.sin(u * 2 * math.pi)))
+			end
 			local breathe = idle and math.sin(self.clock * 2.1 + record.breath) * 0.05 * record.scale or 0
 			local slump = stunned and 1 or 0
 			if reduced then pulse, prepare, cast, hop = 0, 0, 0, 0 end
@@ -564,7 +581,7 @@ function Effects:_turnTowers(dt, onlyModel)
 			end
 			-- A figure that has come to rest keeps its last pose until the next
 			-- motion; one extra pass returns it exactly to rest.
-			record.posed = firing or casting or hopping or stunned or idle
+			record.posed = firing or casting or hopping or stunned or idle or cheering
 			if settled and not firing then record.active = false end
 		end
 	end
