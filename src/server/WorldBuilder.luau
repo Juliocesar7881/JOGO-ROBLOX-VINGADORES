@@ -3018,6 +3018,14 @@ end
 -- a spell circle, chaos shards, orbiting moons. Shapes, never particles: a
 -- battle of towers emits only at its portals and core (world_boot keeps it so).
 local HERO_SIGNATURE = {}
+-- Tags a piece for the client to move (Motion.Accents): orbit (rad/s) round
+-- an axis through a pivot in its host's frame, flicker or pulse.
+local function animate(part, kind, amount, pivot, axis)
+	part:SetAttribute(kind, amount)
+	if pivot then part:SetAttribute("FxPivot", pivot) end
+	if axis then part:SetAttribute("FxAxis", axis) end
+	return part
+end
 local function cylinderAt(f, host, name, diameter, height, offset, color, surface)
 	return f.add(host, name, Vector3.new(height, diameter, diameter), offset * CFrame.Angles(0, 0, math.pi / 2), color, surface, Enum.PartType.Cylinder)
 end
@@ -3049,7 +3057,32 @@ HERO_SIGNATURE.ironman = function(f)
 	seams(f, cyan, true)
 	for _, piece in ipairs(f.model:GetChildren()) do
 		if piece.Name == "RepulsorCore" or piece.Name == "ThrusterSole" or piece.Name == "EnergyLineL" or piece.Name == "EnergyLineR" then piece.Color, piece.Material = cyan, NEON end
+		if piece.Name == "PadRim" then piece.Color = cyan; piece.Material = NEON end
 	end
+	-- The reactor glows round the bolt's diamond, just in front of the armour.
+	local c, s = f.sizes.chest, f.scale
+	animate(f.add("UpperTorso", "ReactorGlow", Vector3.new(0.86 * s, 0.86 * s, 0.012 * s), CFrame.new(0, c.Y * 0.16, -c.Z / 2 - 0.097 * s) * CFrame.Angles(0, 0, math.pi / 4), cyan, NEON), "FxPulse", 0.3)
+end
+HERO_SIGNATURE.falcon = function(f)
+	-- The jetpack's thrusters burn.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "ThrusterNozzle" then animate(piece, "FxPulse", 0.3); piece.Color, piece.Material = Color3.fromRGB(255, 140, 40), NEON end
+	end
+	seams(f, f.glow or Color3.fromRGB(80, 210, 255), true)
+end
+HERO_SIGNATURE.captainmarvel = function(f)
+	-- Her sun's rays breathe light.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if string.find(piece.Name, "^SunRay") then animate(piece, "FxPulse", 0.35) end
+	end
+	seams(f, f.glow or Color3.fromRGB(255, 200, 60), true)
+end
+HERO_SIGNATURE.bucky = function(f)
+	-- The red star on the metal arm glows.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "RedStar" then piece.Color, piece.Material = Color3.fromRGB(255, 50, 64), NEON end
+	end
+	seams(f, f.glow or Color3.fromRGB(80, 210, 255), true)
 end
 HERO_SIGNATURE.captain = function(f)
 	-- A glowing ring round the shield's rim, just behind it.
@@ -3079,14 +3112,6 @@ HERO_SIGNATURE.widow = function(f)
 end
 HERO_SIGNATURE.hawkeye = function(f)
 	seams(f, Color3.fromRGB(100, 255, 120), false)
-end
--- Tags a piece for the client to move (Motion.Accents): orbit (rad/s) round
--- an axis through a pivot in its host's frame, flicker or pulse.
-local function animate(part, kind, amount, pivot, axis)
-	part:SetAttribute(kind, amount)
-	if pivot then part:SetAttribute("FxPivot", pivot) end
-	if axis then part:SetAttribute("FxAxis", axis) end
-	return part
 end
 -- (The rider's chain: links hanging from his belt on the left hip.)
 local function chain(f, links, color)
