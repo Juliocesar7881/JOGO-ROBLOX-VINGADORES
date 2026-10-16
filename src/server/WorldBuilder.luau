@@ -2831,9 +2831,40 @@ local CHAMFER_LIMB, CHAMFER_TORSO = "rbxasset://avatar/meshes/leftarm.mesh", "rb
 local function chamfer(mesh, size)
 	local torso = size.X > size.Z * 1.35
 	mesh.MeshType, mesh.MeshId = Enum.MeshType.FileMesh, torso and CHAMFER_TORSO or CHAMFER_LIMB
-	mesh.Scale = torso and Vector3.new(size.X / 2, size.Y / 2, size.Z) or Vector3.new(size.X, size.Y / 2, size.Z)
+	local native = torso and Vector3.new(2, 2, 1) or Vector3.new(1, 2, 1)
+	mesh.Scale = Vector3.new(size.X / native.X, size.Y / native.Y, size.Z / native.Z)
+	mesh:SetAttribute("MeshNative", native)
 	return mesh
 end
+-- The armour's own block and finish (owner, 16/10: "faça tudo necessário...
+-- só precisa ser gratuito"): a unit box with well-rounded edges and a painted
+-- near-white finish tinted by VertexColor, made by tools/gen_armor_assets.py
+-- and uploaded once (Config.Art). While their ids are 0 the classic chamfered
+-- blocks stay. Set by World.new from the config.
+local ARMOUR_ART = { mesh = 0, texture = 0 }
+-- Last pass on a hero: every chamfered piece wears the armour's own block and
+-- finish in its own colour (after every recolour of the costume).
+local function paintArmour(f)
+	if (ARMOUR_ART.mesh or 0) == 0 then return end
+	local meshId = "rbxassetid://" .. tostring(ARMOUR_ART.mesh)
+	local textureId = (ARMOUR_ART.texture or 0) ~= 0 and "rbxassetid://" .. tostring(ARMOUR_ART.texture) or ""
+	for _, part in ipairs(f.model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			for _, mesh in ipairs(part:GetChildren()) do
+				local native = mesh:IsA("SpecialMesh") and mesh:GetAttribute("MeshNative")
+				if native and (mesh.MeshId == CHAMFER_LIMB or mesh.MeshId == CHAMFER_TORSO) then
+					local drawn = Vector3.new(mesh.Scale.X * native.X, mesh.Scale.Y * native.Y, mesh.Scale.Z * native.Z)
+					mesh.MeshId, mesh.TextureId, mesh.Scale = meshId, textureId, drawn
+					mesh:SetAttribute("MeshNative", Vector3.new(1, 1, 1))
+					local c = part.Color
+					mesh.VertexColor = Vector3.new(c.R, c.G, c.B)
+				end
+			end
+		end
+	end
+	f.model:SetAttribute("ArmourArt", true)
+end
+Figure.ArmourArt = ARMOUR_ART
 Figure.Chamfer = chamfer
 -- Each segment's length (of the limb), how far it slides away from the elbow
 -- or knee (mesh offset, in lengths: the far end stays on its joint) and its
@@ -3097,6 +3128,172 @@ HERO_SIGNATURE.spiderman = function(f)
 	end
 	seams(f, f.glow or Color3.fromRGB(255, 140, 40), true)
 end
+-- The rest of the roster (owner, 16/10: "continue até terminar todos os
+-- heróis"): each hero gets a piece of silhouette or a glowing signature in the
+-- pictures' spirit, on top of the armour, the trims and the seams.
+local function glowSeams(f, fallback) seams(f, f.glow or fallback, true) end
+HERO_SIGNATURE.hawkeye = function(f)
+	-- An archer's short cloak.
+	seams(f, Color3.fromRGB(100, 255, 120), false)
+	cape(f, Color3.fromRGB(38, 92, 60), 2.4, HC.leather)
+end
+HERO_SIGNATURE.antman = function(f)
+	-- Two particle canisters on his back, their caps glowing red.
+	local c, s = f.sizes.chest, f.scale
+	for _, side in ipairs({ -1, 1 }) do
+		local at = CFrame.new(side * c.X * 0.2, -c.Y * 0.02, c.Z / 2 + 0.24 * s)
+		cylinderAt(f, "UpperTorso", "PymCanister", 0.42 * s, c.Y * 0.62, at, Color3.fromRGB(150, 156, 166), FABRIC)
+		animate(cylinderAt(f, "UpperTorso", "PymCap", 0.34 * s, 0.1 * s, at * CFrame.new(0, c.Y * 0.33, 0), Color3.fromRGB(255, 60, 60), NEON), "FxPulse", 0.3)
+	end
+	glowSeams(f, Color3.fromRGB(255, 60, 60))
+end
+HERO_SIGNATURE.rocket = function(f)
+	-- A jet pack with two burning nozzles.
+	local c, s = f.sizes.chest, f.scale
+	f.add("UpperTorso", "JetPack", Vector3.new(c.X * 0.66, c.Y * 0.78, 0.5 * s), CFrame.new(0, 0, c.Z / 2 + 0.27 * s), Color3.fromRGB(70, 76, 88), FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		animate(cylinderAt(f, "UpperTorso", "JetFlame", 0.26 * s, 0.22 * s, CFrame.new(side * c.X * 0.2, -c.Y * 0.45, c.Z / 2 + 0.3 * s), Color3.fromRGB(255, 140, 40), NEON), "FxPulse", 0.35)
+	end
+	glowSeams(f, Color3.fromRGB(255, 140, 40))
+end
+HERO_SIGNATURE.daredevil = function(f)
+	-- Horns on the mask and a glowing red mark on the chest.
+	local h, c, s = f.parts.Head.Size, f.sizes.chest, f.scale
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("Head", "MaskHorn", Vector3.new(0.12 * s, 0.4 * s, 0.22 * s), CFrame.new(side * h.X * 0.24, h.Y * 0.52, -h.Z * 0.06) * CFrame.Angles(0, math.pi / 2, side * 0.22), Color3.fromRGB(176, 30, 40), FABRIC, "wedge")
+	end
+	animate(f.add("UpperTorso", "ChestMark", Vector3.new(0.3, 0.3, 0.06) * s, CFrame.new(0, c.Y * 0.2, -c.Z * 0.51 - 0.06 * s) * CFrame.Angles(0, 0, math.pi / 4), Color3.fromRGB(255, 50, 60), NEON), "FxPulse", 0.3)
+	glowSeams(f, Color3.fromRGB(255, 50, 60))
+end
+HERO_SIGNATURE.vision = function(f)
+	-- Gold lines framing the chest, like the pictures' plates.
+	local c, s = f.sizes.chest, f.scale
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("UpperTorso", "ChestGoldLine", Vector3.new(0.08 * s, c.Y * 0.62, 0.06 * s), CFrame.new(side * c.X * 0.36, c.Y * 0.12, -c.Z * 0.51 - 0.03 * s), Color3.fromRGB(255, 196, 60), FABRIC)
+	end
+	glowSeams(f, Color3.fromRGB(120, 240, 255))
+end
+HERO_SIGNATURE.warmachine = function(f)
+	-- A missile pod on the other shoulder, warheads glowing, and an ammo belt.
+	local c, s = f.sizes.chest, f.scale
+	local pod = CFrame.new(-c.X * 0.36, c.Y / 2 + 0.32 * s, -0.1 * s)
+	f.add("UpperTorso", "MissilePod", Vector3.new(0.7 * s, 0.56 * s, 0.9 * s), pod, Color3.fromRGB(70, 74, 82), FABRIC)
+	for i, x in ipairs({ -0.16, 0.16 }) do
+		for _, y in ipairs({ -0.12, 0.12 }) do
+			animate(f.add("UpperTorso", "Warhead", Vector3.new(0.14, 0.14, 0.08) * s, pod * CFrame.new(x * s, y * s, -0.47 * s), Color3.fromRGB(255, 70, 50), NEON), "FxPulse", 0.25)
+		end
+	end
+	f.rod("UpperTorso", "AmmoBelt", Vector3.new(-c.X * 0.34, c.Y * 0.4, -c.Z * 0.53), Vector3.new(c.X * 0.3, -c.Y * 0.36, -c.Z * 0.53), 0.14 * s, Color3.fromRGB(200, 160, 60), FABRIC)
+	glowSeams(f, Color3.fromRGB(255, 140, 40))
+end
+HERO_SIGNATURE.starlord = function(f)
+	-- Coat tails behind and jet boots that burn.
+	local p, s = f.parts.LowerTorso.Size, f.scale
+	local coat = Color3.fromRGB(110, 40, 46)
+	for _, side in ipairs({ -1, 1 }) do
+		local frame = CFrame.new(side * p.X * 0.27, -p.Y * 0.4, p.Z * 0.56) * CFrame.Angles(0.16, 0, side * 0.06)
+		f.add("LowerTorso", "CoatTail", Vector3.new(p.X * 0.46, 1.9 * s, 0.08 * s), frame * CFrame.new(0, -0.95 * s, 0), coat, FABRIC)
+		local foot = side < 0 and "LeftFoot" or "RightFoot"
+		local b = f.parts[foot].Size
+		animate(f.add(foot, "JetSole", Vector3.new(b.X * 0.8, 0.08 * s, b.Z * 0.6), CFrame.new(0, -b.Y * 0.56, 0.05 * s), Color3.fromRGB(255, 130, 40), NEON), "FxPulse", 0.35)
+	end
+	glowSeams(f, Color3.fromRGB(255, 130, 40))
+end
+HERO_SIGNATURE.emerald = function(f)
+	-- A shield of green light on the left arm, breathing.
+	local s, arm = f.scale, f.sizes.lowerArm
+	local shield = f.disc("LeftLowerArm", "ConstructShield", 1.8 * s, 0.06 * s, CFrame.new(-arm.X * 0.75, 0, -0.1 * s) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromRGB(90, 255, 120), NEON)
+	shield.Transparency = 0.45
+	animate(shield, "FxPulse", 0.25)
+	glowSeams(f, Color3.fromRGB(90, 255, 120))
+end
+HERO_SIGNATURE.speedster = function(f)
+	-- The speed force crackles behind him in two golden trails.
+	local c, s = f.sizes.chest, f.scale
+	local gold = Color3.fromRGB(255, 214, 70)
+	for _, side in ipairs({ -1, 1 }) do
+		local x = side * c.X * 0.32
+		bolt(f, "UpperTorso", "SpeedBolt", { Vector3.new(x, c.Y * 0.2, c.Z * 0.55), Vector3.new(x + side * 0.2 * s, c.Y * 0.05, c.Z * 0.55 + 0.5 * s), Vector3.new(x, -c.Y * 0.1, c.Z * 0.55 + 0.9 * s), Vector3.new(x + side * 0.2 * s, -c.Y * 0.25, c.Z * 0.55 + 1.4 * s) }, 0.07 * s, gold)
+	end
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "SpeedBolt" then animate(piece, "FxPulse", 0.6) end
+	end
+	glowSeams(f, gold)
+end
+HERO_SIGNATURE.wolverine = function(f)
+	-- A red X on the belt buckle.
+	local p, s = f.parts.LowerTorso.Size, f.scale
+	for _, tilt in ipairs({ -0.7, 0.7 }) do
+		f.add("LowerTorso", "BuckleX", Vector3.new(0.08 * s, 0.46 * s, 0.04 * s), CFrame.new(0, p.Y * 0.26, -p.Z * 0.56 - 0.13 * s) * CFrame.Angles(0, 0, tilt), Color3.fromRGB(220, 40, 40), FABRIC)
+	end
+	glowSeams(f, Color3.fromRGB(255, 200, 60))
+end
+HERO_SIGNATURE.jean = function(f)
+	-- Phoenix wings of flame behind her, three feathers a side, licking.
+	local c, s = f.sizes.chest, f.scale
+	local flame, ember = Color3.fromRGB(255, 120, 40), Color3.fromRGB(255, 210, 80)
+	for _, side in ipairs({ -1, 1 }) do
+		for i, feather in ipairs({ { 2.2, 0.5, 0.55, 0.6 }, { 1.9, 0.44, 0.15, 0.3 }, { 1.5, 0.38, -0.2, 0.02 } }) do
+			local length, width, rise, tilt = feather[1] * s, feather[2] * s, feather[3] * s, feather[4]
+			animate(f.add("UpperTorso", "PhoenixFeather", Vector3.new(length, width, 0.07 * s), CFrame.new(side * (c.X * 0.34 + length * 0.46), rise, c.Z / 2 + 0.3 * s + i * 0.03 * s) * CFrame.Angles(0, side * 0.3, side * tilt), i == 1 and ember or flame, NEON), "FxFlicker", 0.08)
+		end
+	end
+	glowSeams(f, flame)
+end
+HERO_SIGNATURE.beast = function(f)
+	-- Shaggy fur on the shoulders.
+	local s, arm = f.scale, f.sizes.upperArm
+	for _, side in ipairs({ -1, 1 }) do
+		local name = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		f.add(name, "FurTuft", Vector3.new(arm.X * 1.2, arm.Y * 0.5, arm.Z * 1.15), CFrame.new(side * arm.X * 0.1, arm.Y * 0.42, 0), Color3.fromRGB(48, 84, 160), FABRIC, "ball")
+	end
+	glowSeams(f, Color3.fromRGB(110, 170, 255))
+end
+HERO_SIGNATURE.psylocke = function(f)
+	-- Sash tails fluttering behind and a psychic mark over the eye.
+	local p, h, s = f.parts.LowerTorso.Size, f.parts.Head.Size, f.scale
+	local violet = Color3.fromRGB(120, 40, 160)
+	for _, side in ipairs({ -1, 1 }) do
+		f.add("LowerTorso", "SashTail", Vector3.new(0.28 * s, 1.6 * s, 0.06 * s), CFrame.new(side * p.X * 0.16, -p.Y * 0.2 - 0.8 * s, p.Z * 0.58) * CFrame.Angles(0.22, 0, side * 0.18), violet, FABRIC)
+	end
+	animate(f.add("Head", "PsychicMark", Vector3.new(0.16, 0.24, 0.05) * s, f.face(-0.36, 0.34, 0.05) * CFrame.Angles(0, 0, 0.4), Color3.fromRGB(255, 110, 200), NEON), "FxPulse", 0.3)
+	glowSeams(f, Color3.fromRGB(255, 110, 200))
+end
+HERO_SIGNATURE.nightstalker = function(f)
+	-- A gold utility belt of pouches.
+	local p, s = f.parts.LowerTorso.Size, f.scale
+	for _, x in ipairs({ -0.36, -0.18, 0.18, 0.36 }) do
+		f.add("LowerTorso", "BeltPouch", Vector3.new(0.26, 0.3, 0.16) * s, CFrame.new(p.X * x, p.Y * 0.2, -p.Z * 0.56 - 0.06 * s), Color3.fromRGB(230, 180, 50), FABRIC)
+	end
+	glowSeams(f, Color3.fromRGB(80, 140, 255))
+end
+HERO_SIGNATURE.seaking = function(f)
+	-- A sea-green cape with a gold hem.
+	cape(f, Color3.fromRGB(22, 112, 104), 3.4, Color3.fromRGB(240, 196, 60))
+	glowSeams(f, Color3.fromRGB(60, 230, 210))
+end
+HERO_SIGNATURE.capmen = function(f)
+	-- A glowing ring round his chest roundel.
+	local c, s = f.sizes.chest, f.scale
+	animate(f.disc("UpperTorso", "RoundelGlow", 0.76 * s, 0.03 * s, CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.022 * s), Color3.fromRGB(255, 170, 60), NEON), "FxPulse", 0.3)
+	glowSeams(f, Color3.fromRGB(255, 150, 60))
+end
+HERO_SIGNATURE.solartitan = function(f)
+	-- A sun's halo behind his head.
+	local h, s = f.parts.Head.Size, f.scale
+	local halo = f.disc("Head", "SunHalo", h.X * 1.9, 0.04 * s, CFrame.new(0, h.Y * 0.1, h.Z * 0.62), Color3.fromRGB(255, 200, 70), NEON)
+	halo.Transparency = 0.45
+	animate(halo, "FxPulse", 0.25)
+	glowSeams(f, Color3.fromRGB(255, 200, 70))
+end
+HERO_SIGNATURE.amazon = function(f)
+	-- A warrior's skirt of blue and gold strips.
+	local p, s = f.parts.LowerTorso.Size, f.scale
+	for i, x in ipairs({ -0.36, -0.12, 0.12, 0.36 }) do
+		f.add("LowerTorso", "SkirtStrip", Vector3.new(p.X * 0.22, 0.7 * s, 0.07 * s), CFrame.new(p.X * x, -p.Y * 0.5 - 0.3 * s, -p.Z * 0.55) * CFrame.Angles(-0.12, 0, x * 0.3), i % 2 == 0 and Color3.fromRGB(240, 186, 50) or Color3.fromRGB(40, 70, 160), FABRIC)
+	end
+	glowSeams(f, Color3.fromRGB(255, 200, 70))
+end
 HERO_SIGNATURE.storm = function(f)
 	local spark, s = Color3.fromRGB(170, 230, 255), f.scale
 	bolt(f, "RightHand", "Lightning", { Vector3.new(-0.2, -0.3, -0.2) * s, Vector3.new(0.1, -0.7, -0.3) * s, Vector3.new(-0.12, -1.0, -0.2) * s, Vector3.new(0.18, -1.4, -0.3) * s }, 0.06 * s, spark)
@@ -3167,9 +3364,6 @@ HERO_SIGNATURE.widow = function(f)
 		if piece.Name == "WidowInsignia" then piece.Color, piece.Material = Color3.fromRGB(255, 50, 70), NEON end
 	end
 	seams(f, shock, false)
-end
-HERO_SIGNATURE.hawkeye = function(f)
-	seams(f, Color3.fromRGB(100, 255, 120), false)
 end
 -- (The rider's chain: links hanging from his belt on the left hip.)
 local function chain(f, links, color)
@@ -3719,6 +3913,7 @@ function Figure.Hero(parent, heroId, hero, scale)
 		seams(figure, figure.glow, true)
 	end
 	if not figure.model:FindFirstChild("Muzzle", true) then muzzle(figure, "RightHand", Vector3.new(0, -figure.sizes.hand.Y / 2 - 0.1 * figure.scale, 0)) end
+	paintArmour(figure)
 	return figure
 end
 
@@ -5544,6 +5739,9 @@ function World.new(catalog, openPanel, config, options)
 	upper = catalog.Upper or string.upper
 	campaignWaves = catalog.CampaignWaves or {}
 	local self = setmetatable({ catalog = catalog, openPanel = openPanel, mapImages = config and config.MapImages or {} }, World)
+	-- The armour's own block and finish, once uploaded (0 keeps the classic chamfer).
+	local art = config and config.Art
+	ARMOUR_ART.mesh, ARMOUR_ART.texture = art and art.armorMesh or 0, art and art.armorTexture or 0
 	-- Match places need the same portraits even when their lobby is removed.
 	local storage = game:GetService("ReplicatedStorage")
 	local previous = storage:FindFirstChild("DoomHeroPortraits")

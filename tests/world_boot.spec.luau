@@ -1367,6 +1367,42 @@ do
 	end
 end
 
+-- The armour's own block and finish (Config.Art): every chamfered piece
+-- swaps to it, tinted to its own colour, drawn at the same size.
+do
+	local holder = Instance.new("Model")
+	holder.Parent = workspace
+	local art = WorldBuilder.Figure.ArmourArt
+	local plain = WorldBuilder.Figure.Hero(holder, "thor", Catalog.Heroes.thor, 1)
+	local function key(part)
+		local at = part:FindFirstChild("Fit") and part.Fit.C0.Position or part.Position
+		return string.format("%s %.3f %.3f %.3f", part.Name, at.X, at.Y, at.Z)
+	end
+	local before = {}
+	for _, part in ipairs(plain.model:GetDescendants()) do
+		local mesh = part:IsA("BasePart") and part:FindFirstChildOfClass("SpecialMesh")
+		local native = mesh and mesh:GetAttribute("MeshNative")
+		if native then before[key(part)] = Vector3.new(mesh.Scale.X * native.X, mesh.Scale.Y * native.Y, mesh.Scale.Z * native.Z) end
+	end
+	art.mesh, art.texture = 123, 456
+	local painted = WorldBuilder.Figure.Hero(holder, "thor", Catalog.Heroes.thor, 1)
+	art.mesh, art.texture = 0, 0
+	local swapped, tinted, same = 0, 0, 0
+	for _, part in ipairs(painted.model:GetDescendants()) do
+		local mesh = part:IsA("BasePart") and part:FindFirstChildOfClass("SpecialMesh")
+		if mesh and mesh.MeshId == "rbxassetid://123" then
+			swapped += 1
+			local c, v = part.Color, mesh.VertexColor
+			if mesh.TextureId == "rbxassetid://456" and math.abs(v.X - c.R) + math.abs(v.Y - c.G) + math.abs(v.Z - c.B) < 1e-3 then tinted += 1 end
+			local was = before[key(part)]
+			if was and (was - mesh.Scale).Magnitude < 1e-3 then same += 1 end
+		end
+	end
+	check(swapped >= 20 and tinted == swapped, "the armour wears its own block and finish in each piece's colour, got " .. swapped .. "/" .. tinted)
+	check(same >= swapped * 0.9, "the armour block keeps each piece's drawn size, got " .. same .. "/" .. swapped)
+	holder:Destroy()
+end
+
 -- Living signatures (owner, 16/10): the server tags the pieces, the client
 -- moves them locally (glyphs and moons orbit, flames lick, glows breathe).
 do
@@ -1418,8 +1454,9 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 					-- Armour (owner, 16/10): a segment reaches its shoulder, wrist, hip
 					-- or ankle and stops short of its elbow or knee, over a dark joint.
 					local half = limb.Size.Y / 2
-					-- A file mesh's scale is in mesh units (the chamfered limb block is 2 tall).
-					local drawn = contour.MeshType == Enum.MeshType.FileMesh and contour.Scale.Y or contour.Scale.Y * half
+					-- A file mesh's scale is in mesh units (MeshNative: the mesh's own size).
+					local native = contour:GetAttribute("MeshNative")
+					local drawn = native and contour.Scale.Y * native.Y / 2 or contour.Scale.Y * half
 					local top, bottom = contour.Offset.Y + drawn, contour.Offset.Y - drawn
 					local reach = string.find(segment, "Upper") and top or -bottom
 					check(reach >= half - 1e-3, heroId .. ": armour reaches the outer joint: " .. side .. segment)
@@ -1437,7 +1474,10 @@ for _, heroId in ipairs(Catalog.HeroOrder) do
 						if fit and fit.Part0 and fit.Part0.Name == side .. pair[1] then joint = item end
 					end
 					local cu, cl = upper.BodyContour, lower.BodyContour
-					local function drawnHalf(contour, limb) return contour.MeshType == Enum.MeshType.FileMesh and contour.Scale.Y or contour.Scale.Y * limb.Size.Y / 2 end
+					local function drawnHalf(contour, limb)
+						local native = contour:GetAttribute("MeshNative")
+						return native and contour.Scale.Y * native.Y / 2 or contour.Scale.Y * limb.Size.Y / 2
+					end
 					local gapUpper = cu.Offset.Y - drawnHalf(cu, upper) + upper.Size.Y / 2
 					local gapLower = lower.Size.Y / 2 - (cl.Offset.Y + drawnHalf(cl, lower)) + 0.02 * s
 					check(joint ~= nil and joint.Size.Y / 2 >= math.max(gapUpper, gapLower), heroId .. ": a dark joint fills the gap at the " .. pair[3] .. ": " .. side)
