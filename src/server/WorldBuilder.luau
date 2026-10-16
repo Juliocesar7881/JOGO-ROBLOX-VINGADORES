@@ -523,9 +523,14 @@ function Figure.HeroFace(figure, style, options)
 		figure.add("Head", "Teeth", V(0.27, 0.06, 0.03) * k, on(0, -0.365, 0.012), FIGURE_WHITE, smooth, "ball")
 		figure.add("Head", "Tongue", V(0.16, 0.075, 0.03) * k, on(0, -0.485, 0.012), Color3.fromRGB(236, 104, 118), smooth, "ball")
 	elseif style == "fierce" then
-		-- A confident half smile.
-		figure.add("Head", "Mouth", V(0.28, 0.065, 0.04) * k, on(-0.02, -0.44, 0.012) * CFrame.Angles(0, 0, 0.1), mouthInk, smooth, "ball")
-		figure.add("Head", "Mouth", V(0.12, 0.06, 0.04) * k, on(0.14, -0.395, 0.012) * CFrame.Angles(0, 0, 0.62), mouthInk, smooth, "ball")
+		-- A confident half smile: a thin line that curls up on one side (two fat
+		-- strokes read as painted lips in Studio's light).
+		for index = 0, 3 do
+			local x = -0.15 + index * 0.1
+			local y = -0.455 + 1.9 * (x + 0.03) ^ 2
+			local slope = 3.8 * (x + 0.03) * h.Y / h.X
+			figure.add("Head", "Mouth", V(0.12, 0.045, 0.04) * k, on(x, y, 0.012) * CFrame.Angles(0, 0, math.atan(slope)), mouthInk, smooth, "ball")
+		end
 	else
 		-- A roar: an open mouth with its teeth showing.
 		figure.add("Head", "Mouth", V(0.32, 0.17, 0.04) * k, on(0, -0.43, 0.0), mouthInk, smooth, "ball")
@@ -621,12 +626,13 @@ local HERO_LOOK = {
 	captain = { suit = Color3.fromRGB(28, 50, 108), body = { width = 1.08, chest = 1.06, arm = 1.08, hand = 1.18, head = 1.1, leg = 1.04 }, colors = { skin = Color3.fromRGB(222, 164, 124), head = Color3.fromRGB(222, 164, 124), chest = Color3.fromRGB(20, 148, 140), pelvis = Color3.fromRGB(28, 50, 108), upperArm = Color3.fromRGB(20, 148, 140), lowerArm = Color3.fromRGB(28, 50, 108), hand = Color3.fromRGB(28, 50, 108), upperLeg = Color3.fromRGB(28, 50, 108), lowerLeg = Color3.fromRGB(28, 50, 108), foot = Color3.fromRGB(28, 50, 108) }, face = "fierce" },
 	panther = { colors = { head = Color3.fromRGB(58, 36, 96), chest = Color3.fromRGB(58, 36, 96), pelvis = Color3.fromRGB(44, 28, 74), upperArm = Color3.fromRGB(58, 36, 96), lowerArm = Color3.fromRGB(58, 36, 96), hand = Color3.fromRGB(44, 28, 74), upperLeg = Color3.fromRGB(58, 36, 96), lowerLeg = Color3.fromRGB(58, 36, 96), foot = Color3.fromRGB(44, 28, 74) }, shiny = true },
 	hulk = { body = { scale = 1.72, width = 1.1, depth = 1.12, chest = 1.14, head = 0.8, arm = 1.55, hand = 1.3, leg = 1.36, legLength = 0.88, torsoLength = 1.1, foot = 1.1 },
-		colors = { skin = Color3.fromRGB(152, 138, 120), head = Color3.fromRGB(152, 138, 120), chest = Color3.fromRGB(152, 138, 120), pelvis = Color3.fromRGB(86, 76, 66), upperArm = Color3.fromRGB(152, 138, 120), lowerArm = Color3.fromRGB(140, 126, 110), hand = Color3.fromRGB(152, 138, 120), upperLeg = Color3.fromRGB(86, 76, 66), lowerLeg = Color3.fromRGB(140, 126, 110), foot = Color3.fromRGB(120, 108, 96) }, face = "angry" },
+		colors = { skin = Color3.fromRGB(152, 138, 120), head = Color3.fromRGB(152, 138, 120), chest = Color3.fromRGB(152, 138, 120), pelvis = Color3.fromRGB(86, 76, 66), upperArm = Color3.fromRGB(152, 138, 120), lowerArm = Color3.fromRGB(140, 126, 110), hand = Color3.fromRGB(152, 138, 120), upperLeg = Color3.fromRGB(86, 76, 66), lowerLeg = Color3.fromRGB(140, 126, 110), foot = Color3.fromRGB(120, 108, 96) }, face = "angry", matte = true },
 	vision = { colors = { skin = Color3.fromRGB(220, 236, 248), head = Color3.fromRGB(220, 236, 248), chest = Color3.fromRGB(110, 150, 230), pelvis = Color3.fromRGB(110, 150, 230), upperArm = Color3.fromRGB(110, 150, 230), lowerArm = Color3.fromRGB(220, 236, 248), hand = Color3.fromRGB(220, 236, 248), upperLeg = Color3.fromRGB(110, 150, 230), lowerLeg = Color3.fromRGB(220, 236, 248), foot = HC.gold }, face = "smile", shiny = true },
 	warmachine = { body = { width = 1.08, arm = 1.08, leg = 1.06 }, colors = { head = Color3.fromRGB(176, 108, 52), chest = Color3.fromRGB(176, 108, 52), pelvis = HC.ink, upperArm = Color3.fromRGB(176, 108, 52), lowerArm = HC.ink, hand = Color3.fromRGB(176, 108, 52), upperLeg = Color3.fromRGB(176, 108, 52), lowerLeg = HC.ink, foot = Color3.fromRGB(176, 108, 52) }, shiny = true },
 	starlord = { colors = { chest = Color3.fromRGB(30, 110, 130), pelvis = HC.ink, upperArm = Color3.fromRGB(36, 126, 146), lowerArm = Color3.fromRGB(36, 126, 146), hand = HC.ink, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.leather, head = Color3.fromRGB(40, 60, 80) } },
 	groot = { body = { scale = 1.52, width = 0.74, depth = 0.8, head = 0.92, arm = 0.8, leg = 0.86, legLength = 1.18, armLength = 1.24, torsoLength = 1.08, hand = 1.1 },
-		colors = { skin = Color3.fromRGB(112, 82, 54), head = Color3.fromRGB(128, 94, 62), chest = Color3.fromRGB(112, 82, 54), pelvis = Color3.fromRGB(96, 70, 46), upperArm = Color3.fromRGB(112, 82, 54), lowerArm = Color3.fromRGB(104, 76, 50), hand = Color3.fromRGB(96, 70, 46), upperLeg = Color3.fromRGB(104, 76, 50), lowerLeg = Color3.fromRGB(96, 70, 46), foot = Color3.fromRGB(84, 60, 40) }, material = Enum.Material.Wood, face = "smile" },
+		-- A warm, light bark: Studio's wood texture darkens it, the old browns read as black.
+		colors = { skin = Color3.fromRGB(156, 114, 74), head = Color3.fromRGB(168, 124, 82), chest = Color3.fromRGB(156, 114, 74), pelvis = Color3.fromRGB(134, 98, 64), upperArm = Color3.fromRGB(156, 114, 74), lowerArm = Color3.fromRGB(146, 106, 68), hand = Color3.fromRGB(134, 98, 64), upperLeg = Color3.fromRGB(146, 106, 68), lowerLeg = Color3.fromRGB(134, 98, 64), foot = Color3.fromRGB(116, 84, 54) }, material = Enum.Material.Wood, face = "smile", matte = true },
 	thor = { body = { width = 1.1, arm = 1.12, leg = 1.04 }, colors = { chest = Color3.fromRGB(54, 74, 120), pelvis = HC.ink, upperArm = Color3.fromRGB(54, 74, 120), lowerArm = HC.silver, hand = HC.silver, upperLeg = HC.ink, lowerLeg = Color3.fromRGB(54, 74, 120), foot = HC.ink }, face = "fierce", hair = { Color3.fromRGB(226, 234, 246), "spiky" } },
 	wanda = { body = { width = 0.88, arm = 0.86, leg = 0.9 }, colors = { chest = Color3.fromRGB(196, 50, 140), pelvis = HC.ink, upperArm = Color3.fromRGB(196, 50, 140), lowerArm = Color3.fromRGB(196, 50, 140), hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = Color3.fromRGB(196, 50, 140) }, face = "smile", hair = { Color3.fromRGB(40, 30, 50), "long" } },
 	strange = { colors = { chest = Color3.fromRGB(88, 48, 140), pelvis = Color3.fromRGB(90, 62, 44), upperArm = Color3.fromRGB(88, 48, 140), lowerArm = Color3.fromRGB(88, 48, 140), hand = HC.skin, upperLeg = HC.ink, lowerLeg = HC.ink, foot = HC.ink }, face = "fierce", hair = { HC.ink, "fringe" } },
@@ -867,29 +873,30 @@ HERO_EXTRAS.spiderman = function(f)
 end
 HERO_EXTRAS.hulk = function(f)
 	local s, c = f.scale, f.sizes.chest
-	local stone, glow, moss = Color3.fromRGB(168, 154, 134), Color3.fromRGB(255, 140, 50), Color3.fromRGB(90, 110, 70)
+	local stone, glow, moss = Color3.fromRGB(150, 136, 116), Color3.fromRGB(255, 140, 50), Color3.fromRGB(90, 110, 70)
 	-- Titan: massive segmented rock armor with glowing magma veins, heavy
 	-- pauldrons, forearm boulders and reinforced knuckles; silhouette reads
 	-- as immovable force even at thumbnail size.
-	-- Head: craggy brow ridge, recessed glowing eyes and jaw guard.
-	local h = f.parts.Head.Size
-	f.add("Head", "BrowRidge", Vector3.new(h.X * 0.92, h.Y * 0.28, h.Z * 0.38), CFrame.new(0, h.Y * 0.34, -h.Z * 0.12), stone, Enum.Material.Slate, "wedge")
+	-- Head: the drawn angry face, a magma glow deep in each eye (the brow ridge
+	-- sat inside the head and the jaw wedges stuck out like ear flaps).
 	for _, side in ipairs({ -1, 1 }) do
 		f.add("Head", "EyeGlow", Vector3.new(0.14 * s, 0.12 * s, 0.08 * s), f.face(side * 0.22, 0.16, -0.02), glow, NEON, "ball")
-		f.add("Head", "JawGuard", Vector3.new(h.X * 0.38, h.Y * 0.22, h.Z * 0.28), CFrame.new(side * h.X * 0.26, -h.Y * 0.32, -h.Z * 0.18), stone, Enum.Material.Slate, "wedge")
 	end
+	-- Rocks are rounded boulders in two tones of smooth stone (owner, 16/10:
+	-- wedge slabs read as planks nailed to the body).
+	local rock, darkRock = Enum.Material.SmoothPlastic, Color3.fromRGB(116, 104, 90)
 	-- Torso: layered pectoral slabs with magma cracks between them, abdominal
 	-- segments that follow the waist taper and a reinforced spine ridge.
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("UpperTorso", "PectoralSlab", Vector3.new(c.X * 0.46, c.Y * 0.52, 0.32 * s), CFrame.new(side * c.X * 0.24, c.Y * 0.14, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.06), stone, Enum.Material.Slate, "wedge")
+		f.add("UpperTorso", "PectoralSlab", Vector3.new(c.X * 0.46, c.Y * 0.52, 0.32 * s), CFrame.new(side * c.X * 0.24, c.Y * 0.14, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, side < 0 and math.pi or 0, side * 0.06), darkRock, rock, "ball")
 	end
 	for i = -1, 1 do
 		f.add("UpperTorso", "MagmaVein", Vector3.new(0.1 * s, c.Y * 0.48, 0.07 * s), CFrame.new(i * c.X * 0.18, -c.Y * 0.12, -c.Z / 2 - 0.06 * s) * CFrame.Angles(0, 0, i * 0.35), glow, NEON)
-		f.add("UpperTorso", "SpineRidge", Vector3.new(0.14 * s, c.Y * 0.6, 0.12 * s), CFrame.new(0, c.Y * 0.08, c.Z / 2 + 0.04 * s), stone, Enum.Material.Slate, "wedge")
+		f.add("UpperTorso", "SpineRidge", Vector3.new(0.14 * s, c.Y * 0.6, 0.12 * s), CFrame.new(0, c.Y * 0.08, c.Z / 2 + 0.04 * s), stone, rock, "wedge")
 	end
 	for i = 1, 3 do
 		local width = 1 - (i - 2) * 0.14
-		f.add("LowerTorso", "AbdomenSegment" .. i, Vector3.new(c.X * 0.68 * width, 0.2 * s, 0.22 * s), CFrame.new(0, -c.Y * 0.22 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), stone, Enum.Material.Slate)
+		f.add("LowerTorso", "AbdomenSegment" .. i, Vector3.new(c.X * 0.68 * width, 0.2 * s, 0.22 * s), CFrame.new(0, -c.Y * 0.22 + (i - 2) * 0.18 * s, -c.Z / 2 - 0.02 * s), stone, rock, "head")
 	end
 	-- Arms: massive shoulder boulders, forearm plates with moss accents and
 	-- reinforced knuckle guards that sell the punch impact.
@@ -897,10 +904,10 @@ HERO_EXTRAS.hulk = function(f)
 		local armName = side < 0 and "LeftUpperArm" or "RightUpperArm"
 		local forearmName = side < 0 and "LeftLowerArm" or "RightLowerArm"
 		local handName = side < 0 and "LeftHand" or "RightHand"
-		f.add(armName, "ShoulderBoulder", f.sizes.upperArm * Vector3.new(1.38, 0.72, 1.34), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0.18, side < 0 and math.pi or 0, side * 0.16), stone, Enum.Material.Slate, "wedge")
-		f.add(armName, "MossPatch", Vector3.new(f.sizes.upperArm.X * 0.6, 0.12 * s, f.sizes.upperArm.Z * 0.5), CFrame.new(0, f.sizes.upperArm.Y * 0.42, -f.sizes.upperArm.Z * 0.2), moss, FABRIC)
-		f.add(forearmName, "ForearmPlate", f.sizes.lowerArm * Vector3.new(1.22, 0.68, 1.18), CFrame.new(0, f.sizes.lowerArm.Y * 0.16, 0), stone, Enum.Material.Slate, "wedge")
-		f.add(handName, "KnuckleGuard", f.sizes.hand * Vector3.new(1.24, 0.52, 1.16), CFrame.new(0, -f.sizes.hand.Y * 0.18, -f.sizes.hand.Z * 0.12), stone, Enum.Material.Slate, "wedge")
+		f.add(armName, "ShoulderBoulder", f.sizes.upperArm * Vector3.new(1.38, 0.72, 1.34), CFrame.new(0, f.sizes.upperArm.Y * 0.26, 0) * CFrame.Angles(0.18, side < 0 and math.pi or 0, side * 0.16), stone, rock, "ball")
+		f.add(armName, "MossPatch", Vector3.new(f.sizes.upperArm.X * 0.6, 0.12 * s, f.sizes.upperArm.Z * 0.5), CFrame.new(0, f.sizes.upperArm.Y * 0.42, -f.sizes.upperArm.Z * 0.2), moss, FABRIC, "ball")
+		f.add(forearmName, "ForearmPlate", f.sizes.lowerArm * Vector3.new(1.22, 0.68, 1.18), CFrame.new(0, f.sizes.lowerArm.Y * 0.16, 0), darkRock, rock, "head")
+		f.add(handName, "KnuckleGuard", f.sizes.hand * Vector3.new(1.24, 0.52, 1.16), CFrame.new(0, -f.sizes.hand.Y * 0.18, -f.sizes.hand.Z * 0.12), stone, rock, "ball")
 	end
 	-- Legs: thigh slabs, knee caps and shin guards; feet are wide and heavy
 	-- to ground the silhouette.
@@ -908,12 +915,12 @@ HERO_EXTRAS.hulk = function(f)
 		local legName = side < 0 and "LeftUpperLeg" or "RightUpperLeg"
 		local lowerName = side < 0 and "LeftLowerLeg" or "RightLowerLeg"
 		local footName = side < 0 and "LeftFoot" or "RightFoot"
-		f.add(legName, "ThighSlab", f.sizes.upperLeg * Vector3.new(1.24, 0.74, 1.2), CFrame.new(0, f.sizes.upperLeg.Y * 0.16, 0), stone, Enum.Material.Slate, "wedge")
-		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.72, 0.26 * s, f.sizes.lowerLeg.Z * 0.64), CFrame.new(0, f.sizes.lowerLeg.Y * 0.44, -f.sizes.lowerLeg.Z * 0.26), stone, Enum.Material.Slate, "ball")
-		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.16, 0.76, 1.14), CFrame.new(0, f.sizes.lowerLeg.Y * 0.1, 0), stone, Enum.Material.Slate, "wedge")
-		f.add(footName, "HeavyBoot", f.sizes.foot * Vector3.new(1.28, 0.68, 1.32), CFrame.new(0, -f.sizes.foot.Y * 0.12, 0), stone, Enum.Material.Slate)
+		f.add(legName, "ThighSlab", f.sizes.upperLeg * Vector3.new(1.24, 0.74, 1.2), CFrame.new(0, f.sizes.upperLeg.Y * 0.16, 0), darkRock, rock, "head")
+		f.add(lowerName, "KneeCap", Vector3.new(f.sizes.lowerLeg.X * 0.72, 0.26 * s, f.sizes.lowerLeg.Z * 0.64), CFrame.new(0, f.sizes.lowerLeg.Y * 0.44, -f.sizes.lowerLeg.Z * 0.26), stone, rock, "ball")
+		f.add(lowerName, "ShinGuard", f.sizes.lowerLeg * Vector3.new(1.16, 0.76, 1.14), CFrame.new(0, f.sizes.lowerLeg.Y * 0.1, 0), stone, rock, "head")
+		f.add(footName, "HeavyBoot", f.sizes.foot * Vector3.new(1.28, 0.68, 1.32), CFrame.new(0, -f.sizes.foot.Y * 0.12, 0), stone, rock)
 	end
-	f.add("LowerTorso", "Waistband", f.sizes.pelvis * Vector3.new(1.08, 0.36, 1.1), CFrame.new(0, f.sizes.pelvis.Y * 0.3, 0), Color3.fromRGB(96, 84, 72), Enum.Material.Slate)
+	f.add("LowerTorso", "Waistband", f.sizes.pelvis * Vector3.new(1.08, 0.36, 1.1), CFrame.new(0, f.sizes.pelvis.Y * 0.3, 0), Color3.fromRGB(96, 84, 72), rock)
 	muzzle(f, "RightHand", Vector3.new(0, -f.sizes.hand.Y / 2, 0))
 end
 HERO_EXTRAS.hawkeye = function(f)
@@ -1553,7 +1560,7 @@ HERO_EXTRAS.starlord = function(f)
 end
 HERO_EXTRAS.groot = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
-	local bark, leaf, neonGreen = Color3.fromRGB(96, 70, 46), Color3.fromRGB(96, 170, 72), Color3.fromRGB(120, 255, 140)
+	local bark, leaf, neonGreen = Color3.fromRGB(134, 98, 64), Color3.fromRGB(96, 170, 72), Color3.fromRGB(120, 255, 140)
 	-- Flora Guardian: living wood body with glowing green veins,
 	-- leafy crown and root-like limbs; silhouette reads as nature
 	-- sentinel even at thumbnail size.
@@ -2715,14 +2722,30 @@ local HERO_SKIN = Color3.fromRGB(232, 181, 147)
 local FACE_PARTS = { Sclera = true, Eye = true, Iris = true, Pupil = true, EyeRim = true, Catchlight = true, Brow = true, Lash = true,
 	EyeLine = true, Mouth = true, Teeth = true, Tongue = true, Blush = true }
 local NIGHT_LIFT = Color3.fromRGB(70, 74, 88)
-local function polishHero(f, skin)
+local function polishHero(f, skin, matte)
 	for _, item in ipairs(f.model:GetChildren()) do
 		if item:IsA("BasePart") and item.Name ~= "HumanoidRootPart" and not FACE_PARTS[item.Name] and item.Material ~= Enum.Material.Neon
 			and item.Material ~= Enum.Material.Glass and item.Material ~= Enum.Material.ForceField then
 			local color = item.Color
 			if math.max(color.R, color.G, color.B) < 0.2 then item.Color = color:Lerp(NIGHT_LIFT, 0.42) end
 			local skinLike = math.abs(color.R - skin.R) + math.abs(color.G - skin.G) + math.abs(color.B - skin.B) < 0.06
-			if not skinLike then item.Reflectance = math.max(item.Reflectance or 0, item.Material == Enum.Material.Metal and 0.15 or 0.1) end
+			-- A matte hero (stone, bark) catches no gloss: a varnish on stone mirrored the sky.
+			if not skinLike and not matte then item.Reflectance = math.max(item.Reflectance or 0, item.Material == Enum.Material.Metal and 0.15 or 0.1) end
+		end
+		-- A flat plate of costume (a chest panel, a pauldron, a slab, a belt) is
+		-- moulded with rounded rims: plain boxes read as planks in Studio next
+		-- to the drawn faces. Rods, cubes and the head's own pieces keep their shape.
+		if item:IsA("Part") and item.Shape == Enum.PartType.Block and not item:FindFirstChildOfClass("SpecialMesh") then
+			local fit = item:FindFirstChild("Fit")
+			local host = fit and fit.Part0
+			if host and host.Name ~= "Head" and not string.find(item.Name, "Hair") then
+				local dims = { item.Size.X, item.Size.Y, item.Size.Z }
+				table.sort(dims)
+				if dims[2] >= 0.12 * f.scale and dims[1] < dims[2] * 0.5 then
+					local mesh = Instance.new("SpecialMesh")
+					mesh.Name, mesh.MeshType, mesh.Parent = "CostumeContour", Enum.MeshType.Head, item
+				end
+			end
 		end
 	end
 	f.model:SetAttribute("HeroFinish", "polished")
@@ -2922,17 +2945,21 @@ function Figure.Hero(parent, heroId, hero, scale)
 	if DRAWN_FACE[heroId] then wrapMaskedFace(figure) end
 	-- An open face (owner, 15/10: refine the faces): a hero with drawn eyes is
 	-- never a coloured head (a red or green face read as the hero's skin). A
-	-- hood, cowl, mask or helmet that wrapped the whole head sits back on it
-	-- instead, a little wider and taller, framing a face of the hero's own skin;
-	-- it no longer tints the head. Coloured-skin heroes keep their shell.
+	-- hood, cowl, mask or helmet that wrapped the whole head goes when the hero
+	-- has hair (the hair is the head's outline); on a hairless hero it becomes a
+	-- cowl over the crown and the nape around a face of the hero's own skin. It
+	-- no longer tints the head. Coloured-skin heroes keep their shell.
 	if figure.model:FindFirstChild("Sclera") and not COLOURED_SKIN[heroId] then
 		local head = figure.parts.Head
 		for _, piece in ipairs(figure.model:GetChildren()) do
 			local fit = piece:IsA("BasePart") and piece:FindFirstChild("Fit")
 			if fit and fit.Part0 == head and HEAD_SHELLS[piece.Name] then
 				if figure.model:FindFirstChild("Hair") then
-					piece.Size = piece.Size * Vector3.new(1.1, 1.08, 1)
-					fit.C0 = fit.C0 * CFrame.new(0, head.Size.Y * 0.03, head.Size.Z * 0.15)
+					-- Under hair the shell only peeked out behind the ears as a
+					-- patch of colour: the hair is the head's outline, the shell goes.
+					head.Color = look.colors and look.colors.skin or HERO_SKIN
+					piece:Destroy()
+					continue
 				else
 					-- No hair: the cowl takes its place over the crown, the same tilted
 					-- cap, and a second shell covers the back of the head to the neck.
@@ -3016,7 +3043,7 @@ function Figure.Hero(parent, heroId, hero, scale)
 	end
 	Figure.Finish(figure, true)
 	finishHeroCostume(figure)
-	polishHero(figure, look.colors and look.colors.skin or HERO_SKIN)
+	polishHero(figure, look.colors and look.colors.skin or HERO_SKIN, look.matte)
 	if look.suit then
 		-- Plated suits (look.suit is the suit colour) need continuous solid
 		-- sleeves and a full waist. A tapered torso mesh on each limb left
