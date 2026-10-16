@@ -3067,6 +3067,14 @@ end
 HERO_SIGNATURE.hawkeye = function(f)
 	seams(f, Color3.fromRGB(100, 255, 120), false)
 end
+-- Tags a piece for the client to move (Motion.Accents): orbit (rad/s) round
+-- an axis through a pivot in its host's frame, flicker or pulse.
+local function animate(part, kind, amount, pivot, axis)
+	part:SetAttribute(kind, amount)
+	if pivot then part:SetAttribute("FxPivot", pivot) end
+	if axis then part:SetAttribute("FxAxis", axis) end
+	return part
+end
 HERO_SIGNATURE.ghostrider = function(f)
 	local s, h = f.scale, f.parts.Head.Size
 	local fire, flare = Color3.fromRGB(255, 118, 28), Color3.fromRGB(255, 214, 84)
@@ -3082,18 +3090,21 @@ HERO_SIGNATURE.ghostrider = function(f)
 			piece.CFrame = f.parts.Head.CFrame * fit.C0
 		end
 	end
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if string.find(piece.Name, "^CrownFlame") then animate(piece, "FxFlicker", 0.12) end
+	end
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("Head", "CrownFlameBack", Vector3.new(0.4, 1.0, 0.4) * s, CFrame.new(side * h.X * 0.16, h.Y * 0.62, h.Z * 0.28) * CFrame.Angles(0.3, math.pi / 4, side * -0.3), fire, NEON)
+		animate(f.add("Head", "CrownFlameBack", Vector3.new(0.4, 1.0, 0.4) * s, CFrame.new(side * h.X * 0.16, h.Y * 0.62, h.Z * 0.28) * CFrame.Angles(0.3, math.pi / 4, side * -0.3), fire, NEON), "FxFlicker", 0.12)
 		-- Flames licking up from each shoulder pad.
 		local arm = side < 0 and "LeftUpperArm" or "RightUpperArm"
 		local a = f.parts[arm].Size
 		for i, tongue in ipairs({ { 0.14, 0.9, flare }, { -0.2, 0.66, fire } }) do
-			f.add(arm, "PadFlame", Vector3.new(0.28 * s, tongue[2] * s, 0.28 * s), CFrame.new(side * a.X * tongue[1], a.Y * 0.62 + tongue[2] * s * 0.32, 0) * CFrame.Angles(0, math.pi / 4, side * (0.3 + i * 0.25)), tongue[3], NEON)
+			animate(f.add(arm, "PadFlame", Vector3.new(0.28 * s, tongue[2] * s, 0.28 * s), CFrame.new(side * a.X * tongue[1], a.Y * 0.62 + tongue[2] * s * 0.32, 0) * CFrame.Angles(0, math.pi / 4, side * (0.3 + i * 0.25)), tongue[3], NEON), "FxFlicker", 0.14)
 		end
 		-- And from each boot's heel.
 		local foot = side < 0 and "LeftFoot" or "RightFoot"
 		local b = f.parts[foot].Size
-		f.add(foot, "HeelFlame", Vector3.new(0.18, 0.5, 0.18) * s, CFrame.new(side * b.X * 0.3, b.Y * 0.6, b.Z * 0.42) * CFrame.Angles(0.3, math.pi / 4, side * 0.4), fire, NEON)
+		animate(f.add(foot, "HeelFlame", Vector3.new(0.18, 0.5, 0.18) * s, CFrame.new(side * b.X * 0.3, b.Y * 0.6, b.Z * 0.42) * CFrame.Angles(0.3, math.pi / 4, side * 0.4), fire, NEON), "FxFlicker", 0.14)
 	end
 end
 HERO_SIGNATURE.strange = function(f)
@@ -3114,8 +3125,11 @@ HERO_SIGNATURE.strange = function(f)
 	f.add("Head", "HatGem", Vector3.new(0.26, 0.26, 0.08) * s, CFrame.new(0, h.Y * 0.62, -h.X * 0.45) * CFrame.Angles(0, 0, math.pi / 4), amber, NEON)
 	-- The spell circle at his left hand is a glowing disc behind its glyphs.
 	-- (Off the glyphs' planes: coplanar faces flicker.)
-	f.disc("LeftHand", "MagicCircle", 1.56 * s, 0.03 * s, CFrame.new(0, -0.42 * s, -0.463 * s), amber, NEON).Transparency = 0.62
+	animate(f.disc("LeftHand", "MagicCircle", 1.56 * s, 0.03 * s, CFrame.new(0, -0.42 * s, -0.463 * s), amber, NEON), "FxPulse", 0.2).Transparency = 0.62
 	f.disc("LeftHand", "MagicCore", 0.5 * s, 0.05 * s, CFrame.new(0, -0.42 * s, -0.533 * s), gold, NEON).Transparency = 0.2
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "SpellGlyph" then animate(piece, "FxOrbit", 0.9, Vector3.new(0, -0.42 * s, -0.52 * s), Vector3.new(0, 0, 1)) end
+	end
 end
 HERO_SIGNATURE.wanda = function(f)
 	local s = f.scale
@@ -3124,11 +3138,13 @@ HERO_SIGNATURE.wanda = function(f)
 	-- each hand.
 	for _, piece in ipairs(f.model:GetChildren()) do
 		if piece.Name == "ChaosOrb" or piece.Name == "BrowGem" or piece.Name == "BodiceGem" then piece.Color = chaos end
+		if piece.Name == "ChaosOrb" then animate(piece, "FxPulse", 0.3) end
 	end
 	for _, side in ipairs({ -1, 1 }) do
 		local hand = side < 0 and "LeftHand" or "RightHand"
 		for i, shard in ipairs({ { 0.5, -0.2 }, { -0.42, -0.62 }, { 0.36, -0.95 } }) do
-			f.add(hand, "ChaosShard", Vector3.new(0.18, 0.28, 0.06) * s, CFrame.new(side * shard[1] * s, shard[2] * s, -0.3 * s) * CFrame.Angles(0, i, math.pi / 4), chaos, NEON)
+			animate(f.add(hand, "ChaosShard", Vector3.new(0.18, 0.28, 0.06) * s, CFrame.new(side * shard[1] * s, shard[2] * s, -0.3 * s) * CFrame.Angles(0, i, math.pi / 4), chaos, NEON),
+				"FxOrbit", side * 1.3, Vector3.new(0, -0.52 * s, -0.12 * s), Vector3.new(0, 1, 0))
 		end
 	end
 	-- A flared skirt from the belt, front, back and sides.
@@ -3157,6 +3173,7 @@ HERO_SIGNATURE.thor = function(f)
 	end
 	for _, piece in ipairs(f.model:GetChildren()) do
 		if piece.Name == "PadStud" then piece.Color, piece.Material = spark, NEON end
+		if piece.Name == "Lightning" then animate(piece, "FxPulse", 0.7) end
 	end
 	-- And arcing round the hammer's head.
 	bolt(f, "RightHand", "Lightning", { Vector3.new(-0.42, 1.0, -0.1) * s, Vector3.new(-0.2, 1.24, -0.32) * s, Vector3.new(0.1, 1.08, -0.3) * s, Vector3.new(0.4, 1.4, -0.12) * s }, 0.05 * s, spark)
@@ -3169,6 +3186,9 @@ HERO_SIGNATURE.silversurfer = function(f)
 	for i, tint in ipairs({ cosmic, Color3.fromRGB(196, 120, 255) }) do
 		local a = i * math.pi * 2 / 3
 		f.add("UpperTorso", "MoonOrb", Vector3.new(0.3, 0.3, 0.3) * s, CFrame.new(math.cos(a) * orbitRadius, 0.92 * s, math.sin(a) * orbitRadius), tint, NEON, "ball")
+	end
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if string.find(piece.Name, "^OrbitSegment") or piece.Name == "MoonOrb" then animate(piece, "FxOrbit", 0.6, Vector3.new(0, 0.92 * s, 0), Vector3.new(0, 1, 0)) end
 	end
 	cape(f, night, 3.4, Color3.fromRGB(200, 210, 220))
 	for i, star in ipairs({ { -0.3, -0.5 }, { 0.22, -0.95 }, { -0.12, -1.45 }, { 0.36, -1.85 }, { -0.4, -2.2 } }) do

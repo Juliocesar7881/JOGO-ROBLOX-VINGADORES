@@ -166,6 +166,8 @@ function LobbyWorld.new(ctx)
 				local wave = waveAge < 2.6 and math.clamp(math.min(waveAge / 0.3, (2.6 - waveAge) / 0.4), 0, 1) or 0
 				Motion.Hero(joints, { breathe = math.sin(t * 1.7), style = "idle", t = t, wave = wave })
 				if figure.eyes == nil then figure.eyes = Motion.Eyes(figure.model) or false end
+				if figure.accents == nil then figure.accents = Motion.Accents(figure.model) end
+				if figure.accents[1] then Motion.StepAccents(figure.accents, t) end
 				if figure.eyes then Motion.SetEyes(figure.eyes, Motion.BlinkClosed(t, figure.phase)) end
 				-- Heads turn slowly to one side, hold and come back, or follow the visitor.
 				local glance = math.max(0, math.sin(t * 0.31)) ^ 0.5 * math.sin(t * 0.9) * 0.45

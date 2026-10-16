@@ -168,6 +168,48 @@ Motion.Gaits = GAITS
 
 -- Advances one enemy's walk. `moved` is the distance walked this frame,
 -- `scale` the figure's size. Returns true when a foot lands (for dust).
+-- Living accents (owner, 16/10, with a picture of the level they want): the
+-- server tags a hero's signature pieces and the client moves them, locally:
+-- FxOrbit (rad/s) turns a piece round FxAxis through FxPivot, both in its
+-- host part's frame (spell glyphs, moons, chaos shards); FxFlicker makes a
+-- flame lick up and down; FxPulse breathes a glow's transparency.
+function Motion.Accents(model)
+	local list = {}
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local orbit, flicker, pulse = part:GetAttribute("FxOrbit"), part:GetAttribute("FxFlicker"), part:GetAttribute("FxPulse")
+			local fit = part:FindFirstChild("Fit")
+			if (orbit and fit) or flicker or pulse then
+				table.insert(list, {
+					part = part, fit = fit, rest = fit and fit.C0, size = part.Size, transparency = part.Transparency or 0,
+					orbit = orbit, pivot = part:GetAttribute("FxPivot") or Vector3.new(0, 0, 0), axis = part:GetAttribute("FxAxis") or Vector3.new(0, 1, 0),
+					flicker = flicker, pulse = pulse, seed = #list * 1.7,
+				})
+			end
+		end
+	end
+	return list
+end
+local function turn(axis, angle)
+	if math.abs(axis.Z) > 0.5 then return CFrame.Angles(0, 0, angle) end
+	if math.abs(axis.X) > 0.5 then return CFrame.Angles(angle, 0, 0) end
+	return CFrame.Angles(0, angle, 0)
+end
+function Motion.StepAccents(list, t)
+	for _, accent in ipairs(list) do
+		if accent.orbit and accent.fit then
+			accent.fit.C0 = CFrame.new(accent.pivot) * turn(accent.axis, t * accent.orbit) * CFrame.new(-accent.pivot) * accent.rest
+		end
+		if accent.flicker then
+			local k = 1 + math.sin(t * 9 + accent.seed) * accent.flicker + math.sin(t * 23 + accent.seed * 2) * accent.flicker * 0.5
+			accent.part.Size = Vector3.new(accent.size.X, accent.size.Y * k, accent.size.Z)
+		end
+		if accent.pulse then
+			accent.part.Transparency = math.clamp(accent.transparency + (0.5 + 0.5 * math.sin(t * 4 + accent.seed)) * accent.pulse, 0, 0.95)
+		end
+	end
+end
+
 function Motion.Walk(record, joints, gaitName, moved, scale, stopped, clock)
 	local gait = GAITS[gaitName] or GAITS.shamble
 	local before = record.stride or 0

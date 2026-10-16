@@ -1367,6 +1367,39 @@ do
 	end
 end
 
+-- Living signatures (owner, 16/10): the server tags the pieces, the client
+-- moves them locally (glyphs and moons orbit, flames lick, glows breathe).
+do
+	local holder = Instance.new("Model")
+	holder.Parent = workspace
+	local function tagged(id, kind)
+		local figure = WorldBuilder.Figure.Hero(holder, id, Catalog.Heroes[id], 1)
+		local found = {}
+		for _, item in ipairs(figure.model:GetDescendants()) do
+			if item:IsA("BasePart") and item:GetAttribute(kind) then table.insert(found, item) end
+		end
+		return figure, found
+	end
+	local strange, glyphs = tagged("strange", "FxOrbit")
+	check(#glyphs >= 8, "the spell glyphs orbit their circle, got " .. #glyphs)
+	local accents = Motion.Accents(strange.model)
+	local glyph = glyphs[1]
+	local rest = glyph.Fit.C0
+	Motion.StepAccents(accents, 1.3)
+	check((glyph.Fit.C0.Position - rest.Position).Magnitude > 0.05, "a spell glyph moves round the circle")
+	local _, moons = tagged("silversurfer", "FxOrbit")
+	check(#moons >= 12, "the cosmic orbit turns with its moons, got " .. #moons)
+	local rider, flames = tagged("ghostrider", "FxFlicker")
+	check(#flames >= 8, "the rider's flames lick, got " .. #flames)
+	local flame = flames[1]
+	local tall = flame.Size.Y
+	Motion.StepAccents(Motion.Accents(rider.model), 0.4)
+	check(math.abs(flame.Size.Y - tall) > 1e-3, "a flame changes height as it licks")
+	local _, glows = tagged("thor", "FxPulse")
+	check(#glows >= 3, "the thunder god's lightning flashes, got " .. #glows)
+	holder:Destroy()
+end
+
 print("--- towers ---")
 local portraits = game:GetService("ReplicatedStorage"):FindFirstChild("DoomHeroPortraits")
 check(portraits ~= nil, "portrait library survives separately from the map")

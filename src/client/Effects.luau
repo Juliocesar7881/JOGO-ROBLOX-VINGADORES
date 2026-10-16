@@ -436,6 +436,7 @@ function Effects:_record(model)
 			record.rig = Motion.Joints(figure)
 			record.emitterRig = Motion.Rig(figure)
 			record.eyes = Motion.Eyes(figure)
+			record.accents = Motion.Accents(figure)
 			record.poseStyle = figure:GetAttribute("PoseStyle")
 		end
 	end
@@ -533,6 +534,8 @@ function Effects:_turnTowers(dt, onlyModel)
 			record.stars = nil
 		end
 		if record.eyes then Motion.SetEyes(record.eyes, stunned or cheering or (idle and Motion.BlinkClosed(self.clock, record.breath))) end
+		-- Signature accents move only near the camera, with effects on.
+		if record.accents and record.accents[1] and near and not reduced then Motion.StepAccents(record.accents, self.clock + record.breath) end
 		if record.active or firing or casting or hopping or stunned or idle or cheering or record.posed then
 			local delta = ((record.target - record.yaw + math.pi) % (2 * math.pi)) - math.pi
 			local settled = math.abs(delta) < 0.01
