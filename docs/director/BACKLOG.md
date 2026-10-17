@@ -402,4 +402,7 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M42.30 Golpes mais fortes para os heróis cujo ataque era só uma linha ou um laser (raio do céu, círculo mágico, raízes, garras, anel arremessado, visão de calor dupla...).
 - [x] M42.31 Auras de partículas nas estátuas e figurantes do lobby (faíscas, brilhos, brasas), nunca na partida.
 - [x] M42.32 Armaduras mais trabalhadas: ombreira em domo com aro (malha própria) e filigrana dourada no peito dos heróis nobres.
+- [x] M42.33 Fundo acabado dos portais (parede com arte na cor do mapa e telão decorado), dos letreiros grandes e dos salões de invocação.
+- [x] M42.34 Tutorial: o poder do Q é do líder, o 1º herói da equipe (todos os 43 heróis têm poder).
+- [x] M42.35 Assinaturas dos últimos sete heróis (Teleportador Azul, Cavaleiro Lunar, Gelo Vivo, Mestre das Cartas, Mercenário Falante, o líder de visor e Nova).
 
