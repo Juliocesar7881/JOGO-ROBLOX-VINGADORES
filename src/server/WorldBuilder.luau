@@ -2843,7 +2843,16 @@ end
 -- near-white finish tinted by VertexColor, made by tools/gen_armor_assets.py
 -- and uploaded once (Config.Art). While their ids are 0 the classic chamfered
 -- blocks stay. Set by World.new from the config.
-local ARMOUR_ART = { mesh = 0, texture = 0, galaxy = 0, flames = 0, runes = 0 }
+local ARMOUR_ART = { mesh = 0, texture = 0, galaxy = 0, flames = 0, runes = 0, web = 0, scales = 0, circuit = 0, tiger = 0 }
+-- A hero's own armour finish (tools/gen_hero_textures.py): a pattern in the
+-- armour block's layout that the piece's colour tints. The galaxy is painted,
+-- not tinted, and only on the suit's coloured pieces (the herald's white
+-- armour stays white).
+local HERO_FINISH = {
+	spiderman = "web", seaking = "scales", wolverine = "tiger",
+	ironman = "circuit", warmachine = "circuit", vision = "circuit", antman = "circuit", wasp = "circuit",
+	silversurfer = "galaxy",
+}
 -- A painted pattern on one face of a piece (tools/gen_hero_textures.py), when
 -- its id is set.
 local function pattern(part, key, face)
@@ -2859,6 +2868,8 @@ local function paintArmour(f)
 	if (ARMOUR_ART.mesh or 0) == 0 then return end
 	local meshId = "rbxassetid://" .. tostring(ARMOUR_ART.mesh)
 	local textureId = (ARMOUR_ART.texture or 0) ~= 0 and "rbxassetid://" .. tostring(ARMOUR_ART.texture) or ""
+	local finishKey = HERO_FINISH[f.model:GetAttribute("HeroId") or ""]
+	local finishId = finishKey and (ARMOUR_ART[finishKey] or 0) ~= 0 and "rbxassetid://" .. tostring(ARMOUR_ART[finishKey]) or nil
 	for _, part in ipairs(f.model:GetDescendants()) do
 		if part:IsA("BasePart") then
 			for _, mesh in ipairs(part:GetChildren()) do
@@ -2869,6 +2880,16 @@ local function paintArmour(f)
 					mesh:SetAttribute("MeshNative", Vector3.new(1, 1, 1))
 					local c = part.Color
 					mesh.VertexColor = Vector3.new(c.R, c.G, c.B)
+					if finishId then
+						if finishKey == "galaxy" then
+							-- The galaxy shows on the suit's saturated pieces, untinted.
+							if math.max(c.R, c.G, c.B) - math.min(c.R, c.G, c.B) > 0.25 then
+								mesh.TextureId, mesh.VertexColor = finishId, Vector3.new(1, 1, 1)
+							end
+						else
+							mesh.TextureId = finishId
+						end
+					end
 				end
 			end
 		end
@@ -5768,6 +5789,7 @@ function World.new(catalog, openPanel, config, options)
 	local art = config and config.Art
 	ARMOUR_ART.mesh, ARMOUR_ART.texture = art and art.armorMesh or 0, art and art.armorTexture or 0
 	ARMOUR_ART.galaxy, ARMOUR_ART.flames, ARMOUR_ART.runes = art and art.galaxy or 0, art and art.flames or 0, art and art.runes or 0
+	for _, key in ipairs({ "web", "scales", "circuit", "tiger" }) do ARMOUR_ART[key] = art and art[key] or 0 end
 	-- Match places need the same portraits even when their lobby is removed.
 	local storage = game:GetService("ReplicatedStorage")
 	local previous = storage:FindFirstChild("DoomHeroPortraits")

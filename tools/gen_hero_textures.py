@@ -4,13 +4,22 @@ Doutor Místico's coat. All three are ours, drawn here from noise and shapes.
 
     python tools/gen_hero_textures.py
 
-Writes assets/meshes/{galaxy,flames,runes}.png and assets/meshes/hero_textures.obj
-(+ .mtl): three small planes, one per texture, so Studio's 3D importer uploads
-the images in one go (free) and reports each id as a MeshPart's TextureID.
-Their ids go in src/shared/Config.luau (Config.Art).
+Also armour finishes in the armour block's layout (tools/gen_armor_assets.py:
+near-white with a shade toward the rims and an inset panel line, so the mesh's
+VertexColor tints them to each piece's colour) with a pattern drawn in grey:
+a spider web, fish scales, circuit traces and tiger stripes.
+
+    python tools/gen_hero_textures.py [--carrier NAME] [names...]
+
+Writes every texture to assets/meshes/<name>.png and assets/meshes/<carrier>.obj
+(+ .mtl, default hero_textures) with one grouped plane per requested texture,
+so Studio's 3D importer uploads them in one go (free) and reports each id as a
+MeshPart's TextureID. Their ids go in src/shared/Config.luau (Config.Art).
 """
 from __future__ import annotations
 
+import argparse
+import math
 from pathlib import Path
 
 import numpy as np
@@ -99,8 +108,94 @@ def runes() -> Image.Image:
     return Image.alpha_composite(glow, canvas)
 
 
-def write_planes(names: list[str]) -> None:
-    lines = ["# Doomsday hero texture carriers (tools/gen_hero_textures.py)", "mtllib hero_textures.mtl"]
+def armour_base(size: int = SIZE) -> np.ndarray:
+    """The armour finish's shading (as in tools/gen_armor_assets.py), 0..1 grey."""
+    y, x = np.mgrid[0:size, 0:size] / (size - 1)
+    edge = np.minimum(np.minimum(x, 1 - x), np.minimum(y, 1 - y))
+    shade = 0.86 + 0.14 * np.clip(edge / 0.22, 0, 1) ** 0.6
+    frame = np.abs(np.maximum(np.abs(x - 0.5), np.abs(y - 0.5)) - (0.5 - 0.17))
+    line = np.clip(1 - frame / 0.012, 0, 1)
+    return shade * (0.97 + 0.03 * (1 - y)) * (1 - 0.22 * line)
+
+
+def finish(draw_pattern) -> Image.Image:
+    """An armour finish with a grey pattern drawn over it."""
+    base = armour_base()
+    ink = Image.new("L", (SIZE, SIZE), 0)
+    draw_pattern(ImageDraw.Draw(ink))
+    ink = np.array(ink.filter(ImageFilter.GaussianBlur(1.0))) / 255.0
+    value = np.clip(base * (1 - 0.45 * ink), 0, 1)
+    rgb = (np.stack([value, value, value], axis=-1) * 255).astype(np.uint8)
+    return Image.fromarray(rgb, "RGB")
+
+
+def web() -> Image.Image:
+    def draw(d: ImageDraw.ImageDraw) -> None:
+        c = SIZE / 2
+        for k in range(8):
+            a = k * math.pi / 4
+            d.line((c, c, c + math.cos(a) * SIZE, c + math.sin(a) * SIZE), fill=255, width=7)
+        for ring in (0.13, 0.25, 0.37, 0.5):
+            r = ring * SIZE
+            pts = [(c + math.cos(k * math.pi / 4) * r, c + math.sin(k * math.pi / 4) * r) for k in range(9)]
+            for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+                mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+                dist = max(1.0, math.hypot(c - mx, c - my))
+                sag = 0.12 * r
+                d.line((x0, y0, mx + (c - mx) / dist * sag, my + (c - my) / dist * sag, x1, y1), fill=255, width=6, joint="curve")
+    return finish(draw)
+
+
+def scales() -> Image.Image:
+    def draw(d: ImageDraw.ImageDraw) -> None:
+        r = SIZE / 8
+        for row in range(10):
+            y = row * r * 0.85
+            offset = (row % 2) * r
+            for col in range(-1, 6):
+                x = col * 2 * r + offset
+                d.arc((x - r, y - r, x + r, y + r), 20, 160, fill=255, width=7)
+    return finish(draw)
+
+
+def circuit() -> Image.Image:
+    rng = np.random.default_rng(5)
+
+    def draw(d: ImageDraw.ImageDraw) -> None:
+        for _ in range(14):
+            x, y = (int(v) for v in rng.integers(60, SIZE - 60, 2))
+            length = int(rng.integers(50, 160))
+            horizontal = rng.random() < 0.5
+            x1, y1 = (x + length, y) if horizontal else (x, y + length)
+            x1, y1 = min(x1, SIZE - 50), min(y1, SIZE - 50)
+            bend = int(rng.integers(30, 80))
+            x2, y2 = (x1, y1 + bend) if horizontal else (x1 + bend, y1)
+            x2, y2 = min(x2, SIZE - 50), min(y2, SIZE - 50)
+            d.line((x, y, x1, y1, x2, y2), fill=255, width=6)
+            d.ellipse((x - 11, y - 11, x + 11, y + 11), outline=255, width=6)
+            d.ellipse((x2 - 9, y2 - 9, x2 + 9, y2 + 9), fill=255)
+    return finish(draw)
+
+
+def tiger() -> Image.Image:
+    rng = np.random.default_rng(9)
+
+    def draw(d: ImageDraw.ImageDraw) -> None:
+        for k in range(7):
+            y = 30 + k * 70 + int(rng.integers(-12, 12))
+            left = int(rng.integers(0, 2)) == 0
+            x0 = 0 if left else SIZE
+            length = int(rng.integers(150, 260))
+            x1 = x0 + length if left else x0 - length
+            d.polygon([(x0, y - 22), (x1, y + 4), (x0, y + 22)], fill=255)
+    return finish(draw)
+
+
+TEXTURES = {"web": web, "scales": scales, "circuit": circuit, "tiger": tiger}
+
+
+def write_planes(names: list[str], carrier: str = "hero_textures") -> None:
+    lines = ["# Doomsday hero texture carriers (tools/gen_hero_textures.py)", f"mtllib {carrier}.mtl"]
     mtl = []
     vertex = 0
     for i, name in enumerate(names):
@@ -116,17 +211,24 @@ def write_planes(names: list[str]) -> None:
         lines.append(f"f {v}/{t}/{n} {v + 2}/{t + 2}/{n} {v + 3}/{t + 3}/{n}")
         vertex += 4
         mtl.append(f"newmtl {name}\nKa 1 1 1\nKd 1 1 1\nd 1\nillum 1\nmap_Kd {name}.png\n")
-    (OUT / "hero_textures.obj").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    (OUT / "hero_textures.mtl").write_text("\n".join(mtl), encoding="utf-8")
+    (OUT / f"{carrier}.obj").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (OUT / f"{carrier}.mtl").write_text("\n".join(mtl), encoding="utf-8")
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("names", nargs="*", help="textures for the carrier (default: galaxy flames runes)")
+    parser.add_argument("--carrier", default="hero_textures")
+    args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     galaxy().save(OUT / "galaxy.png")
     flames().save(OUT / "flames.png")
     runes().save(OUT / "runes.png")
-    write_planes(["galaxy", "flames", "runes"])
-    print(f"galaxy.png, flames.png, runes.png and hero_textures.obj written to {OUT}")
+    for name, make in TEXTURES.items():
+        make().save(OUT / f"{name}.png")
+    names = args.names or ["galaxy", "flames", "runes"]
+    write_planes(names, args.carrier)
+    print(f"textures and {args.carrier}.obj ({', '.join(names)}) written to {OUT}")
     return 0
 
 

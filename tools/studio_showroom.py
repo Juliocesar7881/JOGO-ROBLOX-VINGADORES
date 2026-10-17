@@ -62,6 +62,7 @@ if config.Art and World.Figure and World.Figure.ArmourArt then
 	local art = World.Figure.ArmourArt
 	art.mesh, art.texture = config.Art.armorMesh or 0, config.Art.armorTexture or 0
 	art.galaxy, art.flames, art.runes = config.Art.galaxy or 0, config.Art.flames or 0, config.Art.runes or 0
+	for _, key in ipairs({ "web", "scales", "circuit", "tiger" }) do art[key] = config.Art[key] or 0 end
 end
 local towers = Instance.new("Folder")
 towers.Name, towers.Parent = "Towers", room

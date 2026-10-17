@@ -1416,6 +1416,15 @@ do
 	check(patterns("ghostrider", 32) >= 8, "the flame rider's pads are painted with flames")
 	check(patterns("strange", 33) >= 2, "the mystic's coat carries gold runes")
 	art.galaxy, art.flames, art.runes = savedPatterns[1], savedPatterns[2], savedPatterns[3]
+	-- A hero's own finish on its armour: the spider's web, tinted by each piece.
+	local savedWeb, savedMesh2 = art.web, art.mesh
+	art.web, art.mesh = 41, 123
+	local spider, webbed = WorldBuilder.Figure.Hero(holder, "spiderman", Catalog.Heroes.spiderman, 1), 0
+	for _, d in ipairs(spider.model:GetDescendants()) do
+		if d:IsA("SpecialMesh") and d.MeshId == "rbxassetid://123" and d.TextureId == "rbxassetid://41" then webbed += 1 end
+	end
+	art.web, art.mesh = savedWeb, savedMesh2
+	check(webbed >= 20, "the spider's armour wears its web finish, got " .. webbed)
 	holder:Destroy()
 end
 

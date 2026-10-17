@@ -33,8 +33,10 @@ return {
 	-- The heroes' armour block and its painted finish (tools/gen_armor_assets.py,
 	-- uploaded through Studio's 3D importer). 0 keeps the classic chamfered blocks.
 	-- Signature patterns (tools/gen_hero_textures.py): the Surfer's galaxy cape,
-	-- the Rider's flames, the Mystic's runes. 0 leaves the piece plain.
-	Art = { armorMesh = 117802835003514, armorTexture = 117812857455019, galaxy = 98885280567335, flames = 111186421217436, runes = 118425714210399 },
+	-- the Rider's flames, the Mystic's runes; armour finishes: web, scales, circuit,
+	-- tiger stripes (Figure HERO_FINISH). 0 leaves the piece plain.
+	Art = { armorMesh = 117802835003514, armorTexture = 117812857455019, galaxy = 98885280567335, flames = 111186421217436, runes = 118425714210399,
+		web = 99334513899048, scales = 117029856228705, circuit = 104273646071216, tiger = 91303391426074 },
 	BaseHP = 100,
 	-- Match Gold each commander starts a run with (enemies drop the rest).
 	StartCash = 600,

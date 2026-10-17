@@ -1,0 +1,27 @@
+newmtl web
+Ka 1 1 1
+Kd 1 1 1
+d 1
+illum 1
+map_Kd web.png
+
+newmtl scales
+Ka 1 1 1
+Kd 1 1 1
+d 1
+illum 1
+map_Kd scales.png
+
+newmtl circuit
+Ka 1 1 1
+Kd 1 1 1
+d 1
+illum 1
+map_Kd circuit.png
+
+newmtl tiger
+Ka 1 1 1
+Kd 1 1 1
+d 1
+illum 1
+map_Kd tiger.png
