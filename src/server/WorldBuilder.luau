@@ -7580,7 +7580,7 @@ function World:BuildArena(lobby, hq)
 	local orange = Color3.fromRGB(255, 140, 60)
 	local board = Instance.new("Model")
 	board.Name, board.Parent = "Scoreboard_arena", lobby
-	board:SetAttribute("Kind", "Scoreboard")
+	-- (No Kind: the arena board is scenery, with no prompt since 17/10.)
 	board:SetAttribute("BoardId", "arena")
 	-- Resting on top of the three ranked billboards, flush with their fronts, so
 	-- no billboard hides its lower half from the queues (owner, 17/10).
@@ -7649,11 +7649,9 @@ function World:BuildArena(lobby, hq)
 		table.insert(self.arenaColumns, { mapId = mapId, label = rows })
 	end
 	arenaText(screen, "ArenaFooter", "ENTRE NA FILA • SUPERE SEU RECORDE", "JOIN A QUEUE • BEAT YOUR RECORD", UDim2.fromOffset(16, 365), UDim2.new(1, -32, 0, 27), 24, HQ.gold)
-	local kiosk = part(board, "ScoreKiosk", V(2.4, 3.4, 4), CFrame.new(c.X - 4, 1.9 + GROUND_Y, c.Z - 48), HQ.navy, Enum.Material.Metal)
-	Kit.block(board, "KioskScreen", V(0.2, 2, 3.2), CFrame.new(c.X - 5.3, 2.6 + GROUND_Y, c.Z - 48), orange, Enum.Material.Neon)
-	label(kiosk, "PLACAR\nLEADERBOARD", V(0, 3.6, 0), orange, 160, 60)
-	board.PrimaryPart = kiosk
-	interactable(kiosk, "Placar / Leaderboard", function(player) self.openPanel(player, "leaderboard", { board = "arena" }) end)
+	-- (The loose "PLACAR" kiosk on the walk is gone, owner 17/10: the full
+	-- ranking opens at the Hall of Fame desk; this board shows the season.)
+	board.PrimaryPart = panel
 	-- Stadium floodlights on the four corners.
 	for _, corner in ipairs({ { -19, -52 }, { 20, -52 }, { -19, 52 }, { 20, 52 } }) do
 		local foot = V(c.X + corner[1], GROUND_Y, c.Z + corner[2])
@@ -8160,11 +8158,7 @@ function World:BuildIslands(hq)
 			art = "target", artX = 0.14, artW = 0.24, titleX = 0.6, titleW = 0.74,
 		})
 		for _, x in ipairs({ -40, 40 }) do Kit.flag(hq, V(c.X + x, GROUND_Y, c.Z + 25), 16, violet, 5) end
-		-- Giant playing cards stand beside the cards station.
-		for i, spec in ipairs({ { 37, -2, 0.3, Color3.fromRGB(230, 60, 90) }, { 40, 4, -0.2, HQ.white } }) do
-			local card = Kit.block(hq, "GiantCard", V(0.6, 11, 7.5), CFrame.new(c.X + spec[1], GROUND_Y + 5.5, c.Z + spec[2]) * CFrame.Angles(0, 0, spec[3]), spec[4], Enum.Material.SmoothPlastic)
-			Kit.star(hq, "CardStar", card.Position - card.CFrame.RightVector * 0.35, card.CFrame.LookVector, card.CFrame.UpVector, 2, i == 1 and HQ.white or Color3.fromRGB(230, 60, 90), Enum.Material.Neon, 0.1)
-		end
+		-- (The two giant playing cards beside the station were taken down, owner 17/10.)
 		Kit.cornerMarks(hq, c, width / 2 - 2, depth / 2 - 2, violet, GROUND_Y + 0.05, 0)
 		-- The academy crest: a violet ring and a gold star inlaid in the plaza.
 		local crest = V(c.X, GROUND_Y, c.Z - 11)

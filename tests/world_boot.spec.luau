@@ -980,7 +980,8 @@ do
 		end
 	end
 	check(#wrong == 0, "every lobby prompt opens its own panel and refuses a distant player: " .. table.concat(wrong, ", "))
-	local expected = 2 + 5 + 6 + 1
+	-- Chests, Robux stands, boards and desks (the arena kiosk is gone since 17/10).
+	local expected = 2 + 5 + 6
 	check(refused == expected, "the distance re-check refused all " .. expected .. " far presses, got " .. tostring(refused))
 end
 
@@ -1006,9 +1007,9 @@ do
 	end
 	check(#blocked == 0, "every bridge corridor is clear: " .. table.concat(blocked, ", "))
 end
--- Chests, Robux stands, boards and desks, the arena scoreboard kiosk and the
--- armour case that sells the Iron armour skin.
-local expectedPrompts = 2 + 5 + 6 + 1 + 1
+-- Chests, Robux stands, boards and desks, and the armour case that sells the
+-- Iron armour skin (the loose arena kiosk was removed, owner 17/10).
+local expectedPrompts = 2 + 5 + 6 + 1
 check(totalPrompts == expectedPrompts,
 	"every physical location is interactive, got " .. tostring(totalPrompts) .. "/" .. tostring(expectedPrompts))
 print(string.format("  %d parts, %d locais interativos", countClass(lobby, "BasePart"), totalPrompts))
