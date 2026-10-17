@@ -90,9 +90,12 @@ local function notify(player, message)
 end
 
 local refreshPresence
+local applySkin
 local profiles = PlayerService.new(Config, Catalog, function(player)
 	if refreshPresence then refreshPresence(player) end
 	if pushState then pushState(player) end
+	-- A pass bought or the setting switched: the skin goes on or comes off at once.
+	if applySkin then task.spawn(applySkin, player) end
 end, Rules, Codes)
 
 -- The purchase funnel: what was looked at, what was bought, what was walked
@@ -625,11 +628,11 @@ end
 local MATCH_ACTIONS = {
 	UpgradeBase = true, PlaceTower = true, UpgradeTower = true, SellTower = true, SetPriority = true,
 	CastSkill = true, CollectCoin = true, SkipWave = true, ChooseCard = true, ReturnLobby = true,
-	SetSpeed = true, SetAutoSkip = true, PlayAgain = true, Ping = true,
+	SetSpeed = true, SetAutoSkip = true, PlayAgain = true, Ping = true, SkinShot = true,
 }
 -- Coin pickups arrive several times per second and already answer with their
 -- own FX event, so they never trigger a full snapshot broadcast.
-local QUIET_ACTIONS = { CollectCoin = true, Ping = true }
+local QUIET_ACTIONS = { CollectCoin = true, Ping = true, SkinShot = true }
 -- Actions that move gold, so the economy can be read from the funnels instead
 -- of being inferred from balance snapshots.
 local ECONOMY_ACTIONS = { OpenChest = "Chest", UpgradeAbility = "Upgrade", ClaimQuest = "Gameplay", PickHero = "Shop", BuyMarket = "Shop" }
@@ -927,6 +930,24 @@ end
 --==============================================================================
 -- Player lifecycle
 --==============================================================================
+-- The Iron armour skin (Catalog.Products.Passes.ironSkin): worn over the
+-- commander's avatar while they own the pass and keep it switched on.
+applySkin = function(player)
+	local character = player.Character
+	if not character or not character.Parent then return end
+	local ok, snapshot = pcall(function() return profiles:Snapshot(player) end)
+	if not ok or type(snapshot) ~= "table" then return end
+	local wanted = type(snapshot.passes) == "table" and snapshot.passes.ironSkin == true
+		and not (type(snapshot.settings) == "table" and snapshot.settings.heroSkin == false)
+	local worn = character:FindFirstChild("HeroSkin") ~= nil
+	if wanted and not worn then
+		local dressed, problem = pcall(function() world:DressAvatar(character, Catalog.Products.Passes.ironSkin.skinHero) end)
+		if not dressed then warn("[Doomsday] Skin failed: " .. tostring(problem)) end
+	elseif worn and not wanted then
+		pcall(function() world:UndressAvatar(character) end)
+	end
+end
+
 local function placeCharacter(player)
 	if not player.Character then return end
 	world:MovePlayer(player, match:Has(player), match:Index(player))
@@ -1000,6 +1021,13 @@ local function onPlayerAdded(player)
 	cosmetics:Bind(player)
 	player.CharacterAdded:Connect(function()
 		task.defer(placeCharacter, player)
+		-- The skin goes on once the avatar's own clothes and accessories have
+		-- loaded, so none of them pokes out of the armour.
+		task.spawn(function()
+			local waited = 0
+			while player.Parent and not player:HasAppearanceLoaded() and waited < 6 do waited += task.wait(0.25) end
+			applySkin(player)
+		end)
 	end)
 	joinProfile(player)
 end

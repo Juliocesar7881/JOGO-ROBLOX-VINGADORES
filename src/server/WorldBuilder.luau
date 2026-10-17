@@ -4953,6 +4953,77 @@ local function heroFigure(parent, heroId, hero, origin, scale)
 	return figure.parts.UpperTorso, figure.parts.Head
 end
 
+-- A Robux skin (Catalog.Products.Passes.ironSkin, owner 17/10): the hero's
+-- figure worn over the commander's own R15 avatar. Every body part of the
+-- figure is welded to the avatar's part of the same name (costume pieces stay
+-- welded to theirs), so the avatar's own walk, jump and emotes carry the
+-- armour; the avatar's body, face and accessories hide under it. The figure is
+-- built at the avatar's height. Massless and passable: the skin never changes
+-- how the commander moves, collides or is hit.
+local SKIN_PARTS = { "UpperTorso", "LowerTorso", "Head", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand",
+	"LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot" }
+function World:UndressAvatar(character)
+	local worn = character and character:FindFirstChild("HeroSkin")
+	if not worn then return false end
+	worn:Destroy()
+	for _, item in ipairs(character:GetDescendants()) do
+		local hidden = item:GetAttribute("SkinHidden")
+		if hidden ~= nil then item.Transparency = hidden; item:SetAttribute("SkinHidden", nil) end
+	end
+	return true
+end
+function World:DressAvatar(character, heroId)
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local hero = self.catalog.Heroes[heroId or ""]
+	if not humanoid or not hero or humanoid.RigType ~= Enum.HumanoidRigType.R15 then return false end
+	self:UndressAvatar(character)
+	-- The avatar's height, feet to crown, so the armour fits whoever wears it.
+	local head, foot = character:FindFirstChild("Head"), character:FindFirstChild("LeftFoot")
+	local height = (head and foot) and (head.Position.Y + head.Size.Y / 2) - (foot.Position.Y - foot.Size.Y / 2) or 5.2
+	local function build(scale)
+		local holder = Instance.new("Model")
+		holder.Name = "HeroSkin"
+		heroFigure(holder, heroId, hero, CFrame.new(), scale)
+		return holder, holder:FindFirstChild("HeroFigure", true)
+	end
+	local own = FIGURE_SCALE[heroId] or 1
+	local holder, figure = build(own)
+	local built = figure and tonumber(figure:GetAttribute("FigureHeight"))
+	if built and built > 0 and math.abs(height / built - 1) > 0.04 then
+		holder:Destroy()
+		holder, figure = build(own * math.clamp(height / built, 0.6, 1.6))
+	end
+	if not figure then holder:Destroy(); return false end
+	for _, item in ipairs(figure:GetDescendants()) do
+		if item:IsA("Motor6D") then item:Destroy()
+		elseif item:IsA("BasePart") then
+			item.Anchored, item.CanCollide, item.CanQuery, item.CanTouch, item.Massless, item.CastShadow = false, false, false, false, true, true
+		elseif item:IsA("ParticleEmitter") or item:IsA("PointLight") then item.Enabled = false end
+	end
+	local root = figure:FindFirstChild("HumanoidRootPart")
+	if root then root:Destroy() end
+	for _, name in ipairs(SKIN_PARTS) do
+		local mine, theirs = figure:FindFirstChild(name), character:FindFirstChild(name)
+		if mine and theirs then
+			local weld = Instance.new("Weld")
+			weld.Name, weld.Part0, weld.Part1 = "SkinWeld", theirs, mine
+			weld.Parent = mine
+		elseif mine then
+			mine:Destroy()
+		end
+	end
+	-- Hide the avatar under the armour; Undress puts every value back.
+	for _, item in ipairs(character:GetDescendants()) do
+		if (item:IsA("BasePart") and item.Name ~= "HumanoidRootPart") or (item:IsA("Decal") and item.Parent and item.Parent.Name == "Head") then
+			if item:GetAttribute("SkinHidden") == nil then item:SetAttribute("SkinHidden", item.Transparency) end
+			item.Transparency = 1
+		end
+	end
+	holder:SetAttribute("SkinHero", heroId)
+	holder.Parent = character
+	return true
+end
+
 -- A hero standing still as scenery (statues, display cases). Every part is
 -- anchored before the body is placed: a released body (heroFigure) follows
 -- its root only on the next physics step, so anchoring it afterwards would
@@ -7705,6 +7776,24 @@ function World:BuildTowerPlaza(hq)
 	local figure = Instance.new("Model")
 	figure.Name, figure.Parent = "SuitDisplay", hq
 	staticFigure(figure, "ironman", self.catalog.Heroes.ironman, CFrame.new(foot + V(0, 1.2, 0)), 1.2)
+	-- The suit is for sale (owner, 17/10): a skin the commander wears, sold by the
+	-- case itself. Its plaque sits on the plinth; the prompt opens the offer.
+	-- The plaque stands on its own post in front of the plinth, facing the plaza.
+	local toward = (V(HUB.X, foot.Y, HUB.Z) - foot).Unit
+	local postAt = foot + toward * 5
+	Kit.block(hq, "SkinPlaquePost", V(0.35, 1.6, 0.35), CFrame.new(postAt - toward * 0.3 + V(0, 0.8, 0)), HQ.steel, Enum.Material.Metal)
+	local plaqueAt = postAt + V(0, 1.75, 0)
+	local plaque = Kit.block(hq, "SkinPlaque", V(4.2, 0.9, 0.2), CFrame.lookAt(plaqueAt, plaqueAt + toward), HQ.gold, Enum.Material.Metal)
+	local plaqueGui = Instance.new("SurfaceGui")
+	plaqueGui.Name, plaqueGui.Face, plaqueGui.LightInfluence = "Plaque", Enum.NormalId.Front, 0
+	plaqueGui.SizingMode, plaqueGui.PixelsPerStud, plaqueGui.Parent = Enum.SurfaceGuiSizingMode.PixelsPerStud, 40, plaque
+	local plaqueText = Instance.new("TextLabel")
+	plaqueText.Name, plaqueText.BackgroundTransparency, plaqueText.Size, plaqueText.Font, plaqueText.TextScaled = "Title", 1, UDim2.fromScale(1, 1), Enum.Font.FredokaOne, true
+	plaqueText.TextColor3, plaqueText.Text, plaqueText.Parent = HQ.navy, "SKIN • VISTA ESTA ARMADURA", plaqueGui
+	plaqueText:SetAttribute("LobbyTextPT", "SKIN • VISTA ESTA ARMADURA"); plaqueText:SetAttribute("LobbyTextEN", "SKIN • WEAR THIS ARMOUR")
+	case:SetAttribute("Kind", "SkinStand")
+	local skinPrompt = interactable(case, "Skin Armadura de Ferro / Iron Armour Skin", function(player) self.openPanel(player, "offer", { shopKind = "pass", shopKey = "ironSkin" }) end)
+	skinPrompt.Name, skinPrompt.ActionText = "SkinPrompt", "Ver skin / View skin"
 	Kit.cornerMarks(hq, V(HUB.X, 0, HUB.Z + (p.dz0 + p.dz1) / 2), p.x - 2, (p.dz1 - p.dz0) / 2 - 1, HQ.gold, GROUND_Y + 0.05, 0)
 end
 

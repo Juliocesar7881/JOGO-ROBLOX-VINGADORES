@@ -1201,6 +1201,10 @@ function Panels.new(ctx)
 			{title = T("Efeitos sonoros", "Sound effects"), value = effectsOn and T("Ligado", "On") or T("Desligado", "Off"), key = "effects", next = not effectsOn},
 			{title = T("Sons da interface", "Interface sounds"), value = settings.interface ~= false and T("Ligado", "On") or T("Desligado", "Off"), key = "interface", next = settings.interface == false},
 		}
+		-- The Iron armour skin, for whoever owns it: worn or not.
+		if profile().passes and profile().passes.ironSkin then
+			table.insert(options, {title = T("Skin Armadura de Ferro", "Iron Armour skin"), value = settings.heroSkin ~= false and T("Ligado", "On") or T("Desligado", "Off"), key = "heroSkin", next = settings.heroSkin == false})
+		end
 		-- One row per option, like the big games' settings: the name on the left,
 		-- a switch on the right (green when on).
 		local screen = screenSize()
@@ -1208,7 +1212,7 @@ function Panels.new(ctx)
 		for _, option in ipairs(options) do
 			local card = UI.roundFrame(body, {Name = "Setting_" .. option.key, Size = UDim2.new(1, -6, 0, 66), BackgroundColor3 = UI.Skin.slot}, UI.Skin.slotLine)
 			if not narrow then
-				local glyphs={language="globe",lowFX="sparkle",shake="target",music="music",effects="bolt",interface="gear"}
+				local glyphs={language="globe",lowFX="sparkle",shake="target",music="music",effects="bolt",interface="gear",heroSkin="hero"}
 				UI.illustration(card,glyphs[option.key],C.blue,{Name="SettingIcon",Position=UDim2.fromOffset(12,11),Size=UDim2.fromOffset(44,44)})
 			end
 			local name = UI.label(card, option.title, {Position = UDim2.fromOffset(narrow and 16 or 68, 4), Size = narrow and UDim2.new(0.56, -24, 1, -8) or UDim2.new(1, -302, 1, -8), TextSize = 21, Font = UI.Fonts.display, TextWrapped = true})
@@ -1223,8 +1227,8 @@ function Panels.new(ctx)
 				BackgroundColor3 = on and C.green or (off and C.card or C.blue)})
 		end
 		UI.section(body, T("Controles", "Controls"))
-		UI.label(body, T("1 a 5: escolher herói  •  Q: poder do líder  •  F: velocidade  •  C: ficha\nClique no chão: coloca o herói na hora  •  botão direito ou Esc: cancela\nClique num herói em campo: melhorar, mirar ou vender  •  G: marcar um local para o grupo\nShift: correr  •  pule de novo no ar: pulo duplo",
-			"1 to 5: choose hero  •  Q: leader power  •  F: speed  •  C: sheet\nClick the ground: places the hero at once  •  right click or Esc: cancel\nClick a hero on the field: upgrade, target or sell  •  G: ping a spot for the squad\nShift: run  •  jump again in the air: double jump"),
+		UI.label(body, T("1 a 5: escolher herói  •  Q: poder do líder  •  F: velocidade  •  C: ficha\nClique no chão: coloca o herói na hora  •  botão direito ou Esc: cancela\nClique num herói em campo: melhorar, mirar ou vender  •  G: marcar um local para o grupo\nShift: correr  •  pule de novo no ar: pulo duplo" .. (profile().passes and profile().passes.ironSkin and "  •  com a skin: clique esquerdo dispara o repulsor" or ""),
+			"1 to 5: choose hero  •  Q: leader power  •  F: speed  •  C: sheet\nClick the ground: places the hero at once  •  right click or Esc: cancel\nClick a hero on the field: upgrade, target or sell  •  G: ping a spot for the squad\nShift: run  •  jump again in the air: double jump" .. (profile().passes and profile().passes.ironSkin and "  •  with the skin: left click fires the repulsor" or "")),
 			{Name = "ControlsHelp", Size = UDim2.new(1, -6, 0, 120), TextColor3 = C.muted, TextSize = 17, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top})
 		-- The credit each battle track's Creative Commons licence asks for, for
 		-- the tracks this place really plays (Catalog.MusicCredits).

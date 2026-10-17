@@ -1006,8 +1006,9 @@ do
 	end
 	check(#blocked == 0, "every bridge corridor is clear: " .. table.concat(blocked, ", "))
 end
--- Chests, Robux stands, boards and desks, plus the arena scoreboard kiosk.
-local expectedPrompts = 2 + 5 + 6 + 1
+-- Chests, Robux stands, boards and desks, the arena scoreboard kiosk and the
+-- armour case that sells the Iron armour skin.
+local expectedPrompts = 2 + 5 + 6 + 1 + 1
 check(totalPrompts == expectedPrompts,
 	"every physical location is interactive, got " .. tostring(totalPrompts) .. "/" .. tostring(expectedPrompts))
 print(string.format("  %d parts, %d locais interativos", countClass(lobby, "BasePart"), totalPrompts))
@@ -1647,6 +1648,42 @@ do
 			end
 		end
 	end
+end
+
+-- The Iron armour skin (owner, 17/10): the hero's figure worn over an R15
+-- avatar, every body part welded to the avatar's own, the avatar hidden under
+-- it and given back when the skin comes off. The suit's case sells it.
+do
+	local character = Instance.new("Model")
+	character.Name = "SkinTester"
+	local humanoid = Instance.new("Humanoid")
+	humanoid.RigType = Enum.HumanoidRigType.R15
+	humanoid.Parent = character
+	local names = { "HumanoidRootPart", "UpperTorso", "LowerTorso", "Head", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand",
+		"LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot" }
+	local heights = { HumanoidRootPart = 3, UpperTorso = 3.6, LowerTorso = 2.6, Head = 4.6, LeftFoot = 0.2, RightFoot = 0.2 }
+	for _, name in ipairs(names) do
+		local part = Instance.new("Part")
+		part.Name, part.Size, part.CFrame, part.Transparency, part.Parent = name, v3(1, 1, 1), CFrame.new(0, heights[name] or 2, 0), 0, character
+	end
+	local hat = Instance.new("Accessory")
+	local handle = Instance.new("Part")
+	handle.Name, handle.Transparency, handle.Parent, hat.Parent = "Handle", 0, hat, character
+	character.Parent = workspace
+	check(world:DressAvatar(character, "ironman") == true, "the skin dresses an R15 avatar")
+	local skin = character:FindFirstChild("HeroSkin")
+	local welded, loose = 0, 0
+	for _, item in ipairs(skin and skin:GetDescendants() or {}) do
+		if item:IsA("Weld") and item.Name == "SkinWeld" then welded += 1 end
+		if item:IsA("BasePart") and (item.Anchored or item.CanCollide) then loose += 1 end
+		if item:IsA("Motor6D") then loose += 1 end
+	end
+	check(skin ~= nil and welded == 15 and loose == 0, "every body part of the armour rides the avatar's own, unanchored and passable: " .. welded .. " welds, " .. loose .. " stray")
+	check(character.UpperTorso.Transparency == 1 and handle.Transparency == 1 and character.HumanoidRootPart.Transparency == 0, "the avatar and its accessories hide under the armour")
+	check(world:UndressAvatar(character) == true and character:FindFirstChild("HeroSkin") == nil and character.UpperTorso.Transparency == 0 and handle.Transparency == 0, "taking the skin off gives the avatar back")
+	character:Destroy()
+	local case = workspace.DoomLobby:FindFirstChild("SuitCase", true)
+	check(case ~= nil and case:FindFirstChild("SkinPrompt") ~= nil, "the suit's case sells the skin")
 end
 
 -- Every base is published as the model its card shows (owner, 17/10: the bases

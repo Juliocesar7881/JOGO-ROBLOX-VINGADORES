@@ -1074,6 +1074,12 @@ do
 	equal(Rules.LeakScale(9), 4, "Wave 9: four times")
 	equal(Rules.LeakScale(40), 4, "Never past four times")
 	equal(Rules.LeakScale(0 / 0), 1, "A bad wave counts as the first")
+	-- The Iron armour skin: a Robux pass, on sale only once configured, with a
+	-- small repulsor whose damage grows with the wave.
+	local skin = Catalog.Products.Passes.ironSkin
+	check(skin ~= nil and skin.price >= 499 and skin.skinHero == "ironman" and Catalog.Heroes[skin.skinHero] ~= nil, "The Iron armour skin is a premium pass for an existing hero")
+	check(Rules.SkinShotDamage(1) > 0 and Rules.SkinShotDamage(20) > Rules.SkinShotDamage(1) and Rules.SkinShotDamage(0 / 0) == Rules.SkinShotDamage(1), "The repulsor grows with the wave")
+	check(Rules.SkinShot.cooldown > 0 and Rules.SkinShot.range > 0 and Rules.SkinShot.radius > 0, "The repulsor has a cooldown, a range and a radius")
 end
 
 for _, product in Catalog.Products.Passes do equal(product.id, 0, "Unconfigured passes disabled") end

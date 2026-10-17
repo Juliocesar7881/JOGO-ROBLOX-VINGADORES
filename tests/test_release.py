@@ -26,8 +26,9 @@ class ReleaseTests(unittest.TestCase):
         checked = json.loads((ROOT / 'deployment/template.json').read_text(encoding='utf-8'))
         self.assertEqual(checked, self.template)
         missing, configured = release.validate(checked, self.template)
-        # 99 before the six licensed battle tracks (one per map, Config.Audio.battle<Map>).
-        self.assertEqual(len(missing), 105)
+        # 99 before the six licensed battle tracks (one per map, Config.Audio.battle<Map>),
+        # 106 with the Iron armour skin pass (17/10).
+        self.assertEqual(len(missing), 106)
         self.assertEqual(configured, [])
 
     def test_uploaded_audio_ids_match_the_manifest_and_the_files(self):

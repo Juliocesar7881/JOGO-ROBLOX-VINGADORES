@@ -1473,10 +1473,10 @@ function PlayerService:Handle(player, action, payload, inLobby)
 			if payload.lowFX ~= nil and type(payload.lowFX) ~= "boolean" then return false, "Configuração inválida." end
 			if payload.shake ~= nil and type(payload.shake) ~= "boolean" then return false, "Configuração inválida." end
 			if payload.music ~= nil and type(payload.music) ~= "boolean" then return false, "Configuração inválida." end
-			for _, key in ipairs({ "effects", "interface", "autoSkip", "fastForward" }) do
+			for _, key in ipairs({ "effects", "interface", "autoSkip", "fastForward", "heroSkin" }) do
 				if payload[key] ~= nil and type(payload[key]) ~= "boolean" then return false, "Configuração inválida." end
 			end
-			for _, key in ipairs({ "language", "lowFX", "shake", "music", "effects", "interface", "autoSkip", "fastForward" }) do if payload[key] ~= nil then profile.settings[key] = payload[key] end end
+			for _, key in ipairs({ "language", "lowFX", "shake", "music", "effects", "interface", "autoSkip", "fastForward", "heroSkin" }) do if payload[key] ~= nil then profile.settings[key] = payload[key] end end
 			-- Once the player picks a language, the locale no longer decides it.
 			if payload.language ~= nil then profile.settings.languageSet = true end
 		elseif action == "SetTitle" then

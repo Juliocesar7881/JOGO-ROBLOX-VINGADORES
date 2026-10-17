@@ -1168,6 +1168,17 @@ Catalog.Products = {
 				text("O dobro de Ouro nas recompensas da trilha", "Double the Gold on the track's rewards"),
 				text("Mais baús e um título exclusivo", "More chests and an exclusive title") } },
 		-- freeChestScale: the free chest comes back this much sooner for VIPs.
+		-- The Iron armour skin (owner, 17/10: "esse herói deve ser habilitável para
+		-- você ter a skin dele, comprar por Robux... caro"): the starter hero's
+		-- armour worn by the commander's own avatar, in the lobby and in battle,
+		-- where a left click fires its repulsor (Rules.SkinShot). A small shot on
+		-- purpose: fun to fire, never a tower's worth.
+		ironSkin = { id = 0, price = 799, skinHero = "ironman", name = text("Skin Armadura de Ferro", "Iron Armour Skin"),
+			description = text("Vista a Armadura de Ferro no lobby e nas partidas. Na partida, clique com o botão esquerdo do mouse para disparar o repulsor onde quiser.", "Wear the Iron Armour in the lobby and in battle. In battle, left-click to fire its repulsor wherever you aim."),
+			benefits = { text("Seu avatar vira a Armadura de Ferro", "Your avatar becomes the Iron Armour"),
+				text("Clique esquerdo na partida: disparo de repulsor", "Left click in battle: a repulsor blast"),
+				text("Pode ser desligada nas Opções", "Can be switched off in Settings"),
+				text("É sua para sempre", "Yours forever") } },
 		vip = { id = 0, price = 199, freeChestScale = 0.5, name = text("Pacote VIP", "VIP Pack"), description = text("Baú grátis duas vezes mais rápido, nome dourado, título, rastro dourado e confete na vitória.", "Free chest twice as fast, golden name, title, a golden trail and victory confetti."),
 			benefits = { text("Baú grátis 2x mais rápido: a cada 3 horas", "Free chest twice as fast: every 3 hours"),
 				text("Nome dourado com VIP e o título Patrono da Resistência", "Golden VIP name and the Resistance Patron title"),

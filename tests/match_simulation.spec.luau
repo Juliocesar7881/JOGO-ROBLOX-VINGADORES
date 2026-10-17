@@ -1856,6 +1856,31 @@ do
 	check(lodgeId == "lodge" and lodgeDrop == math.floor(plainDrop * (1 + Rules.BaseStats("lodge", 1).bounty) + 0.5), "the Hunters' lodge adds its bounty to every kill, " .. lodgeDrop .. " vs " .. plainDrop)
 end
 
+-- The Iron armour skin (owner, 17/10): a left click fires its repulsor; the
+-- server alone decides whether it may, where it reaches and what it does.
+print("--- iron armour skin ---")
+do
+	local function standAt(player, position)
+		player.Character = { FindFirstChild = function(_, name) if name == "HumanoidRootPart" then return { Position = position } end return nil end }
+	end
+	local plain, plainPlayer = stage({})
+	standAt(plainPlayer, v3(0, 3, 0))
+	check(not plain:Handle(plainPlayer, "SkinShot", { position = v3(5, 0, 0) }), "without the skin there is no repulsor")
+	local match, player = stage({ profile = { passes = { ironSkin = true } } })
+	local enemy = spawn(match, "brute", 20, 10)
+	local at = enemy.position
+	standAt(player, at + v3(10, 3, 0))
+	local before = enemy.hp
+	local ok = match:Handle(player, "SkinShot", { position = at })
+	check(ok and enemy.hp < before, "the skin's repulsor hits the enemy it is aimed at")
+	check(before - enemy.hp <= Rules.SkinShotDamage(match.wave) + 0.001, "its damage is the rule's, got " .. (before - enemy.hp))
+	check(not match:Handle(player, "SkinShot", { position = at }), "the repulsor waits for its cooldown")
+	match.elapsed += Rules.SkinShot.cooldown + 0.01
+	check(not match:Handle(player, "SkinShot", { position = at + v3(Rules.SkinShot.range + 20, 0, 0) }), "it cannot reach past its range")
+	check(not match:Handle(player, "SkinShot", { position = "nowhere" }), "a bad target is refused")
+	check(match:Handle(player, "SkinShot", { position = at }), "once recharged it fires again")
+end
+
 print("--- cooperative full matches ---")
 for size=2,4 do
 	local run=simulate({mapId="manhattan",modeId="normal",size=size})

@@ -1812,6 +1812,31 @@ function Match:Handle(player,action,payload)
 		self.world:UpgradeTower(tower.model,tower.level,tower.branch,mastery and mastery.level or 1)
 		self:_fx({kind="TowerUpgrade",towerId=tower.id,level=tower.level,branch=tower.branch})
 		return true
+	elseif action=="SkinShot" then
+		-- The Iron armour skin's repulsor (owner, 17/10): its owner fires where
+		-- they click, from their own character, a small hit on a short beat.
+		if not (p.profile.passes and p.profile.passes.ironSkin) then return false,"Skin não ativa. / Skin not active." end
+		if self.phase~="Wave" and self.phase~="Preparing" then return false,"Aguarde a partida. / Wait for the battle." end
+		local target=payload.position
+		if typeof(target)~="Vector3" then return false,"Alvo inválido. / Invalid target." end
+		local rule=self.rules.SkinShot
+		if self.elapsed<(p.skinReadyAt or 0) then return false,"Recarregando. / Recharging." end
+		local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not root then return false,"Sem personagem. / No character." end
+		local from=root.Position
+		if distanceXZ(from,target)>rule.range then return false,"Longe demais. / Too far." end
+		p.skinReadyAt=self.elapsed+rule.cooldown
+		local damage=self.rules.SkinShotDamage(self.wave)
+		local stats={damageType="tech",armorPierce=0.1,bossDamage=0}
+		local hits={}
+		for _,enemy in pairs(self.enemies) do
+			if enemy.hp>0 and distanceXZ(enemy.position,target)<=rule.radius and not enemy.def.illusion then table.insert(hits,enemy) end
+		end
+		for _,enemy in ipairs(hits) do self:_damage(enemy,damage,nil,stats) end
+		if #hits>0 then p.contributed=true end
+		self:_flushSplits()
+		self:_fx({kind="Shot",from=from+Vector3.new(0,1.6,0),to=Vector3.new(target.X,(target.Y or 0)+1,target.Z),color=Color3.fromRGB(120,220,255),heroId="ironman",style="beam",skin=true})
+		return true,{hits=#hits}
 	elseif action=="SkipWave" then
 		if self.phase~="Preparing" then return false,"Aguarde o intervalo. / Wait for preparation." end
 		if #p.cardOffers>0 then return false,"Escolha uma carta primeiro. / Pick a card first." end

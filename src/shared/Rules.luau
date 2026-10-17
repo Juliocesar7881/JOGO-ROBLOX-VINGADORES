@@ -68,6 +68,15 @@ function Rules.PlacementCost(hero, profile, cardTotals)
 	return math.floor(hero.cost * (1 - math.clamp(cut, 0, 0.5)))
 end
 
+-- The Iron armour skin's repulsor (Catalog.Products.Passes.ironSkin): one
+-- shot every `cooldown` seconds at a point within `range` studs of the
+-- commander, hitting every enemy within `radius` of it. Its damage grows with
+-- the wave so it stays a useful nudge, never a tower's worth.
+Rules.SkinShot = { cooldown = 0.5, range = 70, radius = 4.5 }
+function Rules.SkinShotDamage(wave)
+	return math.floor(30 * (1 + 0.1 * (math.max(1, math.floor(number(wave, 1))) - 1)))
+end
+
 -- Leaks hurt more as the run goes on (owner, 17/10: "a cada 4 waves dobra o
 -- dano"): a common enemy's leak doubles every 4 waves, up to 4 times from wave
 -- 9. (Up to 8 times, the simulated five-hero squad lost three campaign maps it

@@ -1980,6 +1980,15 @@ local function handleWorldPointer(position, touch)
 			if d < 5 and (not distance or d < distance) then best, distance = tower.id, d end
 		end
 		if best then selectTower(best) return end
+		-- The Iron armour skin (owner, 17/10): a left click fires its repulsor
+		-- where the commander aims; the server checks range, cooldown and damage.
+		local passes = profile().passes
+		if not touch and passes and passes.ironSkin and (profile().settings or {}).heroSkin ~= false then
+			local at = hit.Position
+			task.spawn(function() request("SkinShot", {position = at}, true) end)
+			kit.inspect:Hide()
+			return
+		end
 		-- No tower: an enemy near the tap is inspected; empty ground folds the card away.
 		local key, record = effects:EnemyNear(hit.Position, 5)
 		if key then closeTowerPanel(); kit.inspect:Show(key, record) else kit.inspect:Hide() end
