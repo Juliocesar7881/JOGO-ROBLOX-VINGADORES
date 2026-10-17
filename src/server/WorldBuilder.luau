@@ -3229,6 +3229,10 @@ HERO_SIGNATURE.starlord = function(f)
 		local b = f.parts[foot].Size
 		animate(f.add(foot, "JetSole", Vector3.new(b.X * 0.8, 0.08 * s, b.Z * 0.6), CFrame.new(0, -b.Y * 0.56, 0.05 * s), Color3.fromRGB(255, 130, 40), NEON), "FxPulse", 0.35)
 	end
+	-- A star pirate's coat: the night sky on its tails.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "CoatTail" then pattern(piece, "galaxy", Enum.NormalId.Back) end
+	end
 	glowSeams(f, Color3.fromRGB(255, 130, 40))
 end
 HERO_SIGNATURE.emerald = function(f)
@@ -3269,6 +3273,10 @@ HERO_SIGNATURE.jean = function(f)
 			local length, width, rise, tilt = feather[1] * s, feather[2] * s, feather[3] * s, feather[4]
 			animate(f.add("UpperTorso", "PhoenixFeather", Vector3.new(length, width, 0.07 * s), CFrame.new(side * (c.X * 0.34 + length * 0.46), rise, c.Z / 2 + 0.3 * s + i * 0.03 * s) * CFrame.Angles(0, side * 0.3, side * tilt), i == 1 and ember or flame, NEON), "FxFlicker", 0.08)
 		end
+	end
+	-- The phoenix's cape burns at the hem.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "Cape" or piece.Name == "CapeHem" then pattern(piece, "flames", Enum.NormalId.Back) end
 	end
 	glowSeams(f, flame)
 end
@@ -3313,6 +3321,10 @@ end
 HERO_SIGNATURE.solartitan = function(f)
 	-- A sun's halo behind his head.
 	local h, s = f.parts.Head.Size, f.scale
+	-- The sun's fire on his cape.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "CapeHem" then pattern(piece, "flames", Enum.NormalId.Back) end
+	end
 	local halo = f.disc("Head", "SunHalo", h.X * 1.9, 0.04 * s, CFrame.new(0, h.Y * 0.1, h.Z * 0.62), Color3.fromRGB(255, 200, 70), NEON)
 	halo.Transparency = 0.45
 	animate(halo, "FxPulse", 0.25)
