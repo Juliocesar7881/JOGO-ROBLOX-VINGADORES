@@ -3371,6 +3371,79 @@ HERO_SIGNATURE.amazon = function(f)
 	end
 	glowSeams(f, Color3.fromRGB(255, 200, 70))
 end
+-- The last seven of the roster (owner, 16/10: "todos os heróis já tiveram seu
+-- design retrabalhado?"): each gets its piece of silhouette or glow too.
+HERO_SIGNATURE.cyclops = function(f)
+	-- The optic visor's beam glows and breathes.
+	local ruby = Color3.fromRGB(255, 60, 70)
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "OpticVisor" then piece.Color, piece.Material = ruby, NEON; animate(piece, "FxPulse", 0.3) end
+	end
+	seams(f, Color3.fromRGB(255, 200, 60), true)
+end
+HERO_SIGNATURE.deadpool = function(f)
+	-- Two katanas crossed on his back, and belt pouches.
+	local c, p, s = f.sizes.chest, f.parts.LowerTorso.Size, f.scale
+	for _, side in ipairs({ -1, 1 }) do
+		local at = CFrame.new(side * c.X * 0.12, c.Y * 0.08, c.Z / 2 + 0.16 * s) * CFrame.Angles(0, 0, side * 0.6)
+		f.add("UpperTorso", "BackKatana", Vector3.new(0.12, 2.6, 0.06) * s, at * CFrame.new(0, -0.2 * s, 0), Color3.fromRGB(215, 222, 232), METAL)
+		f.add("UpperTorso", "BackHilt", Vector3.new(0.16, 0.7, 0.16) * s, at * CFrame.new(0, 1.35 * s, 0), Color3.fromRGB(30, 30, 36), FABRIC)
+	end
+	for _, x in ipairs({ -0.34, 0.34 }) do
+		f.add("LowerTorso", "BeltPouch", Vector3.new(0.3, 0.32, 0.18) * s, CFrame.new(p.X * x, p.Y * 0.2, -p.Z * 0.56 - 0.06 * s), Color3.fromRGB(40, 36, 40), FABRIC)
+	end
+	seams(f, Color3.fromRGB(255, 70, 70), true)
+end
+HERO_SIGNATURE.gambit = function(f)
+	-- A fan of charged cards in his hand, glowing pink.
+	local s = f.scale
+	for i = -1, 1 do
+		animate(f.add("RightHand", "CardFan", Vector3.new(0.05, 0.62, 0.42) * s, CFrame.new(0.05 * s, -0.5 * s, -0.25 * s) * CFrame.Angles(i * 0.35, 0, 0), Color3.fromRGB(255, 80, 190), NEON), "FxPulse", 0.3)
+	end
+	seams(f, Color3.fromRGB(255, 80, 190), true)
+end
+HERO_SIGNATURE.iceman = function(f)
+	-- Ice crystals on his shoulders, glowing cold.
+	local s = f.scale
+	for _, side in ipairs({ -1, 1 }) do
+		local arm = side < 0 and "LeftUpperArm" or "RightUpperArm"
+		local a = f.parts[arm].Size
+		for i, tilt in ipairs({ 0.3, -0.25 }) do
+			local crystal = f.add(arm, "IceCrystal", Vector3.new(0.3, 0.9 - i * 0.2, 0.3) * s, CFrame.new(side * a.X * (0.2 + i * 0.15), a.Y * 0.7, (i - 1.5) * 0.3 * s) * CFrame.Angles(tilt, math.pi / 4, side * 0.3), Color3.fromRGB(170, 235, 255), Enum.Material.Glass)
+			crystal.Transparency = 0.25
+		end
+	end
+	seams(f, Color3.fromRGB(150, 230, 255), true)
+end
+HERO_SIGNATURE.moonknight = function(f)
+	-- The crescent on his chest glows silver-white.
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "CrescentEmblem" then piece.Color, piece.Material = Color3.fromRGB(225, 235, 255), NEON; animate(piece, "FxPulse", 0.25) end
+	end
+	seams(f, Color3.fromRGB(200, 215, 255), true)
+end
+HERO_SIGNATURE.nightcrawler = function(f)
+	-- Violet wisps of his last teleport curl round his feet.
+	local s, violet = f.scale, Color3.fromRGB(170, 90, 255)
+	for _, side in ipairs({ -1, 1 }) do
+		local foot = side < 0 and "LeftFoot" or "RightFoot"
+		animate(f.add(foot, "TeleportWisp", Vector3.new(0.8, 0.4, 0.8) * s, CFrame.new(side * 0.2 * s, -0.1 * s, 0.1 * s), violet, NEON, "ball"), "FxPulse", 0.5).Transparency = 0.35
+	end
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece.Name == "TailTip" then piece.Color, piece.Material = violet, NEON end
+	end
+	seams(f, violet, true)
+end
+HERO_SIGNATURE.nova = function(f)
+	-- A glowing star on his chest armour.
+	local c, s = f.sizes.chest, f.scale
+	local gold = Color3.fromRGB(255, 214, 90)
+	local at = CFrame.new(0, c.Y * 0.16, -c.Z * 0.51 - 0.08 * s)
+	for k = 0, 3 do
+		f.add("UpperTorso", "NovaStar", Vector3.new(0.12, 0.62, 0.05) * s, at * CFrame.Angles(0, 0, k * math.pi / 4), gold, NEON)
+	end
+	seams(f, Color3.fromRGB(255, 200, 70), true)
+end
 HERO_SIGNATURE.storm = function(f)
 	local spark, s = Color3.fromRGB(170, 230, 255), f.scale
 	bolt(f, "RightHand", "Lightning", { Vector3.new(-0.2, -0.3, -0.2) * s, Vector3.new(0.1, -0.7, -0.3) * s, Vector3.new(-0.12, -1.0, -0.2) * s, Vector3.new(0.18, -1.4, -0.3) * s }, 0.06 * s, spark)
@@ -6005,9 +6078,46 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 		artPart(model,"SignLight",Vector3.new(0.3,14,0.2),at(side*14.6,9,-5.0),tint,Enum.Material.Neon)
 	end
 	local board=part(model,"MapBillboard",Vector3.new(32,12.5,0.8),at(0,20,-4.5)*CFrame.Angles(0,math.pi,0),HQ.ink,Enum.Material.Metal)
+	-- The portal seen from behind (owner, 16/10: "atrás do portal tá ridículo"):
+	-- a wall closes the back of the three doors and both it and the board's
+	-- back carry art in the destination's colour, a panel with the map's
+	-- gradient, three glowing rings echoing the doors, a gold star and neon
+	-- trim. No text (nothing may stand in front of letters) and one part.
+	local backWall=part(model,"PortalBackWall",Vector3.new(32.6,10.4,0.8),at(0,5.7,-7.3),HQ.navy,Enum.Material.Metal)
+	backWall.CastShadow=true
+	local function backArt(host,face,canvas,rings)
+		local gui=Instance.new("SurfaceGui")
+		gui.Name,gui.Face,gui.LightInfluence,gui.CanvasSize,gui.SizingMode="PortalBackArt",face,0.4,canvas,Enum.SurfaceGuiSizingMode.FixedSize
+		gui.Parent=host
+		local panel=frame2d(gui,UDim2.fromScale(0.5,0.5),UDim2.fromScale(0.97,0.9),HQ.white,UDim.new(0.06,0))
+		gradient(panel,tint:Lerp(HQ.navy,0.25),HQ.navy:Lerp(Color3.new(0,0,0),0.35),90)
+		stroke(panel,tint,6)
+		-- Diagonal light stripes across the panel.
+		for k=-3,3 do box(panel,0.5+k*0.16,0.5,0.035,1.5,tint:Lerp(HQ.white,0.3),24,nil,0.82) end
+		if rings then
+			for slot=1,3 do
+				local ring=circle(panel,0.5+(slot-2)*0.315,0.52,0.2,0.62,tint,1)
+				stroke(ring,tint:Lerp(HQ.white,0.35),9)
+				circle(ring,0.5,0.5,0.55,0.55,tint:Lerp(HQ.white,0.5),0.55)
+			end
+		else
+			-- A gold sunburst in a ring, the island's emblem: eight rays round a disc.
+			local medal=circle(panel,0.5,0.5,0.24,0.62,HQ.navy,0)
+			stroke(medal,HQ.gold,8)
+			for k=0,3 do box(medal,0.5,0.5,0.1,0.82,HQ.gold,k*45,0.5) end
+			circle(medal,0.5,0.5,0.36,0.36,HQ.gold,0)
+			circle(medal,0.5,0.5,0.22,0.22,tint:Lerp(HQ.white,0.3),0)
+		end
+		box(panel,0.5,0.06,0.9,0.03,HQ.gold,0,0.5)
+		box(panel,0.5,0.94,0.9,0.03,HQ.gold,0,0.5)
+		return gui
+	end
+	backArt(backWall,Enum.NormalId.Front,Vector2.new(640,200),true)
 	-- A thick navy frame, a neon rim in the map's colour and gold studs: the
 	-- same family as every other sign on the island.
-	artPart(model,"BillboardBack",Vector3.new(34.6,14.9,0.6),at(0,20,-5.2),HQ.navy,Enum.Material.Metal).CastShadow=true
+	local billboardBack=artPart(model,"BillboardBack",Vector3.new(34.6,14.9,0.6),at(0,20,-5.2),HQ.navy,Enum.Material.Metal)
+	billboardBack.CastShadow=true
+	backArt(billboardBack,Enum.NormalId.Front,Vector2.new(640,276),false)
 	for _,side in ipairs({-1,1}) do
 		artPart(model,"BillboardRim",Vector3.new(33.8,0.5,0.4),at(0,20+side*6.72,-4.05),tint,Enum.Material.Neon)
 		artPart(model,"BillboardRim",Vector3.new(0.5,13.9,0.4),at(side*16.45,20,-4.05),tint,Enum.Material.Neon)
