@@ -4876,6 +4876,55 @@ function Figure.PoseStatic(model, pose)
 	model:SetAttribute("StatuePosed", true)
 end
 
+-- A hero standing as scenery in the lobby (statues, cameos) glows with its
+-- power (owner, 16/10: "faíscas e raios em volta dos heróis", only where few
+-- heroes stand, never in a battle): one slow emitter of the engine's own
+-- sparkle, spark or ember texture around the chest.
+local HERO_AURA = {
+	thor = { "spark", Color3.fromRGB(150, 215, 255) }, storm = { "spark", Color3.fromRGB(170, 230, 255) },
+	strange = { "sparkle", Color3.fromRGB(255, 200, 90) }, wanda = { "sparkle", Color3.fromRGB(255, 70, 190) },
+	panther = { "sparkle", Color3.fromRGB(190, 130, 255) }, hulk = { "ember", Color3.fromRGB(255, 140, 50) },
+	groot = { "sparkle", Color3.fromRGB(130, 255, 140) }, ironman = { "spark", Color3.fromRGB(110, 220, 255) },
+	captain = { "sparkle", Color3.fromRGB(255, 214, 110) }, ghostrider = { "ember", Color3.fromRGB(255, 130, 40) },
+	silversurfer = { "sparkle", Color3.fromRGB(170, 190, 255) }, jean = { "ember", Color3.fromRGB(255, 160, 60) },
+	captainmarvel = { "sparkle", Color3.fromRGB(255, 210, 120) }, solartitan = { "sparkle", Color3.fromRGB(255, 200, 70) },
+	emerald = { "sparkle", Color3.fromRGB(110, 255, 150) }, speedster = { "spark", Color3.fromRGB(255, 220, 80) },
+}
+local AURA_TEXTURE = {
+	spark = "rbxasset://textures/particles/sparkles_main.dds", sparkle = "rbxasset://textures/particles/sparkles_main.dds",
+	ember = "rbxasset://textures/particles/fire_sparks_main.dds",
+}
+local function heroAura(model, heroId)
+	local aura = HERO_AURA[heroId]
+	local chest = model:FindFirstChild("UpperTorso")
+	if not (aura and chest) then return end
+	local kind, tint = aura[1], aura[2]
+	local particles = Instance.new("ParticleEmitter")
+	particles.Name, particles.Texture = "HeroAura", AURA_TEXTURE[kind]
+	particles.Color = ColorSequence.new(tint:Lerp(Color3.new(1, 1, 1), 0.35), tint)
+	-- Bright enough to read in daylight (the lobby's Bloom stays tame).
+	particles.LightEmission, particles.LightInfluence, particles.Brightness = 1, 0, 2
+	local size = chest.Size.X
+	if kind == "ember" then
+		particles.Rate, particles.Lifetime, particles.Speed = 12, NumberRange.new(0.8, 1.4), NumberRange.new(2, 4)
+		particles.Size = NumberSequence.new(size * 0.3, size * 0.06)
+		particles.Acceleration = Vector3.new(0, 5, 0)
+	elseif kind == "spark" then
+		-- Crackling: quick, bright and scattered.
+		particles.Rate, particles.Lifetime, particles.Speed = 16, NumberRange.new(0.15, 0.35), NumberRange.new(4, 8)
+		particles.Size = NumberSequence.new(size * 0.45, size * 0.04)
+	else
+		particles.Rate, particles.Lifetime, particles.Speed = 9, NumberRange.new(1, 1.8), NumberRange.new(0.8, 1.8)
+		particles.Size = NumberSequence.new(size * 0.4, 0)
+		particles.Acceleration = Vector3.new(0, 1.2, 0)
+	end
+	particles.Transparency = NumberSequence.new(0.1, 1)
+	particles.SpreadAngle = Vector2.new(180, 180)
+	particles.Rotation, particles.RotSpeed = NumberRange.new(0, 360), NumberRange.new(-90, 90)
+	particles.Parent = chest
+	return particles
+end
+
 local function staticFigure(parent, heroId, hero, origin, scale)
 	local emphasis = (scale or FIGURE_SCALE[heroId] or 1) / (FIGURE_SCALE[heroId] or 1)
 	local template = artTemplate("Heroes", heroId)
@@ -4890,6 +4939,7 @@ local function staticFigure(parent, heroId, hero, origin, scale)
 		model = Figure.Hero(parent, heroId, hero, emphasis).model
 	end
 	model:SetAttribute("HeroArt", true)
+	heroAura(model, heroId)
 	-- A figure standing as scenery still breathes and looks about (client side).
 	model:SetAttribute("IdleFigure", true)
 	model:SetAttribute("IdlePhase", (origin.Position.X * 0.37 + origin.Position.Z * 0.21) % 6.28)

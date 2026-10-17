@@ -621,8 +621,20 @@ do
 	local shaft = lobby:FindFirstChild("TowerShaft", true)
 	local wing = lobby:FindFirstChild("PodiumWing", true)
 	check(shaft ~= nil and shaft.CastShadow == true and wing ~= nil and wing.CastShadow == true, "the tower's landmark volumes still cast shadows")
-	local lobbyEmitters = countClass(lobby, "ParticleEmitter")
+	-- Emitters stay rare: the AFK pads and two landmarks, plus at most one aura
+	-- on each hero standing as scenery (statues and cameos, owner 16/10).
+	local lobbyEmitters, auras = 0, 0
+	for _, item in ipairs(lobby:GetDescendants()) do
+		if item:IsA("ParticleEmitter") then
+			if item.Name == "HeroAura" then auras += 1 else lobbyEmitters += 1 end
+		end
+	end
+	local figures = 0
+	for _, item in ipairs(lobby:GetDescendants()) do
+		if item:IsA("Model") and item.Name == "HeroFigure" then figures += 1 end
+	end
 	check(lobbyEmitters <= #Catalog.AfkOrder + 2, "boarding pads use static light instead of multiplying emitters, got " .. tostring(lobbyEmitters))
+	check(auras >= 3 and auras <= figures, "the heroes standing in the lobby glow with their power, one aura each at most, got " .. auras .. " on " .. figures .. " figures")
 end
 
 -- Every physical location is its own Model, tagged with a Kind attribute the
