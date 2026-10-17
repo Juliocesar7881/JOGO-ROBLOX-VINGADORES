@@ -8,7 +8,7 @@
 --   DoomReviewSize = "667x375"    draw the HUD in a phone-sized area ("" = full)
 --   DoomReviewLanguage = "en"     fixture language (default pt)
 --   DoomReviewFocus = "tower"     camera on the first tower ("" = normal camera)
---   DoomReviewFx = "lasers"|"powers"  fire the attack or power effects in a loop for
+--   DoomReviewFx = "lasers"|"melee"|"heroes:a,b,c"|"powers"  fire the attack or power effects in a loop for
 --                                 seven seconds in front of the camera (no match needed)
 --   DoomReviewHideUI = true       hide the game's own interface (marketing shots)
 --   DoomReviewHideChrome = true   hide only Roblox's own buttons and chat
@@ -385,13 +385,15 @@ function Review.start(api)
 			local round = 0
 			while os.clock() < finish and player:GetAttribute("DoomReviewFx") == scene do
 				round += 1
-				if scene == "lasers" or scene == "melee" then
-					local ids = scene == "melee" and { "hulk", "rocket", "warmachine", "ghostrider", "capmen", "seaking", "wanda", "gambit", "beast" }
+				-- "heroes:thor,storm,strange" fires those heroes' own attacks side by side.
+				local listed = string.sub(scene, 1, 7) == "heroes:" and string.split(string.sub(scene, 8), ",") or nil
+				if scene == "lasers" or scene == "melee" or listed then
+					local ids = listed or scene == "melee" and { "hulk", "rocket", "warmachine", "ghostrider", "capmen", "seaking", "wanda", "gambit", "beast" }
 						or { "ironman", "vision", "cyclops", "starlord", "captainmarvel", "widow", "solartitan", "silversurfer", "bucky" }
 					for index, id in ipairs(ids) do
 						local def = Catalog.Heroes[id]
 						if def then
-							local from = center + right * ((index - 5) * 6) + Vector3.new(0, 4, 0)
+							local from = center + right * ((index - (#ids + 1) / 2) * 7) + Vector3.new(0, 4, 0)
 							local to = from + forward * 22 - Vector3.new(0, 3.2, 0)
 							api.fire({ kind = "Shot", heroId = id, from = from, to = to, color = Color3.fromRGB(def.color[1], def.color[2], def.color[3]), towerId = "review" })
 						end
