@@ -760,6 +760,63 @@ function UI.multiverseSeal(parent, tint, properties)
 	return root
 end
 
+-- The stage behind a hero's or a base's portrait on its card (owner, 17/10:
+-- the grey card with a still circle "ficou bem ridículo, ainda sem animação"):
+-- a sunburst of the rarity's light turning slowly behind the figure, sparks
+-- drifting up and a sheen sweeping across now and then. Rarer cards get more
+-- rays and sparks. Engine tweens only (no per-frame script); under reduced
+-- effects it stands still. Never an input surface.
+local BACKDROP_RAYS = { common = 6, rare = 9, epic = 9, legendary = 14, mythic = 14 }
+local BACKDROP_SPARKS = { common = 2, rare = 4, epic = 4, legendary = 6, mythic = 6 }
+-- The three rarities a player sees (Catalog.Rarities), for a caller that only knows the tint.
+UI.RarityColors = { common = Color3.fromRGB(190, 200, 212), rare = Color3.fromRGB(84, 170, 255), legendary = Color3.fromRGB(255, 188, 62) }
+local BACKDROP_SPOTS = { 0.18, 0.78, 0.36, 0.62, 0.1, 0.9 }
+-- options.still: a backdrop that stays in view all the time (the battle's hero bar).
+function UI.cardBackdrop(stage, tint, rarity, properties, options)
+	local still = (options and options.still) or (UI.reducedMotion and UI.reducedMotion())
+	local okTweens, tweens = pcall(game.GetService, game, "TweenService")
+	local function loop(item, seconds, goal, style, delay)
+		if still or not okTweens or not tweens then return end
+		pcall(function()
+			tweens:Create(item, TweenInfo.new(seconds, style or Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1, false, delay or 0), goal):Play()
+		end)
+	end
+	-- Inset a little, so the card's own frame (often a painted plate) stays on top.
+	local root = UI.frame(stage, {Name = "CardBackdrop", Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8), BackgroundTransparency = 1, ClipsDescendants = true, Active = false, ZIndex = 0})
+	for key, value in pairs(properties or {}) do root[key] = value end
+	UI.corner(root, 12)
+	local z = root.ZIndex
+	local light = tint:Lerp(Color3.new(1, 1, 1), 0.6)
+	-- The sunburst: bars through the middle of a big square, bright near the
+	-- figure and fading outwards, turning once every 40 seconds.
+	local burst = UI.frame(root, {Name = "Sunburst", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.fromScale(2.2, 2.2),
+		SizeConstraint = Enum.SizeConstraint.RelativeXX, BackgroundTransparency = 1, Active = false, ZIndex = z})
+	local rays = BACKDROP_RAYS[rarity] or 8
+	for index = 0, rays - 1 do
+		local ray = UI.frame(burst, {Name = "Ray", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(index % 2 == 0 and 0.085 or 0.05, 1),
+			Rotation = index * 180 / rays, BackgroundColor3 = light, BackgroundTransparency = 0, Active = false, ZIndex = z})
+		UI.create("UIGradient", {Rotation = 90, Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.32, index % 2 == 0 and 0.7 or 0.8), NumberSequenceKeypoint.new(0.5, 0.92),
+			NumberSequenceKeypoint.new(0.68, index % 2 == 0 and 0.7 or 0.8), NumberSequenceKeypoint.new(1, 1)})}, ray)
+	end
+	loop(burst, 40, {Rotation = 360})
+	-- Sparks: small diamonds rising from the foot of the card and fading out.
+	for index = 1, BACKDROP_SPARKS[rarity] or 3 do
+		local x = BACKDROP_SPOTS[(index - 1) % #BACKDROP_SPOTS + 1]
+		local size = index % 2 == 0 and 7 or 5
+		local spark = UI.frame(root, {Name = "Spark", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(x, 0.92), Size = UDim2.fromOffset(size, size), Rotation = 45,
+			BackgroundColor3 = index % 3 == 0 and Color3.new(1, 1, 1) or light, BackgroundTransparency = still and 0.5 or 0.15, Active = false, ZIndex = z})
+		if still then spark.Position = UDim2.fromScale(x, 0.25 + (index % 3) * 0.2) end
+		loop(spark, 2.4 + (index % 3) * 0.5, {Position = UDim2.fromScale(x + (index % 2 == 0 and 0.06 or -0.06), 0.08), BackgroundTransparency = 1}, Enum.EasingStyle.Quad, index * 0.45)
+	end
+	-- A sheen sweeps across the card every few seconds.
+	local sheen = UI.frame(root, {Name = "Sheen", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(-0.4, 0.5), Size = UDim2.fromScale(0.16, 2.4), Rotation = 22,
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.78, Active = false, ZIndex = z, Visible = not still})
+	UI.create("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(1, 1)})}, sheen)
+	loop(sheen, 1.3, {Position = UDim2.fromScale(1.4, 0.5)}, Enum.EasingStyle.Sine, 3.2)
+	return root
+end
+
 -- A comic trading-card stage. The silhouette has room to breathe and its
 -- rarity supplies the light; fine hatching sits away from the face.
 function UI.cardSkin(frame,tint)
@@ -794,13 +851,26 @@ function UI.ribbon(parent, tint, height)
 	return band
 end
 
+-- The rarity a card's tint stands for (the nearest rarity colour): sizes its
+-- backdrop when the caller only knows the colour.
+function UI.rarityOf(tint)
+	local best, found = math.huge, "rare"
+	for id, rarity in pairs(UI.RarityColors or {}) do
+		local delta = (tint.R - rarity.R) ^ 2 + (tint.G - rarity.G) ^ 2 + (tint.B - rarity.B) ^ 2
+		if delta < best then best, found = delta, id end
+	end
+	return found
+end
+
 function UI.portraitStage(parent, tint, properties)
-	local stage=UI.frame(parent,properties)
+	local clean = {}
+	for key, value in pairs(properties or {}) do if key ~= "Rarity" then clean[key] = value end end
+	local stage=UI.frame(parent,clean)
 	stage.BackgroundColor3=tint:Lerp(UI.Colors.background,0.28)
 	stage.ClipsDescendants=true
 	UI.corner(stage,12)
 	UI.cardSkin(stage,tint)
-	UI.multiverseSeal(stage,UI.Colors.cream,{Name="PortraitHalo",Position=UDim2.fromScale(0.12,0.03),Size=UDim2.fromScale(0.76,0.88),ZIndex=0})
+	UI.cardBackdrop(stage,tint,properties and properties.Rarity or UI.rarityOf(tint))
 	return stage
 end
 
@@ -1280,24 +1350,21 @@ function UI.matchLayout(width, height, options)
 	local count = math.clamp(math.floor(tonumber(options.skills) or 1), 0, 1)
 	local small = class.short or class.narrow
 	local skillW = small and 124 or (class.compact and 144 or 190)
-	local saluteW = small and 78 or 96
 	-- Speed (2x/3x) and auto-skip ride in the same band as the ability: they
 	-- are pressed often, so they get thumb height and sit where the hand is.
 	local controlW = small and 52 or 64
 	local function bandWidth()
 		local w = count * skillW + math.max(0, count - 1) * 8
-		if options.vip then w += (count > 0 and 8 or 0) + saluteW end
 		-- 2x, 3x, auto-skip and, in the cards mode, the cards.
 		return w + (w > 0 and 8 or 0) + (options.cards and 4 or 3) * controlW + 16
 	end
 	-- On a narrow screen the band gives way a little at a time: the ability
-	-- first, then the salute, then the small controls (never under 44 wide).
+	-- first, then the small controls (never under 44 wide).
 	-- (On a phone on its side the five hero tiles share the row, and need 290.)
 	local available = width - 2 * pad - (class.short and 290 or 0)
-	for _, step in ipairs({ { "skill", 80 }, { "salute", 40 }, { "control", 36 } }) do
+	for _, step in ipairs({ { "skill", 80 }, { "control", 36 } }) do
 		while bandWidth() > available do
 			if step[1] == "skill" and skillW > step[2] then skillW -= 2
-			elseif step[1] == "salute" and saluteW > step[2] then saluteW -= 2
 			elseif step[1] == "control" and controlW > step[2] then controlW -= 1
 			else break end
 		end
@@ -1307,7 +1374,7 @@ function UI.matchLayout(width, height, options)
 	local buttonH = 48
 	local bandH = class.compact and 64 or 86
 	local bandY = height - 8 - bandH
-	layout.buttonH, layout.skillW, layout.saluteW = buttonH, skillW, saluteW
+	layout.buttonH, layout.skillW = buttonH, skillW
 	layout.cardW = class.compact and 110 or 143
 	if class.short then
 		-- One bottom band: hero cards scroll on the left, abilities fixed on the
@@ -1541,6 +1608,24 @@ function UI.basePortrait(parent, def, properties)
 	root:SetAttribute("BaseStyle",def.style or "outpost")
 	local tint=UI.color(def.color)
 	local world=UI.create("WorldModel",{Name="BasePreview"},root)
+	-- The base's own model, as the match builds it (the server publishes every
+	-- base in DoomBasePortraits); the diorama below is only the fallback.
+	local okStorage,storage=pcall(game.GetService,game,"ReplicatedStorage")
+	local templates=okStorage and storage and storage:FindFirstChild("DoomBasePortraits")
+	local template=templates and def.id and templates:FindFirstChild(def.id)
+	if template then
+		local copy=template:Clone()
+		copy.Name="BaseMiniature"
+		copy.Parent=world
+		local frame,size=copy:GetBoundingBox()
+		local span=math.max(size.X,size.Z,size.Y,6)
+		local focus=frame.Position
+		local camera=UI.create("Camera",{Name="BaseCamera",FieldOfView=34},root)
+		camera.CFrame=CFrame.lookAt(focus+Vector3.new(0.58,0.46,-0.67).Unit*span*2.25,focus)
+		root.CurrentCamera=camera
+		root:SetAttribute("BaseArt","template")
+		return root
+	end
 	local model=UI.create("Model",{Name="BaseMiniature"},world)
 	local function block(name,x,y,z,w,h,d,color,material)
 		return UI.create("Part",{Name=name,CFrame=CFrame.new(x,y,z),Size=Vector3.new(w,h,d),Color=color or tint,Material=material or Enum.Material.SmoothPlastic,
@@ -1590,6 +1675,10 @@ function UI.basePortrait(parent, def, properties)
 		local wheel=block("VaultWheel",0,2,-3.15,0.2,1.3,1.3,tint,Enum.Material.Metal)
 		wheel.Shape,wheel.CFrame=Enum.PartType.Cylinder,CFrame.new(0,2,-3.15)*CFrame.Angles(0,math.pi/2,0)
 		for n=1,5 do block("GoldBar",-3.9+((n-1)%3)*1,0.85+math.floor((n-1)/3)*0.42,-3.4,0.95,0.4,0.55,Color3.fromRGB(255,204,72),Enum.Material.Metal) end
+	elseif def.style=="bounty" then
+		block("BountyBoard",-3.2,2.3,-3.4,2.2,1.4,0.15,Color3.fromRGB(86,60,38),Enum.Material.Wood)
+		block("CoinChest",3.2,1.05,-3.3,1.6,0.9,1.1,Color3.fromRGB(112,78,50),Enum.Material.Wood)
+		block("ChestBand",3.2,1.15,-3.3,1.65,0.2,1.15,Color3.fromRGB(255,204,72),Enum.Material.Metal)
 	end
 	local camera=UI.create("Camera",{Name="BaseCamera",FieldOfView=34},root)
 	camera.CFrame=CFrame.lookAt(Vector3.new(15,11,-18),Vector3.new(0,2,0))

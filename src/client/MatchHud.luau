@@ -412,6 +412,14 @@ function MatchHud.new(ctx)
 		CardArt.totalRows(UI, Rules, T, holder, cards, rowH, textSize, maxRows, width)
 	end
 
+	-- Back to the lobby behind the loading cover (ReturnCover): the trip itself
+	-- is never shown; a refusal (rewards still saving) takes the cover away.
+	local function returnToLobby()
+		local cover = kit.returnCover
+		if cover then cover:Show() end
+		act("ReturnLobby", {}, nil, function() if cover then cover:Hide() end end)
+	end
+
 	local function openBaseUpgrade()
 		local state = ctx.state()
 		if not activeMatch() or not state.match.base then return end
@@ -420,15 +428,22 @@ function MatchHud.new(ctx)
 		local nextStats=Rules.BaseStats(base.id,math.min(5,base.level+1))
 		local screen=screenSize()
 		local shade=UI.frame(overlays,{Name="BaseUpgrade",Size=UDim2.fromScale(1,1),BackgroundColor3=C.background,BackgroundTransparency=0.25,Active=true,ZIndex=45})
-		local panel=UI.roundFrame(shade,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(math.min(520,screen.X-24),math.min(470,screen.Y-24)),BackgroundColor3=C.background,ZIndex=46},C.green)
+		local panelH=math.min(540,screen.Y-24)
+		local panel=UI.roundFrame(shade,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(math.min(560,screen.X-24),panelH),BackgroundColor3=C.background,ZIndex=46},C.green)
 		UI.windowSkin(panel,C.green)
 		UI.label(panel,T("Evoluir base","Upgrade base"),{Position=UDim2.fromOffset(16,8),Size=UDim2.new(1,-76,0,36),TextColor3=C.green,TextSize=27,Font=UI.Fonts.display,ZIndex=47})
 		UI.closeButton(panel,function() shade:Destroy() end,{Position=UDim2.new(1,-50,0,6),Size=UDim2.fromOffset(44,44),TextSize=25,ZIndex=47})
-		local body=UI.scroll(panel,{Position=UDim2.fromOffset(16,54),Size=UDim2.new(1,-32,1,-66),ZIndex=47,ScrollBarThickness=8}); UI.list(body,10)
+		-- The action sits in a footer of its own, always on screen and always
+		-- legible (owner, 17/10: the price on the green button could not be read
+		-- and the note under it was cut): white words on a solid colour, the
+		-- price in the words, never a greyed-out button.
+		local roomy=panelH>=400
+		local footH=roomy and 112 or 66
+		local body=UI.scroll(panel,{Position=UDim2.fromOffset(16,54),Size=UDim2.new(1,-32,1,-66-footH),ZIndex=47,ScrollBarThickness=8}); UI.list(body,10)
 		local art=UI.row(body,112); art.ZIndex=47
 		local stage=UI.frame(art,{Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(112,112),BackgroundColor3=C.green:Lerp(C.ink,0.55),ZIndex=47})
 		UI.cardSkin(stage,C.green)
-		UI.multiverseSeal(stage,C.cream,{Size=UDim2.fromScale(1,1),ZIndex=0})
+		UI.cardBackdrop(stage,C.green,def.rarity)
 		UI.basePortrait(stage,def,{Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(104,104),ZIndex=48})
 		UI.fit(UI.label(art,L(def.name),{Name="BaseUpgradeName",Position=UDim2.fromOffset(124,4),Size=UDim2.new(1,-130,0,34),TextSize=25,Font=UI.Fonts.display,TextWrapped=true,ZIndex=48}),13)
 		-- The level as five pips, like a tower's.
@@ -451,24 +466,36 @@ function MatchHud.new(ctx)
 		local function pct(share) return math.floor(share*100+0.5).."%" end
 		if (stats.chill or 0)>0 then line(T("Campo de gelo: ","Ice field: ")..arrow(pct(stats.chill),pct(nextStats.chill))..T(" mais lento • raio "," slower • radius ")..arrow(stats.range,nextStats.range),C.blue,44) end
 		if (stats.interest or 0)>0 then line(T("Juros por onda: ","Interest per wave: ")..arrow(pct(stats.interest),pct(nextStats.interest))..T(" do Ouro guardado • até "," of the Gold kept • up to ")..arrow(stats.interestCap,nextStats.interestCap),C.gold,44) end
-		local button=UI.button(body,base.level>=5 and T("Nível máximo","Maximum level") or T("Evoluir • ","Upgrade • ")..stats.upgradeCost,function()
+		if (stats.bounty or 0)>0 then line(T("Ouro por inimigo derrotado: ","Gold per defeated enemy: ")..arrow("+"..pct(stats.bounty),"+"..pct(nextStats.bounty)),C.gold,44) end
+		local note=T("Usa o Ouro desta partida (o Ouro do lobby nunca é gasto aqui). A renda exige ajudar na onda.","Uses this match's Gold (lobby Gold is never spent here). Income needs you to help in the wave.")
+		if not roomy then UI.label(body,note,{Name="BaseUpgradeNote",Size=UDim2.new(1,-8,0,52),TextSize=15,TextWrapped=true,TextColor3=C.muted,ZIndex=48}) end
+		local footer=UI.frame(panel,{Name="BaseUpgradeFooter",Position=UDim2.new(0,16,1,-footH-8),Size=UDim2.new(1,-32,0,footH),BackgroundTransparency=1,ZIndex=47})
+		local button=UI.button(footer,T("Evoluir","Upgrade"),function()
 			-- The window stays: it redraws with the new level and the next price.
 			act("UpgradeBase",{expectedLevel=base.level},function() audio:Cue("upgrade") end)
-		end,{Name="ConfirmBaseUpgrade",Size=UDim2.new(1,-8,0,56),TextSize=22,BackgroundColor3=C.green,ZIndex=48})
-		if base.level>=5 or (state.match.cash or 0)<stats.upgradeCost then UI.disabled(button) end
+		end,{Name="ConfirmBaseUpgrade",Size=UDim2.new(1,0,0,58),TextSize=24,BackgroundColor3=C.green,ZIndex=48})
+		if roomy then
+			UI.label(footer,note,{Name="BaseUpgradeNote",Position=UDim2.fromOffset(0,64),Size=UDim2.new(1,0,0,44),TextSize=15,TextWrapped=true,TextColor3=C.muted,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=48})
+		end
 		ctx.refs().refreshBaseModal=function()
 			if not shade.Parent then ctx.refs().refreshBaseModal=nil; return end
 			local current=ctx.state().match
 			if not current or not current.base then shade:Destroy(); ctx.refs().refreshBaseModal=nil; return end
 			if current.base.level~=base.level then ctx.refs().refreshBaseModal=nil; openBaseUpgrade(); return end
 			local missing=math.max(0,stats.upgradeCost-(current.cash or 0))
-			if base.level>=5 then return end
-			button.Text=missing>0 and T("Faltam ","Need ")..number(missing)..T(" Ouro"," Gold") or T("Evoluir • ","Upgrade • ")..stats.upgradeCost
-			if missing>0 then UI.disabled(button)
-			else button.Active=true; button.AutoButtonColor=true; button.BackgroundColor3=C.green; button.TextColor3=C.background end
+			local text,color,ready
+			if base.level>=5 then
+				text,color,ready=T("Nível máximo","Maximum level"),Color3.fromRGB(58,62,84),false
+			elseif missing>0 then
+				text,color,ready=T("Custa ","Costs ")..number(stats.upgradeCost)..T(" Ouro  •  faltam ",  " Gold  •  need ")..number(missing),Color3.fromRGB(122,44,56),false
+			else
+				text,color,ready=T("EVOLUIR  •  ","UPGRADE  •  ")..number(stats.upgradeCost)..T(" Ouro"," Gold"),C.green,true
+			end
+			if button.Text~=text then button.Text=text end
+			button.Active,button.AutoButtonColor=ready,ready
+			button.BackgroundColor3,button.TextColor3=color,ready and C.text or C.cream
 		end
 		ctx.refs().refreshBaseModal()
-		UI.label(body,T("Usa o Ouro desta partida. O Ouro do lobby nunca é gasto aqui. Renda exige contribuição na onda.","Uses this match's Gold. Lobby Gold is never spent here. Income requires contribution to the wave."),{Size=UDim2.new(1,-8,0,48),TextSize=15,TextWrapped=true,TextColor3=C.muted,ZIndex=48})
 	end
 
 	-- A commander's Roblox face (avatar headshot) in a round frame. The engine
@@ -508,7 +535,7 @@ function MatchHud.new(ctx)
 		-- Like the genre's best: one tap runs the same map again; going back to
 		-- base is the quieter choice. Training always returns to the lobby.
 		if result.modeId=="tutorial" then
-			UI.button(panel,T("Voltar ao lobby","Back to the lobby"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(1,-36,0,52),TextSize=22})
+			UI.button(panel,T("Voltar ao lobby","Back to the lobby"),returnToLobby,{Name="ResultReturn",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(1,-36,0,52),TextSize=22})
 		else
 			local waiting=result.again==true
 			local again=UI.button(panel,waiting and (T("Esperando ","Waiting ")..tostring(result.againVotes or 1).."/"..tostring(result.againTotal or 1)) or T("▶ Jogar de novo","▶ Play again"),
@@ -519,7 +546,7 @@ function MatchHud.new(ctx)
 				local invite=UI.button(panel,"",ctx.inviteFriends,{Name="ResultInvite",Position=UDim2.new(0.62,-58,1,-64),Size=UDim2.fromOffset(52,52),BackgroundColor3=UI.Skin.bodyTop})
 				UI.icon(invite,"plus",C.green,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(36,36)})
 			end
-			UI.secondary(panel,T("Lobby","Lobby"),function() act("ReturnLobby",{}) end,{Name="ResultReturn",Position=UDim2.new(0.62,0,1,-64),Size=UDim2.new(0.38,-18,0,52),TextSize=20,BackgroundColor3=UI.Skin.bodyTop})
+			UI.secondary(panel,T("Lobby","Lobby"),returnToLobby,{Name="ResultReturn",Position=UDim2.new(0.62,0,1,-64),Size=UDim2.new(0.38,-18,0,52),TextSize=20,BackgroundColor3=UI.Skin.bodyTop})
 		end
 		UI.list(content, 8)
 		local short=sizeClass().short

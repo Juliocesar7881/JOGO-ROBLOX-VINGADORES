@@ -6049,6 +6049,23 @@ function World.new(catalog, openPanel, config, options)
 		local torso = heroFigure(model, id, catalog.Heroes[id], CFrame.new())
 		model.PrimaryPart = torso
 	end
+	-- Every base at level 3, the model its card shows (UI.basePortrait clones it).
+	local previousBases = storage:FindFirstChild("DoomBasePortraits")
+	if previousBases then previousBases:Destroy() end
+	local baseArt = Instance.new("Folder")
+	baseArt.Name = "DoomBasePortraits"
+	for _, id in ipairs(catalog.BaseOrder or {}) do
+		local model = Instance.new("Model")
+		model.Name = id
+		model:SetAttribute("BaseId", id)
+		World.BuildBaseArt(model, catalog.Bases[id], 3, Vector3.new(0, 0, 0))
+		World.TameNeon(model)
+		for _, item in ipairs(model:GetDescendants()) do
+			if item:IsA("BasePart") then item.Anchored, item.CanCollide, item.CanQuery, item.CanTouch = true, false, false, false end
+		end
+		model.Parent = baseArt
+	end
+	baseArt.Parent = storage
 	-- Every enemy's jointed figure, cloned by the clients for the road.
 	Figure.PublishEnemies(catalog)
 	self:ApplyLobbyLighting()
@@ -9701,6 +9718,270 @@ function World:Build(mapId)
 	World.TameNeon(self.Scenery)
 end
 
+-- Every base, in the match and on its card (owner, 17/10: "as bases tão com
+-- design simples demais... retrabalhar todas elas"): a stepped plinth with a
+-- lit front edge and bollards, a building that grows with the level, with a
+-- door, lit windows, pilasters, a parapet roof, a flag and a gauge of five
+-- lamps by the door, and each family's own equipment on top of that: a farm's
+-- crop beds and water tank, a wall's crenellated barricade and shield pylons,
+-- a turret's twin guns on a ring, a barracks' banners and drill dummy, the
+-- frost station's spires and cryo dome, the vault's round door and gold, the
+-- hunters' bounty board and coin chest. The rarest bases add a signature
+-- piece (the world tree, the reactor's crystals, the citadel's spires, the
+-- carrier's helipad, the sanctum's orb, the star treasury's coin fountain).
+-- Built around `at` (the centre of its ground, front towards -Z); stats is
+-- optional (the field's ice reaches as far as the base's range). The back
+-- right corner stays clear for the Base Agent.
+local BASE_SOLID = { Foundation = true, Building = true, Roof = true, WallSection = true, Turret = true }
+function World.BuildBaseArt(model, def, level, at, stats)
+	level = math.clamp(math.floor(tonumber(level) or 1), 1, 5)
+	local V = Vector3.new
+	local M = Enum.Material
+	local tint = Color3.fromRGB(unpack(def.color))
+	local white = Color3.new(1, 1, 1)
+	local dark, steel = Color3.fromRGB(42, 46, 58), Color3.fromRGB(104, 112, 126)
+	local stone = tint:Lerp(Color3.fromRGB(78, 82, 94), 0.72)
+	local trim = tint:Lerp(white, 0.35)
+	local lit = Color3.fromRGB(255, 226, 140)
+	local gold = Color3.fromRGB(255, 204, 72)
+	local wood = Color3.fromRGB(112, 78, 50)
+	local function piece(name, size, offset, color, material, shape, turn)
+		local p = part(model, name, size, CFrame.new(at + offset) * (turn or CFrame.new()), color or tint, material or M.Metal)
+		if shape == "ball" then p.Shape = Enum.PartType.Ball elseif shape == "cylinder" then p.Shape = Enum.PartType.Cylinder end
+		p.CanCollide = BASE_SOLID[name] == true
+		return p
+	end
+	-- A cylinder standing up (Roblox cylinders lie along X) and a disc facing the road.
+	local function upright(name, height, diameter, offset, color, material)
+		return piece(name, V(height, diameter, diameter), offset, color, material, "cylinder", CFrame.Angles(0, 0, math.pi / 2))
+	end
+	local function disc(name, thickness, diameter, offset, color, material)
+		return piece(name, V(thickness, diameter, diameter), offset, color, material, "cylinder", CFrame.Angles(0, math.pi / 2, 0))
+	end
+	-- The plinth: two steps, a lit edge along the front, bollards at three corners.
+	piece("Foundation", V(9.6, 0.6, 9.6), V(0, 0.3, 0), dark, M.Slate)
+	piece("PlinthTop", V(9, 0.4, 9), V(0, 0.8, 0), stone, M.Concrete)
+	piece("PlinthEdge", V(9.1, 0.12, 0.22), V(0, 0.64, -4.76), tint, M.Neon)
+	for _, c in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 } }) do
+		upright("Bollard", 1.2, 0.55, V(c[1] * 4.25, 1.6, c[2] * 4.25), steel, M.Metal)
+		piece("BollardCap", V(0.62, 0.16, 0.62), V(c[1] * 4.25, 2.26, c[2] * 4.25), tint, M.Neon)
+	end
+	-- The building, taller with every level.
+	local h = 3 + level * 0.35
+	local top = 1 + h
+	piece("Building", V(5.6, h, 4.4), V(0, 1 + h / 2, 0.6), tint:Lerp(dark, 0.45), def.style == "vault" and M.DiamondPlate or M.Concrete)
+	piece("BuildingBand", V(5.8, 0.5, 4.6), V(0, 1.25, 0.6), dark, M.Metal)
+	for _, x in ipairs({ -2.9, 2.9 }) do piece("Pilaster", V(0.5, h + 0.2, 0.6), V(x, 1 + h / 2, -1.6), trim, M.Metal) end
+	if def.style ~= "vault" then
+		local wide = def.style == "soldiers"
+		piece("Door", V(wide and 2.2 or 1.4, wide and 2.3 or 2, 0.12), V(0, wide and 2.35 or 2.2, -1.66), dark, M.Metal)
+		piece("DoorLintel", V(wide and 2.6 or 1.8, 0.22, 0.3), V(0, wide and 3.6 or 3.3, -1.72), tint, M.Metal)
+	end
+	piece("EntryStep", V(2.4, 0.2, 0.9), V(0, 1.1, -2.2), steel, M.DiamondPlate)
+	for _, x in ipairs({ -1.9, 1.9 }) do
+		piece("WindowFrame", V(1.1, 1.05, 0.12), V(x, 2.75, -1.66), trim, M.Metal)
+		piece("Window", V(0.85, 0.8, 0.14), V(x, 2.75, -1.68), lit, M.Neon)
+	end
+	-- Roof: an overhanging slab with a parapet round it.
+	piece("Roof", V(6.4, 0.45, 5.2), V(0, top + 0.22, 0.6), trim, M.Metal)
+	for _, edge in ipairs({ { 0, -1.95, 6.4, 0.3 }, { 0, 3.15, 6.4, 0.3 }, { -3.05, 0.6, 0.3, 4.9 }, { 3.05, 0.6, 0.3, 4.9 } }) do
+		piece("Parapet", V(edge[3], 0.45, edge[4]), V(edge[1], top + 0.66, edge[2]), tint, M.Metal)
+	end
+	local roof = top + 0.45
+	-- The level gauge: five lamps up the right pilaster, one lit per level.
+	for n = 1, 5 do
+		piece(n <= level and "LevelLamp" or "LevelLampOff", V(0.34, 0.34, 0.12), V(2.9, 1.3 + n * 0.5, -1.96), n <= level and lit or dark, n <= level and M.Neon or M.Metal)
+	end
+	local function flag(x, z, color)
+		upright("Flagpole", 4.4, 0.16, V(x, 3.2, z), steel, M.Metal)
+		piece("Flag", V(1.6, 1, 0.08), V(x + 0.85, 4.75, z), color or tint, M.Fabric)
+		piece("FlagTip", V(0.3, 0.3, 0.3), V(x, 5.5, z), gold, M.Metal, "ball")
+	end
+	local style, id = def.style, def.id
+	if style == "farm" then
+		-- Crop beds either side of the door; the crops grow with the level.
+		for _, x in ipairs({ -2.85, 2.85 }) do
+			piece("CropBed", V(2.6, 0.45, 2.2), V(x, 1.22, -3.35), wood, M.Wood)
+			for _, dx in ipairs({ -0.6, 0.6 }) do
+				for _, dz in ipairs({ -0.5, 0.5 }) do
+					local size = 0.55 + level * 0.1
+					piece("Crop", V(size, size, size), V(x + dx, 1.5 + size / 2, -3.35 + dz), tint:Lerp(Color3.fromRGB(120, 230, 110), 0.5), M.Neon, "ball")
+				end
+			end
+		end
+		if id == "worldtree" then
+			-- The world tree rises from the back of the garden, its crown in blossom.
+			upright("TreeTrunk", 5, 1.1, V(-2.6, 3.5, 2.9), wood, M.Wood)
+			for _, leaf in ipairs({ { -2.6, 6.6, 2.9, 3.2 }, { -1.5, 6, 2.2, 2.2 }, { -3.5, 6.1, 3.5, 2.4 }, { -2.4, 7.5, 3.4, 1.8 } }) do
+				piece("Blossom", V(leaf[4], leaf[4] * 0.85, leaf[4]), V(leaf[1], leaf[2], leaf[3]), tint, M.Grass, "ball")
+			end
+			for n = 1, level do piece("Lantern", V(0.4, 0.4, 0.4), V(-2.6 + math.cos(n * 1.3) * 1.5, 5.6, 2.9 + math.sin(n * 1.3) * 1.5), lit, M.Neon, "ball") end
+		elseif id == "reactor" then
+			-- A crystal cluster in a containment ring on the roof.
+			upright("ReactorBase", 0.5, 2.6, V(0, roof + 0.25, 0.6), steel, M.Metal)
+			for n, crystal in ipairs({ { 0, 2.6, 0 }, { -0.6, 1.8, 0.4 }, { 0.6, 1.9, -0.35 } }) do
+				piece("Crystal", V(0.7, crystal[2] + level * 0.15, 0.7), V(crystal[1], roof + 0.5 + (crystal[2] + level * 0.15) / 2, 0.6 + crystal[3]), tint, M.Neon, nil, CFrame.Angles(0, n * 0.7, (n - 2) * 0.18))
+			end
+			for n = 0, 5 do
+				local a = n * math.pi / 3
+				piece("ContainmentPost", V(0.18, 1.6, 0.18), V(math.cos(a) * 1.4, roof + 0.8, 0.6 + math.sin(a) * 1.4), trim, M.Metal)
+			end
+		else
+			-- A water tank on four legs at the back of the roof.
+			for _, leg in ipairs({ { -1, 1 }, { 1, 1 }, { -1, -1 }, { 1, -1 } }) do piece("TankLeg", V(0.18, 1.4, 0.18), V(-1.5 + leg[1] * 0.55, roof + 0.7, 1.8 + leg[2] * 0.55), steel, M.Metal) end
+			upright("WaterTank", 1.4, 1.6, V(-1.5, roof + 2.1, 1.8), tint:Lerp(white, 0.2), M.Metal)
+			if id == "workshop" then
+				-- A chimney stack and a gear over the door.
+				upright("Chimney", 2.4, 0.8, V(1.6, roof + 1.2, 1.9), dark, M.Brick)
+				upright("ChimneyCap", 0.3, 1, V(1.6, roof + 2.5, 1.9), tint, M.Metal)
+				disc("Gear", 0.25, 1.5, V(0, 4.05, -1.8), tint, M.Metal)
+				for n = 0, 5 do
+					local a = n * math.pi / 3
+					piece("GearTooth", V(0.3, 0.3, 0.25), V(math.cos(a) * 0.82, 4.05 + math.sin(a) * 0.82, -1.8), tint, M.Metal, nil, CFrame.Angles(0, 0, a))
+				end
+			else
+				piece("SolarPanel", V(2.6, 0.12, 1.4), V(1.3, roof + 0.55, -0.6), Color3.fromRGB(40, 70, 130), M.Glass, nil, CFrame.Angles(math.rad(-22), 0, 0))
+			end
+		end
+		flag(-3.9, 3.9)
+	elseif style == "wall" then
+		-- A crenellated barricade across the front with a shield beam in its gate.
+		local wallH = 1.8 + level * 0.3
+		for _, x in ipairs({ -3.15, 3.15 }) do
+			piece("WallSection", V(2.5, wallH, 0.9), V(x, 1 + wallH / 2, -3.9), tint:Lerp(stone, 0.5), M.Concrete)
+			for _, mx in ipairs({ -0.85, 0, 0.85 }) do piece("Merlon", V(0.55, 0.5, 0.95), V(x + mx, 1 + wallH + 0.25, -3.9), tint:Lerp(stone, 0.3), M.Concrete) end
+			upright("ShieldPylon", wallH + 0.8, 0.5, V(x - math.sign(x) * 1.45, 1 + (wallH + 0.8) / 2, -3.9), steel, M.Metal)
+			piece("PylonCap", V(0.55, 0.55, 0.55), V(x - math.sign(x) * 1.45, 1.6 + wallH + 0.55, -3.9), tint, M.Neon, "ball")
+		end
+		local beam = piece("ShieldBeam", V(2.6, wallH, 0.12), V(0, 1 + wallH / 2, -3.9), tint, M.ForceField)
+		beam.Transparency = 0.35
+		if id == "citadel" then
+			-- Two gold-capped spires on the roof.
+			for _, x in ipairs({ -2.2, 2.2 }) do
+				piece("Spire", V(0.7, 2.8, 0.7), V(x, roof + 1.4, 2.6), trim, M.Marble)
+				piece("SpireCap", V(0.9, 0.9, 0.9), V(x, roof + 3.05, 2.6), gold, M.Metal, "ball")
+			end
+		else
+			piece("Antenna", V(0.14, 2.4, 0.14), V(2, roof + 1.2, 2.4), steel, M.Metal)
+		end
+		flag(-3.9, 3.9)
+	elseif style == "turret" then
+		if id == "sanctum" then
+			-- An arcane orb on a pedestal, rune stones circling it.
+			upright("OrbPedestal", 1.2, 1.4, V(0, roof + 0.6, 0.6), trim, M.Marble)
+			local orb = piece("ArcaneOrb", V(1.7, 1.7, 1.7), V(0, roof + 2.2, 0.6), tint, M.Neon, "ball")
+			orb.Transparency = 0.15
+			for n = 0, 5 + math.min(level, 2) do
+				local a = n * math.pi * 2 / (6 + math.min(level, 2))
+				piece("RuneStone", V(0.3, 0.5, 0.15), V(math.cos(a) * 1.7, roof + 2.2, 0.6 + math.sin(a) * 1.7), tint:Lerp(white, 0.4), M.Neon, nil, CFrame.Angles(0, -a, 0))
+			end
+		else
+			-- Twin guns on a turret ring, longer with every level; crates of shells.
+			upright("TurretRing", 0.4, 3, V(0, roof + 0.2, 0.6), steel, M.Metal)
+			piece("Turret", V(2.4, 1.3, 2.4), V(0, roof + 1.05, 0.6), tint:Lerp(dark, 0.3), M.Metal)
+			piece("TurretVisor", V(1.6, 0.3, 0.1), V(0, roof + 1.3, -0.62), lit, M.Neon)
+			local length = 2.4 + level * 0.3
+			for _, x in ipairs({ -0.55, 0.55 }) do
+				piece("CannonBarrel", V(0.42, 0.42, length), V(x, roof + 1.1, 0.6 - 1.2 - length / 2), steel, M.Metal)
+				disc("Muzzle", 0.2, 0.6, V(x, roof + 1.1, 0.6 - 1.2 - length), tint, M.Neon)
+			end
+			for n, crate in ipairs({ { 2.9, -3.3 }, { 3.6, -2.4 } }) do
+				piece("ShellCrate", V(1, 0.8, 0.8), V(crate[1], 1.4, crate[2]), wood, M.Wood, nil, CFrame.Angles(0, n * 0.3, 0))
+				piece("CrateStripe", V(1.02, 0.15, 0.82), V(crate[1], 1.45, crate[2]), Color3.fromRGB(240, 200, 60), M.Metal, nil, CFrame.Angles(0, n * 0.3, 0))
+			end
+		end
+		flag(-3.9, 3.9)
+	elseif style == "soldiers" then
+		-- Banners at the front corners and a drill dummy by the door.
+		for _, x in ipairs({ -4.25, 4.25 }) do flag(x, -3.5) end
+		upright("DummyPost", 1.6, 0.2, V(-2.3, 1.8, -3.4), wood, M.Wood)
+		piece("DummyBody", V(0.8, 1, 0.5), V(-2.3, 2.6, -3.4), Color3.fromRGB(196, 170, 120), M.Fabric)
+		piece("DummyHead", V(0.6, 0.6, 0.6), V(-2.3, 3.4, -3.4), Color3.fromRGB(196, 170, 120), M.Fabric, "ball")
+		piece("DummyTarget", V(0.5, 0.5, 0.06), V(-2.3, 2.7, -3.68), Color3.fromRGB(220, 60, 60), M.Neon)
+		if id == "carrier" then
+			-- The roof is a helipad with its landing lights.
+			piece("Helipad", V(4.6, 0.15, 4), V(0, roof + 0.08, 0.6), dark, M.Asphalt)
+			for _, bar in ipairs({ { -0.8, 0, 0.3, 2.2 }, { 0.8, 0, 0.3, 2.2 }, { 0, 0, 1.3, 0.3 } }) do
+				piece("HelipadMark", V(bar[3], 0.06, bar[4]), V(bar[1], roof + 0.18, 0.6 + bar[2]), white, M.Neon)
+			end
+			for _, c in ipairs({ { -2, -1.2 }, { 2, -1.2 }, { -2, 2.4 }, { 2, 2.4 } }) do piece("LandingLight", V(0.3, 0.3, 0.3), V(c[1], roof + 0.25, c[2]), Color3.fromRGB(120, 255, 140), M.Neon, "ball") end
+		else
+			piece("Antenna", V(0.14, 2.4, 0.14), V(2, roof + 1.2, 2.4), steel, M.Metal)
+			piece("SupplyCrate", V(1.1, 0.9, 0.9), V(2.9, 1.45, -3.3), Color3.fromRGB(70, 96, 64), M.Wood)
+		end
+	elseif style == "frost" then
+		-- Ice spires at the corners, a cryo dome on the roof, snow by the door.
+		for i, spot in ipairs({ { -3.6, -3.6 }, { 3.6, -3.6 }, { -3.8, 2.6 } }) do
+			local height = 2 + level * 0.45 + (i % 2) * 0.6
+			piece("IceSpire", V(1, height, 1), V(spot[1], 1 + height / 2, spot[2]), tint:Lerp(white, 0.35), M.Ice, nil, CFrame.Angles(0, i * 0.6, (i % 2 == 0 and 1 or -1) * 0.08))
+		end
+		local dome = piece("CryoDome", V(3.2, 3.2, 3.2), V(0, roof, 0.6), tint:Lerp(white, 0.2), M.Glass, "ball")
+		dome.Transparency = 0.3
+		piece("CryoCore", V(1.2, 1.2, 1.2), V(0, roof + 0.8, 0.6), tint, M.Neon, "ball")
+		for _, x in ipairs({ -2.4, 2.4 }) do piece("SnowPile", V(1.6, 0.6, 1.1), V(x, 1.25, -3.3), Color3.fromRGB(236, 244, 255), M.Snow, "ball") end
+		if stats then
+			-- The ice field on the ground, as wide as its slow reaches (the base range).
+			local radius = stats.range or 30
+			local field = part(model, "FrostField", V(0.1, radius * 2, radius * 2), CFrame.new(at + V(0, 0.32, 0)) * CFrame.Angles(0, 0, math.pi / 2), tint, M.ForceField)
+			field.Shape, field.Transparency = Enum.PartType.Cylinder, 0.35
+			field.CanCollide, field.CanQuery, field.CanTouch = false, false, false
+		end
+		flag(-3.9, 3.9)
+	elseif style == "vault" then
+		-- The round vault door and its wheel, gold bars piling up with the level.
+		disc("VaultDoor", 0.45, 2.7, V(0, 2.45, -1.82), Color3.fromRGB(150, 156, 170), M.DiamondPlate)
+		disc("VaultWheel", 0.3, 1.4, V(0, 2.45, -2.1), tint, M.Metal)
+		for n = 0, 3 do piece("WheelSpoke", V(0.12, 1.5, 0.12), V(0, 2.45, -2.25), gold, M.Metal, nil, CFrame.Angles(0, 0, n * math.pi / 4)) end
+		for n = 1, level + 2 do
+			piece("GoldBar", V(1, 0.4, 0.55), V(-3.9 + ((n - 1) % 3) * 1.05, 1.22 + math.floor((n - 1) / 3) * 0.42, -3.4), gold, M.Metal)
+		end
+		piece("CoinSign", V(1.1, 1.1, 0.15), V(0, 4.3 + level * 0.2, -1.75), gold, M.Neon, "cylinder", CFrame.Angles(0, math.pi / 2, 0))
+		flag(-3.9, 3.9)
+	elseif style == "bounty" then
+		-- The hunters' lodge: a bounty board of wanted posters, an open chest of
+		-- coins, coin stacks that grow with the level, crossed spears over the door.
+		for _, x in ipairs({ -3.95, -2.05 }) do piece("BoardPost", V(0.22, 2.6, 0.22), V(x, 2.3, -3.6), wood, M.Wood) end
+		piece("BountyBoard", V(2.3, 1.4, 0.15), V(-3, 2.9, -3.6), Color3.fromRGB(86, 60, 38), M.Wood)
+		for n, x in ipairs({ -3.6, -3, -2.4 }) do
+			piece("WantedPoster", V(0.48, 0.66, 0.05), V(x, 2.95, -3.7), Color3.fromRGB(240, 226, 190), M.SmoothPlastic, nil, CFrame.Angles(0, 0, (n - 2) * 0.08))
+			piece("PosterMark", V(0.22, 0.22, 0.04), V(x, 3.05, -3.74), n == 2 and Color3.fromRGB(200, 50, 50) or dark, M.SmoothPlastic)
+		end
+		piece("CoinChest", V(1.5, 0.8, 1), V(2.9, 1.45, -3.3), wood, M.Wood)
+		piece("ChestBand", V(1.55, 0.18, 1.05), V(2.9, 1.55, -3.3), gold, M.Metal)
+		piece("ChestLid", V(1.5, 0.12, 1), V(2.9, 2.15, -2.75), wood, M.Wood, nil, CFrame.Angles(math.rad(70), 0, 0))
+		for n = 1, 3 do piece("ChestCoins", V(0.5, 0.5, 0.5), V(2.55 + n * 0.22, 1.9, -3.3 + (n % 2) * 0.2), gold, M.Neon, "ball") end
+		for n = 1, level do
+			local stack = 0.2 + n * 0.18
+			upright("CoinStack", stack, 0.55, V(1.1 + (n % 3) * 0.6, 1 + stack / 2, -4 + math.floor((n - 1) / 3) * 0.6), gold, M.Metal)
+		end
+		for _, side in ipairs({ -1, 1 }) do
+			piece("CrossedSpear", V(0.12, 2.6, 0.12), V(0, 4.15, -1.75), steel, M.Metal, nil, CFrame.Angles(0, 0, side * 0.75))
+		end
+		if id == "starvault" then
+			-- The star treasury's fountain of coins on the roof.
+			upright("FountainBasin", 0.5, 2.6, V(0, roof + 0.25, 0.6), trim, M.Marble)
+			for n = 0, 4 + level do
+				local a = n * math.pi * 2 / (5 + level)
+				piece("FountainCoin", V(0.45, 0.45, 0.45), V(math.cos(a) * 0.9, roof + 1.2 + (n % 3) * 0.45, 0.6 + math.sin(a) * 0.9), gold, M.Neon, "ball")
+			end
+			piece("StarCrest", V(1.2, 1.2, 0.2), V(0, roof + 2.6, 0.6), Color3.fromRGB(255, 240, 170), M.Neon, nil, CFrame.Angles(0, 0, math.pi / 4))
+		end
+		flag(-3.9, 3.9, gold)
+	else
+		-- The resistance outpost: sandbags, a searchlight and a radio mast.
+		for n, bag in ipairs({ { -3.4, -3.5 }, { -2.3, -3.6 }, { -2.85, -3.5 } }) do
+			piece("Sandbag", V(1.15, 0.55, 0.75), V(bag[1], n == 3 and 1.82 or 1.3, bag[2]), Color3.fromRGB(176, 158, 116), M.Fabric, "ball")
+		end
+		upright("RadioMast", 2.8, 0.16, V(-2, roof + 1.4, 2.4), steel, M.Metal)
+		disc("RadioDish", 0.15, 1.3, V(-2, roof + 2.4, 2.1), trim, M.Metal)
+		piece("Searchlight", V(0.7, 0.6, 0.8), V(2.2, roof + 0.55, -1.2), steel, M.Metal)
+		piece("SearchlightLens", V(0.5, 0.45, 0.06), V(2.2, roof + 0.55, -1.62), lit, M.Neon)
+		piece("AirUnit", V(1.2, 0.7, 1), V(1.4, roof + 0.35, 1.9), steel, M.Metal)
+		flag(-3.9, 3.9)
+	end
+	return model
+end
+
 function World:UpdateBase(index, base, core, ownerId)
 	local name="PlayerBase_"..index
 	local old=self.Scenery:FindFirstChild(name); if old then old:Destroy() end
@@ -9708,58 +9989,9 @@ function World:UpdateBase(index, base, core, ownerId)
 	local def=self.catalog.Bases[base.id]; local tint=Color3.fromRGB(unpack(def.color))
 	local offsets={{-12,-12},{12,-12},{-12,12},{12,12}}
 	local at=Vector3.new(math.clamp(core.X+offsets[index][1],-100,100),0,math.clamp(core.Z+offsets[index][2],-100,100))
-	-- The body of the outpost is solid (a commander walks around it, not through
-	-- it); lamps, crops and trim stay passable.
-	local SOLID={Foundation=true,Building=true,Roof=true,WallSection=true,Turret=true}
-	local function block(key,size,offset,color,material)
-		local p=part(model,key,size,CFrame.new(at+offset),color or tint,material or Enum.Material.Metal)
-		p.CanCollide=SOLID[key]==true; return p
-	end
-	block("Foundation",Vector3.new(9,1,9),Vector3.new(0,0.5,0),Color3.fromRGB(53,48,61))
-	block("Trim",Vector3.new(9.3,0.2,9.3),Vector3.new(0,1.1,0),tint,Enum.Material.Neon)
-	local building=block("Building",Vector3.new(6,3+base.level*0.4,5),Vector3.new(0,2.7,0))
-	block("Roof",Vector3.new(7,0.65,6),Vector3.new(0,4.4+base.level*0.2,0),tint:Lerp(Color3.new(1,1,1),0.35))
-	for n=1,base.level do block("LevelLamp",Vector3.new(0.7,0.4,0.15),Vector3.new(-2.4+n*0.8,2.4,-2.6),Color3.fromRGB(255,233,146),Enum.Material.Neon) end
-	if def.style=="farm" then
-		for x=-1,1 do
-			block("SupplyBed",Vector3.new(1.5,0.5,3),Vector3.new(x*2.4,1.4,2.6),Color3.fromRGB(101,73,46),Enum.Material.Wood)
-			for z=0,1 do local crop=block("EnergyCrop",Vector3.new(1,1+base.level*0.22,1),Vector3.new(x*2.4,2.2,2+z*1.2),tint,Enum.Material.Neon); crop.Shape=Enum.PartType.Ball end
-		end
-	elseif def.style=="turret" then
-		block("Turret",Vector3.new(2.8,2,2.8),Vector3.new(0,6,0),Color3.fromRGB(69,74,89))
-		for x=-1,1,2 do block("CannonBarrel",Vector3.new(0.65,0.65,4+base.level*0.3),Vector3.new(x*0.8,6,-2),tint) end
-	elseif def.style=="wall" then
-		for x=-1,1 do block("WallSection",Vector3.new(2.8,3+base.level*0.4,1),Vector3.new(x*3,2.4,-4),tint,Enum.Material.Concrete) end
-		block("ShieldEmitter",Vector3.new(8.4,0.3,0.3),Vector3.new(0,4.3,-4.6),tint,Enum.Material.Neon)
-	elseif def.style=="soldiers" then
-		block("Door",Vector3.new(2.4,2.8,0.15),Vector3.new(0,2.5,-2.6),Color3.fromRGB(27,28,39))
-		for x=-1,1,2 do
-			block("Flagpole",Vector3.new(0.15,5,0.15),Vector3.new(x*3.5,3.5,1))
-			block("Banner",Vector3.new(1.3,1.8,0.15),Vector3.new(x*3.5+0.55,5,1),tint,Enum.Material.Fabric)
-		end
-	elseif def.style=="frost" then
-		-- The ice field on the ground, as wide as its slow reaches (the base
-		-- range), and ice spires around a cryo core that grow with the level.
-		local radius=base.stats and base.stats.range or 30
-		local field=part(model,"FrostField",Vector3.new(0.1,radius*2,radius*2),CFrame.new(at+Vector3.new(0,0.32,0))*CFrame.Angles(0,0,math.pi/2),tint,Enum.Material.ForceField)
-		field.Shape,field.Transparency=Enum.PartType.Cylinder,0.35
-		field.CanCollide,field.CanQuery,field.CanTouch=false,false,false
-		for i,spot in ipairs({{-3,-3.4},{3,-3.4},{-3.7,2.4},{3.7,2.4}}) do
-			local height=2.2+base.level*0.45+(i%2)*0.6
-			block("IceSpire",Vector3.new(1.1,height,1.1),Vector3.new(spot[1],1+height/2,spot[2]),tint:Lerp(Color3.new(1,1,1),0.3),Enum.Material.Ice)
-		end
-		local cryo=block("CryoCore",Vector3.new(1.8,1.8,1.8),Vector3.new(0,6.2+base.level*0.2,0),tint,Enum.Material.Neon)
-		cryo.Shape=Enum.PartType.Ball
-	elseif def.style=="vault" then
-		-- A round vault door with its wheel, and gold bars that pile up with the level.
-		local door=part(model,"VaultDoor",Vector3.new(0.5,3,3),CFrame.new(at+Vector3.new(0,2.9,-2.75))*CFrame.Angles(0,math.pi/2,0),Color3.fromRGB(150,156,170),Enum.Material.DiamondPlate)
-		door.Shape,door.CanCollide=Enum.PartType.Cylinder,false
-		local wheel=part(model,"VaultWheel",Vector3.new(0.3,1.5,1.5),CFrame.new(at+Vector3.new(0,2.9,-3.1))*CFrame.Angles(0,math.pi/2,0),tint,Enum.Material.Metal)
-		wheel.Shape,wheel.CanCollide=Enum.PartType.Cylinder,false
-		for n=1,base.level+1 do
-			block("GoldBar",Vector3.new(1.3,0.45,0.65),Vector3.new(-3.6+((n-1)%3)*1.4,1.23+math.floor((n-1)/3)*0.47,-3.6),Color3.fromRGB(255,204,72),Enum.Material.Metal)
-		end
-	end
+	-- The base itself: World.BuildBaseArt (the same model its card shows).
+	World.BuildBaseArt(model,def,base.level,at,base.stats)
+	local building=model:FindFirstChild("Building")
 	-- Both languages ride along; each client shows its own (see init.client).
 	local baseName=label(building,def.name.pt.." • "..base.level.."/5",Vector3.new(0,6,0),tint)
 	baseName:SetAttribute("LobbyTextPT",def.name.pt.." • "..base.level.."/5")

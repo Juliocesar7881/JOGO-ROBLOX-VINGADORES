@@ -14,6 +14,11 @@ local function segmentDistance(p, a, b)
 end
 local function talent(p, id) return (p.profile.talents or {})[id] or 0 end
 local function cardStat(p, key) return (p.mods and p.mods[key]) or 0 end
+-- The account XP a commander really banks, for the results screen: the
+-- training pass and the Hero academy talent (PlayerService:Award applies both).
+local function xpScale(p, rules)
+	return (p.profile.passes and p.profile.passes.training and 1.25 or 1) * (1 + rules.TalentEffect(p.profile, "xpBoost"))
+end
 
 -- Bosses shrug off percentage attacks: an ability that takes a third of an
 -- ordinary enemy's health takes a small slice of a boss's.
@@ -62,7 +67,7 @@ local TUTORIAL_LESSONS = {
 function Match.new(config, catalog, rules, waves, profiles, world, remotes, changed)
 	return setmetatable({ config=config, catalog=catalog, rules=rules, waves=waves, profiles=profiles,
 		world=world, remotes=remotes, changed=changed, running=false, phase="Lobby", participants={},
-		enemies={}, towers={}, rewardQueue={}, nextId=0, syncTimer=0, rewardTimer=0, hitBuffer={}, speed=1,
+		enemies={}, towers={}, rewardQueue={}, nextId=0, syncTimer=0, rewardTimer=0, hitBuffer={}, critBuffer={}, speed=1,
 		landings={}, landingClock=0, landingSerial=0 }, Match)
 end
 
@@ -170,17 +175,23 @@ function Match:Start(members, mapId, modeId, runId, difficultyId)
 	self.rewardBonus = self.partyBonus * self.featuredBonus * self.difficultyBonus * self.eventBonus
 	self.maxBaseHP, self.recovery, self.baseWasDamaged = self.config.BaseHP, 0, false
 	self.lastStandHeal, self.lastStandUsed = 0, false
+	-- Core plating (a share off every leak) and the wave shield (leaks it
+	-- cancels each wave): the best in the squad, like the other Guardian talents.
+	self.coreArmor, self.waveShieldMax, self.waveShieldLeft = 0, 0, 0
 	for _, member in ipairs(members) do
-		local ranks = self.profiles:Snapshot(member).talents or {}
+		local snapshot = self.profiles:Snapshot(member)
+		local ranks = snapshot.talents or {}
 		self.maxBaseHP = math.max(self.maxBaseHP, self.config.BaseHP + (ranks.baseVitality or 0) * 4)
 		self.recovery = math.max(self.recovery, ranks.baseRecovery or 0)
 		self.lastStandHeal = math.max(self.lastStandHeal, (ranks.lastStand or 0) * 5)
+		self.coreArmor = math.max(self.coreArmor, math.min(0.5, self.rules.TalentEffect(snapshot, "baseArmor")))
+		self.waveShieldMax = math.max(self.waveShieldMax, self.rules.TalentEffect(snapshot, "waveShield"))
 	end
 	self.baseHP = self.maxBaseHP
 	self.elapsed, self.phase, self.running, self.shieldUntil = 0, "Preparing", true, 0
 	self.hazardTimer, self.hazardState, self.hazardCount = 0, {}, 0
 	self.speed = 1
-	self.hitBuffer = {}
+	self.hitBuffer, self.critBuffer = {}, {}
 	self.landings, self.landingClock, self.landingSerial = {}, 0, 0
 	-- One seed for the whole run keeps every wave and every card offer stable.
 	self.seed, self.nextThreats, self.criticalWarned = math.floor(os.time() / 86400), {}, false
@@ -366,6 +377,13 @@ end
 function Match:_beginWave()
 	self.wave += 1
 	self.phase, self.skipVotes = "Wave", {}
+	self.waveShieldLeft = self.waveShieldMax
+	-- The wave a leak starts to hurt twice as much is announced, so the
+	-- danger never grows in silence.
+	local scale = self.rules.LeakScale(self.wave)
+	if scale > self.rules.LeakScale(self.wave - 1) then
+		self:_notice("PERIGO • Inimigos que chegam ao núcleo agora causam " .. scale .. "x de dano!", "DANGER • Enemies reaching the core now deal " .. scale .. "x damage!", "boss")
+	end
 	for _, p in pairs(self.participants) do
 		p.waveHeroes, p.contributed, p.bossKills = {}, false, 0
 		-- A commander who let the timer run out is dealt the first offer, so a
@@ -485,7 +503,7 @@ function Match:_damage(enemy, amount, tower, stats)
 		for _, p in pairs(self.participants) do
 			if p.contributed and not p.returned and not p.disconnectedAt then
 				-- Every contributor gets their own pile; talents and cards grow it.
-				local exactCash = enemy.cash * (1 + talent(p,"killGold")*0.04 + cardStat(p,"killGold")) + p.killGoldRemainder
+				local exactCash = enemy.cash * (1 + talent(p,"killGold")*0.04 + cardStat(p,"killGold") + (p.base and p.base.stats.bounty or 0)) + p.killGoldRemainder
 				local earnedCash = math.floor(exactCash + 0.000001)
 				p.killGoldRemainder = exactCash - earnedCash
 				self:_coin(p,enemy.position,earnedCash)
@@ -523,10 +541,14 @@ function Match:_baseStats(tower, preview)
 		damageBonus = perm.damageBonus + (mods.damage or 0),
 		rangeBonus = perm.rangeBonus + (mods.range or 0),
 		attackSpeedBonus = perm.attackSpeedBonus + (mods.speed or 0),
-		armorPierceBonus = mods.pierce, bossDamageBonus = mods.bossDamage, splashBonus = mods.area,
-		airDamage = mods.airDamage, stealthDamage = mods.stealthDamage,
+		armorPierceBonus = (mods.pierce or 0) + (perm.armorPierceBonus or 0), bossDamageBonus = (mods.bossDamage or 0) + (perm.bossDamageBonus or 0),
+		splashBonus = (mods.area or 0) + (perm.splashBonus or 0),
+		airDamage = (mods.airDamage or 0) + (perm.airDamage or 0), stealthDamage = (mods.stealthDamage or 0) + (perm.stealthDamage or 0),
 	})
 	if hero.support then stats.range *= 1 + (mods.supportRange or 0) end
+	-- Field workshop (talent): upgrades cost less; Critical strike rides along.
+	stats.upgradeCost = math.floor(stats.upgradeCost * (1 - math.clamp(perm.upgradeDiscount or 0, 0, 0.5)))
+	stats.critChance = perm.critChance or 0
 	if preview then return stats end
 	tower.cache = { version = p.modsVersion, level = tower.level, branch = tower.branch, stats = stats }
 	return stats
@@ -632,6 +654,13 @@ function Match:_attack(tower, stats)
 		local endpoint=tower.position+(direction.Magnitude>0 and direction.Unit or Vector3.new(0,0,1))*stats.range
 		for i=2,#candidates do if segmentDistance(candidates[i].position,tower.position,endpoint)<=(stats.beamWidth or 3) then table.insert(hits,candidates[i]) end end
 	end
+	-- Critical strike (talent): the share of attacks that hit for double, spread
+	-- evenly (no dice to replay) and offset per tower so they never crit together.
+	local crit=false
+	if (stats.critChance or 0)>0 then
+		local beat=tower.attacks+(tower.critOffset or 0)
+		crit=math.floor(beat*stats.critChance)>math.floor((beat-1)*stats.critChance)
+	end
 	local boost=0
 	for _,ally in pairs(self.towers) do
 		if ally.id~=tower.id and (ally.stunnedUntil or 0)<=self.elapsed then
@@ -653,7 +682,8 @@ function Match:_attack(tower, stats)
 		if attack=="dot" or (stats.dotDuration or 0)>0 then
 			enemy.dot={untilTime=self.elapsed+(stats.dotDuration or 3),damage=stats.damage*0.2,tower=tower,stats=stats,nextTick=self.elapsed+1}
 		end
-		self:_damage(enemy,stats.damage*(1+boost),tower,stats)
+		self:_damage(enemy,stats.damage*(1+boost)*(crit and 2 or 1),tower,stats)
+		if crit then self.critBuffer[enemy.id]=true end
 		-- A punch with weight: the enemy is shoved back along the road, at most once
 		-- every 0.8 s so a fast puncher never pins it in place, and never a boss.
 		if (stats.knockback or 0)>0 and enemy.hp>0 and not enemy.def.boss and (enemy.knockUntil or 0)<=self.elapsed then
@@ -981,7 +1011,14 @@ function Match:_enemiesStep(dt)
 			enemy.progress+=speed*dt enemy.position=self:_pathPosition(enemy.routeIndex,enemy.progress) enemy.speedNow=speed
 			if enemy.progress>=self.routeCache[enemy.routeIndex].total then
 				self.enemies[enemy.id]=nil self.alive-=1
-				local damage=enemy.def.leak or 1 local absorbed=math.min(self.shield,damage)
+				local damage=enemy.def.leak or 1
+				if not enemy.def.boss then damage*=self.rules.LeakScale(self.wave) end
+				damage=math.max(0,math.floor(damage*(1-self.coreArmor)+0.5))
+				if not enemy.def.boss and damage>0 and self.waveShieldLeft>0 then
+					self.waveShieldLeft-=1 damage=0
+					self:_fx({kind="Pulse",position=self.corePosition,radius=9,color=Color3.fromRGB(76,221,174),duration=0.4})
+				end
+				local absorbed=math.min(self.shield,damage)
 				self.shield-=absorbed self.baseHP=math.max(0,self.baseHP-damage+absorbed)
 				if damage > absorbed then self.baseWasDamaged = true end
 				local taken=damage-absorbed
@@ -1025,7 +1062,7 @@ function Match:_checkpoint(p, suffix, completed)
 	end
 	local gold=p.waveGold p.waveGold=0
 	if gold<=0 and xp<=0 then return end
-	p.xpEarned+=xp*(p.profile.passes and p.profile.passes.training and 1.25 or 1)
+	p.xpEarned+=xp*xpScale(p,self.rules)
 	table.insert(self.rewardQueue,{player=p.player,id=self.runId..":"..suffix,
 		reward={gold=gold,xp=xp,mastery=mastery,waves=completed and 1 or 0,bosses=p.bossKills or 0,mapId=self.mapId,modeId=self.modeId}})
 end
@@ -1064,7 +1101,7 @@ function Match:_endWave()
 			if p.contributed and not p.disconnectedAt then
 				-- The Armored vault pays interest on the Gold kept through the wave.
 				local interest = self.rules.BaseInterest(p.base.stats, p.cash)
-				local income = math.floor(self.rules.WaveCash(self.wave)*(1+cardStat(p,"energyIncome")))+p.base.stats.income+interest
+				local income = math.floor(self.rules.WaveCash(self.wave)*(1+cardStat(p,"energyIncome")+self.rules.TalentEffect(p.profile,"waveIncome")))+p.base.stats.income+interest
 				p.cash += income
 				self:_fx({kind="WaveCash",amount=income,interest=interest>0 and interest or nil},p.player)
 				if self.modeId=="ranked" then
@@ -1117,7 +1154,7 @@ function Match:Finish(victory, ended)
 				if self.modeId=="tutorial" and not p.profile.tutorialComplete then p.goldEarned+=self.catalog.Chests.rare.cost
 				elseif self.modeId=="normal" and not ((p.profile.campaign[self.mapId] or {}).normal) then p.goldEarned+=500 end
 			end
-			p.xpEarned+=victory and 150*party*(p.profile.passes and p.profile.passes.training and 1.25 or 1) or 0
+			p.xpEarned+=victory and 150*party*xpScale(p,self.rules) or 0
 			p.results={victory=victory,ended=ended==true,waves=self.completedWaves,gold=math.floor(p.goldEarned),xp=math.floor(p.xpEarned),
 				mapId=self.mapId,modeId=self.modeId,difficultyId=self.difficultyId,mastery=p.masteryEarned,startLevel=p.startLevel,cards=table.clone(p.cards),party=self.partyBonus,featured=self.featuredBonus,event=self.eventBonus}
 			p.coins={}
@@ -1635,8 +1672,10 @@ function Match:Step(dt)
 		end
 		table.sort(order, function(a, b) return self.hitBuffer[a] > self.hitBuffer[b] end)
 		for index = 1, math.min(#order, 10) do hits[order[index]] = math.floor(self.hitBuffer[order[index]]) end
-		self.hitBuffer = {}
-		self:_fx({kind="EnemySync",enemies=enemies,hits=next(hits) and hits or nil})
+		local crits
+		for id in pairs(self.critBuffer) do if hits[id] then crits = crits or {}; crits[id] = true end end
+		self.hitBuffer, self.critBuffer = {}, {}
+		self:_fx({kind="EnemySync",enemies=enemies,hits=next(hits) and hits or nil,crits=crits})
 		local soldiers={}
 		for _,s in pairs(self.soldiers) do table.insert(soldiers,{id=s.id,position=s.position,hp=s.hp,maxHP=s.maxHP,baseId=s.baseId}) end
 		self:_fx({kind="SoldierSync",soldiers=soldiers})
@@ -1742,12 +1781,12 @@ function Match:Handle(player,action,payload)
 		local same=0
 		for _,t in pairs(self.towers) do if t.ownerId==player.UserId and t.heroId==id then same+=1 end end
 		if same>=self.rules.HeroLimit(id) then return refuse("unitLimit") end
-		local cost=math.floor(hero.cost*(1-math.clamp(cardStat(p,"discount"),0,0.5)))
+		local cost=self.rules.PlacementCost(hero,p.profile,{discount=cardStat(p,"discount")})
 		if p.cash<cost then return refuse("cash") end
 		local valid,reason=self:_validBuild(payload.position)
 		if not valid then return refuse(reason or "bounds") end
 		local towerId=self:_nextId("t") local pos=Vector3.new(payload.position.X,0,payload.position.Z)
-		local tower={id=towerId,heroId=id,ownerId=player.UserId,position=pos,level=1,branch=nil,priority="First",invested=cost,nextAttack=0,totalDamage=0,kills=0}
+		local tower={id=towerId,heroId=id,ownerId=player.UserId,position=pos,level=1,branch=nil,priority="First",invested=cost,nextAttack=0,totalDamage=0,kills=0,critOffset=(self.nextId*7)%11}
 		local owned=p.profile.heroes and p.profile.heroes[id]
 		tower.model=self.world:MakeTower(towerId,id,pos,player.UserId,{shiny=type(owned)=="table" and owned.shiny==true})
 		self.towers[towerId]=tower p.cash-=cost p.towerCount+=1
@@ -1861,7 +1900,7 @@ function Match:Snapshot(player)
 	for _,other in pairs(self.participants) do if not other.returned and other.endVote then endVotes+=1 end end
 	return {runId=self.runId,mapId=self.mapId,modeId=self.modeId,difficultyId=self.difficultyId,wave=self.wave,totalWaves=total,
 		base={id=p.base.id,level=p.base.level,stats=table.clone(p.base.stats),wall=math.floor(p.base.wall)},
-		completedWaves=self.completedWaves,baseHP=self.baseHP,maxBaseHP=self.maxBaseHP,shield=self.shield,cash=math.floor(p.cash),coinsWaiting=waiting,magnet=self:_magnet(p),blockers=self:_blockers(),towerLimit=self.rules.TowerLimit(self.size),
+		completedWaves=self.completedWaves,baseHP=self.baseHP,maxBaseHP=self.maxBaseHP,shield=self.shield,leakScale=self.rules.LeakScale(self.wave),waveShield=self.waveShieldLeft,cash=math.floor(p.cash),coinsWaiting=waiting,magnet=self:_magnet(p),blockers=self:_blockers(),towerLimit=self.rules.TowerLimit(self.size),
 		prepRemaining=math.max(0,math.ceil(self.prepRemaining)),enemies=self.alive,elapsed=self.elapsed,ability=ability,
 		cards=table.clone(p.cards),cardOffers=p.cardOffers,cardMode=self.cardMode,goldEarned=p.goldEarned,xpEarned=p.xpEarned,towers=towers,boss=boss,
 		partySize=self.size,skipVotes=votes,nextBoss=nextBoss,threats=self.phase=="Preparing" and self.nextThreats or nil,

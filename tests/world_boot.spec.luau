@@ -1649,6 +1649,24 @@ do
 	end
 end
 
+-- Every base is published as the model its card shows (owner, 17/10: the bases
+-- were too simple), the same art as in the match, bounded and passable.
+do
+	local storage = game:GetService("ReplicatedStorage"):FindFirstChild("DoomBasePortraits")
+	local largest, largestId = 0, ""
+	for _, id in ipairs(Catalog.BaseOrder) do
+		local template = storage and storage:FindFirstChild(id)
+		local count, passive = 0, true
+		for _, item in ipairs(template and template:GetDescendants() or {}) do
+			if item:IsA("BasePart") then count += 1; passive = passive and item.CanCollide == false end
+		end
+		check(template ~= nil and count >= 30 and passive, "the " .. id .. " base has a detailed, passable card model, got " .. count .. " parts")
+		if count > largest then largest, largestId = count, id end
+	end
+	check(largest <= 90, "a base card model stays under 90 parts, the largest is " .. largestId .. " with " .. largest)
+	print(string.format("  bases: largest card model %s with %d parts", largestId, largest))
+end
+
 for _,id in ipairs(Catalog.BaseOrder) do
 	for level=1,5 do
 		local position=world:UpdateBase(1,{id=id,level=level},v3(88,0,78))

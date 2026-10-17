@@ -1773,6 +1773,89 @@ do
 	check(none.lastStandHeal == 0, "no talent, no last stand")
 end
 
+-- The six-branch tree (owner, 17/10): every new talent works in the match.
+print("--- six-branch talents ---")
+do
+	-- Leaks grow with the waves: a zombie leaks 1 at wave 3, 2 at wave 6, 4 from wave 9.
+	for _, case in ipairs({ { 3, 1 }, { 6, 2 }, { 10, 4 }, { 20, 4 } }) do
+		local match = stage({ wave = case[1] })
+		local before = match.baseHP
+		spawn(match, "zombie", match.routeCache[1].total - 0.05, 1)
+		match:_enemiesStep(0.1)
+		check(before - match.baseHP == case[2], "a zombie leak at wave " .. case[1] .. " costs " .. case[2] .. ", got " .. (before - match.baseHP))
+	end
+	-- A boss keeps its own leak, whatever the wave.
+	local late = stage({ wave = 20 })
+	local hp = late.baseHP
+	spawn(late, "lizard", late.routeCache[1].total - 0.05, 1)
+	late:_enemiesStep(0.1)
+	check(hp - late.baseHP == Catalog.Enemies.lizard.leak, "a boss leaks as written, got " .. (hp - late.baseHP))
+	-- Core plating cuts a leak; the wave shield cancels the first leaks of a wave.
+	local plated = stage({ wave = 20, profile = { talents = { baseArmor = 5 } } })
+	check(math.abs(plated.coreArmor - 0.2) < 1e-9, "five points of plating cut 20%")
+	local platedHP = plated.baseHP
+	spawn(plated, "zombie", plated.routeCache[1].total - 0.05, 1)
+	plated:_enemiesStep(0.1)
+	check(platedHP - plated.baseHP == 3, "plating turns a 4 leak into 3, got " .. (platedHP - plated.baseHP))
+	local shielded = stage({ wave = 20, profile = { talents = { waveShield = 2 } } })
+	shielded:_beginWave()
+	check(shielded.waveShieldLeft == 2, "the wave shield is charged at the start of a wave")
+	local shieldHP = shielded.baseHP
+	for _ = 1, 3 do spawn(shielded, "zombie", shielded.routeCache[1].total - 0.05, 1) end
+	shielded:_enemiesStep(0.1)
+	check(shieldHP - shielded.baseHP == Rules.LeakScale(shielded.wave) and shielded.waveShieldLeft == 0, "two points cancel two of three leaks, lost " .. (shieldHP - shielded.baseHP))
+	-- Critical strike: a share of the attacks hits for double, on a steady beat.
+	local critMatch, critPlayer = stage({ profile = { talents = { critical = 5 } } })
+	local tower = place(critMatch, critPlayer, "ironman")
+	local stats = critMatch:_baseStats(tower)
+	check(math.abs(stats.critChance - 0.15) < 1e-9, "five points of critical give a 15% chance")
+	local doubled = 0
+	for _ = 1, 40 do
+		local target = spawn(critMatch, "brute", 0, 1000)
+		target.position = tower.position + v3(0, 0, -4)
+		local before = target.hp
+		critMatch:_attack(tower, stats)
+		local dealt = before - target.hp
+		if dealt > stats.damage * 1.5 then doubled += 1 end
+		critMatch.enemies[target.id] = nil critMatch.alive -= 1
+	end
+	check(doubled == 6, "15% of 40 attacks are critical, got " .. doubled)
+	-- Recruiting contracts and the field workshop make heroes cheaper.
+	local thrifty, thriftyPlayer = stage({ profile = { talents = { towerDiscount = 5, upgradeDiscount = 5 } } })
+	local cashBefore = thrifty.participants[thriftyPlayer.UserId].cash
+	local placed = place(thrifty, thriftyPlayer, "ironman")
+	check(cashBefore - thrifty.participants[thriftyPlayer.UserId].cash == math.floor(Catalog.Heroes.ironman.cost * 0.9), "recruiting contracts take 10% off the price")
+	check(thrifty:_baseStats(placed).upgradeCost == math.floor(Rules.TowerStats("ironman", 1).upgradeCost * 0.9), "the field workshop takes 10% off upgrades")
+	-- Supply line: the wave's match Gold grows by 5% a point.
+	local supplied, suppliedPlayer = stage({ wave = 4, profile = { talents = { waveIncome = 5 } } })
+	local plain, plainPlayer = stage({ wave = 4 })
+	for _, run in ipairs({ { supplied, suppliedPlayer }, { plain, plainPlayer } }) do
+		local p = run[1].participants[run[2].UserId]
+		p.contributed = true
+		run[1].enemies, run[1].alive, run[1].pendingSpawns, run[1].spawnIndex = {}, 0, {}, 1
+	end
+	local suppliedBefore, plainBefore = supplied.participants[suppliedPlayer.UserId].cash, plain.participants[plainPlayer.UserId].cash
+	supplied:_endWave() plain:_endWave()
+	local suppliedGain = supplied.participants[suppliedPlayer.UserId].cash - suppliedBefore
+	local plainGain = plain.participants[plainPlayer.UserId].cash - plainBefore
+	check(suppliedGain > plainGain, "the supply line pays more each wave, " .. suppliedGain .. " vs " .. plainGain)
+	-- A bounty base: every enemy its commander helps defeat drops more Gold.
+	local function killGold(profileOverrides)
+		local match, player = stage({ profile = profileOverrides })
+		local p = match.participants[player.UserId]
+		p.contributed = true
+		local enemy = { id = "bounty-test", hp = 1, maxHP = 1, def = {}, armorUntil = 0, markUntil = 0, shield = 0, cash = 100, position = v3(0, 0, 0) }
+		match.enemies[enemy.id], match.alive = enemy, 1
+		match:_damage(enemy, 10, nil, nil)
+		local dropped = 0
+		for _, coin in pairs(p.coins) do dropped += coin.value end
+		return dropped, p.base.id
+	end
+	local plainDrop = killGold({})
+	local lodgeDrop, lodgeId = killGold({ bases = { outpost = true, lodge = true }, equippedBase = "lodge" })
+	check(lodgeId == "lodge" and lodgeDrop == math.floor(plainDrop * (1 + Rules.BaseStats("lodge", 1).bounty) + 0.5), "the Hunters' lodge adds its bounty to every kill, " .. lodgeDrop .. " vs " .. plainDrop)
+end
+
 print("--- cooperative full matches ---")
 for size=2,4 do
 	local run=simulate({mapId="manhattan",modeId="normal",size=size})

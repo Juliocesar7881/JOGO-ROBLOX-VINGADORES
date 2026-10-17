@@ -405,7 +405,8 @@ local function session(screen)
 		end
 		if action == "Leaderboard" then
 			if leaderboardDown then return { ok = false, message = { pt = "Placar indisponível", en = "Leaderboard unavailable" } } end
-			return { ok = true, data = { rows = { { rank = 1, userId = 5, name = "Ana", waves = 42 }, { rank = 2, userId = LOCAL_ID, name = "Tester", waves = 12 } }, season = 1, personal = 12 } }
+			return { ok = true, data = { rows = { { rank = 1, userId = 5, name = "Ana", waves = 42 }, { rank = 2, userId = LOCAL_ID, name = "Tester", waves = 12 } }, season = 1, personal = 12,
+				mapId = payload.mapId, size = payload.size, period = payload.period or "s1" } }
 		end
 		if action == "OpenChest" and chestResult then return { ok = true, data = { result = chestResult } } end
 		if rewardResult and (action:sub(1,5) == "Claim" or action == "RedeemCode") then return { ok = true, data = { result = rewardResult } } end
@@ -706,7 +707,8 @@ local function session(screen)
 				for _,item in ipairs(miniature:GetDescendants()) do
 					if item:IsA("BasePart") then count+=1;passive=passive and item.Anchored and item.CanCollide==false and item.CanQuery==false end
 				end
-				check(miniature:IsA("ViewportFrame") and miniature.CurrentCamera~=nil and count>0 and count<=36 and passive,tag..": base miniature is a bounded cosmetic model with no gameplay collision")
+				-- The card shows the match's own model (owner, 17/10: richer bases), still bounded.
+				check(miniature:IsA("ViewportFrame") and miniature.CurrentCamera~=nil and count>0 and count<=90 and passive,tag..": base miniature is a bounded cosmetic model with no gameplay collision, got "..count.." parts")
 				miniature:Destroy()
 			end
 		end
@@ -1134,7 +1136,23 @@ local function session(screen)
 		check(countNamed(gui, "TalentHex_roundGold") == 1 and countNamed(gui, "TalentHex_abilityPower") == 1 and countNamed(gui, "TalentHex_globalMagnet") == 1, tag .. ": every talent is a hexagon on the map")
 		check(countNamed(gui, "TalentIcon_roundGold") == 1 and countNamed(gui, "TalentIcon_abilityPower") == 1, tag .. ": each hexagon carries a drawn icon")
 		check(countNamed(gui, "TalentLink") == 0 and countNamed(gui, "TalentZoomIn") == 0, tag .. ": no connecting lines and no zoom controls clutter the tree")
-		check(named(gui, "TalentLegend") ~= nil, tag .. ": the three branches are named once, above the tree")
+		check(named(gui, "TalentLegend") ~= nil, tag .. ": the branches are named once on the tree")
+		-- Every branch name sits inside the board's box (owner, 17/10: FORTUNE and
+		-- COMMAND were cut at the bottom), and every new talent is a hexagon.
+		do
+			local map = named(gui, "TalentMap")
+			for _, branch in ipairs(Catalog.TalentBranches) do
+				local pill = named(gui, "TalentBranch_" .. branch.id)
+				check(pill ~= nil, tag .. ": the " .. branch.id .. " branch is named")
+				if pill and map then
+					local left = pill.Position.X.Offset - pill.AnchorPoint.X * pill.Size.X.Offset
+					local top = pill.Position.Y.Offset - pill.AnchorPoint.Y * pill.Size.Y.Offset
+					check(left >= 0 and top >= 0 and left + pill.Size.X.Offset <= map.Size.X.Offset and top + pill.Size.Y.Offset <= map.Size.Y.Offset,
+						tag .. ": the " .. branch.id .. " name lies inside the board, at " .. left .. "," .. top .. " in " .. map.Size.X.Offset .. "x" .. map.Size.Y.Offset)
+				end
+				for _, id in ipairs(branch.nodes) do check(countNamed(gui, "TalentHex_" .. id) == 1, tag .. ": " .. id .. " is a hexagon on the board") end
+			end
+		end
 		check(named(gui, "TalentLock_killGold") ~= nil and named(gui, "TalentLock_roundGold") == nil, tag .. ": a talent whose parent is too low shows a lock, an open one does not")
 		check(named(named(gui, "TalentRank_roundGold"), "Text") == nil and named(gui, "TalentRank_roundGold").Text == "0/5", tag .. ": the level badge reads 0/5")
 		-- Large research nodes live on an explorable board instead of shrinking.
@@ -1148,7 +1166,27 @@ local function session(screen)
 		check(named(gui, "TalentExit") ~= nil and named(gui, "TalentRoot") ~= nil, tag .. ": the full-screen tree has its Exit button and the commander's hexagon")
 		local function spent() local n = 0; for _, name in ipairs(actions) do if name == "UpgradeTalent" then n += 1 end end; return n end
 		local spentBefore = spent()
-		clickNamed("TalentNode_killGold")
+		-- The stand-ins run timers on flush: look at the message before its
+		-- timed removal runs.
+		local lockedNode = named(gui, "TalentNode_killGold")
+		check(lockedNode ~= nil, tag .. ": the locked hexagon is on the board")
+		if lockedNode then lockedNode.Activated:Fire() end
+		-- The message it raises never sits on a control (owner, 17/10: toasts
+		-- at the bottom covered Exit, Reset and the close buttons).
+		do
+			local toast = named(gui, "Toast")
+			check(toast ~= nil, tag .. ": a locked hexagon explains itself in a message")
+			local box = toast and screenRect(toast, gui, SCREEN)
+			for _, control in ipairs({ "TalentExit", "ResetTalents", "TalentCenter", "CloseContext" }) do
+				local item = named(gui, control)
+				local other = item and screenRect(item, gui, SCREEN)
+				if box and other then
+					local overlap = box.x < other.x + other.w and other.x < box.x + box.w and box.y < other.y + other.h and other.y < box.y + box.h
+					check(not overlap, tag .. ": the message stays clear of " .. control)
+				end
+			end
+		end
+		flush()
 		check(named(gui, "Talent_killGold") == nil, tag .. ": tapping a hexagon opens no card below")
 		local info = named(gui, "TalentInfo")
 		check(info and string.find(info.Text, "Próximo", 1, true) ~= nil and string.find(info.Text, "Requer", 1, true) ~= nil, tag .. ": the line above says now, next and what it requires, got " .. tostring(info and info.Text))
@@ -1183,8 +1221,9 @@ local function session(screen)
 		local rect = screenRect(board, gui, SCREEN)
 		board.AbsolutePosition = Vector2.new(rect.x, rect.y)
 		input.mouseLocation = board.AbsolutePosition + Vector2.new(100 * scale, 100 * scale) + Vector2.new(0, 58)
+		local zoomBefore = board:GetAttribute("Zoom")
 		input.InputChanged:Fire({UserInputType = Enum.UserInputType.MouseWheel, Position = v3(0, 0, 1)})
-		check(math.abs(board:GetAttribute("Zoom") - 1.1) < 0.001, tag .. ": mouse wheel zooms the board")
+		check(math.abs(board:GetAttribute("Zoom") - math.min(1.35, zoomBefore + 0.1)) < 0.001, tag .. ": mouse wheel zooms the board")
 		for _ = 1, 30 do input.InputChanged:Fire({UserInputType = Enum.UserInputType.MouseWheel, Position = v3(0, 0, 1)}) end
 		check(board:GetAttribute("Zoom") == 1.35, tag .. ": zoom has an upper bound")
 		for _ = 1, 30 do input.InputChanged:Fire({UserInputType = Enum.UserInputType.MouseWheel, Position = v3(0, 0, -1)}) end
@@ -1314,6 +1353,16 @@ local function session(screen)
 		local again=named(gui,"BoardRetry")
 		if again then again.Activated:Fire(); flush() end
 		check(named(gui,"BoardRetry")==nil and named(gui,"BoardFailed")==nil,tag..": retrying clears the failure")
+		-- The hall of fame (owner, 17/10): a podium with the leaders' faces, your
+		-- own standing, and every board one tap away.
+		check(named(gui,"Podium_1")~=nil and named(named(gui,"Podium_1"),"PodiumFace")~=nil and string.find(textOf(named(gui,"Podium_1")),"Ana",1,true)~=nil,tag..": the leader stands on the podium with a face")
+		check(named(gui,"BoardStanding")~=nil and string.find(named(gui,"BoardStanding").Text,"#2",1,true)~=nil,tag..": your position on the board is shown, got "..tostring(named(gui,"BoardStanding") and named(gui,"BoardStanding").Text))
+		local boardsAsked=requestCount("Leaderboard")
+		clickNamed("BoardSize_2")
+		check(requestCount("Leaderboard")==boardsAsked+1 and named(gui,"Podium_1")~=nil,tag..": choosing a party size loads that board")
+		clickNamed("BoardPeriod_all")
+		check(requestCount("Leaderboard")==boardsAsked+2,tag..": the all-time record is one tap away")
+		for _,mapId in ipairs(Rules.MapsForMode("ranked")) do check(named(gui,"BoardMap_"..mapId)~=nil,tag..": the "..mapId.." board has its tab") end
 		fx({kind="OpenPanel",panel="premium"})
 		check(#offscreen(main,view())==0,tag..": category navigation stays on screen")
 		-- Everything on sale can be inspected before it is paid for.
@@ -1355,6 +1404,14 @@ local function session(screen)
 		-- Upgrading does not close the window: it redraws at the new level.
 		push(matchSnapshot(p,"Preparing",{base={id="workshop",level=2,stats=Rules.BaseStats("workshop",2),wall=0},cash=1000}))
 		check(countNamed(gui,"ConfirmBaseUpgrade")==1 and string.find(textOf(named(gui,"BaseUpgrade")), "2 / 5", 1, true)~=nil,tag..": the base window stays open and shows the new level")
+		-- Short of Gold the button still reads (owner, 17/10): the price and what
+		-- is missing, in its words; it simply does not upgrade.
+		push(matchSnapshot(p,"Preparing",{base={id="workshop",level=2,stats=Rules.BaseStats("workshop",2),wall=0},cash=100}))
+		local poor=named(gui,"ConfirmBaseUpgrade")
+		local cost=tostring(Rules.BaseStats("workshop",2).upgradeCost)
+		check(poor~=nil and string.find(poor.Text,cost,1,true)~=nil and string.find(poor.Text,"faltam",1,true)~=nil and poor.Active==false,
+			tag..": a base upgrade you cannot afford names its price and what is missing, got "..tostring(poor and poor.Text))
+		check(named(gui,"BaseUpgradeFooter")~=nil and named(named(gui,"BaseUpgradeFooter"),"ConfirmBaseUpgrade")~=nil,tag..": the upgrade button lives in a footer that never scrolls away")
 		named(gui,"BaseUpgrade"):Destroy()
 		push(lobbySnapshot(veteranProfile())); fx({kind="OpenPanel",panel="chests",chestId="rare"})
 	end)
@@ -2029,6 +2086,18 @@ local function session(screen)
 		push(matchSnapshot(profile, "Preparing"))
 		check(frameAt(main, layout.top) ~= nil, tag .. ": the match top bar sits where matchLayout puts it")
 		check(frameAt(main, layout.heroCards) ~= nil, tag .. ": the hero card band sits where matchLayout puts it")
+		-- The hero bar (owner, 17/10): each card prices its hero as the server
+		-- will, and a hero the match Gold cannot pay for dims under a veil.
+		local firstId = profile.loadout[1]
+		local card = named(gui, "HeroCard_" .. firstId)
+		check(card ~= nil and named(card, "PricePill") ~= nil and named(card, "CostVeil") ~= nil, tag .. ": a hero card carries its price pill and its veil")
+		push(matchSnapshot(profile, "Preparing", {cash = 0}))
+		card = named(gui, "HeroCard_" .. firstId)
+		check(card ~= nil and named(card, "CostVeil").BackgroundTransparency < 1, tag .. ": a hero you cannot pay for dims")
+		push(matchSnapshot(profile, "Preparing", {cash = 100000}))
+		card = named(gui, "HeroCard_" .. firstId)
+		check(card ~= nil and named(card, "CostVeil").BackgroundTransparency == 1 and named(card, "EnergyCost").Text == tostring(Rules.PlacementCost(firstId, profile, nil)), tag .. ": a hero you can pay for is bright and priced as the server charges")
+		push(matchSnapshot(profile, "Preparing"))
 		local bad = offscreen(main, view())
 		check(#bad == 0, tag .. ": every match element is on screen: " .. table.concat(bad, ", "))
 		click("Pronto")
@@ -3653,6 +3722,10 @@ local function session(screen)
 		check(asked("PlayAgain"), tag .. ": the results screen offers to play the same map again")
 		click("Lobby")
 		check(asked("ReturnLobby"), tag .. ": the results screen returns to base")
+		-- The trip back hides behind the loading cover (owner, 17/10).
+		local cover = playerGui:FindFirstChild("DoomReturnCover")
+		check(cover ~= nil and cover:FindFirstChild("LoadingSplash", true) ~= nil, tag .. ": the way back to the lobby is covered by the loading screen")
+		if cover then cover:Destroy() end
 		push(lobbySnapshot(profile))
 	end)
 

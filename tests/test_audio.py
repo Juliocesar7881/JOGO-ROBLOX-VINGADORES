@@ -98,7 +98,7 @@ clock+=5
 assert(not audio:Shot('shotTech',200),'A shot beyond earshot is silent')
 local heard=0
 for index=1,10 do clock+=0.01; if audio:Shot(index%2==0 and 'shotTech' or 'shotBlast',10) then heard+=1 end end
-assert(heard==2,'Repeated families are spaced by 120 ms, got '..heard)
+assert(heard==2,'A repeated weapon is spaced by 120 ms, got '..heard)
 clock+=1;heard=0
 for index=1,6 do clock+=0.055; if audio:Shot(index%2==0 and 'shotTech' or 'shotBlast',10) then heard+=1 end end
 assert(heard==4,'No more than four shots play in a 300 ms window (every blow heard, 16/10), got '..heard)
@@ -123,6 +123,13 @@ assert(audio.voices.shotMelee[audio.voiceIndex.shotMelee].PlaybackSpeed>heavyPit
 for i=1,5 do clock+=1;assert(audio:Shot('shotMelee',5)) end
 local neutral=audio.voices.shotMelee[audio.voiceIndex.shotMelee]
 assert(neutral:FindFirstChild('WeaponTone').HighGain==0 and neutral:FindFirstChild('WeaponTone').LowGain==0,'Pooled equalization resets for an ordinary fighter')
+-- Fair turns (owner, 17/10): heroes of one family are each heard, and a hero
+-- not heard for a while gets through a full window.
+clock+=1;local turns=0
+for _,id in ipairs({'hulk','beast','captain','panther'}) do clock+=.02;if audio:Shot('shotMelee',5,id) then turns+=1 end end
+assert(turns==4,'Four heroes sharing a weapon family are all heard, got '..turns)
+clock+=.02;assert(audio:Shot('shotMelee',5,'groot'),'A hero never heard yet gets through a full window')
+clock+=.02;assert(not audio:Shot('shotMelee',5,'hulk'),'A hero just heard waits its turn when the window is full')
 assert(#audio.voices.shotMelee==3,'Hero timbres do not grow the voice pool')
 -- A built-in jingle: the first note now, the rest on their beat, once per cue.
 Config.BuiltinCues={levelUp={path='rbxasset://sounds/volume_slider.ogg',speed=1.5,notes={{at=0,speed=1.5},{at=0.1,speed=1.89},{at=0.2,speed=2.25}}}}
@@ -158,9 +165,18 @@ Config.Audio.shotMelee=81;Config.Audio.shotArrow=82
 clock+=1;count=effectsPlayed;delayed={}
 audio:Cue('collect',.01)
 for i=1,12 do clock+=.01;audio:Cue('collect',.01) end
-assert(effectsPlayed==count+1,'A burst of pickups produces one quiet tick')
-local pickup=audio.voices.click[audio.voiceIndex.click]
-assert(pickup.SoundId=='rbxassetid://78' and pickup.Volume<=.08,'Pickup uses a short owned click, not the old arpeggio')
+assert(effectsPlayed==count+1,'A burst of pickups produces one quiet chime')
+local pickup=audio.voices.collect[audio.voiceIndex.collect]
+assert(pickup.SoundId=='rbxassetid://12' and pickup.Volume<=.08,'Pickup uses the quiet coin chime of the game (owner, 17/10), not a click')
+-- A quick run of coins climbs a semitone a coin, never past six.
+local first=pickup.PlaybackSpeed
+clock+=.3;audio:Cue('collect',.01)
+local second=audio.voices.collect[audio.voiceIndex.collect].PlaybackSpeed
+assert(second>first,'The next coin of a run rings higher')
+for i=1,10 do clock+=.3;audio:Cue('collect',.01) end
+assert(math.abs(audio.voices.collect[audio.voiceIndex.collect].PlaybackSpeed-2^(6/12))<1e-6,'The run stops climbing after six coins')
+clock+=2;audio:Cue('collect',.01)
+assert(audio.voices.collect[audio.voiceIndex.collect].PlaybackSpeed==1,'A new run starts at the bottom again')
 clock+=1;count=effectsPlayed;delayed={}
 audio:Cue('place',.01);audio:Cue('place',.01)
 assert(effectsPlayed==count+1 and #delayed==1,'Reply and FX cannot double a placement sound')
@@ -335,7 +351,7 @@ assert(summonPlays==before,'A pending rarity texture cannot survive cancellation
 clock+=1;bank:Talent('hover');bank:Summon('start');bank:Cue('collect')
 settings.interface=false;bank:Step()
 for _,channel in ipairs({'ui','summon'}) do for _,sound in ipairs(bank.bankPools[channel]) do assert(not sound.IsPlaying,'Interface mute stops active regions') end end
-assert(not bank.bankPools.events[bank.bankIndex.events].IsPlaying,'Interface mute stops an active pickup too')
+assert(not bank.bankPools.events or not bank.bankPools.events[bank.bankIndex.events] or not bank.bankPools.events[bank.bankIndex.events].IsPlaying,'Interface mute stops an active event sound too')
 settings.interface=true;bank:Ambience('ambGamma');settings.effects=false;bank:Step()
 assert(not bank.bankAmbientVoice.IsPlaying,'Effects mute immediately stops looping bank ambience')
 settings.effects=true;bank:Music('lobby');clock+=2;bank:Cue('boss');bank:Step()

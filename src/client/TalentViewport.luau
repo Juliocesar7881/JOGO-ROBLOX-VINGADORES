@@ -9,7 +9,9 @@ local Viewport = {}
 function Viewport.new(ctx)
 	local UI, holder, map = ctx.UI, ctx.holder, ctx.map
 	local saved = ctx.saved
-	local zoom = math.clamp(saved.zoom or 1, 0.65, 1.35)
+	-- The desktop's first look shows the whole board (ctx.fit: the zoom at
+	-- which it fits, never below the lower bound); later looks keep the zoom.
+	local zoom = math.clamp(saved.zoom or (ctx.overview and ctx.fit) or 1, 0.65, 1.35)
 	local pan = Vector2.new(saved.x or 0, saved.y or 0)
 	if saved.width and saved.height then
 		-- Keep the explored region centered when rotating a phone or resizing

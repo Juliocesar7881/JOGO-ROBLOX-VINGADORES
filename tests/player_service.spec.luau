@@ -513,7 +513,7 @@ check(service:Get(p1).xp == beforeXP + 125 and service:Get(p1).heroes.ironman.xp
 
 check(service:Award(p1, "max-level", { xp = 1000000, gold = 100000, mastery = { ironman = 100000 } }), "Large legitimate progression award")
 local leveled = service:Get(p1)
-check(leveled.level == 50 and leveled.heroes.ironman.level == 20 and leveled.heroes.ironman.awakened, "Account and mastery level caps")
+check(leveled.level == Rules.MaxLevel and leveled.heroes.ironman.level == 20 and leveled.heroes.ironman.awakened, "Account and mastery level caps")
 check(leveled.skills == nil and leveled.skillSlots == nil and leveled.skillOffers == nil, "The old skill slots and offers are gone")
 local _, oldSkill = service:Handle(p1, "BuySkill", { skillId = "scan" }, true)
 check(not oldSkill, "Buying skills is no longer possible")
@@ -697,24 +697,25 @@ check(localOnly:Snapshot(p4).talentPoints == 0, "Level one starts with zero tale
 local _, noPoint = localOnly:Handle(p4, "UpgradeTalent", {talentId="roundGold",expectedRank=0}, true)
 check(not noPoint, "Cannot spend an unearned point")
 check(localOnly:Award(p4, "talent-xp", {xp=1000000}), "Earn talent points through server awards")
-check(localOnly:Snapshot(p4).talentPoints == 49, "Level fifty supplies exactly forty-nine points")
+
+check(localOnly:Snapshot(p4).talentPoints == Rules.MaxLevel - 1, "The top level supplies one point per level after the first, got " .. localOnly:Snapshot(p4).talentPoints)
 local _, locked = localOnly:Handle(p4, "UpgradeTalent", {talentId="killGold",expectedRank=0}, true)
 check(not locked, "Branch prerequisite enforced")
 local _, invested = localOnly:Handle(p4, "UpgradeTalent", {talentId="roundGold",expectedRank=0}, true)
 local _, duplicate = localOnly:Handle(p4, "UpgradeTalent", {talentId="roundGold",expectedRank=0}, true)
-check(invested and not duplicate and localOnly:Snapshot(p4).talentPoints == 48, "Retry cannot spend a second point")
+check(invested and not duplicate and localOnly:Snapshot(p4).talentPoints == Rules.MaxLevel - 2, "Retry cannot spend a second point")
 local _, battleEdit = localOnly:Handle(p4, "UpgradeTalent", {talentId="roundGold",expectedRank=1}, false)
 check(not battleEdit, "Talent changes rejected during matches")
 for rank=1,4 do local _, ok = localOnly:Handle(p4,"UpgradeTalent",{talentId="roundGold",expectedRank=rank},true); check(ok,"Valid root investment") end
 local _, capped = localOnly:Handle(p4,"UpgradeTalent",{talentId="roundGold",expectedRank=5},true)
 check(not capped, "Node rank cap enforced")
 local _, child = localOnly:Handle(p4,"UpgradeTalent",{talentId="killGold",expectedRank=0},true)
-check(child and localOnly:Snapshot(p4).talentPoints == 43,"Unlocked branch spends one point")
+check(child and localOnly:Snapshot(p4).talentPoints == Rules.MaxLevel - 7,"Unlocked branch spends one point")
 local _, resetBattle = localOnly:Handle(p4,"ResetTalents",{},false)
 check(not resetBattle,"Reset rejected during matches")
 local goldBeforeReset = localOnly:Get(p4).gold
 local _, reset = localOnly:Handle(p4,"ResetTalents",{},true)
-check(reset and localOnly:Snapshot(p4).talentPoints == 49 and next(localOnly:Get(p4).talents)==nil and localOnly:Get(p4).gold==goldBeforeReset,"Free reset restores all points")
+check(reset and localOnly:Snapshot(p4).talentPoints == Rules.MaxLevel - 1 and next(localOnly:Get(p4).talents)==nil and localOnly:Get(p4).gold==goldBeforeReset,"Free reset restores all points")
 local _, persistTalent = service:Handle(p1,"UpgradeTalent",{talentId="baseVitality",expectedRank=0},true)
 check(persistTalent and stores.Tests.values.p_1.talents.baseVitality == 1,"Talent is durable before acknowledgement")
 local budgetBefore = service:Snapshot(p1).talentPoints

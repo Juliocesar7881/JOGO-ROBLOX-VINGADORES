@@ -29,7 +29,10 @@ for _, name in pairs(AMBIENCE) do VOLUME[name] = 0.1 end
 for name in pairs(BATTLE_TRACKS) do VOLUME[name] = 0.2 end
 -- Combat is dense: only a few weapon sounds per quarter second reach the
 -- speakers, quieter with distance, and none from beyond earshot.
-local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.3, 4, 90, 3
+-- (Earshot 150 since 17/10: from the battle camera at 90 the far side of the
+-- field was silent; SHOT_VOICES_MAX is the room a long-unheard hero may take.)
+local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.3, 4, 150, 3
+local SHOT_VOICES_MAX, SHOT_STARVED = 6, 1.2
 Audio.Ambiences = AMBIENCE
 local BANK_LIMITS = {ui=3,events=4,summon=2,rewardAccent=2,combat=6,powers=3,boss=2,world=2,score=8}
 local WEAPON_BANK = {
@@ -458,6 +461,20 @@ function Audio:Cue(name, minimumGap)
 	local now = os.clock()
 	if now - (self.lastCue[name] or -1) < math.max(minimumGap or 0.12, CUE_GAPS[name] or 0) then return end
 	self.lastCue[name] = now
+	-- Coins (owner, 17/10: "o som ao pegar moeda não está legal"): the game's
+	-- own two-note coin chime (assets/audio/collect.wav), quiet and still rate
+	-- limited, one semitone higher for each coin of a quick run (up to six), so
+	-- a magnet sweep climbs like a reward instead of repeating a click.
+	if name == "collect" and math.floor(tonumber((Config.Audio or {}).collect) or 0) > 0 then
+		local voice = self:_voice("collect")
+		if voice then
+			self.coinRun = (now - (self.coinAt or -10) < 0.9) and math.min(6, (self.coinRun or 0) + 1) or 0
+			self.coinAt = now
+			voice.Volume, voice.PlaybackSpeed = VOLUME.collect, 2 ^ (self.coinRun / 12)
+			pcall(function() SoundService:PlayLocalSound(voice) end)
+			return
+		end
+	end
 	if self:_bankPlay(name=="boss" and (self.bossCue or "boss") or name, {interface=INTERFACE[name],volume=VOLUME[name] or .12,
 		duck=(name=="boss" or name=="victory" or name=="defeat") and .8 or nil}) then return end
 	if name == "card" then name = "upgrade" end
@@ -657,21 +674,28 @@ function Audio:Shot(name, distance, heroId)
 	if distance > EARSHOT then return false end
 	local now = os.clock()
 	if now - (self.shotWindowAt or -math.huge) >= SHOT_WINDOW then self.shotWindowAt, self.shotVoices = now, 0 end
-	if self.shotVoices >= SHOT_VOICES then return false end
-	if now - (self.lastCue[name] or -math.huge) < 0.12 then return false end
+	-- Every hero takes its turn (owner, 17/10: "não estou escutando todos os
+	-- heróis"): the spacing is per hero, not per weapon family, so heroes that
+	-- share a family are all heard; and a hero not heard for SHOT_STARVED
+	-- seconds gets through even when the window is full, so the fastest guns
+	-- can never take every voice.
+	local key = "shot:" .. tostring(heroId or name)
+	local heardAt = self.lastCue[key] or -math.huge
+	if now - heardAt < 0.12 then return false end
+	if self.shotVoices >= ((now - heardAt >= SHOT_STARVED) and SHOT_VOICES_MAX or SHOT_VOICES) then return false end
 	local tone = WEAPON_TONE[heroId]
-	local volume = (VOLUME[name] or .085) * math.clamp((1-distance/EARSHOT)^1.5,.06,1) * (tone and tone[2] or 1)
+	local volume = (VOLUME[name] or .085) * math.clamp((1-distance/EARSHOT)^1.2,.12,1) * (tone and tone[2] or 1)
 	local sequence = (self.shotSequence or 0) + 1
 	local bank = Audio.WeaponProfile(heroId,name)
 	local pitch = PITCHES[(sequence-1)%#PITCHES+1] * (tone and tone[1] or 1)
 	if self:_bankPlay(bank, {volume=math.min(volume * (BANK_GAIN[bank] or 1), 0.22),pitch=pitch}) then
-		self.shotVoices += 1; self.lastCue[name] = now; self.shotSequence = sequence
+		self.shotVoices += 1; self.lastCue[key] = now; self.shotSequence = sequence
 		return true
 	end
 	local voice = self:_voice(name)
 	if not voice then return false end
 	self.shotVoices += 1
-	self.lastCue[name] = now
+	self.lastCue[key] = now
 	self.shotSequence = (self.shotSequence or 0) + 1
 	voice.PlaybackSpeed = self:_sound(name).PlaybackSpeed * PITCHES[(self.shotSequence-1)%#PITCHES+1] * (tone and tone[1] or 1)
 	voice.Volume = volume

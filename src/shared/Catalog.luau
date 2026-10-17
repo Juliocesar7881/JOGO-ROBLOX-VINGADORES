@@ -745,11 +745,17 @@ Catalog.Rewards = {
 -- Commander talents (the level tree)
 --==============================================================================
 -- One talent point per account level after the first. The tree lives on the
--- screen, not in the world. Every branch stays fully earnable over time.
+-- screen, not in the world. Every branch stays fully earnable over time; the
+-- whole tree never is (the choice is the point). Six branches since 17/10
+-- (owner: "quase dobre o número de coisas pra evoluir... até % de dano a mais
+-- nos heróis"): economy and defence on the left, combat on the right.
 Catalog.TalentBranches = {
-	{ id = "fortune", name = text("FORTUNA", "FORTUNE"), color = { 255, 200, 70 }, nodes = { "roundGold", "killGold", "magnet", "victoryGold", "globalMagnet" } },
-	{ id = "guardian", name = text("GUARDIÃO", "GUARDIAN"), color = { 76, 221, 174 }, nodes = { "baseVitality", "baseRecovery", "lastStand" } },
-	{ id = "command", name = text("COMANDO", "COMMAND"), color = { 149, 132, 255 }, nodes = { "startingEnergy", "towerPower", "reach", "skillTempo", "abilityPower" } },
+	{ id = "fortune", name = text("FORTUNA", "FORTUNE"), color = { 255, 200, 70 }, side = -1, row = 0, nodes = { "roundGold", "killGold", "magnet", "victoryGold", "globalMagnet" } },
+	{ id = "guardian", name = text("GUARDIÃO", "GUARDIAN"), color = { 76, 221, 174 }, side = -1, row = -2, nodes = { "baseVitality", "baseRecovery", "lastStand", "baseArmor", "waveShield" } },
+	{ id = "logistics", name = text("LOGÍSTICA", "LOGISTICS"), color = { 255, 146, 84 }, side = -1, row = 2, nodes = { "towerDiscount", "upgradeDiscount", "waveIncome", "xpBoost" } },
+	{ id = "command", name = text("COMANDO", "COMMAND"), color = { 149, 132, 255 }, side = 1, row = 0, nodes = { "startingEnergy", "towerPower", "reach", "skillTempo", "abilityPower" } },
+	{ id = "arsenal", name = text("ARSENAL", "ARSENAL"), color = { 255, 92, 104 }, side = 1, row = -2, nodes = { "heroFury", "drillSpeed", "critical", "bossHunter" } },
+	{ id = "tactics", name = text("TÁTICA", "TACTICS"), color = { 84, 196, 255 }, side = 1, row = 2, nodes = { "skyGuard", "nightSight", "piercing", "shockwave" } },
 }
 Catalog.Talents = {
 	roundGold = { short = text("RENDA", "INCOME"), name = text("Renda de defesa", "Defense income"), description = text("+2 Ouro do lobby por onda concluída por ponto.", "+2 lobby Gold per completed wave per point."), maxRank = 5, effect = 2, unit = "gold", icon = "+G" },
@@ -767,6 +773,24 @@ Catalog.Talents = {
 	reach = { short = text("ALCANCE", "RANGE"), name = text("Visão estratégica", "Strategic vision"), description = text("+1% alcance por ponto, dentro do limite permanente de 10%.", "+1% range per point, within the 10% permanent cap."), maxRank = 5, parent = "towerPower", requiredRank = 2, effect = 1, unit = "%", icon = "RNG" },
 	skillTempo = { short = text("RECARGA", "COOLDOWN"), name = text("Resposta rápida", "Rapid response"), description = text("-1% na recarga da habilidade do herói por ponto, respeitando o limite total.", "-1% hero ability cooldown per point, respecting the combined cap."), maxRank = 10, parent = "reach", requiredRank = 3, effect = 1, unit = "%", icon = "CD" },
 	abilityPower = { short = text("PODER", "POWER"), name = text("Poder amplificado", "Amplified power"), description = text("+2% de potência da habilidade do herói por ponto.", "+2% hero ability strength per point."), maxRank = 10, parent = "skillTempo", requiredRank = 3, effect = 2, unit = "%", icon = "PWR" },
+	-- Guardian, the core's last line (minus: the value is a reduction).
+	baseArmor = { short = text("BLINDAGEM", "PLATING"), name = text("Blindagem do núcleo", "Core plating"), description = text("-4% no dano que o núcleo recebe, por ponto. No grupo vale o maior bônus.", "-4% damage taken by the core, per point. Highest teammate bonus applies."), maxRank = 5, parent = "lastStand", requiredRank = 1, effect = 4, unit = "%", minus = true, icon = "ARM" },
+	waveShield = { short = text("ESCUDO", "SHIELD"), name = text("Escudo de onda", "Wave shield"), description = text("Em cada onda, o escudo anula o dano dos primeiros inimigos comuns que chegam ao núcleo: 1 por ponto. No grupo vale o maior.", "Every wave the shield cancels the damage of the first common enemies to reach the core: 1 per point. Highest teammate applies."), maxRank = 3, parent = "baseArmor", requiredRank = 3, effect = 1, unit = "wave", icon = "SH" },
+	-- Arsenal: raw power for every hero, outside the 15% permanent cap.
+	heroFury = { short = text("FÚRIA", "FURY"), name = text("Fúria dos heróis", "Heroes' fury"), description = text("+2% de dano em todos os seus heróis, por ponto. Soma por fora do limite de 15%.", "+2% damage on all your heroes, per point. Adds on top of the 15% cap."), maxRank = 10, effect = 2, unit = "%", icon = "FURY" },
+	drillSpeed = { short = text("AGILIDADE", "AGILITY"), name = text("Treino de combate", "Combat drills"), description = text("+2% de velocidade de ataque em todos os seus heróis, por ponto.", "+2% attack speed on all your heroes, per point."), maxRank = 5, parent = "heroFury", requiredRank = 3, effect = 2, unit = "%", icon = "SPD" },
+	critical = { short = text("CRÍTICO", "CRITICAL"), name = text("Golpe crítico", "Critical strike"), description = text("+3% de chance, por ponto, de um ataque causar o dobro de dano.", "+3% chance, per point, for an attack to deal double damage."), maxRank = 5, parent = "drillSpeed", requiredRank = 2, effect = 3, unit = "%", icon = "CRIT" },
+	bossHunter = { short = text("CHEFES", "BOSSES"), name = text("Caçador de chefes", "Boss hunter"), description = text("+5% de dano contra chefes, por ponto.", "+5% damage against bosses, per point."), maxRank = 5, parent = "critical", requiredRank = 2, effect = 5, unit = "%", icon = "BOSS" },
+	-- Tactics: the right answer to each kind of enemy.
+	skyGuard = { short = text("ANTIAÉREO", "ANTI-AIR"), name = text("Defesa aérea", "Air defense"), description = text("+5% de dano contra voadores, por ponto.", "+5% damage against flyers, per point."), maxRank = 5, effect = 5, unit = "%", icon = "AIR" },
+	nightSight = { short = text("VISÃO", "SIGHT"), name = text("Visão térmica", "Thermal sight"), description = text("+6% de dano contra camuflados, por ponto.", "+6% damage against hidden enemies, per point."), maxRank = 5, parent = "skyGuard", requiredRank = 2, effect = 6, unit = "%", icon = "EYE" },
+	piercing = { short = text("PERFURAR", "PIERCE"), name = text("Munição perfurante", "Piercing rounds"), description = text("Seus heróis ignoram mais 4% da armadura inimiga, por ponto.", "Your heroes ignore another 4% of enemy armor, per point."), maxRank = 5, parent = "nightSight", requiredRank = 2, effect = 4, unit = "%", icon = "AP" },
+	shockwave = { short = text("ÁREA", "AREA"), name = text("Onda de choque", "Shockwave"), description = text("+5% no raio dos ataques em área, por ponto.", "+5% radius on area attacks, per point."), maxRank = 5, parent = "piercing", requiredRank = 2, effect = 5, unit = "%", icon = "AOE" },
+	-- Logistics: cheaper heroes, more match Gold, a faster level.
+	towerDiscount = { short = text("RECRUTAR", "RECRUIT"), name = text("Contratos de recrutamento", "Recruiting contracts"), description = text("Heróis custam 2% menos para posicionar, por ponto.", "Heroes cost 2% less to place, per point."), maxRank = 5, effect = 2, unit = "%", minus = true, icon = "TAG" },
+	upgradeDiscount = { short = text("OFICINA", "WORKSHOP"), name = text("Oficina de campo", "Field workshop"), description = text("Melhorias de herói custam 2% menos, por ponto.", "Hero upgrades cost 2% less, per point."), maxRank = 5, parent = "towerDiscount", requiredRank = 2, effect = 2, unit = "%", minus = true, icon = "WRK" },
+	waveIncome = { short = text("SUPRIMENTO", "SUPPLY"), name = text("Linha de suprimentos", "Supply line"), description = text("+5% no Ouro da partida que cada onda concluída paga, por ponto.", "+5% match Gold paid by each completed wave, per point."), maxRank = 5, parent = "upgradeDiscount", requiredRank = 2, effect = 5, unit = "%", icon = "SUP" },
+	xpBoost = { short = text("ACADEMIA", "ACADEMY"), name = text("Academia de heróis", "Hero academy"), description = text("+4% de XP da conta ganho nas partidas, por ponto.", "+4% account XP earned in matches, per point."), maxRank = 5, parent = "waveIncome", requiredRank = 2, effect = 4, unit = "%", icon = "XP" },
 }
 
 --==============================================================================
@@ -787,29 +811,29 @@ local function card(id, rarity, maxStacks, name, description, fields)
 	return fields
 end
 Catalog.Cards = {
-	sharpen = card("sharpen", "common", 3, text("Lâminas afiadas", "Sharpened Edges"), text("+10% de dano das suas torres.", "+10% damage on your towers."), { effects = { damage = 0.10 } }),
-	quickDraw = card("quickDraw", "common", 3, text("Gatilho rápido", "Quick Draw"), text("+8% de velocidade de ataque.", "+8% attack speed."), { effects = { speed = 0.08 } }),
-	longSight = card("longSight", "common", 3, text("Mira de águia", "Eagle Eye"), text("+8% de alcance.", "+8% range."), { effects = { range = 0.08 } }),
-	armorBreaker = card("armorBreaker", "common", 2, text("Ruptura de armadura", "Armor Breaker"), text("Ignora mais 10% da armadura inimiga.", "Ignores another 10% of enemy armor."), { effects = { pierce = 0.10 } }),
-	wideArea = card("wideArea", "common", 2, text("Cobertura ampliada", "Wide Coverage"), text("+12% de área nos ataques.", "+12% attack area."), { effects = { area = 0.12 } }),
-	supplyDrop = card("supplyDrop", "common", 5, text("Suprimentos", "Supply Drop"), text("Receba 350 de Ouro da partida agora.", "Gain 350 match Gold now."), { instant = { energy = 350 } }),
-	skyHunter = card("skyHunter", "common", 2, text("Caçador de voadores", "Sky Hunter"), text("+25% de dano contra voadores.", "+25% damage against flyers."), { effects = { airDamage = 0.25 } }),
-	nightHunter = card("nightHunter", "common", 2, text("Visão noturna", "Night Vision"), text("+25% de dano contra camuflados.", "+25% damage against hidden enemies."), { effects = { stealthDamage = 0.25 } }),
-	coinRain = card("coinRain", "rare", 3, text("Chuva de moedas", "Coin Rain"), text("+15% de Ouro das eliminações.", "+15% Gold from kills."), { effects = { killGold = 0.15 } }),
-	income = card("income", "rare", 3, text("Rede logística", "Supply Network"), text("+20% no bônus de Ouro por onda.", "+20% Gold bonus per wave."), { effects = { energyIncome = 0.20 } }),
-	fastCharge = card("fastCharge", "rare", 2, text("Recarga rápida", "Fast Recharge"), text("-10% de recarga da sua habilidade.", "-10% ability cooldown."), { effects = { cooldown = 0.10 } }),
-	abilityPower = card("abilityPower", "rare", 3, text("Poder amplificado", "Amplified Power"), text("+20% de potência da sua habilidade.", "+20% ability strength."), { effects = { abilityPower = 0.20 } }),
-	bossSlayer = card("bossSlayer", "rare", 3, text("Caçador de chefes", "Boss Slayer"), text("+20% de dano contra chefes.", "+20% damage against bosses."), { effects = { bossDamage = 0.20 } }),
-	medic = card("medic", "rare", 3, text("Enfermaria", "Field Medic"), text("Restaura 8 de vida do núcleo agora.", "Restore 8 core health now."), { instant = { heal = 8 } }),
-	fortify = card("fortify", "rare", 3, text("Núcleo reforçado", "Fortified Core"), text("+10 de vida máxima do núcleo e recupera 10.", "+10 max core health and restore 10."), { instant = { maxHealth = 10, heal = 10 } }),
-	discount = card("discount", "rare", 2, text("Contrato de armas", "Arms Contract"), text("Torres custam 8% menos para posicionar.", "Towers cost 8% less to place."), { effects = { discount = 0.08 } }),
-	supportRange = card("supportRange", "rare", 2, text("Rede de comando", "Command Network"), text("+15% de alcance nas torres de suporte.", "+15% range on support towers."), { effects = { supportRange = 0.15 } }),
-	glassCannon = card("glassCannon", "epic", 2, text("Canhão de vidro", "Glass Cannon"), text("+35% de dano, mas -15% de alcance.", "+35% damage, but -15% range."), { effects = { damage = 0.35, range = -0.15 } }),
-	overclock = card("overclock", "epic", 2, text("Sobrecarga", "Overclock"), text("+30% de velocidade de ataque, mas -12% de dano.", "+30% attack speed, but -12% damage."), { effects = { speed = 0.30, damage = -0.12 } }),
-	bloodPact = card("bloodPact", "epic", 2, text("Pacto de ouro", "Gold Pact"), text("+40% de Ouro das eliminações, mas -10% de dano.", "+40% Gold from kills, but -10% damage."), { effects = { killGold = 0.40, damage = -0.10 } }),
-	gambler = card("gambler", "epic", 3, text("Aposta", "The Gamble"), text("50%: +600 de Ouro. 50%: perde 200.", "50%: +600 Gold. 50%: lose 200."), { instant = { gamble = true } }),
-	tempest = card("tempest", "epic", 2, text("Tempestade", "Tempest"), text("+40% de potência da habilidade, mas +15% de recarga.", "+40% ability strength, but +15% cooldown."), { effects = { abilityPower = 0.40, cooldown = -0.15 } }),
-	warChest = card("warChest", "epic", 1, text("Cofre de guerra", "War Chest"), text("Receba 900 de Ouro da partida agora.", "Gain 900 match Gold now."), { instant = { energy = 900 } }),
+	sharpen = card("sharpen", "common", 3, text("Lâminas afiadas", "Sharpened Edges"), text("Todos os seus heróis causam 10% mais dano.", "All your heroes deal 10% more damage."), { effects = { damage = 0.10 } }),
+	quickDraw = card("quickDraw", "common", 3, text("Gatilho rápido", "Quick Draw"), text("Todos os seus heróis atacam 8% mais rápido.", "All your heroes attack 8% faster."), { effects = { speed = 0.08 } }),
+	longSight = card("longSight", "common", 3, text("Mira de águia", "Eagle Eye"), text("Todos os seus heróis alcançam 8% mais longe.", "All your heroes reach 8% farther."), { effects = { range = 0.08 } }),
+	armorBreaker = card("armorBreaker", "common", 2, text("Ruptura de armadura", "Armor Breaker"), text("Seus golpes atravessam mais 10% da armadura dos inimigos blindados.", "Your hits go through another 10% of armored enemies' armor."), { effects = { pierce = 0.10 } }),
+	wideArea = card("wideArea", "common", 2, text("Cobertura ampliada", "Wide Coverage"), text("Explosões, chamas e outros ataques em área ficam 12% maiores.", "Blasts, flames and other area attacks get 12% bigger."), { effects = { area = 0.12 } }),
+	supplyDrop = card("supplyDrop", "common", 5, text("Suprimentos", "Supply Drop"), text("Ganhe 350 de Ouro da partida na hora, para colocar ou melhorar heróis.", "Get 350 match Gold right away, to place or upgrade heroes."), { instant = { energy = 350 } }),
+	skyHunter = card("skyHunter", "common", 2, text("Caçador de voadores", "Sky Hunter"), text("Seus heróis causam 25% mais dano nos inimigos voadores.", "Your heroes deal 25% more damage to flying enemies."), { effects = { airDamage = 0.25 } }),
+	nightHunter = card("nightHunter", "common", 2, text("Visão noturna", "Night Vision"), text("Seus heróis causam 25% mais dano nos camuflados (os inimigos invisíveis).", "Your heroes deal 25% more damage to hidden (invisible) enemies."), { effects = { stealthDamage = 0.25 } }),
+	coinRain = card("coinRain", "rare", 3, text("Chuva de moedas", "Coin Rain"), text("Cada inimigo derrotado deixa 15% mais Ouro da partida.", "Every defeated enemy drops 15% more match Gold."), { effects = { killGold = 0.15 } }),
+	income = card("income", "rare", 3, text("Rede logística", "Supply Network"), text("O Ouro da partida que você recebe ao fim de cada onda aumenta 20%.", "The match Gold you get at the end of every wave grows by 20%."), { effects = { energyIncome = 0.20 } }),
+	fastCharge = card("fastCharge", "rare", 2, text("Recarga rápida", "Fast Recharge"), text("O poder do líder recarrega 10% mais rápido.", "The leader power recharges 10% faster."), { effects = { cooldown = 0.10 } }),
+	abilityPower = card("abilityPower", "rare", 3, text("Poder amplificado", "Amplified Power"), text("O poder do líder fica 20% mais forte.", "The leader power gets 20% stronger."), { effects = { abilityPower = 0.20 } }),
+	bossSlayer = card("bossSlayer", "rare", 3, text("Caçador de chefes", "Boss Slayer"), text("Seus heróis causam 20% mais dano nos chefes.", "Your heroes deal 20% more damage to bosses."), { effects = { bossDamage = 0.20 } }),
+	medic = card("medic", "rare", 3, text("Enfermaria", "Field Medic"), text("Cura 8 de vida do núcleo na hora.", "Heals the core for 8 health right away."), { instant = { heal = 8 } }),
+	fortify = card("fortify", "rare", 3, text("Núcleo reforçado", "Fortified Core"), text("O núcleo ganha 10 de vida máxima e cura 10 na hora.", "The core gains 10 max health and heals 10 right away."), { instant = { maxHealth = 10, heal = 10 } }),
+	discount = card("discount", "rare", 2, text("Contrato de armas", "Arms Contract"), text("Colocar um herói custa 8% menos Ouro da partida (as melhorias não mudam).", "Placing a hero costs 8% less match Gold (upgrades stay the same)."), { effects = { discount = 0.08 } }),
+	supportRange = card("supportRange", "rare", 2, text("Rede de comando", "Command Network"), text("Heróis de suporte, que fortalecem os vizinhos, alcançam 15% mais longe.", "Support heroes, who power up their neighbours, reach 15% farther."), { effects = { supportRange = 0.15 } }),
+	glassCannon = card("glassCannon", "epic", 2, text("Canhão de vidro", "Glass Cannon"), text("Seus heróis causam 35% mais dano, mas alcançam 15% menos.", "Your heroes deal 35% more damage, but reach 15% less."), { effects = { damage = 0.35, range = -0.15 } }),
+	overclock = card("overclock", "epic", 2, text("Sobrecarga", "Overclock"), text("Seus heróis atacam 30% mais rápido, mas cada golpe causa 12% menos dano.", "Your heroes attack 30% faster, but each hit deals 12% less damage."), { effects = { speed = 0.30, damage = -0.12 } }),
+	bloodPact = card("bloodPact", "epic", 2, text("Pacto de ouro", "Gold Pact"), text("Inimigos derrotados deixam 40% mais Ouro, mas seus heróis causam 10% menos dano.", "Defeated enemies drop 40% more Gold, but your heroes deal 10% less damage."), { effects = { killGold = 0.40, damage = -0.10 } }),
+	gambler = card("gambler", "epic", 3, text("Aposta", "The Gamble"), text("Cara ou coroa: metade das vezes você ganha 600 de Ouro da partida, na outra metade perde 200.", "Heads or tails: half the time you win 600 match Gold, the other half you lose 200."), { instant = { gamble = true } }),
+	tempest = card("tempest", "epic", 2, text("Tempestade", "Tempest"), text("O poder do líder fica 40% mais forte, mas demora 15% mais para recarregar.", "The leader power gets 40% stronger, but takes 15% longer to recharge."), { effects = { abilityPower = 0.40, cooldown = -0.15 } }),
+	warChest = card("warChest", "epic", 1, text("Cofre de guerra", "War Chest"), text("Ganhe 900 de Ouro da partida na hora. Só pode ser escolhida uma vez.", "Get 900 match Gold right away. It can only be picked once."), { instant = { energy = 900 } }),
 }
 
 --==============================================================================
@@ -1027,7 +1051,8 @@ for _, id in ipairs({ "indestructible", "emeraldConstruct", "solarWrath", "super
 
 -- Personal outposts support the shared core. Income is match Gold, never
 -- lobby Gold. Each has five match-only levels, bought with match Gold.
-Catalog.BaseOrder={"outpost","workshop","garden","bunker","arsenal","barracks","reactor","polar","vault","citadel","carrier","sanctum","worldtree"}
+-- New bases join at the end: a base's place in this list feeds the chests' deterministic draws.
+Catalog.BaseOrder={"outpost","workshop","garden","bunker","arsenal","barracks","reactor","polar","vault","citadel","carrier","sanctum","worldtree","lodge","mint","starvault"}
 Catalog.Bases={}
 local bases={
 	{"outpost","Posto da Resistência","Resistance outpost","common","balanced",{139,213,151},20,0,0,0,0},
@@ -1047,10 +1072,18 @@ local bases={
 	{"carrier","Porta-aviões da Resistência","Resistance carrier","legendary","soldiers",{146,183,225},32,14,0,0,140},
 	{"sanctum","Santuário Arcano","Arcane sanctum","mythic","turret",{242,142,92},30,14,48,0,0},
 	{"worldtree","Jardim da Árvore-Mundo","World-tree garden","mythic","farm",{245,177,221},85,12,0,0,0},
+	-- Bounty bases (owner, 17/10: "bases que deem gold extra por kill, também
+	-- as da última raridade"): every enemy a commander's heroes help defeat
+	-- drops this much more of their match Gold (Rules.BaseStats grows it 3
+	-- points a level). One at each rarity a player sees.
+	{"lodge","Pavilhão dos Caçadores","Hunters' lodge","rare","bounty",{226,150,64},20,6,0,0,0,{bounty=0.10}},
+	{"mint","Casa da Moeda","The Mint","epic","bounty",{255,206,84},25,10,0,0,0,{bounty=0.18}},
+	{"starvault","Tesouro Estelar","Star treasury","mythic","bounty",{255,226,140},40,16,0,0,0,{bounty=0.30}},
 }
 local roles={balanced=text("Renda básica e vida ao evoluir.","Basic income and HP when upgraded."),farm=text("Mais Ouro da partida a cada onda concluída.","More match Gold each completed wave."),wall=text("Barricada troca vida por dano e se regenera fora de combate.","Barricade trades HP for damage and regenerates out of combat."),turret=text("Canhão automático protege a chegada ao núcleo.","Automatic cannon guards the approach to the core."),soldiers=text("Soldados percorrem a rota ao contrário e colidem com inimigos.","Soldiers march backwards along the path and collide with enemies."),
 	frost=text("Campo de gelo: os inimigos perto da base andam mais devagar. Chefes resistem.","Ice field: enemies near the base move slower. Bosses resist."),
-	vault=text("Rende juros: guarde Ouro da partida e ganhe uma parte dele a cada onda.","Earns interest: keep match Gold and get a share of it every wave.")}
+	vault=text("Rende juros: guarde Ouro da partida e ganhe uma parte dele a cada onda.","Earns interest: keep match Gold and get a share of it every wave."),
+	bounty=text("Recompensa: cada inimigo derrotado deixa mais Ouro da partida para você.","Bounty: every defeated enemy drops more match Gold for you.")}
 for _,row in ipairs(bases) do
 	local id,pt,en,rarity,style,color,income,hp,damage,wall,soldier,extra=unpack(row)
 	Catalog.Bases[id]={id=id,name=text(pt,en),rarity=rarity,style=style,color=color,income=income,hp=hp,damage=damage,wall=wall,soldier=soldier,starter=id=="outpost",description=roles[style]}
@@ -1063,7 +1096,7 @@ Catalog.BaseUpgradeCosts={450,950,1800,3200}
 -- own bases only. Existing chest IDs and guarantee counters are kept; the
 -- base Alliance and Legends chests were retired on 15/10.
 Catalog.HeroChestOrder={"supply","rare","epic","legendary","cosmic"}
-Catalog.BaseChestOrder={"base_supply","base_epic","base_cosmic"}
+Catalog.BaseChestOrder={"base_supply","base_epic","base_cosmic","base_bounty"}
 Catalog.Chests.supply={id="supply",name=text("Suprimentos","Supplies"),cost=400,color={155,214,129},odds={common=75,rare=23,epic=2,legendary=0,mythic=0}}
 Catalog.Chests.epic={id="epic",name=text("Baú Épico","Epic chest"),cost=1500,color={196,145,250},odds={common=0,rare=45,epic=47,legendary=7,mythic=1},pity={after=8,minimum="epic"}}
 Catalog.Chests.cosmic={id="cosmic",name=text("Baú Cósmico","Cosmic chest"),cost=5000,color={255,138,198},odds={common=0,rare=0,epic=45,legendary=43,mythic=12},pity={after=15,minimum="mythic"}}
@@ -1081,12 +1114,17 @@ local baseChests={
 		description=text("Quatro bases táticas, entre elas o campo de gelo e o cofre com juros.","Four tactical bases, among them the ice field and the interest vault.")},
 	base_cosmic={look="cosmic",bases={"citadel","carrier","sanctum","worldtree"},odds={legendary=75,mythic=25},pity={after=15,minimum="mythic"},
 		description=text("As quatro bases mais fortes do jogo.","The four strongest bases in the game.")},
+	-- The bounty bases have a chest of their own (17/10), so the odds and prices
+	-- of the three older chests stay exactly as players know them.
+	base_bounty={look="legendary",name=text("Baú dos Caçadores","Hunters' chest"),cost=2500,color={255,170,60},
+		bases={"lodge","mint","starvault"},odds={rare=55,epic=33,mythic=12},pity={after=12,minimum="mythic"},
+		description=text("As bases caçadoras: cada inimigo derrotado deixa mais Ouro da partida. O Tesouro Estelar é a mais rara.","The bounty bases: every defeated enemy drops more match Gold. The Star treasury is the rarest.")},
 }
 for _,id in ipairs(Catalog.BaseChestOrder) do
 	local spec=baseChests[id]; local look=Catalog.Chests[spec.look]
 	local odds={common=0,rare=0,epic=0,legendary=0,mythic=0}
 	for rarity,weight in pairs(spec.odds) do odds[rarity]=weight end
-	Catalog.Chests[id]={id=id,kind="base",name=look.name,cost=look.cost,color=look.color,odds=odds,pity=spec.pity,bases=spec.bases,description=spec.description}
+	Catalog.Chests[id]={id=id,kind="base",name=spec.name or look.name,cost=spec.cost or look.cost,color=spec.color or look.color,odds=odds,pity=spec.pity,bases=spec.bases,description=spec.description}
 	table.insert(Catalog.ChestOrder,id)
 end
 
@@ -1130,11 +1168,11 @@ Catalog.Products = {
 				text("O dobro de Ouro nas recompensas da trilha", "Double the Gold on the track's rewards"),
 				text("Mais baús e um título exclusivo", "More chests and an exclusive title") } },
 		-- freeChestScale: the free chest comes back this much sooner for VIPs.
-		vip = { id = 0, price = 199, freeChestScale = 0.5, name = text("Pacote VIP", "VIP Pack"), description = text("Baú grátis duas vezes mais rápido, nome dourado, título, saudação e rastro dourado.", "Free chest twice as fast, golden name, title, salute and a golden trail."),
+		vip = { id = 0, price = 199, freeChestScale = 0.5, name = text("Pacote VIP", "VIP Pack"), description = text("Baú grátis duas vezes mais rápido, nome dourado, título, rastro dourado e confete na vitória.", "Free chest twice as fast, golden name, title, a golden trail and victory confetti."),
 			benefits = { text("Baú grátis 2x mais rápido: a cada 3 horas", "Free chest twice as fast: every 3 hours"),
 				text("Nome dourado com VIP e o título Patrono da Resistência", "Golden VIP name and the Resistance Patron title"),
 				text("Rastro dourado no seu personagem", "A golden trail on your character"),
-				text("Saudação VIP nas partidas e confete na vitória", "VIP salute in matches and confetti on victory"),
+				text("Chuva de confete em cada vitória", "A shower of confetti on every victory"),
 				text("Com o Drone coletor, o drone fica dourado", "With the Collector Drone, the drone turns gold") } },
 	},
 	Consumables = {

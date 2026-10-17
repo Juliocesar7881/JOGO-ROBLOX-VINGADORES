@@ -143,7 +143,7 @@ local function seasonMaxXp(catalog)
 	return season.levels * season.firstXp + season.stepXp * season.levels * (season.levels - 1) / 2
 end
 
-local function normalize(raw, now, catalog)
+local function normalize(raw, now, catalog, maxLevel)
 	if raw == nil then return newProfile(now) end
 	if type(raw) ~= "table" or not integer(raw.schemaVersion or 1, 1, SCHEMA_VERSION) then error("UNSUPPORTED_PROFILE_VERSION") end
 	if not integer(raw.gold, 0, 9007199254740991) or not integer(raw.xp, 0, 9007199254740991) or type(raw.heroes) ~= "table" then error("INVALID_PROFILE_DATA") end
@@ -159,7 +159,7 @@ local function normalize(raw, now, catalog)
 	if type(profile.equippedBase)~="string" or not profile.bases[profile.equippedBase] then profile.equippedBase="outpost" end
 	if profile.settings.effects == nil then profile.settings.effects = profile.settings.music ~= false end
 	if profile.settings.interface == nil then profile.settings.interface = profile.settings.effects ~= false end
-	profile.level = levelFor(profile.xp, 50, xpThreshold)
+	profile.level = levelFor(profile.xp, maxLevel or 100, xpThreshold)
 	-- The old per-slot skill system is gone: abilities now belong to heroes.
 	profile.skills, profile.activeSkills, profile.passives = nil, nil, nil
 	-- A talent that a later version removed or re-shaped is dropped, not fatal:
@@ -509,7 +509,7 @@ function PlayerService:Load(player)
 		local lockFailure
 		local ok, persisted = self:_update(player.UserId, function(raw)
 			local now = os.time()
-			local profile = normalize(raw, now, self.catalog)
+			local profile = normalize(raw, now, self.catalog, self.rules.MaxLevel)
 			local session = profile._session
 			if session and session.id ~= self.sessionId and (session.expires or 0) > now then lockFailure = "Seu perfil ainda está em outro servidor. Aguarde alguns segundos. / Your profile is still on another server. Wait a few seconds."; return nil end
 			lockFailure = nil
@@ -576,7 +576,7 @@ function PlayerService:_transaction(player, mutate, operationId, options)
 		local saved, persisted = self:_update(player.UserId, function(raw)
 			rejected, value, lost = nil, nil, false
 			local now = os.time()
-			local profile = normalize(raw, now, self.catalog)
+			local profile = normalize(raw, now, self.catalog, self.rules.MaxLevel)
 			if not profile._session or profile._session.id ~= self.sessionId or profile._session.expires <= now then lost = true; rejected = "Sessão de dados expirada. Entre novamente. / Data session expired. Please rejoin."; return nil end
 			local previous = profile._operations[operationId]
 			if previous then value = copy(previous.result); return profile end
@@ -587,7 +587,7 @@ function PlayerService:_transaction(player, mutate, operationId, options)
 			local accepted, payload = mutate(profile, now, record)
 			if accepted == false then rejected = payload or "Operação inválida."; return nil end
 			value = payload
-			profile.level = levelFor(profile.xp, 50, xpThreshold)
+			profile.level = levelFor(profile.xp, self.rules.MaxLevel, xpThreshold)
 			profile.updatedAt = now
 			if options.releasing then profile._session = nil else profile._session.expires = now + self.leaseSeconds end
 			-- This bounded list only covers transport retries of a single queued
@@ -929,7 +929,7 @@ function PlayerService:Snapshot(player)
 	end
 	result.rewards = self.rules.RewardsStatus(record.profile, now, math.clamp(now - (record.playMark or now), 0, PLAYTIME_CAP), record.passes.vip == true and not record.randomRestricted)
 	result.tradeAllowed = record.tradeAllowed ~= false
-	result.xpNext = result.level < 50 and xpThreshold(result.level + 1) or result.xp
+	result.xpNext = result.level < self.rules.MaxLevel and xpThreshold(result.level + 1) or result.xp
 	result.xpFloor = xpThreshold(result.level)
 	result.season = self:_season()
 	result.seasonStatus = self.rules.SeasonStatus(
@@ -1636,7 +1636,8 @@ function PlayerService:Award(player, awardId, reward)
 		if profile._awards[awardId] then return true, { duplicate = true, gold = 0, xp = 0 } end
 		local gold = reward.gold or 0
 		local multiplier = record.passes.training and 1.25 or 1
-		local xp = math.floor((reward.xp or 0) * multiplier)
+		-- Hero academy (talent) grows the account's XP, not the heroes' mastery.
+		local xp = math.floor((reward.xp or 0) * multiplier * (1 + self.rules.TalentEffect(profile, "xpBoost")))
 		local won = reward.finished == true and reward.victory == true
 		local waves, bosses = reward.waves or 0, reward.bosses or 0
 		if won and reward.tutorial == true and not profile.tutorialComplete then
@@ -1716,7 +1717,7 @@ function PlayerService:Award(player, awardId, reward)
 			end
 		end
 		if required>0 and cleared >= required then achievement(profile, "campaign", "Última Defesa", "Last Defense", now, "title") end
-		local newLevel = levelFor(profile.xp, 50, xpThreshold)
+		local newLevel = levelFor(profile.xp, self.rules.MaxLevel, xpThreshold)
 		if newLevel >= 10 then achievement(profile, "commander10", "Comandante", "Commander", now, "title") end
 		if newLevel >= 50 then achievement(profile, "commander50", "Comandante supremo", "Supreme commander", now, "title") end
 		profile._awards[awardId] = now

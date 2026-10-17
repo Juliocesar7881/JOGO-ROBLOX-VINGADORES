@@ -129,7 +129,7 @@ check(Rules.TowerStats("silversurfer", 5, 1).chain == 10, "Silver Surfer wave ch
 check(Rules.TowerStats("ghostrider", 5, 1).splash == 13, "Ghost Rider flames spread")
 check(Rules.TowerStats("daredevil", 1).reveal and Rules.TowerStats("widow", 1).reveal, "Reveal heroes reveal")
 
-for level = 1, 50 do
+for level = 1, Rules.MaxLevel do
 	equal(Rules.LevelFromXP(Rules.LevelXP(level)), level, "Account threshold inclusive")
 	if level > 1 then equal(Rules.LevelFromXP(Rules.LevelXP(level) - 1), level - 1, "Account threshold boundary") end
 	equal(Rules.TalentPointsEarned(level), level - 1, "One talent point per level after the first")
@@ -138,7 +138,8 @@ for level = 1, 20 do
 	equal(Rules.MasteryLevel(Rules.MasteryXP(level)), level, "Mastery threshold inclusive")
 	if level > 1 then equal(Rules.MasteryLevel(Rules.MasteryXP(level) - 1), level - 1, "Mastery threshold boundary") end
 end
-equal(Rules.LevelFromXP(1e10), 50, "Account cap")
+equal(Rules.MaxLevel, 100, "The account levels up to 100 (six-branch talent tree)")
+equal(Rules.LevelFromXP(1e10), Rules.MaxLevel, "Account cap")
 equal(Rules.MasteryLevel(1e10), 20, "Mastery cap")
 equal(Rules.LevelFromXP(0 / 0), 1, "Reject NaN experience")
 equal(Rules.LevelFromXP(-40), 1, "Nonnegative experience")
@@ -292,7 +293,7 @@ do
 	local seen = {}
 	for _, chestId in Catalog.BaseChestOrder do
 		local chest = Catalog.Chests[chestId]
-		check(chest.kind == "base" and #chest.bases == 4, "a base chest has four bases of its own: " .. chestId)
+		check(chest.kind == "base" and #chest.bases >= 3, "a base chest has at least three bases of its own: " .. chestId)
 		for _, group in chest.groups do
 			check(group.weight == 0 or #group.items > 0, "a base chest never draws an empty tier: " .. chestId)
 			for _, id in group.items do check(table.find(chest.bases, id) ~= nil, "a base chest draws only its own bases: " .. chestId .. "/" .. id) end
@@ -314,6 +315,20 @@ do
 	equal(Rules.BaseInterest(vault1, 500), math.floor(500 * vault1.interest), "the vault pays its rate on the Gold kept")
 	check(Rules.BaseInterest(vault1, 1e9) == vault1.interestCap and vault5.interestCap > vault1.interestCap and vault5.interest > vault1.interest, "the interest has a cap that grows with the level")
 	check(Rules.BaseInterest(vault1, -50) == 0 and Rules.BaseInterest(Rules.BaseStats("workshop", 3), 5000) == 0, "no interest on nothing, nor without a vault")
+	-- Bounty bases: more match Gold per enemy, growing with the level, one at
+	-- every rarity a player sees (the top one included).
+	local seenBounty = {}
+	for _, id in Catalog.BaseOrder do
+		local def = Catalog.Bases[id]
+		if def.style == "bounty" then
+			local one, five = Rules.BaseStats(id, 1), Rules.BaseStats(id, 5)
+			check(one.bounty > 0 and five.bounty > one.bounty, "a bounty base pays more per enemy as it levels: " .. id)
+			seenBounty[def.rarity] = true
+		else
+			check(Rules.BaseStats(id, 5).bounty == 0, "only bounty bases pay per enemy: " .. id)
+		end
+	end
+	for _, rarity in Catalog.RarityOrder do check(seenBounty[rarity], "a bounty base at every rarity: " .. rarity) end
 end
 
 -- Guaranteed purchase for restricted accounts: priced at the expected chest cost.
@@ -1001,7 +1016,64 @@ for id in Catalog.Talents do check(seenTalent[id], "Every talent belongs to a br
 do
 	local total = 0
 	for id, node in Catalog.Talents do total += node.maxRank end
-	check(total > Rules.TalentPointsEarned(50), "Not every talent can be maxed: choices matter")
+	check(total > Rules.TalentPointsEarned(Rules.MaxLevel), "Not every talent can be maxed: choices matter")
+	-- The owner's 17/10 ask: almost double the tree (it had 13 talents, 3 branches).
+	local count = 0
+	for _ in Catalog.Talents do count += 1 end
+	check(count >= 25 and #Catalog.TalentBranches == 6, "The talent tree has six branches and about twice its 13 talents, got " .. count)
+	-- Every branch fits a row of the board: a side (-1 left, 1 right) and a row
+	-- (0, -2, 2), never two branches in the same place.
+	local places = {}
+	for _, branch in Catalog.TalentBranches do
+		check(branch.side == -1 or branch.side == 1, "A branch has a side: " .. branch.id)
+		check(branch.row == 0 or branch.row == -2 or branch.row == 2, "A branch has a row: " .. branch.id)
+		local key = branch.side .. ":" .. branch.row
+		check(not places[key], "Two branches never share a row: " .. branch.id)
+		places[key] = true
+		check(branch.name.pt and branch.name.en, "A branch is named: " .. branch.id)
+	end
+	-- Every branch, maxed on its own, fits in the points of a top account.
+	for _, branch in Catalog.TalentBranches do
+		local need = 0
+		for _, id in ipairs(branch.nodes) do need += Catalog.Talents[id].maxRank end
+		check(need <= Rules.TalentPointsEarned(Rules.MaxLevel), "A whole branch is earnable: " .. branch.id)
+	end
+end
+
+-- What each new talent does, through the same functions the server uses.
+do
+	equal(Rules.TalentEffect({ talents = { heroFury = 10 } }, "heroFury"), 0.2, "Heroes' fury: +2% damage a point")
+	equal(Rules.TalentEffect({ talents = { heroFury = 99 } }, "heroFury"), 0.2, "A talent's effect stops at its top rank")
+	equal(Rules.TalentEffect({ talents = { waveShield = 2 } }, "waveShield"), 2, "The wave shield counts leaks, not a share")
+	equal(Rules.TalentEffect({}, "heroFury"), 0, "No talents, no effect")
+	equal(Rules.TalentEffect({ talents = { heroFury = 3 } }, "nonsense"), 0, "An unknown talent has no effect")
+	equal(Rules.TalentEffect(nil, "critical"), 0, "No profile, no effect")
+	-- Heroes' fury adds on top of the 15% permanent cap.
+	local capped = Rules.PermanentModifiers({ talents = { towerPower = 5 }, heroes = {} }, "ironman")
+	local furious = Rules.PermanentModifiers({ talents = { towerPower = 5, heroFury = 10 }, heroes = {} }, "ironman")
+	check(math.abs(furious.damageBonus - capped.damageBonus - 0.2) < 1e-9, "Heroes' fury adds +20% on top of Elite formation")
+	local tactics = Rules.PermanentModifiers({ talents = { drillSpeed = 5, bossHunter = 5, skyGuard = 5, nightSight = 5, piercing = 5, shockwave = 5, critical = 5, upgradeDiscount = 5 }, heroes = {} }, "ironman")
+	check(math.abs(tactics.attackSpeedBonus - capped.attackSpeedBonus - 0.10) < 1e-9, "Combat drills: +10% attack speed at 5")
+	check(math.abs(tactics.bossDamageBonus - 0.25) < 1e-9 and math.abs(tactics.airDamage - 0.25) < 1e-9 and math.abs(tactics.stealthDamage - 0.30) < 1e-9, "Boss, air and hidden talents")
+	check(math.abs(tactics.armorPierceBonus - 0.20) < 1e-9 and math.abs(tactics.splashBonus - 0.25) < 1e-9, "Piercing and shockwave talents")
+	check(math.abs(tactics.critChance - 0.15) < 1e-9 and math.abs(tactics.upgradeDiscount - 0.10) < 1e-9, "Critical and workshop talents")
+	local plain = Rules.TowerStats("hulk", 1, nil, {})
+	local tuned = Rules.TowerStats("hulk", 1, nil, { bossDamageBonus = tactics.bossDamageBonus, splashBonus = tactics.splashBonus, armorPierceBonus = tactics.armorPierceBonus })
+	check(tuned.bossDamage > plain.bossDamage and tuned.splash >= plain.splash and tuned.armorPierce > plain.armorPierce, "The tactics talents reach the tower's stats")
+	-- Placement: the talent and the card discounts add up, never past half.
+	local hero = Catalog.Heroes.ironman
+	equal(Rules.PlacementCost(hero, {}, nil), hero.cost, "No discount: the hero's price")
+	equal(Rules.PlacementCost("ironman", { talents = { towerDiscount = 5 } }, nil), math.floor(hero.cost * 0.9), "Recruiting contracts: -10% at 5")
+	equal(Rules.PlacementCost(hero, { talents = { towerDiscount = 5 } }, { discount = 0.08 }), math.floor(hero.cost * (1 - 0.18)), "Talent and card discounts add up")
+	equal(Rules.PlacementCost(hero, { talents = { towerDiscount = 5 } }, { discount = 0.9 }), math.floor(hero.cost * 0.5), "Never more than half off")
+	-- Leaks: double every 4 waves, at most 4 times.
+	equal(Rules.LeakScale(1), 1, "Wave 1 leaks hurt as written")
+	equal(Rules.LeakScale(4), 1, "Waves 1-4 at 1x")
+	equal(Rules.LeakScale(5), 2, "Wave 5: twice")
+	equal(Rules.LeakScale(8), 2, "Waves 5-8 at 2x")
+	equal(Rules.LeakScale(9), 4, "Wave 9: four times")
+	equal(Rules.LeakScale(40), 4, "Never past four times")
+	equal(Rules.LeakScale(0 / 0), 1, "A bad wave counts as the first")
 end
 
 for _, product in Catalog.Products.Passes do equal(product.id, 0, "Unconfigured passes disabled") end

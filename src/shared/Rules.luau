@@ -15,15 +15,18 @@ end
 --==============================================================================
 -- Account level and hero mastery
 --==============================================================================
+-- The account's top level: 100 since the six-branch talent tree (17/10), so
+-- there are points enough for most of it, never all of it.
+Rules.MaxLevel = 100
 function Rules.LevelXP(level)
-	level = math.clamp(math.floor(number(level, 1)), 1, 50)
+	level = math.clamp(math.floor(number(level, 1)), 1, Rules.MaxLevel)
 	return math.floor(150 * (level - 1) ^ 1.65)
 end
 
 function Rules.LevelFromXP(xp)
 	xp = math.max(0, number(xp, 0))
 	local level = 1
-	while level < 50 and xp >= Rules.LevelXP(level + 1) do level += 1 end
+	while level < Rules.MaxLevel and xp >= Rules.LevelXP(level + 1) do level += 1 end
 	return level
 end
 
@@ -41,7 +44,39 @@ end
 
 -- One point per level after the first, spent one at a time on the talent tree.
 function Rules.TalentPointsEarned(level)
-	return math.clamp(math.floor(number(level, 1)), 1, 50) - 1
+	return math.clamp(math.floor(number(level, 1)), 1, Rules.MaxLevel) - 1
+end
+
+-- A talent's whole effect for an account: its rank times the Catalog's effect
+-- per point, as a fraction for a "%" talent (5 points of +2% = 0.10). Never
+-- past the talent's top rank; 0 for an unknown talent or a bad profile.
+function Rules.TalentEffect(profile, id)
+	local def = Catalog.Talents[id]
+	local ranks = type(profile) == "table" and type(profile.talents) == "table" and profile.talents or {}
+	if not def then return 0 end
+	local rank = math.clamp(math.floor(number(ranks[id], 0)), 0, def.maxRank)
+	local value = rank * def.effect
+	return if def.unit == "%" then value / 100 else value
+end
+
+-- What a hero costs this commander to place: the talent's and the cards'
+-- discounts together, never more than half off. Server and HUD both use it.
+function Rules.PlacementCost(hero, profile, cardTotals)
+	if type(hero) == "string" then hero = Catalog.Heroes[hero] end
+	if type(hero) ~= "table" or not hero.cost then return 0 end
+	local cut = Rules.TalentEffect(profile, "towerDiscount") + number(type(cardTotals) == "table" and cardTotals.discount, 0)
+	return math.floor(hero.cost * (1 - math.clamp(cut, 0, 0.5)))
+end
+
+-- Leaks hurt more as the run goes on (owner, 17/10: "a cada 4 waves dobra o
+-- dano"): a common enemy's leak doubles every 4 waves, up to 4 times from wave
+-- 9. (Up to 8 times, the simulated five-hero squad lost three campaign maps it
+-- wins at 4; two starters alone already lose Manhattan.) Bosses keep their own
+-- heavy leak, already half a core.
+Rules.LeakDoubling, Rules.LeakScaleMax = 4, 4
+function Rules.LeakScale(wave)
+	local steps = math.floor((math.max(1, math.floor(number(wave, 1))) - 1) / Rules.LeakDoubling)
+	return math.min(Rules.LeakScaleMax, 2 ^ steps)
 end
 
 -- There is no design limit on towers: a commander fields as many heroes (of any
@@ -591,10 +626,15 @@ function Rules.PermanentModifiers(profile, heroId)
 	local talents = profile and profile.talents or {}
 	local stars = type(mastery) == "table" and math.clamp(math.floor(number(mastery.stars, 0)), 0, Catalog.Stars.max) or 0
 	local card = type(mastery) == "table" and Rules.CardBonus(mastery.rank, mastery.alloc) or { damage = 0, speed = 0, range = 0 }
+	local function effect(id) return Rules.TalentEffect(profile, id) end
 	return {
-		damageBonus = math.min(0.15, math.floor(masteryLevel / 2) * 0.01 + (talents.towerPower or 0) * 0.01) + stars * Catalog.Stars.damage + card.damage,
+		-- Heroes' fury sits outside the 15% cap of mastery and Elite formation.
+		damageBonus = math.min(0.15, math.floor(masteryLevel / 2) * 0.01 + (talents.towerPower or 0) * 0.01) + stars * Catalog.Stars.damage + card.damage + effect("heroFury"),
 		rangeBonus = math.min(0.10, (masteryLevel - 1) * 0.002 + (talents.reach or 0) * 0.01) + card.range,
-		attackSpeedBonus = math.min(0.10, (masteryLevel - 1) * 0.003) + card.speed,
+		attackSpeedBonus = math.min(0.10, (masteryLevel - 1) * 0.003) + card.speed + effect("drillSpeed"),
+		bossDamageBonus = effect("bossHunter"), airDamage = effect("skyGuard"), stealthDamage = effect("nightSight"),
+		armorPierceBonus = effect("piercing"), splashBonus = effect("shockwave"),
+		critChance = effect("critical"), upgradeDiscount = effect("upgradeDiscount"),
 	}
 end
 
@@ -1001,6 +1041,8 @@ function Rules.BaseStats(id, level)
 		-- Vault: 2 more points of interest a level; its cap grows like income.
 		interest=(def.interest or 0)>0 and def.interest+(level-1)*0.02 or 0,
 		interestCap=math.floor((def.interestCap or 0)*growth),
+		-- Bounty: 3 more points of match Gold per defeated enemy a level.
+		bounty=(def.bounty or 0)>0 and def.bounty+(level-1)*0.03 or 0,
 		upgradeCost=Catalog.BaseUpgradeCosts[level] or 0}
 end
 

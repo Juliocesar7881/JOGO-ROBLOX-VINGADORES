@@ -1059,13 +1059,42 @@ local BY_KIND = {
 }
 
 -- Plays the cast. False when there is nothing to draw it with.
+-- Every leader power is framed the same way around its own look (owner,
+-- 17/10: "as habilidades dos heróis principais podem melhorar os efeitos"): a
+-- pillar of the hero's light rises from the caster as it casts, a ring closes
+-- in on the target, and as the power lands a white-hot flash and two
+-- shockwaves roll out with sparks; an ultimate also falls from the sky. The
+-- landing layers give way when the pool is busy (a signature comes first).
+local FRAME_BUDGET = 44
+function PowerFX:Frame(event, c, r, color, land)
+	local at = land and land.at or 0
+	if typeof(event.casterAt) == "Vector3" then
+		local foot = ground(event.casterAt, 0.3)
+		self:Column(foot, color:Lerp(WHITE, 0.35), 14, 1.5, 0.5, 0, 0.3)
+		self:Ring(foot, color, 4, 0.5, 0.35)
+		self:Emit("star", foot + UP * 2, color, 8)
+	end
+	self:Ring(c, color:Lerp(WHITE, 0.5), r * 1.25, r * 0.2, math.clamp(at, 0.25, 0.5))
+	self:_later(at, function()
+		if self:Count() > FRAME_BUDGET then return end
+		self:Flash(ground(c, 1.2), WHITE, 1.5, r * 0.8, 0.22, 0, 0.25)
+		self:Ring(c, color, r * 0.15, r * 1.35, 0.5, 0, 0.35)
+		self:Ring(c, color:Lerp(WHITE, 0.6), r * 0.1, r * 0.95, 0.38, 0.08, 0.6)
+		self:Emit("spark", ground(c, 1), color, 16)
+		if event.ultimate and self:Count() <= FRAME_BUDGET then self:SkyStrike(c, color, math.max(2.5, r * 0.22)) end
+	end)
+end
+
 function PowerFX:Cast(event, tint)
 	if typeof(event.position) ~= "Vector3" then return false end
 	local signature = SIGNATURES[event.heroId or ""] or SIGNATURES[BY_KIND[event.abilityKind or ""] or ""]
 	if not signature then return false end
 	local radius = math.clamp(tonumber(event.radius) or 8, 5, 40)
-	local ok, problem = pcall(signature, self, ground(event.position, 0.3), radius, tint, event, PowerFX.Landing(event))
-	if not ok then self.lastError = problem end
+	local centre, land = ground(event.position, 0.3), PowerFX.Landing(event)
+	local ok, problem = pcall(signature, self, centre, radius, tint, event, land)
+	if not ok then self.lastError = problem; return ok end
+	local framed, issue = pcall(self.Frame, self, event, centre, radius, tint, land)
+	if not framed then self.lastError = issue end
 	return ok
 end
 

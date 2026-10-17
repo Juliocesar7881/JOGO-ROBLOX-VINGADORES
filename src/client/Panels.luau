@@ -100,6 +100,8 @@ function Panels.new(ctx)
 		UI.corner(tile, 14)
 		UI.stroke(tile, C.ink, 3)
 		UI.cardSkin(tile,mine and tint or tint:Lerp(C.ink,0.55))
+		-- The card's living stage behind the figure (the painted plate has none).
+		UI.cardBackdrop(tile, mine and tint or tint:Lerp(C.ink, 0.45), def.rarity)
 		heroPortrait(tile, id, {Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8)})
 		if not mine then
 			local shade = UI.frame(tile, {Name = "NotOwned", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 0.5})
@@ -633,62 +635,141 @@ function Panels.new(ctx)
 	end
 
 	local function loadBoard()
-		local maps=Rules.MapsForMode(board.mode)
+		local maps=Rules.MapsForMode("ranked")
+		board.mode="ranked"
 		if not table.find(maps,board.map) then board.map=maps[1] end
+		board.period=board.period=="all" and "all" or nil
 		board.failed = false
 		local function refresh() if ctx.contextPanel() and ctx.contextPanel().kind == "leaderboard" then renderContext() end end
-		act("Leaderboard", {mapId = board.map, size = board.size, modeId=board.mode}, function(data) board.data = data; refresh() end,
+		act("Leaderboard", {mapId = board.map, size = board.size, modeId="ranked", period = board.period}, function(data) board.data = data; refresh() end,
 			function() board.failed = true; refresh() end)
 	end
 
+	-- The hall of fame (owner, 17/10: "o salão da fama parece bem bugado... quero
+	-- ele totalmente funcional"): the competitive arena's records, one board per
+	-- map, party size and period (this season or all time), all chosen with a
+	-- tap; the top three on a podium with their Roblox faces, the rest in a list
+	-- with yours highlighted, your own best and position always on top, and a
+	-- way to the arena when a board is still empty. The server reads the boards;
+	-- the client only draws what it sends.
+	local SIZE_NAMES = { T("Solo", "Solo"), T("Dupla", "Duo"), T("Trio", "Trio"), T("Quarteto", "Squad of 4") }
+	local MEDALS = { C.gold, Color3.fromRGB(216, 224, 234), Color3.fromRGB(224, 154, 91) }
+	local function headshot(parent, userId, properties, tint)
+		local holder = UI.frame(parent, properties)
+		holder.BackgroundColor3 = UI.Skin.bodyTop
+		UI.corner(holder, 100)
+		UI.stroke(holder, tint or C.gold, 2.5)
+		if tonumber(userId) and tonumber(userId) > 0 then
+			UI.create("ImageLabel", {Name = "Headshot", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = "rbxthumb://type=AvatarHeadShot&id=" .. tostring(userId) .. "&w=150&h=150", ZIndex = holder.ZIndex}, holder)
+			UI.corner(holder:FindFirstChild("Headshot"), 100)
+		else
+			UI.icon(holder, "hero", tint or C.gold, {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.6, 0.6)})
+		end
+		return holder
+	end
 	local function contextLeaderboard(body)
-		local maps=Rules.MapsForMode(board.mode)
+		local maps=Rules.MapsForMode("ranked")
+		board.mode="ranked"
 		if not table.find(maps,board.map) then board.map=maps[1] end
-	 board.mode="ranked"
-	 if board.mode=="ranked" then
-	  local rank=Rules.RankForWaves(board.data and board.data.personal or 0)
-	  UI.section(body,T("Seu rank: ","Your rank: ")..(ctx.language()=="en" and rank.en or rank.pt),T("Bronze 10 • Prata 20 • Ouro 30 • Diamante 40 • Lenda 50 ondas","Bronze 10 • Silver 20 • Gold 30 • Diamond 40 • Legend 50 waves"))
-	 end
-		UI.section(body, T("Lendas da resistência", "Legends of the resistance"), T("Evolução real da conta • temporadas de 60 dias.", "Real account progression • 60-day seasons."))
-		local controls = UI.row(body, 52)
-		UI.tab(controls, mapName(board.map), C.coral, "globe", true, function()
-			local index = table.find(maps, board.map) or 1
-			board.map = maps[index % #maps + 1]
-			board.data = nil; renderContext(); loadBoard()
-		end, {Name = "BoardMap", Size = UDim2.new(0.6, -6, 0, 48), TextSize = 21})
-		UI.tab(controls, tostring(board.size) .. (board.size == 1 and T(" jogador", " player") or T(" jogadores", " players")), C.blue, "hero", true, function() board.size = board.size % 4 + 1; board.data = nil; renderContext(); loadBoard() end,
-			{Name = "BoardSize", Position = UDim2.new(0.6, 4, 0, 0), Size = UDim2.new(0.4, -4, 0, 48), TextSize = 21})
-		-- The personal best, big, like a trophy plate.
-		local row = UI.roundFrame(body, {Name = "BoardPersonal", Size = UDim2.new(1, -6, 0, 78), BackgroundColor3 = UI.Skin.slot}, C.green)
-		UI.stroke(row, C.green, 3)
-		UI.icon(row, "trophy", C.gold, {Position = UDim2.fromOffset(12, 15), Size = UDim2.fromOffset(46, 46)})
-		UI.fit(UI.label(row, T("Sua melhor marca", "Your personal best"), {Position = UDim2.fromOffset(70, 8), Size = UDim2.new(1, -190, 0, 26), Font = UI.Fonts.display, TextSize = 20, TextColor3 = C.green}), 11)
-		UI.label(row, T("Temporada ", "Season ") .. tostring(board.data and board.data.season or profile().season or 1), {Position = UDim2.fromOffset(70, 40), Size = UDim2.new(1, -190, 0, 24), TextSize = 16, TextColor3 = C.muted})
-		local best = UI.label(row, tostring(board.data and board.data.personal or 0) .. T(" ondas", " waves"), {Name = "BoardBest", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(170, 44), Font = UI.Fonts.display, TextSize = 30, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Right})
+		local data = board.data
+		local fresh = data and data.mapId == board.map and data.size == board.size
+		local narrow = screenSize().X < 600
+		-- Where to look: the map, the party size and the period, every option on show.
+		local mapRow = UI.frame(body, {Name = "BoardMaps", Size = UDim2.new(1, -6, 0, 50), BackgroundTransparency = 1})
+		for index, mapId in ipairs(maps) do
+			local chosen = mapId == board.map
+			local tab = UI.button(mapRow, mapName(mapId), function()
+				if board.map == mapId then return end
+				board.map, board.data = mapId, nil; renderContext(); loadBoard()
+			end, {Name = "BoardMap_" .. mapId, Position = UDim2.new((index - 1) / #maps, index == 1 and 0 or 4, 0, 0), Size = UDim2.new(1 / #maps, -4, 1, 0),
+				BackgroundColor3 = chosen and C.coral or UI.Skin.slot, TextSize = narrow and 15 or 19})
+			if chosen then UI.stroke(tab, C.cream, 3) end
+		end
+		local sizeRow = UI.frame(body, {Name = "BoardSizes", Size = UDim2.new(1, -6, 0, 44), BackgroundTransparency = 1})
+		for size = 1, 4 do
+			local chosen = size == board.size
+			local tab = UI.button(sizeRow, SIZE_NAMES[size], function()
+				if board.size == size then return end
+				board.size, board.data = size, nil; renderContext(); loadBoard()
+			end, {Name = "BoardSize_" .. size, Position = UDim2.new((size - 1) / 4, size == 1 and 0 or 4, 0, 0), Size = UDim2.new(0.25, -4, 1, 0),
+				BackgroundColor3 = chosen and C.blue or UI.Skin.slot, TextSize = narrow and 14 or 17})
+			if chosen then UI.stroke(tab, C.cream, 3) end
+		end
+		local periodRow = UI.frame(body, {Name = "BoardPeriods", Size = UDim2.new(1, -6, 0, 40), BackgroundTransparency = 1})
+		for index, spec in ipairs({ { nil, T("Esta temporada", "This season") }, { "all", T("Recorde de sempre", "All-time record") } }) do
+			local chosen = (board.period or nil) == spec[1]
+			local tab = UI.button(periodRow, spec[2], function()
+				if (board.period or nil) == spec[1] then return end
+				board.period, board.data = spec[1], nil; renderContext(); loadBoard()
+			end, {Name = "BoardPeriod_" .. (spec[1] or "season"), Position = UDim2.new((index - 1) / 2, index == 1 and 0 or 4, 0, 0), Size = UDim2.new(0.5, -4, 1, 0),
+				BackgroundColor3 = chosen and C.violet or UI.Skin.slot, TextSize = narrow and 14 or 16})
+			if chosen then UI.stroke(tab, C.cream, 3) end
+		end
+		-- Your best on this board and where you stand, like a trophy plate.
+		local personal = fresh and tonumber(data.personal) or 0
+		local myRank
+		for _, entry in ipairs(fresh and data.rows or {}) do if entry.userId == player.UserId then myRank = entry.rank end end
+		local tier = Rules.RankForWaves(personal)
+		local mine = UI.roundFrame(body, {Name = "BoardPersonal", Size = UDim2.new(1, -6, 0, 82), BackgroundColor3 = UI.Skin.slot}, C.green)
+		UI.stroke(mine, C.green, 3)
+		headshot(mine, player.UserId, {Position = UDim2.fromOffset(12, 11), Size = UDim2.fromOffset(60, 60)}, C.green)
+		UI.fit(UI.label(mine, T("Sua melhor marca", "Your best"), {Position = UDim2.fromOffset(84, 8), Size = UDim2.new(1, -250, 0, 26), Font = UI.Fonts.display, TextSize = 20, TextColor3 = C.green}), 11)
+		UI.fit(UI.label(mine, (ctx.language() == "en" and tier.en or tier.pt) .. "  •  " .. (myRank and (T("posição ", "rank ") .. "#" .. myRank) or T("fora do top 50", "outside the top 50")),
+			{Name = "BoardStanding", Position = UDim2.fromOffset(84, 40), Size = UDim2.new(1, -250, 0, 24), TextSize = 16, TextColor3 = C.muted}), 10)
+		local best = UI.label(mine, tostring(personal) .. T(" ondas", " waves"), {Name = "BoardBest", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(160, 44), Font = UI.Fonts.display, TextSize = 30, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Right})
 		UI.outline(best, 3)
-		if board.data and board.data.rows then
-			local MEDALS = { C.gold, Color3.fromRGB(216, 224, 234), Color3.fromRGB(224, 154, 91) }
-			for _, entry in ipairs(board.data.rows) do
-				local mine = entry.userId == player.UserId
-				local medal = MEDALS[entry.rank]
-				local entryRow = UI.roundFrame(body, {Name = "BoardRow_" .. tostring(entry.rank), Size = UDim2.new(1, -6, 0, 64), BackgroundColor3 = mine and Color3.fromRGB(24, 54, 49) or UI.Skin.slot}, medal or UI.Skin.slotLine)
-				UI.stroke(entryRow, medal or (mine and C.green or UI.Skin.slotLine), medal and 3 or 2)
-				local place = UI.label(entryRow, "#" .. tostring(entry.rank), {Position = UDim2.fromOffset(12, 0), Size = UDim2.new(0, 64, 1, 0), Font = UI.Fonts.display, TextSize = 26, TextColor3 = medal or C.gold})
-				UI.outline(place, 2.5)
-				local tier=Rules.RankForWaves(entry.waves)
-				UI.label(entryRow, entry.name or tostring(entry.userId), {Position = UDim2.fromOffset(80, 6), Size = UDim2.new(1, -200, 0, 28), TextSize = 20, Font = UI.Fonts.display, TextTruncate = Enum.TextTruncate.AtEnd})
-				if board.mode=="ranked" then
-					UI.label(entryRow, ctx.language()=="en" and tier.en or tier.pt, {Position = UDim2.fromOffset(80, 34), Size = UDim2.new(1, -200, 0, 22), TextSize = 16, TextColor3 = C.muted})
+		if fresh and data.rows then
+			local rows = data.rows
+			if #rows == 0 then
+				local empty = UI.roundFrame(body, {Name = "BoardEmpty", Size = UDim2.new(1, -6, 0, 132), BackgroundColor3 = UI.Skin.slot}, C.gold)
+				UI.icon(empty, "trophy", C.gold, {Position = UDim2.fromOffset(16, 22), Size = UDim2.fromOffset(52, 52)})
+				UI.fit(UI.label(empty, T("Ninguém marcou este placar ainda. Seja o primeiro!", "Nobody is on this board yet. Be the first!"), {Position = UDim2.fromOffset(82, 14), Size = UDim2.new(1, -96, 0, 56), TextWrapped = true, TextSize = 18, Font = UI.Fonts.display}), 12)
+				UI.button(empty, T("Ir para a Arena Competitiva", "Go to the Competitive Arena"), function() routePreview.goPortal("ranked") end,
+					{Name = "BoardGoArena", Position = UDim2.new(0, 14, 1, -54), Size = UDim2.new(1, -28, 0, 44), BackgroundColor3 = C.green, TextSize = 17})
+			else
+				-- The podium: second, first and third, the first one highest.
+				local podium = UI.frame(body, {Name = "BoardPodium", Size = UDim2.new(1, -6, 0, 196), BackgroundTransparency = 1})
+				for slot, place in ipairs({ 2, 1, 3 }) do
+					local entry = rows[place]
+					local column = UI.frame(podium, {Name = "Podium_" .. place, Position = UDim2.new((slot - 1) / 3, slot == 1 and 0 or 4, 0, 0), Size = UDim2.new(1 / 3, -4, 1, 0), BackgroundTransparency = 1})
+					local lift = place == 1 and 0 or (place == 2 and 18 or 30)
+					local block = UI.roundFrame(column, {Name = "PodiumBlock", Position = UDim2.new(0, 0, 0, 96 + lift), Size = UDim2.new(1, 0, 1, -96 - lift), BackgroundColor3 = (MEDALS[place]):Lerp(C.ink, 0.45)}, MEDALS[place])
+					UI.stroke(block, MEDALS[place], 3)
+					local number = UI.label(block, "#" .. place, {Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 4), Font = UI.Fonts.display, TextSize = 28, TextColor3 = MEDALS[place], TextXAlignment = Enum.TextXAlignment.Center})
+					UI.outline(number, 2.5)
+					if entry then
+						local face = headshot(column, entry.userId, {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 4 + lift), Size = UDim2.fromOffset(place == 1 and 70 or 60, place == 1 and 70 or 60)}, MEDALS[place])
+						face.Name = "PodiumFace"
+						UI.fit(UI.label(column, entry.name or tostring(entry.userId), {Name = "PodiumName", Position = UDim2.new(0, 2, 0, (place == 1 and 76 or 66) + lift), Size = UDim2.new(1, -4, 0, 20), Font = UI.Fonts.display, TextSize = 16,
+							TextXAlignment = Enum.TextXAlignment.Center, TextTruncate = Enum.TextTruncate.AtEnd, TextColor3 = entry.userId == player.UserId and C.green or C.text}), 10)
+						UI.fit(UI.label(block, tostring(entry.waves) .. T(" ondas", " waves"), {Name = "PodiumWaves", Position = UDim2.fromOffset(0, 38), Size = UDim2.new(1, 0, 0, 24), Font = UI.Fonts.display, TextSize = 19, TextColor3 = C.cream, TextXAlignment = Enum.TextXAlignment.Center}), 11)
+					else
+						UI.label(column, T("vago", "open"), {Name = "PodiumOpen", Position = UDim2.new(0, 0, 0, 60 + lift), Size = UDim2.new(1, 0, 0, 24), TextSize = 15, TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center})
+					end
 				end
-				UI.label(entryRow, tostring(entry.waves) .. T(" ondas", " waves"), {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(120, 34), TextXAlignment = Enum.TextXAlignment.Right, Font = UI.Fonts.display, TextSize = 22, TextColor3 = C.green})
+				-- Everyone after the podium, yours in green.
+				for index = 4, #rows do
+					local entry = rows[index]
+					local isMine = entry.userId == player.UserId
+					local row = UI.roundFrame(body, {Name = "BoardRow_" .. tostring(entry.rank), Size = UDim2.new(1, -6, 0, 58), BackgroundColor3 = isMine and Color3.fromRGB(24, 54, 49) or UI.Skin.slot}, isMine and C.green or UI.Skin.slotLine)
+					UI.label(row, "#" .. tostring(entry.rank), {Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0, 56, 1, 0), Font = UI.Fonts.display, TextSize = 22, TextColor3 = C.gold})
+					headshot(row, entry.userId, {Position = UDim2.fromOffset(66, 7), Size = UDim2.fromOffset(44, 44)}, isMine and C.green or UI.Skin.slotLine)
+					local rowTier = Rules.RankForWaves(entry.waves)
+					UI.label(row, entry.name or tostring(entry.userId), {Position = UDim2.fromOffset(120, 4), Size = UDim2.new(1, -250, 0, 26), TextSize = 18, Font = UI.Fonts.display, TextTruncate = Enum.TextTruncate.AtEnd})
+					UI.label(row, ctx.language() == "en" and rowTier.en or rowTier.pt, {Position = UDim2.fromOffset(120, 30), Size = UDim2.new(1, -250, 0, 20), TextSize = 14, TextColor3 = C.muted})
+					UI.label(row, tostring(entry.waves) .. T(" ondas", " waves"), {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(120, 30), TextXAlignment = Enum.TextXAlignment.Right, Font = UI.Fonts.display, TextSize = 20, TextColor3 = C.green})
+				end
 			end
-			if #board.data.rows == 0 then UI.label(body, T("Seja o primeiro a deixar sua marca neste setor.", "Be the first to set a record in this sector."), {Size = UDim2.new(1, -6, 0, 50), TextWrapped = true, TextColor3 = C.muted}) end
 		elseif board.failed then
 			-- Failure is a state with a way out, not an endless "loading".
 			UI.label(body, T("Não foi possível carregar o placar agora.", "The leaderboard could not be loaded right now."), {Name = "BoardFailed", Size = UDim2.new(1, -6, 0, 40), TextWrapped = true, TextColor3 = C.red})
 			UI.button(body, T("Tentar novamente", "Try again"), function() board.data = nil; loadBoard(); renderContext() end, {Name = "BoardRetry", Size = UDim2.new(1, -6, 0, 48), BackgroundColor3 = C.gold, TextSize = 20})
-		else UI.label(body, T("Carregando placar…", "Loading leaderboard…"), {TextColor3 = C.muted}) end
-		UI.secondary(body, T("Atualizar placar", "Refresh leaderboard"), loadBoard, {Name = "BoardRefresh", Size = UDim2.new(1, -6, 0, 44), TextSize = 18})
+		else
+			UI.label(body, T("Carregando placar…", "Loading leaderboard…"), {Name = "BoardLoading", Size = UDim2.new(1, -6, 0, 40), TextColor3 = C.muted})
+		end
+		smallText(body, T("Recorde = ondas sobrevividas no modo Competitivo. Ranks: Bronze 10 • Prata 20 • Ouro 30 • Diamante 40 • Lenda 50 ondas. Temporadas de 60 dias.",
+			"Record = waves survived in Competitive mode. Ranks: Bronze 10 • Silver 20 • Gold 30 • Diamond 40 • Legend 50 waves. 60-day seasons."), 0, 54)
+		UI.secondary(body, T("Atualizar placar", "Refresh leaderboard"), function() board.data = nil; renderContext(); loadBoard() end, {Name = "BoardRefresh", Size = UDim2.new(1, -6, 0, 44), TextSize = 18})
 	end
 
 	-- Four small loops around the main game, all decided by the server's clock:
@@ -1164,40 +1245,58 @@ function Panels.new(ctx)
 	-- One drawn icon per talent (UI.icon kinds): no letters, no emoji.
 	local TALENT_ICONS = {
 		roundGold = "coin", killGold = "star", magnet = "magnet", victoryGold = "trophy", globalMagnet = "globe",
-		baseVitality = "heart", baseRecovery = "plus", lastStand = "shield",
+		baseVitality = "heart", baseRecovery = "plus", lastStand = "alert", baseArmor = "base", waveShield = "shield",
+		towerDiscount = "tag", upgradeDiscount = "gear", waveIncome = "bank", xpBoost = "scroll",
 		startingEnergy = "bolt", towerPower = "sword", reach = "target", skillTempo = "clock", abilityPower = "sparkle",
+		heroFury = "hero", drillSpeed = "play", critical = "dice", bossHunter = "skull",
+		skyGuard = "wing", nightSight = "eye", piercing = "bow", shockwave = "ring",
 	}
 	-- The talent tree, in the style of the big games' research trees: big
-	-- hexagons growing out of the commander's own hexagon (the level), Fortune
-	-- to the left, Command to the right and Guardian upwards. Hovering one tells
+	-- hexagons growing out of the commander's own hexagon (the level), six
+	-- branches in rows: economy and defence to the left (Guardian, Fortune,
+	-- Logistics), combat to the right (Arsenal, Command, Tactics). Hovering one tells
 	-- what it does now and next; tapping it evolves it. In the lobby it fills the
 	-- screen over a dark backdrop and opens with the hexagons snapping in one by
 	-- one like building blocks; inside a match it is read-only and only shows
 	-- what the commander already has.
 	-- options.readOnly, options.rerender (how to redraw the host), options.canvasHeight.
-	local TALENT_STEPS = {
-		W = { { -1.732, 0 }, { -0.866, -1.5 }, { -1.732, 0 }, { -0.866, 1.5 } },
-		E = { { 1.732, 0 }, { 0.866, -1.5 }, { 1.732, 0 }, { 0.866, 1.5 } },
-		N = { { 0.866, -1.5 }, { -0.866, -1.5 } },
-	}
-	local TALENT_DIRECTION = { fortune = "W", command = "E", guardian = "N" }
 	-- Where every hexagon sits, in units of the hexagon's radius, around the
-	-- commander's hexagon at (0, 0); and the box they need.
+	-- commander's hexagon at (0, 0); where each branch's name goes; and the box
+	-- they all need. A branch is a row of the honeycomb running outwards
+	-- (Catalog side: -1 left, 1 right; row 0 beside the commander, -2 above,
+	-- 2 below): an upper or lower branch leaves the commander on his diagonal,
+	-- and an empty row between branches keeps each one reading on its own.
+	-- The name sits just past the branch's outer end, and the box includes it,
+	-- so no name is ever cut at the edge of the board (owner, 17/10).
+	local LEGEND_UNITS = 2.7
 	local function talentUnits()
-		local units, order = {}, {}
+		local units, order, legends = {}, {}, {}
 		local minX, maxX, minY, maxY = -1, 1, -1.1, 1.1
+		local function include(x, y, halfW, halfH)
+			minX, maxX = math.min(minX, x - halfW), math.max(maxX, x + halfW)
+			minY, maxY = math.min(minY, y - halfH), math.max(maxY, y + halfH)
+		end
 		for b, branch in ipairs(Catalog.TalentBranches) do
-			local steps = TALENT_STEPS[TALENT_DIRECTION[branch.id] or ({ "W", "E", "N" })[(b - 1) % 3 + 1]]
-			local x, y = 0, 0
+			local side = branch.side or (b % 2 == 1 and -1 or 1)
+			local row = branch.row or 0
+			local lift = row > 0 and 1 or -1
+			local q, r = 0, 0
 			for index, id in ipairs(branch.nodes) do
-				local step = steps[(index - 1) % #steps + 1]
-				x, y = x + step[1], y + step[2]
+				if row ~= 0 and index == 1 then q, r = side, lift
+				elseif row ~= 0 and index == 2 then q, r = 2 * side, row
+				else q, r = q + 2 * side, row end
+				local x, y = q * 0.866, r * 1.5
 				units[id], order[id] = Vector2.new(x, y), index
-				minX, maxX = math.min(minX, x - 0.95), math.max(maxX, x + 0.95)
-				minY, maxY = math.min(minY, y - 1.1), math.max(maxY, y + 1.1)
+				include(x, y, 0.95, 1.1)
+			end
+			local last = units[branch.nodes[#branch.nodes]]
+			if last then
+				local edge = last.X + side * 1.0
+				legends[branch.id] = { position = Vector2.new(edge, last.Y), side = side }
+				include(edge + side * LEGEND_UNITS / 2, last.Y, LEGEND_UNITS / 2 + 0.15, 0.4)
 			end
 		end
-		return units, order, minX, maxX, minY, maxY
+		return units, order, minX, maxX, minY, maxY, legends
 	end
 	-- A pointy-top hexagon: the UI has no polygons, so three bars turned 30, 90
 	-- and 150 degrees make one. Opaque only (overlapping see-through bars show).
@@ -1213,7 +1312,8 @@ function Panels.new(ctx)
 	end
 	local function talentValue(def, r)
 		if def.flag then return r > 0 and T("Ativo", "Active") or T("inativo", "inactive") end
-		return (r > 0 and "+" or "") .. tostring(r * def.effect) .. talentUnit(def)
+		if def.unit == "wave" then return tostring(r * def.effect) .. T(" por onda", " per wave") end
+		return (r > 0 and (def.minus and "-" or "+") or "") .. tostring(r * def.effect) .. talentUnit(def)
 	end
 	local function buildTalents(body, options)
 		options = options or {}
@@ -1284,7 +1384,7 @@ function Panels.new(ctx)
 		end
 
 		-- The honeycomb, sized to the space between the heading and the footer.
-		local units, order, minX, maxX, minY, maxY = talentUnits()
+		local units, order, minX, maxX, minY, maxY, legends = talentUnits()
 		local areaW, areaH = stageW - 24, stageH - headH - footH - infoH - 12
 		-- Never smaller than a fingertip on a small screen: the tree scrolls instead.
 		local R = math.floor(math.clamp(math.min(areaW / (maxX - minX), areaH / (maxY - minY)), compact and 30 or 26, readOnly and 50 or 66))
@@ -1310,7 +1410,8 @@ function Panels.new(ctx)
 		if not readOnly then
 			kit.talentView = kit.talentView or {}
 			navigation = TalentViewport.new({UI = UI, holder = holder, map = map, saved = kit.talentView, width = areaW, height = areaH + 8,
-				mapW = mapW, mapH = mapH, root = at(Vector2.new(0, 0)), overview = not compact, lowFX = lowFX})
+				mapW = mapW, mapH = mapH, root = at(Vector2.new(0, 0)), overview = not compact, lowFX = lowFX,
+				fit = math.min(1, (areaW - 8) / mapW, (areaH + 4) / mapH)})
 			local center = UI.secondary(stage, T("Centralizar", "Center"), function() navigation.Center(); audio:Talent("center") end,
 				{Name = "TalentCenter", Position = UDim2.fromOffset(12, compact and 4 or 12), Size = UDim2.fromOffset(compact and 106 or 130, compact and 34 or 42), TextSize = compact and 14 or 17, ZIndex = 8})
 			if compact then UI.hover(center, function(box) UI.tooltipTitle(box, T("Explorar a árvore", "Explore the tree")); UI.tooltipLine(box, T("Arraste com o dedo ou mouse. No PC, use a roda para aproximar.", "Drag with your finger or mouse. On PC, use the wheel to zoom."), C.muted) end, 280) end
@@ -1352,14 +1453,17 @@ function Panels.new(ctx)
 		UI.fit(UI.label(root, tostring(p.level or 1), {Name = "RootLevel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.6), Size = UDim2.fromOffset(R * 1.4, R * 0.7), Font = UI.Fonts.display, TextSize = math.max(18, math.floor(R * 0.62)), TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 6}), 8)
 		if animate then popIn(root, 0, 0) end
 
-		-- The branch names, once each, at the outer end of their branch.
+		-- The branch names, once each, just past the outer end of their branch
+		-- (inside the board's box: talentUnits counts them).
 		local legend = UI.frame(map, {Name = "TalentLegend", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 6})
-		for b, branch in ipairs(Catalog.TalentBranches) do
-			local last = units[branch.nodes[#branch.nodes]]
-			local direction = TALENT_DIRECTION[branch.id] or ({ "W", "E", "N" })[(b - 1) % 3 + 1]
-			local spot = at(last) + (direction == "N" and Vector2.new(R * 1.85, 0) or Vector2.new(0, R * 1.32))
-			local tint = Color3.fromRGB(unpack(branch.color))
-			UI.pill(legend, L(branch.name), tint:Lerp(C.ink, 0.25), {Name = "TalentBranch_" .. branch.id, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(spot.X, spot.Y), TextSize = compact and 13 or 17, ZIndex = 7})
+		for _, branch in ipairs(Catalog.TalentBranches) do
+			local spot = legends[branch.id]
+			if spot then
+				local tint = Color3.fromRGB(unpack(branch.color))
+				local where = at(spot.position)
+				UI.pill(legend, L(branch.name), tint:Lerp(C.ink, 0.25), {Name = "TalentBranch_" .. branch.id, AnchorPoint = Vector2.new(spot.side < 0 and 1 or 0, 0.5), Position = UDim2.fromOffset(where.X, where.Y),
+					TextSize = math.clamp(math.floor(R * 0.28), 12, 17), ZIndex = 7})
+			end
 		end
 
 		local info
@@ -1447,7 +1551,7 @@ function Panels.new(ctx)
 					end
 				end, 320)
 				if animate then
-					popIn(node, 0.12 + (order[id] or 1) * 0.07 + (branch.id == "guardian" and 0.03 or 0), 0)
+					popIn(node, 0.12 + (order[id] or 1) * 0.07 + math.abs(branch.row or 0) * 0.015, 0)
 				elseif bought == id and not lowFX then
 					popIn(node, 0, 1.35)
 				end
@@ -1604,6 +1708,7 @@ function Panels.new(ctx)
 		local function basePassive(stats,hpWord)
 			if (stats.chill or 0)>0 then return "  •  -"..math.floor(stats.chill*100+0.5)..T("% de velocidade","% speed") end
 			if (stats.interest or 0)>0 then return "  •  "..T("juros de ","interest ")..math.floor(stats.interest*100+0.5).."%" end
+			if (stats.bounty or 0)>0 then return "  •  +"..math.floor(stats.bounty*100+0.5)..T("% Ouro por inimigo","% Gold per enemy") end
 			return stats.hp>0 and ("  •  +"..stats.hp..hpWord) or ""
 		end
 		-- The base in use, big, with what it gives and where it is upgraded.
@@ -1632,7 +1737,7 @@ function Panels.new(ctx)
 			UI.corner(stage,12)
 			UI.create("UIGradient",{Color=ColorSequence.new(tint:Lerp(Color3.new(1,1,1),0.15),tint:Lerp(C.ink,0.55)),Rotation=90},stage)
 			UI.cardSkin(stage,tint)
-			UI.multiverseSeal(stage,C.cream,{Position=UDim2.fromScale(0.25,0),Size=UDim2.fromScale(0.5,1),ZIndex=0})
+			UI.cardBackdrop(stage,tint,def.rarity)
 			UI.basePortrait(stage,def,{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,4),Size=UDim2.fromOffset(100,96)})
 			if not owned then
 				local shade=UI.frame(stage,{Name="NotOwned",Size=UDim2.fromScale(1,1),BackgroundColor3=C.ink,BackgroundTransparency=0.45})

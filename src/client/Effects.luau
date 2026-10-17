@@ -643,7 +643,7 @@ end
 -- BillboardGui with no BasePart parent has no adornee and never renders, so
 -- each popup gets its own tiny invisible anchor part, exactly like coins.
 -- size: the text size the number settles at; it pops in half again bigger.
-function Effects:_popup(position, amount, color, prefix, size, strength)
+function Effects:_popup(position, amount, color, prefix, size, strength, suffix)
 	if #self.popups >= 40 then return end
 	local pooled = table.remove(self.popupPool)
 	local anchor, label
@@ -663,7 +663,7 @@ function Effects:_popup(position, amount, color, prefix, size, strength)
 	local state = self.getState()
 	local reduced = state and state.profile and state.profile.settings and state.profile.settings.lowFX
 	local pop = reduced and 0 or (0.18 + 0.32 * math.clamp(strength or 0, 0, 1))
-	label.Text, label.TextColor3, label.TextTransparency, label.TextStrokeTransparency = (prefix or "-") .. UI.format(math.max(1, math.floor(amount))), color, 0, 0
+	label.Text, label.TextColor3, label.TextTransparency, label.TextStrokeTransparency = (prefix or "-") .. UI.format(math.max(1, math.floor(amount))) .. (suffix or ""), color, 0, 0
 	label.TextSize = math.floor(size * (1 + pop) * math.max(1, UI.screenScale or 1))
 	anchor.CFrame = CFrame.new(position + Vector3.new(math.random(-8, 8) * 0.1, 1, 0))
 	table.insert(self.popups, {anchor = anchor, label = label, born = self.clock, size = size, pop = pop, drift = reduced and 0 or math.random(-10, 10) * 0.12, expires = self.clock + 0.85})
@@ -1643,6 +1643,9 @@ function Effects:Handle(event)
 		if event.ultimate and not lowFX then self:_ultimateGrade(tint) end
 		-- Each hero's power has its own look (PowerFX); a hero without one keeps
 		-- the look of its kind of power. Reduced effects keeps the ring only.
+		-- The caster's light rises from the hero that casts (PowerFX:Frame).
+		local caster=event.towerId and self:_towerModel(event.towerId)
+		if caster and caster.PrimaryPart then event.casterAt=caster.PrimaryPart.Position end
 		local signed=not lowFX and typeof(event.position)=="Vector3" and self.powerFX:Cast(event,tint)
 		if typeof(event.position)=="Vector3" then
 			self:Handle({kind="Pulse",cosmetic=true,position=event.position,color=event.color,radius=math.max(event.radius or 0,5),duration=math.clamp(event.duration or 0.5,0.5,6)})
@@ -1741,7 +1744,10 @@ function Effects:Handle(event)
 				-- Only the server's ten largest aggregated hits get a number.
 				-- The health tint still tells every hit, without eighty labels.
 				if event.hits and event.hits[enemy.id] then
-					self:_popup(enemy.position + Vector3.new(0, 2.6 * current.scale, 0), event.hits[enemy.id], tint, "-", math.floor(21 + weight * 15 + (current.def.boss and 5 or 0)), weight)
+					-- A critical strike (talent) reads at once: bigger, orange-gold, "!".
+					local crit = event.crits and event.crits[enemy.id]
+					self:_popup(enemy.position + Vector3.new(0, 2.6 * current.scale, 0), event.hits[enemy.id], crit and Color3.fromRGB(255, 176, 40) or tint, "-",
+						math.floor(21 + weight * 15 + (current.def.boss and 5 or 0) + (crit and 10 or 0)), crit and 1 or weight, crit and "!" or nil)
 				end
 			end
 			current.lastHP = hp

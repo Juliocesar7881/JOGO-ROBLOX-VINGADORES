@@ -220,9 +220,24 @@ showToast = function(message, bad, icon)
 	if current then current:Destroy() end
 	local inBattle = activeMatch() and refs.toastTop ~= nil
 	local top = inBattle and ((refs.boss and refs.boss.Parent and refs.boss.Visible) and refs.toastBossTop or refs.toastTop) or nil
+	-- In the lobby a message drops in at the top centre, never over a control
+	-- (owner, 17/10: at the bottom it covered the panels' Close, Exit and Reset):
+	-- clear of the profile pill, the settings button and a sheet's close button.
+	local width = nil
+	if not activeMatch() then
+		local size = screenSize()
+		local hud = UI.lobbyLayout(size.X, size.Y)
+		local reserve = math.max(hud.pill.x + hud.pill.w, size.X - hud.settings.x, 76) + 8
+		if size.X - 2 * reserve >= 300 then
+			width, top = math.floor(math.min(640, size.X - 2 * reserve)), hud.pill.y
+		else
+			-- A narrow phone: under the corner buttons, still clear of a sheet's close.
+			width, top = math.floor(size.X - 152), hud.pill.y + hud.pill.h + 8
+		end
+	end
 	local toast = UI.roundFrame(overlays, {
-		Name = "Toast", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, top or (activeMatch() and 8 or math.max(8,screenSize().Y-82))),
-		Size = UDim2.new(1, -32, 0, inBattle and 54 or 66), ZIndex = 60,
+		Name = "Toast", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, top or 8),
+		Size = width and UDim2.fromOffset(width, 66) or UDim2.new(1, -32, 0, inBattle and 54 or 66), ZIndex = 60,
 	}, bad and C.red or C.green)
 	UI.windowSkin(toast, bad and C.red or C.green)
 	UI.create("UISizeConstraint", {MaxSize = Vector2.new(640, 110)}, toast)
@@ -423,38 +438,11 @@ local celebrate = Celebrate.new({
 	end,
 })
 
--- A quickbar slot: the hero's 3D portrait on a tile in its rarity colour,
--- the slot number in a corner and the price on the bottom edge. No name: a
--- name never fits a phone tile, and the portrait and colour already say who.
-local function heroCard(parent, id, index, width, height, callback, equipped)
-	local def = Catalog.Heroes[id]
-	local rarity = Catalog.Rarities[def.rarity]
-	local tint = rarity and UI.color(rarity.color) or colorFor(id)
-	local button = UI.secondary(parent, "", callback, {
-		Name = "HeroCard_" .. id, LayoutOrder = index,
-		Size = UDim2.fromOffset(width, height), BackgroundColor3 = tint:Lerp(C.background, equipped and 0.1 or 0.3),
-	})
-	local light = button:FindFirstChildOfClass("UIGradient")
-	if light then light.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(120, 120, 130)) end
-	UI.cardSkin(button,tint)
-	UI.stroke(button, index == 1 and C.gold or tint, index == 1 and 3.5 or 2.5)
-	heroPortrait(button, id, {Position = UDim2.fromOffset(2, 1), Size = UDim2.new(1, -4, 1, -14)})
-	local priceH = height < 62 and 17 or 20
-	local price = UI.label(button, tostring(def.cost), {Name = "EnergyCost", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -3),
-		Size = UDim2.new(1, -8, 0, priceH), BackgroundTransparency = 0.05, BackgroundColor3 = C.ink, TextColor3 = C.gold,
-		TextSize = height < 62 and 13 or 16, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
-	UI.corner(price, 8)
-	local badge = UI.label(button, index == 1 and "★" or tostring(index), {Name = "SlotNumber", Position = UDim2.fromOffset(3, 3), Size = UDim2.fromOffset(18, 18),
-		BackgroundColor3 = index == 1 and C.gold or C.background, BackgroundTransparency = 0.05, TextSize = 12,
-		TextColor3 = index == 1 and C.ink or C.text, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center})
-	UI.corner(badge, 9)
-	local count = UI.label(button, "", {Name = "PlacedCount", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 3), Size = UDim2.fromOffset(30, 16),
-		BackgroundColor3 = C.background, BackgroundTransparency = 0.2, TextSize = 12, Font = UI.Fonts.display, TextXAlignment = Enum.TextXAlignment.Center, Visible = false})
-	UI.corner(count, 8)
-	local line = UI.frame(button, {Name = "SelectionLine", Position = UDim2.new(0, 6, 1, -3), Size = UDim2.new(1, -12, 0, 3), BackgroundColor3 = C.gold, BackgroundTransparency = equipped and 0 or 1})
-	-- Hovering a slot tells what the hero does now: damage, range, speed, traits.
-	UI.hover(button, function(box) if kit.heroTooltip then kit.heroTooltip(box, id) end end, 320)
-	return button, price, line, count
+-- A quickbar slot (Hotbar.luau): the hero's card in its rarity's colours.
+local Hotbar = require(script:WaitForChild("Hotbar"))
+local function heroCard(parent, id, index, width, height, callback)
+	return Hotbar.card({UI = UI, C = C, Catalog = Catalog, heroPortrait = heroPortrait, colorFor = colorFor,
+		hover = function(box, heroId) if kit.heroTooltip then kit.heroTooltip(box, heroId) end end}, parent, id, index, width, height, callback)
 end
 
 -- The lobby panels live in Panels.luau (see its header).
@@ -1146,8 +1134,7 @@ local function positionValid(position)
 	if not ok then return false, reason end
 	if mine >= (match.towerLimit or Rules.SafetyTowerCeiling) then return false, "limit" end
 	local hero = Catalog.Heroes[selectedHero]
-	local discount = math.clamp(Rules.CardTotals(match.cards).discount or 0, 0, 0.5)
-	if hero and (match.cash or 0) < math.floor(hero.cost * (1 - discount)) then return false, "cash" end
+	if hero and (match.cash or 0) < Rules.PlacementCost(hero, profile(), Rules.CardTotals(match.cards)) then return false, "cash" end
 	return true
 end
 
@@ -1233,7 +1220,7 @@ local function chooseHero(id)
 	-- The strip above names what is in hand and its price; the bar below says
 	-- how to place it (they used to say the same words twice).
 	local def = Catalog.Heroes[id]
-	refs.hint.Text = heroName(id) .. (def and ("  •  " .. number(def.cost) .. T(" Ouro", " Gold")) or "")
+	refs.hint.Text = heroName(id) .. (def and ("  •  " .. number(Rules.PlacementCost(def, profile(), Rules.CardTotals(state and state.match and state.match.cards))) .. T(" Ouro", " Gold")) or "")
 	refs.hint.Visible = true
 	refs.placement.Visible = true
 	refs.confirm.Text = UserInputService.TouchEnabled and T("Toque no chão para colocar", "Tap the ground to place") or T("Clique para colocar  •  botão direito cancela", "Click to place  •  right click cancels")
@@ -1350,7 +1337,7 @@ kit.priorityOrder = {"First", "Last", "Strongest", "Nearest"}
 
 local function currentMatchLayout()
 	local size = screenSize()
-	return UI.matchLayout(size.X, size.Y, {skills = 1, vip = profile().passes ~= nil and profile().passes.vip == true, cards = state ~= nil and state.match ~= nil and state.match.cardMode == true})
+	return UI.matchLayout(size.X, size.Y, {skills = 1, cards = state ~= nil and state.match ~= nil and state.match.cardMode == true})
 end
 
 local function closeTowerPanel()
@@ -1434,7 +1421,11 @@ local function renderMatch()
 			label.Size=UDim2.new(s.X.Scale,s.X.Offset-inset,s.Y.Scale,s.Y.Offset)
 		end
 	end
-	refs.hpText = UI.button(top, "", function() showToast(T("Evolua a base com o Agente ao lado dela (tecla E).", "Upgrade the base with the Agent beside it (E key)."), false) end, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
+	refs.hpText = UI.button(top, "", function()
+		local scale = state and state.match and tonumber(state.match.leakScale) or 1
+		local danger = scale > 1 and (T("Inimigos que chegam ao núcleo causam ", "Enemies reaching the core deal ") .. scale .. T("x de dano (dobra a cada 4 ondas). ", "x damage (it doubles every 4 waves). ")) or ""
+		showToast(danger .. T("Evolua a base com o Agente ao lado dela (tecla E).", "Upgrade the base with the Agent beside it (E key)."), false)
+	end, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
 	UI.outline(refs.hpText, 2)
 	refs.hp = UI.bar(top, C.green, at(layout.hpBar, topRect), dims(layout.hpBar))
 	UI.icon(top, "heart", C.red, {Name = "CoreHeart", Position = UDim2.fromOffset(layout.hpBar.x - topRect.x - 30, layout.hpBar.y - topRect.y - 7), Size = UDim2.fromOffset(28, layout.hpBar.h + 14)})
@@ -1521,12 +1512,7 @@ local function renderMatch()
 		refs.abilityButtons[id] = {button = button, index = index, meter = meter, tint = tint, shade = shade, caption = caption,
 			name = (def and L(def.name) or T("Poder do líder", "Leader power")), ultimate = abilityInfo.ultimate}
 	end
-	if profile().passes and profile().passes.vip then
-		UI.secondary(abilities, T("Saudação", "Salute"), function()
-			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-			if humanoid then pcall(function() humanoid:PlayEmote("wave") end) end
-		end, {LayoutOrder = 3, Size = UDim2.fromOffset(layout.saluteW, layout.buttonH), TextColor3 = C.gold, TextSize = 12})
-	end
+	-- (The VIP's "Salute" button is gone: it did nothing in a match, owner 17/10.)
 	-- Narrow bands (a phone) get smaller letters so every label still fits.
 	refs.controlDelta = layout.controlW >= 52 and 0 or (layout.controlW >= 44 and -2 or -4)
 	local cd = refs.controlDelta
@@ -1565,9 +1551,7 @@ local function renderMatch()
 	for index = 1, 5 do
 		local id = (profile().loadout or {})[index]
 		if id and Catalog.Heroes[id] then
-			local button, price, line, count = heroCard(cards, id, index, layout.cardW, layout.heroCards.h - 14, function() chooseHero(id) end)
-			local border = button:FindFirstChild("Border")
-			refs.heroCards[id] = {button = button, price = price, line = line, count = count, border = border, borderColor = border and border.Color, borderThickness = border and border.Thickness}
+			refs.heroCards[id] = heroCard(cards, id, index, layout.cardW, layout.heroCards.h - 14, function() chooseHero(id) end)
 		else
 			-- An empty slot is a quiet tile with a plus: heroes are equipped in
 			-- the lobby, and a phone tile has no room to say so.
@@ -1591,7 +1575,12 @@ updateMatch = function()
 	refs.wave.Text = T("Onda ", "Wave ") .. tostring(match.wave or 0) .. (match.totalWaves == 0 and " / ∞" or " / " .. tostring(match.totalWaves or 50))
 	refs.map.Text = mapName(match.mapId) .. "  /  " .. modeName(match.modeId, match.difficultyId)
 	-- One line: a second one used to fall behind the health bar.
+	-- How hard a leak hits now (it doubles every 4 waves, Rules.LeakScale): the
+	-- server's number, shown so the danger never grows in silence.
+	local leakScale = tonumber(match.leakScale) or 1
+	refs.hpText.RichText = true
 	refs.hpText.Text = "BASE " .. tostring(math.ceil(match.baseHP or 0)) .. "/" .. tostring(match.maxBaseHP or 100) .. ((match.shield or 0) > 0 and "  +" .. math.ceil(match.shield) or "")
+		.. (leakScale > 1 and ('  <font color="#FF6A5A">x' .. tostring(leakScale) .. "</font>") or "")
 		.. (refs.layout and refs.layout.class.narrow and "  ▲" or T("   ▲ Evoluir", "   ▲ Upgrade"))
 	refs.hp.Size = UDim2.fromScale(math.clamp((match.baseHP or 0) / (match.maxBaseHP or 100), 0, 1), 1)
 	refs.hp.BackgroundColor3 = (match.baseHP or 0)/math.max(1,match.maxBaseHP or 100) > 0.3 and C.green or C.red
@@ -1692,24 +1681,7 @@ updateMatch = function()
 		if record.shade then record.shade.Size = UDim2.fromScale(1, waiting) end
 		if record.caption then record.caption.Text, record.caption.TextColor3 = record.button.Text, record.button.TextColor3 end
 	end
-	for id, card in pairs(refs.heroCards or {}) do
-		local selected = selectedHero == id
-		local rarity = Catalog.Rarities[Catalog.Heroes[id].rarity]
-		local tint = rarity and UI.color(rarity.color) or colorFor(id)
-		card.button.BackgroundColor3 = tint:Lerp(C.background, selected and 0.1 or 0.45)
-		card.line.BackgroundTransparency = selected and 0 or 1
-		-- The hero in hand wears a thick white frame on the bar.
-		if card.border then
-			card.border.Color = selected and Color3.new(1, 1, 1) or card.borderColor
-			card.border.Thickness = selected and 4.5 or card.borderThickness
-		end
-		card.price.TextColor3 = (match.cash or 0) >= Catalog.Heroes[id].cost and C.gold or C.red
-		local placed = 0
-		for _, tower in ipairs(match.towers or {}) do if tower.ownerId == player.UserId and tower.heroId == id then placed += 1 end end
-		card.count.Visible = placed > 0
-		card.count.Text = "x" .. tostring(placed)
-		card.count.TextColor3 = C.text
-	end
+	Hotbar.update({UI = UI, C = C, Catalog = Catalog, Rules = Rules, profile = profile(), selected = selectedHero}, refs.heroCards, match, player.UserId)
 	matchHud.updateUpgradeBoards(match)
 	if routePreview:Update(state.phase, match, profile().settings and profile().settings.lowFX) then
 		showToast(T("NOVA ENTRADA! Os inimigos vão chegar por outro caminho.", "NEW ENTRANCE! Enemies will come another way."), true)
@@ -2258,6 +2230,7 @@ end)
 kit.nameplateAt, kit.anchorCheckAt = 0, 0
 -- A device that cannot hold the frame rate in a battle drops to reduced
 -- effects by itself (never in Studio, where the window may simply be hidden).
+kit.returnCover = require(script:WaitForChild("ReturnCover")).new({art = kit.screenArt, T = T, player = player, getState = function() return state end})
 kit.autoQuality = require(script:WaitForChild("AutoQuality")).new({
 	active = function() return state ~= nil and state.phase == "Wave" and not RunService:IsStudio() end,
 	reduced = function() local settings = profile().settings return settings ~= nil and settings.lowFX == true end,
