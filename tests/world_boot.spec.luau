@@ -1437,6 +1437,18 @@ do
 	end
 	art.web, art.mesh = savedWeb, savedMesh2
 	check(webbed >= 20, "the spider's armour wears its web finish, got " .. webbed)
+	-- Ornate armour: domed pads and gold filigree on the chest of a hero of rank.
+	local savedOrnate = { art.mesh, art.padMesh, art.padTexture, art.filigree }
+	art.mesh, art.padMesh, art.padTexture, art.filigree = 123, 51, 52, 53
+	local thor = WorldBuilder.Figure.Hero(holder, "thor", Catalog.Heroes.thor, 1)
+	local domes, scroll = 0, 0
+	for _, d in ipairs(thor.model:GetDescendants()) do
+		if d:IsA("SpecialMesh") and d.MeshId == "rbxassetid://51" and d.TextureId == "rbxassetid://52" then domes += 1 end
+		if d:IsA("Decal") and d.Texture == "rbxassetid://53" then scroll += 1 end
+	end
+	art.mesh, art.padMesh, art.padTexture, art.filigree = savedOrnate[1], savedOrnate[2], savedOrnate[3], savedOrnate[4]
+	check(domes == 2, "the thunder god's pads are domed pauldrons, got " .. domes)
+	check(scroll == 1, "the thunder god's chest carries gold filigree, got " .. scroll)
 	holder:Destroy()
 end
 

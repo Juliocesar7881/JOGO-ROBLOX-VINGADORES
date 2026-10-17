@@ -36,7 +36,9 @@ return {
 	-- the Rider's flames, the Mystic's runes; armour finishes: web, scales, circuit,
 	-- tiger stripes (Figure HERO_FINISH). 0 leaves the piece plain.
 	Art = { armorMesh = 117802835003514, armorTexture = 117812857455019, galaxy = 98885280567335, flames = 111186421217436, runes = 118425714210399,
-		web = 99334513899048, scales = 117029856228705, circuit = 104273646071216, tiger = 91303391426074 },
+		web = 99334513899048, scales = 117029856228705, circuit = 104273646071216, tiger = 91303391426074,
+		-- Ornate armour (tools/gen_ornate_assets.py): domed pauldron and chest filigree.
+		padMesh = 113935066525487, padTexture = 102954478036198, filigree = 132068800303676 },
 	BaseHP = 100,
 	-- Match Gold each commander starts a run with (enemies drop the rest).
 	StartCash = 600,

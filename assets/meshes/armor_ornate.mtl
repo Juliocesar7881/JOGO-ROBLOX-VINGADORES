@@ -1,0 +1,13 @@
+newmtl pad_finish
+Ka 1 1 1
+Kd 1 1 1
+d 1
+illum 1
+map_Kd pad_finish.png
+
+newmtl filigree
+Ka 1 1 1
+Kd 1 1 1
+d 1
+illum 1
+map_Kd filigree.png

@@ -2843,7 +2843,11 @@ end
 -- near-white finish tinted by VertexColor, made by tools/gen_armor_assets.py
 -- and uploaded once (Config.Art). While their ids are 0 the classic chamfered
 -- blocks stay. Set by World.new from the config.
-local ARMOUR_ART = { mesh = 0, texture = 0, galaxy = 0, flames = 0, runes = 0, web = 0, scales = 0, circuit = 0, tiger = 0 }
+local ARMOUR_ART = { mesh = 0, texture = 0, galaxy = 0, flames = 0, runes = 0, web = 0, scales = 0, circuit = 0, tiger = 0,
+	padMesh = 0, padTexture = 0, filigree = 0 }
+-- Heroes of rank whose chest plate carries gold filigree (tools/gen_ornate_assets.py).
+local FILIGREE = { thor = true, strange = true, wanda = true, captain = true, captainmarvel = true, seaking = true, amazon = true,
+	storm = true, jean = true, solartitan = true, capmen = true, vision = true, panther = true }
 -- A hero's own armour finish (tools/gen_hero_textures.py): a pattern in the
 -- armour block's layout that the piece's colour tints. The galaxy is painted,
 -- not tinted, and only on the suit's coloured pieces (the herald's white
@@ -2868,6 +2872,8 @@ local function paintArmour(f)
 	if (ARMOUR_ART.mesh or 0) == 0 then return end
 	local meshId = "rbxassetid://" .. tostring(ARMOUR_ART.mesh)
 	local textureId = (ARMOUR_ART.texture or 0) ~= 0 and "rbxassetid://" .. tostring(ARMOUR_ART.texture) or ""
+	local padId = (ARMOUR_ART.padMesh or 0) ~= 0 and "rbxassetid://" .. tostring(ARMOUR_ART.padMesh) or nil
+	local padTexture = (ARMOUR_ART.padTexture or 0) ~= 0 and "rbxassetid://" .. tostring(ARMOUR_ART.padTexture) or ""
 	local finishKey = HERO_FINISH[f.model:GetAttribute("HeroId") or ""]
 	local finishId = finishKey and (ARMOUR_ART[finishKey] or 0) ~= 0 and "rbxassetid://" .. tostring(ARMOUR_ART[finishKey]) or nil
 	for _, part in ipairs(f.model:GetDescendants()) do
@@ -2877,6 +2883,11 @@ local function paintArmour(f)
 				if native and (mesh.MeshId == CHAMFER_LIMB or mesh.MeshId == CHAMFER_TORSO) then
 					local drawn = Vector3.new(mesh.Scale.X * native.X, mesh.Scale.Y * native.Y, mesh.Scale.Z * native.Z)
 					mesh.MeshId, mesh.TextureId, mesh.Scale = meshId, textureId, drawn
+					if padId and part.Name == "Pauldron" then
+						-- A domed pauldron with a rim, curved like the pictures' (a block read as a crate).
+						mesh.MeshId, mesh.TextureId = padId, padTexture
+						part:SetAttribute("PadShape", "dome")
+					end
 					mesh:SetAttribute("MeshNative", Vector3.new(1, 1, 1))
 					local c = part.Color
 					mesh.VertexColor = Vector3.new(c.R, c.G, c.B)
@@ -2894,7 +2905,29 @@ local function paintArmour(f)
 			end
 		end
 	end
+	if padId then
+		for _, stud in ipairs(f.model:GetChildren()) do
+			local fit = stud.Name == "PadStud" and stud:FindFirstChild("Fit")
+			if fit then
+				-- On the dome's curve, a little lower and further in than on the block.
+				local at = fit.C0.Position
+				fit.C0 = CFrame.new(at.X * 0.85, at.Y - 0.06 * f.scale, at.Z * 0.88) * (fit.C0 - at)
+				stud.CFrame = fit.Part0.CFrame * fit.C0
+			end
+		end
+	end
 	f.model:SetAttribute("ArmourArt", true)
+end
+-- Gold filigree on the chest plate of a hero of rank: a see-through plate just
+-- in front of the chest with the scrollwork as its decal (the middle stays
+-- free for the hero's emblem).
+local function filigree(f, heroId)
+	if not FILIGREE[heroId] or (ARMOUR_ART.filigree or 0) == 0 then return end
+	local c, s = f.sizes.chest, f.scale
+	local plate = f.add("UpperTorso", "Filigree", Vector3.new(c.X * 0.78, c.Y * 0.62, 0.02 * s), CFrame.new(0, c.Y * 0.14, -c.Z / 2 - 0.17 * s), Color3.new(1, 1, 1), FABRIC)
+	plate.Transparency = 1
+	local decal = Instance.new("Decal")
+	decal.Name, decal.Texture, decal.Face, decal.Parent = "Pattern", "rbxassetid://" .. tostring(ARMOUR_ART.filigree), Enum.NormalId.Front, plate
 end
 Figure.ArmourArt = ARMOUR_ART
 Figure.Chamfer = chamfer
@@ -3972,6 +4005,7 @@ function Figure.Hero(parent, heroId, hero, scale)
 	end
 	if not figure.model:FindFirstChild("Muzzle", true) then muzzle(figure, "RightHand", Vector3.new(0, -figure.sizes.hand.Y / 2 - 0.1 * figure.scale, 0)) end
 	paintArmour(figure)
+	filigree(figure, heroId)
 	return figure
 end
 
@@ -5850,6 +5884,7 @@ function World.new(catalog, openPanel, config, options)
 	-- The armour's own block and finish, once uploaded (0 keeps the classic chamfer).
 	local art = config and config.Art
 	ARMOUR_ART.mesh, ARMOUR_ART.texture = art and art.armorMesh or 0, art and art.armorTexture or 0
+	ARMOUR_ART.padMesh, ARMOUR_ART.padTexture, ARMOUR_ART.filigree = art and art.padMesh or 0, art and art.padTexture or 0, art and art.filigree or 0
 	ARMOUR_ART.galaxy, ARMOUR_ART.flames, ARMOUR_ART.runes = art and art.galaxy or 0, art and art.flames or 0, art and art.runes or 0
 	for _, key in ipairs({ "web", "scales", "circuit", "tiger" }) do ARMOUR_ART[key] = art and art[key] or 0 end
 	-- Match places need the same portraits even when their lobby is removed.
