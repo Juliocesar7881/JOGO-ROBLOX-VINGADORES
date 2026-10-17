@@ -302,7 +302,7 @@ function Review.start(api)
 			elseif stage == "premiumgold" then
 				api.openContext("shop", { hud = true, shopKind = "product" })
 			elseif stage == "basechests" then
-				api.openContext("chests", { chestId = "base_epic" })
+				api.openContext("chests", { chestId = "base_epic", hud = true })
 			elseif stage == "chests" then
 				-- Reset the fixture's category even after reviewing base summons.
 				api.openContext("chests", { chestId = "rare", hud = true })

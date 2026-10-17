@@ -781,12 +781,21 @@ function UI.cardBackdrop(stage, tint, rarity, properties, options)
 			tweens:Create(item, TweenInfo.new(seconds, style or Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1, false, delay or 0), goal):Play()
 		end)
 	end
-	-- Inset a little, so the card's own frame (often a painted plate) stays on top.
-	local root = UI.frame(stage, {Name = "CardBackdrop", Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8), BackgroundTransparency = 1, ClipsDescendants = true, Active = false, ZIndex = 0})
+	-- Inset a little, so the card's own frame (often a painted plate) stays on
+	-- top. The stage is lit from above and deep below, in the rarity's colour,
+	-- so even the grey of a common card reads as a lit stage, not a grey slab.
+	-- Inside the card's shell, just over its painted plate: the plate and the
+	-- shell stay under the figure, so the stage does too.
+	local shell = stage:FindFirstChild("ComicShell")
+	local root = UI.frame(shell or stage, {Name = "CardBackdrop", Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8), BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundTransparency = 0, ClipsDescendants = true, Active = false, ZIndex = shell and (shell.ZIndex or 0) + 1 or 0})
 	for key, value in pairs(properties or {}) do root[key] = value end
 	UI.corner(root, 12)
+	UI.create("UIGradient", {Rotation = 90, Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, tint:Lerp(Color3.new(1, 1, 1), 0.28)), ColorSequenceKeypoint.new(0.55, tint:Lerp(Color3.fromRGB(26, 34, 70), 0.35)),
+		ColorSequenceKeypoint.new(1, tint:Lerp(Color3.fromRGB(14, 18, 40), 0.72))})}, root)
 	local z = root.ZIndex
-	local light = tint:Lerp(Color3.new(1, 1, 1), 0.6)
+	local light = tint:Lerp(Color3.new(1, 1, 1), 0.7)
 	-- The sunburst: bars through the middle of a big square, bright near the
 	-- figure and fading outwards, turning once every 40 seconds.
 	local burst = UI.frame(root, {Name = "Sunburst", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.fromScale(2.2, 2.2),
@@ -796,8 +805,8 @@ function UI.cardBackdrop(stage, tint, rarity, properties, options)
 		local ray = UI.frame(burst, {Name = "Ray", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(index % 2 == 0 and 0.085 or 0.05, 1),
 			Rotation = index * 180 / rays, BackgroundColor3 = light, BackgroundTransparency = 0, Active = false, ZIndex = z})
 		UI.create("UIGradient", {Rotation = 90, Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.32, index % 2 == 0 and 0.7 or 0.8), NumberSequenceKeypoint.new(0.5, 0.92),
-			NumberSequenceKeypoint.new(0.68, index % 2 == 0 and 0.7 or 0.8), NumberSequenceKeypoint.new(1, 1)})}, ray)
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, index % 2 == 0 and 0.52 or 0.68), NumberSequenceKeypoint.new(0.5, 0.86),
+			NumberSequenceKeypoint.new(0.7, index % 2 == 0 and 0.52 or 0.68), NumberSequenceKeypoint.new(1, 1)})}, ray)
 	end
 	loop(burst, 40, {Rotation = 360})
 	-- Sparks: small diamonds rising from the foot of the card and fading out.

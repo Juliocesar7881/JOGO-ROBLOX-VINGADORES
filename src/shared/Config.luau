@@ -147,9 +147,9 @@ return {
 	-- Real map photographs, uploaded by LoopsDev7881 via Studio's Asset Manager.
 	-- Sources and upload IDs: assets/map-photos/manifest.json. Zero uses the fallback.
 	MapImages = {
-		-- manhattan = 0: its photo showed third-party storefront names; the
-		-- drawn diorama stands in until a clean photo is uploaded.
-		manhattan = 0, gamma = 132922675966302,
+		-- manhattan: a new photograph (17/10) of the city with its original
+		-- storefronts (the 28/09 one showed third-party names and was retired).
+		manhattan = 124937669877628, gamma = 132922675966302,
 		hydra = 77531885765033, wakanda = 83315123182560,
 		asgard = 81125412205211, latveria = 124835578394292,
 	},

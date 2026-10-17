@@ -25,7 +25,8 @@ function Hotbar.card(ctx, parent, id, index, width, height, callback)
 	UI.cardBackdrop(button, tint, def.rarity, nil, { still = true })
 	UI.stroke(button, index == 1 and C.gold or tint, index == 1 and 3.5 or 2.5)
 	local priceH = small and 18 or 22
-	ctx.heroPortrait(button, id, { Position = UDim2.fromOffset(3, small and 2 or 4), Size = UDim2.new(1, -6, 1, -(priceH + (small and 4 or 8))) })
+	-- The hero fills the card; the price pill and the badges ride over it.
+	ctx.heroPortrait(button, id, { Position = UDim2.fromOffset(3, 2), Size = UDim2.new(1, -6, 1, -(math.floor(priceH * 0.45) + 2)) })
 	local z = (button.ZIndex or 1) + 3
 	-- The veil over a hero the Gold cannot pay for yet.
 	local veil = UI.frame(button, { Name = "CostVeil", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.ink, BackgroundTransparency = 1, Active = false, ZIndex = z - 1 })

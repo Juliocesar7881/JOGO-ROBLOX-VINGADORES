@@ -6,8 +6,10 @@
   "maps": {
     "manhattan": {
       "file": "manhattan.jpg",
-      "imageAssetId": 106232571755279,
-      "sha256": "7ff5cc5cffae5f750eccbf344c8c4c82418efd16540e137efeede2f926eff2e1"
+      "imageAssetId": 124937669877628,
+      "sha256": "2b25d8b8b2e9bb50e819f1c2adf6e38c5cb7effbb2d6c7e45b61b6d14d52a55c",
+      "uploadedOn": "2026-10-17",
+      "via": "Studio 3D importer (OBJ plane carrying the photo as its texture)"
     },
     "gamma": {
       "file": "gamma.jpg",

@@ -9,6 +9,11 @@ local Viewport = {}
 function Viewport.new(ctx)
 	local UI, holder, map = ctx.UI, ctx.holder, ctx.map
 	local saved = ctx.saved
+	-- A board resized while still on its whole-board look (a window or screen
+	-- that changed) fits again instead of keeping a zoom made for another size.
+	if ctx.overview and saved.fitted and saved.width and (saved.width ~= ctx.width or saved.height ~= ctx.height) then
+		saved.x, saved.y, saved.zoom, saved.rootX, saved.rootY = nil, nil, nil, nil, nil
+	end
 	-- The desktop's first look shows the whole board (ctx.fit: the zoom at
 	-- which it fits, never below the lower bound); later looks keep the zoom.
 	local zoom = math.clamp(saved.zoom or (ctx.overview and ctx.fit) or 1, 0.65, 1.35)
@@ -46,6 +51,7 @@ function Viewport.new(ctx)
 		-- Later refreshes retain the explored region; Center still finds the root.
 		pan=Vector2.new((ctx.width-ctx.mapW*zoom)*0.5,(ctx.height-ctx.mapH*zoom)*0.5)
 		apply()
+		saved.fitted = true
 	elseif saved.x == nil then center() else apply() end
 	local function pointer(position)
 		local inset = GuiService:GetGuiInset()
@@ -76,6 +82,7 @@ function Viewport.new(ctx)
 			local delta = UI.toLogical(point - drag.origin)
 			if delta.Magnitude >= 8 then drag.moved = true end
 			if drag.moved then
+				saved.fitted = nil
 				UI.hideTooltip()
 				if drag.source then drag.source:SetAttribute("DragConsumed", true) end
 				pan = drag.pan + delta
@@ -84,6 +91,7 @@ function Viewport.new(ctx)
 			end
 			drag.previous = point
 		elseif not drag and input.UserInputType == Enum.UserInputType.MouseWheel and inside(Input:GetMouseLocation()) then
+			saved.fitted = nil
 			local nextZoom = math.clamp(zoom + input.Position.Z * 0.1, 0.65, 1.35)
 			local anchor = pointer(Input:GetMouseLocation())
 			pan = anchor - (anchor - pan) * (nextZoom / zoom)

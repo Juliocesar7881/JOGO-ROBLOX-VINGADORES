@@ -1616,11 +1616,12 @@ function Panels.new(ctx)
 		local screen=screenSize()
 		local width=UI.contextLayout(screen.X,screen.Y,{wide=true}).w-40
 		local columns=width>=640 and 2 or 1
-		local cellW=math.floor((width-(columns-1)*10)/columns)
 		local grid,placed
 		local function newGrid()
 			grid=UI.frame(body,{Name="DestinationGrid",Size=UDim2.new(1,-6,0,0),BackgroundTransparency=1,AutomaticSize=Enum.AutomaticSize.Y})
-			local layout=UI.create("UIGridLayout",{CellPadding=UDim2.fromOffset(10,10),CellSize=UDim2.fromOffset(cellW,272),SortOrder=Enum.SortOrder.LayoutOrder},grid)
+			-- Cells share the grid's real width (owner, 17/10: a card a few pixels
+			-- too wide fell to one column and left the right half of the window empty).
+			local layout=UI.create("UIGridLayout",{CellPadding=UDim2.fromOffset(10,10),CellSize=UDim2.new(1/columns,-math.ceil(10*(columns-1)/columns),0,272),SortOrder=Enum.SortOrder.LayoutOrder},grid)
 			placed=0
 			return layout
 		end
