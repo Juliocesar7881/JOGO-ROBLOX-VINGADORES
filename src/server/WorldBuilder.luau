@@ -4089,28 +4089,67 @@ end
 local AGENT_SKIN = { Color3.fromRGB(232, 181, 147), Color3.fromRGB(141, 92, 64), Color3.fromRGB(198, 146, 108), Color3.fromRGB(96, 64, 46) }
 local AGENT_HAIR = { Color3.fromRGB(38, 30, 28), Color3.fromRGB(96, 64, 40), Color3.fromRGB(20, 20, 24), Color3.fromRGB(150, 110, 60) }
 function Figure.Agent(parent, index)
-	local suit, white, navy = Color3.fromRGB(26, 28, 36), Color3.fromRGB(240, 242, 246), Color3.fromRGB(28, 38, 84)
+	-- The agency's staff, chunky like the heroes (owner, 17/10: "esses agentes
+	-- tão meio mal feitos"): a tailored black suit of rounded blocks over a
+	-- white shirt, navy tie with a gold pin, white cuffs, a belt with a silver
+	-- buckle, glossy shoes, wraparound dark glasses and an earpiece.
+	local suit, white, navy = Color3.fromRGB(30, 32, 42), Color3.fromRGB(240, 242, 246), Color3.fromRGB(28, 38, 84)
+	local ink, gold, silver = Color3.fromRGB(14, 15, 20), Color3.fromRGB(232, 186, 70), Color3.fromRGB(196, 202, 212)
 	local skin = AGENT_SKIN[(index - 1) % #AGENT_SKIN + 1]
-	local figure = Figure.Build(parent, { scale = 1.02, width = 1.04 }, {
+	local figure = Figure.Build(parent, { scale = 0.97, width = 1.06, depth = 1.12, chest = 1.12, arm = 1.24, leg = 1.18, hand = 0.82, foot = 1.08, footHeight = 1.25, head = 1.16, legLength = 0.96 }, {
 		skin = skin, head = skin, chest = suit, pelvis = suit, upperArm = suit, lowerArm = suit, hand = skin,
-		upperLeg = suit, lowerLeg = suit, foot = Color3.fromRGB(14, 14, 18),
+		upperLeg = suit, lowerLeg = suit, foot = ink,
 	})
 	figure.model.Name = "Agent"
-	local f, c, h, s = figure, figure.sizes.chest, figure.parts.Head.Size, figure.scale
-	f.add("UpperTorso", "Shirt", Vector3.new(c.X * 0.3, c.Y * 0.78, 0.06 * s), CFrame.new(0, c.Y * 0.08, -c.Z / 2 - 0.03 * s), white, FABRIC)
-	f.add("UpperTorso", "Tie", Vector3.new(0.2 * s, c.Y * 0.62, 0.08 * s), CFrame.new(0, c.Y * 0.02, -c.Z / 2 - 0.07 * s), navy, FABRIC)
-	f.add("UpperTorso", "TieKnot", Vector3.new(0.26, 0.2, 0.1) * s, CFrame.new(0, c.Y * 0.4, -c.Z / 2 - 0.08 * s), navy, FABRIC)
+	local f, c, p, h, s = figure, figure.sizes.chest, figure.sizes.pelvis, figure.parts.Head.Size, figure.scale
+	local front = -c.Z / 2
+	-- The shirt's V between the lapels, its collar points and the tie with a pin.
+	f.add("UpperTorso", "Shirt", Vector3.new(c.X * 0.32, c.Y * 0.62, 0.06 * s), CFrame.new(0, c.Y * 0.18, front - 0.03 * s), white, FABRIC)
 	for _, side in ipairs({ -1, 1 }) do
-		f.add("UpperTorso", "Lapel", Vector3.new(0.34 * s, c.Y * 0.84, 0.1 * s), CFrame.new(side * c.X * 0.26, c.Y * 0.04, -c.Z / 2 - 0.04 * s) * CFrame.Angles(0, 0, side * 0.16), Color3.fromRGB(14, 16, 22), FABRIC)
+		f.add("UpperTorso", "Collar", Vector3.new(0.3, 0.2, 0.08) * s, CFrame.new(side * 0.17 * s, c.Y * 0.44, front - 0.06 * s) * CFrame.Angles(0, 0, side * 0.6), white, FABRIC)
+		f.add("UpperTorso", "Lapel", Vector3.new(0.4 * s, c.Y * 0.78, 0.12 * s), CFrame.new(side * c.X * 0.22, c.Y * 0.1, front - 0.06 * s) * CFrame.Angles(0, 0, side * 0.2), ink, FABRIC)
 	end
-	f.add("LowerTorso", "Belt", Vector3.new(f.sizes.pelvis.X * 1.04, f.sizes.pelvis.Y * 0.4, f.sizes.pelvis.Z * 1.06), CFrame.new(0, f.sizes.pelvis.Y * 0.28, 0), Color3.fromRGB(10, 10, 14), FABRIC)
+	f.add("UpperTorso", "Tie", Vector3.new(0.22 * s, c.Y * 0.56, 0.08 * s), CFrame.new(0, c.Y * 0.06, front - 0.09 * s), navy, FABRIC)
+	f.add("UpperTorso", "TieKnot", Vector3.new(0.28, 0.22, 0.12) * s, CFrame.new(0, c.Y * 0.36, front - 0.1 * s), navy, FABRIC)
+	f.add("UpperTorso", "TiePin", Vector3.new(0.3, 0.08, 0.06) * s, CFrame.new(0, c.Y * 0.05, front - 0.14 * s), gold, METAL)
+	f.add("UpperTorso", "PocketSquare", Vector3.new(0.34, 0.14, 0.06) * s, CFrame.new(c.X * 0.3, c.Y * 0.22, front - 0.06 * s), white, FABRIC)
+	f.add("UpperTorso", "AgencyPin", Vector3.new(0.18, 0.18, 0.06) * s, CFrame.new(-c.X * 0.3, c.Y * 0.26, front - 0.08 * s), gold, METAL, "ball")
+	-- The jacket's hem over the hips, the belt and its buckle.
+	f.add("LowerTorso", "JacketHem", Vector3.new(p.X * 1.06, p.Y * 0.6, p.Z * 1.08), CFrame.new(0, p.Y * 0.22, 0), suit, FABRIC)
+	f.add("LowerTorso", "Belt", Vector3.new(p.X * 1.02, p.Y * 0.26, p.Z * 1.04), CFrame.new(0, -p.Y * 0.18, 0), ink, FABRIC)
+	f.add("LowerTorso", "BeltBuckle", Vector3.new(0.36, 0.22, 0.08) * s, CFrame.new(0, -p.Y * 0.18, -p.Z * 0.54), silver, METAL)
+	for _, side in ipairs({ "Left", "Right" }) do
+		local arm = f.sizes.lowerArm
+		f.add(side .. "LowerArm", "ShirtCuff", Vector3.new(arm.X * 1.06, 0.18 * s, arm.Z * 1.06), CFrame.new(0, -arm.Y * 0.44, 0), white, FABRIC)
+		local foot = f.parts[side .. "Foot"].Size
+		f.add(side .. "Foot", "ShoeShine", Vector3.new(foot.X * 0.6, 0.06 * s, foot.Z * 0.3), CFrame.new(0, foot.Y * 0.5, -foot.Z * 0.28), Color3.fromRGB(70, 74, 86), METAL)
+	end
 	Figure.Hair(f, AGENT_HAIR[(index * 3 - 1) % #AGENT_HAIR + 1])
-	-- Dark glasses and a firm mouth.
-	Figure.Face(f, "lens", { lens = Color3.fromRGB(10, 12, 18), rim = Color3.fromRGB(10, 12, 18), width = 0.38, height = 0.2, slant = 0.06 })
-	f.add("Head", "Mouth", Vector3.new(0.3, 0.06, 0.05) * s, f.face(0, -0.5, 0.0), Color3.fromRGB(70, 40, 40), FABRIC)
-	-- The earpiece and its wire running down into the collar.
+	-- Wraparound dark glasses (a band round the front of the head) and a firm mouth.
+	local glasses = f.add("Head", "Sunglasses", Vector3.new(h.X * 1.02, h.Y * 0.2, h.Z * 1.02), CFrame.new(0, h.Y * 0.08, 0), Color3.fromRGB(10, 11, 16), FABRIC, "head")
+	glasses.Reflectance = 0.3
+	f.add("Head", "GlassShine", Vector3.new(0.24, 0.06, 0.04) * s, f.face(-0.3, 0.16, 0.06) * CFrame.Angles(0, 0, 0.3), Color3.fromRGB(150, 170, 200), Enum.Material.Neon)
+	f.add("Head", "Mouth", Vector3.new(0.32, 0.06, 0.05) * s, f.face(0, -0.48, 0.0), Color3.fromRGB(80, 44, 44), FABRIC)
+	-- The earpiece and its coiled wire running down into the collar.
 	f.add("Head", "Earpiece", Vector3.new(0.18, 0.26, 0.2) * s, CFrame.new(-h.X / 2 - 0.05 * s, -h.Y * 0.04, 0.1 * s), Color3.fromRGB(20, 20, 24), METAL, "ball")
 	f.rod("Head", "EarWire", Vector3.new(-h.X / 2 - 0.08 * s, -h.Y * 0.14, 0.12 * s), Vector3.new(-h.X * 0.4, -h.Y * 0.68, 0.3 * s), 0.05 * s, Color3.fromRGB(150, 150, 160), METAL)
+	-- Rounded blocks for the suit, like the heroes' armour (no panel lines on cloth).
+	Figure.Finish(f, true)
+	for _, name in ipairs({ "UpperTorso", "LowerTorso", "LeftHand", "RightHand", "LeftFoot", "RightFoot" }) do
+		local part = f.parts[name]
+		local contour = part and part:FindFirstChild("BodyContour")
+		if contour and name ~= "UpperTorso" then chamfer(contour, part.Size) end
+	end
+	for _, piece in ipairs(f.model:GetChildren()) do
+		if piece:IsA("Part") and piece.Shape == Enum.PartType.Block and not piece:FindFirstChildOfClass("SpecialMesh")
+			and (piece.Name == "JacketHem" or piece.Name == "Belt" or piece.Name == "BeltBuckle") then
+			chamfer(Instance.new("SpecialMesh"), piece.Size).Parent = piece
+		end
+	end
+	paintArmour(f)
+	for _, mesh in ipairs(f.model:GetDescendants()) do
+		if mesh:IsA("SpecialMesh") and mesh.MeshType == Enum.MeshType.FileMesh and mesh:GetAttribute("MeshNative") then mesh.TextureId = "" end
+	end
 	f.model:SetAttribute("IdleFigure", true)
 	f.model:SetAttribute("IdleGuard", true)
 	f.model:SetAttribute("IdlePhase", index * 1.7)
@@ -6096,6 +6135,21 @@ end
 -- (independent four-player queues), each under its own lit gate, and the
 -- map's billboard framed in neon above them. Each zone retains its catalog
 -- destination, never a client map.
+-- A board mounted right on top of a portal's map billboard, flush with its
+-- front (owner, 17/10: "as placas de cima e atrás dos portais devem ser coladas
+-- em cima das outras placas"): the district signs and the arena scoreboard
+-- stood far behind the billboards, whose tops hid their lower half from
+-- anyone near a portal. `reach` is how far the board's lowest piece hangs
+-- below its face centre; it comes to rest just above the billboard's frame.
+local BILLBOARD_TOP = GROUND_Y + 27.45
+local function onBillboard(destination, reach, along)
+	local base = CFrame.new(destination.x, GROUND_Y, destination.z) * CFrame.Angles(0, destination.facing or 0, 0)
+	local front = base * CFrame.new(along or 0, 0, -4.1)
+	local centre = Vector3.new(front.X, BILLBOARD_TOP + 0.3 + reach, front.Z)
+	return CFrame.lookAt(centre, centre - base.LookVector)
+end
+World.OnBillboard = onBillboard
+
 local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 	local tint=rgb(PORTAL_COLORS[destination.mapId])
 	local yaw=destination.facing or 0
@@ -6245,6 +6299,19 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 		glow.Name="SwirlGlow"
 		local core=circle(gui,0.5,0.5,0.22,0.22,HQ.white,0.15)
 		core.Name="SwirlCore"
+		-- Life (owner, 17/10: "melhore o design dos portais... algum efeito"): a
+		-- spark orbits each door, passing in front of it and behind it, the
+		-- landing ring breathes and the well's glow pulses (the client turns and
+		-- pulses them; no emitter, one part a door).
+		local doorCentre=at(dx,4.7,-3.8).Position
+		local spark=artPart(model,"PortalSpark",Vector3.new(0.75,0.75,0.75),at(dx+4.3,5.6,-3.8),tint:Lerp(HQ.white,0.45),Enum.Material.Neon)
+		spark.Shape=Enum.PartType.Ball
+		spark:SetAttribute("Spin",(slot%2==0 and -1 or 1)*1.7)
+		spark:SetAttribute("SpinCenter",doorCentre)
+		spark:SetAttribute("Bob",0.7)
+		pad:SetAttribute("Pulse",0.1)
+		glow:SetAttribute("Breathe",0.12)
+		core:SetAttribute("Breathe",0.08)
 		local sign=part(model,"QueueSign"..slot,Vector3.new(8.3,2.5,0.25),at(dx,10,-3.8)*CFrame.Angles(0,math.pi,0),HQ.ink)
 		local gui=Instance.new("SurfaceGui"); gui.Name="QueueBoard"; gui.Face=Enum.NormalId.Front; gui.LightInfluence=0
 		gui.CanvasSize=Vector2.new(290,94); gui.SizingMode=Enum.SurfaceGuiSizingMode.FixedSize; gui.Parent=sign
@@ -6579,6 +6646,61 @@ World.CoplanarConflicts = function(root)
 	end
 	return #found, table.concat(names, " ")
 end
+-- Every structure stands on the ground under it (owner, 17/10: "as coisas não
+-- estão de fato construídas certo e tão meio flutuando"): a tall part standing
+-- at ground level reaches down to the terrain or part below its footprint, so
+-- where the island falls away to the beach it rises out of the sand instead of
+-- hanging over it; where the ground is level the extension hides inside it.
+-- Needs the engine's raycasts (nothing changes without them). Returns how many
+-- parts it grounded.
+function World.GroundStructures(root)
+	local okRay, raycast = pcall(function() return workspace.Raycast end)
+	if not okRay or type(raycast) ~= "function" then return 0 end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local grounded = 0
+	for _, part in ipairs(root:GetDescendants()) do
+		if not (part:IsA("BasePart") and part.Anchored and (part.Transparency or 0) < 0.9) then continue end
+		local cf, size = part.CFrame, part.Size
+		-- The part's vertical axis (a column is a cylinder lying on its X).
+		local axis
+		if math.abs(cf.UpVector.Y) > 0.98 then axis = "Y" elseif math.abs(cf.RightVector.Y) > 0.98 then axis = "X" elseif math.abs(cf.LookVector.Y) > 0.98 then axis = "Z" end
+		if not axis then continue end
+		local length = size[axis]
+		local bottom = part.Position.Y - length / 2
+		-- A bush is a ball: it settles onto the ground instead of growing.
+		local settle = part.Name == "Bush"
+		if (length < 4 and not settle) or bottom < GRASS_Y - 1.6 or bottom > GROUND_Y + 0.6 then continue end
+		local across = axis == "Y" and { cf.RightVector * size.X / 2, cf.LookVector * size.Z / 2 }
+			or axis == "X" and { cf.UpVector * size.Y / 2, cf.LookVector * size.Z / 2 }
+			or { cf.RightVector * size.X / 2, cf.UpVector * size.Y / 2 }
+		if math.min(across[1].Magnitude, across[2].Magnitude) < 0.75 then continue end
+		params.FilterDescendantsInstances = { part }
+		local worst, centre = 0, nil
+		for _, k in ipairs({ { 0, 0 }, { 0.8, 0.8 }, { -0.8, 0.8 }, { 0.8, -0.8 }, { -0.8, -0.8 } }) do
+			local start = Vector3.new(part.Position.X, bottom + 0.05, part.Position.Z) + across[1] * k[1] + across[2] * k[2]
+			local ok, hit = pcall(function() return workspace:Raycast(start, Vector3.new(0, -24, 0), params) end)
+			local gap = ok and hit and (bottom - hit.Position.Y) or 8
+			worst = math.max(worst, gap)
+			centre = centre or gap
+		end
+		if settle then
+			if centre > 0.3 and centre < 4 then
+				part.CFrame = cf - Vector3.new(0, centre + 0.3, 0)
+				grounded += 1
+			end
+		elseif worst > 0.4 then
+			local grow = worst + 0.6
+			local grown = Vector3.new(axis == "X" and size.X + grow or size.X, axis == "Y" and size.Y + grow or size.Y, axis == "Z" and size.Z + grow or size.Z)
+			part.Size = grown
+			part.CFrame = cf - Vector3.new(0, grow / 2, 0)
+			part:SetAttribute("Grounded", math.floor(grow * 10 + 0.5) / 10)
+			grounded += 1
+		end
+	end
+	return grounded
+end
+
 -- Scenery a visitor can walk into must be solid: the agency's set pieces,
 -- tree and palm trunks, crystals, giant cards and the tower's glass podium.
 -- Light strips, glass panes you see through, floor markings, foliage and
@@ -6707,6 +6829,7 @@ function World:BuildLobby()
 	self:BuildHeroCameos(hq)
 	self:BuildHorizon(hq)
 	self:DressHeroesHQ(hq)
+	World.GroundStructures(lobby)
 	World.SolidifyProps(lobby)
 	World.TameNeon(lobby)
 	-- Last: no two surfaces of the finished lobby may share a plane.
@@ -6937,8 +7060,10 @@ function World:BuildHeroesHub(lobby)
 	local gates = {
 		{ dir = V(0, 0, -1), pt = "CAMPANHA", en = "CAMPAIGN", color = Color3.fromRGB(90, 230, 170) },
 		{ dir = V(1, 0, 0), pt = "ARENA", en = "ARENA", color = Color3.fromRGB(255, 150, 70) },
-		{ dir = V(-1, 0, 0), pt = "ZONA AFK", en = "AFK ZONE", color = Color3.fromRGB(120, 200, 255) },
-		{ dir = V(0, 0, 1), pt = "TORRE • LOJA", en = "TOWER • SHOP", color = HQ.gold },
+		-- The AFK and tower/shop bridges end without an arch (owner, 17/10: "remove
+		-- esse pilar"): their areas already carry big signs of their own.
+		{ dir = V(-1, 0, 0), pt = "ZONA AFK", en = "AFK ZONE", color = Color3.fromRGB(120, 200, 255), arch = false },
+		{ dir = V(0, 0, 1), pt = "TORRE • LOJA", en = "TOWER • SHOP", color = HQ.gold, arch = false },
 	}
 	for _, gate in ipairs(gates) do
 		local dir = gate.dir
@@ -6950,6 +7075,7 @@ function World:BuildHeroesHub(lobby)
 			local sa, sb = a + dir * 4 + right * side * 7.4, b + right * side * 7.4
 			Kit.beam(hq, "BridgeBeam", sa + V(0, GROUND_Y - 1.4, 0), sb + V(0, GROUND_Y - 1.4, 0), 1.4, 2.2, HQ.steel, metal, true)
 			Kit.fence(hq, { sa + V(0, GROUND_Y + 0.1, 0), sb + V(0, GROUND_Y + 0.1, 0) }, 3, gate.color)
+			if gate.arch == false then continue end
 			-- The gate at the far end of the bridge.
 			local foot = b - dir * 1 + right * side * 8.6
 			Kit.block(hq, "GatePillar", V(2, 12, 2), CFrame.new(foot + V(0, GROUND_Y + 6, 0)), HQ.navy, metal, true).CastShadow = true
@@ -6957,6 +7083,7 @@ function World:BuildHeroesHub(lobby)
 			-- The capital crowns the pillar just under the lintel (it crossed the sign).
 			Kit.block(hq, "GateCapital", V(2.7, 0.7, 2.7), CFrame.new(foot + V(0, GROUND_Y + 10.9, 0)), HQ.gold, metal)
 		end
+		if gate.arch == false then continue end
 		local top = b - dir * 1 + V(0, GROUND_Y + 12.4, 0)
 		local lintel = Kit.block(hq, "GateLintel", V(19.6, 2.2, 2.4), CFrame.lookAt(top, top - dir), HQ.navy, metal)
 		Kit.block(hq, "GateTrim", V(19.8, 0.4, 2.6), CFrame.lookAt(top - V(0, 1.3, 0), top - V(0, 1.3, 0) - dir), gate.color, Enum.Material.Neon)
@@ -7344,11 +7471,11 @@ function World:BuildCampaignTerrace(hq)
 	local back = {}
 	for i = 0, 8 do table.insert(back, V(c.X - 62 + i * 15.5, GROUND_Y, backZ)) end
 	Kit.fence(hq, back, 3.4, Color3.fromRGB(120, 240, 190))
-	Kit.sign(hq, "CampaignSign", CFrame.lookAt(V(c.X, 34, backZ - 4.6), V(c.X, 34, HUB.Z)), 44, 8, {
+	Kit.sign(hq, "CampaignSign", onBillboard(self.catalog.Destinations.normal_gamma, 5.2), 36, 8, {
 		premium = true,
 		title = { "CAMPANHA", "CAMPAIGN" }, subtitle = { "SALVE MANHATTAN • GAMA • FUNDIÇÃO", "SAVE MANHATTAN • GAMMA • FOUNDRY" },
 		top = Color3.fromRGB(90, 215, 255), bottom = Color3.fromRGB(30, 110, 170), accent = Color3.fromRGB(90, 230, 170),
-		art = "skyline", artX = 0.5, artY = 0.62, artW = 0.96, artH = 0.62, titleY = 0.36, legs = GRASS_Y,
+		art = "skyline", artX = 0.5, artY = 0.62, artW = 0.96, artH = 0.62, titleY = 0.36,
 	})
 	for _, x in ipairs({ -64, 64 }) do Kit.flag(hq, V(c.X + x, GROUND_Y, backZ + 3.4), 18, Color3.fromRGB(70, 200, 150), 5) end
 	for _, x in ipairs({ -21, 21 }) do Kit.lamp(hq, V(c.X + x, GROUND_Y, c.Z + 16.5)) end
@@ -7367,12 +7494,9 @@ function World:BuildArena(lobby, hq)
 	board.Name, board.Parent = "Scoreboard_arena", lobby
 	board:SetAttribute("Kind", "Scoreboard")
 	board:SetAttribute("BoardId", "arena")
-	-- Raised above the three ranked stations so it reads from the plaza.
-	local x, y = c.X + 16, 40 + GROUND_Y
-	for _, dz in ipairs({ -27, 27 }) do
-		Kit.block(board, "ScoreboardLeg", V(2, y, 2), CFrame.new(x + 1, y / 2, c.Z + dz), HQ.navy, Enum.Material.Metal, true).CastShadow = true
-	end
-	local face = CFrame.new(x, y, c.Z) * CFrame.Angles(0, math.pi / 2, 0)
+	-- Resting on top of the three ranked billboards, flush with their fronts, so
+	-- no billboard hides its lower half from the queues (owner, 17/10).
+	local face = onBillboard(self.catalog.Destinations.ranked_wakanda, 11)
 	local panel = part(board, "ScoreboardPanel", V(56, 20, 1.2), face, HQ.navy, Enum.Material.Metal)
 	panel.CastShadow = true
 	Kit.block(board, "ScoreboardFrame", V(58, 22, 0.8), face * CFrame.new(0, 0, 0.9), HQ.steel, Enum.Material.Metal)
@@ -7381,8 +7505,6 @@ function World:BuildArena(lobby, hq)
 	end
 	for _, side in ipairs({-1, 1}) do
 		Kit.block(board, "ScoreboardSide", V(0.6, 21, 1.4), face * CFrame.new(side * 28.5, 0, -0.2), HQ.gold, Enum.Material.Metal)
-		Kit.block(board, "ScoreboardFoot", V(4.4, 1.2, 4.4), CFrame.new(x + 1, GROUND_Y + 0.6, c.Z + side * 27), HQ.steel, Enum.Material.Metal, true)
-		Kit.beam(board, "ScoreboardBrace", face * V(side * 27, -2, 1), face * V(side * 23, -10.5, 1), 0.65, 0.85, HQ.gold, Enum.Material.Metal, true)
 	end
 	local gui = Instance.new("SurfaceGui")
 	gui.Name, gui.Face, gui.LightInfluence = "Scores", Enum.NormalId.Front, 0
@@ -7868,23 +7990,12 @@ function World:BuildIslands(hq)
 			Kit.block(hq, "VibraniumCore", V(1.2, h - 1.4, 1.2), shard * CFrame.new(0, h / 2 - 0.3, 0) * CFrame.Angles(0, math.pi / 4, 0), purple, Enum.Material.Neon)
 			if i == 2 then Kit.light(shell, purple, 24, 1.2) end
 		end
-		-- Asgard: a golden arch over a rainbow walk to its station.
-		local asgard = self.catalog.Destinations.normal_asgard
-		local walkZ = asgard and asgard.z or HUB.Z + 99
-		local archX = c.X + width / 2 - 3
-		for _, dz in ipairs({ -7, 7 }) do
-			Kit.block(hq, "AsgardPillar", V(2.4, 16, 2.4), CFrame.new(archX, GROUND_Y + 8, walkZ + dz), gold, Enum.Material.Metal, true).CastShadow = true
-			Kit.blob(hq, "AsgardOrb", V(2.6, 2.6, 2.6), CFrame.new(archX, GROUND_Y + 17.6, walkZ + dz), HQ.glow, Enum.Material.Neon)
-		end
-		Kit.block(hq, "AsgardLintel", V(3, 2, 18), CFrame.new(archX, GROUND_Y + 16.6, walkZ), gold, Enum.Material.Metal)
-		for i, color in ipairs({ Color3.fromRGB(255, 80, 80), Color3.fromRGB(255, 170, 60), Color3.fromRGB(255, 230, 80), Color3.fromRGB(90, 220, 120), Color3.fromRGB(80, 160, 255), Color3.fromRGB(170, 110, 255) }) do
-			Kit.block(hq, "RainbowBridge", V(12, 0.1, 1.5), CFrame.new(archX - 5, GROUND_Y + 0.05, walkZ - 5.25 + i * 1.5), color, Enum.Material.SmoothPlastic)
-		end
-		Kit.sign(hq, "ExpeditionSign", CFrame.lookAt(hubAt(-272, 81, 34), hubAt(-150, 81, 34)), 32, 8, {
+		-- (Asgard's golden arch and rainbow walk were taken down, owner 17/10.)
+		Kit.sign(hq, "ExpeditionSign", onBillboard(self.catalog.Destinations.normal_wakanda, 5.2, -18), 32, 8, {
 			premium = true,
 			title = { "EXPEDIÇÕES", "EXPEDITIONS" }, subtitle = { "SELVA • PONTE CELESTE", "JUNGLE • SKY BRIDGE" },
 			top = Color3.fromRGB(190, 140, 255), bottom = Color3.fromRGB(80, 40, 150), accent = purple,
-			art = "mountains", artX = 0.5, artY = 0.6, artW = 0.96, artH = 0.7, titleY = 0.34, legs = GRASS_Y,
+			art = "mountains", artX = 0.5, artY = 0.6, artW = 0.96, artH = 0.7, titleY = 0.34,
 		})
 		for _, spot in ipairs({ { -190, 125, 0.3 }, { -176, 50, -0.2 }, { -230, 136, 1 }, { -200, 31, 2 }, { -262, 124, 0.8 }, { -255, 45, 2.4 } }) do
 			Kit.palm(hq, hubAt(spot[1], spot[2], GRASS_Y), 1.1, spot[3])
@@ -7896,10 +8007,12 @@ function World:BuildIslands(hq)
 		self:AreaFloor(hq, "LatveriaPlaza", c.X, c.Z, width, depth, 0, Color3.fromRGB(150, 156, 150), Enum.Material.Cobblestone)
 		Kit.beam(hq, "IslandPath", hubAt(151, 103, GROUND_Y - 0.75), V(c.X - width / 2, GROUND_Y - 0.75, c.Z - 2), 12, 1.5, HQ.stone, Enum.Material.Pavement, true)
 		local rock, green = Color3.fromRGB(90, 96, 104), Color3.fromRGB(80, 220, 120)
-		Kit.block(hq, "FortressWall", V(6, 18, 56), CFrame.new(c.X + 25, GROUND_Y + 9, c.Z), rock, Enum.Material.Cobblestone, true).CastShadow = true
-		for i = -3, 3 do Kit.block(hq, "Battlement", V(6.4, 3, 4), CFrame.new(c.X + 25, GROUND_Y + 19.5, c.Z + i * 8), rock, Enum.Material.Cobblestone) end
-		for _, dz in ipairs({ -30, 30 }) do
-			local foot = V(c.X + 25, GROUND_Y, c.Z + dz)
+		-- The citadel stands on its island: at +25 its wall's ends and towers hung
+		-- over the beach (owner, 17/10: "o castelo está flutuando").
+		Kit.block(hq, "FortressWall", V(6, 18, 50), CFrame.new(c.X + 21, GROUND_Y + 9, c.Z), rock, Enum.Material.Cobblestone, true).CastShadow = true
+		for i = -3, 3 do Kit.block(hq, "Battlement", V(6.4, 3, 4), CFrame.new(c.X + 21, GROUND_Y + 19.5, c.Z + i * 7.4), rock, Enum.Material.Cobblestone) end
+		for _, dz in ipairs({ -27, 27 }) do
+			local foot = V(c.X + 21, GROUND_Y, c.Z + dz)
 			Kit.column(hq, "FortressTower", foot, 28, 12, rock:Lerp(HQ.navy, 0.2), Enum.Material.Cobblestone, true).CastShadow = true
 			Kit.disc(hq, "FortressCap", foot + V(0, 28.5, 0), 14, 1, green:Lerp(HQ.navy, 0.5), Enum.Material.Metal)
 			local flame = Kit.blob(hq, "GreenFlame", V(3, 5, 3), CFrame.new(foot + V(0, 31.5, 0)), green, Enum.Material.Neon)
@@ -7907,14 +8020,14 @@ function World:BuildIslands(hq)
 			Kit.light(flame, green, 26, 1.2)
 		end
 		for _, dz in ipairs({ -22, 22 }) do
-			Kit.block(hq, "DoomBanner", V(0.3, 12, 5), CFrame.new(c.X + 21.8, GROUND_Y + 11, c.Z + dz), Color3.fromRGB(40, 110, 60), Enum.Material.Fabric)
-			Kit.block(hq, "BannerTrim", V(0.35, 0.6, 5.2), CFrame.new(c.X + 21.7, GROUND_Y + 5.3, c.Z + dz), HQ.gold, Enum.Material.Metal)
+			Kit.block(hq, "DoomBanner", V(0.3, 12, 5), CFrame.new(c.X + 17.8, GROUND_Y + 11, c.Z + dz), Color3.fromRGB(40, 110, 60), Enum.Material.Fabric)
+			Kit.block(hq, "BannerTrim", V(0.35, 0.6, 5.2), CFrame.new(c.X + 17.7, GROUND_Y + 5.3, c.Z + dz), HQ.gold, Enum.Material.Metal)
 		end
-		Kit.sign(hq, "LatveriaSign", CFrame.lookAt(V(c.X + 21, 33, c.Z), V(HUB.X, 33, c.Z)), 30, 8, {
+		Kit.sign(hq, "LatveriaSign", onBillboard(self.catalog.Destinations.normal_latveria, 5.2), 30, 8, {
 			premium = true,
 			title = { "CIDADELA", "CITADEL" }, subtitle = { "EXPEDIÇÃO FINAL • 70 ONDAS", "FINAL EXPEDITION • 70 WAVES" },
 			top = Color3.fromRGB(90, 200, 130), bottom = Color3.fromRGB(20, 60, 50), accent = green,
-			art = "castle", artX = 0.17, artW = 0.3, titleX = 0.6, titleW = 0.74, legs = GROUND_Y,
+			art = "castle", artX = 0.17, artW = 0.3, titleX = 0.6, titleW = 0.74,
 		})
 		for _, spot in ipairs({ { 180, 155, 0.5 }, { 175, 80, -0.4 }, { 215, 160, 1.2 }, { 250, 80, 0.9 } }) do Kit.tree(hq, hubAt(spot[1], spot[2], GRASS_Y), 1.1, Color3.fromRGB(60, 130, 80)) end
 	end
@@ -7934,11 +8047,11 @@ function World:BuildIslands(hq)
 		for _, side in ipairs({ -1, 1 }) do
 			Kit.triangle(hq, "AcademyPediment", V(c.X, GROUND_Y + 19, hallZ - 7.5), V(0, 9, 0), V(side * 37, 0, 0), 2, HQ.trim, Enum.Material.Marble)
 		end
-		Kit.sign(hq, "AcademySign", CFrame.lookAt(V(c.X, 33, hallZ - 10), V(c.X, 33, HUB.Z)), 32, 8, {
+		Kit.sign(hq, "AcademySign", onBillboard(self.catalog.Destinations.cards, 5.2, 18), 32, 8, {
 			premium = true,
 			title = { "ACADEMIA", "ACADEMY" }, subtitle = { "TREINO • CARTAS", "TRAINING • CARDS" },
 			top = Color3.fromRGB(200, 150, 255), bottom = Color3.fromRGB(90, 50, 170), accent = violet,
-			art = "target", artX = 0.14, artW = 0.24, titleX = 0.6, titleW = 0.74, legs = GROUND_Y,
+			art = "target", artX = 0.14, artW = 0.24, titleX = 0.6, titleW = 0.74,
 		})
 		for _, x in ipairs({ -40, 40 }) do Kit.flag(hq, V(c.X + x, GROUND_Y, c.Z + 25), 16, violet, 5) end
 		-- Giant playing cards stand beside the cards station.

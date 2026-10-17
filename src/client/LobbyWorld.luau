@@ -174,11 +174,12 @@ function LobbyWorld.new(ctx)
 				figure.look = (figure.look or 0) + ((turn or glance) - (figure.look or 0)) * 0.15
 				if joints.Neck then joints.Neck.Transform = CFrame.Angles(-0.02 * math.sin(t * 1.7), figure.look, 0) end
 				if figure.guard and joints.LeftShoulder and joints.RightShoulder then
-					-- Hands folded in front, as staff stand at a post.
-					joints.LeftShoulder.Transform = CFrame.Angles(0.5, 0, 0.3)
-					joints.RightShoulder.Transform = CFrame.Angles(0.5, 0, -0.3)
-					joints.LeftElbow.Transform = CFrame.Angles(1.25, 0, 0)
-					joints.RightElbow.Transform = CFrame.Angles(1.25, 0, 0)
+					-- Hands clasped in front of the belt, as staff stand at a post (held
+					-- up at the chest they read as a tray, owner 17/10).
+					joints.LeftShoulder.Transform = CFrame.Angles(0.24, 0, 0.34)
+					joints.RightShoulder.Transform = CFrame.Angles(0.24, 0, -0.34)
+					joints.LeftElbow.Transform = CFrame.Angles(0.82, 0, 0)
+					joints.RightElbow.Transform = CFrame.Angles(0.82, 0, 0)
 				end
 				Motion.Solve(figure.rig)
 			elseif figure.eyes and figure.eyes.closed then
@@ -221,6 +222,12 @@ function LobbyWorld.new(ctx)
 						table.insert(idleFigures, { model = child, rig = rig, phase = child:GetAttribute("IdlePhase") or 0, guard = child:GetAttribute("IdleGuard") == true })
 					end
 				end
+				-- The vortex's glow and core breathe (Breathe: how much they swell).
+				if child:IsA("GuiObject") and child:GetAttribute("Breathe") then
+					local host = child.Parent
+					while host and not host:IsA("BasePart") do host = host.Parent end
+					table.insert(lobbyProps, {part = host or lobby, breathe = child:GetAttribute("Breathe"), gui = child, base = child.Size, spin = 0, angle = 0, phase = #lobbyProps * 0.37})
+				end
 				-- Portal vortices turn; each one a little differently.
 				if child:IsA("SurfaceGui") and child.Name == "PortalSwirl" and child.Parent then
 					local swirl = child:FindFirstChild("Swirl")
@@ -248,7 +255,10 @@ function LobbyWorld.new(ctx)
 		idleStep(now)
 		for _, prop in ipairs(lobbyProps) do
 			prop.angle += dt * prop.spin
-			if prop.swirl then
+			if prop.breathe then
+				local k = 1 + math.sin(now * 2.4 + prop.phase) * prop.breathe
+				prop.gui.Size = UDim2.new(prop.base.X.Scale * k, prop.base.X.Offset, prop.base.Y.Scale * k, prop.base.Y.Offset)
+			elseif prop.swirl then
 				prop.swirl.Rotation = (prop.swirl.Rotation + dt * prop.speed) % 360
 			elseif prop.pulse then
 				local k = 1 + math.sin(now * 3 + prop.phase) * prop.pulse * 0.4

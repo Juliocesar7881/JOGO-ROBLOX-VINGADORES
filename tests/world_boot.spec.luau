@@ -385,15 +385,14 @@ do
 		end
 	end
 	check(pierCounts.MoatPier == 16 and pierCounts.IslandPier == 12, "all seven lobby bridges have four structural pilings")
+	-- The academy board rests on the academy portals' billboards (owner, 17/10:
+	-- the boards behind the portals sit right on top of them): no legs, its
+	-- back's lowest edge just above the billboard frames.
 	local academy = hq and hq:FindFirstChild("AcademySign")
-	local supports = 0
-	for _, piece in ipairs(academy and academy:GetChildren() or {}) do
-		if piece.Name == "SignLeg" then
-			supports += 1
-			check(math.abs(piece.Position.Y - piece.Size.X / 2 - WorldBuilder.HQ.groundY) < .01, "academy board has a support reaching the ground")
-		end
-	end
-	check(supports == 2, "academy board has two physical supports")
+	local back = academy and academy:FindFirstChild("SignBack")
+	check(academy and academy:FindFirstChild("SignLeg") == nil, "the academy board needs no legs: it rests on the billboards")
+	check(back and math.abs(back.Position.Y - back.Size.Y / 2 - (WorldBuilder.HQ.groundY + 27.75)) < 0.05,
+		"the academy board rests right on top of the portal billboards, got bottom " .. tostring(back and back.Position.Y - back.Size.Y / 2))
 	local stones = 0
 	for _, piece in ipairs(beacon and beacon:GetChildren() or {}) do
 		if piece.Name == "JumpStone" and piece.CanCollide then stones += 1 end
@@ -601,6 +600,29 @@ do
 	local signs, blocked = blockedSigns(lobby)
 	check(signs >= 20 and #blocked == 0, "no lobby part stands in front of a sign's letters (" .. signs .. " signs), got: " .. table.concat(blocked, "; ", 1, math.min(#blocked, 8)))
 end
+-- Structures reach the ground under them (owner, 17/10: a floating citadel):
+-- with a stand-in ground 3 studs lower, a wall standing at ground level grows
+-- down to it, keeping its top; a short prop and a high billboard are left alone.
+do
+	local ground = Instance.new("Model")
+	ground.Parent = workspace
+	local wall = Instance.new("Part")
+	wall.Name, wall.Anchored, wall.Size, wall.CFrame, wall.Parent = "TestWall", true, v3(6, 12, 20), CFrame.new(0, 0.3 + 6, 0), ground
+	local prop = Instance.new("Part")
+	prop.Name, prop.Anchored, prop.Size, prop.CFrame, prop.Parent = "TestCrate", true, v3(2, 2, 2), CFrame.new(10, 0.3 + 1, 0), ground
+	local board = Instance.new("Part")
+	board.Name, board.Anchored, board.Size, board.CFrame, board.Parent = "TestBoard", true, v3(30, 12, 1), CFrame.new(0, 20, 30), ground
+	local before = rawget(workspace, "Raycast")
+	workspace.Raycast = function(_, origin) return { Position = v3(origin.X, -2.7, origin.Z) } end
+	local count = WorldBuilder.GroundStructures(ground)
+	workspace.Raycast = before
+	local wallTop = wall.Position.Y + wall.Size.Y / 2
+	check(count == 1 and math.abs(wall.Position.Y - wall.Size.Y / 2 - (-3.3)) < 0.05 and math.abs(wallTop - 12.3) < 0.01,
+		"a wall over lower ground reaches down to it and keeps its top, got " .. count .. " grounded, bottom " .. (wall.Position.Y - wall.Size.Y / 2))
+	check(prop.Size.Y == 2 and board.Size.Y == 12, "a short prop and a high board are not grounded")
+	ground:Destroy()
+end
+
 -- Coplanar overlapping faces flicker (z-fighting) as the camera moves.
 do
 	local flickers, names = WorldBuilder.CoplanarConflicts(lobby)

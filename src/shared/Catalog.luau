@@ -513,11 +513,12 @@ Catalog.Destinations = {
 -- minute, measured and paid by the server. Deliberately far below playing:
 -- a campaign victory is worth 2,000 Gold for 30-45 minutes.
 Catalog.AfkOrder = { "gold", "xp" }
+-- The two farms stand beside the Green Giant's spot (owner, 17/10: closer to him).
 Catalog.Afk = {
 	interval = 60,
-	gold = { id = "gold", gold = 5, xp = 0, x = -112, z = 453, color = { 255, 206, 82 },
+	gold = { id = "gold", gold = 5, xp = 0, x = -122, z = 456, color = { 255, 206, 82 },
 		name = text("Farm de Ouro AFK", "AFK Gold Farm"), rate = text("+5 OURO POR MINUTO", "+5 GOLD PER MINUTE") },
-	xp = { id = "xp", gold = 0, xp = 10, x = -112, z = 503, color = { 120, 200, 255 },
+	xp = { id = "xp", gold = 0, xp = 10, x = -122, z = 500, color = { 120, 200, 255 },
 		name = text("Farm de XP AFK", "AFK XP Farm"), rate = text("+10 XP POR MINUTO", "+10 XP PER MINUTE") },
 }
 Catalog.Maps.asgard = {
