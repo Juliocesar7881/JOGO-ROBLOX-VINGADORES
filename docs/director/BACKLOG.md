@@ -398,4 +398,5 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M42.26 Poderes brilhantes de todos os heróis pulsam/tremulam; raio na mão da Deusa do Clima.
 - [x] M42.27 Segunda camada (silhueta + brilho próprio) para todos os heróis restantes.
 - [x] M42.28 Arte própria enviada pelo importador 3D do Studio (gratuito, autorizado pelo dono): bloco de armadura arredondado com acabamento pintado em todos os heróis, capa de galáxia, ombreiras com chamas, runas no casaco (tools/gen_armor_assets.py, tools/gen_hero_textures.py, Config.Art).
+- [x] M42.29 Acabamentos de armadura por herói (teia, escamas, circuitos, listras, galáxia) e estampas reaproveitadas em mais capas (chamas da fênix e do sol, galáxia do Pirata Estelar).
 
