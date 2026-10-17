@@ -406,3 +406,19 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M42.34 Tutorial: o poder do Q é do líder, o 1º herói da equipe (todos os 43 heróis têm poder).
 - [x] M42.35 Assinaturas dos últimos sete heróis (Teleportador Azul, Cavaleiro Lunar, Gelo Vivo, Mestre das Cartas, Mercenário Falante, o líder de visor e Nova).
 
+## M43 — Lista do dono de 17/10 (25 correções, "arrume tudo sem me perguntar, já publicado")
+
+- [x] M43.1 Lobby: estruturas no chão (cidadela, muros), placas por cima dos painéis dos portais, portais com faíscas e pulsos, agentes refeitos, arcos ZONA AFK / TORRE • LOJA / Asgard removidos, farms perto do Gigante Verde (35d3077).
+- [x] M43.2 Árvore de evolução com 6 ramos e 27 talentos (Arsenal, Tática e Logística novos; Guardião ganha blindagem e escudo de onda), todos aplicados pelo servidor; nível máximo 100; nomes dos ramos sempre dentro da tela; zoom que encaixa o quadro inteiro (5a95fa8, e288caa).
+- [x] M43.3 Dano no núcleo dobra a cada 4 ondas (até 4x na onda 9; chefes fora), avisado e mostrado ao lado da vida do núcleo; teto escolhido por simulação (o elenco de 5 heróis vence todos os mapas, os 2 iniciais sozinhos não).
+- [x] M43.4 Bases de recompensa (Ouro extra por inimigo) num baú próprio, Baú dos Caçadores: Pavilhão dos Caçadores, Casa da Moeda, Tesouro Estelar (lendária); baús antigos sem mudança de chances.
+- [x] M43.5 Todas as bases refeitas (World.BuildBaseArt) e o cartão mostra o mesmo modelo da partida (DoomBasePortraits).
+- [x] M43.6 Fundo animado nos cartões de heróis e bases (raios girando, faíscas subindo, brilho passando), no lugar do círculo parado.
+- [x] M43.7 Janela Evoluir base legível: botão num rodapé fixo com preço e o que falta.
+- [x] M43.8 Salão da Fama com abas de mapa, grupo e período, pódio com rostos, sua posição e estados de vazio/erro.
+- [x] M43.9 HUD de heróis da partida refeito (Hotbar.luau): cartões da raridade, preço com moeda, véu quando falta Ouro.
+- [x] M43.10 Mensagens do lobby no topo, longe de botões; botão Saudação removido; descrições das cartas reescritas.
+- [x] M43.11 Som da moeda: o sino de duas notas do jogo subindo de tom numa sequência; todo herói tem vez de ser ouvido (alcance 150); moldura comum nos poderes do líder (pilar de luz, anel, clarão e ondas).
+- [x] M43.12 Volta ao lobby coberta pela tela de carregamento (ReturnCover.luau).
+- [x] M43.13 Escolha seu Mapa sem metade vazia; foto nova de Manhattan (imagem 124937669877628).
+- [~] M43.14 Skin Armadura de Ferro por Robux (799): veste o avatar, clique esquerdo dispara o repulsor na partida, vitrine na praça vende (c6daeb7). Falta o dono criar o passe no Creator Hub e pôr o ID em Config.Products.Passes.ironSkin (o navegador desta sessão não tem login).
