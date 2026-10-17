@@ -399,4 +399,7 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M42.27 Segunda camada (silhueta + brilho próprio) para todos os heróis restantes.
 - [x] M42.28 Arte própria enviada pelo importador 3D do Studio (gratuito, autorizado pelo dono): bloco de armadura arredondado com acabamento pintado em todos os heróis, capa de galáxia, ombreiras com chamas, runas no casaco (tools/gen_armor_assets.py, tools/gen_hero_textures.py, Config.Art).
 - [x] M42.29 Acabamentos de armadura por herói (teia, escamas, circuitos, listras, galáxia) e estampas reaproveitadas em mais capas (chamas da fênix e do sol, galáxia do Pirata Estelar).
+- [x] M42.30 Golpes mais fortes para os heróis cujo ataque era só uma linha ou um laser (raio do céu, círculo mágico, raízes, garras, anel arremessado, visão de calor dupla...).
+- [x] M42.31 Auras de partículas nas estátuas e figurantes do lobby (faíscas, brilhos, brasas), nunca na partida.
+- [ ] M42.32 Armaduras mais trabalhadas: ombreira curva com aro (malha própria) e filigrana dourada no peito.
 
