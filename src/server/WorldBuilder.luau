@@ -5781,12 +5781,49 @@ World.SignArt = SignArt
 -- sky gradient, a sunburst, the area's illustration and an outlined title.
 -- `cf` faces the reader (its -Z looks at them). Text is localized by the
 -- client (LobbyTextPT/LobbyTextEN).
+-- The back of a sign or a portal (owner, 16/10: "atrás do portal tá
+-- ridículo"): a panel in the given colour's gradient with light stripes, a
+-- neon rim and gold trim, and either three glowing rings (a portal's doors) or
+-- a gold sunburst medallion. No text: nothing may stand in front of letters.
+local function backPanel(host, face, tint, rings)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name, gui.Face, gui.LightInfluence = "BackArt", face, 0.4
+	gui.SizingMode, gui.PixelsPerStud, gui.Parent = Enum.SurfaceGuiSizingMode.PixelsPerStud, 20, host
+	local panel = frame2d(gui, UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.97, 0.9), HQ.white, UDim.new(0.06, 0))
+	gradient(panel, tint:Lerp(HQ.navy, 0.25), HQ.navy:Lerp(Color3.new(0, 0, 0), 0.35), 90)
+	stroke(panel, tint, 6)
+	for k = -3, 3 do box(panel, 0.5 + k * 0.16, 0.5, 0.035, 1.5, tint:Lerp(HQ.white, 0.3), 24, nil, 0.82) end
+	local function round(item)
+		local ratio = Instance.new("UIAspectRatioConstraint")
+		ratio.AspectRatio, ratio.Parent = 1, item
+		return item
+	end
+	if rings then
+		for slot = 1, 3 do
+			local ring = round(circle(panel, 0.5 + (slot - 2) * 0.315, 0.52, 0.2, 0.62, tint, 1))
+			stroke(ring, tint:Lerp(HQ.white, 0.35), 9)
+			circle(ring, 0.5, 0.5, 0.55, 0.55, tint:Lerp(HQ.white, 0.5), 0.55)
+		end
+	else
+		-- A gold sunburst in a ring, the island's emblem: eight rays round a disc.
+		local medal = round(circle(panel, 0.5, 0.5, 0.3, 0.62, HQ.navy, 0))
+		stroke(medal, HQ.gold, 8)
+		for k = 0, 3 do box(medal, 0.5, 0.5, 0.1, 0.82, HQ.gold, k * 45, 0.5) end
+		circle(medal, 0.5, 0.5, 0.36, 0.36, HQ.gold, 0)
+		circle(medal, 0.5, 0.5, 0.22, 0.22, tint:Lerp(HQ.white, 0.3), 0)
+	end
+	box(panel, 0.5, 0.06, 0.9, 0.03, HQ.gold, 0, 0.5)
+	box(panel, 0.5, 0.94, 0.9, 0.03, HQ.gold, 0, 0.5)
+	return gui
+end
+
 function Kit.sign(parent, name, cf, width, height, spec)
 	local model = Instance.new("Model")
 	model.Name, model.Parent = name, parent
 	local accent = spec.accent or HQ.cyan
 	local back = Kit.block(model, "SignBack", Vector3.new(width + 2.4, height + 2.4, 1.4), cf * CFrame.new(0, 0, 0.9), HQ.navy, Enum.Material.Metal)
 	back.CastShadow = true
+	backPanel(back, Enum.NormalId.Back, accent, false)
 	local face = Kit.block(model, "SignFace", Vector3.new(width, height, 0.4), cf, HQ.ink, Enum.Material.SmoothPlastic)
 	for _, side in ipairs({ -1, 1 }) do
 		Kit.block(model, "SignRim", Vector3.new(width + 1.6, 0.45, 0.4), cf * CFrame.new(0, side * (height / 2 + 0.55), -0.1), accent, not spec.premium and side == -1 and Enum.Material.Neon or Enum.Material.Metal)
@@ -6085,39 +6122,12 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 	-- trim. No text (nothing may stand in front of letters) and one part.
 	local backWall=part(model,"PortalBackWall",Vector3.new(32.6,10.4,0.8),at(0,5.7,-7.3),HQ.navy,Enum.Material.Metal)
 	backWall.CastShadow=true
-	local function backArt(host,face,canvas,rings)
-		local gui=Instance.new("SurfaceGui")
-		gui.Name,gui.Face,gui.LightInfluence,gui.CanvasSize,gui.SizingMode="PortalBackArt",face,0.4,canvas,Enum.SurfaceGuiSizingMode.FixedSize
-		gui.Parent=host
-		local panel=frame2d(gui,UDim2.fromScale(0.5,0.5),UDim2.fromScale(0.97,0.9),HQ.white,UDim.new(0.06,0))
-		gradient(panel,tint:Lerp(HQ.navy,0.25),HQ.navy:Lerp(Color3.new(0,0,0),0.35),90)
-		stroke(panel,tint,6)
-		-- Diagonal light stripes across the panel.
-		for k=-3,3 do box(panel,0.5+k*0.16,0.5,0.035,1.5,tint:Lerp(HQ.white,0.3),24,nil,0.82) end
-		if rings then
-			for slot=1,3 do
-				local ring=circle(panel,0.5+(slot-2)*0.315,0.52,0.2,0.62,tint,1)
-				stroke(ring,tint:Lerp(HQ.white,0.35),9)
-				circle(ring,0.5,0.5,0.55,0.55,tint:Lerp(HQ.white,0.5),0.55)
-			end
-		else
-			-- A gold sunburst in a ring, the island's emblem: eight rays round a disc.
-			local medal=circle(panel,0.5,0.5,0.24,0.62,HQ.navy,0)
-			stroke(medal,HQ.gold,8)
-			for k=0,3 do box(medal,0.5,0.5,0.1,0.82,HQ.gold,k*45,0.5) end
-			circle(medal,0.5,0.5,0.36,0.36,HQ.gold,0)
-			circle(medal,0.5,0.5,0.22,0.22,tint:Lerp(HQ.white,0.3),0)
-		end
-		box(panel,0.5,0.06,0.9,0.03,HQ.gold,0,0.5)
-		box(panel,0.5,0.94,0.9,0.03,HQ.gold,0,0.5)
-		return gui
-	end
-	backArt(backWall,Enum.NormalId.Front,Vector2.new(640,200),true)
+	backPanel(backWall,Enum.NormalId.Front,tint,true)
 	-- A thick navy frame, a neon rim in the map's colour and gold studs: the
 	-- same family as every other sign on the island.
 	local billboardBack=artPart(model,"BillboardBack",Vector3.new(34.6,14.9,0.6),at(0,20,-5.2),HQ.navy,Enum.Material.Metal)
 	billboardBack.CastShadow=true
-	backArt(billboardBack,Enum.NormalId.Front,Vector2.new(640,276),false)
+	backPanel(billboardBack,Enum.NormalId.Front,tint,false)
 	for _,side in ipairs({-1,1}) do
 		artPart(model,"BillboardRim",Vector3.new(33.8,0.5,0.4),at(0,20+side*6.72,-4.05),tint,Enum.Material.Neon)
 		artPart(model,"BillboardRim",Vector3.new(0.5,13.9,0.4),at(side*16.45,20,-4.05),tint,Enum.Material.Neon)
