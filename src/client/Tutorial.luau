@@ -220,9 +220,11 @@ function Tutorial:_matchStep(state)
 		local record = refs.abilityButtons and refs.abilityButtons[ability.id]
 		return {
 			id = "ability", number = 4, total = total,
-			-- The Q key only means something with a keyboard.
-			text = UserInputService.KeyboardEnabled and T("Use o poder do líder: o botão grande (tecla Q)", "Use your leader's power: the big button (Q key)")
-				or T("Use o poder do líder: toque no botão grande", "Use your leader's power: tap the big button"),
+			-- The Q key only means something with a keyboard. The leader is the first
+			-- hero of the team: every hero has a power, the leader's is the one used
+			-- (owner, 16/10: the tutorial should say so).
+			text = UserInputService.KeyboardEnabled and T("Use o poder do líder (o 1º herói da equipe): o botão grande, tecla Q", "Use your leader's power (your team's 1st hero): the big button, Q key")
+				or T("Use o poder do líder (o 1º herói da equipe): toque no botão grande", "Use your leader's power (your team's 1st hero): tap the big button"),
 			gui = record and record.button,
 		}
 	elseif ability and (ability.cooldown or 0) > 0 then
