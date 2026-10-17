@@ -58,6 +58,8 @@ return {
 			-- Five passes enabled in the official Creator Hub (2026-10-12).
 			collector = { id = 2004326420 }, training = { id = 2001722936 },
 			vip = { id = 2003954466 }, speed3 = { id = 2001776936 }, season = { id = 2026575250 },
+			-- The Iron armour skin, created in the Creator Hub on 17/10 (799 Robux).
+			ironSkin = { id = 2037267402 },
 		},
 		Consumables = {
 			gold1000 = { id = 3715833438 }, gold5000 = { id = 3715833690 }, gold12000 = { id = 3715833842 }, gold30000 = { id = 3715833975 },
