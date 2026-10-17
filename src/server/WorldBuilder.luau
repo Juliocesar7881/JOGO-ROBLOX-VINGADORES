@@ -6270,7 +6270,10 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 	local function at(dx,y,dz) return origin*CFrame.new(dx,y,dz) end
 	local floor=part(model,"Plinth",Vector3.new(28,0.6,22),at(0,0.3,0),HQ.navy,Enum.Material.Metal)
 	model.PrimaryPart=floor
-	part(model,"BackWall",Vector3.new(28,16,1.2),at(0,8,-10.5),HQ.navy,Enum.Material.Metal).CastShadow=true
+	local hallBack=part(model,"BackWall",Vector3.new(28,16,1.2),at(0,8,-10.5),HQ.navy,Enum.Material.Metal)
+	hallBack.CastShadow=true
+	-- Seen from behind, the hall is finished like the portals (owner, 16/10).
+	backPanel(hallBack,Enum.NormalId.Front,secondary,false)
 	for _,side in ipairs({-1,1}) do
 		part(model,"HallWall",Vector3.new(1.2,16,22),at(side*13.4,8,0),HQ.steel,Enum.Material.Metal).CastShadow=true
 		-- Deep round glazing breaks the broad side wall into recognisable bays.
