@@ -29,20 +29,27 @@ for _, name in pairs(AMBIENCE) do VOLUME[name] = 0.1 end
 for name in pairs(BATTLE_TRACKS) do VOLUME[name] = 0.2 end
 -- Combat is dense: only a few weapon sounds per quarter second reach the
 -- speakers, quieter with distance, and none from beyond earshot.
-local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.3, 3, 90, 3
+local SHOT_WINDOW, SHOT_VOICES, EARSHOT, VOICES_PER_SOUND = 0.3, 4, 90, 3
 Audio.Ambiences = AMBIENCE
 local BANK_LIMITS = {ui=3,events=4,summon=2,rewardAccent=2,combat=6,powers=3,boss=2,world=2,score=8}
 local WEAPON_BANK = {
 	hulk="heavy", capmen="heavy", beast="punch", shangchi="punch", ironfist="punch", antman="punch",
 	captain="metal", panther="swift", wolverine="swift", daredevil="swift", blade="swift",
 	groot="organic", spiderman="web", hawkeye="arrow", thor="tech", storm="tech", wasp="tech",
-	ironman="tech", starlord="tech", vision="beam", cyclops="beam", nova="beam", captainmarvel="beam",
+	ironman="beam", starlord="tech", vision="beam", cyclops="beam", nova="beam", captainmarvel="beam",
 	wanda="magic", strange="magic", jean="magic", gambit="magic", nightcrawler="magic", emerald="magic",
 	iceman="ice", ghostrider="fire", torch="fire", rocket="blast", warmachine="blast", nightstalker="blast",
 	falcon="swift", bucky="tech", widow="swift", silversurfer="beam", psylocke="magic", deadpool="tech",
 	moonknight="arrow", solartitan="beam", speedster="swift", amazon="metal", seaking="organic",
 }
 local FAMILY_BANK = {shotTech="tech",shotArrow="arrow",shotMagic="magic",shotMelee="punch",shotBlast="blast"}
+-- Every basic attack is heard, even softly (owner, 16/10: "cada ataque básico
+-- deveria ter algum sfx, mesmo que bem baixinho"): the families' recordings
+-- differ by up to 12 dB (measured RMS on sfx_combat.wav), so each gets a gain
+-- that brings it near the punches; the soft organic creak and the arrow and
+-- tech ticks were lost under the music.
+local BANK_GAIN = {punch=1, heavy=1.15, metal=1.05, organic=2.6, web=1.05, arrow=1.8, tech=1.6, beam=1.3, magic=1.2, ice=1, fire=1, blast=1.2, swift=1}
+Audio.BankGain = BANK_GAIN
 local POWER_BANK = {blast="powerBlast",smite="powerLightning",freeze="powerFreeze",web="powerWeb",lightning="powerLightning",chain="powerLightning",
 	heal="powerHeal",buff="powerHeal",rally="powerHeal",barrier="powerHeal",shield="powerHeal",overdrive="powerHeal",
 	taunt="powerTaunt",meteor="powerFire",fire="powerFire",burn="powerFire",execute="powerBlast",
@@ -148,7 +155,7 @@ local PITCHES = {0.96, 1.03, 0.99, 1.06, 0.93}
 -- lower register; agile tools stay short and bright. Shared voices remain
 -- capped at three per family even with the entire roster on screen.
 local WEAPON_TONE = {
-	ironman = {1.12, 1, 1, -3}, warmachine = {0.74, 1.05, -5, 3}, rocket = {0.8, 0.95, -3, 2},
+	ironman = {1.12, 1.45, 1, -3}, warmachine = {0.74, 1.05, -5, 3}, rocket = {0.8, 0.95, -3, 2},
 	hulk = {0.68, 1.1, -9, 5}, groot = {0.8, 0.85, -8, 1}, beast = {0.9, 0.9, -4, 1},
 	hawkeye = {1.12, 0.82, 2, -7}, spiderman = {0.88, 0.75, -3, -6},
 	wanda = {0.9, 0.85, -4, -3}, strange = {1.05, 0.8, -2, -5}, thor = {0.83, 1, -4, 3},
@@ -655,7 +662,9 @@ function Audio:Shot(name, distance, heroId)
 	local tone = WEAPON_TONE[heroId]
 	local volume = (VOLUME[name] or .085) * math.clamp((1-distance/EARSHOT)^1.5,.06,1) * (tone and tone[2] or 1)
 	local sequence = (self.shotSequence or 0) + 1
-	if self:_bankPlay(Audio.WeaponProfile(heroId,name), {volume=volume,pitch=PITCHES[(sequence-1)%#PITCHES+1]}) then
+	local bank = Audio.WeaponProfile(heroId,name)
+	local pitch = PITCHES[(sequence-1)%#PITCHES+1] * (tone and tone[1] or 1)
+	if self:_bankPlay(bank, {volume=math.min(volume * (BANK_GAIN[bank] or 1), 0.22),pitch=pitch}) then
 		self.shotVoices += 1; self.lastCue[name] = now; self.shotSequence = sequence
 		return true
 	end

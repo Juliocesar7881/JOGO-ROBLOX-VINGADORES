@@ -3425,6 +3425,16 @@ local function session(screen)
 			if SharedConfig.Audio[cue] == nil or SharedConfig.BuiltinCues[cue] == nil then table.insert(missing, heroId .. ":" .. tostring(cue)) end
 		end
 		check(#missing == 0, tag .. ": every hero maps to a configured weapon cue with a built-in fallback: " .. table.concat(missing, ", "))
+		-- And every hero's blow is heard: its recording family has a loudness gain
+		-- (the iron armour's repulsor is a beam, 16/10).
+		local AudioModule = require(clientModules.Audio)
+		local quiet = {}
+		for heroId in pairs(Catalog.Heroes) do
+			local bank = AudioModule.WeaponProfile(heroId, EffectsModule.ShotSound(heroId))
+			if not AudioModule.BankGain[bank] then table.insert(quiet, heroId .. ":" .. tostring(bank)) end
+		end
+		check(#quiet == 0, tag .. ": every hero's weapon sound has a loudness gain, missing: " .. table.concat(quiet, ", "))
+		check(AudioModule.WeaponProfile("ironman", EffectsModule.ShotSound("ironman")) == "beam", tag .. ": the iron armour's repulsor sounds like a beam")
 	end)
 
 	step("enemy families read at a glance: links, reveal, summons and armour", function()

@@ -101,7 +101,7 @@ for index=1,10 do clock+=0.01; if audio:Shot(index%2==0 and 'shotTech' or 'shotB
 assert(heard==2,'Repeated families are spaced by 120 ms, got '..heard)
 clock+=1;heard=0
 for index=1,6 do clock+=0.055; if audio:Shot(index%2==0 and 'shotTech' or 'shotBlast',10) then heard+=1 end end
-assert(heard==3,'No more than three shots play in a 300 ms window, got '..heard)
+assert(heard==4,'No more than four shots play in a 300 ms window (every blow heard, 16/10), got '..heard)
 clock+=1
 assert(audio:Shot('shotTech',80),'A far shot within earshot still plays')
 local farVolume=audio.voices.shotTech[audio.voiceIndex.shotTech].Volume
