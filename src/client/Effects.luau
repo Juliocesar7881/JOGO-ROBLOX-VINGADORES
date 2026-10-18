@@ -826,6 +826,48 @@ function Effects:_emit(kind, position, color, count)
 	return true
 end
 
+-- A flamethrower's jet: fire particles thrown from the nozzle straight at the
+-- target, swelling from a hot yellow core to orange, red and smoke as they fly.
+-- One emitter, re-aimed and re-timed before each burst (a particle keeps the
+-- speed it was born with). Reduced effects: the fireballs alone.
+function Effects:_flameJet(from, to)
+	local distance = (to - from).Magnitude
+	if distance < 0.5 or self:_reduced() then return false end
+	local jet = self.flameJet
+	if not jet or not jet.attachment.Parent then
+		local attachment = Instance.new("Attachment")
+		attachment.Name, attachment.Parent = "FlameJet", self:_particleRoot()
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Name, emitter.Texture, emitter.Rate, emitter.Enabled = "FlameJet", "rbxasset://textures/particles/fire_main.dds", 0, true
+		emitter.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 236, 150)), ColorSequenceKeypoint.new(0.3, Color3.fromRGB(255, 150, 40)),
+			ColorSequenceKeypoint.new(0.75, Color3.fromRGB(214, 56, 22)), ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 48, 40)) })
+		emitter.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(0.45, 2.2), NumberSequenceKeypoint.new(1, 3.4) })
+		emitter.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(0.7, 0.4), NumberSequenceKeypoint.new(1, 1) })
+		emitter.EmissionDirection, emitter.SpreadAngle = Enum.NormalId.Front, Vector2.new(8, 8)
+		emitter.Drag, emitter.Acceleration = 0, Vector3.new(0, 3, 0)
+		emitter.Rotation, emitter.RotSpeed = NumberRange.new(0, 360), NumberRange.new(-240, 240)
+		emitter.LightEmission, emitter.LightInfluence = 0.3, 0.25
+		emitter.Parent = attachment
+		jet = { attachment = attachment, emitter = emitter }
+		self.flameJet = jet
+	end
+	-- Speeds from a quarter to all of the way spread each burst along the whole
+	-- path (one speed flew as a single clump), and three bursts a beat apart
+	-- make one continuous jet.
+	local life = 0.42
+	local function burst()
+		if not jet.attachment.Parent then return end
+		jet.emitter.Lifetime = NumberRange.new(life * 0.9, life)
+		jet.emitter.Speed = NumberRange.new(distance / life * 0.25, distance / life * 1.05)
+		jet.attachment.WorldCFrame = CFrame.lookAt(from, to)
+		jet.emitter:Emit(math.clamp(math.floor(distance * 0.9), 16, 44))
+	end
+	burst()
+	task.delay(0.08, burst)
+	task.delay(0.16, burst)
+	return true
+end
+
 -- A soft ribbon between two points that always faces the camera: a stretched
 -- box reads as a slab from the side. Fades out over its life (see Step).
 function Effects:_beam(from, to, color, width, duration)
@@ -1408,16 +1450,19 @@ function Effects:_heroShot(event, lowFX)
 		end
 		self:_emit("star", target + Vector3.new(0, 1, 0), Color3.fromRGB(120, 230, 110), 5)
 	elseif heroId == "flavio" then
-		-- A flamethrower stream: a thick orange jet with a yellow core, then fire on the ground.
-		local previous = from
-		for index = 1, 4 do
-			local point = index == 4 and target or from:Lerp(target, index / 4) + Vector3.new(0, math.sin(index * 1.7 + self.shotSerial) * 0.25, 0)
-			self:_line(previous, point, Color3.fromRGB(255, 120, 30), 0.34, 0.14)
-			self:_line(previous, point, Color3.fromRGB(255, 220, 110), 0.14, 0.12)
-			previous = point
+		-- A real flamethrower (owner, 18/10: "não parece fogo"): a jet of fire
+		-- from the nozzle to the target, fireballs riding it, and the target
+		-- going up in flames and embers.
+		local jet = self:_flameJet(from, target)
+		-- Reduced effects (no particles): fireballs fly the path instead.
+		for index = 0, jet and 0 or 2 do
+			local ball = self:_effect(Vector3.one, CFrame.new(from), index == 1 and Color3.fromRGB(255, 214, 96) or Color3.fromRGB(255, 118, 30), 0.24 + index * 0.05, Enum.PartType.Ball, jet and 0.5 or 0.3)
+			if ball then ball.from, ball.to, ball.ballFrom, ball.ballTo = from, target, 0.8, jet and 3.2 or 2.2 + index * 0.5 end
 		end
-		self:_groundImpact(target, Color3.fromRGB(255, 100, 20), 5)
-		self:_column(Vector3.new(target.X, 0.3, target.Z), Color3.fromRGB(255, 140, 40), 5, 1.6, 0.4, 0.35)
+		self:_muzzle(from, Color3.fromRGB(255, 170, 60), 1.1)
+		if not self:_emit("fire", target, Color3.fromRGB(255, 130, 40), 10) then self:_impact(target, Color3.fromRGB(255, 120, 30), 2.4) end
+		self:_emit("ember", target, Color3.fromRGB(255, 180, 70), 8)
+		self:_groundImpact(target, Color3.fromRGB(255, 100, 20), 4)
 	elseif heroId == "ghostrider" then
 		local previous = from
 		for index = 1, 3 do
@@ -1839,14 +1884,18 @@ function Effects:Handle(event)
 		end
 	elseif event.kind == "Shot" then
 		local state = self.getState()
-		self:_aim(event.towerId, event.to)
-		self:_recoil(event.towerId,event.interval)
+		-- An extra stream of the same attack (a hero that hits every target)
+		-- neither turns the tower again nor recoils nor sounds.
+		if not event.extra then
+			self:_aim(event.towerId, event.to)
+			self:_recoil(event.towerId,event.interval)
+		end
 		-- Pose before reading the attachment: otherwise a projectile originates
 		-- at the previous frame's lowered hand while the hero is already firing.
 		local firingModel = self:_towerModel(event.towerId)
 		if firingModel then self:_turnTowers(0,firingModel) end
 		local camera = workspace.CurrentCamera
-		if self.audio and camera and typeof(event.to) == "Vector3" then
+		if self.audio and camera and typeof(event.to) == "Vector3" and not event.extra then
 			local model = self:_towerModel(event.towerId)
 			local heroId = event.heroId or (model and model:GetAttribute("HeroId"))
 			self.audio:Shot(Effects.ShotSound(heroId), (event.to - camera.CFrame.Position).Magnitude, heroId)

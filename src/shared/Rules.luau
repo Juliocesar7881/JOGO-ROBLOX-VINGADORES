@@ -669,7 +669,7 @@ function Rules.TowerStats(hero, level, branch, modifiers)
 		range = hero.range + linear * 1.75,
 		interval = hero.interval * 0.96 ^ linear,
 		attack = hero.attack, damageType = hero.damageType, air = hero.air == true,
-		reveal = hero.reveal == true, support = hero.support == true,
+		reveal = hero.reveal == true, support = hero.support == true, allTargets = hero.allTargets == true,
 		splash = hero.splash or 0, chain = hero.chain or 1,
 		-- A slowing hero slows harder with every level: +20% of its base a level.
 		slow = math.min(0.75, (hero.slow or 0) * (1 + 0.2 * linear)),

@@ -689,6 +689,25 @@ end
 
 local function distanceBetween(a, b) return (a - b).Magnitude end
 
+print("--- the event hero burns every enemy in reach, cloaked ones too ---")
+do
+	-- Owner, 18/10: "ele tem que atirar em todos os alvos".
+	local match, player = stage({ loadout = { "flavio", "ironman" } })
+	match.participants[player.UserId].cash = 100000
+	local tower = place(match, player, "flavio")
+	local spread = {}
+	for index, id in ipairs({ "zombie", "runner", "stealth", "flyer", "brute" }) do
+		local enemy = spawn(match, id, index * 25, 50)
+		spread[enemy] = enemy.hp
+	end
+	local stats = match:_towerStats(tower)
+	check(stats.allTargets and stats.reveal and stats.range >= 320, "Flávio reaches the whole map, sees cloaked enemies and hits every target")
+	check(match:_attack(tower, stats), "Flávio fires")
+	local missed = {}
+	for enemy, hp in pairs(spread) do if not (enemy.hp < hp and enemy.dot) then table.insert(missed, enemy.enemyId) end end
+	check(#missed == 0, "one flamethrower shot burns every enemy on the road, missed: " .. table.concat(missed, ","))
+end
+
 print("--- cosmetic windups preserve authoritative attacks ---")
 do
 	local match, player = stage()

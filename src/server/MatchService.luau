@@ -642,7 +642,10 @@ function Match:_attack(tower, stats)
 	local attack=stats.attack
 	local stomp = false
 	if stats.periodicSplash and stats.periodicSplash>0 and tower.attacks%stats.periodicSplash==0 then attack="splash" stomp=true end
-	if attack=="splash" or attack=="dot" then
+	if stats.allTargets then
+		-- Every enemy the tower can reach is hit at once (the event hero).
+		hits=candidates
+	elseif attack=="splash" or attack=="dot" then
 		hits={}
 		for _,enemy in pairs(self.enemies) do
 			if (not enemy.def.air or stats.air) and distanceXZ(enemy.position,target.position)<=(stats.splash or 8) then table.insert(hits,enemy) end
@@ -699,6 +702,16 @@ function Match:_attack(tower, stats)
 	-- Inside a frame's batch every shot rides in one Shots event; alone (tests,
 	-- a stray call) it goes out at once.
 	if self.shotBuffer then shot.kind=nil table.insert(self.shotBuffer,shot) else self:_fx(shot) end
+	-- A hero that hits everything shows two more streams; extra ones turn,
+	-- recoil and sound nothing on the client.
+	if stats.allTargets then
+		for index=2,math.min(#candidates,3) do
+			local other=candidates[index]
+			local height=(self.world.AimHeight and self.world:AimHeight(other.enemyId)) or (other.def.air and 8 or 2)
+			local extra={kind="Shot",from=shot.from,to=other.position+Vector3.new(0,height,0),color=shot.color,towerId=tower.id,heroId=tower.heroId,style=attack,interval=stats.interval,extra=true}
+			if self.shotBuffer then extra.kind=nil table.insert(self.shotBuffer,extra) else self:_fx(extra) end
+		end
+	end
 	if attack=="splash" or attack=="dot" then self:_fx({kind="Pulse",position=target.position,radius=stats.splash or 8,color=Color3.fromRGB(c[1],c[2],c[3])}) end
 	return true
 end

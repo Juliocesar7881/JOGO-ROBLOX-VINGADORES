@@ -1061,10 +1061,13 @@ table.insert(Catalog.AbilityOrder, "jurassicInferno")
 Catalog.Heroes.flavio = {
 	id = "flavio", rarity = "supreme", exclusive = true, ability = "jurassicInferno",
 	name = text("Flávio Hipotético", "Hypothetical Flávio"), role = text("Lança-chamas montado num dinossauro", "Flamethrower riding a dinosaur"), cost = 900,
-	description = text("Monta um dinossauro e queima tudo com um lança-chamas de alcance ilimitado: fogo em área que continua queimando, atravessa armadura e derrete chefes.", "Rides a dinosaur and burns everything with an unlimited-range flamethrower: area fire that keeps burning, pierces armor and melts bosses."),
+	description = text("Monta um dinossauro e queima todos os inimigos do mapa de uma vez com um lança-chamas de alcance ilimitado: o fogo continua queimando, atravessa armadura, vê camuflados e derrete chefes.", "Rides a dinosaur and burns every enemy on the map at once with an unlimited-range flamethrower: the fire keeps burning, pierces armor, sees cloaked enemies and melts bosses."),
 	-- Unlimited range (owner, 18/10): farther than any map reaches.
 	damage = 150, range = 999, interval = 0.55, color = { 255, 120, 30 }, attack = "dot", damageType = "tech", air = true, splash = 13, dotDuration = 5,
 	armorPierce = 0.5, bossDamage = 0.5,
+	-- Every enemy in reach burns at each shot, and nothing cloaked hides from
+	-- him (owner, 18/10: "ele tem que atirar em todos os alvos").
+	allTargets = true, reveal = true,
 	branches = {
 		{ name = text("Lança-chamas turbo", "Turbo Flamethrower"), description = text("+60% de dano e chamas 30% mais rápidas.", "+60% damage and 30% faster flames."), mods = { mul("damage", 1.6), mul("interval", 0.7) } },
 		{ name = text("Rugido do T-Rex", "T-Rex Roar"), description = text("Fogo numa área enorme e inimigos 40% mais lentos.", "Fire over a huge area and enemies 40% slower."), mods = { set("splash", 19), set("slow", 0.4) } },
