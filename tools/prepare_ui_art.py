@@ -9,7 +9,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1] / "assets/ui/illustrated"
 SIZES = {"window": (1024, 683), "button": (1024, 341), "icons": (1024, 1024),
          "observatory": (1024, 683), "chests": (1023, 682), "card": (1024, 1024),
-         "launch_refuge_v2": (1024, 576), "afk_refuge_v2": (1024, 576)}
+         "launch_refuge_v3": (1024, 576), "afk_refuge_v3": (1024, 576)}
 
 def main():
     destination = ROOT / "roblox"

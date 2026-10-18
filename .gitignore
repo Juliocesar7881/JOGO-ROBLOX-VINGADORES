@@ -15,6 +15,8 @@ test-results/
 # Authored game-page artwork and preserved generator originals.
 !assets/store/promo-2026-10-15/*.png
 !assets/store/promo-2026-10-15/originais/*.png
+!assets/store/promo-2026-10-18/*.png
+!assets/store/promo-2026-10-18/originais/*.png
 # Editor and OS noise.
 .vscode/
 deployment/local.json

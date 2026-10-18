@@ -1,0 +1,38 @@
+[
+  {
+    "originalReference": "test-results/showroom/flavio_three.png",
+    "archivedFile": "assets/store/promo-2026-10-18/referencias/flavio_three.jpg",
+    "sha256": "bb07bb438eaf457483655261798c37754a2b7cd085bcd9bafabffb8a30c02aa0",
+    "kind": "Actual game screenshot; JPEG archive of generation reference"
+  },
+  {
+    "originalReference": "test-results/showroom/flavio_face.png",
+    "archivedFile": "assets/store/promo-2026-10-18/referencias/flavio_face.jpg",
+    "sha256": "41584dd083553073bf1ba642ca290ab6cf7b667c822371907d48d55e9beec04c",
+    "kind": "Actual game screenshot; JPEG archive of generation reference"
+  },
+  {
+    "originalReference": "test-results/showroom/flavio_match.png",
+    "archivedFile": "assets/store/promo-2026-10-18/referencias/flavio_match.jpg",
+    "sha256": "27ecfbbbbc87365e03a015c9f121493a1d92656b5a1fc7cf7a896d94a9affe81",
+    "kind": "Actual game screenshot; JPEG archive of generation reference"
+  },
+  {
+    "originalReference": "test-results/showroom/event-current-heroes.png",
+    "archivedFile": "assets/store/promo-2026-10-18/referencias/event-current-heroes.jpg",
+    "sha256": "43467d82b24e7d1d94f9caee3595e5e516018f95367722ae6d9886fb0ff0978c",
+    "kind": "Actual game screenshot; JPEG archive of generation reference"
+  },
+  {
+    "originalReference": "test-results/art-event-20261018/lobby-current.png",
+    "archivedFile": "assets/store/promo-2026-10-18/referencias/lobby-current.jpg",
+    "sha256": "e7cec12bc36d8ff9178bdda90125d040bbc532d37ff789dd627a4d5cc0e4bfe3",
+    "kind": "Actual game screenshot; JPEG archive of generation reference"
+  },
+  {
+    "originalReference": "test-results/art-event-20261018/afk-current.png",
+    "archivedFile": "assets/store/promo-2026-10-18/referencias/afk-current.jpg",
+    "sha256": "b1e4baab0d9134084942530152099eb0757a2daa0e91d04f48b50ad5e5d124a9",
+    "kind": "Actual game screenshot; JPEG archive of generation reference"
+  }
+]

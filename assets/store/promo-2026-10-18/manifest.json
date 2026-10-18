@@ -1,0 +1,117 @@
+{
+  "date": "2026-10-18",
+  "tool": "built-in image_gen",
+  "placeId": 97132875544830,
+  "exports": [
+    {
+      "id": "icon",
+      "source": {
+        "file": "assets/store/promo-2026-10-18/originais/icon.png",
+        "size": [
+          1254,
+          1254
+        ],
+        "bytes": 1960643,
+        "sha256": "f5fee1ada8809e9583c1d6a6799d5b0d7450e84b64c203189713427683bf3d05"
+      },
+      "delivery": {
+        "file": "assets/store/promo-2026-10-18/icone.png",
+        "size": [
+          512,
+          512
+        ],
+        "bytes": 410508,
+        "sha256": "097f71b2231faade2922e0c65ec374a0e2914620f90a11f88a1c7ac36e7d53fd"
+      },
+      "generatedFile": "exec-776b2062-7424-453b-8004-d346ef0ba157.png"
+    },
+    {
+      "id": "thumbnail-event",
+      "source": {
+        "file": "assets/store/promo-2026-10-18/originais/thumbnail-event.png",
+        "size": [
+          1672,
+          941
+        ],
+        "bytes": 2219592,
+        "sha256": "33ed1090b31c8e5f1a8acbcc29aac5423b0f7ec521069a935209ae42162b8667"
+      },
+      "delivery": {
+        "file": "assets/store/promo-2026-10-18/thumbnail-event.jpg",
+        "size": [
+          1920,
+          1080
+        ],
+        "bytes": 891156,
+        "sha256": "d4f1b822e1da414f0e26826e6ffc2bdb84b564ff05f892cc0aea121fea522932"
+      },
+      "generatedFile": "exec-4d1efd5b-0172-4642-a94d-0e9f2c9d5bab.png"
+    },
+    {
+      "id": "thumbnail-squad",
+      "source": {
+        "file": "assets/store/promo-2026-10-18/originais/thumbnail-squad.png",
+        "size": [
+          1672,
+          941
+        ],
+        "bytes": 2406451,
+        "sha256": "3d8cefae742012871f523d83a9a2ffc35bd21ad78acbf91baa998ab879e2b801"
+      },
+      "delivery": {
+        "file": "assets/store/promo-2026-10-18/thumbnail-squad.jpg",
+        "size": [
+          1920,
+          1080
+        ],
+        "bytes": 949876,
+        "sha256": "342ff435ef49ac14d43a0b538a8f35e0c38e69e27e2b10429d343833ab658c84"
+      },
+      "generatedFile": "exec-e64830d0-5c48-4000-85f0-509f955f8b96.png"
+    },
+    {
+      "id": "launch",
+      "source": {
+        "file": "assets/ui/illustrated/launch_refuge_v3.png",
+        "size": [
+          1672,
+          941
+        ],
+        "bytes": 2149226,
+        "sha256": "e4a29d6a8cb385e5f551757038712d890c01425015150f3f4d15047b11a0a918"
+      },
+      "delivery": {
+        "file": "assets/ui/illustrated/roblox/md_launch_refuge_v3.png",
+        "size": [
+          1024,
+          576
+        ],
+        "bytes": 874214,
+        "sha256": "deec727f6239525c2b80e7e7e441ac22337071a43db7510586976cfac7308450"
+      },
+      "generatedFile": "exec-8a0075e6-50c9-48d3-bed8-c3b9a9e73bd6.png"
+    },
+    {
+      "id": "afk",
+      "source": {
+        "file": "assets/ui/illustrated/afk_refuge_v3.png",
+        "size": [
+          1672,
+          941
+        ],
+        "bytes": 2225837,
+        "sha256": "7c4f8e8d91153e21118b6ad626a9534a796dd3f2d42b78bf46587e5886fca54a"
+      },
+      "delivery": {
+        "file": "assets/ui/illustrated/roblox/md_afk_refuge_v3.png",
+        "size": [
+          1024,
+          576
+        ],
+        "bytes": 893754,
+        "sha256": "04dcc1c0f2b30eb09c363ecb9a3452ee379f77ffea37213b991b53d16494e54d"
+      },
+      "generatedFile": "exec-a6d85b92-7494-4f68-84ba-a8b93efd7331.png"
+    }
+  ]
+}

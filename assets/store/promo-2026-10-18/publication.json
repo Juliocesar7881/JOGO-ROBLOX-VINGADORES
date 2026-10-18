@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-18",
+  "placeId": 97132875544830,
+  "universeId": 10768165352,
+  "icon": {
+    "targetId": 10768165352,
+    "state": "Completed",
+    "imageUrl": "https://tr.rbxcdn.com/180DAY-f78a41f571213628c9841750feefacca/512/512/Image/Png/noFilter",
+    "version": "TN3"
+  },
+  "detailThumbnails": [
+    {
+      "assetTypeId": 1,
+      "assetType": "Image",
+      "imageId": 116292789932511,
+      "videoHash": null,
+      "videoTitle": null,
+      "approved": true,
+      "altText": "Flávio Hipotético rides a brown T-Rex with a flamethrower beside the current white-and-blue armored hero, silver hammer hero and teal shield captain in the island lobby."
+    },
+    {
+      "assetTypeId": 1,
+      "assetType": "Image",
+      "imageId": 71851013049409,
+      "videoHash": null,
+      "videoTitle": null,
+      "approved": true,
+      "altText": "Flávio Hipotético raises a flamethrower while riding his T-Rex in the Jurassic Event. Current armored heroes defend the yellow city route against green enemies."
+    }
+  ],
+  "home": {
+    "active": [
+      "thumbnail-squad.jpg",
+      "thumbnail-event.jpg"
+    ],
+    "personalization": true,
+    "verifiedAfterNavigation": true,
+    "evidence": "test-results/art-event-20261018/hub/home-roundtrip.png"
+  },
+  "descriptions": {
+    "sourceLocale": "en-us",
+    "savedAndReadBack": [
+      "en-us",
+      "pt-br",
+      "es-es"
+    ],
+    "titlePreserved": "Multiverse Heroes: Doomsday Tower Defense"
+  },
+  "runtimeArt": [
+    {
+      "loaded": true,
+      "image": "rbxassetid://100615646421098",
+      "stage": "startup",
+      "visible": true
+    },
+    {
+      "loaded": true,
+      "image": "rbxassetid://102874803609554",
+      "stage": "afkxp",
+      "visible": true
+    }
+  ],
+  "publication": {
+    "timestamp": "2026-10-18T13:42:14.513Z",
+    "line": "2026-10-18T13:42:14.513Z,5186.513184,14cc,6,Info [FLog::StudioPublishStatusLabel] Publish succeeded for placeId 97132875544830; marking as published (refreshing menu label to \"Publish latest version\")",
+    "log": "0.743.0.7431133_20261018T121548Z_Studio_E9411_last.log",
+    "placeId": 97132875544830,
+    "studioIsEdit": true
+  },
+  "fullSuiteExit": 0,
+  "studioReview": {
+    "pt": [
+      "startup",
+      "loading",
+      "afkgold",
+      "afkxp"
+    ],
+    "phoneLandscape": "667x375",
+    "en": [
+      "startup",
+      "afkxp"
+    ],
+    "phonePortrait": "375x667",
+    "exit": 0
+  }
+}

@@ -29,7 +29,7 @@ return {
 	MaxPartySize = 4,
 	-- Text-free, authored comic art. Sources, prompts and delivery hashes:
 	-- assets/ui/illustrated/manifest.json. IDs are set only after Studio upload.
-	UiArt = {window=117794482905127,button=91879736431596,icons=76122046230704,observatory=93095245078402,chests=137153627143583,card=77752406707285,launch=113377652302568,afk=126038966446275},
+	UiArt = {window=117794482905127,button=91879736431596,icons=76122046230704,observatory=93095245078402,chests=137153627143583,card=77752406707285,launch=100615646421098,afk=102874803609554},
 	-- The heroes' armour block and its painted finish (tools/gen_armor_assets.py,
 	-- uploaded through Studio's 3D importer). 0 keeps the classic chamfered blocks.
 	-- Signature patterns (tools/gen_hero_textures.py): the Surfer's galaxy cape,

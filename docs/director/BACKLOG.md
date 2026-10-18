@@ -422,3 +422,8 @@ Referências: dois vídeos do dono (tycoon "Buy/Country/Sell" e um tower defense
 - [x] M43.12 Volta ao lobby coberta pela tela de carregamento (ReturnCover.luau).
 - [x] M43.13 Escolha seu Mapa sem metade vazia; foto nova de Manhattan (imagem 124937669877628).
 - [~] M43.14 Skin Armadura de Ferro por Robux (799): veste o avatar, clique esquerdo dispara o repulsor na partida, vitrine na praça vende (c6daeb7). Falta o dono criar o passe no Creator Hub e pôr o ID em Config.Products.Passes.ironSkin (o navegador desta sessão não tem login).
+
+## M44 — Artes atuais e Evento Jurássico, 18/10
+
+- [x] M44.1 Fundos de carregamento/conexão e AFK/Ouro/XP refeitos com os modelos atuais; IDs importados, carregamento real conferido, revisão PC/celular e suíte completa verdes. Publicado no place oficial em 18/10 às 10:42:14.
+- [x] M44.2 Ícone e duas miniaturas novos com Flávio Hipotético no T-Rex e heróis atuais; ícone Completed, miniaturas aprovadas na página e ativas na Home, versões anteriores substituídas. Descrições EN/PT-BR/ES salvas e relidas. Prompts, originais e referências em `assets/store/promo-2026-10-18/`; relatório `docs/ARTES_EVENTO_2026-10-18.md`.

@@ -147,64 +147,70 @@
       }
     },
     "launch": {
-      "prompt": "Use case: stylized-concept. Asset: finished landscape 16:9 text-free loading-screen background for Multiverse Doomsday, an existing Roblox tower defense. Create a beautiful polished stylized 3D Roblox render based closely on the actual game in the two reference images. Image 1 is environment identity reference: keep its circular gray brick island plaza with navy, gold and cyan concentric rings and gold five-point star, tall rectangular blue/navy hero tower with golden trims and circular white star medallion, orbital blue globe beacon, navy/gold lamps and summoning halls, green round trees, grassy ocean cliffs. Image 2 is CHARACTER IDENTITY reference ONLY: reproduce the two actual simple blocky characters shown there: silver spiky hair, tan smiling face, navy tunic with a single tilted white rectangular emblem, pale gray arms, black trousers/navy boots and a dark brown long hammer handle; second is the bulky royal-blue and gray armored robot with rounded gray helmet, wide horizontal cyan visor, single yellow lightning bolt on blue chest, blue gloves/boots. Preserve these actual boxy Roblox proportions and original colors, small bevels and tasteful material polish allowed. No human anatomical superheroes, no capes added, no movie franchise costumes. Composition: two actual heroes standing cooperatively in the LEFT foreground, clean visible silhouettes, camera at character chest height with tower/globe/plaza recognizable behind them in the LEFT half. Rightmost 44% gradually becomes calm deep navy atmospheric negative space with very restrained cyan edge light, for the game's native text and progress UI later; no objects or faces in that area. Bright welcoming soft daylight left, golden rim accents, rich blue and teal, modest bloom, crisp legible shapes, elegant restrained cinematic depth, fidelity to supplied Roblox world rather than a different invented world. No text, no letters, no labels, no logo, no user interface, no buttons, no progress bar, no editor chrome, no Roblox top controls, no watermark. Deliver a single finished wide illustration, not a UI mockup or collage.",
-      "generated_file": "exec-7fe5d284-321c-4ee9-b379-a767c741a170.png",
+      "prompt": "Use case: stylized-concept. Final LANDSCAPE 16:9 text-free loading/connection screen BACKGROUND for the actual Roblox game Multiverse Heroes: Doomsday Tower Defense. Ref1 mandatory exact CURRENT heroes: white/cobalt robot with engraved segmented armor, rounded shoulder domes, bright cyan diamond bolt reactor and horizontal cyan visor; teal/navy/gold captain with navy trousers, ornate gold chest chevron and matching round chevron shield; silver/navy white-spiky-haired hammer hero with gold filigree. Ref2 mandatory current ENVIRONMENT: ocean island circular gray brick plaza, huge gold star and cyan concentric navy/gold rings, orbital glowing blue globe beacon with gold orbit bands, navy/gold lamps, rounded green trees, orange/green/red portals and grassy cliff islands. Ref3 supports the current event mount, brown block-built T. rex with green/yellow bandana and fictional navy-suited rider Flávio; use only a small background silhouette beside a portal if it fits, do not dominate. Compose the robot and captain as a strong cooperative pair in the LEFT 50%, complete clear silhouettes on the actual plaza with the globe and distant portal behind. Faithful game-specific stylized Roblox modular geometry, new bevels/layered armor and dome shoulders, premium toy-like material polish, cheerful bright afternoon lighting, rich cobalt/teal/gold and warm rim highlights. IMPORTANT RIGHTMOST 43% must be quiet deep navy atmospheric gradient/negative space for the actual native loading text and progress controls, with no faces, key architecture or busy effects there. Hero faces/silhouettes positioned inside the left half so a portrait crop can preserve them. Strong cinematic depth and composed lighting without drowning the real game identity. No old generic block heroes, no realistic human superhero bodies, no movie costumes, no invented objects. No text, letters, logos, labels, numbers, buttons, progress bar, UI/editor controls, watermark or collage. A single finished background illustration, no mockup.",
+      "generated_file": "exec-8a0075e6-50c9-48d3-bed8-c3b9a9e73bd6.png",
+      "references": [
+        "test-results/showroom/event-current-heroes.png",
+        "test-results/art-event-20261018/lobby-current.png",
+        "test-results/showroom/flavio_three.png"
+      ],
+      "roblox_id": 100615646421098,
+      "identity": [
+        "Current engraved white/cobalt cyan-reactor armour and domed shoulders",
+        "Current teal/navy/gold shield captain and silver/navy hammer hero",
+        "Current star plaza, orbital globe, portal stations and open AFK pavilion"
+      ],
       "source": {
-        "file": "launch_refuge_v2.png",
+        "file": "launch_refuge_v3.png",
         "size": [
           1672,
           941
         ],
-        "sha256": "c4d44094664bbbf8816ce2e3692a07c9f3f55ee5a0103e062b5b9c8dbdc3083d"
+        "bytes": 2149226,
+        "sha256": "e4a29d6a8cb385e5f551757038712d890c01425015150f3f4d15047b11a0a918"
       },
       "delivery": {
-        "file": "roblox/md_launch_refuge_v2.png",
+        "file": "roblox/md_launch_refuge_v3.png",
         "size": [
           1024,
           576
         ],
-        "sha256": "c961280424509a11a56c45dfcddac51802448e199416b91e4da792438fd21595"
-      },
-      "references": [
-        "C:/Users/loops/Desktop/Multiverse_Lobby_2026-10-11/overview.png",
-        "test-results/review/01-startup.png"
-      ],
-      "identity": [
-        "actual star-medallion tower and circular refuge plaza",
-        "actual orbital globe and cyan AFK pavilion",
-        "actual silver-haired navy hero and blue lightning-armored hero"
-      ],
-      "roblox_id": 113377652302568
+        "bytes": 874214,
+        "sha256": "deec727f6239525c2b80e7e7e441ac22337071a43db7510586976cfac7308450"
+      }
     },
     "afk": {
-      "prompt": "Use case: stylized-concept. Asset: final 16:9 landscape background for the AFK rest/reward screen of the existing Roblox game Multiverse Doomsday. Reference image 1 is the ACTUAL GAME environment and architecture. Reference image 2 is the ACTUAL GAME character identity reference, ignore all editor and interface around it. Reference image 3 is the approved new loading artwork for matching render polish and color. Create a calmer companion illustration. Keep the real navy/royal-blue buildings with gold trim and cyan light lines, the cyan circular AFK pavilion on the right side of the original game photo, turquoise island ocean, green round trees, stone walkways with navy/gold rails, orbital globe and star-medallion tower visible at a distance. Camera beside the cyan-ring AFK pavilion, looking back toward the recognizable refuge plaza. The two actual blocky heroes are resting watchfully in the LEFT foreground: the silver spiky-haired smiling tan hero with navy tunic, single tilted white bar on chest, pale gray block arms, black trousers/navy boots and long brown hammer handle; and the gray helmet/flat cyan visor royal-blue robot with yellow lightning bolt on chest and blue gloves. Keep exact simplified Roblox block geometry, no realistic anatomy or different superhero costumes, no new weapons or objects. Use the same faithful slightly polished 3D rendering as reference 3. Comfortable soft afternoon light, subtle gold bounce light/cyan station lights, clean crisp shapes, no flashy combat. Composition: actual characters and pavilion fill left 55%; right 45% is calm deep navy atmospheric negative space to receive native gold/XP counters and return controls, so no face or key building in that area. Text-free: no letters, words, numbers, badges, symbols claiming reward amounts, logos, HUD, editor UI, buttons, watermark. A single finished background illustration, not a mockup/collage. Must remain visibly the exact same Roblox world and characters from the references.",
-      "generated_file": "exec-8c3bbd75-d2d0-463a-8b5e-fa0b422b7340.png",
+      "prompt": "Use case: stylized-concept. Final LANDSCAPE 16:9 text-free AFK/rest/energy-saving screen BACKGROUND for the actual Roblox game Multiverse Heroes: Doomsday Tower Defense. Mandatory CURRENT character ref1: white/cobalt engraved robot with bright cyan diamond bolt reactor, horizontal cyan visor and rounded shoulder domes; silver/navy hammer hero with spiky white hair, gold-filigree chestplate and rounded silver shoulder domes; teal/navy/gold shield captain. Preserve exact blocky modular Roblox proportions, layered beveled armor, gold/cyan edge details and faces. Mandatory ENVIRONMENT ref2: circular gray brick star plaza, navy/gold/cyan architecture, gold orbital blue globe, rounded green topiary and turquoise island ocean with grassy rock cliffs. Compose the silver/navy hammer hero seated peacefully on a low stone bench at LEFT foreground with hammer resting safely beside him and the white/cobalt robot standing nearby watching the sea; a recognizably game-like AFK pavilion of 4 white/gold posts, a simple cyan halo roof and navy circular floor behind them, connected to plaza by stone paths and navy/gold rails. Calm welcoming afternoon, luminous clean toy-like Roblox rendering, premium materials and soft depth, cyan/blue with restrained warm gold. Restful companion to the loading art, not a battle scene. Left 52% holds characters and pavilion; RIGHTMOST 43% a calm deep navy atmospheric negative space for actual native resource/timer/button UI, no faces or important objects there. No extra weapon types, old bare-bones hero designs, realistic anatomy or movie-franchise outfits. No text, letters, digits, currency symbols, reward claims, badges, buttons, UI/editor chrome, logo or watermark. A single finished background, not a UI mockup or collage.",
+      "generated_file": "exec-a6d85b92-7494-4f68-84ba-a8b93efd7331.png",
+      "references": [
+        "test-results/showroom/event-current-heroes.png",
+        "test-results/art-event-20261018/lobby-current.png",
+        "test-results/art-event-20261018/afk-current.png"
+      ],
+      "roblox_id": 102874803609554,
+      "identity": [
+        "Current engraved white/cobalt cyan-reactor armour and domed shoulders",
+        "Current teal/navy/gold shield captain and silver/navy hammer hero",
+        "Current star plaza, orbital globe, portal stations and open AFK pavilion"
+      ],
       "source": {
-        "file": "afk_refuge_v2.png",
+        "file": "afk_refuge_v3.png",
         "size": [
           1672,
           941
         ],
-        "sha256": "730664b93a15b6e2761dac0a8812fe911866d540745fdee2c01906fe5f0998e4"
+        "bytes": 2225837,
+        "sha256": "7c4f8e8d91153e21118b6ad626a9534a796dd3f2d42b78bf46587e5886fca54a"
       },
       "delivery": {
-        "file": "roblox/md_afk_refuge_v2.png",
+        "file": "roblox/md_afk_refuge_v3.png",
         "size": [
           1024,
           576
         ],
-        "sha256": "8324d2e820b8fbd270cd6408f9bf167df15767bf1ab649a9f76219851b49970e"
-      },
-      "references": [
-        "C:/Users/loops/Desktop/Multiverse_Lobby_2026-10-11/overview.png",
-        "test-results/review/01-startup.png"
-      ],
-      "identity": [
-        "actual star-medallion tower and circular refuge plaza",
-        "actual orbital globe and cyan AFK pavilion",
-        "actual silver-haired navy hero and blue lightning-armored hero"
-      ],
-      "roblox_id": 126038966446275
+        "bytes": 893754,
+        "sha256": "04dcc1c0f2b30eb09c363ecb9a3452ee379f77ffea37213b991b53d16494e54d"
+      }
     }
   }
 }
