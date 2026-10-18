@@ -854,6 +854,26 @@ function PlayerService:GrantCosmetic(player, featId)
 	return ok, result
 end
 
+-- Heroes this account is given outright (the experience creator's test heroes,
+-- Config.CreatorHeroes): each one it does not own yet joins it once, like a
+-- chest's new hero. Returns the ids granted.
+function PlayerService:GrantHeroes(player, heroIds)
+	if type(heroIds) ~= "table" then return false, {} end
+	local granted = {}
+	local ok = self:_transaction(player, function(profile, now)
+		granted = {}
+		for _, id in ipairs(heroIds) do
+			if type(id) == "string" and self.catalog.Heroes[id] and not profile.heroes[id] then
+				self:_grantHero(profile, id, now)
+				table.insert(granted, id)
+			end
+		end
+		return true, { granted = granted }
+	end)
+	if ok and #granted > 0 then self:_notify(player) end
+	return ok, granted
+end
+
 -- Studio memory mode only: own these heroes and field them as the squad, for
 -- reviewing a hero without opening chests. Never touches saved data.
 function PlayerService:_studioEdit(player, mutate)

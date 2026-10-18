@@ -856,6 +856,8 @@ do
 		check(seen[id] or Catalog.Heroes[id].starter, "Every non-starter hero can be won from a chest: " .. id)
 	end
 	equal(seen.flavio, "jurassic", "Flávio comes only from the event chest")
+	-- His flamethrower reaches the whole map (owner, 18/10): maps stay inside ±112 studs.
+	check(Rules.TowerStats("flavio", 1).range >= 320, "Flávio's range is unlimited")
 	equal(Catalog.Chests.jurassic.cost, dearest, "The event chest costs as much as the dearest chest")
 	check(Catalog.Chests.jurassic.event == true and Catalog.Chests.jurassic.pity == nil, "The event chest is marked and has no guarantee")
 	local odds = {}

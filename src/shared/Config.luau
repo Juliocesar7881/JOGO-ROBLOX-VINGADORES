@@ -42,6 +42,9 @@ return {
 	BaseHP = 100,
 	-- Match Gold each commander starts a run with (enemies drop the rest).
 	StartCash = 600,
+	-- Heroes the experience's creator owns for testing (owner, 18/10: "add o
+	-- Flávio na minha conta pra eu testar"). Granted once at login, server side.
+	CreatorHeroes = { "flavio" },
 	PreparationSeconds = 10,
 	ReconnectSeconds = 120,
 	MaxEnemies = 180,

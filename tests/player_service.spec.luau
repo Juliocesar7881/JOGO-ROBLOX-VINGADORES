@@ -416,6 +416,19 @@ failBefore = 3
 check(service:_receipt({ PlayerId = 1, ProductId = 301, PurchaseId = "falcon-x" }) == "pending", "A storage failure leaves a hero receipt pending")
 failBefore = 0
 
+-- The creator's test heroes: given once, never twice, unknown ids ignored.
+do
+	local okGrant, given = service:GrantHeroes(p1, { "flavio", "notAHero" })
+	check(okGrant and #given == 1 and given[1] == "flavio" and service:Get(p1).heroes.flavio ~= nil, "the creator's test hero joins the account")
+	local okAgain, again = service:GrantHeroes(p1, { "flavio" })
+	check(okAgain and #again == 0, "a test hero already owned is not granted again")
+	for _, profile in ipairs({ service.records[p1.UserId].profile, stores.Tests.values.p_1 }) do
+		profile.heroes.flavio, profile.abilities.flavio = nil, nil
+		local index = table.find(profile.loadout, "flavio")
+		if index then table.remove(profile.loadout, index) end
+	end
+end
+
 -- The starter pack: an epic hero and Gold, once per account.
 do
 	local pack = Catalog.Products.Consumables.starterPack

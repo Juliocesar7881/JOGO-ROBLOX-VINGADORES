@@ -1148,6 +1148,23 @@ function UI.rememberHero(heroId, source)
 	return true
 end
 
+-- A figure may ask for its own portrait framing (a rider on a mount the
+-- default front view would hide): PortraitFocus (a point in the root's frame),
+-- PortraitSpan and PortraitView (the camera's direction, times the span).
+-- A full-figure portrait keeps the view but frames the whole model.
+function UI.portraitFraming(figure, full)
+	local focus = figure and figure:GetAttribute("PortraitFocus")
+	local view = figure and figure:GetAttribute("PortraitView")
+	if typeof(focus) ~= "Vector3" or typeof(view) ~= "Vector3" then return nil end
+	local root = figure.PrimaryPart
+	local pivot = root and root.CFrame or figure:GetPivot()
+	if full then
+		local frame, bounds = figure:GetBoundingBox()
+		return { focus = frame.Position, span = math.max(bounds.Y, bounds.X, bounds.Z) * 0.7, view = view }
+	end
+	return { focus = (pivot * CFrame.new(focus)).Position, span = tonumber(figure:GetAttribute("PortraitSpan")) or 4, view = view }
+end
+
 function UI.heroModel(parent, heroId, source)
 	-- Final art is cloned as it is (a MeshPart cannot be rebuilt from its
 	-- properties by a script); portraits and previews never animate it.
@@ -1206,6 +1223,8 @@ function UI.heroPortraitLive(parent, heroId, source, tint, properties)
 	local span = math.max(bounds.Y, bounds.X * 0.9, 5) * 1.02
 	local camera = UI.create("Camera", {Name = "PortraitCamera", FieldOfView = 32}, viewportFrame)
 	local offset = Vector3.new(span * 0.44, span * 0.12, -span * 1.95)
+	local custom = UI.portraitFraming(figure, true)
+	if custom then focus, span, offset = custom.focus, custom.span, custom.view * custom.span end
 	camera.CFrame = CFrame.lookAt(focus + offset, focus)
 	viewportFrame.CurrentCamera = camera
 	return { frame = viewportFrame, model = model, figure = figure, camera = camera, focus = focus, offset = offset }
@@ -1237,7 +1256,10 @@ function UI.heroPortrait(parent, heroId, source, tint, properties)
 	local camera = UI.create("Camera", {Name = "PortraitCamera", FieldOfView = 32}, viewportFrame)
 	-- Characters face -Z. A mild three-quarter angle keeps their emblems,
 	-- weapons and silhouette readable even in the small quickbar slots.
-	camera.CFrame = CFrame.lookAt(focus + Vector3.new(span * 0.44, span * 0.12, -span * 1.95), focus)
+	local view = Vector3.new(0.44, 0.12, -1.95)
+	local custom = UI.portraitFraming(model:FindFirstChild("HeroFigure", true), full)
+	if custom then focus, span, view = custom.focus, custom.span, custom.view end
+	camera.CFrame = CFrame.lookAt(focus + view * span, focus)
 	viewportFrame.CurrentCamera = camera
 	return viewportFrame
 end
@@ -1589,7 +1611,12 @@ end
 
 function UI.percent(value, language)
 	value = tonumber(value) or 0
-	local text = value >= 10 and string.format("%.0f%%", value) or value >= 1 and string.format("%.1f%%", value) or string.format("%.2f%%", value)
+	local decimals = value >= 10 and 0 or value >= 1 and 1 or 2
+	-- A chance is never rounded up to a certainty or down to nothing (owner,
+	-- 18/10: the event chest's 99.99% showed as 100%).
+	local function shown(places) return tonumber(string.format("%." .. places .. "f", value)) end
+	while decimals < 2 and ((value < 100 and shown(decimals) >= 100) or (value > 0 and shown(decimals) <= 0)) do decimals += 1 end
+	local text = string.format("%." .. decimals .. "f%%", value)
 	text = text:gsub("%.0%%", "%%")
 	if language ~= "en" then text = text:gsub("%.", ",") end
 	return text

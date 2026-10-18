@@ -1296,6 +1296,8 @@ local function session(screen)
 		clickNamed("SummonSelect_jurassic")
 		check(countNamed(gui,"OpenChest_jurassic")==1 and countNamed(gui,"OpenChest_rare")==0,tag..": the event chest has its own page")
 		check(named(gui,"ChestHero_flavio")~=nil and named(gui,"ChestHero_ironman")~=nil,tag..": the event chest shows its two heroes, Flávio and the Iron Armor")
+		-- 99.99% is not a certainty (owner, 18/10: it showed as 100%).
+		check(named(gui,"ChestOdds_ironman").Text=="99,99%" and named(gui,"ChestOdds_flavio").Text=="0,01%",tag..": the event chest shows 99,99% and 0,01%, got "..named(gui,"ChestOdds_ironman").Text)
 		clickNamed("SummonSelect_cosmic")
 		for _,entry in ipairs(Rules.ChestOutcomes("cosmic",0,{})) do
 			check((named(gui,"GuaranteedFeature_"..entry.id)~=nil)==entry.guaranteed,tag..": cosmic stars mark the preserved guarantee pool "..entry.id)

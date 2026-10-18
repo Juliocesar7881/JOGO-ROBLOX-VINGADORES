@@ -79,7 +79,7 @@ function Panels.new(ctx)
 		if mine then status ..= T("  •  Maestria ", "  •  Mastery ") .. tostring(mine.level or 1) .. T("  •  Carta nv ", "  •  Card lv ") .. tostring(mine.rank or 1) else status ..= T("  •  Você ainda não tem", "  •  Not owned yet") end
 		UI.tooltipLine(box, status, C.muted, 2, 15)
 		local perSecond = (stats.interval or 0) > 0 and 1 / stats.interval or 0
-		UI.tooltipLine(box, T("Dano ", "Damage ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.damage) .. "</b></font>   " .. T("Alcance ", "Range ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.range) .. "</b></font>   "
+		UI.tooltipLine(box, T("Dano ", "Damage ") .. '<font color="#FFFFFF"><b>' .. fmt(stats.damage) .. "</b></font>   " .. T("Alcance ", "Range ") .. '<font color="#FFFFFF"><b>' .. ((stats.range or 0) >= 300 and T("Ilimitado", "Unlimited") or fmt(stats.range)) .. "</b></font>   "
 			.. T("Ataques/s ", "Hits/s ") .. '<font color="#FFFFFF"><b>' .. string.format("%.1f", perSecond) .. "</b></font>", C.muted, 3, 17)
 		for index, trait in ipairs(UI.heroTraits(def, T, stats.slow)) do UI.tooltipLine(box, "• " .. trait, C.cream, 4 + index, 15) end
 		local ability = def.ability and Catalog.Abilities[def.ability]
@@ -181,7 +181,7 @@ function Panels.new(ctx)
 		local stats=UI.row(body,92)
 		local nowStats=heroNow(id)
 		local perSecond=(nowStats.interval or 0)>0 and 1/nowStats.interval or 0
-		for index,entry in ipairs({{"",T("Dano","Damage"),fmt(nowStats.damage)},{"",T("Alcance","Range"),fmt(nowStats.range)},{"",T("Ataques/s","Hits/s"),string.format("%.1f",perSecond)}}) do
+		for index,entry in ipairs({{"",T("Dano","Damage"),fmt(nowStats.damage)},{"",T("Alcance","Range"),(nowStats.range or 0)>=300 and T("Ilimitado","Unlimited") or fmt(nowStats.range)},{"",T("Ataques/s","Hits/s"),string.format("%.1f",perSecond)}}) do
 			local card=UI.frame(stats,{Name="HeroStat_"..index,Position=UDim2.new((index-1)/3,0,0,0),Size=UDim2.new(1/3,-8,1,-4),BackgroundColor3=UI.Skin.slot})
 			UI.corner(card,14)
 			UI.stroke(card,tint,2.5)
@@ -1119,7 +1119,7 @@ function Panels.new(ctx)
 			UI.button(pick,(p.loadout or {})[1]==id and T("É o líder","Leader") or T("Fazer líder","Make leader"),function() makeLeader(id) end,{Name="ChoiceLeader",Position=UDim2.fromOffset(buttonsX,144),Size=UDim2.fromOffset(buttonsW,34),BackgroundColor3=C.gold,TextSize=15})
 			local stats=heroNow(id)
 			local perSecond=(stats.interval or 0)>0 and 1/stats.interval or 0
-			UI.statTable(pick,{{key="damage",label=T("Dano","Damage"),value=fmt(stats.damage)},{key="speed",label=T("Ataques/s","Hits/s"),value=string.format("%.1f",perSecond)},{key="range",label=T("Alcance","Range"),value=fmt(stats.range)}},{Name="ChoiceStats",Position=UDim2.fromOffset(14,188),Size=UDim2.new(1,-28,0,68)})
+			UI.statTable(pick,{{key="damage",label=T("Dano","Damage"),value=fmt(stats.damage)},{key="speed",label=T("Ataques/s","Hits/s"),value=string.format("%.1f",perSecond)},{key="range",label=T("Alcance","Range"),value=(stats.range or 0)>=300 and T("Ilimitado","Unlimited") or fmt(stats.range)}},{Name="ChoiceStats",Position=UDim2.fromOffset(14,188),Size=UDim2.new(1,-28,0,68)})
 			local pills=UI.frame(pick,{Name="ChoiceTraits",Position=UDim2.fromOffset(14,264),Size=UDim2.new(1,-28,0,72),BackgroundTransparency=1})
 			local flow=UI.list(pills,6,true)
 			pcall(function() flow.Wraps=true end)

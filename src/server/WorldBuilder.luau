@@ -1790,6 +1790,11 @@ HERO_EXTRAS.flavio = function(f)
 	f.add("Head", "Jawline", V(h.X * 1.02, h.Y * 0.5, h.Z * 0.9), CFrame.new(0, -h.Y * 0.22, h.Z * 0.03), skin, FABRIC, "ball")
 	f.add("Head", "Chin", V(h.X * 0.46, h.Y * 0.18, h.Z * 0.24), CFrame.new(0, -h.Y * 0.43, -h.Z * 0.33), skin, FABRIC, "ball")
 	f.add("Head", "HairSweep", V(h.X * 0.9, h.Y * 0.3, h.Z * 0.5), CFrame.new(-h.X * 0.08, h.Y * 0.46, -h.Z * 0.22) * CFrame.Angles(0.25, 0, 0.16), Color3.fromRGB(56, 40, 30), FABRIC, "ball")
+	-- His portrait frames the rider from his right and a little above, past
+	-- the dinosaur's head (owner, 18/10: it stood in front of him).
+	f.model:SetAttribute("PortraitFocus", (f.parts.Head.Position + f.parts.UpperTorso.Position) / 2 - f.parts.HumanoidRootPart.Position)
+	f.model:SetAttribute("PortraitSpan", 4.4 * s)
+	f.model:SetAttribute("PortraitView", V(1.25, 0.45, -1.35))
 	f.add("UpperTorso", "SuitJacket", c * V(1.08, 1.03, 1.1), CFrame.new(), suit, FABRIC)
 	local front = -c.Z * 0.55
 	f.add("UpperTorso", "ShirtFront", V(c.X * 0.32, c.Y * 0.64, 0.06 * s), CFrame.new(0, c.Y * 0.15, front - 0.03 * s), shirt, FABRIC)

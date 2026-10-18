@@ -987,6 +987,11 @@ joinProfile = function(player)
 	end
 	-- Thanks owed from friends who joined from this player's invite elsewhere.
 	task.spawn(function() profiles:ClaimInviteThanks(player) end)
+	-- The experience's creator tests the event hero on their own account.
+	local okCreator, isCreator = pcall(function() return game.CreatorType == Enum.CreatorType.User and player.UserId == game.CreatorId end)
+	if okCreator and isCreator and type(Config.CreatorHeroes) == "table" then
+		task.spawn(function() pcall(function() profiles:GrantHeroes(player, Config.CreatorHeroes) end) end)
+	end
 	refreshPresence(player)
 	analytics:ProfileReady(player, profile.stats and (profile.stats.matches or 0) > 0)
 	-- Joined through a friend's invite: PlayerService decides who is paid.

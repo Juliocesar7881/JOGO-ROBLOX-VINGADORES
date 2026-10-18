@@ -538,6 +538,8 @@ local function lobbyChrome(visible)
 	if tracker then tracker.Visible=visible and contextPanel==nil end
 	local tip=main:FindFirstChild("FirstVisitHint")
 	if tip then tip.Visible=contextPanel==nil and not (state and state.elevator) end
+	-- The event tags yield to any open panel too.
+	for _,name in ipairs({"EventTag","JurassicTag"}) do local tag=main:FindFirstChild(name); if tag then tag.Visible=visible and contextPanel==nil end end
 end
 
 local function refreshNavigation()
@@ -903,7 +905,10 @@ local function renderEventTag()
 	local size = screenSize()
 	local hud = UI.lobbyLayout(size.X, size.Y)
 	local boosted = (tonumber(profile().boostUntil) or 0) > os.time()
-	local y = hud.pill.y + hud.pill.h + 4 + (boosted and 28 or 0)
+	-- Under the gold pill, right of the menu column where there is one (owner,
+	-- 18/10: they lay over its buttons), below the tutorial card's top row.
+	local x = hud.column and hud.navigation.x + hud.navigation.w + 10 or hud.pill.x + 6
+	local y = hud.pill.y + hud.pill.h + 10 + (boosted and 28 or 0)
 	local event = state.event
 	if event and (event.active or (tonumber(event.startsAt) and event.startsAt - os.time() < 3 * 86400)) then
 		local map = Catalog.Maps[event.mapId]
@@ -911,12 +916,12 @@ local function renderEventTag()
 		local clock = left >= 86400 and (math.floor(left / 86400) .. "d " .. math.floor((left % 86400) / 3600) .. "h") or (math.floor(left / 3600) .. "h " .. string.format("%02d", math.floor((left % 3600) / 60)) .. "m")
 		local text = event.active and (T("Evento: Ouro ×", "Event: Gold ×") .. tostring(event.goldScale or 2) .. T(" em ", " on ") .. (map and L(map.name) or "?") .. T("  •  acaba em ", "  •  ends in ") .. clock)
 			or (T("Evento de fim de semana em ", "Weekend event in ") .. clock)
-		UI.pill(main, text, C.coral:Lerp(C.ink, 0.25), {Name = "EventTag", Position = UDim2.new(0, hud.pill.x + 6, 0, y), TextSize = 14, TextColor3 = C.coral})
+		UI.pill(main, text, C.coral:Lerp(C.ink, 0.25), {Name = "EventTag", Position = UDim2.new(0, x, 0, y), TextSize = 14, TextColor3 = C.coral, Visible = contextPanel == nil})
 		-- The event's chest (owner, 17/10) rides under the event tag: one tap
 		-- opens it in the summon hall (where it stays all week).
 		if Catalog.Chests.jurassic then
 			UI.button(main, T("EVENTO: Baú Jurássico • Flávio 0,01%", "EVENT: Jurassic chest • Flávio 0.01%"), function() openContext("chests", { chestId = "jurassic", hud = true }) end,
-				{ Name = "JurassicTag", Position = UDim2.fromOffset(hud.pill.x + 6, y + 28), Size = UDim2.fromOffset(300, 28), TextSize = 13, BackgroundColor3 = Color3.fromRGB(36, 140, 74) })
+				{ Name = "JurassicTag", Position = UDim2.fromOffset(x, y + 28), Size = UDim2.fromOffset(300, 28), TextSize = 13, BackgroundColor3 = Color3.fromRGB(36, 140, 74), Visible = contextPanel == nil })
 		end
 	end
 end
@@ -1082,6 +1087,9 @@ end
 local function rangeRing(existing, position, radius, tint)
 	local ring = existing or previewPart("RangePreview", Vector3.one, tint, 0.7)
 	ring.Shape = Enum.PartType.Cylinder
+	-- An unlimited range (the event hero) reaches the whole map: no disc over it.
+	ring.Transparency = radius >= 300 and 1 or 0.7
+	radius = math.min(radius, 300)
 	ring.Size = Vector3.new(0.10, radius * 2, radius * 2)
 	ring.Color = tint
 	ring.CFrame = CFrame.new(position.X, 0.18, position.Z) * CFrame.Angles(0, 0, math.pi / 2)

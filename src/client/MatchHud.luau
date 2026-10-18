@@ -22,6 +22,8 @@ function MatchHud.new(ctx)
 		local now, nextStats = tower.base or tower, tower.next
 		local function whole(v) return number(math.floor(v + 0.5)) end
 		local function tenth(v) return string.format("%.1f", v) end
+		-- The event hero's range covers every map: it reads as unlimited.
+		local function reach(v) return v >= 300 and T("Ilimitado", "Unlimited") or tenth(v) end
 		local function rate(v) return string.format("%.2f", v) end
 		local function percent(v) return math.floor(v * 100 + 0.5) .. "%" end
 		-- One stat as "now -> next (+n%)": the next value in green, as the server sent it.
@@ -38,7 +40,7 @@ function MatchHud.new(ctx)
 		local rateAfter = nextStats and nextStats.rate * ((tower.rate or 0) / math.max(0.001, now.rate or 1))
 		local lines = {
 			line(T("Dano", "Dmg"), tower.damage, damageAfter, whole, true),
-			line(T("Alcance", "Range"), tower.range, nextStats and nextStats.range, tenth, true),
+			line(T("Alcance", "Range"), tower.range, nextStats and nextStats.range, reach, true),
 			line(T("Vel.", "Rate"), tower.rate, rateAfter, rate, true),
 		}
 		if (tower.slow or 0) > 0 then table.insert(lines, line(T("Lentidão", "Slow"), tower.slow, nextStats and nextStats.slow, percent, false)) end
@@ -530,23 +532,24 @@ function MatchHud.new(ctx)
 		-- The window's title tab, like every other screen: victory green, retry blue.
 		UI.titleRibbon(panel, result.ended and T("Recorde!", "Record!") or victory and T("Vitória!", "Victory!") or T("Fim de jogo", "Game over"), victory and C.green or C.blue,
 			{Name = "ResultRibbon", Position = UDim2.fromOffset(-10, -14), width = 320, height = 54, TextSize = 32, ZIndex = 3})
-		local content = UI.scroll(panel, {Name="ResultBody",Position = UDim2.fromOffset(20, 48), Size = UDim2.new(1, -40, 1, -128), ScrollBarThickness = 8})
-		UI.frame(panel,{Position=UDim2.new(0,18,1,-75),Size=UDim2.new(1,-36,0,2),BackgroundColor3=UI.Skin.slotLine})
+		local content = UI.scroll(panel, {Name="ResultBody",Position = UDim2.fromOffset(20, 48), Size = UDim2.new(1, -40, 1, -146), ScrollBarThickness = 8})
+		UI.frame(panel,{Position=UDim2.new(0,18,1,-93),Size=UDim2.new(1,-36,0,2),BackgroundColor3=UI.Skin.slotLine})
+		-- The buttons sit clear of the window's bottom border (owner, 18/10).
 		-- Like the genre's best: one tap runs the same map again; going back to
 		-- base is the quieter choice. Training always returns to the lobby.
 		if result.modeId=="tutorial" then
-			UI.button(panel,T("Voltar ao lobby","Back to the lobby"),returnToLobby,{Name="ResultReturn",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(1,-36,0,52),TextSize=22})
+			UI.button(panel,T("Voltar ao lobby","Back to the lobby"),returnToLobby,{Name="ResultReturn",Position=UDim2.new(0,18,1,-82),Size=UDim2.new(1,-36,0,52),TextSize=22})
 		else
 			local waiting=result.again==true
 			local again=UI.button(panel,waiting and (T("Esperando ","Waiting ")..tostring(result.againVotes or 1).."/"..tostring(result.againTotal or 1)) or T("▶ Jogar de novo","▶ Play again"),
-				function() act("PlayAgain",{}) end,{Name="ResultPlayAgain",Position=UDim2.new(0,18,1,-64),Size=UDim2.new(0.62,-84,0,52),BackgroundColor3=C.green,TextSize=22})
+				function() act("PlayAgain",{}) end,{Name="ResultPlayAgain",Position=UDim2.new(0,18,1,-82),Size=UDim2.new(0.62,-84,0,52),BackgroundColor3=C.green,TextSize=22})
 			if waiting then UI.disabled(again) end
 			-- A friend for the next round: Roblox's invite sheet, one tap from the result.
 			if ctx.inviteFriends then
-				local invite=UI.button(panel,"",ctx.inviteFriends,{Name="ResultInvite",Position=UDim2.new(0.62,-58,1,-64),Size=UDim2.fromOffset(52,52),BackgroundColor3=UI.Skin.bodyTop})
+				local invite=UI.button(panel,"",ctx.inviteFriends,{Name="ResultInvite",Position=UDim2.new(0.62,-58,1,-82),Size=UDim2.fromOffset(52,52),BackgroundColor3=UI.Skin.bodyTop})
 				UI.icon(invite,"plus",C.green,{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(36,36)})
 			end
-			UI.secondary(panel,T("Lobby","Lobby"),returnToLobby,{Name="ResultReturn",Position=UDim2.new(0.62,0,1,-64),Size=UDim2.new(0.38,-18,0,52),TextSize=20,BackgroundColor3=UI.Skin.bodyTop})
+			UI.secondary(panel,T("Lobby","Lobby"),returnToLobby,{Name="ResultReturn",Position=UDim2.new(0.62,0,1,-82),Size=UDim2.new(0.38,-18,0,52),TextSize=20,BackgroundColor3=UI.Skin.bodyTop})
 		end
 		UI.list(content, 8)
 		local short=sizeClass().short

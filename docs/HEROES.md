@@ -73,7 +73,7 @@ Todo herói ataca inimigos no chão e voando.
 
 | Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Flávio Hipotético** — Lança-chamas montado num dinossauro | 900 | queima contínua | 150 | 38 | 0.55s | Inferno Jurássico ⚡ (ultimate) |
+| **Flávio Hipotético** — Lança-chamas montado num dinossauro | 900 | queima contínua | 150 | 999 | 0.55s | Inferno Jurássico ⚡ (ultimate) |
 
 ## Habilidades
 

@@ -21,7 +21,7 @@
 local Review = {}
 
 Review.STAGES = {
-	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "basechests", "bases", "premium", "premiumgold",
+	"lobby", "newcomer", "modes", "squad", "hero", "talents", "chests", "eventchest", "basechests", "bases", "premium", "premiumgold",
 	"quests", "leaderboard", "settings", "rewards", "boarding", "afk", "afkgold", "afkxp", "prompt",
 	"preparing", "wave", "placing", "skillaim", "sheet", "sheetbase", "enemycard", "enemycardboss", "tower", "cards", "finalboss", "baseupgrade", "results", "defeat", "loading", "startup",
 	"reveal", "revealbase", "revealcommon", "reel", "herocard",
@@ -303,6 +303,8 @@ function Review.start(api)
 				api.openContext("shop", { hud = true, shopKind = "product" })
 			elseif stage == "basechests" then
 				api.openContext("chests", { chestId = "base_epic", hud = true })
+			elseif stage == "eventchest" then
+				api.openContext("chests", { chestId = "jurassic", hud = true })
 			elseif stage == "chests" then
 				-- Reset the fixture's category even after reviewing base summons.
 				api.openContext("chests", { chestId = "rare", hud = true })
