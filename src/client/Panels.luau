@@ -459,29 +459,14 @@ function Panels.new(ctx)
 			if goldOnSale then UI.button(purchaseParent,T("Comprar Ouro com Robux","Buy Gold with Robux"),function() openContext("premium",{shopKind="product"}) end,{Name="BuyGoldShortcut",Size=UDim2.new(1,-6,0,46),BackgroundColor3=C.gold,TextSize=17}) end
 		end
 
-		-- A real roster showcase, separate from the complete odds list. These
-		-- are available outcomes, never a promise that the player will win one.
-		local featuredH=wide and math.min(210,math.floor(galleryHeight*0.58)) or 0
-		if wide then
-			local featured=UI.frame(galleryParent,{Name="SummonFeatured",Size=UDim2.new(1,-6,0,featuredH),BackgroundTransparency=1})
-			local seen,chosen={},{}
-			for index=#outcomes,1,-1 do
-				local outcome=outcomes[index]
-				if outcome.chance>0 and not seen[outcome.rarity] then seen[outcome.rarity]=true; table.insert(chosen,outcome) end
-				if #chosen==3 then break end
-			end
-			for index,outcome in ipairs(chosen) do
-				local tint=UI.color(Catalog.Rarities[outcome.rarity].color)
-				local slot=UI.portraitStage(featured,tint,{Name="Featured_"..outcome.id,Position=UDim2.new((index-1)/#chosen,3,0,3),Size=UDim2.new(1/#chosen,-6,1,-6)})
-				portrait(slot,outcome.id,{Position=UDim2.fromOffset(3,3),Size=UDim2.new(1,-6,1,-26)})
-				UI.chip(slot,UI.percent(outcome.chance,ctx.language()),C.ink,{Name="FeaturedChance",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,4),Size=UDim2.fromOffset(54,22),TextSize=13,ZIndex=3})
-				UI.fit(UI.label(slot,L(catalog[outcome.id].name),{Name="FeaturedName",AnchorPoint=Vector2.new(0,1),Position=UDim2.new(0,4,1,-2),Size=UDim2.new(1,-8,0,24),Font=UI.Fonts.display,TextSize=15,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=3}),10)
-			end
-		end
+		-- The odds grid is the showcase (owner, 17/10: "tá ruim de visualizar os
+		-- heróis de cada baú, ficou pequeno pra scrollar"): no featured row above
+		-- it any more, big portrait cards filling the whole side, on every screen.
+		local featuredH=0
 		local caption=UI.frame(galleryParent,{Name="SummonOddsCaption",Position=UDim2.fromOffset(0,featuredH),Size=UDim2.new(1,-6,0,30),BackgroundTransparency=1})
 		UI.label(caption,forced and T("Destaques garantidos","Guaranteed features") or T("Pode vir neste baú","In this chest"),{Size=UDim2.new(1,0,1,0),TextSize=20,Font=UI.Fonts.display,TextColor3=C.cream})
-		local cols=wide and 2 or math.max(2,math.floor(width/145))
-		local pitch,tileH=wide and 64 or 128,wide and 56 or 116
+		local cols=math.max(2,math.floor((wide and width*0.58 or width)/145))
+		local pitch,tileH=128,116
 		local gallery=UI.scroll(galleryParent,{Name="SummonOdds",Position=UDim2.fromOffset(0,32+featuredH),Size=UDim2.new(1,-6,0,galleryHeight-featuredH),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,math.ceil(#outcomes/cols)*pitch+6),ScrollBarThickness=5,ScrollBarImageColor3=tint})
 		gallery:SetAttribute("SummonChestId",kit.selectedChest)
 		gallery.CanvasPosition=scrolls.odds or Vector2.new(0,0)
@@ -492,14 +477,14 @@ function Panels.new(ctx)
 			UI.corner(card,12)
 			UI.stroke(card,mine and C.ink or Color3.new(1,1,1),mine and 2.5 or 3)
 			UI.cardSkin(card,rarityColor)
-			portrait(card,outcome.id,{Position=UDim2.fromOffset(4,wide and 4 or 22),Size=wide and UDim2.fromOffset(44,48) or UDim2.new(1,-8,0,70)})
-			if outcome.guaranteed then UI.icon(card,"star",C.gold,{Name="GuaranteedFeature_"..outcome.id,Position=UDim2.fromOffset(4,wide and 2 or 24),Size=UDim2.fromOffset(16,16),ZIndex=4}) end
+			portrait(card,outcome.id,{Position=UDim2.fromOffset(4,22),Size=UDim2.new(1,-8,0,70)})
+			if outcome.guaranteed then UI.icon(card,"star",C.gold,{Name="GuaranteedFeature_"..outcome.id,Position=UDim2.fromOffset(4,24),Size=UDim2.fromOffset(16,16),ZIndex=4}) end
 			-- The chance on top, big; NEW for what the account does not own yet.
-			local odds=UI.label(card,UI.percent(outcome.chance,ctx.language()),{Name="ChestOdds_"..outcome.id,Position=wide and UDim2.new(1,-62,0,14) or UDim2.fromOffset(4,2),Size=wide and UDim2.fromOffset(58,28) or UDim2.new(1,-8,0,22),TextSize=19,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,BackgroundTransparency=wide and 0.15 or 1,BackgroundColor3=C.ink})
+			local odds=UI.label(card,UI.percent(outcome.chance,ctx.language()),{Name="ChestOdds_"..outcome.id,Position=UDim2.fromOffset(4,2),Size=UDim2.new(1,-8,0,22),TextSize=19,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center,BackgroundTransparency=1,BackgroundColor3=C.ink})
 			UI.oneLine(odds,11);UI.corner(odds,8)
 			UI.outline(odds,2.5)
-			if not mine then UI.chip(card,T("Novo","New"),C.green,{Name="ChestNew",AnchorPoint=Vector2.new(wide and 0 or 1,0),Position=wide and UDim2.fromOffset(4,38) or UDim2.new(1,-4,0,24),Size=UDim2.fromOffset(wide and 40 or 44,wide and 14 or 18),TextSize=wide and 10 or 12,ZIndex=3}) end
-			local name=UI.label(card,L(catalog[outcome.id].name),{Position=UDim2.fromOffset(wide and 54 or 4,wide and 4 or 92),Size=wide and UDim2.new(1,-120,0,48) or UDim2.new(1,-8,0,28),TextScaled=true,TextWrapped=wide,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
+			if not mine then UI.chip(card,T("Novo","New"),C.green,{Name="ChestNew",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-4,0,24),Size=UDim2.fromOffset(44,18),TextSize=12,ZIndex=3}) end
+			local name=UI.label(card,L(catalog[outcome.id].name),{Position=UDim2.fromOffset(4,92),Size=UDim2.new(1,-8,0,28),TextScaled=true,TextWrapped=false,Font=UI.Fonts.display,TextXAlignment=Enum.TextXAlignment.Center})
 			UI.textLimit(name,15,7)
 			UI.outline(name,2)
 			if not isBase then UI.hover(card,function(box) if kit.heroTooltip then kit.heroTooltip(box,outcome.id) end end,320) end
@@ -1724,7 +1709,7 @@ function Panels.new(ctx)
 		UI.pill(summary,T("Base ativa","Active base"),C.green:Lerp(C.ink,0.2),{Position=UDim2.fromOffset(textX,12),TextSize=15})
 		UI.fit(UI.label(summary,L(active.name),{Name="ActiveBaseName",Position=UDim2.fromOffset(textX,44),Size=UDim2.new(1,-textX-12,0,34),TextWrapped=true,TextSize=26,Font=UI.Fonts.display}),14)
 		UI.fit(UI.label(summary,"+"..activeStats.income..T(" Ouro por onda"," Gold per wave")..basePassive(activeStats,T(" de vida"," HP")),{Name="ActiveBaseIncome",Position=UDim2.fromOffset(textX,80),Size=UDim2.new(1,-textX-12,0,narrow and 36 or 24),TextWrapped=narrow,TextSize=18,Font=UI.Fonts.display,TextColor3=C.gold}),11)
-		UI.fit(UI.label(summary,T("Entra na sua próxima partida. Evolua com o Agente da Base ao lado dela (tecla E).","Deploys in your next match. Upgrade it with the Base Agent beside it (E key)."),{Name="ActiveBaseHow",Position=narrow and UDim2.fromOffset(12,124) or UDim2.fromOffset(132,106),Size=narrow and UDim2.new(1,-24,0,62) or UDim2.new(1,-144,0,40),TextWrapped=true,TextSize=15,TextColor3=C.muted}),11)
+		UI.fit(UI.label(summary,T("Entra na sua próxima partida. Evolua na própria base (chegue perto e aperte E) ou em Evoluir, no topo.","Deploys in your next match. Upgrade it at the base itself (walk up and press E) or with Upgrade at the top."),{Name="ActiveBaseHow",Position=narrow and UDim2.fromOffset(12,124) or UDim2.fromOffset(132,106),Size=narrow and UDim2.new(1,-24,0,62) or UDim2.new(1,-144,0,40),TextWrapped=true,TextSize=15,TextColor3=C.muted}),11)
 
 		UI.button(body,T("Ir à loja de bases","Go to the base shop"),function() routePreview.goShop("base_epic") end,{Size=UDim2.new(1,-6,0,50),BackgroundColor3=C.gold,TextSize=20})
 		-- Every base as a tile: picture, name, rarity, what it gives, one button.

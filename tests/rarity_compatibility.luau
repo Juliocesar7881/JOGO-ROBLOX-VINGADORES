@@ -3,13 +3,23 @@ local Rules=require("../src/shared/Rules")
 local baseline=require("./rarity_baseline")
 
 return function(check,equal,approx)
-	local merged={common="common",rare="common",epic="rare",legendary="legendary",mythic="legendary"}
-	equal(#Catalog.RarityOrder,3,"Exactly three collectible rarities")
+	local merged={common="common",rare="common",epic="rare",legendary="legendary",mythic="legendary",supreme="supreme"}
+	-- Three collectible rarities, plus the event hero's own Supreme (owner, 17/10).
+	equal(#Catalog.RarityOrder,4,"Three collectible rarities and the Supreme")
+	local supreme=0
+	for _,id in ipairs(Catalog.HeroOrder) do
+		local hero=Catalog.Heroes[id]
+		if hero.rarity=="supreme" then
+			supreme+=1
+			check(hero.exclusive==true and Catalog.Products.Heroes[id]==nil,"The Supreme hero is never sold for Robux: "..id)
+		end
+	end
+	equal(supreme,1,"The Supreme rarity has exactly one hero")
 	check(Catalog.Rarities.epic==nil and Catalog.Rarities.mythic==nil,"Retired rarities cannot leak into UI")
 	for id,old in pairs(baseline.heroes) do
 		local hero=Catalog.Heroes[id]
 		equal(hero.rarity,merged[old.rarity],"Hero reclassified without changing ID: "..id)
-		local robux={common=49,rare=149,legendary=399}
+		local robux={common=49,rare=149,legendary=399,supreme=0}
 		equal(Catalog.Products.Heroes[id] and Catalog.Products.Heroes[id].price or 0,hero.starter and 0 or robux[hero.rarity],"Direct Robux price by rarity; starters remain free: "..id)
 		equal(Rules.GuaranteedPrice(id),old.guaranteed,"Existing guaranteed Gold price: "..id)
 		for rank,cost in ipairs(old.abilityCosts) do equal(Rules.AbilityUpgrade(id,rank).cost,cost,"Existing ability price: "..id.." "..rank) end
@@ -26,7 +36,7 @@ return function(check,equal,approx)
 		local chest=Catalog.Chests[chestId]
 		equal(chest.cost,old.cost,"Existing chest price: "..chestId)
 		equal(chest.pity and chest.pity.after,old.pity and old.pity.after,"Existing guarantee threshold: "..chestId)
-		local odds={common=0,rare=0,legendary=0}
+		local odds={common=0,rare=0,legendary=0,supreme=0}
 		for rarity,weight in pairs(old.odds) do odds[merged[rarity]]+=weight end
 		for rarity,weight in pairs(odds) do equal(chest.odds[rarity],weight,"Merged displayed odds: "..chestId.." "..rarity) end
 		local hash=1
@@ -40,7 +50,7 @@ return function(check,equal,approx)
 				local sum,byId=0,{}
 				for _,entry in ipairs(outcomes) do
 					check(not byId[entry.id],"One displayed outcome per item: "..chestId)
-					check(not items[entry.id].starter,"No starter in actual or visual chest outcomes")
+					check(not items[entry.id].starter or (chest.heroes~=nil and table.find(chest.heroes,entry.id)~=nil),"No starter in a chest that does not name it")
 					check(not forced or entry.guaranteed,"Forced display contains only guarantee winners")
 					equal(entry.rarity,items[entry.id].rarity,"Odds use the actual new rarity")
 					byId[entry.id]=entry;sum+=entry.chance

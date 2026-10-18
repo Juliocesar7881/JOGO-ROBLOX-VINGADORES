@@ -1855,7 +1855,7 @@ function Match:Handle(player,action,payload)
 		return true,{ended=true}
 	elseif action=="SetSpeed" then
 		if payload.speed~=1 and payload.speed~=2 and payload.speed~=3 then return false,"Velocidade inválida. / Invalid speed." end
-		if payload.speed==3 and not (p.profile.passes and p.profile.passes.speed3) then return false,"A velocidade 3x é do passe 3x na loja. / 3x speed comes with the 3x pass in the shop." end
+		if payload.speed==3 and not (p.profile.passes and p.profile.passes.speed3) then return false,"A velocidade 3x é uma vantagem da loja. / 3x speed is a perk from the shop." end
 		p.speedVote=payload.speed
 		self:_refreshSpeed()
 		return true,{speed=self.speed}

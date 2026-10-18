@@ -20,7 +20,7 @@ require("../tests/next_goal")(check,equal)
 --==============================================================================
 -- Catalog shape
 --==============================================================================
-equal(#Catalog.HeroOrder, 43, "Roster size")
+equal(#Catalog.HeroOrder, 44, "Roster size: 43 and the event's Flávio Hipotético")
 -- Shouted names keep their accents (string.upper alone produced "BAú LENDáRIO").
 equal(Catalog.Upper("Baú Lendário"), "BAÚ LENDÁRIO", "Accent-aware uppercase")
 equal(Catalog.Upper("Instalação da HYDRA"), "INSTALAÇÃO DA HYDRA", "Cedilla and tilde uppercase")
@@ -38,7 +38,7 @@ equal(#Catalog.EnemyOrder, 25, "Enemy families")
 equal(#Catalog.BossOrder, 6, "Six bosses: one per map, Loki for Asgard")
 equal(#Catalog.ModeOrder, 4, "Campaign, competitive and cards plus training")
 equal(#Catalog.PortalOrder, 4, "Four kinds of portal")
-equal(#Catalog.AbilityOrder, 43, "One ability per hero")
+equal(#Catalog.AbilityOrder, 44, "One ability per hero")
 check(Catalog.Modes.daily == nil and Catalog.Modes.bossrush == nil, "Daily challenge and boss rush are gone")
 check(Catalog.Modes.infinite == nil and Catalog.Modes.hard == nil, "The casual endless and hard modes are gone")
 check(Catalog.Skills == nil and Catalog.Protocols == nil, "The old skill and protocol systems are gone")
@@ -80,9 +80,10 @@ for _, id in Catalog.HeroOrder do
 		check(stats.damage > 0 and stats.splash >= 0 and stats.chain >= 1, "Valid final stats")
 	end
 	check(not pcall(function() Rules.TowerStats(hero, 5, 3) end), "Reject invalid specialization")
-	-- Starters are free; everything else costs Robux in the premium shop.
-	if hero.starter then
-		check(Catalog.Products.Heroes[id] == nil, "Starters are never sold: " .. id)
+	-- Starters are free; everything else costs Robux in the premium shop, but
+	-- the event's exclusive hero, who only comes from his chest.
+	if hero.starter or hero.exclusive then
+		check(Catalog.Products.Heroes[id] == nil, "Starters and the exclusive hero are never sold: " .. id)
 	else
 		local product = Catalog.Products.Heroes[id]
 		check(product ~= nil, "A purchasable hero has a product: " .. id)
@@ -91,7 +92,7 @@ for _, id in Catalog.HeroOrder do
 	end
 end
 equal(rarityCount.common, 16, "Commons"); equal(rarityCount.rare, 15, "Rares")
-equal(rarityCount.legendary, 12, "Legendaries")
+equal(rarityCount.legendary, 12, "Legendaries"); equal(rarityCount.supreme, 1, "One Supreme")
 check(Catalog.Heroes.ironman.starter and Catalog.Heroes.hawkeye.starter, "Iron Man and Hawkeye are the starters")
 local starters = 0
 for _, id in Catalog.HeroOrder do if Catalog.Heroes[id].starter then starters += 1 end end
@@ -328,7 +329,7 @@ do
 			check(Rules.BaseStats(id, 5).bounty == 0, "only bounty bases pay per enemy: " .. id)
 		end
 	end
-	for _, rarity in Catalog.RarityOrder do check(seenBounty[rarity], "a bounty base at every rarity: " .. rarity) end
+	for _, rarity in Catalog.RarityOrder do check(seenBounty[rarity] or rarity == "supreme", "a bounty base at every rarity (the Supreme is one hero): " .. rarity) end
 end
 
 -- Guaranteed purchase for restricted accounts: priced at the expected chest cost.
@@ -823,41 +824,56 @@ for _, chestId in Catalog.ChestOrder do
 	local chest = Catalog.Chests[chestId]
 	local total = 0
 	for _, rarity in Catalog.RarityOrder do total += chest.odds[rarity] or 0 end
-	equal(total, 100, chestId .. " odds sum to 100")
+	approx(total, 100, chestId .. " odds sum to 100")
 	for rarity in chest.odds do check(Catalog.Rarities[rarity] ~= nil, "Known rarity in " .. chestId .. " odds") end
 end
-equal(Catalog.Chests.legendary.cost, Catalog.Chests.rare.cost * 2, "The rare chest costs half of the legendary chest")
-check(Catalog.Chests.rare.odds.legendary <= 2, "The Alliance chest barely holds a top hero")
-equal(Catalog.Chests.legendary.odds.common,30,"Legends chest keeps its former entry-tier pool")
--- The best heroes come from the legendary chest, and the best of them are the rarest.
-check(Catalog.Chests.legendary.odds.legendary > Catalog.Chests.rare.odds.legendary, "Legendaries are far likelier in the legendary chest")
-check(Catalog.Chests.legendary.odds.rare > Catalog.Chests.legendary.odds.legendary,"Legends chest keeps top items less likely than the middle group")
-check(Catalog.Chests.rare.odds.common > Catalog.Chests.rare.odds.rare and Catalog.Chests.rare.odds.rare > Catalog.Chests.rare.odds.legendary,"Alliance chest shows three descending odds")
-
--- Chest pools never contain a starter, and cover every other hero exactly once.
+-- Four hero chests that share no hero (owner, 17/10): Supplies (commons),
+-- the Alliance chest (rares), the Cosmic chest (legendaries, with a guarantee)
+-- and the event's Jurassic chest, as dear as the dearest, with the Iron Armor
+-- at 99.99% and the Supreme Flávio Hipotético at 0.01%.
 do
-	local covered = {}
-	for _, rarity in Catalog.RarityOrder do
-		for _, id in Rules.ChestPool(rarity) do
-			check(not Catalog.Heroes[id].starter, "No starter in a chest pool")
-			check(not covered[id], "A hero sits in one pool only")
-			covered[id] = true
+	equal(table.concat(Catalog.HeroChestOrder, ","), "supply,rare,cosmic,jurassic", "Four hero chests")
+	check(Catalog.Chests.epic == nil and Catalog.Chests.legendary == nil, "The Vanguard and Legends chests are retired")
+	local seen, dearest = {}, 0
+	for _, chestId in Catalog.HeroChestOrder do
+		local chest = Catalog.Chests[chestId]
+		if chestId ~= "jurassic" then dearest = math.max(dearest, chest.cost) end
+		local rarities = {}
+		for _, outcome in Rules.ChestOutcomes(chestId, 0, {}) do
+			if outcome.chance > 0 then
+				check(seen[outcome.id] == nil, "A hero lives in one chest only: " .. outcome.id .. " in " .. chestId .. " and " .. tostring(seen[outcome.id]))
+				seen[outcome.id] = chestId
+				rarities[outcome.rarity] = true
+			end
+		end
+		if chestId ~= "jurassic" then
+			local count = 0
+			for _ in rarities do count += 1 end
+			equal(count, 1, "A regular chest holds one rarity: " .. chestId)
 		end
 	end
 	for _, id in Catalog.HeroOrder do
-		check(covered[id] or Catalog.Heroes[id].starter, "Every non-starter can be won from a chest: " .. id)
+		check(seen[id] or Catalog.Heroes[id].starter, "Every non-starter hero can be won from a chest: " .. id)
 	end
+	equal(seen.flavio, "jurassic", "Flávio comes only from the event chest")
+	equal(Catalog.Chests.jurassic.cost, dearest, "The event chest costs as much as the dearest chest")
+	check(Catalog.Chests.jurassic.event == true and Catalog.Chests.jurassic.pity == nil, "The event chest is marked and has no guarantee")
+	local odds = {}
+	for _, outcome in Rules.ChestOutcomes("jurassic", 0, {}) do odds[outcome.id] = outcome.chance end
+	approx(odds.flavio, 0.01, "Flávio: 0.01%")
+	approx(odds.ironman, 99.99, "The Iron Armor: 99.99%")
+	equal(Rules.RollChest("jurassic", 0, 0.5, 0, {}).heroId, "ironman", "The event chest's ordinary draw")
+	equal(Rules.RollChest("jurassic", 0.999999, 0.5, 0, {}).heroId, "flavio", "Only the top 0.01% of rolls is Flávio")
+	equal(Rules.RollChest("jurassic", 0.9998, 0.5, 0, {}).heroId, "ironman", "0.02% from the top is still the Iron Armor")
+	equal(Rules.GuaranteedPrice("hawkeye"), Rules.GuaranteedPrice("falcon"), "Only the heroes the event chest names take its price")
+	check(Catalog.Rewards.freeChest.chestId == "supply", "The free chest is Supplies")
 end
 
 -- Deterministic edges of the draw.
 do
-	local low = Rules.RollChest("legendary", 0, 0, 0, {})
-	equal(low.rarity, "common", "The lowest roll in the Legends chest is common")
-	local high = Rules.RollChest("legendary", 0.999999, 0, 0, {})
-	equal(high.rarity, "legendary", "The highest roll in the Legends chest is legendary")
-	local rareLow = Rules.RollChest("rare", 0, 0, 0, {})
-	equal(rareLow.rarity, "common", "The lowest roll in the rare chest is a common")
-	check(Catalog.Heroes[rareLow.heroId].rarity == "common" and not Catalog.Heroes[rareLow.heroId].starter, "A common draw is a chestable common")
+	equal(Rules.RollChest("supply", 0, 0, 0, {}).rarity, "common", "Supplies give commons")
+	equal(Rules.RollChest("rare", 0, 0, 0, {}).rarity, "rare", "The Alliance chest gives rares")
+	equal(Rules.RollChest("cosmic", 0.999999, 0, 0, {}).rarity, "legendary", "The Cosmic chest gives legendaries")
 	for _, roll in { 0, 0.25, 0.5, 0.75, 0.999999, -1, 2, 0 / 0 } do
 		local result = Rules.RollChest("rare", roll, roll, 0, {})
 		check(Catalog.Heroes[result.heroId] ~= nil, "A hostile roll still resolves to a hero")
@@ -881,47 +897,41 @@ do
 		for _, rarity in Catalog.RarityOrder do
 			local expected = Catalog.Chests[chestId].odds[rarity] or 0
 			local actual = (counts[rarity] or 0) / trials * 100
-			check(math.abs(actual - expected) < 0.6, string.format("%s chest %s rate is %.2f%%, published %d%%", chestId, rarity, actual, expected))
+			check(math.abs(actual - expected) < 0.6, string.format("%s chest %s rate is %.2f%%, published %.2f%%", chestId, rarity, actual, expected))
 		end
 	end
 end
 
--- Duplicates: a chest prefers something new, and only repeats once that rarity is complete.
+-- Duplicates: a chest prefers something new, and only repeats once its pool is complete.
 do
-	local ownedAllEpics = {}
-	for _, id in Rules.ChestPool("rare") do ownedAllEpics[id] = true end
-	local pool = Rules.ChestPool("rare")
+	local pool = {}
+	for _, outcome in Rules.ChestOutcomes("rare", 0, {}) do table.insert(pool, outcome.id) end
+	local ownedAll = {}
+	for _, id in pool do ownedAll[id] = true end
 	local missing = pool[3]
-	ownedAllEpics[missing] = nil
+	ownedAll[missing] = nil
 	for step = 0, 99 do
-		local result = Rules.RollChest("legendary", 0.65, step / 100, 0, ownedAllEpics)
-		equal(result.rarity, "rare", "Fixture rolls the merged middle rarity")
-		equal(result.heroId, missing, "The one missing epic is always the one delivered")
+		local result = Rules.RollChest("rare", 0.65, step / 100, 0, ownedAll)
+		equal(result.heroId, missing, "The one missing hero is always the one delivered")
 		check(not result.duplicate, "A new hero is not a duplicate")
 	end
-	ownedAllEpics[missing] = true
-	local dupe = Rules.RollChest("legendary", 0.65, 0.4, 0, ownedAllEpics)
-	check(dupe.duplicate, "A completed rarity yields a duplicate")
+	ownedAll[missing] = true
+	local dupe = Rules.RollChest("rare", 0.65, 0.4, 0, ownedAll)
+	check(dupe.duplicate, "A completed chest yields a duplicate")
 	check(Catalog.Heroes[dupe.heroId].rarity == "rare", "The duplicate still keeps its rarity")
 end
 
--- Pity: the tenth legendary chest without a top hero is guaranteed to be one.
+-- Pity: the fifteenth Cosmic chest without one of the four strongest is guaranteed one.
 do
-	local chest = Catalog.Chests.legendary
-	equal(chest.pity.after, 10, "Pity threshold")
+	local chest = Catalog.Chests.cosmic
+	equal(chest.pity.after, 15, "Pity threshold")
 	for step = 0, 99 do
-		local result = Rules.RollChest("legendary", step / 100, 0.5, chest.pity.after - 1, {})
-		equal(result.rarity,"legendary","Pity guarantees the top collectible rarity")
-		check(result.pity and result.top, "The result reports the pity")
+		local result = Rules.RollChest("cosmic", step / 100, 0.5, chest.pity.after - 1, {})
+		check(result.pity and result.top and Catalog.Heroes[result.heroId].cosmicAchievement, "Pity delivers one of the four strongest")
 	end
-	local normal = Rules.RollChest("legendary", 0.05, 0.5, chest.pity.after - 2, {})
+	local normal = Rules.RollChest("cosmic", 0.05, 0.5, chest.pity.after - 2, {})
 	check(not normal.pity, "Pity is not triggered early")
-	local mythics = 0
-	for step = 0, 999 do
-		if Catalog.Heroes[Rules.RollChest("legendary", step / 1000, 0.5, chest.pity.after - 1, {}).heroId].cosmicAchievement then mythics += 1 end
-	end
-	check(mythics > 0 and mythics < 300, "A pity opening keeps mythic the rarest outcome")
-	check(Catalog.Chests.rare.pity == nil, "The rare chest has no pity")
+	check(Catalog.Chests.rare.pity == nil and Catalog.Chests.supply.pity == nil, "The cheaper chests have no pity")
 end
 
 --==============================================================================

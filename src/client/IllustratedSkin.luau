@@ -5,7 +5,7 @@ local Skin={}
 local downloads={}
 local icons={hero=1,base=2,heart=16,star=9,talents=3,shop=4,coin=4,gift=5,scroll=6,quest=6,gear=7,trophy=8,xp=9,bolt=10,wave=10,sword=11,damage=11,range=12,target=12,chest=13,home=14,play=15,shield=16}
 local chests={common=1,supply=1,rare=2,epic=3,legendary=4,mythic=5,cosmic=5,base=6,
-	base_supply=6,base_epic=3,base_cosmic=5}
+	base_supply=6,base_epic=3,base_cosmic=5,jurassic=4}
 function Skin.available(name)
 	return type(Config.UiArt)=="table" and (tonumber(Config.UiArt[name]) or 0)>0
 end

@@ -230,7 +230,7 @@ local CHEST_GOLD = Color3.fromRGB(255, 200, 70)
 local STAGE_INK = Color3.fromRGB(8, 10, 30)
 local NEW_GREEN = Color3.fromRGB(120, 236, 92)
 -- Confetti by prize rarity: an epic is a party, a mythic a storm.
-local CONFETTI_BY_RARITY = { common = 0, rare = 6, epic = 18, legendary = 36, mythic = 60 }
+local CONFETTI_BY_RARITY = { common = 0, rare = 6, epic = 18, legendary = 36, mythic = 60, supreme = 120 }
 
 -- Rays of light behind a prize: bars through one centre, each fading to both
 -- ends, turned one by one (a rotation pivots on the bar's own middle, which is

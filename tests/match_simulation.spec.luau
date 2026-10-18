@@ -881,7 +881,8 @@ do
 			tower.nextAttack = math.huge
 			local start = target.hp
 			for _ = 1, math.floor(stats.duration / 0.1) + 12 do match:Step(0.1) end
-			check(start - target.hp > target.maxHP * stats.power * 0.6, "burn deals its total over time: " .. label)
+			-- (A burn that kills before it is spent, as an extra blast can make it, is done.)
+			check(target.hp <= 0 or start - target.hp > target.maxHP * stats.power * 0.6, "burn deals its total over time: " .. label)
 		elseif def.kind == "smite" then
 			local strongest = spawn(match, "brute", 90, 50)
 			match.enemies[strongest.id] = strongest

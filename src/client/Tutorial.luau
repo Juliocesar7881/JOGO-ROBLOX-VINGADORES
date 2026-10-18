@@ -305,7 +305,11 @@ function Tutorial:_buildCard(step)
 		Size = UDim2.new(1, -140, 0, step.shortcut and 84 or 62), BackgroundColor3 = C.background, ZIndex = 49,
 	}, C.green)
 	UI.windowSkin(card, C.green)
-	UI.create("UISizeConstraint", { MaxSize = Vector2.new(600, 100), MinSize = Vector2.new(260, 46) }, card)
+	-- On a phone on its side the card is a narrow strip in the status row, not
+	-- a band across the battlefield (owner, 17/10).
+	local screen = UI.toLogical(ctx.gui.AbsoluteSize)
+	local phone = screen ~= nil and screen.Y > 0 and screen.Y < 520
+	UI.create("UISizeConstraint", { MaxSize = Vector2.new(phone and 440 or 600, phone and 84 or 100), MinSize = Vector2.new(260, 46) }, card)
 	local flag = UI.frame(card, { Name = "TutorialFlag", Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(40, 40), BackgroundColor3 = C.gold, ZIndex = 50 })
 	UI.corner(flag, 20)
 	UI.stroke(flag, C.ink, 2.5)
@@ -514,7 +518,9 @@ function Tutorial:Step(dt)
 		-- On a phone held upright the gold pill and the corner buttons share the
 		-- top row with the card: it goes below them there.
 		local narrow = screen and screen.X < 560
-		local cardY = inMatch and 122 or (narrow and 104 or ((screen and screen.Y < 500) and 62 or 10))
+		-- In a match on a phone on its side it rides the status row (top bar 46 + gaps).
+		local phoneMatch = inMatch and screen ~= nil and screen.Y < 520 and not narrow
+		local cardY = phoneMatch and 60 or (inMatch and 122 or (narrow and 104 or ((screen and screen.Y < 500) and 62 or 10)))
 		local target = step.gui
 		local origin, position, size = self.ctx.gui.AbsolutePosition, target and target.AbsolutePosition, target and target.AbsoluteSize
 		local scale = self.ctx.UI.screenScale or 1

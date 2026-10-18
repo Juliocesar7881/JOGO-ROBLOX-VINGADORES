@@ -865,6 +865,17 @@ SIGNATURES.strange = function(fx, c, r, color)
 	fx:Circle(c, r * 0.55, color:Lerp(WHITE, 0.3), 0.2, 1.4)
 	fx:Emit("star", ground(c, 2), color, 16, 0.3)
 end
+-- Hypothetical Flávio: a sea of fire swept from the dinosaur's saddle, two
+-- rings of flame, a shockwave and embers everywhere.
+SIGNATURES.flavio = function(fx, c, r, color)
+	fx:Flash(ground(c, 1.5), Color3.fromRGB(255, 170, 60), 3, r * 1.2, 0.4, 0, 0.3)
+	fx:FlameRing(c, r, color, 16, 0, 6)
+	fx:FlameRing(c, r * 0.6, Color3.fromRGB(255, 210, 90), 10, 0.15, 5)
+	fx:FlameRing(c, r * 0.3, Color3.fromRGB(255, 240, 160), 6, 0.3, 4)
+	for wave = 0, 1 do fx:Ring(c, color, r * 0.2, r * (1.1 + wave * 0.25), 0.6, wave * 0.15) end
+	fx:Column(c, color, 16, r * 0.45, 0.8, 0.1)
+	fx:Emit("spark", ground(c, 3), Color3.fromRGB(255, 190, 70), 24, 0.2)
+end
 -- Flame Rider: hellfire rises in a ring around the road.
 SIGNATURES.ghostrider = function(fx, c, r, color)
 	fx:FlameRing(c, r, color, 12, 0, 5)

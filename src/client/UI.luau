@@ -766,10 +766,10 @@ end
 -- drifting up and a sheen sweeping across now and then. Rarer cards get more
 -- rays and sparks. Engine tweens only (no per-frame script); under reduced
 -- effects it stands still. Never an input surface.
-local BACKDROP_RAYS = { common = 6, rare = 9, epic = 9, legendary = 14, mythic = 14 }
-local BACKDROP_SPARKS = { common = 2, rare = 4, epic = 4, legendary = 6, mythic = 6 }
+local BACKDROP_RAYS = { common = 6, rare = 9, epic = 9, legendary = 14, mythic = 14, supreme = 18 }
+local BACKDROP_SPARKS = { common = 2, rare = 4, epic = 4, legendary = 6, mythic = 6, supreme = 9 }
 -- The three rarities a player sees (Catalog.Rarities), for a caller that only knows the tint.
-UI.RarityColors = { common = Color3.fromRGB(190, 200, 212), rare = Color3.fromRGB(84, 170, 255), legendary = Color3.fromRGB(255, 188, 62) }
+UI.RarityColors = { common = Color3.fromRGB(190, 200, 212), rare = Color3.fromRGB(84, 170, 255), legendary = Color3.fromRGB(255, 188, 62), supreme = Color3.fromRGB(60, 220, 110) }
 local BACKDROP_SPOTS = { 0.18, 0.78, 0.36, 0.62, 0.1, 0.9 }
 -- options.still: a backdrop that stays in view all the time (the battle's hero bar).
 function UI.cardBackdrop(stage, tint, rarity, properties, options)

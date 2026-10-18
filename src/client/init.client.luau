@@ -145,6 +145,10 @@ end
 local function applyScreenScale()
 	local size = physicalSize()
 	local scale = kit.reviewSize and 1 or math.clamp(math.min(size.X / DESIGN_W, size.Y / DESIGN_H), 1, 4)
+	-- A phone on its side draws everything 15% smaller (owner, 17/10: "as telas
+	-- tão cobrindo toda a tela... a maioria dos jogadores é mobile"), never so
+	-- small that its screen stops being short (the phone layouts stay).
+	if not kit.reviewSize and size.Y < 520 and size.X >= 560 then scale = math.clamp(size.Y / 510, 0.85, 1) end
 	scale = math.floor(scale * 100 + 0.5) / 100
 	local changed = scale ~= UI.screenScale
 	UI.screenScale = scale
@@ -894,20 +898,27 @@ end
 -- one starts. Redrawn on every lobby snapshot so its clock and phase follow
 -- the server (the rest of the HUD is drawn once per layout).
 local function renderEventTag()
-	local old = main:FindFirstChild("EventTag")
-	if old then old:Destroy() end
-	local event = state and state.phase == "Lobby" and state.event
-	if not event or not main:FindFirstChild("LobbyPill") then return end
-	if not (event.active or (tonumber(event.startsAt) and event.startsAt - os.time() < 3 * 86400)) then return end
+	for _, name in ipairs({ "EventTag", "JurassicTag" }) do local old = main:FindFirstChild(name); if old then old:Destroy() end end
+	if not (state and state.phase == "Lobby") or not main:FindFirstChild("LobbyPill") then return end
 	local size = screenSize()
 	local hud = UI.lobbyLayout(size.X, size.Y)
-	local map = Catalog.Maps[event.mapId]
-	local left = math.max(0, (event.active and (tonumber(event.endsAt) or 0) or (tonumber(event.startsAt) or 0)) - os.time())
-	local clock = left >= 86400 and (math.floor(left / 86400) .. "d " .. math.floor((left % 86400) / 3600) .. "h") or (math.floor(left / 3600) .. "h " .. string.format("%02d", math.floor((left % 3600) / 60)) .. "m")
-	local text = event.active and (T("Evento: Ouro ×", "Event: Gold ×") .. tostring(event.goldScale or 2) .. T(" em ", " on ") .. (map and L(map.name) or "?") .. T("  •  acaba em ", "  •  ends in ") .. clock)
-		or (T("Evento de fim de semana em ", "Weekend event in ") .. clock)
 	local boosted = (tonumber(profile().boostUntil) or 0) > os.time()
-	UI.pill(main, text, C.coral:Lerp(C.ink, 0.25), {Name = "EventTag", Position = UDim2.new(0, hud.pill.x + 6, 0, hud.pill.y + hud.pill.h + 4 + (boosted and 28 or 0)), TextSize = 14, TextColor3 = C.coral})
+	local y = hud.pill.y + hud.pill.h + 4 + (boosted and 28 or 0)
+	local event = state.event
+	if event and (event.active or (tonumber(event.startsAt) and event.startsAt - os.time() < 3 * 86400)) then
+		local map = Catalog.Maps[event.mapId]
+		local left = math.max(0, (event.active and (tonumber(event.endsAt) or 0) or (tonumber(event.startsAt) or 0)) - os.time())
+		local clock = left >= 86400 and (math.floor(left / 86400) .. "d " .. math.floor((left % 86400) / 3600) .. "h") or (math.floor(left / 3600) .. "h " .. string.format("%02d", math.floor((left % 3600) / 60)) .. "m")
+		local text = event.active and (T("Evento: Ouro ×", "Event: Gold ×") .. tostring(event.goldScale or 2) .. T(" em ", " on ") .. (map and L(map.name) or "?") .. T("  •  acaba em ", "  •  ends in ") .. clock)
+			or (T("Evento de fim de semana em ", "Weekend event in ") .. clock)
+		UI.pill(main, text, C.coral:Lerp(C.ink, 0.25), {Name = "EventTag", Position = UDim2.new(0, hud.pill.x + 6, 0, y), TextSize = 14, TextColor3 = C.coral})
+		-- The event's chest (owner, 17/10) rides under the event tag: one tap
+		-- opens it in the summon hall (where it stays all week).
+		if Catalog.Chests.jurassic then
+			UI.button(main, T("EVENTO: Baú Jurássico • Flávio 0,01%", "EVENT: Jurassic chest • Flávio 0.01%"), function() openContext("chests", { chestId = "jurassic", hud = true }) end,
+				{ Name = "JurassicTag", Position = UDim2.fromOffset(hud.pill.x + 6, y + 28), Size = UDim2.fromOffset(300, 28), TextSize = 13, BackgroundColor3 = Color3.fromRGB(36, 140, 74) })
+		end
+	end
 end
 
 -- reserves space for both the dock and the portal's countdown card.
@@ -1264,7 +1275,7 @@ local function chooseSpeed(wanted)
 			local ok = pcall(function() MarketplaceService:PromptGamePassPurchase(player, pass.id) end)
 			if ok then return end
 		end
-		showToast(T("O 3x é um passe: veja na LOJA ROBUX.", "3x is a pass: see the ROBUX SHOP."), false)
+		showToast(T("O 3x é uma vantagem: veja na LOJA ROBUX.", "3x is a perk: see the ROBUX SHOP."), false)
 		return
 	end
 	local current = state.match.speedVote or 1
@@ -1424,7 +1435,7 @@ local function renderMatch()
 	refs.hpText = UI.button(top, "", function()
 		local scale = state and state.match and tonumber(state.match.leakScale) or 1
 		local danger = scale > 1 and (T("Inimigos que chegam ao núcleo causam ", "Enemies reaching the core deal ") .. scale .. T("x de dano (dobra a cada 4 ondas). ", "x damage (it doubles every 4 waves). ")) or ""
-		showToast(danger .. T("Evolua a base com o Agente ao lado dela (tecla E).", "Upgrade the base with the Agent beside it (E key)."), false)
+		showToast(danger .. T("Evolua a base: chegue perto dela e aperte E, ou toque em Evoluir no topo.", "Upgrade the base: walk up to it and press E, or tap Upgrade at the top."), false)
 	end, {Name="OpenBaseUpgrade",Position = at(layout.hpText, topRect), Size = UDim2.fromOffset(layout.hpText.w,math.max(44,layout.hpText.h)),BackgroundTransparency=1,TextColor3=C.text,TextXAlignment = Enum.TextXAlignment.Right,TextYAlignment=Enum.TextYAlignment.Top, TextSize = compact and 14 or 18, Font = UI.Fonts.display})
 	UI.outline(refs.hpText, 2)
 	refs.hp = UI.bar(top, C.green, at(layout.hpBar, topRect), dims(layout.hpBar))
@@ -1540,7 +1551,7 @@ local function renderMatch()
 		end
 	end
 	controlTip(refs.speedToggle, T("Velocidade 2x  (tecla F)", "Speed 2x  (F key)"), T("Acelera a partida. Em grupo, começa quando todos pedirem.", "Speeds the match up. In a group it starts once everyone asks."))
-	controlTip(refs.speed3Toggle, T("Velocidade 3x", "Speed 3x"), T("Do passe 3x: quem tem o passe acelera a partida sozinho.", "From the 3x pass: its owner speeds the match up alone."))
+	controlTip(refs.speed3Toggle, T("Velocidade 3x", "Speed 3x"), T("Vantagem 3x da loja: quem tem acelera a partida sozinho.", "The shop's 3x perk: its owner speeds the match up alone."))
 	controlTip(refs.autoSkipToggle, T("Onda automática", "Auto wave"), T("Ligado, a próxima onda começa sozinha quando a atual acaba.", "When on, the next wave starts by itself once the current one ends."))
 	controlTip(state.match and state.match.cardMode and refs.cardsButton or nil, T("Cartas", "Cards"), T("As cartas escolhidas e o bônus total delas.", "The cards you picked and their total bonus."))
 	local bottom = UI.roundFrame(main, {Position = at(layout.heroCards), Size = dims(layout.heroCards), BackgroundColor3 = C.background})
@@ -1608,7 +1619,7 @@ updateMatch = function()
 		local owns3 = profile().passes and profile().passes.speed3
 		if refs.speed3Toggle then
 			local on3 = speed >= 3
-			refs.speed3Toggle.Text = owns3 and "3x" or "3x\n" .. T("Passe", "Pass")
+			refs.speed3Toggle.Text = owns3 and "3x" or "3x\n" .. T("Loja", "Shop")
 			refs.speed3Toggle.TextSize = (owns3 and 22 or 15) + (refs.controlDelta or 0)
 			refs.speed3Toggle.BackgroundColor3 = on3 and C.gold or (owns3 and UI.Skin.bodyTop or C.violet:Lerp(C.card, 0.45))
 			refs.speed3Toggle.TextColor3 = C.text

@@ -69,6 +69,12 @@ Todo herói ataca inimigos no chão e voando.
 | **Velocista Rubro** — Golpes ultrarrápidos | 560 | corrente | 11 | 24 | 0.18s | Supervelocidade ⚡ (ultimate) |
 | **Guardião Solar** — Visão de calor e força suprema | 800 | feixe | 50 | 32 | 1.30s | Fúria Solar ⚡ (ultimate) |
 
+## Supremo — 1 heróis
+
+| Herói | Custo (Ouro da partida) | Ataque | Dano | Alcance | Intervalo | Habilidade |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Flávio Hipotético** — Lança-chamas montado num dinossauro | 900 | queima contínua | 150 | 38 | 0.55s | Inferno Jurássico ⚡ (ultimate) |
+
 ## Habilidades
 
 Toda habilidade tem 5 ranks (`Catalog.AbilityRanks`); cada rank melhora poder
@@ -122,4 +128,5 @@ foi preservado na unificação (`hero.economy.abilityCost`)
 | Laço da Verdade | Amazona Dourada | 60s | Revela camuflados e faz alvos sofrerem +30% de dano por 10 s em 40 studs, e derrete 30% da armadura. |
 | Maremoto | Rei dos Mares | 70s | Uma onda empurra os inimigos 30 studs para trás em 45 studs e os desacelera em 50% depois. Chefes não saem do lugar. |
 | Bomba de Fumaça | Caçador da Noite | 70s | Paralisa por 3 s em 34 studs e derrete 25% da armadura por 8 s. Chefes resistem. |
+| Inferno Jurássico ⚡ | Flávio Hipotético | 75s | ULTIMATE: o dinossauro ruge e o lança-chamas varre 90 studs. 60% da vida máxima na hora, queima mais 200% em 6 s, atordoa por 3 s e desacelera 60%. Chefes sofrem menos. |
 

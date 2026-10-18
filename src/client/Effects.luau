@@ -1407,6 +1407,17 @@ function Effects:_heroShot(event, lowFX)
 			end
 		end
 		self:_emit("star", target + Vector3.new(0, 1, 0), Color3.fromRGB(120, 230, 110), 5)
+	elseif heroId == "flavio" then
+		-- A flamethrower stream: a thick orange jet with a yellow core, then fire on the ground.
+		local previous = from
+		for index = 1, 4 do
+			local point = index == 4 and target or from:Lerp(target, index / 4) + Vector3.new(0, math.sin(index * 1.7 + self.shotSerial) * 0.25, 0)
+			self:_line(previous, point, Color3.fromRGB(255, 120, 30), 0.34, 0.14)
+			self:_line(previous, point, Color3.fromRGB(255, 220, 110), 0.14, 0.12)
+			previous = point
+		end
+		self:_groundImpact(target, Color3.fromRGB(255, 100, 20), 5)
+		self:_column(Vector3.new(target.X, 0.3, target.Z), Color3.fromRGB(255, 140, 40), 5, 1.6, 0.4, 0.35)
 	elseif heroId == "ghostrider" then
 		local previous = from
 		for index = 1, 3 do

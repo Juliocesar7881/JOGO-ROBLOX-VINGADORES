@@ -99,7 +99,7 @@ function Shop.new(ctx, helpers)
 	 -- Heroes bought but not yet chosen: the way to them stays on top of the shop.
 	 local picksLeft=heroPicksLeft()
 	 if picksLeft>0 then UI.button(body,picksLeft==1 and T("Você tem 1 herói para escolher","You have 1 hero to choose") or T("Você tem "..picksLeft.." heróis para escolher","You have "..picksLeft.." heroes to choose"),function() openContext("pick",{}) end,{Name="PickHeroes",Size=UDim2.new(1,-6,0,48),BackgroundColor3=C.green,TextSize=18}) end
-	 categoryTabs(body,"PremiumTabs",{{id="hero",label=T("Heróis","Heroes"),icon="hero",color=C.coral},{id="offer",label=T("Ofertas","Offers"),icon="star",color=C.green},{id="pass",label=T("Passes","Passes"),icon="star",color=C.blue},{id="product",label=T("Ouro","Gold"),icon="coin",color=C.gold}},premiumCategory,function(id) premiumCategory=id; renderContext() end)
+	 categoryTabs(body,"PremiumTabs",{{id="hero",label=T("Heróis","Heroes"),icon="hero",color=C.coral},{id="offer",label=T("Ofertas","Offers"),icon="star",color=C.green},{id="pass",label=T("Vantagens","Perks"),icon="star",color=C.blue},{id="product",label=T("Ouro","Gold"),icon="coin",color=C.gold}},premiumCategory,function(id) premiumCategory=id; renderContext() end)
 		for _,group in ipairs({{tab="hero",kind="hero",items=Catalog.Products.Heroes},{tab="offer",kind="product",items=Catalog.Products.Consumables,only=function(def) return not goldPack(def) end},{tab="pass",kind="pass",items=Catalog.Products.Passes},{tab="product",kind="product",items=Catalog.Products.Consumables,only=goldPack}}) do
 			if group.tab~=premiumCategory then continue end
 			-- Cheapest first; the starter pack has its own banner above.
@@ -260,7 +260,7 @@ function Shop.new(ctx, helpers)
 		local art = UI.portraitStage(top, tint, { Name = "OfferArt", Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(artW, headH - 16) })
 		UI.illustration(art, PASS_ART[key] or "star", C.gold, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(slim and 56 or 76, slim and 56 or 76) })
 		local left = artW + 20
-		UI.chip(top, owned and T("JÁ É SEU", "YOURS") or T("PASSE PERMANENTE", "PERMANENT PASS"), owned and C.green or tint, { Name = "OfferChip", Position = UDim2.fromOffset(left, 10), Size = UDim2.fromOffset(170, 22), TextSize = 12 })
+		UI.chip(top, owned and T("JÁ É SEU", "YOURS") or T("VANTAGEM PERMANENTE", "PERMANENT PERK"), owned and C.green or tint, { Name = "OfferChip", Position = UDim2.fromOffset(left, 10), Size = UDim2.fromOffset(170, 22), TextSize = 12 })
 		UI.fit(UI.label(top, Catalog.Upper(L(def.name)), { Name = "OfferName", Position = UDim2.fromOffset(left, 36), Size = UDim2.new(1, -left - 10, 0, slim and 30 or 40), Font = UI.Fonts.display, TextSize = slim and 24 or 32, TextColor3 = tint:Lerp(C.text, 0.35) }), 14)
 		if not slim then
 			UI.fit(UI.label(top, L(def.description), { Name = "OfferLine", Position = UDim2.fromOffset(left, 80), Size = UDim2.new(1, -left - 10, 0, 50), TextWrapped = true, TextSize = 15, TextColor3 = C.muted, TextYAlignment = Enum.TextYAlignment.Top }), 10)
@@ -285,7 +285,7 @@ function Shop.new(ctx, helpers)
 		end, { Name = "Buy_" .. cacheKey, Size = UDim2.new(1, -6, 0, slim and 50 or 60), BackgroundColor3 = owned and C.card or C.green, TextSize = slim and 20 or 24 })
 		buy:SetAttribute("Owned", owned)
 		if not quoteUsable(info, owned) then UI.disabled(buy) end
-		UI.secondary(body, T("Ver todos os passes", "See every pass"), function() openContext("premium", { hud = true, shopKind = "pass" }) end, { Name = "OfferAll", Size = UDim2.new(1, -6, 0, 40), TextSize = 15 })
+		UI.secondary(body, T("Ver todas as vantagens", "See every perk"), function() openContext("premium", { hud = true, shopKind = "pass" }) end, { Name = "OfferAll", Size = UDim2.new(1, -6, 0, 40), TextSize = 15 })
 		fetchProducts("pass")
 	end
 

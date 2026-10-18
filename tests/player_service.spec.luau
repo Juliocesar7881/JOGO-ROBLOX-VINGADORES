@@ -152,53 +152,55 @@ end
 -- Mutations and reward idempotency, including retries AFTER a successful commit.
 replayCallback = true
 failAfter = 1
+-- Training pays the first Alliance chest (Chests.rare.cost: 1,500 since 17/10).
 check(service:Award(p1, "tutorial:finish", { tutorial = true, finished = true, victory = true, modeId = "tutorial", mapId = "manhattan", gold = 0, xp = 100, mastery = { ironman = 10 } }), "Tutorial award survives lost response")
-check(service:Get(p1).gold == 1000, "Repeated UpdateAsync callbacks cannot duplicate tutorial gold, got " .. tostring(service:Get(p1).gold))
+check(service:Get(p1).gold == Catalog.Chests.rare.cost, "Repeated UpdateAsync callbacks cannot duplicate tutorial gold, got " .. tostring(service:Get(p1).gold))
 check(service:Get(p1).tutorialComplete, "Tutorial unlock saved")
 check(service:Award(p1, "tutorial:finish", { tutorial = true, finished = true, victory = true, gold = 999999 }), "Duplicate award acknowledged")
-check(service:Get(p1).gold == 1000 and service:Get(p1).xp == 100, "Duplicate award is inert")
+check(service:Get(p1).gold == Catalog.Chests.rare.cost and service:Get(p1).xp == 100, "Duplicate award is inert")
 check(service:Award(p1, "tutorial:again", { tutorial = true, finished = true, victory = true }), "Replay tutorial award")
-check(service:Get(p1).gold == 1000, "Tutorial first-clear bonus awarded once")
+check(service:Get(p1).gold == Catalog.Chests.rare.cost, "Tutorial first-clear bonus awarded once")
 -- A quick-session win is never the map's campaign victory (nor its first-clear bonus).
 check(service:Award(p1, "quick:final", { finished = true, victory = true, modeId = "quick", mapId = "gamma", gold = 0, xp = 0 }), "a quick-session award is accepted")
-check(not ((service:Get(p1).campaign or {}).gamma or {}).normal and service:Get(p1).gold == 1000, "a quick-session win never records the map's campaign victory")
+check(not ((service:Get(p1).campaign or {}).gamma or {}).normal and service:Get(p1).gold == Catalog.Chests.rare.cost, "a quick-session win never records the map's campaign victory")
 
 -- Heroes come from chests, never from a plain gold purchase.
 local handled, boughtDirect = service:Handle(p1, "BuyHero", { heroId = "spiderman" }, true)
 check(not handled and not boughtDirect, "The old direct hero purchase no longer exists")
-local _, brokeOpen = service:Handle(p1, "OpenChest", { chestId = "legendary" }, true)
-check(not brokeOpen and service:Get(p1).gold == 1000 and service:Get(p1).stats.chests == 0, "A chest needs its full price")
+local _, brokeOpen = service:Handle(p1, "OpenChest", { chestId = "cosmic" }, true)
+check(not brokeOpen and service:Get(p1).gold == Catalog.Chests.rare.cost and service:Get(p1).stats.chests == 0, "A chest needs its full price")
 local _, badChest = service:Handle(p1, "OpenChest", { chestId = "platinum" }, true)
-check(not badChest and service:Get(p1).gold == 1000, "Unknown chests rejected")
+check(not badChest and service:Get(p1).gold == Catalog.Chests.rare.cost, "Unknown chests rejected")
 local _, nonString = service:Handle(p1, "OpenChest", { chestId = { "rare" } }, true)
 check(not nonString, "A table is not a chest id")
-service:Award(p1, "seed-chest-gold", { gold = 9000 })
+service:Award(p1, "seed-chest-gold", { gold = 10000 - Catalog.Chests.rare.cost })
 check(service:Get(p1).gold == 10000, "Gold to spend on chests")
 local _, inMatch = service:Handle(p1, "OpenChest", { chestId = "rare" }, false)
 check(not inMatch and service:Get(p1).gold == 10000, "Chests only open in the lobby")
 
--- A scripted rare chest: rarity roll 0 is a common, hero roll 0 the first of the pool.
+-- A scripted Supplies chest (the commons' chest since 17/10): rarity roll 0 is
+-- the first tier, hero roll 0 the first of its pool.
 service.random = scriptedRolls(0, 0)
-local _, openedOk, opened = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
-check(openedOk and opened.gold == 9000, "A rare chest costs 1,000")
-check(opened.result.chestId == "rare" and opened.result.heroId == "falcon" and opened.result.rarity == "common" and not opened.result.duplicate, "The reply reports what the chest held")
-check(opened.result.cost == 1000, "The reply reports the price")
+local _, openedOk, opened = service:Handle(p1, "OpenChest", { chestId = "supply" }, true)
+check(openedOk and opened.gold == 9600, "A Supplies chest costs 400")
+check(opened.result.chestId == "supply" and opened.result.heroId == "falcon" and opened.result.rarity == "common" and not opened.result.duplicate, "The reply reports what the chest held")
+check(opened.result.cost == 400, "The reply reports the price")
 check(opened.heroes.falcon and opened.heroes.falcon.level == 1, "The hero drawn joins the account")
 check(opened.abilities.falcon == 1, "A new hero's ability starts at rank one")
 check(opened.loadout[3] == "falcon", "A new hero takes the first free slot")
 check(opened.stats.chests == 1, "Chests opened are counted")
 check(opened.achievements.firstChest ~= nil, "First chest achievement")
-check(stores.Tests.values.p_1.heroes.falcon ~= nil and stores.Tests.values.p_1.gold == 9000, "The hero and the price are durable together")
+check(stores.Tests.values.p_1.heroes.falcon ~= nil and stores.Tests.values.p_1.gold == 9600, "The hero and the price are durable together")
 
 -- The same roll now finds Falcon owned: a chest prefers something new.
 service.random = scriptedRolls(0, 0)
-local _, secondOk, second = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
-check(secondOk and second.heroes.bucky ~= nil and second.gold == 8000, "A repeated roll delivers the other new common instead of a duplicate")
+local _, secondOk, second = service:Handle(p1, "OpenChest", { chestId = "supply" }, true)
+check(secondOk and second.heroes.bucky ~= nil and second.gold == 9200, "A repeated roll delivers the other new common instead of a duplicate")
 service.random = scriptedRolls(0, 0)
 local masteryBefore = service:Get(p1).heroes.falcon.xp + service:Get(p1).heroes.bucky.xp
-local _, thirdOk, third = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+local _, thirdOk, third = service:Handle(p1, "OpenChest", { chestId = "supply" }, true)
 check(thirdOk, "A third common opening resolves")
-check(third.gold == 8000 - 1000 + Catalog.Heroes[third.result.heroId].economy.duplicate.gold, "A duplicate refunds its per-hero Gold")
+check(third.gold == 9200 - 400 + Catalog.Heroes[third.result.heroId].economy.duplicate.gold, "A duplicate refunds its per-hero Gold")
 check(third.result.duplicate and third.result.refundGold == 150 and third.result.refundMastery == 60, "The reply reports the duplicate refund")
 check(third.heroes.falcon.xp + third.heroes.bucky.xp == masteryBefore + Catalog.Heroes[third.result.heroId].economy.duplicate.mastery, "A duplicate becomes mastery on that hero")
 check(#third.loadout == 4, "A duplicate never takes a slot")
@@ -210,21 +212,21 @@ do
 	local stored = stores.Tests.values.p_1.heroes
 	stored.falcon.stars, stored.bucky.stars = Catalog.Stars.max, Catalog.Stars.max
 	service.random = scriptedRolls(0, 0)
-	local _, maxOk, maxed = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+	local _, maxOk, maxed = service:Handle(p1, "OpenChest", { chestId = "supply" }, true)
 	check(maxOk and maxed.result.duplicate and maxed.result.starGained == false and maxed.result.stars == Catalog.Stars.max, "A maxed hero gains no more stars")
 	check((maxed.heroes.falcon.stars or 0) <= Catalog.Stars.max and (maxed.heroes.bucky.stars or 0) <= Catalog.Stars.max, "Stars never pass the maximum")
 	stored.falcon.stars, stored.bucky.stars = 0, 0
 	-- Shiny: the chest's third roll decides it, once per hero, and it is cosmetic.
 	service.random = scriptedRolls(0, 0, 0.99)
-	local _, shinyOk, shiny = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+	local _, shinyOk, shiny = service:Handle(p1, "OpenChest", { chestId = "supply" }, true)
 	check(shinyOk and shiny.result.shiny == true, "A third roll in the top 1/40 makes the pulled hero shiny")
 	check(shiny.heroes[shiny.result.heroId].shiny == true, "The hero keeps its shine")
 	local statsBefore = Rules.PermanentModifiers(service.records[p1.UserId].profile, shiny.result.heroId).damageBonus
 	service.random = scriptedRolls(0, 0, 0.99)
-	local _, againOk, again = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+	local _, againOk, again = service:Handle(p1, "OpenChest", { chestId = "supply" }, true)
 	check(againOk and again.result.shiny == false, "An already shiny hero is not announced shiny twice")
 	service.random = scriptedRolls(0, 0, 0.5)
-	local _, plainOk, plain = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
+	local _, plainOk, plain = service:Handle(p1, "OpenChest", { chestId = "supply" }, true)
 	check(plainOk and plain.result.shiny == false, "An ordinary third roll gives no shine")
 end
 
@@ -233,34 +235,42 @@ local _, reorderOk, reordered = service:Handle(p1, "SetLoadout", { heroes = { "f
 check(reorderOk and reordered.loadout[1] == "falcon" and reordered.loadout[2] == "ironman", "Loadout order is preserved")
 check(stores.Tests.values.p_1.loadout[1] == "falcon", "The ability slot is durable")
 
--- A rare chest that hits an epic, then the legendary chest with its pity counter.
+-- The Alliance chest gives a rare hero, then the Cosmic chest with its guarantee.
 service.random = scriptedRolls(0.9, 0)
 local _, epicOk, epic = service:Handle(p1, "OpenChest", { chestId = "rare" }, true)
 local epicHero
 for id in pairs(epic.heroes) do if Catalog.Heroes[id].rarity == "rare" then epicHero = id end end
-check(epicOk and epicHero ~= nil, "A high roll in the Alliance chest is now rare")
-check(epic.pity.legendary == 0, "The rare chest keeps no pity counter")
-for opening = 1, 9 do
-	service:Award(p1, "pity-gold-" .. opening, { gold = 2000 })
+check(epicOk and epicHero ~= nil, "The Alliance chest gives a rare hero")
+check(epic.pity.legendary == 0 and (epic.pity.rare or 0) == 0, "The Alliance chest keeps no pity counter")
+local cosmicPity = Catalog.Chests.cosmic.pity.after
+for opening = 1, cosmicPity - 1 do
+	service:Award(p1, "pity-gold-" .. opening, { gold = 5000 })
 	local goldBeforeOpen = service:Get(p1).gold
-	-- A low rarity roll is a plain rare hero, which is never a top hero.
-	service.random = scriptedRolls(0, opening / 20)
-	local _, legendaryOk, snapshot = service:Handle(p1, "OpenChest", { chestId = "legendary" }, true)
-	check(legendaryOk, "Legendary opening " .. opening)
-	check(snapshot.pity.legendary == opening, "Each miss raises pity, opening " .. opening)
+	-- A low rarity roll is one of the eight legendaries, never one of the four strongest.
+	service.random = scriptedRolls(0, (opening % 20) / 20)
+	local _, cosmicOk, snapshot = service:Handle(p1, "OpenChest", { chestId = "cosmic" }, true)
+	check(cosmicOk, "Cosmic opening " .. opening)
+	check(snapshot.pity.cosmic == opening, "Each miss raises the guarantee, opening " .. opening)
+	check(not Catalog.Heroes[snapshot.result.heroId].cosmicAchievement, "A low roll is never one of the four strongest")
 	local spent = goldBeforeOpen - snapshot.gold
-	check(spent <= 2000 and spent >= 1700, "The low entry pool of the Legends chest keeps its original refund")
+	check(spent <= 5000 and spent >= 3800, "A Cosmic chest costs 5,000, less a duplicate's refund")
 end
 service:Award(p1, "chest-gold-2", { gold = 30000 })
 service.random = scriptedRolls(0, 0.3)
-local _, pityOk, pitySnapshot = service:Handle(p1, "OpenChest", { chestId = "legendary" }, true)
-check(pityOk and pitySnapshot.pity.legendary == 0, "Pity resets when a top hero arrives")
-local topFound = false
-for id in pairs(pitySnapshot.heroes) do
-	local rarity = Catalog.Heroes[id].rarity
-	if rarity == "legendary" or rarity == "mythic" then topFound = true end
+local _, pityOk, pitySnapshot = service:Handle(p1, "OpenChest", { chestId = "cosmic" }, true)
+check(pityOk and pitySnapshot.pity.cosmic == 0, "The guarantee resets when one of the four strongest arrives")
+check(Catalog.Heroes[pitySnapshot.result.heroId].cosmicAchievement, "The fifteenth Cosmic chest delivers one of the four strongest")
+-- The receipts below start from an account without the Cosmic chest's heroes.
+do
+	for _, outcome in ipairs(Rules.ChestOutcomes("cosmic", 0, {})) do
+		for _, profile in ipairs({ service.records[p1.UserId].profile, stores.Tests.values.p_1 }) do
+			profile.heroes[outcome.id] = nil
+			profile.abilities[outcome.id] = nil
+			local index = table.find(profile.loadout, outcome.id)
+			if index then table.remove(profile.loadout, index) end
+		end
+	end
 end
-check(topFound, "The tenth legendary chest guarantees a legendary or better")
 
 -- A response lost after the commit and a replayed callback still charge once
 -- and add at most one hero, because the roll lives inside the committed transaction.
@@ -276,7 +286,7 @@ do
 	local ownedAfter = 0
 	for _ in pairs(service:Get(p1).heroes) do ownedAfter += 1 end
 	check(replayOk, "A chest survives a lost response")
-	check(service:Get(p1).gold >= goldNow - 1000 and service:Get(p1).gold <= goldNow - 1000 + 1200, "A replayed callback cannot charge twice")
+	check(service:Get(p1).gold >= goldNow - Catalog.Chests.rare.cost and service:Get(p1).gold <= goldNow - Catalog.Chests.rare.cost + 1200, "A replayed callback cannot charge twice")
 	check(ownedAfter == ownedNow or ownedAfter == ownedNow + 1, "A replayed callback cannot add two heroes")
 end
 
@@ -409,6 +419,12 @@ failBefore = 0
 -- The starter pack: an epic hero and Gold, once per account.
 do
 	local pack = Catalog.Products.Consumables.starterPack
+	-- The Alliance chest (all rares since 17/10) may have drawn the pack's hero earlier in this file.
+	for _, profile in ipairs({ service.records[p1.UserId].profile, stores.Tests.values.p_1 }) do
+		profile.heroes[pack.heroId], profile.abilities[pack.heroId] = nil, nil
+		local index = table.find(profile.loadout, pack.heroId)
+		if index then table.remove(profile.loadout, index) end
+	end
 	local before = service:Get(p1)
 	check(before.starterPack == false and not before.heroes[pack.heroId], "A new account has not bought the starter pack")
 	-- The welcome offer counts down from the account's birth, on the server's clock.
@@ -1165,7 +1181,7 @@ do
 	check(Rules.SeasonStatus({ xp = 1e9 }, false).level == Catalog.Season.levels, "Level is capped")
 	local free10, premium30 = Rules.SeasonReward(10, "free"), Rules.SeasonReward(30, "premium")
 	check(free10.chest == "rare" and Rules.SeasonReward(9, "free").chest == nil, "The free track gives a chest every ten levels")
-	check(premium30.chest == "legendary" and premium30.title ~= nil, "The last premium level gives a legendary chest and a title")
+	check(premium30.chest == "cosmic" and premium30.title ~= nil, "The last premium level gives a Cosmic chest and a title")
 	check(Rules.SeasonReward(5, "premium").gold > Rules.SeasonReward(5, "free").gold, "Premium always pays more Gold")
 	local totalFree, totalPremium = 0, 0
 	for level = 1, Catalog.Season.levels do
@@ -1453,8 +1469,8 @@ end
 	check(not hugeCount and localOnly:Get(fan).gold == goldNow, "More than the cap is refused, never clamped")
 	local _, floatCount = localOnly:Handle(fan, "OpenChest", { chestId = "rare", count = 2.5 }, true)
 	check(not floatCount and localOnly:Get(fan).gold == goldNow, "A fractional count is refused")
-	local _, pricey = localOnly:Handle(fan, "OpenChest", { chestId = "legendary", count = 40 }, true)
-	check(not pricey and localOnly:Get(fan).gold == goldNow, "Forty legendary chests need all forty prices")
+	local _, pricey = localOnly:Handle(fan, "OpenChest", { chestId = "cosmic", count = 40 }, true)
+	check(not pricey and localOnly:Get(fan).gold == goldNow, "Forty Cosmic chests need all forty prices")
 	local _, batchOk, batch = localOnly:Handle(fan, "OpenChest", { chestId = "rare", count = 3 }, true)
 	check(batchOk and batch.result.count == 3 and #batch.result.batch == 3, "Three chests come back as three results, got " .. tostring(batchOk))
 	local refunds = 0
@@ -1477,7 +1493,7 @@ end
 	end
 	for _, owned in pairs(localOnly.memoryProfiles.p_91.heroes) do owned.copies = 0 end
 	localOnly.random = scriptedRolls(0, 0, 0)
-	local _, dupOk, dup = localOnly:Handle(fan, "OpenChest", { chestId = "rare" }, true)
+	local _, dupOk, dup = localOnly:Handle(fan, "OpenChest", { chestId = "supply" }, true)
 	check(dupOk and dup.result.duplicate == true and dup.result.cards == Catalog.Heroes[dup.result.heroId].economy.cards, "A duplicate pays its original per-hero compensation")
 	local dupHero = dup.result.heroId
 	check(dup.heroes[dupHero].copies == dup.result.cards, "The cards are kept on the hero: " .. tostring(dupHero) .. " has " .. tostring(dup.heroes[dupHero].copies) .. ", result " .. tostring(dup.result.cards) .. " copies " .. tostring(dup.result.copies))

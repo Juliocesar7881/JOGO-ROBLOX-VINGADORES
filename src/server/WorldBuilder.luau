@@ -249,7 +249,10 @@ Figure.Body = BODY
 
 -- spec: scale, width, depth, chest (shoulders over hips), head, arm, leg,
 -- hand, foot, footHeight, legLength, armLength, torsoLength, neck, stance
--- (how far apart the legs stand, in thigh widths between the hips' outer edges).
+-- (how far apart the legs stand, in thigh widths between the hips' outer edges),
+-- ride (a rider's seat: thighs forward by this many radians and spread a
+-- little, shins hanging) and lift (the whole body this many studs up, over a
+-- mount the costume builds; the root stays on the ground).
 -- colors: skin, head, chest, pelvis, upperArm, lowerArm, hand, upperLeg,
 -- lowerLeg, foot (each falls back to the one it sits next to).
 function Figure.Build(parent, spec, colors, material)
@@ -319,12 +322,32 @@ function Figure.Build(parent, spec, colors, material)
 		local upperLeg = body(name .. "UpperLeg", sizes.upperLeg, V(side * hipX, kneeY + sizes.upperLeg.Y / 2, 0), upperLegColor)
 		local lowerLeg = body(name .. "LowerLeg", sizes.lowerLeg, V(side * hipX, ankleY + sizes.lowerLeg.Y / 2, 0), lowerLegColor)
 		local foot = body(name .. "Foot", sizes.foot, V(side * hipX, sizes.foot.Y / 2, -(sizes.foot.Z - sizes.lowerLeg.Z) / 2), footColor)
+		local hip, knee, ankle = V(side * hipX, hipTop - 0.22 * s, 0), V(side * hipX, kneeY, 0), V(side * hipX, ankleY, 0)
+		if spec.ride then
+			-- Seated: the thigh swings forward about the hip (and a little out,
+			-- around the mount's back), the shin swings back to hang straight.
+			local swing = CFrame.new(hip) * CFrame.Angles(spec.ride, 0, side * 0.22) * CFrame.new(-hip)
+			for _, piece in ipairs({ upperLeg, lowerLeg, foot }) do piece.CFrame = swing * piece.CFrame end
+			knee, ankle = swing * knee, swing * ankle
+			local hang = CFrame.new(knee) * CFrame.Angles(-spec.ride, 0, -side * 0.22) * CFrame.new(-knee)
+			for _, piece in ipairs({ lowerLeg, foot }) do piece.CFrame = hang * piece.CFrame end
+			ankle = hang * ankle
+		end
 		joints[name .. "Shoulder"] = figureJoint(name .. "Shoulder", chest, upperArm, V(side * shoulderX, neckY - sizes.upperArm.X * 0.5, 0))
 		joints[name .. "Elbow"] = figureJoint(name .. "Elbow", upperArm, lowerArm, V(side * shoulderX, elbowY, 0))
 		joints[name .. "Wrist"] = figureJoint(name .. "Wrist", lowerArm, handPart, V(side * shoulderX, wristY, 0))
-		joints[name .. "Hip"] = figureJoint(name .. "Hip", pelvis, upperLeg, V(side * hipX, hipTop - 0.22 * s, 0))
-		joints[name .. "Knee"] = figureJoint(name .. "Knee", upperLeg, lowerLeg, V(side * hipX, kneeY, 0))
-		joints[name .. "Ankle"] = figureJoint(name .. "Ankle", lowerLeg, foot, V(side * hipX, ankleY, 0))
+		joints[name .. "Hip"] = figureJoint(name .. "Hip", pelvis, upperLeg, hip)
+		joints[name .. "Knee"] = figureJoint(name .. "Knee", upperLeg, lowerLeg, knee)
+		joints[name .. "Ankle"] = figureJoint(name .. "Ankle", lowerLeg, foot, ankle)
+	end
+	if spec.lift then
+		-- Everything but the root rises; only the root's joint changes, the
+		-- rest move together and keep their own.
+		local up = CFrame.new(0, spec.lift * s, 0)
+		for name, piece in pairs(parts) do
+			if name ~= "HumanoidRootPart" then piece.CFrame = up * piece.CFrame end
+		end
+		joints.Root.C0 = up * joints.Root.C0
 	end
 	model:SetAttribute("HeroRig", true)
 	model:SetAttribute("FigureScale", s)
@@ -619,6 +642,8 @@ local HERO_POSE = {
 	vision = "beam", captainmarvel = "beam", cyclops = "beam", nova = "shoot", ghostrider = "magic", nightcrawler = "strike",
 	-- The league: alternating jabs, a hovering flier, a spear thrust.
 	capmen = "punch", speedster = "punch", emerald = "magic", solartitan = "fly", amazon = "throw", seaking = "strike", nightstalker = "throw",
+	-- The event hero aims his flamethrower like a rifle from the saddle.
+	flavio = "rifle",
 }
 
 -- body, colors, face and hair per hero; `extras` below adds what makes each
@@ -672,6 +697,10 @@ local HERO_LOOK = {
 	amazon = { body = { width = 0.9, arm = 0.88, leg = 0.94 }, colors = { chest = Color3.fromRGB(196, 40, 56), pelvis = Color3.fromRGB(30, 56, 140), upperArm = HC.skin, lowerArm = Color3.fromRGB(240, 196, 60), hand = HC.skin, upperLeg = HC.skin, lowerLeg = Color3.fromRGB(30, 56, 140), foot = Color3.fromRGB(196, 40, 56) }, face = "smile", hair = { Color3.fromRGB(36, 28, 30), "long" } },
 	nightstalker = { body = { width = 1.04, arm = 1.0, leg = 1.0 }, colors = { head = Color3.fromRGB(26, 28, 40), chest = Color3.fromRGB(52, 60, 86), pelvis = Color3.fromRGB(26, 28, 40), upperArm = Color3.fromRGB(52, 60, 86), lowerArm = Color3.fromRGB(26, 28, 40), hand = Color3.fromRGB(26, 28, 40), upperLeg = Color3.fromRGB(52, 60, 86), lowerLeg = Color3.fromRGB(26, 28, 40), foot = Color3.fromRGB(26, 28, 40) } },
 	seaking = { body = { width = 1.12, arm = 1.12, chest = 1.08, leg = 1.04 }, colors = { chest = Color3.fromRGB(232, 150, 44), pelvis = Color3.fromRGB(20, 120, 124), upperArm = Color3.fromRGB(232, 150, 44), lowerArm = Color3.fromRGB(20, 120, 124), hand = HC.tan, upperLeg = Color3.fromRGB(20, 120, 124), lowerLeg = Color3.fromRGB(20, 120, 124), foot = Color3.fromRGB(232, 150, 44) }, face = "fierce", hair = { Color3.fromRGB(240, 216, 150), "long" } },
+	-- The event hero (owner, 17/10, with pictures): a man in a dark suit and a
+	-- yellow tie, seated high on a dinosaur (HERO_EXTRAS builds the mount). Cloth,
+	-- not armour: matte.
+	flavio = { body = { lift = 2.7, ride = 1.15 }, colors = { chest = Color3.fromRGB(38, 46, 70), pelvis = Color3.fromRGB(34, 40, 62), upperArm = Color3.fromRGB(38, 46, 70), lowerArm = Color3.fromRGB(38, 46, 70), hand = HC.skin, upperLeg = Color3.fromRGB(34, 40, 62), lowerLeg = Color3.fromRGB(34, 40, 62), foot = HC.ink }, face = "grin", hair = { Color3.fromRGB(62, 46, 36), "fringe" }, matte = true },
 }
 Figure.HeroLook = HERO_LOOK
 
@@ -1748,6 +1777,85 @@ HERO_EXTRAS.strange = function(f)
 		f.add(footName, "BootBuckle", Vector3.new(f.sizes.foot.X * 0.5, 0.1 * s, f.sizes.foot.Z * 0.4), CFrame.new(0, -f.sizes.foot.Y * 0.22, -f.sizes.foot.Z * 0.2), gold, METAL)
 	end
 	muzzle(f, "LeftHand", Vector3.new(0, -0.42 * s, -0.62 * s))
+end
+HERO_EXTRAS.flavio = function(f)
+	local s, c = f.scale, f.sizes.chest
+	local suit, shirt, tie = Color3.fromRGB(38, 46, 70), Color3.fromRGB(240, 242, 246), Color3.fromRGB(246, 200, 40)
+	local hide, belly, ink = Color3.fromRGB(150, 112, 70), Color3.fromRGB(196, 160, 112), FIGURE_INK
+	local leather, steel, fire = Color3.fromRGB(102, 64, 38), Color3.fromRGB(196, 202, 210), Color3.fromRGB(255, 130, 30)
+	-- The rider: a suit jacket over a white shirt and a yellow tie.
+	f.add("UpperTorso", "SuitJacket", c * Vector3.new(1.06, 1.02, 1.08), CFrame.new(), suit, FABRIC)
+	local front = -c.Z * 0.54
+	f.add("UpperTorso", "ShirtFront", Vector3.new(c.X * 0.3, c.Y * 0.62, 0.06 * s), CFrame.new(0, c.Y * 0.16, front - 0.03 * s), shirt, FABRIC)
+	f.add("UpperTorso", "Tie", Vector3.new(0.17 * s, c.Y * 0.56, 0.05 * s), CFrame.new(0, c.Y * 0.04, front - 0.07 * s), tie, FABRIC)
+	f.add("UpperTorso", "TieKnot", Vector3.new(0.24 * s, 0.18 * s, 0.07 * s), CFrame.new(0, c.Y * 0.36, front - 0.08 * s), tie, FABRIC)
+	f.add("UpperTorso", "ShirtCollar", Vector3.new(c.X * 0.46, 0.16 * s, c.Z * 0.62), CFrame.new(0, c.Y / 2 + 0.02 * s, 0), shirt, FABRIC)
+	for _, side in ipairs({ -1, 1 }) do
+		f.rod("UpperTorso", "Lapel", Vector3.new(side * c.X * 0.08, c.Y * 0.46, front - 0.05 * s), Vector3.new(side * c.X * 0.26, -c.Y * 0.06, front - 0.05 * s), 0.14 * s, Color3.fromRGB(26, 32, 50), FABRIC)
+		f.add(side < 0 and "LeftHand" or "RightHand", "Cuff", f.sizes.hand * Vector3.new(1.08, 0.28, 1.08), CFrame.new(0, f.sizes.hand.Y * 0.4, 0), shirt, FABRIC)
+	end
+	-- The flamethrower, held like a rifle: a fuel body, a long barrel and a
+	-- nozzle with a pilot flame; shots leave from its tip.
+	f.add("RightHand", "FuelBody", Vector3.new(0.56 * s, 0.8 * s, 0.56 * s), CFrame.new(-0.1 * s, -0.42 * s, -0.16 * s), steel, METAL)
+	f.add("RightHand", "Flamethrower", Vector3.new(0.34 * s, 1.9 * s, 0.34 * s), CFrame.new(-0.1 * s, -1.2 * s, -0.16 * s), Color3.fromRGB(120, 78, 44), FABRIC)
+	f.add("RightHand", "Nozzle", Vector3.new(0.5 * s, 0.32 * s, 0.5 * s), CFrame.new(-0.1 * s, -2.2 * s, -0.16 * s), Color3.fromRGB(60, 64, 72), METAL)
+	f.add("RightHand", "PilotFlame", Vector3.new(0.5 * s, 0.6 * s, 0.5 * s), CFrame.new(-0.1 * s, -2.62 * s, -0.16 * s), fire, NEON, "ball")
+	muzzle(f, "RightHand", Vector3.new(-0.1 * s, -2.8 * s, -0.16 * s))
+	-- The mount: a dinosaur standing on the ground under the rider, welded to
+	-- the root so it stays planted while the rider aims and recoils.
+	local pelvis = f.parts.LowerTorso
+	local back = pelvis.Position.Y - pelvis.Size.Y / 2
+	local function dino(name, size, at, color, surface, shape, turn)
+		return f.add("HumanoidRootPart", name, size * s, CFrame.new(at.X * s, back + at.Y * s, at.Z * s) * (turn or CFrame.new()), color, surface or FABRIC, shape)
+	end
+	local V = Vector3.new
+	dino("DinoBody", V(2.3, 2.5, 4.2), V(0, -1.05, 0.4), hide, FABRIC, "ball")
+	dino("DinoBelly", V(1.9, 1.5, 3.2), V(0, -1.8, 0.1), belly, FABRIC, "ball")
+	dino("DinoNeck", V(1.35, 2.1, 1.45), V(0, 0.2, -1.85), hide, FABRIC, "ball", CFrame.Angles(-0.5, 0, 0))
+	dino("DinoHead", V(1.6, 1.35, 2.2), V(0, 1.35, -2.95), hide)
+	dino("DinoSnout", V(1.3, 0.85, 1.0), V(0, 1.18, -4.4), hide)
+	dino("DinoJaw", V(1.36, 0.45, 2.0), V(0, 0.5, -3.55), belly, FABRIC, nil, CFrame.Angles(-0.22, 0, 0))
+	dino("DinoTeeth", V(1.18, 0.2, 1.7), V(0, 0.74, -3.85), Color3.fromRGB(246, 242, 228))
+	dino("DinoTongue", V(0.8, 0.12, 1.2), V(0, 0.6, -3.4), Color3.fromRGB(200, 70, 80))
+	for _, side in ipairs({ -1, 1 }) do
+		dino("DinoEye", V(0.36, 0.36, 0.36), V(side * 0.7, 1.62, -3.35), Color3.fromRGB(255, 196, 40), FABRIC, "ball")
+		dino("DinoPupil", V(0.16, 0.22, 0.16), V(side * 0.84, 1.62, -3.38), ink, FABRIC, "ball")
+		dino("DinoBrow", V(0.42, 0.18, 0.7), V(side * 0.6, 1.9, -3.3), hide:Lerp(ink, 0.3))
+		dino("DinoNostril", V(0.14, 0.14, 0.14), V(side * 0.32, 1.48, -4.88), ink, FABRIC, "ball")
+		-- Legs: a heavy thigh, a shin down to a three-clawed foot on the ground.
+		local thighBottom = -2.9
+		dino("DinoThigh", V(1.05, 2.0, 1.75), V(side * 1.05, -1.95, 0.9), hide, FABRIC, "ball")
+		local footTop = 0.45 - back / s
+		local shinLength = math.max(0.6, thighBottom - footTop + 0.3)
+		dino("DinoShin", V(0.66, shinLength, 0.76), V(side * 1.05, footTop + shinLength / 2 - 0.15, 1.0), hide)
+		dino("DinoFoot", V(0.92, 0.45, 1.6), V(side * 1.05, footTop - 0.225, 0.45), hide:Lerp(ink, 0.15))
+		for claw = -1, 1 do
+			dino("DinoClaw", V(0.18, 0.22, 0.42), V(side * 1.05 + claw * 0.3, footTop - 0.34, -0.45), ink)
+		end
+		-- The little arms.
+		dino("DinoArm", V(0.32, 0.95, 0.34), V(side * 0.62, -0.75, -1.95), hide, FABRIC, nil, CFrame.Angles(-0.8, 0, 0))
+		-- Stirrups hang from the saddle.
+		f.rod("HumanoidRootPart", "StirrupStrap", Vector3.new(side * 1.0 * s, back, 0.1 * s), Vector3.new(side * 1.25 * s, back - 1.7 * s, -0.25 * s), 0.1 * s, leather, FABRIC)
+		dino("Stirrup", V(0.5, 0.12, 0.5), V(side * 1.25, -1.75, -0.25), ink, METAL)
+		-- Reins from the jaw to the saddle horn.
+		f.rod("HumanoidRootPart", "Rein", Vector3.new(side * 0.55 * s, back + 1.05 * s, -3.2 * s), Vector3.new(side * 0.12 * s, back + 0.4 * s, -0.75 * s), 0.07 * s, leather, FABRIC)
+	end
+	dino("DinoTail", V(1.5, 1.5, 2.4), V(0, -0.95, 2.9), hide, FABRIC, "ball")
+	dino("DinoTailMid", V(0.95, 0.95, 2.2), V(0, -1.3, 4.65), hide, FABRIC, "ball")
+	dino("DinoTailTip", V(0.5, 0.5, 1.8), V(0, -1.55, 6.25), hide, FABRIC, "ball")
+	-- A green bandana with a yellow hem round the neck (no emblem).
+	dino("Bandana", V(1.62, 0.7, 1.62), V(0, -0.25, -2.05), Color3.fromRGB(30, 150, 70), FABRIC, "ball")
+	dino("BandanaHem", V(1.7, 0.16, 1.7), V(0, -0.58, -2.05), Color3.fromRGB(250, 210, 40), FABRIC, Enum.PartType.Cylinder, CFrame.Angles(0, 0, math.pi / 2))
+	-- The saddle and, behind it, the flamethrower's gas tanks.
+	dino("Saddle", V(1.7, 0.3, 1.7), V(0, 0.05, 0.15), leather)
+	dino("SaddleBlanket", V(2.2, 0.12, 2.1), V(0, -0.06, 0.2), Color3.fromRGB(150, 36, 40))
+	dino("SaddleHorn", V(0.26, 0.5, 0.26), V(0, 0.4, -0.75), leather)
+	for _, side in ipairs({ -1, 1 }) do
+		dino("GasTank", V(1.4, 0.66, 0.66), V(side * 0.38, 0.85, 1.45), steel, METAL, Enum.PartType.Cylinder, CFrame.Angles(0, 0, math.pi / 2))
+		dino("TankLabel", V(0.42, 0.7, 0.7), V(side * 0.38, 0.75, 1.45), Color3.fromRGB(200, 44, 40), FABRIC, Enum.PartType.Cylinder, CFrame.Angles(0, 0, math.pi / 2))
+		dino("TankValve", V(0.2, 0.22, 0.2), V(side * 0.38, 1.65, 1.45), ink, METAL)
+	end
+	f.rod("HumanoidRootPart", "Hose", Vector3.new(0.38 * s, back + 1.7 * s, 1.45 * s), Vector3.new(0.7 * s, back + 0.2 * s, 0.4 * s), 0.12 * s, ink, FABRIC)
 end
 HERO_EXTRAS.ghostrider = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
@@ -3123,6 +3231,7 @@ local LIVING_POWERS = {
 	PhotonGauntlet = "pulse", StormSigil = "pulse", EmberSigil = "pulse", HammerRune = "pulse", ChestRingCore = "pulse",
 	MagmaVein = "pulse", MagmaCrack = "pulse", VeinCore = "pulse", GlowBud = "pulse",
 	Lasso = "pulse", BoltTop = "pulse", BoltBottom = "pulse", TideEmblem = "pulse", CircletGem = "pulse", ChestRing = "pulse",
+	PilotFlame = "flicker",
 }
 -- Tags a piece for the client to move (Motion.Accents): orbit (rad/s) round
 -- an axis through a pivot in its host's frame, flicker or pulse.
@@ -9843,7 +9952,7 @@ end
 -- carrier's helipad, the sanctum's orb, the star treasury's coin fountain).
 -- Built around `at` (the centre of its ground, front towards -Z); stats is
 -- optional (the field's ice reaches as far as the base's range). The back
--- right corner stays clear for the Base Agent.
+-- right corner stays clear for the base's upgrade prompt.
 local BASE_SOLID = { Foundation = true, Building = true, Roof = true, WallSection = true, Turret = true }
 function World.BuildBaseArt(model, def, level, at, stats)
 	level = math.clamp(math.floor(tonumber(level) or 1), 1, 5)
@@ -10108,27 +10217,18 @@ function World:UpdateBase(index, base, core, ownerId)
 	local baseName=label(building,def.name.pt.." • "..base.level.."/5",Vector3.new(0,6,0),tint)
 	baseName:SetAttribute("LobbyTextPT",def.name.pt.." • "..base.level.."/5")
 	baseName:SetAttribute("LobbyTextEN",def.name.en.." • "..base.level.."/5")
-	-- The base agent: the only place a base is upgraded. Pressing E beside the
-	-- agent opens the upgrade (the client listens for the prompt); the server
-	-- still decides everything when the upgrade is requested.
+	-- The base itself is upgraded (owner, 17/10: "remova esses agentes das
+	-- bases, o botão de evoluir a base pode ser na própria base"). Pressing E
+	-- beside it opens the upgrade (the client listens for the prompt), as does
+	-- Evoluir on the base bar; the server decides everything on the request.
 	do
-		local frame=CFrame.new(at+Vector3.new(3.1,1,3.5))*CFrame.Angles(0,math.pi,0)
-		local made=Figure.Agent(model,index)
-		for _,item in ipairs(made.model:GetDescendants()) do
-			if item:IsA("BasePart") then item.Anchored,item.CanCollide,item.CanQuery,item.CanTouch=true,false,false,false end
-		end
-		made.model.Name="BaseAgent"
-		made.model:PivotTo(frame)
-		local ring=part(model,"AgentRing",Vector3.new(0.15,4.6,4.6),CFrame.new(at+Vector3.new(3.1,1.1,3.5))*CFrame.Angles(0,0,math.pi/2),tint,Enum.Material.Neon)
-		ring.Shape,ring.CanCollide,ring.Transparency=Enum.PartType.Cylinder,false,0.35
-		local anchor=part(model,"AgentTrigger",Vector3.new(2.4,6.4,2.4),frame*CFrame.new(0,3.2,0),tint,Enum.Material.SmoothPlastic)
-		-- Invisible but solid: the agent is a person, not a hologram to walk through.
-		anchor.Transparency,anchor.CanCollide,anchor.CanQuery=1,true,false
+		local anchor=part(model,"UpgradeTrigger",Vector3.new(2,2,2),CFrame.new(at+Vector3.new(0,2.5,0)),tint,Enum.Material.SmoothPlastic)
+		anchor.Transparency,anchor.CanCollide,anchor.CanQuery,anchor.CanTouch=1,false,false,false
 		local prompt=Instance.new("ProximityPrompt")
-		prompt.Name,prompt.ActionText,prompt.ObjectText="BaseUpgradePrompt","Evoluir base / Upgrade base","Agente da Base / Base Agent"
+		prompt.Name,prompt.ActionText,prompt.ObjectText="BaseUpgradePrompt","Evoluir base / Upgrade base",def.name.pt.." / "..def.name.en
 		-- Each client shows the prompt in its own language (see init.client, PromptShown).
 		prompt:SetAttribute("ActionPT","Evoluir base"); prompt:SetAttribute("ActionEN","Upgrade base")
-		prompt:SetAttribute("ObjectPT","Agente da Base"); prompt:SetAttribute("ObjectEN","Base Agent")
+		prompt:SetAttribute("ObjectPT",def.name.pt); prompt:SetAttribute("ObjectEN",def.name.en)
 		prompt.MaxActivationDistance,prompt.HoldDuration,prompt.RequiresLineOfSight=14,0,false
 		prompt:SetAttribute("BaseOwnerId",ownerId or 0)
 		prompt.Parent=anchor

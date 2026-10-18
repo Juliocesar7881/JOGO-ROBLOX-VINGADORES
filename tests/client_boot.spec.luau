@@ -641,9 +641,12 @@ local function session(screen)
 		screenRoot=named(gui,"AfkScreen")
 		check(screenRoot:GetAttribute("AfkKind")=="xp" and named(screenRoot,"AfkScreenEarned").Text=="+0 XP",tag..": switching chambers rebuilds the XP scene and unit")
 		check(named(screenRoot,"AfkScreenSaved").Text=="Aguardando o primeiro pagamento",tag..": no saved award is claimed before the first minute")
+		-- screenRect works in the client's logical pixels (it does not apply UIScale):
+		-- the screen in those pixels is the real one over the client's scale.
+		local scale=(named(gui,"ScreenScale") or {}).Scale or 1
 		for _,name in ipairs({"AfkEcoOff","AfkLeave","AfkScreenEarned","AfkScreenNext"}) do
 			local rect=screenRect(named(screenRoot,name),gui,screen)
-			check(rect and rect.x>=0 and rect.y>=0 and rect.x+rect.w<=screen.w+1 and rect.y+rect.h<=screen.h+1,tag..": AFK control/counter stays on screen: "..name)
+			check(rect and rect.x>=0 and rect.y>=0 and rect.x+rect.w<=screen.w/scale+1 and rect.y+rect.h<=screen.h/scale+1,tag..": AFK control/counter stays on screen: "..name)
 		end
 		local canvas=gui:GetChildren()[1]
 		local originalSize=canvas.AbsoluteSize
@@ -1273,14 +1276,13 @@ local function session(screen)
 		local odds=named(gui,"SummonOdds")
 		local panel=named(gui,"ContextPanel")
 		check(panel.Sheen:GetAttribute("Chapter")=="chests",tag..": summon window carries its own chapter artwork")
-		local featured=named(gui,"SummonFeatured")
-		if featured then
-			local children=featured:GetChildren()
-			check(#children>0 and #children<=3,tag..": summon showcases at most three real outcomes")
-			check(named(gui,"OpenChest_rare")~=nil,tag..": the featured roster keeps the real purchase action")
-			local first=odds:GetChildren()[1]
-			check(first and first.Size.Y.Offset+first.Position.Y.Offset<=odds.Size.Y.Offset,tag..": one complete odds entry fits below the showcase")
-		end
+		-- The odds grid is the whole showcase (owner, 17/10: the heroes of a chest
+		-- were hard to see in a small scroll): no featured row, two full rows of
+		-- big cards at least, wherever the window is wide.
+		check(named(gui,"SummonFeatured")==nil,tag..": no featured row squeezes the chest's heroes")
+		local first=odds:GetChildren()[1]
+		check(first and first.Size.Y.Offset>=110,tag..": every hero of the chest gets a big portrait card")
+		if view().w>=1000 then check(odds.Size.Y.Offset>=240,tag..": at least two rows of hero cards show without scrolling, got "..odds.Size.Y.Offset) end
 		local crates=named(gui,"SummonCrates")
 		if view().w>=1000 then
 			local viewport=screenRect(named(gui,"ContextBody"),gui,SCREEN)
@@ -1290,8 +1292,10 @@ local function session(screen)
 		end
 		odds.CanvasPosition=Vector2.new(0,128)
 		crates.CanvasPosition=Vector2.new(14,0)
-		clickNamed("SummonSelect_legendary")
-		check(countNamed(gui,"OpenChest_legendary")==1 and countNamed(gui,"OpenChest_rare")==0,tag..": legendary tab switches the purchase intent")
+		check(countNamed(gui,"SummonSelect_legendary")==0 and countNamed(gui,"SummonSelect_epic")==0,tag..": the retired chests are gone from the summon hall")
+		clickNamed("SummonSelect_jurassic")
+		check(countNamed(gui,"OpenChest_jurassic")==1 and countNamed(gui,"OpenChest_rare")==0,tag..": the event chest has its own page")
+		check(named(gui,"ChestHero_flavio")~=nil and named(gui,"ChestHero_ironman")~=nil,tag..": the event chest shows its two heroes, Flávio and the Iron Armor")
 		clickNamed("SummonSelect_cosmic")
 		for _,entry in ipairs(Rules.ChestOutcomes("cosmic",0,{})) do
 			check((named(gui,"GuaranteedFeature_"..entry.id)~=nil)==entry.guaranteed,tag..": cosmic stars mark the preserved guarantee pool "..entry.id)
@@ -1299,7 +1303,7 @@ local function session(screen)
 		clickNamed("SummonSelect_rare")
 		check(named(gui,"SummonOdds").CanvasPosition.Y==128 and named(gui,"SummonCrates").CanvasPosition.X==14,tag..": each summon catalogue retains its scroll when changing crates")
 		fx({kind="OpenPanel",panel="premium"})
-		click("Passes")
+		click("Vantagens")
 		check(countNamed(gui,"PremiumTabs_pass")==1,tag..": premium pass tab stays accessible")
 		-- Prices arrive one by one: each updates its own button, the window is
 		-- never redrawn for them (that flickered and stuttered).
@@ -1325,10 +1329,10 @@ local function session(screen)
 			local Config=require(shared.Config)
 			local saved=Config.Products.Consumables.gold30000.id
 			Config.Products.Consumables.gold30000.id=0
-			click("Passes"); click("Ouro")
+			click("Vantagens"); click("Ouro")
 			check(named(gui,"Product_gold30000")==nil and named(gui,"Product_gold5000")~=nil,tag..": an unconfigured product is left out of the shop")
 			Config.Products.Consumables.gold30000.id=saved
-			click("Passes"); click("Ouro")
+			click("Vantagens"); click("Ouro")
 			check(named(gui,"Product_gold30000")~=nil,tag..": a configured product is drawn")
 		end
 		-- The Gold packs rank themselves: the biggest pack is the best deal and
@@ -1337,7 +1341,7 @@ local function session(screen)
 		check(named(gui,"Badge_gold30000").Text=="Melhor valor" and named(gui,"Badge_gold5000").Text=="Sugestão",tag..": regional prices determine best value; recommendations do not claim popularity")
 		local valueLine=named(gui,"Value_gold12000")
 		check(valueLine~=nil and string.find(valueLine.Text,"387",1,true)~=nil,tag..": a pack states Gold per regional Robux, got "..tostring(valueLine and valueLine.Text))
-		click("Passes")
+		click("Vantagens")
 		retry=named(gui,"Buy_pass:training")
 		collectorPrice=true
 		if retry then retry.Activated:Fire(); flush() end
@@ -1584,7 +1588,8 @@ local function session(screen)
 		clickNamed("ChestCountPlus")
 		check(string.find(named(gui, "ChestCount").Text, "x3", 1, true) ~= nil, tag .. ": the quantity buttons count up, got " .. named(gui, "ChestCount").Text)
 		clickNamed("ChestCountMax")
-		check(string.find(named(gui, "ChestCount").Text, "x9", 1, true) ~= nil, tag .. ": MAX is the most the Gold pays for (9,000 Gold = 9 chests)")
+		local most = math.floor(9000 / Catalog.Chests.rare.cost)
+		check(string.find(named(gui, "ChestCount").Text, "x" .. most, 1, true) ~= nil, tag .. ": MAX is the most the Gold pays for (9,000 Gold = " .. most .. " Alliance chests)")
 		clickNamed("ChestCountMinus")
 		clickNamed("OpenChest_rare")
 		clickNamed("ConfirmChest_rare")
@@ -2133,7 +2138,7 @@ local function session(screen)
 			tag .. ": the 2x button is visible, got " .. tostring(speed and speed.Text))
 		local three = named(gui, "Speed3Toggle")
 		check(three ~= nil and shown(three, gui) and string.find(three.Text, "3x", 1, true) ~= nil, tag .. ": 3x is a button of its own")
-		check(string.find(three.Text, "Passe", 1, true) ~= nil, tag .. ": without the pass the 3x button says it needs one")
+		check(string.find(three.Text, "Loja", 1, true) ~= nil and string.find(three.Text, "Passe", 1, true) == nil, tag .. ": without the perk the 3x button points to the shop (the game has no passes)")
 		clickNamed("Speed3Toggle")
 		check(not asked("SetSpeed"), tag .. ": 3x without the pass never asks the server for 3x")
 		check(auto ~= nil and shown(auto, gui), tag .. ": the auto-skip toggle is visible")
@@ -3765,7 +3770,11 @@ local function session(screen)
 		main.AbsoluteSize = Vector2.new(rotated.w, rotated.h)
 		main:GetPropertyChangedSignal("AbsoluteSize"):Fire()
 		flush()
-		local fresh = UILayout.matchLayout(rotated.w, rotated.h, { skills = 1, vip = true })
+		-- A phone on its side draws everything smaller (owner, 17/10); layouts are
+		-- in the client's logical pixels, the real screen over that scale.
+		local scale = (named(gui, "ScreenScale") or {}).Scale or 1
+		if rotated.h < 520 and rotated.w >= 560 then check(scale < 1 and scale >= 0.85, tag .. ": a phone on its side draws the HUD smaller, got " .. scale) end
+		local fresh = UILayout.matchLayout(math.floor(rotated.w / scale), math.floor(rotated.h / scale), { skills = 1, vip = true })
 		check(frameAt(main, fresh.top) ~= nil, tag .. ": after a resize the top bar follows the new layout")
 		local bad = offscreen(main, view())
 		check(#bad == 0, tag .. ": after a resize everything is still on screen: " .. table.concat(bad, ", "))

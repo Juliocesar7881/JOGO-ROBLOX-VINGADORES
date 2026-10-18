@@ -289,7 +289,8 @@ function Rules.GuaranteedPrice(itemId)
 		local group = chest.groups[def.recruitmentGroup]
 		local odds, count = group.weight, group.size
 		-- A base chest gives only its own bases (chest.bases).
-		if chestKind == kind and odds > 0 and count > 0 and (not chest.bases or table.find(chest.bases, itemId)) then
+		-- A chest that names its heroes (the event chest) gives only those.
+		if chestKind == kind and odds > 0 and count > 0 and (not chest.bases or table.find(chest.bases, itemId)) and (not chest.heroes or table.find(chest.heroes, itemId)) then
 			local price = chest.cost / (odds / 100 / count)
 			if not best or price < best then best = price end
 		end
@@ -898,7 +899,7 @@ function Rules.SeasonReward(level, track, seasonId)
 	level = math.clamp(math.floor(number(level, 1)), 1, Catalog.Season.levels)
 	if track == "premium" then
 		local reward = { gold = 200 + level * 40 }
-		if level % 5 == 0 then reward.chest = (level % 10 == 0) and (level == Catalog.Season.levels and "legendary" or "epic") or "rare" end
+		if level % 5 == 0 then reward.chest = level == Catalog.Season.levels and "cosmic" or "rare" end
 		if level == Catalog.Season.levels then
 			reward.title = { id = "seasonPremium", pt = "Campeão da temporada", en = "Season champion" }
 			-- The top of the track: the season's exclusive hero, shiny.

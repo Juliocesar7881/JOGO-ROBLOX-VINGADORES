@@ -43,7 +43,7 @@ local WEAPON_BANK = {
 	wanda="magic", strange="magic", jean="magic", gambit="magic", nightcrawler="magic", emerald="magic",
 	iceman="ice", ghostrider="fire", torch="fire", rocket="blast", warmachine="blast", nightstalker="blast",
 	falcon="swift", bucky="tech", widow="swift", silversurfer="beam", psylocke="magic", deadpool="tech",
-	moonknight="arrow", solartitan="beam", speedster="swift", amazon="metal", seaking="organic",
+	moonknight="arrow", solartitan="beam", speedster="swift", amazon="metal", seaking="organic", flavio="fire",
 }
 local FAMILY_BANK = {shotTech="tech",shotArrow="arrow",shotMagic="magic",shotMelee="punch",shotBlast="blast"}
 -- Every basic attack is heard, even softly (owner, 16/10: "cada ataque básico
@@ -73,7 +73,7 @@ local HERO_POWER = {
 	iceman = {"powerFreeze", 1.0}, gambit = {"powerBlast", 1.2}, nightcrawler = {"powerMagic", 1.45}, beast = {"powerTaunt", 0.85},
 	psylocke = {"powerWeb", 1.15}, deadpool = {"powerHeal", 1.15}, moonknight = {"powerMagic", 0.85}, nova = {"powerBlast", 0.95},
 	capmen = {"powerHeal", 0.8}, amazon = {"powerWeb", 0.85}, seaking = {"powerFreeze", 0.75}, emerald = {"powerMagic", 0.9},
-	speedster = {"powerWeb", 1.4}, solartitan = {"powerBlast", 0.85}, nightstalker = {"powerBlast", 1.35},
+	speedster = {"powerWeb", 1.4}, solartitan = {"powerBlast", 0.85}, nightstalker = {"powerBlast", 1.35}, flavio = {"powerFire", 0.7},
 }
 Audio.HeroPower = HERO_POWER
 
@@ -105,6 +105,8 @@ local POWER_SCORES = {
 	wanda = { { 0.3, "magic", 0.9, 0.6 }, { 0.7, "magic", 1.1, 0.6 }, { 1.1, "powerBlast", 1.2, 0.8 } },
 	strange = { { 0.2, "magic", 1.2, 0.6 }, { 0.45, "magic", 0.9, 0.5 }, { 0.7, "powerHeal", 1.3, 0.5 } },
 	ghostrider = { { 0.1, "fire", 0.9, 0.8 }, { 0.25, "fire", 1.1, 0.7 }, { 0.4, "powerFire", 1.1, 0.6 } },
+	-- The dinosaur's roar, the flamethrower's whoosh, the inferno landing.
+	flavio = { { 0.02, "heavy", 0.55, 0.9 }, { 0.18, "fire", 0.8, 0.9 }, { 0.35, "powerFire", 0.75, 0.85 }, { 0.6, "fire", 1.1, 0.7 } },
 	captainmarvel = { { 0.05, "beam", 1.1, 0.8 }, { 0.15, "blast", 0.9, 0.75 }, { 0.3, "powerBlast", 1.3, 0.6 } },
 	silversurfer = { { 0.05, "beam", 0.8, 0.8 }, { 0.12, "heavy", 0.9, 0.6 }, { 0.3, "powerHeal", 1.4, 0.5 } },
 	wolverine = { { 0.03, "metal", 1.4, 0.6 }, { 0.22, "swift", 0.85, 1 }, { 0.27, "metal", 1.5, 0.6 } },
@@ -181,6 +183,7 @@ local REWARDS = {
 	common = {name="rewardCommon", notes={{"click",0.82,0.10,0},{"click",1.1,0.07,0.075}}},
 	rare = {name="rewardRare", notes={{"shotTech",0.6,0.055,0},{"shotMagic",0.84,0.09,0.06},{"shotMagic",1.12,0.10,0.22},{"shotMagic",1.33,0.09,0.38}}},
 	legendary = {name="rewardLegendary", notes={{"shotMelee",0.9,0.075,0},{"shotMagic",0.75,0.11,0},{"shotMagic",1,0.11,0.18},{"shotMagic",1.5,0.10,0.36},{"shotMagic",1.19,0.075,0.36}}},
+	supreme = {name="rewardLegendary", notes={{"shotMelee",0.8,0.09,0},{"shotMagic",0.75,0.12,0},{"shotMagic",1,0.12,0.18},{"shotMagic",1.5,0.11,0.36},{"shotMagic",2,0.10,0.54}}},
 }
 
 -- The uploaded rarity fanfare owns the melody. A restrained, separate
@@ -189,6 +192,7 @@ local REWARD_MIX = {
 	common = {volume=.18,duck=.45},
 	rare = {volume=.22,duck=1.3,accent="powerMagic",gain=.065,delay=.14},
 	legendary = {volume=.24,duck=1.6,accent="bossDown",gain=.075,delay=.18},
+	supreme = {volume=.26,duck=2,accent="bossDown",gain=.09,delay=.18},
 }
 
 function Audio.new(getState)

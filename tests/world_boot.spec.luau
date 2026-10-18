@@ -1783,13 +1783,16 @@ for _,id in ipairs(Catalog.BaseOrder) do
 		for _,item in ipairs(model:GetChildren()) do
 			if item.Name=="LevelLamp" then markers+=1 end
 			if item:IsA("BasePart") then
-				-- The body of the outpost is solid, and so is the agent beside it (one
-				-- invisible block for the person); every piece of dressing is passable.
-				local solid = item.Name == "Foundation" or item.Name == "Building" or item.Name == "Roof" or item.Name == "WallSection" or item.Name == "Turret" or item.Name == "AgentTrigger"
+				-- The body of the outpost is solid; every piece of dressing is passable.
+				local solid = item.Name == "Foundation" or item.Name == "Building" or item.Name == "Roof" or item.Name == "WallSection" or item.Name == "Turret"
 				check(item.CanCollide == solid, "only the outpost's body is solid: " .. item.Name)
 			end
 		end
 		check(markers==level,"base upgrade level is visible")
+		-- No agent stands beside a base any more (owner, 17/10): the base itself
+		-- carries the upgrade prompt.
+		local trigger = model:FindFirstChild("UpgradeTrigger")
+		check(model:FindFirstChild("BaseAgent") == nil and trigger ~= nil and trigger:FindFirstChild("BaseUpgradePrompt") ~= nil, "the base itself is upgraded, with no agent beside it: " .. id)
 	end
 end
 

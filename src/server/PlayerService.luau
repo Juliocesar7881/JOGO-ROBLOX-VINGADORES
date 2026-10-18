@@ -1018,6 +1018,7 @@ function PlayerService:_tradeable(profile, partnerProfile, heroId)
 		if entry.pending and entry.got == heroId then return "Esta troca ainda está sendo confirmada. / This trade is still being confirmed." end
 	end
 	if hero.starter then return "Heróis iniciais não são trocados. / Starter heroes cannot be traded." end
+	if hero.exclusive then return "Este herói é exclusivo e não pode ser trocado. / This hero is exclusive and cannot be traded." end
 	for _, id in ipairs(profile.loadout or {}) do
 		if id == heroId then return "Tire o herói da equipe antes de trocar. / Remove the hero from your team before trading." end
 	end

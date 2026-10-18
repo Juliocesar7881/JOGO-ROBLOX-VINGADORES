@@ -39,7 +39,7 @@ end
 -- abilityCost: multiplies the gold price of every ability upgrade.
 -- duplicate: what a chest turns a hero you already own into.
 -- placeLimit: how many towers of one hero of this rarity a commander may field.
-Catalog.RarityOrder = { "common", "rare", "epic", "legendary", "mythic" }
+Catalog.RarityOrder = { "common", "rare", "epic", "legendary", "mythic", "supreme" }
 -- Stars: every duplicate of a hero you own adds one (up to max), and each
 -- star adds `damage` to that hero's towers on top of mastery and talents.
 -- After the last star a duplicate only pays its Gold and mastery.
@@ -52,7 +52,7 @@ Catalog.Stars = { max = 5, damage = 0.03 }
 -- and goldPerRank * n Gold.
 Catalog.MaxChestsAtOnce = 50
 Catalog.HeroCards = {
-	copiesPerDuplicate = { common = 3, rare = 2, epic = 2, legendary = 1, mythic = 1 },
+	copiesPerDuplicate = { common = 3, rare = 2, epic = 2, legendary = 1, mythic = 1, supreme = 1 },
 	firstCost = 2, growth = 1.5, goldPerRank = 100, pointsPerRank = 1,
 	base = { damage = 0.04, speed = 0.02, range = 0.01 },
 	point = { damage = 0.03, speed = 0.02, range = 0.015 },
@@ -110,29 +110,27 @@ Catalog.Rarities = {
 	epic = { id = "epic", name = text("Épico", "Epic"), color = { 176, 108, 255 }, robux = 149, placeLimit = 5, abilityCost = 2, duplicate = { gold = 600, mastery = 250 } },
 	legendary = { id = "legendary", name = text("Lendário", "Legendary"), color = { 255, 188, 62 }, robux = 399, placeLimit = 4, abilityCost = 3, duplicate = { gold = 1200, mastery = 500 } },
 	mythic = { id = "mythic", name = text("Mítico", "Mythic"), color = { 255, 84, 112 }, robux = 399, placeLimit = 3, abilityCost = 4.5, duplicate = { gold = 2500, mastery = 1000 } },
+	-- A rarity of one hero (owner, 17/10): the event chest's Flávio Hipotético,
+	-- never sold for Robux, never traded, never in another chest.
+	supreme = { id = "supreme", name = text("Supremo", "Supreme"), color = { 60, 220, 110 }, robux = 0, placeLimit = 2, abilityCost = 5, duplicate = { gold = 5000, mastery = 2000 } },
 }
 
 --==============================================================================
 -- Chests
 --==============================================================================
--- Heroes are found in chests, paid for with Gold. The rare chest costs half of
--- the legendary one, and it is the legendary chest that holds the best heroes,
--- with the best of them deliberately the least likely. Odds are percentages,
--- sum to 100 and are shown to the player as they are.
--- pity: after this many legendary-chest openings without a hero of at least
--- that rarity, the next one is guaranteed to be one.
-Catalog.ChestOrder = { "rare", "legendary" }
+-- Heroes are found in chests, paid for with Gold. Odds are percentages per
+-- price tier, sum to 100 and are shown to the player as they are; a tier's
+-- share is split evenly among its heroes in that chest.
+-- pity: after this many openings without a hero of at least that tier, the
+-- next one is guaranteed to be one.
+-- Four hero chests (owner, 17/10: "menos baús... um baú libera alguns, o outro
+-- não vai liberar os mesmos heróis"): no hero is in two chests.
+Catalog.ChestOrder = {}
 Catalog.Chests = {
 	rare = {
-		id = "rare", name = text("Baú Raro", "Rare Chest"), cost = 1000, color = { 84, 170, 255 },
-		description = text("Heróis comuns, raros e, com sorte, épicos.", "Common, rare and, with luck, epic heroes."),
-		odds = { common = 34, rare = 44, epic = 20, legendary = 2, mythic = 0 },
-	},
-	legendary = {
-		id = "legendary", name = text("Baú Lendário", "Legendary Chest"), cost = 2000, color = { 255, 188, 62 },
-		description = text("Os melhores heróis do jogo. Os mais poderosos são raros.", "The best heroes in the game. The strongest are rare."),
-		odds = { common = 0, rare = 30, epic = 42, legendary = 22, mythic = 6 },
-		pity = { after = 10, minimum = "legendary" },
+		id = "rare", name = text("Baú Raro", "Rare Chest"), cost = 1500, color = { 84, 170, 255 },
+		description = text("Só heróis raros, nenhum deles em outro baú.", "Rare heroes only, none of them in another chest."),
+		odds = { common = 0, rare = 0, epic = 100, legendary = 0, mythic = 0 },
 	},
 }
 
@@ -702,7 +700,9 @@ Catalog.Events = { weekend = { goldScale = 2, days = { [6] = true, [0] = true } 
 -- way to farm. A gift with a chest opens it on the spot, like any other chest.
 Catalog.Rewards = {
 	-- A free chest every few hours. It never stacks: the point is to come back.
-	freeChest = { chestId = "rare", cooldown = 6 * 3600 },
+	-- Supplies since the chests stopped sharing heroes (17/10): a free rare hero
+	-- every few hours would empty the Alliance chest in days.
+	freeChest = { chestId = "supply", cooldown = 6 * 3600 },
 	-- A chest sent to a Roblox friend in the same server, once per UTC day; the
 	-- server pays it from nothing and the friend opens it on the gifts page.
 	gift = { chestId = "supply", perDay = 1 },
@@ -721,11 +721,11 @@ Catalog.Rewards = {
 		{ gold = 250 }, { gold = 350 }, { gold = 450, xp = 150 }, { gold = 600 },
 		{ gold = 800, xp = 300 }, { gold = 1000 }, { gold = 1500, chest = "rare" },
 		{ gold = 600 }, { gold = 700 }, { gold = 800, xp = 300 }, { gold = 900 },
-		{ gold = 1000, xp = 400 }, { gold = 1200 }, { gold = 2000, chest = "epic" },
+		{ gold = 1000, xp = 400 }, { gold = 1200 }, { gold = 2000, chest = "rare" },
 		{ gold = 800 }, { gold = 900 }, { gold = 1000, xp = 400 }, { gold = 1200 },
-		{ gold = 1400, xp = 500 }, { gold = 1600 }, { gold = 2500, chest = "epic" },
+		{ gold = 1400, xp = 500 }, { gold = 1600 }, { gold = 2500, chest = "rare" },
 		{ gold = 1000 }, { gold = 1200 }, { gold = 1500, xp = 600 }, { gold = 1800 },
-		{ gold = 2200, xp = 800 }, { gold = 2600 }, { gold = 5000, chest = "legendary", heroPick = "legendary" },
+		{ gold = 2200, xp = 800 }, { gold = 2600 }, { gold = 5000, chest = "cosmic", heroPick = "legendary" },
 	},
 	-- Gifts for time spent in the game today. Time resets with the UTC day.
 	playtime = {
@@ -1049,6 +1049,28 @@ Catalog.Abilities.smokeBomb = ability("smokeBomb", "stun", "area", 70, { duratio
 	text("Bomba de Fumaça", "Smoke Bomb"), text("Paralisa por {duration} s em {radius} studs e derrete {e1.power}% da armadura por {e1.duration} s. Chefes resistem.", "Stuns for {duration} s within {radius} studs and melts {e1.power}% of armor for {e1.duration} s. Bosses resist."))
 for _, id in ipairs({ "indestructible", "emeraldConstruct", "solarWrath", "superSpeed", "truthLasso", "tidalWave", "smokeBomb" }) do table.insert(Catalog.AbilityOrder, id) end
 
+-- The event hero (owner, 17/10: "super apelão absurdo de apelão com lança
+-- chamas até a skill vai ser apelona... o herói mais difícil de ganhar"): a
+-- commander in a suit riding a dinosaur, a flamethrower fed by gas tanks on
+-- the saddle. Only the event chest gives him, at 0.01%; his own rarity, no
+-- Robux product, no trade. Deliberately far above every other hero.
+Catalog.Abilities.jurassicInferno = ability("jurassicInferno", "burn", "area", 75, { power = 2.0, duration = 6, radius = 90, unit = "pct", color = { 255, 120, 30 }, ultimate = true, impact = { at = 0.35 },
+	extras = { { kind = "blast", power = 0.6 }, { kind = "stun", duration = 3 }, { kind = "slow", power = 0.6, duration = 8 } } },
+	text("Inferno Jurássico", "Jurassic Inferno"), text("ULTIMATE: o dinossauro ruge e o lança-chamas varre {radius} studs. {e1.power}% da vida máxima na hora, queima mais {power}% em {duration} s, atordoa por {e2.duration} s e desacelera {e3.power}%. Chefes sofrem menos.", "ULTIMATE: the dinosaur roars and the flamethrower sweeps {radius} studs. {e1.power}% of max health at once, burns {power}% more over {duration} s, stuns for {e2.duration} s and slows {e3.power}%. Bosses take less."))
+table.insert(Catalog.AbilityOrder, "jurassicInferno")
+Catalog.Heroes.flavio = {
+	id = "flavio", rarity = "supreme", exclusive = true, ability = "jurassicInferno",
+	name = text("Flávio Hipotético", "Hypothetical Flávio"), role = text("Lança-chamas montado num dinossauro", "Flamethrower riding a dinosaur"), cost = 900,
+	description = text("Monta um dinossauro e queima tudo com um lança-chamas: fogo em área que continua queimando, atravessa armadura e derrete chefes.", "Rides a dinosaur and burns everything with a flamethrower: area fire that keeps burning, pierces armor and melts bosses."),
+	damage = 150, range = 38, interval = 0.55, color = { 255, 120, 30 }, attack = "dot", damageType = "tech", air = true, splash = 13, dotDuration = 5,
+	armorPierce = 0.5, bossDamage = 0.5,
+	branches = {
+		{ name = text("Lança-chamas turbo", "Turbo Flamethrower"), description = text("+60% de dano e chamas 30% mais rápidas.", "+60% damage and 30% faster flames."), mods = { mul("damage", 1.6), mul("interval", 0.7) } },
+		{ name = text("Rugido do T-Rex", "T-Rex Roar"), description = text("Fogo numa área enorme, +8 de alcance e inimigos 40% mais lentos.", "Fire over a huge area, +8 range and enemies 40% slower."), mods = { set("splash", 19), add("range", 8), set("slow", 0.4) } },
+	},
+}
+table.insert(Catalog.HeroOrder, "flavio")
+
 -- Personal outposts support the shared core. Income is match Gold, never
 -- lobby Gold. Each has five match-only levels, bought with match Gold.
 -- New bases join at the end: a base's place in this list feeds the chests' deterministic draws.
@@ -1095,11 +1117,23 @@ Catalog.BaseUpgradeCosts={450,950,1800,3200}
 -- no other chest gives (bases); a chest's odds weigh the price tiers of its
 -- own bases only. Existing chest IDs and guarantee counters are kept; the
 -- base Alliance and Legends chests were retired on 15/10.
-Catalog.HeroChestOrder={"supply","rare","epic","legendary","cosmic"}
+-- Hero chests (owner, 17/10): four, and each hero lives in exactly one of them.
+-- Supplies holds the common heroes, the Alliance chest the rare ones, the
+-- Cosmic chest the legendary ones; the event's Jurassic chest gives the Iron
+-- Armor (99.99%) or, at 0.01%, the Supreme Flávio Hipotético, with no pity.
+-- heroes: when set, the chest's only heroes (starters included).
+-- The retired Vanguard (epic) and Legends chests leave only their look to the
+-- base chests that wore it.
+Catalog.HeroChestOrder={"supply","rare","cosmic","jurassic"}
 Catalog.BaseChestOrder={"base_supply","base_epic","base_cosmic","base_bounty"}
-Catalog.Chests.supply={id="supply",name=text("Suprimentos","Supplies"),cost=400,color={155,214,129},odds={common=75,rare=23,epic=2,legendary=0,mythic=0}}
-Catalog.Chests.epic={id="epic",name=text("Baú Épico","Epic chest"),cost=1500,color={196,145,250},odds={common=0,rare=45,epic=47,legendary=7,mythic=1},pity={after=8,minimum="epic"}}
-Catalog.Chests.cosmic={id="cosmic",name=text("Baú Cósmico","Cosmic chest"),cost=5000,color={255,138,198},odds={common=0,rare=0,epic=45,legendary=43,mythic=12},pity={after=15,minimum="mythic"}}
+Catalog.Chests.supply={id="supply",name=text("Suprimentos","Supplies"),cost=400,color={155,214,129},odds={common=20,rare=80,epic=0,legendary=0,mythic=0},
+	description=text("Só heróis comuns, nenhum deles em outro baú.","Common heroes only, none of them in another chest.")}
+Catalog.Chests.cosmic={id="cosmic",name=text("Baú Cósmico","Cosmic chest"),cost=5000,color={255,138,198},odds={common=0,rare=0,epic=0,legendary=85,mythic=15},pity={after=15,minimum="mythic"},
+	description=text("Só heróis lendários. Os quatro mais fortes saem cerca de 1 vez em 7, e a garantia entrega um deles.","Legendary heroes only. The four strongest come about one time in seven, and the guarantee delivers one.")}
+Catalog.Chests.jurassic={id="jurassic",event=true,name=text("Baú Jurássico","Jurassic chest"),cost=5000,color={60,200,90},heroes={"ironman","flavio"},
+	odds={common=99.99,rare=0,epic=0,legendary=0,mythic=0,supreme=0.01},
+	description=text("EVENTO: 0,01% de chance do Flávio Hipotético, o único herói Supremo. Nos outros 99,99%, a Armadura de Ferro (repetida vira Ouro, maestria, estrelas e cartas).","EVENT: a 0.01% chance of Hypothetical Flávio, the only Supreme hero. The other 99.99%: the Iron Armor (a duplicate turns into Gold, mastery, stars and cards).")}
+local retiredLooks={epic={name=text("Baú da Vanguarda","Vanguard chest"),cost=1500,color={196,145,250}},legendary={name=text("Baú das Lendas","Legends chest"),cost=2000,color={255,188,62}}}
 Catalog.ChestOrder={}
 for _,id in ipairs(Catalog.HeroChestOrder) do
 	local chest=Catalog.Chests[id]; chest.kind="hero"
@@ -1121,7 +1155,7 @@ local baseChests={
 		description=text("As bases caçadoras: cada inimigo derrotado deixa mais Ouro da partida. O Tesouro Estelar é a mais rara.","The bounty bases: every defeated enemy drops more match Gold. The Star treasury is the rarest.")},
 }
 for _,id in ipairs(Catalog.BaseChestOrder) do
-	local spec=baseChests[id]; local look=Catalog.Chests[spec.look]
+	local spec=baseChests[id]; local look=Catalog.Chests[spec.look] or retiredLooks[spec.look]
 	local odds={common=0,rare=0,epic=0,legendary=0,mythic=0}
 	for rarity,weight in pairs(spec.odds) do odds[rarity]=weight end
 	Catalog.Chests[id]={id=id,kind="base",name=spec.name or look.name,cost=spec.cost or look.cost,color=spec.color or look.color,odds=odds,pity=spec.pity,bases=spec.bases,description=spec.description}
@@ -1158,12 +1192,12 @@ Catalog.Products = {
 				text("+25% de maestria nos heróis: libera as melhorias antes", "+25% hero mastery: unlock upgrades sooner"),
 				text("Mais pontos na Árvore de Evolução, mais cedo", "More Talent Tree points, sooner"),
 				text("É seu para sempre", "Yours forever") } },
-		speed3 = { id = 0, price = 99, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. Com o passe, você liga o 3x para o grupo todo.", "Unlocks 3x in matches. With the pass, you switch the whole squad to 3x."),
+		speed3 = { id = 0, price = 99, name = text("Velocidade 3x", "3x Speed"), description = text("Libera 3x nas partidas. Com esta vantagem, você liga o 3x para o grupo todo.", "Unlocks 3x in matches. With this perk, you switch the whole squad to 3x."),
 			benefits = { text("Partidas na velocidade 3x", "Matches at 3x speed"),
 				text("Você liga o 3x para o grupo todo", "You switch the whole squad to 3x"),
 				text("Mais ondas no mesmo tempo de jogo", "More waves in the same playing time"),
 				text("É seu para sempre", "Yours forever") } },
-		season = { id = 0, price = 499, name = text("Passe de Temporada", "Season Pass"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title."),
+		season = { id = 0, price = 499, name = text("Trilha Premium da Temporada", "Premium Season Track"), description = text("Trilha premium da temporada: o dobro de Ouro, mais baús e um título exclusivo.", "The season's premium track: double the Gold, more chests and an exclusive title."),
 			benefits = { text("Trilha premium da temporada", "The season's premium track"),
 				text("O dobro de Ouro nas recompensas da trilha", "Double the Gold on the track's rewards"),
 				text("Mais baús e um título exclusivo", "More chests and an exclusive title") } },
@@ -1201,7 +1235,7 @@ Catalog.Products = {
 		-- time (profile.season.premium). One product, reused every season; the
 		-- old permanent game pass (Passes.season) keeps unlocking every season
 		-- for whoever bought it.
-		seasonPass = { id = 0, price = 199, seasonPass = true, name = text("Passe da Temporada", "Season Pass"),
+		seasonPass = { id = 0, price = 199, seasonPass = true, name = text("Trilha Premium da Temporada", "Premium Season Track"),
 			description = text("Trilha premium desta temporada: o dobro de Ouro, mais baús, um título e o herói brilhante da temporada no nível 30.", "This season's premium track: double the Gold, more chests, a title and the season's shiny hero at level 30.") },
 		-- A timed boost: lobby Gold from waves and victories is doubled while it
 		-- lasts. Buying it again adds another hour to the end. The server keeps
@@ -1222,7 +1256,7 @@ Catalog.Products = {
 }
 for _, heroId in ipairs(Catalog.HeroOrder) do
 	local hero = Catalog.Heroes[heroId]
-	if not hero.starter then
+	if not hero.starter and not hero.exclusive then
 		Catalog.Products.Heroes[heroId] = { id = 0, price = Catalog.Rarities[hero.rarity].robux, name = hero.name, rarity = hero.rarity }
 	end
 end
@@ -1232,21 +1266,22 @@ end
 -- pool before merging their presentation. No saved hero/base/chest ID changes.
 local acquisitionOrder = Catalog.RarityOrder
 local acquisitionRarities = Catalog.Rarities
-local mergedRarity = { common="common", rare="common", epic="rare", legendary="legendary", mythic="legendary" }
+local mergedRarity = { common="common", rare="common", epic="rare", legendary="legendary", mythic="legendary", supreme="supreme" }
 for _, id in ipairs(Catalog.ChestOrder) do
 	local chest = Catalog.Chests[id]
 	local sourceOdds, sourcePity = chest.odds, chest.pity
 	local floor = sourcePity and table.find(acquisitionOrder,sourcePity.minimum) or 4
-	chest.groups, chest.odds = {}, {common=0,rare=0,legendary=0}
+	chest.groups, chest.odds = {}, {common=0,rare=0,legendary=0,supreme=0}
 	local items = chest.kind=="base" and Catalog.Bases or Catalog.Heroes
 	local order = chest.kind=="base" and Catalog.BaseOrder or Catalog.HeroOrder
 	for index, rarity in ipairs(acquisitionOrder) do
 		local pool, size = {}, 0
 		for _, itemId in ipairs(order) do
 			local item=items[itemId]
-			if item.rarity==rarity and (not chest.bases or table.find(chest.bases,itemId)) then
+			if item.rarity==rarity and (not chest.bases or table.find(chest.bases,itemId)) and (not chest.heroes or table.find(chest.heroes,itemId)) then
 				size+=1
-				if not item.starter then table.insert(pool,itemId) end
+				-- Starters are never drawn, unless the chest names them itself.
+				if not item.starter or chest.heroes then table.insert(pool,itemId) end
 			end
 		end
 		local weight=sourceOdds[rarity] or 0
@@ -1272,23 +1307,22 @@ for _, id in ipairs(Catalog.BaseOrder) do
 	base.economy={duplicate=acquisitionRarities[base.rarity].duplicate}
 	base.rarity=mergedRarity[base.rarity]
 end
-Catalog.RarityOrder={"common","rare","legendary"}
+Catalog.RarityOrder={"common","rare","legendary","supreme"}
 Catalog.Rarities={
 	common={id="common",name=text("Comum","Common"),color={190,200,212}},
 	rare={id="rare",name=text("Raro","Rare"),color={84,170,255}},
 	legendary={id="legendary",name=text("Lendário","Legendary"),color={255,188,62}},
+	supreme={id="supreme",name=text("Supremo","Supreme"),color={60,220,110}},
 }
 Catalog.HeroCards.copiesPerDuplicate=nil -- Per-hero compensation stays intact.
 -- Match cards use the same three names without changing their draw weights.
 Catalog.CardRarityWeight={common=60,rare=30,legendary=10}
 for _, card in pairs(Catalog.Cards) do if card.rarity=="epic" then card.rarity="legendary" end end
-local chestNames={supply=text("Suprimentos","Supplies"),rare=text("Baú da Aliança","Alliance chest"),
-	epic=text("Baú da Vanguarda","Vanguard chest"),legendary=text("Baú das Lendas","Legends chest"),cosmic=text("Baú Cósmico","Cosmic chest")}
+local chestNames={supply=text("Suprimentos","Supplies"),rare=text("Baú da Aliança","Alliance chest"),cosmic=text("Baú Cósmico","Cosmic chest")}
 for id,name in pairs(chestNames) do
 	Catalog.Chests[id].name=name
 	if Catalog.Chests["base_"..id] then Catalog.Chests["base_"..id].name=name end
 end
-Catalog.Chests.rare.description=text("Uma nova força para sua equipe. Veja as chances de cada herói.","A new force for your squad. Check each hero's odds.")
 Catalog.Products.Consumables.starterPack.description=text("Uma vez por conta: Gigante Furioso (raro) + 5.000 de Ouro.","Once per account: Raging Giant (rare) + 5,000 Gold.")
 -- (No anti-air role: every hero hits flyers since 16/10.)
 Catalog.HeroRoles={area={name=text("Área","Area")},control={name=text("Controle","Control")},support={name=text("Apoio","Support")}}
