@@ -700,7 +700,7 @@ local HERO_LOOK = {
 	-- The event hero (owner, 17/10, with pictures): a man in a dark suit and a
 	-- yellow tie, seated high on a dinosaur (HERO_EXTRAS builds the mount). Cloth,
 	-- not armour: matte.
-	flavio = { body = { lift = 2.7, ride = 1.15 }, colors = { chest = Color3.fromRGB(38, 46, 70), pelvis = Color3.fromRGB(34, 40, 62), upperArm = Color3.fromRGB(38, 46, 70), lowerArm = Color3.fromRGB(38, 46, 70), hand = HC.skin, upperLeg = Color3.fromRGB(34, 40, 62), lowerLeg = Color3.fromRGB(34, 40, 62), foot = HC.ink }, face = "grin", hair = { Color3.fromRGB(62, 46, 36), "fringe" }, matte = true },
+	flavio = { body = { lift = 2.3, ride = 1.2, width = 1.14, chest = 1.16, arm = 1.08 }, colors = { chest = Color3.fromRGB(44, 54, 84), pelvis = Color3.fromRGB(38, 47, 74), upperArm = Color3.fromRGB(44, 54, 84), lowerArm = Color3.fromRGB(44, 54, 84), hand = HC.skin, upperLeg = Color3.fromRGB(38, 47, 74), lowerLeg = Color3.fromRGB(38, 47, 74), foot = HC.ink }, face = "fierce", hair = { Color3.fromRGB(56, 40, 30), "fringe" }, matte = true },
 }
 Figure.HeroLook = HERO_LOOK
 
@@ -1779,83 +1779,136 @@ HERO_EXTRAS.strange = function(f)
 	muzzle(f, "LeftHand", Vector3.new(0, -0.42 * s, -0.62 * s))
 end
 HERO_EXTRAS.flavio = function(f)
-	local s, c = f.scale, f.sizes.chest
-	local suit, shirt, tie = Color3.fromRGB(38, 46, 70), Color3.fromRGB(240, 242, 246), Color3.fromRGB(246, 200, 40)
-	local hide, belly, ink = Color3.fromRGB(150, 112, 70), Color3.fromRGB(196, 160, 112), FIGURE_INK
-	local leather, steel, fire = Color3.fromRGB(102, 64, 38), Color3.fromRGB(196, 202, 210), Color3.fromRGB(255, 130, 30)
-	-- The rider: a suit jacket over a white shirt and a yellow tie.
-	f.add("UpperTorso", "SuitJacket", c * Vector3.new(1.06, 1.02, 1.08), CFrame.new(), suit, FABRIC)
-	local front = -c.Z * 0.54
-	f.add("UpperTorso", "ShirtFront", Vector3.new(c.X * 0.3, c.Y * 0.62, 0.06 * s), CFrame.new(0, c.Y * 0.16, front - 0.03 * s), shirt, FABRIC)
-	f.add("UpperTorso", "Tie", Vector3.new(0.17 * s, c.Y * 0.56, 0.05 * s), CFrame.new(0, c.Y * 0.04, front - 0.07 * s), tie, FABRIC)
-	f.add("UpperTorso", "TieKnot", Vector3.new(0.24 * s, 0.18 * s, 0.07 * s), CFrame.new(0, c.Y * 0.36, front - 0.08 * s), tie, FABRIC)
-	f.add("UpperTorso", "ShirtCollar", Vector3.new(c.X * 0.46, 0.16 * s, c.Z * 0.62), CFrame.new(0, c.Y / 2 + 0.02 * s, 0), shirt, FABRIC)
-	for _, side in ipairs({ -1, 1 }) do
-		f.rod("UpperTorso", "Lapel", Vector3.new(side * c.X * 0.08, c.Y * 0.46, front - 0.05 * s), Vector3.new(side * c.X * 0.26, -c.Y * 0.06, front - 0.05 * s), 0.14 * s, Color3.fromRGB(26, 32, 50), FABRIC)
-		f.add(side < 0 and "LeftHand" or "RightHand", "Cuff", f.sizes.hand * Vector3.new(1.08, 0.28, 1.08), CFrame.new(0, f.sizes.hand.Y * 0.4, 0), shirt, FABRIC)
-	end
-	-- The flamethrower, held like a rifle: a fuel body, a long barrel and a
-	-- nozzle with a pilot flame; shots leave from its tip.
-	f.add("RightHand", "FuelBody", Vector3.new(0.56 * s, 0.8 * s, 0.56 * s), CFrame.new(-0.1 * s, -0.42 * s, -0.16 * s), steel, METAL)
-	f.add("RightHand", "Flamethrower", Vector3.new(0.34 * s, 1.9 * s, 0.34 * s), CFrame.new(-0.1 * s, -1.2 * s, -0.16 * s), Color3.fromRGB(120, 78, 44), FABRIC)
-	f.add("RightHand", "Nozzle", Vector3.new(0.5 * s, 0.32 * s, 0.5 * s), CFrame.new(-0.1 * s, -2.2 * s, -0.16 * s), Color3.fromRGB(60, 64, 72), METAL)
-	f.add("RightHand", "PilotFlame", Vector3.new(0.5 * s, 0.6 * s, 0.5 * s), CFrame.new(-0.1 * s, -2.62 * s, -0.16 * s), fire, NEON, "ball")
-	muzzle(f, "RightHand", Vector3.new(-0.1 * s, -2.8 * s, -0.16 * s))
-	-- The mount: a dinosaur standing on the ground under the rider, welded to
-	-- the root so it stays planted while the rider aims and recoils.
-	local pelvis = f.parts.LowerTorso
-	local back = pelvis.Position.Y - pelvis.Size.Y / 2
-	local function dino(name, size, at, color, surface, shape, turn)
-		return f.add("HumanoidRootPart", name, size * s, CFrame.new(at.X * s, back + at.Y * s, at.Z * s) * (turn or CFrame.new()), color, surface or FABRIC, shape)
-	end
+	local s, c, h = f.scale, f.sizes.chest, f.parts.Head.Size
 	local V = Vector3.new
-	dino("DinoBody", V(2.3, 2.5, 4.2), V(0, -1.05, 0.4), hide, FABRIC, "ball")
-	dino("DinoBelly", V(1.9, 1.5, 3.2), V(0, -1.8, 0.1), belly, FABRIC, "ball")
-	dino("DinoNeck", V(1.35, 2.1, 1.45), V(0, 0.2, -1.85), hide, FABRIC, "ball", CFrame.Angles(-0.5, 0, 0))
-	dino("DinoHead", V(1.6, 1.35, 2.2), V(0, 1.35, -2.95), hide)
-	dino("DinoSnout", V(1.3, 0.85, 1.0), V(0, 1.18, -4.4), hide)
-	dino("DinoJaw", V(1.36, 0.45, 2.0), V(0, 0.5, -3.55), belly, FABRIC, nil, CFrame.Angles(-0.22, 0, 0))
-	dino("DinoTeeth", V(1.18, 0.2, 1.7), V(0, 0.74, -3.85), Color3.fromRGB(246, 242, 228))
-	dino("DinoTongue", V(0.8, 0.12, 1.2), V(0, 0.6, -3.4), Color3.fromRGB(200, 70, 80))
+	local suit, suitDark, shirt, tie = Color3.fromRGB(44, 54, 84), Color3.fromRGB(30, 37, 60), Color3.fromRGB(242, 244, 248), Color3.fromRGB(250, 204, 36)
+	local skin = HC.skin
+	-- The rider (owner, 17/10: "o Flávio chad"): a square jaw, hair slicked to
+	-- one side, a broad suit with lapels, a white shirt and a yellow tie.
+	-- A broad, heavy jaw just behind the face (the mouth stays in front of it)
+	-- and a strong chin under it.
+	f.add("Head", "Jawline", V(h.X * 1.02, h.Y * 0.5, h.Z * 0.9), CFrame.new(0, -h.Y * 0.22, h.Z * 0.03), skin, FABRIC, "ball")
+	f.add("Head", "Chin", V(h.X * 0.46, h.Y * 0.18, h.Z * 0.24), CFrame.new(0, -h.Y * 0.43, -h.Z * 0.33), skin, FABRIC, "ball")
+	f.add("Head", "HairSweep", V(h.X * 0.9, h.Y * 0.3, h.Z * 0.5), CFrame.new(-h.X * 0.08, h.Y * 0.46, -h.Z * 0.22) * CFrame.Angles(0.25, 0, 0.16), Color3.fromRGB(56, 40, 30), FABRIC, "ball")
+	f.add("UpperTorso", "SuitJacket", c * V(1.08, 1.03, 1.1), CFrame.new(), suit, FABRIC)
+	local front = -c.Z * 0.55
+	f.add("UpperTorso", "ShirtFront", V(c.X * 0.32, c.Y * 0.64, 0.06 * s), CFrame.new(0, c.Y * 0.15, front - 0.03 * s), shirt, FABRIC)
+	f.add("UpperTorso", "Tie", V(0.2 * s, c.Y * 0.6, 0.05 * s), CFrame.new(0, c.Y * 0.02, front - 0.07 * s), tie, FABRIC)
+	f.add("UpperTorso", "TieKnot", V(0.28 * s, 0.2 * s, 0.07 * s), CFrame.new(0, c.Y * 0.37, front - 0.08 * s), tie, FABRIC)
+	f.add("UpperTorso", "ShirtCollar", V(c.X * 0.48, 0.18 * s, c.Z * 0.64), CFrame.new(0, c.Y / 2 + 0.02 * s, 0), shirt, FABRIC)
+	f.add("UpperTorso", "PocketSquare", V(0.26 * s, 0.14 * s, 0.05 * s), CFrame.new(-c.X * 0.3, c.Y * 0.22, front - 0.04 * s), shirt, FABRIC)
+	for index = 0, 1 do
+		f.add("UpperTorso", "JacketButton", V(0.1 * s, 0.1 * s, 0.05 * s), CFrame.new(c.X * 0.13, -c.Y * (0.12 + index * 0.2), front - 0.04 * s), suitDark, FABRIC, "ball")
+	end
 	for _, side in ipairs({ -1, 1 }) do
-		dino("DinoEye", V(0.36, 0.36, 0.36), V(side * 0.7, 1.62, -3.35), Color3.fromRGB(255, 196, 40), FABRIC, "ball")
-		dino("DinoPupil", V(0.16, 0.22, 0.16), V(side * 0.84, 1.62, -3.38), ink, FABRIC, "ball")
-		dino("DinoBrow", V(0.42, 0.18, 0.7), V(side * 0.6, 1.9, -3.3), hide:Lerp(ink, 0.3))
-		dino("DinoNostril", V(0.14, 0.14, 0.14), V(side * 0.32, 1.48, -4.88), ink, FABRIC, "ball")
-		-- Legs: a heavy thigh, a shin down to a three-clawed foot on the ground.
-		local thighBottom = -2.9
-		dino("DinoThigh", V(1.05, 2.0, 1.75), V(side * 1.05, -1.95, 0.9), hide, FABRIC, "ball")
-		local footTop = 0.45 - back / s
-		local shinLength = math.max(0.6, thighBottom - footTop + 0.3)
-		dino("DinoShin", V(0.66, shinLength, 0.76), V(side * 1.05, footTop + shinLength / 2 - 0.15, 1.0), hide)
-		dino("DinoFoot", V(0.92, 0.45, 1.6), V(side * 1.05, footTop - 0.225, 0.45), hide:Lerp(ink, 0.15))
-		for claw = -1, 1 do
-			dino("DinoClaw", V(0.18, 0.22, 0.42), V(side * 1.05 + claw * 0.3, footTop - 0.34, -0.45), ink)
+		f.rod("UpperTorso", "Lapel", V(side * c.X * 0.09, c.Y * 0.47, front - 0.05 * s), V(side * c.X * 0.27, -c.Y * 0.05, front - 0.05 * s), 0.16 * s, suitDark, FABRIC)
+		f.add(side < 0 and "LeftHand" or "RightHand", "Cuff", f.sizes.hand * V(1.1, 0.3, 1.1), CFrame.new(0, f.sizes.hand.Y * 0.42, 0), shirt, FABRIC)
+		f.add(side < 0 and "LeftUpperArm" or "RightUpperArm", "SuitShoulder", f.sizes.upperArm * V(1.18, 0.46, 1.16), CFrame.new(0, f.sizes.upperArm.Y * 0.3, 0), suit, FABRIC)
+	end
+	-- The flamethrower, held like a rifle: a wooden stock, a steel barrel with
+	-- its fuel canister, a brass nozzle and a flame that never goes out.
+	local wood, steel, brass = Color3.fromRGB(122, 80, 46), Color3.fromRGB(150, 158, 170), Color3.fromRGB(214, 160, 60)
+	local x, z = -0.1 * s, -0.16 * s
+	f.add("RightHand", "GunStock", V(0.42 * s, 0.9 * s, 0.5 * s), CFrame.new(x, 0.25 * s, z), wood, FABRIC)
+	f.add("RightHand", "FuelCanister", V(0.62 * s, 0.9 * s, 0.62 * s), CFrame.new(x, -0.5 * s, z - 0.12 * s), steel, METAL)
+	f.add("RightHand", "Flamethrower", V(0.36 * s, 2.2 * s, 0.36 * s), CFrame.new(x, -1.3 * s, z), Color3.fromRGB(80, 86, 96), METAL)
+	f.add("RightHand", "BarrelGuard", V(0.46 * s, 0.9 * s, 0.46 * s), CFrame.new(x, -1.0 * s, z), wood, FABRIC)
+	f.add("RightHand", "Nozzle", V(0.56 * s, 0.4 * s, 0.56 * s), CFrame.new(x, -2.5 * s, z), brass, METAL)
+	f.add("RightHand", "FlamePlume", V(0.75 * s, 1.1 * s, 0.75 * s), CFrame.new(x, -3.15 * s, z), Color3.fromRGB(255, 120, 30), NEON, "ball")
+	f.add("RightHand", "FlameCore", V(0.42 * s, 0.7 * s, 0.42 * s), CFrame.new(x, -2.95 * s, z), Color3.fromRGB(255, 214, 80), NEON, "ball")
+	muzzle(f, "RightHand", V(x, -3.4 * s, z))
+	-- The mount: a T. rex standing on the ground under the rider, welded to
+	-- the root so it stays planted while the rider aims and recoils. Heavy and
+	-- low: big thighs, thick shins, three-clawed feet, a huge head with its
+	-- jaws open, a long tail; a saddle with its girth, stirrups under the
+	-- rider's feet, two gas tanks and a green bandana with a yellow hem.
+	local hide, hideDark, belly, ink = Color3.fromRGB(150, 110, 68), Color3.fromRGB(112, 80, 50), Color3.fromRGB(204, 170, 118), FIGURE_INK
+	local leather, red = Color3.fromRGB(96, 60, 36), Color3.fromRGB(196, 44, 40)
+	local pelvis = f.parts.LowerTorso
+	local back = (pelvis.Position.Y - pelvis.Size.Y / 2) / s
+	-- Every point below is in body units: y measured from the saddle (back) up.
+	local function at(px, py, pz) return V(px * s, (back + py) * s, pz * s) end
+	local function dino(name, size, px, py, pz, color, surface, shape, turn)
+		return f.add("HumanoidRootPart", name, size * s, CFrame.new(at(px, py, pz)) * (turn or CFrame.new()), color, surface or FABRIC, shape)
+	end
+	local function limb(name, from, to, thick, color)
+		return f.rod("HumanoidRootPart", name, from, to, thick * s, color, FABRIC)
+	end
+	local ground = -back
+	dino("DinoBody", V(3.0, 3.0, 5.0), 0, -1.3, 0.5, hide, FABRIC, "ball")
+	dino("DinoBelly", V(2.5, 2.0, 3.8), 0, -2.0, 0.1, belly, FABRIC, "ball")
+	dino("DinoChest", V(2.5, 2.5, 2.3), 0, -1.1, -1.7, hide, FABRIC, "ball")
+	dino("DinoNeck", V(2.0, 2.7, 2.1), 0, 0.3, -2.45, hide, FABRIC, "ball", CFrame.Angles(-0.45, 0, 0))
+	-- The head: skull, snout, a dark brow ridge, cheeks, eyes with slit pupils.
+	dino("DinoSkull", V(2.2, 1.7, 2.8), 0, 1.7, -3.7, hide)
+	dino("DinoSnout", V(1.8, 1.2, 1.5), 0, 1.55, -5.65, hide)
+	dino("DinoBrowRidge", V(2.3, 0.4, 1.0), 0, 2.6, -3.75, hideDark)
+	dino("DinoMouth", V(1.6, 0.45, 2.7), 0, 0.82, -4.6, Color3.fromRGB(110, 30, 34))
+	dino("DinoJaw", V(1.9, 0.5, 2.4), 0, 0.3, -4.45, belly, FABRIC, nil, CFrame.Angles(-0.45, 0, 0))
+	dino("DinoTongue", V(0.9, 0.16, 1.4), 0, 0.72, -4.3, Color3.fromRGB(214, 90, 104))
+	for _, side in ipairs({ -1, 1 }) do
+		dino("DinoCheek", V(0.9, 0.9, 1.2), side * 0.95, 1.35, -3.1, hide, FABRIC, "ball")
+		dino("DinoEye", V(0.46, 0.46, 0.46), side * 1.05, 2.15, -3.85, Color3.fromRGB(255, 196, 40), FABRIC, "ball")
+		dino("DinoPupil", V(0.12, 0.36, 0.12), side * 1.27, 2.15, -3.88, ink)
+		dino("DinoNostril", V(0.18, 0.18, 0.18), side * 0.42, 1.95, -6.38, ink, FABRIC, "ball")
+		-- Teeth along the upper jaw and on the lower one.
+		for tooth = 0, 4 do
+			dino("DinoTooth", V(0.18, 0.34, 0.2), side * 0.72, 0.84, -3.75 - tooth * 0.55, Color3.fromRGB(248, 244, 230), FABRIC, "wedge", CFrame.Angles(math.pi, 0, 0))
 		end
-		-- The little arms.
-		dino("DinoArm", V(0.32, 0.95, 0.34), V(side * 0.62, -0.75, -1.95), hide, FABRIC, nil, CFrame.Angles(-0.8, 0, 0))
-		-- Stirrups hang from the saddle.
-		f.rod("HumanoidRootPart", "StirrupStrap", Vector3.new(side * 1.0 * s, back, 0.1 * s), Vector3.new(side * 1.25 * s, back - 1.7 * s, -0.25 * s), 0.1 * s, leather, FABRIC)
-		dino("Stirrup", V(0.5, 0.12, 0.5), V(side * 1.25, -1.75, -0.25), ink, METAL)
+		for tooth = 0, 2 do
+			dino("DinoTooth", V(0.16, 0.28, 0.18), side * 0.68, 0.66 - tooth * 0.24, -3.9 - tooth * 0.5, Color3.fromRGB(248, 244, 230), FABRIC, "wedge")
+		end
+		-- A heavy leg: thigh, shin down and back, the upright foot bones, the foot.
+		local lx = side * 1.3
+		dino("DinoThigh", V(1.7, 2.9, 2.5), lx, -2.25, 1.0, hide, FABRIC, "ball")
+		local knee, ankle, ball = at(lx, -3.4, 1.5), at(lx, ground + 1.7, 2.05), at(lx, ground + 0.45, 1.3)
+		limb("DinoShin", knee, ankle, 1.05, hide)
+		limb("DinoShank", ankle, ball, 0.85, hide)
+		dino("DinoHeel", V(0.95, 0.95, 0.95), lx, ground + 1.7, 2.05, hide, FABRIC, "ball")
+		dino("DinoFoot", V(1.4, 0.5, 2.1), lx, ground + 0.25, 0.55, hideDark)
+		for claw = -1, 1 do
+			dino("DinoClaw", V(0.26, 0.32, 0.6), lx + claw * 0.44, ground + 0.22, -0.65, ink, FABRIC, "wedge", CFrame.Angles(0, math.pi, 0))
+		end
+		-- The little arms, each with two claws.
+		limb("DinoArm", at(side * 0.95, -1.0, -2.2), at(side * 1.05, -1.75, -2.85), 0.42, hide)
+		dino("DinoArmClaw", V(0.14, 0.14, 0.34), side * 1.05, -1.85, -3.05, ink)
+		-- The saddle's girth strap and a stirrup under the rider's foot.
+		limb("SaddleGirth", at(side * 1.45, 0.05, 0.35), at(side * 1.25, -2.7, 0.35), 0.2, leather)
+		local footPart = f.parts[side < 0 and "LeftFoot" or "RightFoot"]
+		local under = footPart.Position - V(0, footPart.Size.Y / 2 + 0.06 * s, 0)
+		f.add("HumanoidRootPart", "Stirrup", V(0.9, 0.12, 0.7) * s, CFrame.new(under), ink, METAL)
+		f.rod("HumanoidRootPart", "StirrupStrap", at(side * 1.2, 0.0, 0.2), under + V(side * 0.36 * s, 0, 0), 0.1 * s, leather, FABRIC)
 		-- Reins from the jaw to the saddle horn.
-		f.rod("HumanoidRootPart", "Rein", Vector3.new(side * 0.55 * s, back + 1.05 * s, -3.2 * s), Vector3.new(side * 0.12 * s, back + 0.4 * s, -0.75 * s), 0.07 * s, leather, FABRIC)
+		f.rod("HumanoidRootPart", "Rein", at(side * 0.8, 1.15, -4.2), at(side * 0.14, 0.5, -0.75), 0.08 * s, leather, FABRIC)
 	end
-	dino("DinoTail", V(1.5, 1.5, 2.4), V(0, -0.95, 2.9), hide, FABRIC, "ball")
-	dino("DinoTailMid", V(0.95, 0.95, 2.2), V(0, -1.3, 4.65), hide, FABRIC, "ball")
-	dino("DinoTailTip", V(0.5, 0.5, 1.8), V(0, -1.55, 6.25), hide, FABRIC, "ball")
-	-- A green bandana with a yellow hem round the neck (no emblem).
-	dino("Bandana", V(1.62, 0.7, 1.62), V(0, -0.25, -2.05), Color3.fromRGB(30, 150, 70), FABRIC, "ball")
-	dino("BandanaHem", V(1.7, 0.16, 1.7), V(0, -0.58, -2.05), Color3.fromRGB(250, 210, 40), FABRIC, Enum.PartType.Cylinder, CFrame.Angles(0, 0, math.pi / 2))
-	-- The saddle and, behind it, the flamethrower's gas tanks.
-	dino("Saddle", V(1.7, 0.3, 1.7), V(0, 0.05, 0.15), leather)
-	dino("SaddleBlanket", V(2.2, 0.12, 2.1), V(0, -0.06, 0.2), Color3.fromRGB(150, 36, 40))
-	dino("SaddleHorn", V(0.26, 0.5, 0.26), V(0, 0.4, -0.75), leather)
+	-- A long tail, thick at the hips and thin at the tip, a little raised.
+	dino("DinoTail", V(2.3, 2.1, 3.0), 0, -1.0, 3.5, hide, FABRIC, "ball")
+	dino("DinoTailMid", V(1.55, 1.45, 2.8), 0, -0.85, 5.6, hide, FABRIC, "ball")
+	dino("DinoTailEnd", V(0.95, 0.9, 2.4), 0, -0.6, 7.4, hide, FABRIC, "ball")
+	dino("DinoTailTip", V(0.5, 0.5, 1.7), 0, -0.3, 8.8, hideDark, FABRIC, "ball")
+	-- Darker stripes over the back and the tail.
+	for index, stripe in ipairs({ { -1.1, 2.4, 2.9 }, { 2.3, 2.25, 2.0 }, { 4.6, 1.6, 1.5 }, { 6.6, 1.05, 1.0 } }) do
+		dino("DinoStripe", V(stripe[2], 0.32, 0.42), 0, (index == 1 and 0.1 or -0.05) - (index - 1) * 0.08, stripe[1], hideDark, FABRIC, "ball")
+	end
+	-- The green bandana knotted round the neck, its point down the chest.
+	dino("BandanaCollar", V(2.15, 0.85, 2.25), 0, -0.35, -2.25, Color3.fromRGB(28, 150, 70), FABRIC, "ball")
+	-- Its point: a square turned on its corner, the upper half hidden in the
+	-- collar, lying on the chest.
+	dino("Bandana", V(1.35, 1.35, 0.2), 0, -0.95, -2.95, Color3.fromRGB(28, 150, 70), FABRIC, nil, CFrame.Angles(0.45, 0, math.pi / 4))
+	dino("BandanaHem", V(1.5, 1.5, 0.14), 0, -0.95, -2.9, Color3.fromRGB(250, 212, 40), FABRIC, nil, CFrame.Angles(0.45, 0, math.pi / 4))
+	-- The saddle: a leather seat with a raised back, a horn and a red blanket.
+	dino("SaddleBlanket", V(2.5, 0.14, 2.3), 0, -0.05, 0.3, red)
+	dino("Saddle", V(1.9, 0.34, 1.9), 0, 0.1, 0.3, leather)
+	dino("SaddleBack", V(1.9, 0.62, 0.34), 0, 0.38, 1.2, leather)
+	dino("SaddleHorn", V(0.28, 0.6, 0.28), 0, 0.45, -0.75, leather)
+	-- Two gas tanks on a rack behind the saddle, and the hose to the gun.
+	dino("TankRack", V(1.8, 0.2, 1.0), 0, 0.12, 1.85, ink, METAL)
 	for _, side in ipairs({ -1, 1 }) do
-		dino("GasTank", V(1.4, 0.66, 0.66), V(side * 0.38, 0.85, 1.45), steel, METAL, Enum.PartType.Cylinder, CFrame.Angles(0, 0, math.pi / 2))
-		dino("TankLabel", V(0.42, 0.7, 0.7), V(side * 0.38, 0.75, 1.45), Color3.fromRGB(200, 44, 40), FABRIC, Enum.PartType.Cylinder, CFrame.Angles(0, 0, math.pi / 2))
-		dino("TankValve", V(0.2, 0.22, 0.2), V(side * 0.38, 1.65, 1.45), ink, METAL)
+		dino("GasTank", V(1.9, 0.8, 0.8), side * 0.45, 1.15, 1.85, Color3.fromRGB(196, 202, 210), METAL, Enum.PartType.Cylinder, CFrame.Angles(0, 0, math.pi / 2))
+		dino("TankLabel", V(0.55, 0.84, 0.84), side * 0.45, 0.95, 1.85, red, FABRIC, Enum.PartType.Cylinder, CFrame.Angles(0, 0, math.pi / 2))
+		dino("TankCap", V(0.32, 0.5, 0.5), side * 0.45, 2.15, 1.85, Color3.fromRGB(214, 160, 60), METAL, Enum.PartType.Cylinder, CFrame.Angles(0, 0, math.pi / 2))
 	end
-	f.rod("HumanoidRootPart", "Hose", Vector3.new(0.38 * s, back + 1.7 * s, 1.45 * s), Vector3.new(0.7 * s, back + 0.2 * s, 0.4 * s), 0.12 * s, ink, FABRIC)
+	f.rod("HumanoidRootPart", "Hose", at(0.45, 2.3, 1.85), at(0.95, 0.2, 0.2), 0.14 * s, ink, FABRIC)
 end
 HERO_EXTRAS.ghostrider = function(f)
 	local s, h, c = f.scale, f.parts.Head.Size, f.sizes.chest
@@ -3231,7 +3284,7 @@ local LIVING_POWERS = {
 	PhotonGauntlet = "pulse", StormSigil = "pulse", EmberSigil = "pulse", HammerRune = "pulse", ChestRingCore = "pulse",
 	MagmaVein = "pulse", MagmaCrack = "pulse", VeinCore = "pulse", GlowBud = "pulse",
 	Lasso = "pulse", BoltTop = "pulse", BoltBottom = "pulse", TideEmblem = "pulse", CircletGem = "pulse", ChestRing = "pulse",
-	PilotFlame = "flicker",
+	PilotFlame = "flicker", FlamePlume = "flicker", FlameCore = "flicker",
 }
 -- Tags a piece for the client to move (Motion.Accents): orbit (rad/s) round
 -- an axis through a pivot in its host's frame, flicker or pulse.
