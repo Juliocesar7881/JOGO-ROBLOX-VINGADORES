@@ -3726,7 +3726,11 @@ local function session(screen)
 		local cover = playerGui:FindFirstChild("DoomReturnCover")
 		check(cover ~= nil and cover:FindFirstChild("LoadingSplash", true) ~= nil, tag .. ": the way back to the lobby is covered by the loading screen")
 		if cover then cover:Destroy() end
+		-- On the battlefield the lobby is out of this client's workspace (owner,
+		-- 17/10: maps stuttered behind it); the lobby snapshot brings it back.
+		check(workspace:FindFirstChild("DoomLobby") == nil, tag .. ": the lobby is not drawn behind the battlefield")
 		push(lobbySnapshot(profile))
+		check(workspace:FindFirstChild("DoomLobby") ~= nil, tag .. ": back home the lobby is drawn again at once")
 	end)
 
 	step("switching to English re-renders in English", function()

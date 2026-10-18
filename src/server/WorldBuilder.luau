@@ -4997,7 +4997,10 @@ function World:DressAvatar(character, heroId)
 	for _, item in ipairs(figure:GetDescendants()) do
 		if item:IsA("Motor6D") then item:Destroy()
 		elseif item:IsA("BasePart") then
-			item.Anchored, item.CanCollide, item.CanQuery, item.CanTouch, item.Massless, item.CastShadow = false, false, false, false, true, true
+			-- Only the body casts a shadow: the costume's dozens of small pieces
+			-- would add shadow work every frame for no visible difference.
+			item.Anchored, item.CanCollide, item.CanQuery, item.CanTouch, item.Massless = false, false, false, false, true
+			item.CastShadow = table.find(SKIN_PARTS, item.Name) ~= nil
 		elseif item:IsA("ParticleEmitter") or item:IsA("PointLight") then item.Enabled = false end
 	end
 	local root = figure:FindFirstChild("HumanoidRootPart")
@@ -5008,6 +5011,11 @@ function World:DressAvatar(character, heroId)
 			local weld = Instance.new("Weld")
 			weld.Name, weld.Part0, weld.Part1 = "SkinWeld", theirs, mine
 			weld.Parent = mine
+			-- Never the avatar's own part names: the Animator matches poses to
+			-- parts by name, and a second "RightLowerArm" under the character
+			-- bent the real elbow up by 110 degrees (owner, 17/10: "braço
+			-- sempre levantado").
+			mine.Name = "Skin" .. name
 		elseif mine then
 			mine:Destroy()
 		end
@@ -6262,7 +6270,8 @@ local function buildModePortal(lobby,x,z,portalId,mode,destination,map,photo)
 	-- back carry art in the destination's colour, a panel with the map's
 	-- gradient, three glowing rings echoing the doors, a gold star and neon
 	-- trim. No text (nothing may stand in front of letters) and one part.
-	local backWall=part(model,"PortalBackWall",Vector3.new(32.6,10.4,0.8),at(0,5.7,-7.3),HQ.navy,Enum.Material.Metal)
+	-- It stands on the ground: half a stud of light showed under it (owner, 17/10).
+	local backWall=part(model,"PortalBackWall",Vector3.new(32.6,11,0.8),at(0,5.4,-7.3),HQ.navy,Enum.Material.Metal)
 	backWall.CastShadow=true
 	backPanel(backWall,Enum.NormalId.Front,tint,true)
 	-- A thick navy frame, a neon rim in the map's colour and gold studs: the
@@ -6445,7 +6454,6 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 		Kit.block(model,"HallPierFoot",Vector3.new(5.2,1.3,5.2),at(side*9.6,0.65,10),HQ.stoneWarm,Enum.Material.Slate,true)
 		Kit.block(model,"HallCapital",Vector3.new(5.1,0.7,5.1),at(side*9.6,15.5,10),HQ.gold,Enum.Material.Metal)
 		artPart(model,"SummonTrim",Vector3.new(0.25,12.5,0.2),at(side*9.6,7.5,12.15),HQ.gold,Enum.Material.Metal)
-		artPart(model,"EnergyConduit",Vector3.new(0.15,8,0.15),at(side*6.2,6,10.8),secondary,Enum.Material.Neon)
 		Kit.block(model,"HallBanner",Vector3.new(3.6,7.5,0.2),at(side*11.5,8,12.1),HQ.navy,Enum.Material.Fabric)
 		for _, edge in ipairs({-1,1}) do artPart(model,"HallBannerEdge",Vector3.new(0.12,7.5,0.15),at(side*11.5+edge*1.8,8,12.3),HQ.gold,Enum.Material.Metal) end
 		Kit.star(model,"HallBannerStar",at(side*11.5,8.6,12.35).Position,origin.RightVector,origin.UpVector,1.1,HQ.gold,Enum.Material.Metal,0.08)
@@ -6514,6 +6522,8 @@ local function buildChestStand(lobby,x,z,chestId,chest,openPanel,yaw)
 	pad.CanCollide=false
 	for i=1,2 do Kit.block(model,"HallEntranceStep",Vector3.new(12.8,0.22,1.6),at(0,0.11+(i-1)*0.22,19.1-(i-1)*1.6),HQ.stoneWarm,Enum.Material.Pavement,true) end
 	for _,side in ipairs({-1,1}) do artPart(model,"ShopEntryBorder",Vector3.new(0.3,0.15,12),at(side*5.65,0.77,11.5),tint,Enum.Material.Neon) end
+	-- The hint hangs on a lintel from pier to pier, not in the doorway's air.
+	Kit.block(model,"HallLintel",Vector3.new(15.4,2.2,0.6),at(0,11,10.4),HQ.navy,Enum.Material.Metal,true)
 	local plaque=wallSign(model,"SummonDoorHint",at(0,11,10.9)*CFrame.Angles(0,math.pi,0),Vector3.new(10.4,1.6,0.15),"APROXIME-SE","ESCOLHA • INVOQUE • EQUIPE",ART.pearl)
 	for _,node in ipairs(plaque:GetDescendants()) do
 		if node:IsA("TextLabel") then
@@ -6747,7 +6757,9 @@ function World.GroundStructures(root)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	local grounded = 0
+	local settled, berries = {}, {}
 	for _, part in ipairs(root:GetDescendants()) do
+		if part:IsA("BasePart") and part.Name == "BushBerry" then table.insert(berries, part) end
 		if not (part:IsA("BasePart") and part.Anchored and (part.Transparency or 0) < 0.9) then continue end
 		local cf, size = part.CFrame, part.Size
 		-- The part's vertical axis (a column is a cylinder lying on its X).
@@ -6775,6 +6787,7 @@ function World.GroundStructures(root)
 		if settle then
 			if centre > 0.3 and centre < 4 then
 				part.CFrame = cf - Vector3.new(0, centre + 0.3, 0)
+				table.insert(settled, { from = cf.Position, drop = centre + 0.3, reach = math.max(size.X, size.Z) })
 				grounded += 1
 			end
 		elseif worst > 0.4 then
@@ -6785,6 +6798,16 @@ function World.GroundStructures(root)
 			part:SetAttribute("Grounded", math.floor(grow * 10 + 0.5) / 10)
 			grounded += 1
 		end
+	end
+	-- A bush's berries go down with it: left behind they hung in the air as
+	-- little red balls over the grass (owner, 17/10).
+	for _, berry in ipairs(berries) do
+		local nearest, distance
+		for _, bush in ipairs(settled) do
+			local d = (bush.from - berry.Position).Magnitude
+			if d <= bush.reach and (not distance or d < distance) then nearest, distance = bush, d end
+		end
+		if nearest then berry.CFrame = berry.CFrame - Vector3.new(0, nearest.drop, 0) end
 	end
 	return grounded
 end
@@ -7395,7 +7418,7 @@ function World:BuildHeroTower(lobby)
 	title.TextColor3, title.Text, title.Parent = HQ.gold, "TORRE DOS HERÓIS", gui
 	title:SetAttribute("LobbyTextPT", "TORRE DOS HERÓIS"); title:SetAttribute("LobbyTextEN", "HEROES TOWER")
 	-- Shop identity belongs to a physical sign, not text floating in the bay.
-	local shopSign = wallSign(model, "PremiumShopSign", CFrame.new(base + V(0, 16, -16)), V(20, 4, 0.3), "LOJA • EQUIPAMENTOS", "ESCOLHA SUA VANTAGEM", HQ.gold)
+	local shopSign = wallSign(model, "PremiumShopSign", CFrame.new(base + V(0, 16, -15.2)), V(20, 4, 0.3), "LOJA • EQUIPAMENTOS", "ESCOLHA SUA VANTAGEM", HQ.gold)
 	for _, text in ipairs(shopSign:GetDescendants()) do
 		if text:IsA("TextLabel") then
 			local isTitle = text.Text == "LOJA • EQUIPAMENTOS"
@@ -7697,13 +7720,17 @@ function World:BuildAfkLounge(lobby, hq)
 			icon = Kit.block(model, "AfkIcon", V(4.2, 4.2, 4.2), CFrame.new(x, 6 + GROUND_Y, z), tint, Enum.Material.Neon)
 			icon.Shape = Enum.PartType.Ball
 		end
+		-- The icon turns on a post rising from the platform (owner, 17/10: "n
+		-- quero nd flutuando"); it spins in place and no longer bobs.
+		local iconBottom = 6 - (kind == "gold" and 2.5 or 2.1)
+		Kit.block(model, "AfkIconPost", V(0.9, iconBottom - 0.5, 0.9), CFrame.new(x, GROUND_Y + (iconBottom + 0.5) / 2, z), HQ.trim, Enum.Material.Metal, true)
 		emitter(icon, tint, 6, 2.5, 0.6, 1.6, V(0, 3, 0))
 		Kit.light(icon, tint, 16, 1)
 		label(icon, def.rate.pt, V(0, 4.2, 0), tint, 240, 70)
 		-- Seats face the plaza, so resting players watch the island go by.
 		for _, dz in ipairs({ -5, 0, 5 }) do
 			local seat = Instance.new("Seat")
-			seat.Name, seat.Size, seat.CFrame = "AfkSeat", V(3, 0.6, 2.4), CFrame.lookAt(V(x - 6, 1.2 + GROUND_Y, z + dz), V(x + 10, 1.2 + GROUND_Y, z + dz))
+			seat.Name, seat.Size, seat.CFrame = "AfkSeat", V(3, 0.6, 2.4), CFrame.lookAt(V(x - 6, 0.8 + GROUND_Y, z + dz), V(x + 10, 0.8 + GROUND_Y, z + dz))
 			seat.Anchored, seat.Color, seat.Material, seat.CastShadow = true, tint:Lerp(HQ.navy, 0.55), Enum.Material.Fabric, false
 			seat.Parent = model
 		end
@@ -9319,7 +9346,7 @@ function FACADES.industrial(folder, theme, rng, face, width, height, depth)
 	roofline(folder, face, width, height, depth, rib, Enum.Material.Metal)
 	prop(folder, "Beacon", Vector3.new(0.8, 0.8, 0.8), face * CFrame.new(width / 2 - 1, height + 1.3, -0.2), theme.accent, Enum.Material.Neon)
 	if rng:NextNumber() < 0.35 then
-		prop(folder, "Banner", Vector3.new(3.4, 8, 0.2), face * CFrame.new(rng:NextNumber(-width / 3, width / 3), height - 7, -0.6), theme.accent:Lerp(Color3.new(0, 0, 0), 0.3), Enum.Material.Fabric)
+		prop(folder, "Banner", Vector3.new(3.4, 8, 0.2), face * CFrame.new(rng:NextNumber(-width / 3, width / 3), height - 7, -0.55), theme.accent:Lerp(Color3.new(0, 0, 0), 0.3), Enum.Material.Fabric)
 	end
 	if rng:NextNumber() < 0.3 then
 		prop(folder, "Chimney", Vector3.new(16, 3, 3), upright(face * CFrame.new(width / 3, height + 8, depth / 2)), rib, Enum.Material.CorrodedMetal).Shape = Enum.PartType.Cylinder
@@ -9374,7 +9401,8 @@ function FACADES.castle(folder, theme, rng, face, width, height, depth)
 		end
 	end
 	if rng:NextNumber() < 0.45 then
-		prop(folder, "Banner", Vector3.new(3, 9, 0.2), face * CFrame.new(rng:NextNumber(-width / 4, width / 4), height - 6, -0.3), theme.accent, Enum.Material.Fabric)
+		-- Hung flat on the wall: a fifth of a stud off it, it floated (owner, 17/10).
+		prop(folder, "Banner", Vector3.new(3, 9, 0.2), face * CFrame.new(rng:NextNumber(-width / 4, width / 4), height - 6, -0.1), theme.accent, Enum.Material.Fabric)
 	end
 	if rng:NextNumber() < 0.4 then
 		-- A round tower rising above the wall, with a stepped slate roof.

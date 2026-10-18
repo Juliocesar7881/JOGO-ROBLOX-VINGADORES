@@ -1299,6 +1299,16 @@ if RunService:IsStudio() then
 			for _, player in ipairs(Players:GetPlayers()) do granted = profiles:StudioGrant(player, arg) or granted end
 			return granted
 		end
+		-- skin: every commander wears a hero's armour skin (arg = hero id,
+		-- the Iron armour by default), to look at it without owning the pass.
+		if command == "skin" then
+			local dressed = false
+			for _, player in ipairs(Players:GetPlayers()) do
+				local heroId = Catalog.Heroes[arg or ""] and arg or Catalog.Products.Passes.ironSkin.skinHero
+				dressed = (player.Character ~= nil and world:DressAvatar(player.Character, heroId)) or dressed
+			end
+			return dressed
+		end
 		if command == "panel" and type(arg) == "string" then
 			for _, player in ipairs(Players:GetPlayers()) do remotes.FX:FireClient(player, { kind = "OpenPanel", panel = arg }) end
 			return true

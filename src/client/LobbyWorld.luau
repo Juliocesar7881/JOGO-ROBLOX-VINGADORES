@@ -189,8 +189,35 @@ function LobbyWorld.new(ctx)
 			end
 		end
 	end
+	-- Only the place the commander stands in is drawn (owner, 17/10: "mapas
+	-- que dão stuterring"): the lobby's 4,300 parts, 80 lights and particles
+	-- stood behind every battlefield and were drawn whenever the camera looked
+	-- their way. While the commander is on the battlefield (a match phase,
+	-- within MAP_REACH of the map's centre: maps stay inside 104 studs, the
+	-- lobby begins at 350) the lobby leaves this client's workspace; it is back
+	-- the first frame they are anywhere else, before the trip home lands them.
+	-- Purely local: the server keeps the lobby and keeps replicating into it.
+	local MAP_REACH = 160
+	local hiddenLobby = nil
+	local function cullLobby(state)
+		local character = player and player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local position = root and root:IsA("BasePart") and root.Position
+		local onMap = state ~= nil and state.phase ~= "Lobby" and position ~= nil
+			and Vector3.new(position.X, 0, position.Z).Magnitude < MAP_REACH
+		if onMap and not hiddenLobby then
+			local lobby = workspace:FindFirstChild("DoomLobby")
+			if lobby then hiddenLobby = lobby; lobby.Parent = nil end
+		elseif not onMap and hiddenLobby then
+			local lobby = hiddenLobby
+			hiddenLobby = nil
+			-- A lobby rebuilt meanwhile replaced this one; never bring both.
+			if not workspace:FindFirstChild("DoomLobby") then pcall(function() lobby.Parent = workspace end) end
+		end
+	end
 	local function animateLobby(dt)
 		local state = ctx.state()
+		cullLobby(state)
 		if not state or state.phase ~= "Lobby" then return end
 		if profile().settings and profile().settings.lowFX then return end
 		if not lobbyProps or (lobbyProps[1] and lobbyProps[1].part.Parent == nil) then
@@ -211,7 +238,7 @@ function LobbyWorld.new(ctx)
 					collect(model, "Drone", 1.8, 0.25)
 					collect(model, "DroneRing", -1.2, 0.25)
 				elseif model:GetAttribute("Kind") == "AfkZone" then
-					collect(model, "AfkIcon", 1.4, 0.35)
+					collect(model, "AfkIcon", 1.4, 0)
 				end
 			end
 			idleFigures = {}
@@ -338,6 +365,8 @@ function LobbyWorld.new(ctx)
 	local updateWorldCosmetics
 	updateWorldCosmetics = function()
 		local state, language = ctx.state(), ctx.language()
+		-- A lobby snapshot brings the lobby back at once, not a frame later.
+		cullLobby(state)
 		for model,board in pairs(portalBoards) do
 			if not model.Parent then board:Destroy(); portalBoards[model]=nil end
 		end

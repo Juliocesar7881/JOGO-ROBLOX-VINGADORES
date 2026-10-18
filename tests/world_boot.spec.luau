@@ -1673,13 +1673,16 @@ do
 	character.Parent = workspace
 	check(world:DressAvatar(character, "ironman") == true, "the skin dresses an R15 avatar")
 	local skin = character:FindFirstChild("HeroSkin")
-	local welded, loose = 0, 0
+	local welded, loose, clashing = 0, 0, 0
 	for _, item in ipairs(skin and skin:GetDescendants() or {}) do
 		if item:IsA("Weld") and item.Name == "SkinWeld" then welded += 1 end
+		if item:IsA("BasePart") and table.find(names, item.Name) then clashing += 1 end
 		if item:IsA("BasePart") and (item.Anchored or item.CanCollide) then loose += 1 end
 		if item:IsA("Motor6D") then loose += 1 end
 	end
 	check(skin ~= nil and welded == 15 and loose == 0, "every body part of the armour rides the avatar's own, unanchored and passable: " .. welded .. " welds, " .. loose .. " stray")
+	-- The Animator poses parts by name: a second "RightLowerArm" bent the real elbow.
+	check(clashing == 0, "no armour piece shares a name with an avatar body part: " .. clashing)
 	check(character.UpperTorso.Transparency == 1 and handle.Transparency == 1 and character.HumanoidRootPart.Transparency == 0, "the avatar and its accessories hide under the armour")
 	check(world:UndressAvatar(character) == true and character:FindFirstChild("HeroSkin") == nil and character.UpperTorso.Transparency == 0 and handle.Transparency == 0, "taking the skin off gives the avatar back")
 	character:Destroy()
