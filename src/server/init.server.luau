@@ -1311,6 +1311,9 @@ if RunService:IsStudio() then
 			for _, player in ipairs(Players:GetPlayers()) do
 				local heroId = Catalog.Heroes[arg or ""] and arg or Catalog.Products.Passes.ironSkin.skinHero
 				dressed = (player.Character ~= nil and world:DressAvatar(player.Character, heroId)) or dressed
+				-- The temporary Studio profile owns no pass: own the skin's for this session.
+				local record = profiles.memory and profiles.records[player.UserId]
+				if record then record.passes.ironSkin = true; profiles:_notify(player) end
 			end
 			return dressed
 		end

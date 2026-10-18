@@ -1392,7 +1392,11 @@ function UI.matchLayout(width, height, options)
 	-- On a narrow screen the band gives way a little at a time: the ability
 	-- first, then the small controls (never under 44 wide).
 	-- (On a phone on its side the five hero tiles share the row, and need 290.)
-	local available = width - 2 * pad - (class.short and 290 or 0)
+	-- A touch phone keeps its bottom-right corner for Roblox's jump button and
+	-- the run and fire buttons above it (owner, 18/10: they overlapped).
+	local thumb = (options.touch and class.short) and 118 or 0
+	layout.thumb = thumb
+	local available = width - 2 * pad - (class.short and 290 or 0) - thumb
 	for _, step in ipairs({ { "skill", 80 }, { "control", 36 } }) do
 		while bandWidth() > available do
 			if step[1] == "skill" and skillW > step[2] then skillW -= 2
@@ -1410,8 +1414,8 @@ function UI.matchLayout(width, height, options)
 	if class.short then
 		-- One bottom band: hero cards scroll on the left, abilities fixed on the
 		-- right. A phone on its side has width to spare and no height at all.
-		layout.abilities = rect(width - pad - abilitiesW, bandY + math.floor((bandH - buttonH) / 2), abilitiesW, buttonH)
-		layout.heroCards = rect(pad, bandY, width - 2 * pad - abilitiesW - (abilitiesW > 0 and 8 or 0), bandH)
+		layout.abilities = rect(width - pad - thumb - abilitiesW, bandY + math.floor((bandH - buttonH) / 2), abilitiesW, buttonH)
+		layout.heroCards = rect(pad, bandY, width - 2 * pad - thumb - abilitiesW - (abilitiesW > 0 and 8 or 0), bandH)
 		layout.actionTop = bandY
 	else
 		local cardsW = math.min(775, width - 2 * pad)
@@ -1425,17 +1429,21 @@ function UI.matchLayout(width, height, options)
 	-- around them instead of stretching the tiles.
 	local tileH = layout.heroCards.h - 14
 	layout.cardW = math.max(48, math.min(tileH + 22, math.floor((layout.heroCards.w - 14 - 4 * 7) / 5)))
+	local bandW = 5 * layout.cardW + 4 * 7 + 14
 	if not class.short then
-		local bandW = 5 * layout.cardW + 4 * 7 + 14
 		layout.heroCards = rect(math.floor((width - bandW) / 2), layout.heroCards.y, bandW, layout.heroCards.h)
+	else
+		-- A phone's band hugs its five cards (owner, 18/10: an empty stretch of
+		-- frame after them read as an unfinished HUD).
+		layout.heroCards = rect(layout.heroCards.x, layout.heroCards.y, math.min(layout.heroCards.w, bandW), layout.heroCards.h)
 	end
 
 	-- Every control a thumb must hit on a phone is at least 48 x 48 pixels.
 	local placementH, hintH = 60, 40
 	local bossH = class.short and 60 or 76
 	if class.short then
-		local columnW = math.min(300, width - 2 * pad - 220)
-		local columnX = width - pad - columnW
+		local columnW = math.min(300, width - 2 * pad - 220 - thumb)
+		local columnX = width - pad - thumb - columnW
 		local columnBottom = bandY - gap
 		local area = columnX - gap - pad
 		local skipW = math.min(208, area)
@@ -1525,7 +1533,9 @@ function UI.lobbyLayout(width, height, options)
 	local rowH = 48
 	-- Settings alone occupies the top-right; Base lives in the main dock.
 	local round = class.short and 58 or 66
-	local settings = rect(width - pad - round, pad, round, round + 16)
+	-- Options sits tight in the top-right corner (owner, 18/10).
+	local corner = class.compact and 4 or 8
+	local settings = rect(width - corner - round, corner, round, round + 16)
 	-- The pill never reaches the buttons, however narrow the screen.
 	local pill = rect(pad, pad, math.min(class.compact and 170 or 236, settings.x - 8 - pad), rowH)
 	local count = UI.NAV_COUNT

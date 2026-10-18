@@ -826,6 +826,35 @@ function Effects:_emit(kind, position, color, count)
 	return true
 end
 
+-- The Iron armour skin's repulsor (owner, 18/10: "o tiro tem que ter um efeito
+-- mais forte"): a thick cyan beam with a white core, a flash at the hand, and a
+-- blast where it lands, a ring and a shockwave, sparks and smoke, a column of
+-- light; the shooter's camera kicks. Purely a show: the server dealt the hit.
+function Effects:SkinBlast(from, to, mine)
+	if typeof(from) ~= "Vector3" or typeof(to) ~= "Vector3" or (to - from).Magnitude < 0.5 then return end
+	local cyan, white = Color3.fromRGB(110, 220, 255), Color3.fromRGB(230, 248, 255)
+	-- The weight is where it lands: at the hand, close to the camera, the
+	-- flash stays small so it never washes the screen.
+	local start = from + (to - from).Unit * 1.2
+	self:_beam(start, to, cyan, 0.9, 0.26)
+	self:_effect(Vector3.new(0.32, 0.32, (to - start).Magnitude), CFrame.lookAt((start + to) / 2, to), white, 0.2, nil, 0.15)
+	self:_muzzle(start, cyan, 0.9)
+	self:_impact(to, cyan, 4.5)
+	self:_ring(to, cyan, 1, 13, 0.42)
+	self:_ring(to, white, 0.6, 7, 0.26)
+	self:_groundImpact(to, cyan, 6.5)
+	self:_column(Vector3.new(to.X, 0.3, to.Z), cyan, 9, 2, 0.45, 0.3)
+	if not self:_emit("spark", to, cyan, 24) then self:_sparks(to, cyan, 8, 5) end
+	self:_emit("smoke", to, Color3.fromRGB(190, 210, 228), 6)
+	if mine then self:Shake(0.16) end
+	local camera = workspace.CurrentCamera
+	if self.audio and camera then
+		local distance = (to - camera.CFrame.Position).Magnitude
+		self.audio:Shot("beam", distance, "skinRepulsor")
+		self.audio:Shot("blast", distance, "skinBlast")
+	end
+end
+
 -- A flamethrower's jet: fire particles thrown from the nozzle straight at the
 -- target, swelling from a hot yellow core to orange, red and smoke as they fly.
 -- One emitter, re-aimed and re-timed before each burst (a particle keeps the
@@ -1882,6 +1911,12 @@ function Effects:Handle(event)
 			end
 			if self.audio then self.audio:Cue("collect", 0.07) end
 		end
+	elseif event.kind == "Shot" and event.skin and typeof(event.to) == "Vector3" then
+		-- The armour skin's repulsor leaves the shooter's own hand.
+		local shooter = event.userId and game:GetService("Players"):GetPlayerByUserId(event.userId)
+		local hand = shooter and shooter.Character and (shooter.Character:FindFirstChild("SkinRightHand", true) or shooter.Character:FindFirstChild("RightHand"))
+		local from = hand and hand:IsA("BasePart") and hand.Position or event.from
+		if typeof(from) == "Vector3" then self:SkinBlast(from, event.to, shooter == self.player) end
 	elseif event.kind == "Shot" then
 		local state = self.getState()
 		-- An extra stream of the same attack (a hero that hits every target)

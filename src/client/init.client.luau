@@ -910,7 +910,15 @@ local function renderEventTag()
 	local x = hud.column and hud.navigation.x + hud.navigation.w + 10 or hud.pill.x + 6
 	local y = hud.pill.y + hud.pill.h + 10 + (boosted and 28 or 0)
 	local event = state.event
-	if event and (event.active or (tonumber(event.startsAt) and event.startsAt - os.time() < 3 * 86400)) then
+	-- On a phone the event is one short tag (owner, 18/10: it took too much
+	-- screen); a tap opens the event chest.
+	if event and hud.class.compact and (event.active or (tonumber(event.startsAt) and event.startsAt - os.time() < 3 * 86400)) then
+		local left = math.max(0, (tonumber(event.startsAt) or 0) - os.time())
+		local text = event.active and T("EVENTO: Ouro ×", "EVENT: Gold ×") .. tostring(event.goldScale or 2) .. T(" • Baú Jurássico ›", " • Jurassic chest ›")
+			or T("Evento em ", "Event in ") .. (left >= 86400 and (math.floor(left / 86400) .. "d " .. math.floor((left % 86400) / 3600) .. "h") or (math.floor(left / 3600) .. "h " .. string.format("%02d", math.floor((left % 3600) / 60)) .. "m"))
+		UI.button(main, text, function() if Catalog.Chests.jurassic then openContext("chests", { chestId = "jurassic", hud = true }) end end,
+			{ Name = "EventTag", Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(250, 26), TextSize = 12, BackgroundColor3 = Color3.fromRGB(36, 140, 74), Visible = contextPanel == nil })
+	elseif event and (event.active or (tonumber(event.startsAt) and event.startsAt - os.time() < 3 * 86400)) then
 		local map = Catalog.Maps[event.mapId]
 		local left = math.max(0, (event.active and (tonumber(event.endsAt) or 0) or (tonumber(event.startsAt) or 0)) - os.time())
 		local clock = left >= 86400 and (math.floor(left / 86400) .. "d " .. math.floor((left % 86400) / 3600) .. "h") or (math.floor(left / 3600) .. "h " .. string.format("%02d", math.floor((left % 3600) / 60)) .. "m")
@@ -1356,7 +1364,7 @@ kit.priorityOrder = {"First", "Last", "Strongest", "Nearest"}
 
 local function currentMatchLayout()
 	local size = screenSize()
-	return UI.matchLayout(size.X, size.Y, {skills = 1, cards = state ~= nil and state.match ~= nil and state.match.cardMode == true})
+	return UI.matchLayout(size.X, size.Y, {skills = 1, cards = state ~= nil and state.match ~= nil and state.match.cardMode == true, touch = UserInputService.TouchEnabled})
 end
 
 local function closeTowerPanel()
@@ -1465,7 +1473,8 @@ local function renderMatch()
 		UI.icon(refs.matchGold,"trophy",C.gold,{Name="GoldTrophy",Position=UDim2.new(0,8,0.5,-cupSize/2),Size=UDim2.fromOffset(cupSize,cupSize)})
 	end
 	refs.matchGold.TextXAlignment=Enum.TextXAlignment.Center
-	refs.waveInfo = UI.label(main, "", {Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 14 or 17, Font = UI.Fonts.display, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Center})
+	-- A phone keeps the status row to Gold and score (owner, 18/10: too much on screen).
+	refs.waveInfo = UI.label(main, "", {Visible = not layout.class.short, Position = at(layout.waveInfo), Size = dims(layout.waveInfo), TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd, TextSize = compact and 14 or 17, Font = UI.Fonts.display, TextColor3 = C.text, TextXAlignment = Enum.TextXAlignment.Center})
 	UI.fit(refs.waveInfo, 10)
 	surface(refs.waveInfo,UI.Skin.slotLine)
 	refs.waveInfo.BackgroundColor3,refs.waveInfo.BackgroundTransparency=UI.Skin.slot,0.1
@@ -2001,10 +2010,7 @@ local function handleWorldPointer(position, touch)
 		if best then selectTower(best) return end
 		-- The Iron armour skin (owner, 17/10): a left click fires its repulsor
 		-- where the commander aims; the server checks range, cooldown and damage.
-		local passes = profile().passes
-		if not touch and passes and passes.ironSkin and (profile().settings or {}).heroSkin ~= false then
-			local at = hit.Position
-			task.spawn(function() request("SkinShot", {position = at}, true) end)
+		if not touch and kit.skinBlaster:Fire(hit.Position) then
 			kit.inspect:Hide()
 			return
 		end
@@ -2281,6 +2287,11 @@ kit.movement = require(script:WaitForChild("Movement")).new({
 	actions = (function() local ok, service = pcall(game.GetService, game, "ContextActionService") return ok and service or nil end)(),
 	lowFX = function() local p = profile() return p and p.settings and p.settings.lowFX end,
 })
+-- The skin's repulsor: a FIRE button on touch screens, a click in the lobby.
+kit.skinBlaster = require(script:WaitForChild("SkinBlaster")).new({
+	player = player, input = UserInputService, gui = overlays, UI = UI, C = C, T = T, Rules = Rules, effects = effects,
+	request = function(action, payload, quiet) return request(action, payload, quiet) end, getState = function() return state end, profile = profile,
+})
 kit.sheet = require(script:WaitForChild("Sheet")).new({
 	UI = UI, C = C, T = T, L = L, Catalog = Catalog, Rules = Rules, overlays = overlays, screenSize = screenSize,
 	state = function() return state end, profile = profile, number = number,
@@ -2297,6 +2308,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if refs.loading then refs.loading.Step(os.clock() - (refs.loadingStarted or os.clock()), game:IsLoaded(), false, profile().settings and profile().settings.lowFX) end
 	kit.sheet:Sync()
 	kit.movement:Step(dt or 1 / 60)
+	kit.skinBlaster:Step()
 	kit.tutorial:Step(dt or 1 / 60)
 	kit.updatePromptVisibility()
 	matchHud.stepUpgradeBoards()

@@ -24,9 +24,13 @@ function Movement.new(ctx)
 	local input = ctx.input
 	if input.JumpRequest then input.JumpRequest:Connect(function() self:_jumpRequest() end) end
 	if ctx.actions then
+		-- On a touch screen the run button is ours, above the jump button (owner,
+		-- 18/10: Roblox's own button sat on top of the jump button); the keys and
+		-- the left stick stay bound everywhere.
+		local touch = input.TouchEnabled == true
 		local bound = pcall(function()
-			ctx.actions:BindAction("DoomRun", function(_, state, event) return self:_action(state, event) end, true, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3)
-			ctx.actions:SetTitle("DoomRun", ctx.T("CORRER", "RUN"))
+			ctx.actions:BindAction("DoomRun", function(_, state, event) return self:_action(state, event) end, not touch, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3)
+			if not touch then ctx.actions:SetTitle("DoomRun", ctx.T("CORRER", "RUN")) end
 		end)
 		self.bound = bound
 	end
@@ -120,7 +124,7 @@ end
 -- The run button on touch screens, above the thumb's jump button.
 function Movement:_ensurePhoneButton()
 	local ctx = self.ctx
-	if self.bound or not ctx.input.TouchEnabled then
+	if not ctx.input.TouchEnabled then
 		if self.phoneButton then self.phoneButton:Destroy() self.phoneButton = nil end
 		return
 	end
@@ -154,7 +158,7 @@ function Movement:Step(dt)
 			self.phoneButton.Text = title
 			self.phoneButton.BackgroundColor3 = self.toggled and ctx.C.green or ctx.C.card
 		end
-		if self.bound and self.title ~= title then
+		if self.bound and not ctx.input.TouchEnabled and self.title ~= title then
 			self.title = title
 			pcall(function() ctx.actions:SetTitle("DoomRun", title) end)
 		end

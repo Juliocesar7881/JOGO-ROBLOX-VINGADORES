@@ -1899,6 +1899,13 @@ do
 	check(not match:Handle(player, "SkinShot", { position = at + v3(Rules.SkinShot.range + 20, 0, 0) }), "it cannot reach past its range")
 	check(not match:Handle(player, "SkinShot", { position = "nowhere" }), "a bad target is refused")
 	check(match:Handle(player, "SkinShot", { position = at }), "once recharged it fires again")
+	-- The FIRE button (touch screens, owner 18/10): the server picks the nearest enemy.
+	match.elapsed += Rules.SkinShot.cooldown + 0.01
+	local hpBefore = enemy.hp
+	check(match:Handle(player, "SkinShot", { auto = true }) and enemy.hp < hpBefore, "the FIRE button hits the nearest enemy in reach")
+	match.elapsed += Rules.SkinShot.cooldown + 0.01
+	standAt(player, at + v3(Rules.SkinShot.range + 40, 3, 0))
+	check(not match:Handle(player, "SkinShot", { auto = true }), "with nobody in reach the FIRE button is refused")
 end
 
 print("--- cooperative full matches ---")

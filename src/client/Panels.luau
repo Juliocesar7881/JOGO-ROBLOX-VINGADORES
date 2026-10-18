@@ -308,7 +308,9 @@ function Panels.new(ctx)
 		local owned=isBase and (p.bases or {outpost=true}) or (p.heroes or {})
 		local ids=isBase and Catalog.BaseChestOrder or Catalog.HeroChestOrder
 		local size=screenSize(); local slot=UI.contextLayout(size.X,size.Y,{wide=true,elevator=ctx.state().elevator~=nil,difficulty=ctx.state().elevator~=nil and ctx.state().elevator.modeId=="normal"})
-		local width=slot.w-34; local wide=width>=620
+		-- The side-by-side stage needs height too: on a phone on its side it cut
+		-- the Summon button off (owner, 18/10), so a short slot gets the compact page.
+		local width=slot.w-34; local wide=width>=620 and slot.h>=560
 		local function portrait(parent,id,properties)
 			if isBase then return UI.basePortrait(parent,catalog[id],properties) end
 			return heroPortrait(parent,id,properties)

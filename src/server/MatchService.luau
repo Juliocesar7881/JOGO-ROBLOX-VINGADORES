@@ -1830,13 +1830,22 @@ function Match:Handle(player,action,payload)
 		-- they click, from their own character, a small hit on a short beat.
 		if not (p.profile.passes and p.profile.passes.ironSkin) then return false,"Skin não ativa. / Skin not active." end
 		if self.phase~="Wave" and self.phase~="Preparing" then return false,"Aguarde a partida. / Wait for the battle." end
-		local target=payload.position
-		if typeof(target)~="Vector3" then return false,"Alvo inválido. / Invalid target." end
 		local rule=self.rules.SkinShot
 		if self.elapsed<(p.skinReadyAt or 0) then return false,"Recarregando. / Recharging." end
 		local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if not root then return false,"Sem personagem. / No character." end
 		local from=root.Position
+		local target=payload.position
+		-- The FIRE button (touch screens): the nearest enemy in reach.
+		if payload.auto==true then
+			local best
+			for _,enemy in pairs(self.enemies) do
+				local d=distanceXZ(from,enemy.position)
+				if enemy.hp>0 and not enemy.def.illusion and d<=rule.range and (not best or d<best) then best,target=d,enemy.position end
+			end
+			if not best then return false,"Nenhum inimigo por perto. / No enemy in reach." end
+		end
+		if typeof(target)~="Vector3" then return false,"Alvo inválido. / Invalid target." end
 		if distanceXZ(from,target)>rule.range then return false,"Longe demais. / Too far." end
 		p.skinReadyAt=self.elapsed+rule.cooldown
 		local damage=self.rules.SkinShotDamage(self.wave)
@@ -1848,7 +1857,7 @@ function Match:Handle(player,action,payload)
 		for _,enemy in ipairs(hits) do self:_damage(enemy,damage,nil,stats) end
 		if #hits>0 then p.contributed=true end
 		self:_flushSplits()
-		self:_fx({kind="Shot",from=from+Vector3.new(0,1.6,0),to=Vector3.new(target.X,(target.Y or 0)+1,target.Z),color=Color3.fromRGB(120,220,255),heroId="ironman",style="beam",skin=true})
+		self:_fx({kind="Shot",from=from+Vector3.new(0,1.6,0),to=Vector3.new(target.X,(target.Y or 0)+1,target.Z),color=Color3.fromRGB(120,220,255),heroId="ironman",style="beam",skin=true,userId=player.UserId})
 		return true,{hits=#hits}
 	elseif action=="SkipWave" then
 		if self.phase~="Preparing" then return false,"Aguarde o intervalo. / Wait for preparation." end
