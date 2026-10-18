@@ -623,6 +623,69 @@ do
 	ground:Destroy()
 end
 
+-- Nothing floats (owner, 17/10: "n quero nd flutuando"): every visible piece
+-- either meets another piece (boxes grown by `reach` studs) or stands at ground
+-- level. Pieces that move by design (Spin, Bob, Sway, Pulse) are exempt. The
+-- boxes are axis-aligned, so a tilted piece is judged generously; the same scan
+-- in Studio found berries, seats, signs and banners that hung a fraction of a
+-- stud off what should hold them.
+local function floatingParts(root, groundTop, reach)
+	local parts, boxes = {}, {}
+	local function moving(item)
+		local node = item
+		while node and node ~= root do
+			if node:GetAttribute("Spin") or node:GetAttribute("Bob") or node:GetAttribute("Sway") or node:GetAttribute("Pulse") then return true end
+			node = node.Parent
+		end
+		return false
+	end
+	for _, item in ipairs(root:GetDescendants()) do
+		if item:IsA("BasePart") and (item.Transparency or 0) < 0.95 then
+			local cf, half = item.CFrame, item.Size / 2
+			local r, u, l = cf.RightVector, cf.UpVector, cf.LookVector
+			local ext = v3(math.abs(r.X) * half.X + math.abs(u.X) * half.Y + math.abs(l.X) * half.Z,
+				math.abs(r.Y) * half.X + math.abs(u.Y) * half.Y + math.abs(l.Y) * half.Z,
+				math.abs(r.Z) * half.X + math.abs(u.Z) * half.Y + math.abs(l.Z) * half.Z)
+			table.insert(parts, item)
+			table.insert(boxes, { min = cf.Position - ext, max = cf.Position + ext })
+		end
+	end
+	local CELL, grid = 16, {}
+	local function cells(lo, hi, visit)
+		for x = math.floor(lo.X / CELL), math.floor(hi.X / CELL) do
+			for y = math.floor(lo.Y / CELL), math.floor(hi.Y / CELL) do
+				for z = math.floor(lo.Z / CELL), math.floor(hi.Z / CELL) do
+					if visit(x .. "," .. y .. "," .. z) then return true end
+				end
+			end
+		end
+		return false
+	end
+	for index, box in ipairs(boxes) do
+		cells(box.min, box.max, function(key) grid[key] = grid[key] or {}; table.insert(grid[key], index); return false end)
+	end
+	local found = {}
+	for index, box in ipairs(boxes) do
+		local item = parts[index]
+		if item.Size.Magnitude > 0.5 and box.min.Y > groundTop and not moving(item) then
+			local lo, hi = box.min - v3(reach, reach, reach), box.max + v3(reach, reach, reach)
+			local touching = cells(lo, hi, function(key)
+				for _, other in ipairs(grid[key] or {}) do
+					local o = boxes[other]
+					if other ~= index and o.min.X <= hi.X and o.max.X >= lo.X and o.min.Y <= hi.Y and o.max.Y >= lo.Y and o.min.Z <= hi.Z and o.max.Z >= lo.Z then return true end
+				end
+				return false
+			end)
+			if not touching then table.insert(found, string.format("%s/%s@(%.0f,%.1f,%.0f)", item.Parent and item.Parent.Name or "?", item.Name, item.Position.X, item.Position.Y, item.Position.Z)) end
+		end
+	end
+	return found
+end
+do
+	local found = floatingParts(lobby, 0.3 + 0.6, 0.1)
+	check(#found == 0, "no lobby piece hangs in the air, got " .. #found .. ": " .. table.concat(found, " ", 1, math.min(#found, 10)))
+end
+
 -- Coplanar overlapping faces flicker (z-fighting) as the camera moves.
 do
 	local flickers, names = WorldBuilder.CoplanarConflicts(lobby)
@@ -1026,6 +1089,8 @@ for _, mapId in ipairs(Catalog.MapOrder) do
 	do
 		local _, blocked = blockedSigns(workspace:FindFirstChild("DoomWorld"))
 		check(#blocked == 0, mapId .. ": nothing stands in front of a sign's letters, got: " .. table.concat(blocked, "; ", 1, math.min(#blocked, 6)))
+		local found = floatingParts(workspace:FindFirstChild("DoomWorld"), 0.6, 0.1)
+		check(#found == 0, mapId .. ": no piece hangs in the air, got " .. #found .. ": " .. table.concat(found, " ", 1, math.min(#found, 10)))
 	end
 	local trailSegments,arrows,expectedSegments={},0,{}
 	for _,route in ipairs(Catalog.Maps[mapId].paths) do

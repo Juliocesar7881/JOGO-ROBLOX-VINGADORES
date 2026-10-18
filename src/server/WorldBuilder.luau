@@ -9242,7 +9242,7 @@ function FACADES.city(folder, theme, rng, face, width, height, depth)
 	shop.Transparency = 0.1
 	prop(folder, "Awning", Vector3.new(width - 2.6, 0.25, 2.6), face * CFrame.new(0, 5.6, -1.3) * CFrame.Angles(-0.28, 0, 0), theme.signs[rng:NextInteger(1, #theme.signs)]:Lerp(Color3.fromRGB(30, 30, 30), 0.35), Enum.Material.Fabric)
 	if rng:NextNumber() < 0.65 then
-		prop(folder, "ShopSign", Vector3.new(math.min(width * 0.55, 9), 1, 0.3), face * CFrame.new(0, 6.7, -0.25), theme.signs[rng:NextInteger(1, #theme.signs)], Enum.Material.Neon)
+		prop(folder, "ShopSign", Vector3.new(math.min(width * 0.55, 9), 1, 0.3), face * CFrame.new(0, 6.7, -0.15), theme.signs[rng:NextInteger(1, #theme.signs)], Enum.Material.Neon)
 	end
 	-- Floors: a dark glass band each, a few windows lit behind it, piers
 	-- between the bays so the facade reads as a grid of windows.
@@ -9318,8 +9318,9 @@ function FACADES.lab(folder, theme, rng, face, width, height, depth)
 			prop(folder, "LitWindow", Vector3.new(math.min(6, width - 4), 1.3, 0.25), face * CFrame.new(rng:NextNumber(-width / 4, width / 4), y, -0.12), theme.lit:Lerp(Color3.new(0, 0, 0), rng:NextNumber(0.2, 0.5)), Enum.Material.Neon)
 		end
 	end
-	-- A cylinder's axis is its X, which in face space runs along the facade.
-	prop(folder, "Pipe", Vector3.new(width, 0.9, 0.9), face * CFrame.new(0, height * 0.55, -0.6), Color3.fromRGB(150, 156, 150), Enum.Material.Metal).Shape = Enum.PartType.Cylinder
+	-- A cylinder's axis is its X, which in face space runs along the facade;
+	-- it lies against the wall, not a hand's breadth off it.
+	prop(folder, "Pipe", Vector3.new(width, 0.9, 0.9), face * CFrame.new(0, height * 0.55, -0.45), Color3.fromRGB(150, 156, 150), Enum.Material.Metal).Shape = Enum.PartType.Cylinder
 	roofline(folder, face, width, height, depth, look[2]:Lerp(Color3.new(1, 1, 1), 0.1), look[1])
 	for _ = 1, rng:NextInteger(1, 2) do
 		local vent = prop(folder, "RoofVent", Vector3.new(2.4, 2.2, 2.2), upright(face * CFrame.new(rng:NextNumber(-width / 3, width / 3), height + 2.1, depth / 2 + rng:NextNumber(-3, 3))), Color3.fromRGB(110, 116, 112), Enum.Material.Metal)

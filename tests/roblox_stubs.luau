@@ -238,6 +238,7 @@ Enum = setmetatable({}, {
 local INHERITS = {
 	Part = { "BasePart", "PVInstance" },
 	SpawnLocation = { "BasePart", "PVInstance" },
+	Seat = { "Part", "BasePart", "PVInstance" },
 	MeshPart = { "BasePart", "PVInstance" },
 	WedgePart = { "BasePart", "PVInstance" },
 	CornerWedgePart = { "BasePart", "PVInstance" },
